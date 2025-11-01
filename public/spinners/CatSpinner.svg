@@ -1,0 +1,55 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .head {
+    transform-origin: center;
+    animation: spin 1.2s linear infinite;
+  }
+
+  .head circle {
+    animation: colorShift 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes colorShift {
+    0%   { stroke: #A855F7; }  /* фиолетовый */
+    50%  { stroke: #EC4899; }  /* розовый */
+    100% { stroke: #A855F7; }  /* снова фиолетовый */
+  }
+  </style>
+  <g class="head">
+    <!-- Голова -->
+    <circle cx="32" cy="32" r="28" fill="#FFF5F8" stroke="#A855F7" stroke-width="4"/>
+
+    <!-- Ушки -->
+    <polygon points="18,2 26,14 10,14" fill="#FFF5F8" stroke="#A855F7" stroke-width="2"/>
+    <polygon points="46,2 38,14 54,14" fill="#FFF5F8" stroke="#A855F7" stroke-width="2"/>
+
+    <!-- Глаза -->
+    <circle cx="24" cy="30" r="3.2" fill="#000"/>
+    <circle cx="40" cy="30" r="3.2" fill="#000"/>
+
+    <!-- Щечки -->
+    <circle cx="18" cy="36" r="2.5" fill="#FFBCD9" opacity="0.8"/>
+    <circle cx="46" cy="36" r="2.5" fill="#FFBCD9" opacity="0.8"/>
+
+    <!-- Носик -->
+    <rect x="30" y="34" width="4" height="4" rx="1" fill="#000"/>
+
+    <!-- Рот -->
+    <path d="M24 44 Q32 50, 40 44" stroke="#000" stroke-width="2" fill="none"/>
+
+    <!-- Усы -->
+    <line x1="10" y1="34" x2="22" y2="34" stroke="#000" stroke-width="1.5"/>
+    <line x1="10" y1="30" x2="22" y2="28" stroke="#000" stroke-width="1.5"/>
+    <line x1="10" y1="38" x2="22" y2="40" stroke="#000" stroke-width="1.5"/>
+
+    <line x1="54" y1="34" x2="42" y2="34" stroke="#000" stroke-width="1.5"/>
+    <line x1="54" y1="30" x2="42" y2="28" stroke="#000" stroke-width="1.5"/>
+    <line x1="54" y1="38" x2="42" y2="40" stroke="#000" stroke-width="1.5"/>
+    
+  </g>
+</svg>

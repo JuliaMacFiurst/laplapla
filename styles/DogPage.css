@@ -1,0 +1,128 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #ffe0f0 0%, #e0f7ff 100%);
+  min-height: 100vh;
+  font-family: 'Amatic SC', cursive;
+}
+
+
+.dog-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  max-width: 48rem; /* 3xl */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dog-header-wrapper {
+  text-align: center;
+  flex-grow: 1;
+}
+
+.dog-header-image {
+  width: 200px;
+  height: auto;
+}
+
+.dog-page-title {
+  font-size: 3.5rem;
+  margin-bottom: 3rem;
+  margin-top: 0px;
+  color: #333;
+}
+
+.dog-page-subtitle {
+    font-size: 2rem;
+}
+
+.dog-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 48rem; /* 3xl */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dog-category-button {
+  background-color: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-family: 'Amatic SC', cursive;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dog-category-button span {
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0;
+  font-size: 1.25rem;
+  font-family: 'Amatic SC', cursive;
+  z-index: 4;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.dog-category-color-1 { background-color: #ffe0f0; } /* розовый */
+.dog-category-color-2 { background-color: #e0f7ff; } /* голубой */
+.dog-category-color-3 { background-color: #fff5cc; } /* нежно-жёлтый */
+.dog-category-color-4 { background-color: #e6ffe6; } /* мятный */
+.dog-category-color-5 { background-color: #fceaff; } /* сиреневый */
+.dog-category-color-6 { background-color: #f0fff0; } /* лайм-молочный */
+.dog-category-color-7 { background-color: #ffe5d9; } /* персиковый */
+.dog-category-color-8 { background-color: #f0f8ff; } /* ледяной */
+
+.dog-category-button:hover {
+  background-color: #e090b0;
+}
+
+@media (max-width: 768px) {
+  .dog-category-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dog-category-button {
+    font-size: 1.1rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dog-category-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dog-category-button {
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+}
+
+.dog-category-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}

@@ -1,0 +1,409 @@
+.raccoons-header-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  max-width: 100rem; /* 3xl */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#countries-svg path {
+  stroke: violet;
+  stroke-width: 1;
+  fill: transparent;
+  transition: fill 0.2s ease;
+}
+
+#countries-svg path:hover {
+  fill: rgba(238, 130, 238, 0.2); /* полупрозрачный фиолетовый */
+  cursor: pointer;
+}
+
+.map-container {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+}
+
+.map-content {
+  position: relative;
+  overflow: visible;
+  width: 100%;
+  height: auto;
+  transform-origin: center center;
+  cursor: grab;
+  transition: transform 0.1s ease;
+  will-change: transform;
+}
+
+
+#countries-svg {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: all;
+}
+
+#rivers-svg {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: all;
+}
+
+#rivers-svg path {
+  stroke: #00BCD4;
+  stroke-width: 1;
+  fill: none;
+  cursor: pointer;
+  transition: stroke 0.3s ease;
+}
+
+#rivers-svg path:hover {
+  stroke: #FF5722;
+  stroke-width: 2;
+}
+
+.world-map-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  max-width: 1280px;
+  overflow: visible;
+}
+
+
+.map-overlay {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+
+.country-popup {
+  width: 25vw;             /* Четверть экрана */
+  max-height: 80vh;        /* Высота до 80% экрана */
+  overflow-y: auto;        /* Скролл если не влезает */
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  position: absolute;
+  top: 60px;
+  left: 60px;
+  z-index: 1000;
+  cursor: move;
+}
+
+.country-popup p {
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.raccoons-home-wrapper {
+  margin: 0 auto;
+  padding: 20px;
+}
+
+#countries-svg path {
+  outline: none;
+  border: none;
+}
+
+#countries-svg path:focus {
+  outline: none !important;
+  border: none;
+}
+
+#countries-svg path:focus-visible {
+  outline: none !important;
+}
+
+.country-close-button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.5rem;
+  font-size: 1.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.map-svg {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.zoom-buttons {
+  position: absolute;
+  bottom: 0px;
+  right: 30px;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+  transform: translateX(-50%);
+  z-index: 7931;
+}
+
+.zoom-buttons button {
+  font-size: 1.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.zoom-buttons-container {
+  z-index: 9999;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+
+.country-map-content {
+  transform: translate(-200px, -150px) scale(0.64);
+}
+
+.river-map-content {
+  transform: translate(0, 0) scale(1);
+}
+
+.river-map, .sea-map, .physic-map {
+  width: 80%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.map-text {
+  font-size: 1.125rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+.map-tabs {
+  display: flex;
+  flex-direction: column-reverse; /* изменено с column */
+  justify-content: flex-end;
+  align-items: center;
+  width: 100vw;
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative;
+} 
+
+.map-tabs-container {
+  justify-content: center;
+  align-items: center; /* изменено */
+  z-index: 10;
+  width: 100%;
+  position: relative;
+}
+
+.map-tab-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 3px;
+  width: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+.map-tabs-background-bar {
+  width: 100%;
+  height: 20px;
+  background: linear-gradient(135deg, #ffe0f0 0%, #e0f7ff 100%);
+  background-color: rgba(255, 255, 255, 0.7);
+  position: relative;
+  z-index: 60;
+  align-items: flex-end;
+  border-radius: 12px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.map-tab {
+  position: relative;
+  z-index: 4;
+  padding: 0.5rem 2rem;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 4px -5px 9px 0px rgba(0, 0, 0, 0.1);
+  line-height: 37px;
+  font-weight: bold;
+  font-family: 'Amatic SC', cursive;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transform: translateY(0%) scale(1); /* изменено */
+  border: 0.1px solid transparent;
+  transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+  min-width: 140px;
+  text-align: center;
+  margin-bottom: -15px;
+}
+
+.map-tab.active {
+  background: #d6b2ff;
+  color: #fff;
+  border-color: #a855f7;
+  z-index: 20;
+  transform: translateY(-25%) scale(1.05) rotate(-1deg); /* изменено */
+  transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+  animation: tabPop 0.4s ease;
+}
+
+@keyframes tabPop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-25%) scale(1.1) rotate(1deg);
+  }
+  100% {
+    transform: translateY(-20%) scale(1.05) rotate(-1deg);
+  }
+}
+
+.map-tab-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  object-fit: contain;
+  border: none;
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.sea {
+  fill: #b2ebf2;
+  stroke: #004d40;
+  stroke-width: 0.5;
+  cursor: pointer;
+  transition: fill 0.3s ease;
+}
+
+.sea:hover {
+  fill: #4dd0e1;
+}
+
+.raccoon-image {
+  width: 200px;
+  height: 200px;
+  border: none;
+  display: block;
+  position: static;
+}
+
+/* Wiggle effect – как у попугая */
+.raccoon-image.is-wiggle {
+  transform: rotate(4deg) translateY(-2px);
+  transition: transform 200ms ease;
+}
+
+.raccoon-container {
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 1.95rem; 
+  margin-top: 6px;
+  opacity: 0.9;
+}
+
+/* Контейнер: енот слева, текст справа */
+.raccoons-title-with-raccoon {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+/* Блок слева — енот-гид */
+.raccoon-guide-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Картинка енота (PNG или GIF) */
+.raccoon-image {
+  width: 180px;
+  height: 180px;
+  border: none;
+  display: block;
+  position: static;
+}
+
+/* Покачивание — как у попугая */
+.raccoon-image.is-wiggle {
+  transform: rotate(4deg) translateY(-2px);
+  transition: transform 200ms ease;
+}
+
+/* Блок справа — заголовок + подзаголовок */
+.raccoon-text-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+
+/* Адаптив для телефонов */
+@media (max-width: 700px) {
+  .raccoons-title-with-raccoon {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .raccoon-image {
+    width: 120px;
+    height: 120px;
+  }
+
+  .page-title {
+    font-size: 32px;
+  }
+
+  .page-subtitle {
+    font-size: 16px;
+  }
+}
+
+/* Адаптив для совсем маленьких экранов */
+@media (max-width: 420px) {
+  .raccoon-image {
+    width: 100px;
+    height: 100px;
+  }
+
+  .page-title {
+    font-size: 28px;
+  }
+}

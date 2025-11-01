@@ -1,0 +1,591 @@
+.lessons-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.lessons-title {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  font-family: 'Amatic SC', cursive;
+}
+
+.lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.lesson-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  position: relative;
+}
+
+.lesson-card:hover {
+  transform: translateY(-4px);
+}
+
+.lesson-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lesson-info {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.lesson-title {
+  font-size: 1.5rem;
+  margin: 0;
+  font-family: 'Amatic SC', cursive;
+  color: #333;
+  z-index: 1;
+  position: relative;
+}
+
+.lesson-start-button {
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+  background-color: #ffc6d0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Amatic SC', cursive;
+}
+
+.lesson-image--placeholder {
+  width: 100%;
+  height: 150px;
+  background-color: #f5f5f5;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+/*стили для страницы загрузки уроков*/
+
+
+.lesson-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.lesson-frank,
+.lesson-fibi {
+  width: 200px;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lesson-canvas-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+
+.lesson-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.lesson-button-start {
+  font-size: 1.4rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Amatic SC', cursive;
+  transition: background-color 0.3s ease;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.lesson-button-start.restarted {
+  top: 1rem;
+  left: 1rem;
+  transform: none;
+}
+
+.lesson-button-start:hover {
+  background-color: #8ccfe8;
+}
+
+.lesson-button-next {
+  font-size: 1.4rem;
+  padding: 0.5rem 1rem;
+  background-color: #ffe2b6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Amatic SC', cursive;
+  transition: background-color 0.3s ease;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  width: 160px;
+  max-height: 70px;
+}
+
+.lesson-button-next:hover {
+  background-color: #ffd78f;
+}
+
+.lesson-start-text {
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.lesson-main-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.lesson-frank-tip {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.lesson-canvas-wrapper {
+  position: relative;
+  width: 512px;
+  height: 512px;
+  margin-bottom: 10px;
+}
+
+.lesson-canvas-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  border: 1px solid #ccc;
+}
+
+.lesson-canvas-draw {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  touch-action: none;
+  background-color: transparent;
+}
+
+.lesson-toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 10px;
+}
+
+.lesson-toolbar label:first-of-type {
+  font-size: 1.6rem;
+  font-family: 'Amatic SC', cursive;
+}
+
+.lesson-brush-settings label {
+  font-size: 1.6rem;
+  font-family: 'Amatic SC', cursive;
+}
+
+.lesson-toolbar button:nth-child(1) {
+  background-color: #ffc6d0;
+}
+
+.lesson-toolbar button:nth-child(2) {
+  background-color: #ffe2b6;
+}
+
+.lesson-button-eraser {
+  background-color: #d8ccff;
+  border: none;
+}
+
+.lesson-button-clear {
+  background-color: #c6ffd6;
+}
+
+.lesson-button-save {
+  background-color: #f5ccff;
+}
+
+.lesson-toolbar button:nth-child(4) {
+  background-color: #c6e0ff;
+}
+
+.lesson-toolbar button,
+.lesson-button-eraser
+.lesson-button-clear,
+.lesson-button-save {
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Amatic SC', cursive;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-toolbar button:hover,
+.lesson-button-clear:hover,
+.lesson-button-save:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.lesson-brush-settings {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.lesson-brush-settings button {
+  padding: 0.6rem 1.2rem;
+  font-size: 1.3rem;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Amatic SC', cursive;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-brush-settings button:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.lesson-brush-settings button:nth-child(1) {
+  background-color: #ffd3e2;
+}
+
+.lesson-brush-settings button:nth-child(2) {
+  background-color: #c6f7ff;
+}
+
+.lesson-brush-settings button:nth-child(3) {
+  background-color: #ffe9b6;
+}
+
+.lesson-brush-settings button:nth-child(4) {
+  background-color: #dcc6ff;
+}
+
+
+.lesson-brush-settings input {
+  min-width: 70px;
+}
+
+
+
+
+.lesson-step-counter {
+  font-family: 'Amatic SC', cursive;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 0.5rem;
+  color: #444;
+}
+
+.lesson-button-colorize {
+  padding: 14px 24px;
+  border: 5px double #87ceeb; /* нежно-голубая двойная рамка */
+  background: linear-gradient(145deg, #e0f7ff, #ffffff); /* светло-голубой градиент */
+  border-radius: 16px;
+  font-size: 28px;
+  font-weight: bold;
+  color: #005f73;
+  cursor: pointer;
+  box-shadow: 0 0 15px 5px rgba(135, 206, 235, 0.6);
+  animation: pulse-highlight 1.5s infinite, wiggle 2s infinite;
+  transition: transform 0.2s ease;
+  font-family: 'Amatic SC', cursive;
+  position: absolute;
+  bottom: 430px; /* расположение над пузырём */
+  left: 230px;
+  z-index: 10;
+}
+
+.lesson-button-colorize:hover {
+  transform: scale(1.1);
+}
+
+.colorizer-container {
+  position: relative;
+  z-index: 10;
+}
+.colorizer-content {
+  margin-top: 30px;
+  padding-top: 60px;
+  backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.colorizer-title {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 28px;
+  font-weight: bold;
+}
+.colorizer-main {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+.colorizer-palette-section {
+  margin-right: 20px;
+}
+.color-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 32px);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.color-palette-swatch {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+.color-palette-swatch.selected {
+  border: 2px solid black;
+}
+.colorizer-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.colorizer-button {
+  padding: 8px 16px;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 16px;
+  margin-bottom: 2px;
+  transition: background 0.2s;
+  z-index: 7;
+}
+
+
+.colorizer-button-undo {
+  background-color: #ffd3e2; /* Нежно-розовый */
+  color: #4a4a4a;
+}
+
+.colorizer-button-undo:hover {
+  background-color: #ffbfd2;
+  transform: scale(1.05);
+}
+
+.colorizer-button-clear {
+  background-color: #d4f5dc; /* Нежно-зелёный */
+  color: #4a4a4a;
+}
+
+.colorizer-button-clear:hover {
+  background-color: #bbf0c6;
+  transform: scale(1.05);
+}
+
+.colorizer-action-button {
+  font-family: 'Amatic SC', cursive;
+  font-size: 1.6rem;
+  font-weight: bold;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #fff176, #ffe082);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #333;
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translate(-50%, -50%);
+  animation: bounceGlow 2s infinite ease-in-out;
+  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.2s ease;
+  z-index: 4;
+}
+
+.colorizer-action-button:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  filter: brightness(1.1);
+}
+
+.colorizer-action-button:active {
+  transform: translate(-50%, -50%) scale(0.95);
+  box-shadow: 0 0 6px rgba(255, 235, 59, 0.4);
+}
+
+.colorizer-action-button.loading {
+  background: linear-gradient(135deg, #b0bec5, #cfd8dc);
+  cursor: not-allowed;
+  box-shadow: 0 0 8px rgba(120, 144, 156, 0.6);
+  animation: none;
+}
+
+@keyframes bounceGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(255, 235, 59, 0.6);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 235, 59, 1);
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+.colorizer-canvas-wrapper {
+  position: relative;
+  width: 512px;
+  height: 512px;
+}
+.colorizer-canvas-sketch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 512px;
+  height: 512px;
+  z-index: 1;
+}
+.colorizer-canvas-drawing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 512px;
+  height: 512px;
+  z-index: 2;
+  cursor: crosshair;
+}
+.colorizer-action {
+  margin: 20px 0;
+  text-align: center;
+}
+.colorizer-result {
+  margin-top: 20px;
+}
+
+.colorizer-result-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 512px;
+  height: 512px;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.colorizer-result-img.visible {
+  opacity: 1;
+}
+
+/* Контейнер персонажа */
+.dog-image-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;           /* как было раньше */
+}
+
+/* Картинка песика */
+.dog-image-img {
+  display: block;
+  object-fit: contain;
+  width: 100%;
+  height: auto;
+}
+
+/* Пузырь с репликой */
+.dog-bubble {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100%;
+  margin-bottom: 12px;   
+  width: 200px;           /* расстояние над головой */
+  max-width: min(320px, 90vw);
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  font-size: 28px;
+  line-height: 1.25;
+  text-align: left;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+/* «Хвостик» облачка */
+.dog-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border-left: 1px solid rgba(0,0,0,0.08);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+}
+
+/* Адаптив: уменьшить шрифт на узких экранах */
+@media (max-width: 420px) {
+  .dog-bubble { font-size: 14px; }
+}

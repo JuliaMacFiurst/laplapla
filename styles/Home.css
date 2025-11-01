@@ -1,0 +1,318 @@
+@font-face {
+  font-family: 'Amatic SC';
+  src: url('../assets/fonts/AmaticSC-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Caveat';
+  src: url('../assets/fonts/Caveat-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #fff8ef;
+  font-family: 'Amatic SC','Caveat', cursive;
+  overflow-x: hidden;
+  background-image: url('/cloudy-bg.svg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.home-wrapper {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.menu-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff2cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.title {
+  font-size: 64px;
+  text-align: center;
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+.subtitle {
+  font-size: 1.95rem; 
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 30px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  justify-items: center;
+}
+
+.card {
+  border-radius: 24px;
+  text-align: center;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: visible;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1 / 1; /* делает карточку квадратной */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card img {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-height: 280px;
+  width: auto;
+  height: auto;
+  max-width: 280px;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+
+.card:hover img {
+  transform: translateX(-50%) translateY(-10px);
+}
+
+.label {
+  margin-top: 10px;
+  font-size: 28px;
+  color: #333;
+  background-color: rgba(255, 255, 255, 0.6);
+  padding: 8px 12px;
+  border-radius: 16px;
+  display: inline-block;
+  backdrop-filter: blur(2px);
+  position: relative;      /* теперь можно управлять z-index */
+  z-index: 3;      
+}
+
+.mystery-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.mystery-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.mystery-container .curtain {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 3;
+}
+
+.mystery-container .paw {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+  transition: transform 0.4s ease;
+}
+
+.mystery-card:hover .paw {
+  bottom: -30px; /* лапка поднимается */
+  animation: paw-wave 0.8s ease-in-out;
+}
+
+/* Пастельные цвета карточек */
+.card:nth-child(1) { background-color: #ffe7d6; } /* персиковый */
+.card:nth-child(2) { background-color: #f3f8dc; } /* оливковый */
+.card:nth-child(3) { background-color: #fffacc; } /* ванильно-жёлтый */
+.card:nth-child(4) { background-color: #ffe6ec; } /* розовый */
+.card:nth-child(5) { background-color: #ede5f9; } /* сиреневый */
+.card:nth-child(6) { background-color: #f8e9ef; } /* пудровый */
+
+@keyframes paw-wave {
+  0%   { transform: translateX(-50%) rotate(0deg); }
+  25%  { transform: translateX(-50%) rotate(-4deg); }
+  50%  { transform: translateX(-50%) rotate(4deg); }
+  75%  { transform: translateX(-50%) rotate(-2deg); }
+  100% { transform: translateX(-50%) rotate(0deg); }
+}
+
+.story-container {
+  width: 100%;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  min-height: 550px;
+  background-color: var(--bg-color, #f3f4f6);
+}
+
+.story-error {
+  text-align: center;
+  color: #334155; /* text-slate-700 */
+}
+
+.story-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 0;
+  overflow: hidden;
+  min-height: 600px;
+  max-height: 700px;
+}
+
+.story-inner {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+@media (min-width: 640px) {
+  .story-inner {
+    padding: 2rem;
+  }
+}
+
+.story-content {
+  flex-grow: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.story-image-wrapper {
+  width: 100%;
+  max-width: 28rem;
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .story-image-wrapper {
+    max-width: 32rem;
+  }
+}
+
+.story-image-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 1rem;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.story-image {
+  position: relative;
+  z-index: 10;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  height: auto;
+  max-height: 280px;
+  object-fit: contain;
+  border: 4px solid white;
+  transition: opacity 0.3s ease;
+}
+
+@media (min-width: 640px) {
+  .story-image {
+    max-height: 320px;
+  }
+}
+
+.story-nav {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+}
+
+.story-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 20rem;
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .story-nav-inner {
+    max-width: 24rem;
+  }
+}
+
+.site-header {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.site-logo {
+  height: 80px;
+  margin-bottom: 10px;
+}
+
+.site-title {
+  font-family: 'Amatic SC', cursive;
+  font-size: 48px;
+  margin: 0;
+}
+
+.site-subtitle {
+  font-size: 18px;
+  color: #555;
+  margin-top: 5px;
+}
