@@ -1,7 +1,8 @@
 import { GEMINI_MODEL_NAME } from "../../constants";
 import { useRef, useEffect, useState } from "react";
 import { prompts } from "@/utils/prompts";
-import flagCodeMap from "@/public/images/map/confirmed_country_codes.json";
+import flagCodeMap from "@/utils/confirmed_country_codes.json";
+import { getMapSvg } from "@/utils/storageMaps";
 
 interface InteractiveMapProps {
   svgPath: string;
@@ -58,29 +59,42 @@ function getPrompt(mapType: InteractiveMapProps['type'], id: string): string {
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  const getFlagUrl = (countryName: string): string | null => {
+  const getFlagUrl = (id: string): string | null => {
+    if (!id) return null;
+
+    const lower = id.toLowerCase();
+
+    // ✅ ISO‑коды (две буквы)
+    if (/^[a-z]{2}$/.test(lower)) {
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/flags-svg/flags-svg/${lower}.svg`;
+    }
+
+    // ✅ Поиск кода страны по названию
     const map = flagCodeMap as Record<string, string>;
-    const code = map[countryName.toLowerCase()];
-    return code ? `/images/map/flags-svg/${code.toLowerCase()}.svg` : null;
+    const code = map[lower];
+
+    return code
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/flags-svg/flags-svg/${code}.svg`
+      : null;
   };
 
   useEffect(() => {
-    fetch(svgPath)
-      .then(res => res.text())
-      .then(text => {
-        // Добавим id внутрь <svg>
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, "image/svg+xml");
-        const svgElement = doc.querySelector("svg");
-        if (svgElement) {
-          const className = `${type}-map`;
-          svgElement.classList.add(className);
-          setSvgContent(svgElement.outerHTML);
-        } else {
-          setSvgContent(text); // fallback
-        }
-        setTimeout(() => setIsVisible(true), 0);
-      });
+    getMapSvg(svgPath).then((text) => {
+      if (!text) return;
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "image/svg+xml");
+      const svgElement = doc.querySelector("svg");
+
+      if (svgElement) {
+        svgElement.classList.add(`${type}-map`);
+        setSvgContent(svgElement.outerHTML);
+      } else {
+        setSvgContent(text);
+      }
+
+      setTimeout(() => setIsVisible(true), 0);
+    });
   }, [svgPath, type]);
 
 useEffect(() => {
@@ -500,7 +514,9 @@ useEffect(() => {
                   align-items: center;
                   z-index: 99999;
                 ">
-                  <img src="/images/raccoons/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
+                  <img src="\${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif" 
+                    alt="Еноты отдыхают" 
+                    style="width:260px; margin-bottom:20px;" />
                   <p>Еноты устали от кликов и ушли спать 🦝💤</p>
                   <p>Чтобы карта снова заработала, перезагрузи страницу.</p>
                   <button onclick="location.reload()" style="
@@ -735,14 +751,10 @@ useEffect(() => {
         // Если идёт генерация — блокируем новые клики
         if (isLoading) {
           console.log("🦝 История ещё загружается, новый клик заблокирован");
-          setToast("Енот ещё рассказывает предыдущую историю...");
-          setAiResponse(`
-            <div style='text-align:center;'>
-<<<<<<< HEAD
-              <img src="/images/raccoons-with-mops.gif" alt="Еноты заняты уборкой" style="width:220px; margin-bottom:10px;" />
-=======
-              <img src="/images/raccoons/raccoons-with-mops.gif" alt="Еноты заняты уборкой" style="width:220px; margin-bottom:10px;" />
->>>>>>> ef90e18 (Rebuild clean history)
+            setToast("Енот ещё рассказывает предыдущую историю...");
+            setAiResponse(`
+              <div style='text-align:center;'>
+              <img src=\`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif\` alt="Еноты заняты уборкой" style="width:220px; margin-bottom:10px;" />
               <p>Подожди немного — еноты моют карту после предыдущей истории!</p>
             </div>
           `);
@@ -771,11 +783,7 @@ useEffect(() => {
               align-items: center;
               z-index: 99999;
             ">
-<<<<<<< HEAD
-              <img src="/images/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
-=======
-              <img src="/images/raccoons/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
->>>>>>> ef90e18 (Rebuild clean history)
+              <img src="\${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
               <p>Еноты устали от кликов и ушли спать 🦝💤</p>
               <p>Чтобы карта снова заработала, перезагрузи страницу.</p>
               <button onclick="location.reload()" style="
@@ -923,11 +931,7 @@ useEffect(() => {
             align-items: center;
             z-index: 99999;
           ">
-<<<<<<< HEAD
-            <img src="/images/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
-=======
-            <img src="/images/raccoons/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
->>>>>>> ef90e18 (Rebuild clean history)
+            <img src="\${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
             <p>Кажется, еноты застряли с предыдущей историей 🦝💤</p>
             <p>Перезагрузи страницу, чтобы вернуть карту к жизни.</p>
             <button onclick="location.reload()" style="

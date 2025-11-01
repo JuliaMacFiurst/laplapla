@@ -1,26 +1,28 @@
 import React, { useEffect, useRef, useState } from "react";
 
+const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const base = `${SUPA}/storage/v1/object/public/characters/raccoons/raccoon_with_map`;
+
 export function RaccoonGuide({
   wiggle,
-  raccoonLine,
 }: {
   wiggle: boolean;
   raccoonLine: string;
 }) {
   // GIF-анимации (живые еноты)
   const gifs = [
-    "/images/raccoons/raccoon_with_map/raccoon-with-map.gif",
-    "/images/raccoons/raccoon_with_map/raccoon-shakes-map.gif",
-    "/images/raccoons/raccoon_with_map/raccoon-rollup-map.gif",
-    "/images/raccoons/raccoon_with_map/raccoon-puts-map-in-bottle.gif",
+    `${base}/raccoon-with-map.gif`,
+    `${base}/raccoon-shakes-map.gif`,
+    `${base}/raccoon-rollup-map.gif`,
+    `${base}/raccoon-puts-map-in-bottle.gif`,
   ];
 
   // PNG (статичные позы)
   const pngs = [
-    "/images/raccoons/raccoon_with_map/raccoon-with-map.png",
-    "/images/raccoons/raccoon_with_map/raccoon-shakes-map.png",
-    "/images/raccoons/raccoon_with_map/raccoon-rollup-map.png",
-    "/images/raccoons/raccoon_with_map/raccoon-puts-map-in-bottle.png",
+    `${base}/raccoon-with-map.png`,
+    `${base}/raccoon-shakes-map.png`,
+    `${base}/raccoon-rollup-map.png`,
+    `${base}/raccoon-puts-map-in-bottle.png`,
   ];
 
   const [showGif, setShowGif] = useState(false);
