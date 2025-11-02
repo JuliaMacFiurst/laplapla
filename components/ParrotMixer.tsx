@@ -1149,10 +1149,12 @@ function ParrotImage({
   wiggle: boolean;
   parrotLine: string;
 }) {
+  const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const baseParrot = `${SUPA}/storage/v1/object/public/characters/parrots/blue_parrot`;
   const gifs = [
-    "/images/parrot_pics/blue_parrot/blue-parrot1.gif",
-    "/images/parrot_pics/blue_parrot/blue-parrot2.gif",
-    "/images/parrot_pics/blue_parrot/blue-parrot3.gif",
+    `${baseParrot}/blue-parrot1.gif`,
+    `${baseParrot}/blue-parrot2.gif`,
+    `${baseParrot}/blue-parrot3.gif`,
   ];
 
   const [showGif, setShowGif] = useState(false);
@@ -1186,7 +1188,7 @@ function ParrotImage({
     };
   }, []);
 
-  const src = showGif ? gifs[gifIndex] : "/images/parrot_pics/blue_parrot/blue-parrot.png";
+  const src = showGif ? gifs[gifIndex] : `${baseParrot}/blue-parrot.png`;
 
   return (
     <div className="parrot-container">
