@@ -7,6 +7,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_MODEL_NAME } from "../../../constants";
 import { generatePhoebePrompt } from '@/utils/prompts';
 
+const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
 type Lesson = {
   title: string;
   category_slug: string;
@@ -31,11 +33,13 @@ function DogImage({
   const [showAnim, setShowAnim] = useState(false);
   const [animIdx, setAnimIdx] = useState(0);
 
-  // используем постер из anims в качестве базовой PNG-картинки
-  const pngSrc = `/characters/${name}/anims/${pose}-poster.png`;
+  // используем постер из Supabase storage в качестве базовой PNG-картинки и GIF-анимацию
+  const base = `${SUPA}/storage/v1/object/public/characters/dogs/${name}/anims/`;
+  const pngSrc = `${base}/${pose}-poster.png`;
 
-  // GIF для текущей позы (в каждой папке уже есть .gif и -poster.png)
-  const animList: string[] = [`/characters/${name}/anims/${pose}.gif`];
+  const animList: string[] = [
+    `${base}/${pose}.gif`
+  ];
 
   // Alternate only if there is any animation for this pose
   useEffect(() => {
