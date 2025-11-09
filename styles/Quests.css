@@ -1,122 +1,600 @@
-.passage {
-  line-height: 0.75 !important;
-}
-
+/************************************
+  ОСНОВНОЙ КОНТЕЙНЕР КВЕСТА
+*************************************/
 .quest-wrapper {
-  background-color: #2b1a12; /* кофейный фон */
-  border-radius: 20px;
-  padding: 20px 16px;
-  max-width: 600px;
-  margin: 40px auto; /* немного воздуха вокруг */
-  box-shadow: 0 0 40px rgba(0,0,0,0.35);
+  position: relative;
+  overflow: hidden;
+
+  /* глубокий тёмный фон */
+  background: radial-gradient(
+      circle at 50% 30%,
+      rgba(10, 25, 40, 0.9),
+      rgba(3, 8, 15, 1)
+    );
+  
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  border-radius: 0; /* если хочешь можно вернуть 20px */
 }
 
-img {
+.quest-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  /* огромный туманный градиент */
+  background: radial-gradient(
+    circle at 30% 50%,
+    rgba(0, 140, 200, 0.18),
+    rgba(0, 80, 140, 0.12) 20%,
+    rgba(0, 40, 80, 0.04) 50%,
+    transparent 80%
+  );
+
+  filter: blur(80px); /* размытие, убирающее любые чёткие края */
+  transform: scale(1.6); /* увеличивает «туман», чтобы не было видимых концов */
+
+  animation: fogWave 16s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes fogWave {
+  0% {
+    transform: translateX(-20%) translateY(0) scale(1.6);
+  }
+  50% {
+    transform: translateX(12%) translateY(8px) scale(1.6);
+  }
+  100% {
+    transform: translateX(60%) translateY(0) scale(1.6);
+  }
+}
+
+.quest-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: radial-gradient(
+    circle at 70% 60%,
+    rgba(0, 200, 255, 0.1),
+    rgba(0, 100, 180, 0.05) 30%,
+    transparent 70%
+  );
+
+  filter: blur(120px);
+  transform: scale(2);
+  animation: fogWave2 22s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes fogWave2 {
+  0% {
+    transform: translateX(30%) translateY(-10px) scale(2);
+  }
+  50% {
+    transform: translateX(-20%) translateY(10px) scale(2);
+  }
+  100% {
+    transform: translateX(30%) translateY(-10px) scale(2);
+  }
+}
+/************************************
+  ТЕКСТОВЫЙ КОНТЕЙНЕР
+*************************************/
+.quest-story-text {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  font-size: 1.8rem;
+  line-height: 1.5;
+  color: #f8e7cc;
+
+  font-family: 'Amatic SC', cursive;
+  letter-spacing: 1px;
+}
+
+/* абзацы */
+.quest-story-text p {
+  margin: 1em 0;   /* расстояние между абзацами */
+}
+
+/************************************
+  АКЦЕНТЫ
+*************************************/
+.quest-strong,
+.quest-story-text strong {
+  color: #ffb48e;
+  text-shadow: 0 0 6px rgba(255,180,100,0.35);
+  font-weight: 800;
+}
+
+.quest-em,
+.quest-story-text em {
+  color: #ffd8a0;
+  font-style: italic;
+  text-shadow: 0 0 4px rgba(255,160,90,0.25);
+}
+
+/************************************
+  ВИДЕО + ОГОНЬ
+*************************************/
+.quest-video {
+  width: 600px;
+  max-width: 90%;
   border-radius: 20px;
+
   box-shadow: 0 0 40px rgba(255,140,60,0.4);
-  animation: flicker 3s infinite ease-in-out;
+  animation: questFlicker 6s infinite ease-in-out;
 }
 
-@keyframes flicker {
-  0%   { box-shadow: 0 0 30px rgba(255,140,60,0.3); }
-  50%  { box-shadow: 0 0 60px rgba(255,180,100,0.6); }
-  100% { box-shadow: 0 0 30px rgba(255,140,60,0.3); }
+@keyframes questFlicker {
+  0%   { box-shadow: 0 0 25px rgba(255,140,60,0.25); }
+  50%  { box-shadow: 0 0 55px rgba(255,180,100,0.55); }
+  100% { box-shadow: 0 0 25px rgba(255,140,60,0.25); }
 }
 
-em {
-  color: #ffdba6;
+.firelight {
+  position: fixed;
+  inset: 0;
+
+  /* основной свет — гораздо ярче и шире */
+  background: radial-gradient(
+    circle at 50% 85%,
+    rgba(255, 160, 80, 0.35),
+    rgba(255, 120, 40, 0.20) 25%,
+    rgba(255, 80, 20, 0.10) 45%,
+    transparent 70%
+  );
+
+  filter: blur(30px); /* делает свечение мягким */
+  pointer-events: none;
+  animation: questGlow 4s ease-in-out infinite;
+  z-index: 1;
 }
 
-a.link-internal {
-  background: rgba(255,200,100,0.1);
-  text-align: center;
-  border-radius: 8px;
-  padding: 4px 8px;
-  text-decoration: none;
-  color: #fff0d0;
-  transition: background 0.3s;
+/* ДОБАВЛЯЕМ второй, мягкий слой поверх */
+.firelight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: radial-gradient(
+    circle at 50% 85%,
+    rgba(255, 200, 120, 0.22),
+    rgba(255, 150, 70, 0.10) 40%,
+    transparent 75%
+  );
+
+  filter: blur(60px); /* очень мягкое рассеяние */
+  animation: questGlowSoft 6s ease-in-out infinite;
+}
+@keyframes questGlow {
+  0% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.06); }
+  100% { opacity: 0.55; transform: scale(1); }
 }
 
-a.link-internal:hover {
-  background: rgba(255,200,100,0.25);
-}
-p {
-  margin-top: 0.2em;
-  margin-bottom: 0.2em;
-  line-height: 1;
+@keyframes questGlowSoft {
+  0% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.12); }
+  100% { opacity: 0.25; transform: scale(1); }
 }
 
-#startBtn {
+/************************************
+  КНОПКИ
+*************************************/
+.quest-start-btn,
+.quest-next-btn,
+.quest-control-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1; 
+
+  min-width: 260px;
+  padding: 10px 26px;
+
   font-family: 'Amatic SC', cursive;
   font-size: 1.6em;
   letter-spacing: 1px;
-  align-items: center;  
-  color: #fff9f5;
+
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+
+  color: #fffaf3;
   background: linear-gradient(120deg, #b48ef0, #f6c191, #f8b5a1);
   background-size: 200% 200%;
-  border: none;
-  border-radius: 14px;
-  padding: 6px 28px;       /* уменьшили высоту кнопки */
-  margin: 0;               /* убрали внешние отступы полностью */
-  cursor: pointer;
+
   box-shadow: 0 0 12px rgba(0,0,0,0.25);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
-  animation: gradientShift 6s ease-in-out infinite;
-  vertical-align: middle;
-  line-height: 1;          /* чтобы текст не съезжал вниз */
+  animation: questButtonGradient 6s ease-in-out infinite;
+
+  margin: 20px auto;
 }
 
-#startBtn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 22px rgba(255,210,170,0.6);
-}
-
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-tw-link, a.link-internal {
-  display: inline-flex;
-  background: linear-gradient(120deg, #6a5acd, #ffb06b, #ff986b);
-  background-size: 300% 300%;
-  border-radius: 16px;
-  padding: 10px 25px;
-  color: #fff9f5;
-  font-family: 'Amatic SC', cursive;
-  font-size: 1.8em;
-  align-items: center; 
-  justify-content: center;           /* по центру по горизонтали */
-  vertical-align: middle;    
-  letter-spacing: 1px;
-  line-height: 1; 
-  text-decoration: none;
-  box-shadow: 0 0 15px rgba(255,180,120,0.3);
-  animation: gradientShift 6s ease-in-out infinite;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-tw-link:hover, a.link-internal:hover {
+.quest-start-btn:hover,
+.quest-next-btn:hover,
+.quest-control-btn:hover {
   transform: scale(1.05);
   box-shadow: 0 0 25px rgba(255,210,160,0.6);
 }
 
-@keyframes gradientShift {
+@keyframes questButtonGradient {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
+/************************************
+  ПАНЕЛЬ СОХРАНЕНИЯ / ВЫХОДА
+*************************************/
+.quest-top-panel {
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 20px;
 
-html, body, #passages, #story, tw-story, tw-passage {
-  font-family: 'Amatic SC', cursive !important;
-  font-weight: 700;
-  font-size: 1.1em;
-  line-height: 0.7;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/************************************
+  ЦЕНТРОВКА
+*************************************/
+.quest-center {
+  text-align: center;
+}
+
+/************************************
+  МОДАЛКА ВЫХОДА
+*************************************/
+.quest-exit-modal {
+  position: fixed;
+  inset: 0;
+
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 999;
+}
+
+.quest-exit-content {
+  background: #2b1a12;
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 420px;
+
+  color: #ffe9c8;
+  font-family: 'Amatic SC', cursive;
+  line-height: 1.4;
+  font-size: 1.4rem;
+
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,0,0,0.45);
+}
+
+.quest-exit-buttons {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quest-paragraph-appear {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: questParagraphFade 0.7s forwards ease-out;
+}
+
+@keyframes questParagraphFade {
+  to {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+/* === ВОПРОС ДЛЯ ИГРОКА === */
+.quest-question {
+  display: block;
+  margin: 1.2em auto 0.6em;
+  font-family: 'Amatic SC', cursive;
+  font-size: 2rem;
+  line-height: 1.2;
   letter-spacing: 1px;
+  color: #ffe7b0;
+  text-align: center;
+
+  /* выразительное выделение */
+  position: relative;
+  display: inline-block;
+  padding: 4px 14px 6px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, rgba(255,210,150,0.12), rgba(255,160,100,0.10));
+  box-shadow: 0 0 18px rgba(255, 170, 110, 0.25);
+  text-shadow: 0 0 6px rgba(255, 180, 120, 0.35);
+}
+
+/* небольшая «полоса внимания» под заголовком */
+.quest-question::after {
+  content: "";
+  display: block;
+  height: 3px;
+  margin: 6px auto 0;
+  width: 60%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,200,140,0.6), transparent);
+}
+
+/* === БЛОК ВЫБОРА МАРШРУТА === */
+.quest-choice-container {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 14px;
+  flex-wrap: wrap; /* на маленьких экранах уйдут в две строки */
+}
+
+/* единая база для вариантов */
+.quest-route-flight,
+.quest-route-c {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 220px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+
+  font-family: 'Amatic SC', cursive;
+  font-size: 1.6em;
+  letter-spacing: 1px;
+  color: #fff9f3;
+
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  transition: transform .2s ease, box-shadow .2s ease, filter .25s ease;
+}
+
+/* визуально отличаем маршруты (но в одном стиле) */
+.quest-route-flight {
+  background: linear-gradient(120deg, #6aa9ff, #6cc7ff, #59a4ff);
+  background-size: 220% 220%;
+}
+.quest-route-c {
+  background: linear-gradient(120deg, #7bd4b5, #5fc3a3, #4bbd97);
+  background-size: 220% 220%;
+}
+
+.quest-route-flight:hover,
+.quest-route-c:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+  filter: brightness(1.05);
+}
+
+.quest-flex-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+
+  /* важная строка — чтобы блок красиво перестраивался на узких экранах */
+  flex-wrap: wrap;
+}
+
+/* Левая колонка (советы) */
+.quest-tips {
+  flex: 1 1 280px;       /* растягивается, но имеет минимальную ширину */
+  max-width: 480px;      /* чтобы не расползалась слишком сильно */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* ✅ равномерное распределение */
+  gap: 0;                          /* на всякий случай */
+  height: 100%;  
+}
+
+.quest-hint-blue {
+  color: #6ab3ff;
+  font-size: 26px;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(100, 180, 255, 0.4);
+}
+
+.quest-hint-red {
+  color: #ff6a6a;
+  font-size: 26px;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(255, 100, 100, 0.4);
+}
+
+.quest-hint-green {
+  color: #6aff9e;
+  font-size: 26px;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(100, 255, 180, 0.4);
+}
+
+/* Правая колонка (видео) */
+.quest-video-container {
+  flex: 1 1 300px;       /* адаптивная ширина */
+  max-width: 520px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.35);
+  background: #000;
+}
+
+.quest-video-container video {
+  object-fit: cover;
+  display: block;
+}
+
+/* На очень узком экране — всё в колонку */
+@media (max-width: 700px) {
+  .quest-flex-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .quest-tips,
+  .quest-video {
+    max-width: 100%;
+  }
+}
+
+.quest-map {
+  position: relative;
+  width: min(90vw, 980px);
+  aspect-ratio: 2000 / 856;   /* ✅ пропорции карты */
+  overflow: hidden;           /* ✅ скрывает всё, что вылезает */
+  border-radius: 18px;
+  border: 2px solid #c9b07a;
+  background: #f9f1de;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  margin-inline: auto;
+}
+
+/* SVG, загруженный внутрь */
+.quest-map > div svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;     /* ✅ тянет карту на весь контейнер */
+  display: block;
+  pointer-events: auto; /* нужно для хита стран */
+}
+
+.quest-route-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.quest-route-path {
+  stroke: #c92a2a;
+  stroke-width: 6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
+}
+
+/* ПИНЫ */
+.quest-pin-start,
+.quest-pin-end {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  cursor: grab;
+  user-select: none;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+    0 6px 13px rgba(0, 0, 0, 0.25);
+}
+
+.quest-pin-start {
+  background: radial-gradient(circle at 30% 30%, #6ab3ff, #1f4e8a);
+  border: 2px solid #b7d7ff;
+  animation: pulseStart 1.4s infinite ease-in-out;
+}
+
+.quest-pin-end {
+  background: radial-gradient(circle at 30% 30%, #ff6a6a, #8a1f1f);
+  border: 2px solid #e7b7b7;
+  pointer-events: none;
+}
+
+@keyframes pulseStart {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ШПИЦБЕРГЕН */
+.quest-pin-svalbard {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3px solid #c92a2a;
+  background: transparent;
+  box-shadow: 0 0 10px rgba(201, 42, 42, 0.55);
+  pointer-events: none;
+}
+
+.quest-svalbard-label {
+  position: absolute;
+  transform: translate(-50%, -10px);
+  color: #c92a2a;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 0 4px rgba(255, 245, 230, 0.8);
+  pointer-events: none;
+}
+
+/* РЕЧЬ ЕНОТА */
+.quest-raccoon {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.quest-raccoon-video {
+  width: 200px;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.quest-speech {
+  flex: 1;
+  background: #fff8e6;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-style: italic;
+  border: 2px solid #c92a2a;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* КНОПКИ */
+.quest-controls {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.quest-route-btn {
+  padding: 10px 16px;
+  margin: 6px;
+  border-radius: 12px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #ffb7ff, #ffb97a);
+  cursor: pointer;
+  border: 1px solid #bfa574;
+}
+
+.quest-route-btn.active {
+  outline: 2px solid #c92a2a;
+  outline-offset: 2px;
 }

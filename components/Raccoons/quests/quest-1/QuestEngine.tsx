@@ -2,11 +2,17 @@ import { useState } from "react";
 
 import Day1 from "./pages/Day1";
 import Day2 from "./pages/Day2";
+import Day3Flight from "./pages/Day3Flight";
+import Day3Sail from "./pages/Day3Sail";
+
 // дальше добавляем по мере создания
 
 const PAGES = {
   day1: Day1,
   day2: Day2,
+  day3flight: Day3Flight,
+  day3sail: Day3Sail,
+  
 };
 
 export type PageId = keyof typeof PAGES;

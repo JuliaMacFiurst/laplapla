@@ -15,7 +15,6 @@
     "@types/node-fetch": "^2.6.13",
     "axios": "^1.10.0",
     "dotenv": "^17.2.3",
-    "inkjs": "^2.3.2",
     "next": "^15.3.3",
     "node-fetch": "^3.3.2",
     "openai": "^5.5.1",
