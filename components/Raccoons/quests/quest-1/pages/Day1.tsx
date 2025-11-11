@@ -5,6 +5,8 @@ import type { PageId } from "../QuestEngine";
 // ✅ Абзацы истории (готовая JSX-разметка)
 //
 const paragraphs = [
+  <div className="quest-text-paper">
+    <div className="quest-text-inner">
   <p className="quest-p" key="p1">
     <em className="quest-em">
       Хрустят дрова в камине. За окном медленно падает снег. На пушистом
@@ -13,15 +15,19 @@ const paragraphs = [
       маленький щенок Тобиас, играющий с апельсином, и задумчивая кошка,
       свернувшаяся клубком на кровати в углу.
     </em>
-  </p>,
+  </p></div></div>,
 
+<div className="quest-text-paper">
+    <div className="quest-text-inner">
   <p className="quest-p" key="p2">
     <em className="quest-em">
       Бульдог открывает старую, чуть потёртую книгу. Его голос звучит низко
       и спокойно:
     </em>
-  </p>,
+  </p></div></div>,
 
+<div className="quest-text-paper">
+    <div className="quest-text-inner">
   <p className="quest-p" key="p3">
     «Когда-то давно, мой юный слушатель, жил великий путешественник —
     <strong className="quest-strong">сэр Бартоломью Вагглстоун</strong>. Он прошёл сквозь снега
@@ -29,14 +35,20 @@ const paragraphs = [
     И в один из своих походов он нашёл древнюю карту — карту, ведущую к{" "}
     <strong className="quest-strong">Кладу Времён</strong>. Но судьба капризна: буря разорвала
     карту на пять частей и разбросала их по всему свету.»
-  </p>,
+  </p></div></div>,
 
+
+<div className="quest-text-paper">
+    <div className="quest-text-inner">
   <p className="quest-p" key="p4">
     <em className="quest-em">Йоркширский терьер отпивает чай и шепчет:</em>
   </p>,
 
   <p className="quest-p" key="p5">— Пять частей... это же почти как пять историй!</p>,
+</div></div>,
 
+<div className="quest-text-paper">
+    <div className="quest-text-inner">
   <p className="quest-p" key="p6">
     <em className="quest-em">Бульдог кивает:</em>
   </p>,
@@ -48,8 +60,10 @@ const paragraphs = [
       горами, под морем и в сердце джунглей. И лишь самые отважные смогут
       пройти этот путь.»
     </strong>
-  </p>,
+  </p></div></div>,
 
+<div className="quest-text-paper">
+    <div className="quest-text-inner">
   <p className="quest-p" key="p8">
     <em className="quest-em">Маленький щенок подпрыгивает:</em>
   </p>,
@@ -58,8 +72,10 @@ const paragraphs = [
 
   <p className="quest-p" key="p10">
     <em className="quest-em">Бульдог с улыбкой закрывает книгу:</em>
-  </p>,
+  </p></div></div>,
 
+<div className="quest-text-paper">
+    <div className="quest-text-inner">
   <p className="quest-p" key="p11">
     <strong className="quest-strong">
       «Каждое путешествие начинается с первого шага. Завтра на рассвете —
@@ -72,7 +88,7 @@ const paragraphs = [
       Пламя камина тихо трещит, и кажется, что искры на секунду складываются
       в очертания старой карты…
     </em>
-  </p>,
+  </p></div></div>,
 ];
 
 export default function Day1({ go }: { go: (id: PageId) => void }) {
@@ -130,25 +146,35 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
   }
 
   return (
-    <div className="quest-wrapper">
+    <div className="quest-page-bg">
+      <div className="quest-bg-left"></div>
+      <div className="quest-bg-right"></div>
+      {/*ЗАГОЛОВОК */}
+      <div className="quest-title-wrapper">
+          <img
+            src="/quests/assets/banners/ribbon.webp"
+            alt=""
+            className="quest-title-banner"
+          />
+
+          <h1 className="quest-title-text">К Заполярным Берегам</h1>
+      </div>
       {/* ВИДЕО */}
-      <video
-        className="quest-video"
-        width="600"
-        autoPlay
-        loop
-        muted
-        playsInline
-      >
+      <div className="quest-video-wrapper firelight">
+  <video
+    className="quest-video"
+    autoPlay
+    muted
+    loop
+    playsInline
+  >
         <source
           src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/output.webm"
           type="video/webm"
         />
       </video>
-
-      {/* ОГНЕННАЯ ПОДСВЕТКА */}
-      <div className="firelight" id="firelight"></div>
-
+      <img src="/quests/assets/frames/frame1.webp" className="quest-frame" alt="" />
+       </div>
       {/* КНОПКА СТАРТА */}
       {!started && (
         <button

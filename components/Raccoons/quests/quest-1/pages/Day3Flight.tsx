@@ -54,6 +54,8 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   // ======================================================
   return (
     <div className="quest-wrapper">
+        <div className="quest-bg-left"></div>
+        <div className="quest-bg-right"></div>
 
       <div className="quest-story-text">
         <h2 className="page-title quest-center">Прокладываем маршрут</h2>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1200 800"
+     preserveAspectRatio="none">
+  <defs>
+    <!-- Мягкий «бумажный» градиент -->
+    <linearGradient id="paperGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#f7ebc8"/>
+      <stop offset="60%" stop-color="#f2deb3"/>
+      <stop offset="100%" stop-color="#eed3a1"/>
+    </linearGradient>
+
+    <!-- Шум для текстуры бумаги -->
+    <filter id="paperNoise" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0 0.03 0.06 0.09"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- «Деколь» — рваные края (маска) -->
+    <filter id="deckle" x="-10%" y="-10%" width="120%" height="120%">
+      <!-- Неровность контура -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.0075" numOctaves="3" seed="13" result="turb"/>
+      <feDisplacementMap in="SourceGraphic" in2="turb" scale="18" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- Внутренняя тень (чуть поджигает края) -->
+    <filter id="innerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feOffset dx="0" dy="1" />
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="blur" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" />
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0
+        0 0 0 0 0
+        0 0 0 0 0
+        0 0 0 .4 0"/>
+      <feBlend in="SourceGraphic" mode="normal"/>
+    </filter>
+
+    <!-- Полупрозрачный шум сверху -->
+    <pattern id="noiseOverlay" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="none" filter="url(#paperNoise)"/>
+    </pattern>
+  </defs>
+
+  <!-- База: прямоугольник, который мы «лохматим» фильтром -->
+  <g filter="url(#deckle)">
+    <rect x="40" y="40" width="1120" height="720" rx="28" ry="28" fill="url(#paperGrad)"/>
+    <!-- Лёгкая внутренняя тень -->
+    <rect x="40" y="40" width="1120" height="720" rx="28" ry="28" fill="transparent" filter="url(#innerShadow)"/>
+    <!-- Шум поверх -->
+    <rect x="40" y="40" width="1120" height="720" fill="url(#noiseOverlay)" opacity=".35"/>
+  </g>
+</svg>

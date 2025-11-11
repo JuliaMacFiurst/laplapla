@@ -1,17 +1,30 @@
 /************************************
   ОСНОВНОЙ КОНТЕЙНЕР КВЕСТА
 *************************************/
+
+.quest-page-bg {
+  min-height: 100vh;
+  background-image: url(/quests/assets/backgrounds/main-bg.webp);
+  background-size: 100% auto;
+  background-repeat: repeat-y;
+  background-attachment: fixed;
+  background-position: top center;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .quest-wrapper {
   position: relative;
+  z-index: 2;
   overflow: hidden;
-
-  /* глубокий тёмный фон */
-  background: radial-gradient(
-      circle at 50% 30%,
-      rgba(10, 25, 40, 0.9),
-      rgba(3, 8, 15, 1)
-    );
-  
+  background: linear-gradient(
+  180deg,
+  #FDF5DE 0%,
+  #F9EFD7 100%
+);
   padding: 40px 20px;
   min-height: 100vh;
   display: flex;
@@ -21,73 +34,127 @@
   border-radius: 0; /* если хочешь можно вернуть 20px */
 }
 
-.quest-wrapper::before {
-  content: "";
-  position: absolute;
-  inset: 0;
+/************************************
+  ЗАГОЛОВОК КВЕСТА
+*************************************/
 
-  /* огромный туманный градиент */
-  background: radial-gradient(
-    circle at 30% 50%,
-    rgba(0, 140, 200, 0.18),
-    rgba(0, 80, 140, 0.12) 20%,
-    rgba(0, 40, 80, 0.04) 50%,
-    transparent 80%
-  );
+/* Контейнер заголовка */
+.quest-title-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
 
-  filter: blur(80px); /* размытие, убирающее любые чёткие края */
-  transform: scale(1.6); /* увеличивает «туман», чтобы не было видимых концов */
 
-  animation: fogWave 16s infinite ease-in-out;
+/* ЛЕНТА */
+.quest-title-banner {
+  width: 92%;
+  max-width: 650px;
   pointer-events: none;
-  z-index: 0;
+  display: block;
 }
 
-@keyframes fogWave {
-  0% {
-    transform: translateX(-20%) translateY(0) scale(1.6);
-  }
-  50% {
-    transform: translateX(12%) translateY(8px) scale(1.6);
-  }
-  100% {
-    transform: translateX(60%) translateY(0) scale(1.6);
-  }
-}
 
-.quest-wrapper::after {
-  content: "";
+/* ТЕКСТ */
+.quest-title-text {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -52%);
 
-  background: radial-gradient(
-    circle at 70% 60%,
-    rgba(0, 200, 255, 0.1),
-    rgba(0, 100, 180, 0.05) 30%,
-    transparent 70%
-  );
+  margin: 0;
+  padding: 0;
 
-  filter: blur(120px);
-  transform: scale(2);
-  animation: fogWave2 22s infinite ease-in-out;
-  pointer-events: none;
-  z-index: 0;
+  font-family: 'Amatic SC', cursive;
+  font-size: 44px;
+  line-height: 11;
+  color: rgba(47, 58, 62, 0.75);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  text-align: center;
 }
 
-@keyframes fogWave2 {
-  0% {
-    transform: translateX(30%) translateY(-10px) scale(2);
+
+/* ⭐ ЗВЁЗДЫ через псевдоэлементы ⭐ */
+.quest-title-text::before,
+.quest-title-text::after {
+  content: "";
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  background-image: url("/quests/assets/decorations/star.webp");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 1;
+  vertical-align: middle;
+}
+
+
+/* Левая звезда */
+.quest-title-text::before {
+  margin-right: 10px;
+}
+
+/* Правая звезда */
+.quest-title-text::after {
+  margin-left: 10px;
+}
+
+
+/* Адаптив */
+@media (max-width: 480px) {
+  .quest-title-text {
+    font-size: 34px;
   }
-  50% {
-    transform: translateX(-20%) translateY(10px) scale(2);
-  }
-  100% {
-    transform: translateX(30%) translateY(-10px) scale(2);
+  .quest-title-text::before,
+  .quest-title-text::after {
+    width: 20px;
+    height: 20px;
   }
 }
 /************************************
   ТЕКСТОВЫЙ КОНТЕЙНЕР
 *************************************/
+
+/* ✅ Основная «бумажная» подложка */
+.quest-text-paper {
+  max-width: 900px;
+  padding: 60px 80px;
+
+  background-image: url('/quests/assets/backgrounds/paper.svg');
+  background-repeat: no-repeat;
+  background-size: 100% 100%; /* Растягивается под размер контейнера */
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
+}
+
+
+/* ✅ Контейнер текста — чтобы не растягивался слишком широко */
+.quest-text-inner {
+  max-width: 70ch;   /* идеальная читабельность */
+}
+
+/* ✅ Абзацы */
+.quest-text-paper p,
+.quest-p {
+  font-size: 1.55rem;
+  line-height: 1.55;
+  margin: 1.2rem 0;
+  color: #3b2c22; /* тёмно-кофейный */
+}
+
+/* ✅ Курсив */
+.quest-em {
+  color: #5a463b;
+}
+
+/* ✅ Выделение */
+.quest-strong {
+  font-weight: 800;
+  color: #964e01;
+}
+
 .quest-story-text {
   max-width: 800px;
   width: 100%;
@@ -100,136 +167,42 @@
   letter-spacing: 1px;
 }
 
-/* абзацы */
-.quest-story-text p {
-  margin: 1em 0;   /* расстояние между абзацами */
-}
+
 
 /************************************
-  АКЦЕНТЫ
+  ВИДЕО 
 *************************************/
-.quest-strong,
-.quest-story-text strong {
-  color: #ffb48e;
-  text-shadow: 0 0 6px rgba(255,180,100,0.35);
-  font-weight: 800;
+.quest-video-wrapper {
+  position: relative;
+  width: 900px;
+  height: 540px;
+  margin: 0 auto;
+  overflow: hidden; 
+  filter: drop-shadow(0px 12px 22px rgba(0, 0, 0, 0.25));
 }
 
-.quest-em,
-.quest-story-text em {
-  color: #ffd8a0;
-  font-style: italic;
-  text-shadow: 0 0 4px rgba(255,160,90,0.25);
-}
-
-/************************************
-  ВИДЕО + ОГОНЬ
-*************************************/
+/* Видео — на заднем плане */
 .quest-video {
-  width: 600px;
-  max-width: 90%;
-  border-radius: 20px;
-
-  box-shadow: 0 0 40px rgba(255,140,60,0.4);
-  animation: questFlicker 6s infinite ease-in-out;
-}
-
-@keyframes questFlicker {
-  0%   { box-shadow: 0 0 25px rgba(255,140,60,0.25); }
-  50%  { box-shadow: 0 0 55px rgba(255,180,100,0.55); }
-  100% { box-shadow: 0 0 25px rgba(255,140,60,0.25); }
-}
-
-.firelight {
-  position: fixed;
-  inset: 0;
-
-  /* основной свет — гораздо ярче и шире */
-  background: radial-gradient(
-    circle at 50% 85%,
-    rgba(255, 160, 80, 0.35),
-    rgba(255, 120, 40, 0.20) 25%,
-    rgba(255, 80, 20, 0.10) 45%,
-    transparent 70%
-  );
-
-  filter: blur(30px); /* делает свечение мягким */
-  pointer-events: none;
-  animation: questGlow 4s ease-in-out infinite;
-  z-index: 1;
-}
-
-/* ДОБАВЛЯЕМ второй, мягкий слой поверх */
-.firelight::after {
-  content: "";
   position: absolute;
-  inset: 0;
-
-  background: radial-gradient(
-    circle at 50% 85%,
-    rgba(255, 200, 120, 0.22),
-    rgba(255, 150, 70, 0.10) 40%,
-    transparent 75%
-  );
-
-  filter: blur(60px); /* очень мягкое рассеяние */
-  animation: questGlowSoft 6s ease-in-out infinite;
-}
-@keyframes questGlow {
-  0% { opacity: 0.55; transform: scale(1); }
-  50% { opacity: 0.95; transform: scale(1.06); }
-  100% { opacity: 0.55; transform: scale(1); }
+  top: 50%;
+  left: 50%;
+  width: 72%;         /* подгон под окно рамки */
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 20px;
+  z-index: 1;
+  object-fit: fill;
 }
 
-@keyframes questGlowSoft {
-  0% { opacity: 0.25; transform: scale(1); }
-  50% { opacity: 0.45; transform: scale(1.12); }
-  100% { opacity: 0.25; transform: scale(1); }
-}
-
-/************************************
-  КНОПКИ
-*************************************/
-.quest-start-btn,
-.quest-next-btn,
-.quest-control-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-width: 260px;
-  padding: 10px 26px;
-
-  font-family: 'Amatic SC', cursive;
-  font-size: 1.6em;
-  letter-spacing: 1px;
-
-  border: none;
-  border-radius: 16px;
-  cursor: pointer;
-
-  color: #fffaf3;
-  background: linear-gradient(120deg, #b48ef0, #f6c191, #f8b5a1);
-  background-size: 200% 200%;
-
-  box-shadow: 0 0 12px rgba(0,0,0,0.25);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  animation: questButtonGradient 6s ease-in-out infinite;
-
-  margin: 20px auto;
-}
-
-.quest-start-btn:hover,
-.quest-next-btn:hover,
-.quest-control-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 25px rgba(255,210,160,0.6);
-}
-
-@keyframes questButtonGradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Рамка — сверху */
+.quest-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;     /* чтобы рамка не мешала кликам по кнопкам */
+  z-index: 2;
 }
 
 /************************************
@@ -597,4 +570,12 @@
 .quest-route-btn.active {
   outline: 2px solid #c92a2a;
   outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .quest-bg-left,
+  .quest-bg-right {
+    opacity: 0.22;
+    width: 65%;
+  }
 }
