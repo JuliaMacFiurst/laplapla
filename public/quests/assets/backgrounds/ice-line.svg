@@ -1,0 +1,29 @@
+<svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="g" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#B3CDD2" stop-opacity="0.45"/>
+    </linearGradient>
+    <filter id="emboss" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#FFFFFF" flood-opacity="0.9"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1C3F55" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Неровный контур льдины -->
+  <path filter="url(#emboss)" fill="url(#g)" stroke="#60868F" stroke-opacity="0.45" stroke-width="2"
+        d="M20,60
+           C60,35 120,55 170,40
+           C250,60 310,35 380,52
+           C470,35 520,58 600,44
+           C690,58 750,36 820,52
+           C900,36 970,55 1040,42
+           C1100,52 1150,40 1180,60
+           L1185,320
+           C1150,360 1080,345 1020,360
+           C950,342 870,360 800,345
+           C720,360 660,342 600,356
+           C520,342 450,360 380,345
+           C300,360 230,342 160,356
+           C100,342 60,360 25,320 Z"/>
+</svg>

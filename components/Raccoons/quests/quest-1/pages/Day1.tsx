@@ -119,36 +119,44 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
   // ✅ Кнопка «Начать историю»
   //
   function startIntro() {
-    const fire = document.getElementById("fire") as HTMLAudioElement | null;
-    const music = document.getElementById("music") as HTMLAudioElement | null;
-    const btn = document.getElementById("startBtn") as HTMLButtonElement | null;
+  const fire = document.getElementById("fire") as HTMLAudioElement | null;
+  const music = document.getElementById("music") as HTMLAudioElement | null;
+  const btn = document.getElementById("startBtn") as HTMLButtonElement | null;
 
-    if (fire) {
-      fire.volume = 0.4;
-      fire.play();
-    }
-
-    if (music) {
-      music.volume = 0.2;
-      music.play();
-    }
-
-    if (btn) {
-      btn.style.transition = "opacity 1s ease";
-      btn.style.opacity = "0";
-      setTimeout(() => btn.remove(), 800);
-    }
-
-    setStarted(true);
-
-    // Запускаем появление параграфов чуть позже, чтобы визуально красиво вошло
-    setTimeout(() => startRevealingParagraphs(), 500);
+  if (fire) {
+    fire.volume = 0.4;
+    fire.play();
   }
+
+  if (music) {
+    music.volume = 0.2;
+    music.play();
+  }
+
+  if (btn) {
+    btn.style.transition = "opacity 1s ease";
+    btn.style.opacity = "0";
+    setTimeout(() => btn.remove(), 800);
+  }
+
+  setStarted(true);
+
+  // Появление параграфов чуть позже
+  setTimeout(() => startRevealingParagraphs(), 500);
+
+  // ✅ Небольшая плавная прокрутка вниз
+  // (даём странице время начать рендерить текст)
+  setTimeout(() => {
+    window.scrollTo({
+      top: window.scrollY + 200,  // прокрутить примерно на 200px вниз
+      behavior: "smooth",
+    });
+  }, 700); // запускаем чуть позже старта текста
+}
 
   return (
     <div className="quest-page-bg">
-      <div className="quest-bg-left"></div>
-      <div className="quest-bg-right"></div>
+      <div className="polar-scenery" aria-hidden />
       {/*ЗАГОЛОВОК */}
       <div className="quest-title-wrapper">
           <img
@@ -160,7 +168,8 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
           <h1 className="quest-title-text">К Заполярным Берегам</h1>
       </div>
       {/* ВИДЕО */}
-      <div className="quest-video-wrapper firelight">
+      <div className="quest-video-wrapper ice-window">
+        <div className="ice-window">
   <video
     className="quest-video"
     autoPlay
@@ -173,19 +182,28 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
           type="video/webm"
         />
       </video>
-      <img src="/quests/assets/frames/frame1.webp" className="quest-frame" alt="" />
+      {/*<img src="/quests/assets/frames/frame1.webp" className="quest-frame" alt="" />*/}
+      </div>
        </div>
       {/* КНОПКА СТАРТА */}
-      {!started && (
-        <button
-          className="quest-start-btn"
-          id="startBtn"
-          onClick={startIntro}
-        >
-          Начать историю
-        </button>
-      )}
-
+      <div className="quest-start-btn-wrapper">
+  {!started && (
+    <div
+      className="boat-wrapper"
+      id="startBtn"
+      onClick={startIntro}
+    >
+      <div className="boat-inner boat-button">
+        <img
+          className="boat"
+          src="/quests/assets/buttons/boat-btn.svg"
+          alt="boat"
+        />
+        <div className="boat-text">Начать историю</div>
+      </div>
+    </div>
+  )}
+</div>
       {/* АУДИО */}
       <audio
         id="fire"

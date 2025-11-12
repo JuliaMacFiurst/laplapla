@@ -3,35 +3,25 @@
 *************************************/
 
 .quest-page-bg {
-  min-height: 100vh;
-  background-image: url(/quests/assets/backgrounds/main-bg.webp);
-  background-size: 100% auto;
-  background-repeat: repeat-y;
-  background-attachment: fixed;
-  background-position: top center;
+  min-height: 100svh;
+  background: #f9faf7;
   position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  overflow-x: hidden;
 }
 
-.quest-wrapper {
-  position: relative;
-  z-index: 2;
-  overflow: hidden;
-  background: linear-gradient(
-  180deg,
-  #FDF5DE 0%,
-  #F9EFD7 100%
-);
-  padding: 40px 20px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  border-radius: 0; /* если хочешь можно вернуть 20px */
+/* Фиксированный пейзаж снизу.
+   Всегда занимает нижнюю часть окна, не скроллится. */
+.polar-scenery {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 100%;     /* можно 50–60vh по вкусу */
+  background-image: url("/quests/assets/backgrounds/city-bg-1.webp");
+  background-size: cover;
+  background-position: bottom center;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+  filter: saturate(0.95) contrast(0.98);
 }
 
 /************************************
@@ -70,7 +60,7 @@
   font-family: 'Amatic SC', cursive;
   font-size: 44px;
   line-height: 11;
-  color: rgba(47, 58, 62, 0.75);
+  color: rgba(10, 35, 57, 0.75);
   letter-spacing: 1px;
   white-space: nowrap;
   text-align: center;
@@ -121,12 +111,12 @@
 /* ✅ Основная «бумажная» подложка */
 .quest-text-paper {
   max-width: 900px;
-  padding: 60px 80px;
+  padding: 50px 80px;
 
-  background-image: url('/quests/assets/backgrounds/paper.svg');
+  background-image: url('/quests/assets/backgrounds/ice-line.svg');
   background-repeat: no-repeat;
   background-size: 100% 100%; /* Растягивается под размер контейнера */
-  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.75));
 }
 
 
@@ -173,37 +163,189 @@
   ВИДЕО 
 *************************************/
 .quest-video-wrapper {
-  position: relative;
-  width: 900px;
-  height: 540px;
-  margin: 0 auto;
-  overflow: hidden; 
-  filter: drop-shadow(0px 12px 22px rgba(0, 0, 0, 0.25));
-}
-
-/* Видео — на заднем плане */
-.quest-video {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 72%;         /* подгон под окно рамки */
-  height: auto;
-  transform: translate(-50%, -50%);
-  border-radius: 20px;
-  z-index: 1;
-  object-fit: fill;
-}
-
-/* Рамка — сверху */
-.quest-frame {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
-  height: 100%;
-  pointer-events: none;     /* чтобы рамка не мешала кликам по кнопкам */
+  max-width: 800px;
+  margin: 30px auto;
+}
+
+.ice-window {
+  position: relative;
+  overflow: hidden;
+  padding: 32px;
+  
+
+  background: linear-gradient(213deg, #6c7378 0%, #edfaff 100%) padding-box, radial-gradient(140% 130% at 50% 0%, #84b0bd 0%, #c7c7c7 70%, #9cbcc3 100%) border-box;
+  
+  background-blend-mode: overlay, normal;
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(255,255,255,0.8);
+  box-shadow:
+  0 18px 45px rgba(15, 30, 50, 0.35),         /* основная глубокая тень */
+  0 6px 12px rgba(10, 25, 40, 0.25),          /* низкая мягкая тень под льдиной */
+  inset 0 2px 6px rgba(255, 255, 255, 0.9),   /* ледяной блик сверху */
+  inset 0 -4px 10px rgba(70, 120, 150, 0.25); /* холодная глубина снизу */
+  clip-path: polygon(
+    4% 5%, 10% 3%, 20% 6%, 30% 3%, 40% 5%, 
+    50% 3%, 60% 6%, 70% 3%, 80% 5%, 88% 3%, 
+    95% 7%, 97% 20%, 95% 40%, 98% 50%, 
+    95% 60%, 97% 80%, 
+    95% 93%, 88% 96%, 78% 94%, 
+    68% 97%, 58% 94%, 48% 97%, 
+    38% 94%, 28% 96%, 18% 94%, 
+    10% 96%, 4% 90%, 
+    3% 70%, 5% 50%, 3% 30%
+  );
+}
+
+
+.quest-video {
+  width: 100%;
+  display: block;
+  border-radius: 20px;
+  position: relative;
   z-index: 2;
 }
+
+/* Лёгкое тёплое мерцание снизу */
+.ice-window::after {
+  content: "";
+  position: absolute;
+  inset: -50px;
+  border-radius: 40px;
+  z-index: 0;
+  pointer-events: none;
+
+  background: radial-gradient(
+    90% 80% at 50% 120%,
+    rgba(255,180,80,0.35),
+    rgba(255,150,60,0.18) 40%,
+    transparent 80%
+  );
+
+  filter: blur(75px);
+  animation: iceWarmGlow 5.5s ease-in-out infinite;
+}
+
+/************************************
+  КНОПКА СТАРТА
+*************************************/
+
+.quest-start-btn-wrapper {
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* чтобы контейнер над интерфейсом не мешал */
+}
+
+/* === КОРАБЛИК-КНОПКА === */
+
+/* === ОБОЛОЧКА КОРАБЛЯ (кликабельная зона) === */
+.boat-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: -420px;             /* старт за экраном, как раньше */
+  z-index: 999999;
+  width: 420px;
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  animation:
+    boatFloatIn 5.5s ease-out forwards,
+    boatFloatIdle 6s ease-in-out infinite 5.5s;
+}
+
+
+/* === ВНУТРЕННИЙ КОНТЕЙНЕР, НА НЁМ ВСЯ АНИМАЦИЯ === */
+.boat-inner {
+  position: relative;
+  width: 420px;
+  height: 120px;   /* обязательная высота, иначе SVG сжимается до 0 */
+  pointer-events: none; /* клики идут на wrapper */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* ДВЕ АНИМАЦИИ */
+  animation:
+    boatFloatIn 5.5s ease-out forwards,
+    boatFloatIdle 6s ease-in-out infinite 5.5s;
+}
+
+/* === КОРАБЛИК (SVG) === */
+.boat {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  position: relative;
+}
+
+/* === ТЕКСТ НА КОРАБЛИКЕ === */
+.boat-text {
+  position: absolute;
+  bottom: 24%;                  /* положение текста на палубе */
+
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 70%;
+  text-align: center;
+
+  font-family: "Amatic SC", sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.1;
+
+  color: #fff;
+  text-shadow:
+    0 0 8px rgba(0,0,0,0.75),
+    0 0 12px rgba(0,0,0,0.7);
+
+  pointer-events: none;
+}
+
+.boat-wrapper:hover .boat-text {
+  color: #001f3f; /* насыщенно-тёмно-синий, navy-toned */
+  text-shadow:
+    0 0 8px rgba(0, 20, 60, 0.9),
+    0 0 14px rgba(0, 40, 100, 0.8);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+.boat-wrapper:hover .boat-text {
+  animation: textGlowPulse 1.6s ease-in-out infinite;
+}
+
+/* === МЕДЛЕННОЕ ВЫПЛЫВАНИЕ СБОКУ === */
+@keyframes boatFloatIn {
+  0% {
+    left: -420px;
+    opacity: 0;
+    transform: scale(0.9) rotate(-3deg);
+  }
+  30% { opacity: 1; }
+  100% {
+    left: calc(50% - 210px); /* центрируем лодку */
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* === ПОКАЧИВАНИЕ ПОСЛЕ ПРИБЫТИЯ === */
+@keyframes boatFloatIdle {
+  0%   { transform: translateY(0) rotate(0); }
+  50%  { transform: translateY(-6px) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+/* === ХОВЕР НА ОБОЛОЧКЕ — НЕ ЛОМАЕМ АНИМАЦИИ INNER === */
+.boat-wrapper:hover .boat-inner {
+  transform: translateX(-50%) translateY(-4px) scale(1.03);
+}
+
+.boat-wrapper:active .boat-inner {
+  transform: translateX(-50%) translateY(2px) scale(0.97);
+}
+
 
 /************************************
   ПАНЕЛЬ СОХРАНЕНИЯ / ВЫХОДА
