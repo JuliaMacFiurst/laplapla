@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import type { PageId } from "../QuestEngine";
 
 //
@@ -42,16 +42,16 @@ const paragraphs = [
     <div className="quest-text-inner">
   <p className="quest-p" key="p4">
     <em className="quest-em">Йоркширский терьер отпивает чай и шепчет:</em>
-  </p>,
+  </p>
 
-  <p className="quest-p" key="p5">— Пять частей... это же почти как пять историй!</p>,
+  <p className="quest-p" key="p5">— Пять частей... это же почти как пять историй!</p>
 </div></div>,
 
 <div className="quest-text-paper">
     <div className="quest-text-inner">
   <p className="quest-p" key="p6">
     <em className="quest-em">Бульдог кивает:</em>
-  </p>,
+  </p>
 
   <p className="quest-p" key="p7">
     <strong className="quest-strong">
@@ -66,9 +66,9 @@ const paragraphs = [
     <div className="quest-text-inner">
   <p className="quest-p" key="p8">
     <em className="quest-em">Маленький щенок подпрыгивает:</em>
-  </p>,
+  </p>
 
-  <p className="quest-p" key="p9">— Давайте мы попробуем!</p>,
+  <p className="quest-p" key="p9">— Давайте мы попробуем!</p>
 
   <p className="quest-p" key="p10">
     <em className="quest-em">Бульдог с улыбкой закрывает книгу:</em>
@@ -81,7 +81,7 @@ const paragraphs = [
       «Каждое путешествие начинается с первого шага. Завтра на рассвете —
       отправляемся.»
     </strong>
-  </p>,
+  </p>
 
   <p className="quest-p" key="p12">
     <em className="quest-em">
@@ -103,7 +103,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
     let i = 0;
 
     function reveal() {
-      setVisibleIndex(i);
+      startTransition(() => setVisibleIndex(i));
       i++;
       if (i < paragraphs.length) {
         setTimeout(reveal, 700); // задержка между абзацами
@@ -139,19 +139,23 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
     setTimeout(() => btn.remove(), 800);
   }
 
-  setStarted(true);
+  // Отложенный запуск, чтобы дать браузеру полностью отрисовать DOM
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      setStarted(true);
 
-  // Появление параграфов чуть позже
-  setTimeout(() => startRevealingParagraphs(), 500);
+      // Появление параграфов чуть позже
+      setTimeout(() => startRevealingParagraphs(), 300);
 
-  // ✅ Небольшая плавная прокрутка вниз
-  // (даём странице время начать рендерить текст)
-  setTimeout(() => {
-    window.scrollTo({
-      top: window.scrollY + 200,  // прокрутить примерно на 200px вниз
-      behavior: "smooth",
+      // Небольшая плавная прокрутка вниз
+      setTimeout(() => {
+        window.scrollTo({
+          top: window.scrollY + 200,
+          behavior: "smooth",
+        });
+      }, 500);
     });
-  }, 700); // запускаем чуть позже старта текста
+  });
 }
 
   return (
@@ -218,22 +222,41 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
 
       {/* ТЕКСТ — ПОЯВЛЕНИЕ АБЗАЦОВ */}
       {started && (
-        <div className="quest-story-text" style={{ marginTop: "20px" }}>
-          {paragraphs.slice(0, visibleIndex + 1).map((p, idx) => (
-            <div key={idx} className="quest-paragraph-appear">
-              {p}
-            </div>
-          ))}
+        <div className="story-wrapper">
+          <div className="quest-story-text" style={{ marginTop: "20px" }}>
+            {paragraphs.slice(0, visibleIndex + 1).map((p, idx) => (
+              <div key={idx} className="quest-paragraph-appear">
+                {p}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* КНОПКА ПЕРЕХОДА */}
       {typingDone && (
-        <div className="quest-center quest-choice-container">
-          <button className="quest-next-btn" onClick={() => go("day2")}>
-            🚢 Отправиться в путешествие
-          </button>
+        <footer className="quest-footer">
+        <div className="quest-center ice-button-wrapper" style={{ marginTop: "60px" }}>
+          <div className="ice-button" onClick={() => go("day2")}>
+            {/* льдина */}
+      <img
+        className="ice"
+        src="/quests/assets/buttons/ice-button-bg.svg"
+        alt="ice-btn"
+      />
+
+      {/* текст */}
+     <div className="ice-text">🚢 Отправиться в путешествие</div>
+
+      {/* пингвин */}
+      <img
+        className="penguin"
+        src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+        alt="penguin"
+      />
+          </div>
         </div>
+        </footer>
       )}
     </div>
   );

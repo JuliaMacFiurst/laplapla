@@ -346,6 +346,98 @@
   transform: translateX(-50%) translateY(2px) scale(0.97);
 }
 
+/************************************
+ КНОПКА ЛЬДИНЫ
+*************************************/
+
+/* === ЛЬДИНА-КНОПКА === */
+
+.quest-footer {
+  position: static;     /* по умолчанию */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 60px;
+  
+}
+
+.ice-button-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.ice-button {
+  position: relative;
+  width: min(720px, 90vw);
+  height: 180px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: ice-bounce 1.4s ease-in-out infinite;
+  pointer-events: auto;
+}
+
+@keyframes ice-bounce {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(-3px); }
+  55%  { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+
+.ice-button .ice {
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  display: block;
+}
+
+.ice-button .ice-text {
+  position: absolute;
+  left: 180px;
+    top: 50px;
+  z-index: 3;
+  max-width: 60%;
+  font-family: "Amatic SC", cursive;
+  font-size: 36px;
+  font-weight: 700;
+  color: #204562;
+  text-shadow:
+    0 2px 4px rgba(255, 255, 255, 0.85),
+    0 0 6px rgba(0, 50, 80, 0.4);
+  text-align: center;
+}
+
+.ice-text:hover {
+  color: #ffffff;
+  text-shadow:
+    0 3px 6px rgba(255, 156, 26, 0.95),
+    0 0 10px rgba(0, 40, 80, 0.55);
+  transition: color .25s ease, text-shadow .25s ease;
+}
+
+.ice-button .penguin {
+  position: absolute;
+  top: -30px;
+  width: 92px;
+  height: auto;
+  z-index: 4;
+  pointer-events: none;
+  image-rendering: smooth;
+}
+
+.ice-button:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.05);
+  transition: transform .25s ease, filter .25s ease;
+}
+
+.ice-button:active {
+  transform: translateY(0);
+  filter: brightness(0.96);
+}
 
 /************************************
   ПАНЕЛЬ СОХРАНЕНИЯ / ВЫХОДА
