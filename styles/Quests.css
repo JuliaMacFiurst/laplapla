@@ -13,8 +13,10 @@
    Всегда занимает нижнюю часть окна, не скроллится. */
 .polar-scenery {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
-  height: 100%;     /* можно 50–60vh по вкусу */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%; /* можно 50–60vh по вкусу */
   background-image: url("/quests/assets/backgrounds/city-bg-1.webp");
   background-size: cover;
   background-position: bottom center;
@@ -37,7 +39,6 @@
   margin-top: 18px;
 }
 
-
 /* ЛЕНТА */
 .quest-title-banner {
   width: 92%;
@@ -45,7 +46,6 @@
   pointer-events: none;
   display: block;
 }
-
 
 /* ТЕКСТ */
 .quest-title-text {
@@ -57,7 +57,7 @@
   margin: 0;
   padding: 0;
 
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   font-size: 44px;
   line-height: 11;
   color: rgba(10, 35, 57, 0.75);
@@ -65,7 +65,6 @@
   white-space: nowrap;
   text-align: center;
 }
-
 
 /* ⭐ ЗВЁЗДЫ через псевдоэлементы ⭐ */
 .quest-title-text::before,
@@ -81,7 +80,6 @@
   vertical-align: middle;
 }
 
-
 /* Левая звезда */
 .quest-title-text::before {
   margin-right: 10px;
@@ -91,7 +89,6 @@
 .quest-title-text::after {
   margin-left: 10px;
 }
-
 
 /* Адаптив */
 @media (max-width: 480px) {
@@ -113,16 +110,15 @@
   max-width: 900px;
   padding: 50px 80px;
 
-  background-image: url('/quests/assets/backgrounds/ice-line.svg');
+  background-image: url("/quests/assets/backgrounds/ice-line.svg");
   background-repeat: no-repeat;
   background-size: 100% 100%; /* Растягивается под размер контейнера */
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.75));
 }
 
-
 /* ✅ Контейнер текста — чтобы не растягивался слишком широко */
 .quest-text-inner {
-  max-width: 70ch;   /* идеальная читабельность */
+  max-width: 70ch; /* идеальная читабельность */
 }
 
 /* ✅ Абзацы */
@@ -153,11 +149,9 @@
   line-height: 1.5;
   color: #f8e7cc;
 
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   letter-spacing: 1px;
 }
-
-
 
 /************************************
   ВИДЕО 
@@ -172,31 +166,52 @@
   position: relative;
   overflow: hidden;
   padding: 32px;
-  
 
-  background: linear-gradient(213deg, #6c7378 0%, #edfaff 100%) padding-box, radial-gradient(140% 130% at 50% 0%, #84b0bd 0%, #c7c7c7 70%, #9cbcc3 100%) border-box;
-  
+  background: linear-gradient(213deg, #6c7378 0%, #edfaff 100%) padding-box,
+    radial-gradient(140% 130% at 50% 0%, #84b0bd 0%, #c7c7c7 70%, #9cbcc3 100%)
+      border-box;
+
   background-blend-mode: overlay, normal;
   backdrop-filter: blur(3px);
-  border: 1px solid rgba(255,255,255,0.8);
-  box-shadow:
-  0 18px 45px rgba(15, 30, 50, 0.35),         /* основная глубокая тень */
-  0 6px 12px rgba(10, 25, 40, 0.25),          /* низкая мягкая тень под льдиной */
-  inset 0 2px 6px rgba(255, 255, 255, 0.9),   /* ледяной блик сверху */
-  inset 0 -4px 10px rgba(70, 120, 150, 0.25); /* холодная глубина снизу */
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 18px 45px rgba(15, 30, 50, 0.35),
+    /* основная глубокая тень */ 0 6px 12px rgba(10, 25, 40, 0.25),
+    /* низкая мягкая тень под льдиной */ inset 0 2px 6px
+      rgba(255, 255, 255, 0.9),
+    /* ледяной блик сверху */ inset 0 -4px 10px rgba(70, 120, 150, 0.25); /* холодная глубина снизу */
   clip-path: polygon(
-    4% 5%, 10% 3%, 20% 6%, 30% 3%, 40% 5%, 
-    50% 3%, 60% 6%, 70% 3%, 80% 5%, 88% 3%, 
-    95% 7%, 97% 20%, 95% 40%, 98% 50%, 
-    95% 60%, 97% 80%, 
-    95% 93%, 88% 96%, 78% 94%, 
-    68% 97%, 58% 94%, 48% 97%, 
-    38% 94%, 28% 96%, 18% 94%, 
-    10% 96%, 4% 90%, 
-    3% 70%, 5% 50%, 3% 30%
+    4% 5%,
+    10% 3%,
+    20% 6%,
+    30% 3%,
+    40% 5%,
+    50% 3%,
+    60% 6%,
+    70% 3%,
+    80% 5%,
+    88% 3%,
+    95% 7%,
+    97% 20%,
+    95% 40%,
+    98% 50%,
+    95% 60%,
+    97% 80%,
+    95% 93%,
+    88% 96%,
+    78% 94%,
+    68% 97%,
+    58% 94%,
+    48% 97%,
+    38% 94%,
+    28% 96%,
+    18% 94%,
+    10% 96%,
+    4% 90%,
+    3% 70%,
+    5% 50%,
+    3% 30%
   );
 }
-
 
 .quest-video {
   width: 100%;
@@ -217,8 +232,8 @@
 
   background: radial-gradient(
     90% 80% at 50% 120%,
-    rgba(255,180,80,0.35),
-    rgba(255,150,60,0.18) 40%,
+    rgba(255, 180, 80, 0.35),
+    rgba(255, 150, 60, 0.18) 40%,
     transparent 80%
   );
 
@@ -242,24 +257,22 @@
 .boat-wrapper {
   position: fixed;
   bottom: 0;
-  left: -420px;             /* старт за экраном, как раньше */
+  left: -420px; /* старт за экраном, как раньше */
   z-index: 999999;
   width: 420px;
 
   cursor: pointer;
   pointer-events: auto;
 
-  animation:
-    boatFloatIn 5.5s ease-out forwards,
+  animation: boatFloatIn 5.5s ease-out forwards,
     boatFloatIdle 6s ease-in-out infinite 5.5s;
 }
-
 
 /* === ВНУТРЕННИЙ КОНТЕЙНЕР, НА НЁМ ВСЯ АНИМАЦИЯ === */
 .boat-inner {
   position: relative;
   width: 420px;
-  height: 120px;   /* обязательная высота, иначе SVG сжимается до 0 */
+  height: 120px; /* обязательная высота, иначе SVG сжимается до 0 */
   pointer-events: none; /* клики идут на wrapper */
 
   display: flex;
@@ -267,8 +280,7 @@
   align-items: center;
 
   /* ДВЕ АНИМАЦИИ */
-  animation:
-    boatFloatIn 5.5s ease-out forwards,
+  animation: boatFloatIn 5.5s ease-out forwards,
     boatFloatIdle 6s ease-in-out infinite 5.5s;
 }
 
@@ -284,7 +296,7 @@
 /* === ТЕКСТ НА КОРАБЛИКЕ === */
 .boat-text {
   position: absolute;
-  bottom: 24%;                  /* положение текста на палубе */
+  bottom: 24%; /* положение текста на палубе */
 
   left: 50%;
   transform: translateX(-50%);
@@ -298,18 +310,14 @@
   line-height: 1.1;
 
   color: #fff;
-  text-shadow:
-    0 0 8px rgba(0,0,0,0.75),
-    0 0 12px rgba(0,0,0,0.7);
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.75), 0 0 12px rgba(0, 0, 0, 0.7);
 
   pointer-events: none;
 }
 
 .boat-wrapper:hover .boat-text {
   color: #001f3f; /* насыщенно-тёмно-синий, navy-toned */
-  text-shadow:
-    0 0 8px rgba(0, 20, 60, 0.9),
-    0 0 14px rgba(0, 40, 100, 0.8);
+  text-shadow: 0 0 8px rgba(0, 20, 60, 0.9), 0 0 14px rgba(0, 40, 100, 0.8);
   transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 .boat-wrapper:hover .boat-text {
@@ -323,7 +331,9 @@
     opacity: 0;
     transform: scale(0.9) rotate(-3deg);
   }
-  30% { opacity: 1; }
+  30% {
+    opacity: 1;
+  }
   100% {
     left: calc(50% - 210px); /* центрируем лодку */
     transform: scale(1) rotate(0deg);
@@ -332,9 +342,15 @@
 
 /* === ПОКАЧИВАНИЕ ПОСЛЕ ПРИБЫТИЯ === */
 @keyframes boatFloatIdle {
-  0%   { transform: translateY(0) rotate(0); }
-  50%  { transform: translateY(-6px) rotate(-1deg); }
-  100% { transform: translateY(0) rotate(0); }
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
 }
 
 /* === ХОВЕР НА ОБОЛОЧКЕ — НЕ ЛОМАЕМ АНИМАЦИИ INNER === */
@@ -353,12 +369,11 @@
 /* === ЛЬДИНА-КНОПКА === */
 
 .quest-footer {
-  position: static;     /* по умолчанию */
+  position: static; /* по умолчанию */
   width: 100%;
   display: flex;
   justify-content: center;
   margin-top: 60px;
-  
 }
 
 .ice-button-wrapper {
@@ -381,10 +396,18 @@
 }
 
 @keyframes ice-bounce {
-  0%   { transform: translateY(0); }
-  30%  { transform: translateY(-3px); }
-  55%  { transform: translateY(2px); }
-  100% { transform: translateY(0); }
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-3px);
+  }
+  55% {
+    transform: translateY(2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 
 .ice-button .ice {
@@ -397,25 +420,22 @@
 .ice-button .ice-text {
   position: absolute;
   left: 180px;
-    top: 50px;
+  top: 50px;
   z-index: 3;
   max-width: 60%;
   font-family: "Amatic SC", cursive;
   font-size: 36px;
   font-weight: 700;
   color: #204562;
-  text-shadow:
-    0 2px 4px rgba(255, 255, 255, 0.85),
-    0 0 6px rgba(0, 50, 80, 0.4);
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.85), 0 0 6px rgba(0, 50, 80, 0.4);
   text-align: center;
 }
 
 .ice-text:hover {
   color: #ffffff;
-  text-shadow:
-    0 3px 6px rgba(255, 156, 26, 0.95),
+  text-shadow: 0 3px 6px rgba(255, 156, 26, 0.95),
     0 0 10px rgba(0, 40, 80, 0.55);
-  transition: color .25s ease, text-shadow .25s ease;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
 }
 
 .ice-button .penguin {
@@ -431,7 +451,7 @@
 .ice-button:hover {
   transform: translateY(-3px);
   filter: brightness(1.05);
-  transition: transform .25s ease, filter .25s ease;
+  transition: transform 0.25s ease, filter 0.25s ease;
 }
 
 .ice-button:active {
@@ -466,7 +486,7 @@
   position: fixed;
   inset: 0;
 
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -482,12 +502,12 @@
   max-width: 420px;
 
   color: #ffe9c8;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   line-height: 1.4;
   font-size: 1.4rem;
 
   text-align: center;
-  box-shadow: 0 0 40px rgba(0,0,0,0.45);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.45);
 }
 
 .quest-exit-buttons {
@@ -512,23 +532,20 @@
 
 /* === ВОПРОС ДЛЯ ИГРОКА === */
 .quest-question {
-  display: block;
-  margin: 1.2em auto 0.6em;
-  font-family: 'Amatic SC', cursive;
-  font-size: 2rem;
+  position: absolute;
+  left: 150px;
+  top: 40px;
+  z-index: 3;
+  max-width: 60%;
+  font-family: "Amatic SC", cursive;
+  font-weight: 700;
+  text-align: center;
+  font-size: 2.5rem;
   line-height: 1.2;
   letter-spacing: 1px;
-  color: #ffe7b0;
-  text-align: center;
-
-  /* выразительное выделение */
-  position: relative;
-  display: inline-block;
-  padding: 4px 14px 6px;
-  border-radius: 12px;
-  background: linear-gradient(120deg, rgba(255,210,150,0.12), rgba(255,160,100,0.10));
-  box-shadow: 0 0 18px rgba(255, 170, 110, 0.25);
-  text-shadow: 0 0 6px rgba(255, 180, 120, 0.35);
+  color: #204562;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.85), 0 0 6px rgba(0, 50, 80, 0.4);
+  transition: color 0.25s ease, text-shadow 0.25s ease;
 }
 
 /* небольшая «полоса внимания» под заголовком */
@@ -539,7 +556,12 @@
   margin: 6px auto 0;
   width: 60%;
   border-radius: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255,200,140,0.6), transparent);
+  background: linear-gradient(
+  90deg,
+  transparent 0%,
+  rgba(255, 156, 26, 0.95) 50%,
+  transparent 100%
+  );
 }
 
 /* === БЛОК ВЫБОРА МАРШРУТА === */
@@ -550,6 +572,102 @@
   align-items: stretch;
   gap: 14px;
   flex-wrap: wrap; /* на маленьких экранах уйдут в две строки */
+}
+
+.quest-btn,
+.quest-next-btn {
+  position: relative;
+  width: min(460px, 40vw); /* адаптивно */
+  height: 160px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+}
+
+/* Ховер — кнопка чуть увеличивается и становится ярче */
+.quest-btn:hover,
+.quest-next-btn:hover {
+  animation: iceTilt 0.8s ease-in-out;
+  filter: brightness(1.08);
+}
+
+@keyframes iceTilt {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-1px) rotate(3deg);
+  }
+  75% {
+    transform: translateY(-3px) rotate(-2deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+/* Нажатие — мягкое погружение */
+.quest-btn:active,
+.quest-next-btn:active {
+  animation: iceSink 0.22s ease-in-out forwards;
+  filter: brightness(0.9);
+}
+
+@keyframes iceSink {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  35% {
+    transform: translateY(6px) scale(0.97) rotate(1deg);
+  }
+  65% {
+    transform: translateY(10px) scale(0.96) rotate(-1deg);
+  }
+  100% {
+    transform: translateY(8px) scale(0.965) rotate(0deg);
+  }
+}
+
+.small-ice {
+  width: 60vw;
+  height: auto;
+  pointer-events: none;
+  display: block;
+  opacity: 80%;
+}
+
+.quest-option {
+  position: absolute;
+  z-index: 3;
+  max-width: 60%;
+  font-family: "Amatic SC", cursive;
+  font-size: 34px;
+  font-weight: 700;
+  color: #204562;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.85), 0 0 6px rgba(0, 50, 80, 0.4);
+  text-align: center;
+}
+
+.quest-option-sail {
+  top: 30px;
+  left: 50px;
+}
+
+.quest-option-flight {
+  top: 35px;
+  left: 120px;
+}
+
+.quest-option:hover {
+  color: #ffffff;
+  text-shadow: 0 3px 6px rgba(255, 156, 26, 0.95),
+    0 0 10px rgba(0, 40, 80, 0.55);
+  transition: color 0.25s ease, text-shadow 0.25s ease;
 }
 
 /* единая база для вариантов */
@@ -565,13 +683,13 @@
   border-radius: 14px;
   cursor: pointer;
 
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   font-size: 1.6em;
   letter-spacing: 1px;
   color: #fff9f3;
 
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  transition: transform .2s ease, box-shadow .2s ease, filter .25s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.25s ease;
 }
 
 /* визуально отличаем маршруты (но в одном стиле) */
@@ -587,7 +705,7 @@
 .quest-route-flight:hover,
 .quest-route-c:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
   filter: brightness(1.05);
 }
 
@@ -603,13 +721,13 @@
 
 /* Левая колонка (советы) */
 .quest-tips {
-  flex: 1 1 280px;       /* растягивается, но имеет минимальную ширину */
-  max-width: 480px;      /* чтобы не расползалась слишком сильно */
+  flex: 1 1 280px; /* растягивается, но имеет минимальную ширину */
+  max-width: 480px; /* чтобы не расползалась слишком сильно */
   display: flex;
   flex-direction: column;
   justify-content: space-between; /* ✅ равномерное распределение */
-  gap: 0;                          /* на всякий случай */
-  height: 100%;  
+  gap: 0; /* на всякий случай */
+  height: 100%;
 }
 
 .quest-hint-blue {
@@ -635,7 +753,7 @@
 
 /* Правая колонка (видео) */
 .quest-video-container {
-  flex: 1 1 300px;       /* адаптивная ширина */
+  flex: 1 1 300px; /* адаптивная ширина */
   max-width: 520px;
   border-radius: 14px;
   overflow: hidden;
@@ -664,12 +782,12 @@
 .quest-map {
   position: relative;
   width: min(90vw, 980px);
-  aspect-ratio: 2000 / 856;   /* ✅ пропорции карты */
-  overflow: hidden;           /* ✅ скрывает всё, что вылезает */
+  aspect-ratio: 2000 / 856; /* ✅ пропорции карты */
+  overflow: hidden; /* ✅ скрывает всё, что вылезает */
   border-radius: 18px;
   border: 2px solid #c9b07a;
   background: #f9f1de;
-  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   margin-inline: auto;
 }
 
@@ -679,7 +797,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill;     /* ✅ тянет карту на весь контейнер */
+  object-fit: fill; /* ✅ тянет карту на весь контейнер */
   display: block;
   pointer-events: auto; /* нужно для хита стран */
 }
@@ -709,8 +827,7 @@
   border-radius: 50%;
   cursor: grab;
   user-select: none;
-  box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5),
     0 6px 13px rgba(0, 0, 0, 0.25);
 }
 
