@@ -53,12 +53,23 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   // ✅ RENDER
   // ======================================================
   return (
-    <div className="quest-wrapper">
-        <div className="quest-bg-left"></div>
-        <div className="quest-bg-right"></div>
+    <div className="quest-page-bg">
+        <div className="polar-scenery" aria-hidden />
+        {/*ЗАГОЛОВОК */}
+      <div className="quest-title-wrapper">
+        <img
+          src="/quests/assets/banners/ribbon.webp"
+          alt=""
+          className="quest-title-banner"
+        />
 
-      <div className="quest-story-text">
-        <h2 className="page-title quest-center">Прокладываем маршрут</h2>
+        <h1 className="quest-title-text">Прокладываем маршрут</h1>
+      </div>
+
+        
+     <div className="quest-story-text" style={{ marginTop: "20px" }}>
+      <div className="quest-text-paper">
+        <div className="quest-text-inner">
         <p className="quest-p quest-em">
           Енот надевает лётный шлем и говорит:
           </p>
@@ -66,8 +77,12 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
             «Роланд, ставь синюю кнопку на свой дом!»
           </p>
       </div>
-
-      <div className="quest-flex-row">
+       </div>
+      </div>
+      
+      <div className="quest-row-story">
+      <div className="quest-story-text" style={{ marginTop: "20px" }}>
+        <div className="quest-text-paper">
         <div className="quest-tips">
           <p className="quest-hint-blue">Синяя точка — твой дом.</p>
           <p className="quest-hint-red">Красная точка — Шпицберген.</p>
@@ -76,48 +91,50 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
             над какими странами вы пролетите.
           </p>
         </div>
-        <div className="quest-video-conteiner">
-        <video
-          className="quest-video"
-          autoPlay
-          loop
-          muted
-          playsInline
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/route.webm"
-        />
+      </div>
+     </div>
+     
+      {/* ВИДЕО */}
+      <div className="quest-video-wrapper ice-window">
+        <div className="ice-window">
+          <video className="quest-video" autoPlay muted loop playsInline>
+            <source
+             src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/route.webm"
+              type="video/webm"
+            />
+          </video>
         </div>
       </div>
 
+        
+      </div>
+
       {/* MAP */}
-      <div id="map-wrap" ref={wrapRef} className="quest-map">
-        <div ref={svgContainerRef}></div>
+      <div className="map-center">
+      <div className="map-frame">
+        <div id="map-wrap" ref={wrapRef} className="quest-map">
+          <div ref={svgContainerRef}></div>
 
-        <div ref={svalMkRef} id="svalbard-marker" className="quest-pin-svalbard"></div>
-        <div id="svalbard-label" className="quest-svalbard-label">Шпицберген</div>
+          <div ref={svalMkRef} id="svalbard-marker" className="quest-pin-svalbard"></div>
+          <div id="svalbard-label" className="quest-svalbard-label">Шпицберген</div>
 
-        <svg
-          ref={svgRef}
-          id="route-svg"
-          className="quest-route-svg"
-          viewBox="0 0 2000 856"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <path ref={pathRef} id="route-path" className="quest-route-path"></path>
-        </svg>
+          <svg
+            ref={svgRef}
+            id="route-svg"
+            className="quest-route-svg"
+            viewBox="0 0 2000 856"
+            preserveAspectRatio="xMidYMid meet"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+          >
+            <path ref={pathRef} id="route-path" className="quest-route-path"></path>
+          </svg>
 
-        <div ref={pinStartRef} id="btn-start" className="quest-pin-start"></div>
-        <div ref={pinEndRef} id="btn-end" className="quest-pin-end"></div>
+          <div ref={pinStartRef} id="btn-start" className="quest-pin-start"></div>
+          <div ref={pinEndRef} id="btn-end" className="quest-pin-end"></div>
+        </div>
       </div>
-
-      {/* BUTTONS */}
-      <div className="quest-controls">
-        <button className="quest-route-btn" data-type="straight">Прямая</button>
-        <button className="quest-route-btn" data-type="arc">Дуга</button>
-        <button className="quest-route-btn" data-type="zigzag">Зигзаг</button>
       </div>
-
-      {/* RACCOON */}
-      <div className="quest-raccoon">
+      <div className="raccoon-absolute">
         <video
           className="quest-raccoon-video"
           autoPlay
@@ -126,10 +143,18 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
           playsInline
           src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/raccoon-points.webm"
         />
-        <div ref={racTextRef} id="raccoonText" className="quest-speech">
-          Енот: «Выбери тип маршрута.»
-        </div>
+      </div>
+      {/* BUTTONS */}
+      <div className="quest-controls">
+        <button className="quest-route-btn" data-type="straight">Прямая</button>
+        <button className="quest-route-btn" data-type="arc">Дуга</button>
+        <button className="quest-route-btn" data-type="zigzag">Зигзаг</button>
+      </div>
+
+      <div ref={racTextRef} id="raccoonText" className="quest-speech">
+        Енот: «Выбери тип маршрута.»
       </div>
     </div>
+     
   );
 }

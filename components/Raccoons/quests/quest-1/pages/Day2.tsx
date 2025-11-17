@@ -19,7 +19,7 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
         </div>
       </div>
 
-      <div className="story-wrapper">
+      
         <div className="quest-story-text" style={{ marginTop: "20px" }}>
           <div className="quest-text-paper">
             <div className="quest-text-inner">
@@ -121,7 +121,6 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
             </div>
           </div>
         </div>
-      </div>
       <div
             className="quest-center ice-button-wrapper"
             style={{ marginTop: "60px" }}

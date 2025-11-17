@@ -479,6 +479,11 @@
   text-align: center;
 }
 
+.map-center {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 /************************************
   МОДАЛКА ВЫХОДА
 *************************************/
@@ -751,6 +756,13 @@
   text-shadow: 0 0 6px rgba(100, 255, 180, 0.4);
 }
 
+.quest-row-story {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
 /* Правая колонка (видео) */
 .quest-video-container {
   flex: 1 1 300px; /* адаптивная ширина */
@@ -791,6 +803,31 @@
   margin-inline: auto;
 }
 
+/* === ТОНКАЯ ДЕРЕВЯННАЯ РАМКА ВОКРУГ КАРТЫ === */
+.map-frame {
+  padding: 22px; /* толще рамка для объёма */
+  width: fit-content;
+
+  /* мультяшная объёмная рамка */
+  border-radius: 26px;
+  background: #b16c0a; /* тёплый светло-коричневый */
+  border: 4px solid #8a613a; /* насыщенная коричневая рамка */
+  box-shadow:
+    0 0 40px 18px rgba(138, 97, 58, 0.45),   /* расплавчатое коричневое свечение наружу */
+    0 0 65px 28px rgba(181, 138, 90, 0.35),  /* более широкое, мягкое сияние */
+    inset 0 2px 4px rgba(255, 255, 255, 0.6), /* внутренний холодный блик */
+    inset 0 -4px 8px rgba(110, 70, 40, 0.35); /* внутренняя тень */
+  display: inline-block;
+  margin-inline: auto;
+  position: relative;
+}
+
+.map-frame .quest-map {
+  border-radius: 18px;              /* повторяем плавность */
+  overflow: hidden;                 /* скрываем углы */
+  box-shadow: none;                 /* убираем старую тень, рамка теперь делает тень */
+}
+
 /* SVG, загруженный внутрь */
 .quest-map > div svg {
   position: absolute;
@@ -801,6 +838,8 @@
   display: block;
   pointer-events: auto; /* нужно для хита стран */
 }
+
+
 
 .quest-route-svg {
   position: absolute;
@@ -879,43 +918,91 @@
 }
 
 /* РЕЧЬ ЕНОТА */
+/* РЕЧЬ ЕНОТА */
 .quest-raccoon {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  position: relative;
+  z-index: 99999;
+}
+
+.raccoon-absolute {
+  position: absolute;
+  bottom: -28px;         /* голова енота заходит на карту */
+  left: -10px;           /* чуть смещаем влево */
+  width: 300px;
+  height: auto;
+  z-index: 200000;
+  pointer-events: none;  /* чтобы не перекрывал карту */
 }
 
 .quest-raccoon-video {
-  width: 200px;
-  height: 260px;
+  width: 270px;
+  height: auto;
   object-fit: cover;
   border-radius: 12px;
+  position: relative;
+  z-index: 200001;
 }
 
 .quest-speech {
-  flex: 1;
-  background: #fff8e6;
-  padding: 12px 16px;
-  border-radius: 16px;
-  font-style: italic;
-  border: 2px solid #c92a2a;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  margin: 30px auto 10px;
+  padding: 20px 26px;
+
+  background: #fff9f0;
+  border-radius: 18px;
+  border: 3px solid #d48d2a;
+
+  font-family: "Amatic SC", cursive;
+  font-size: 26px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #412100;
+
+  text-align: center;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+
+  position: relative;
+  z-index: 100001;
 }
 
 /* КНОПКИ */
 .quest-controls {
   text-align: center;
   margin: 20px 0;
+  position: relative;
+  z-index: 9999;
 }
 
 .quest-route-btn {
-  padding: 10px 16px;
+  padding: 18px 26px;
   margin: 6px;
   border-radius: 12px;
   font-weight: 700;
-  background: linear-gradient(180deg, #ffb7ff, #ffb97a);
+  background: linear-gradient(
+    180deg,
+    #f5c9ff 0%,
+    #ffdaa6 100%
+  );
   cursor: pointer;
   border: 1px solid #bfa574;
+  position: relative;
+  z-index: 10000;
+  font-family: "Amatic SC", cursive;
+  font-size: 30px;
+  color: #753700;
+  letter-spacing: 1px;
+}
+
+.quest-route-btn:hover {
+  transform: translateY(-4px) scale(1.04);
+  filter: brightness(1.12);
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.28),
+    0 0 14px rgba(255, 200, 150, 0.55);
+  transition: transform 0.25s ease, filter 0.25s ease, box-shadow 0.25s ease;
 }
 
 .quest-route-btn.active {
