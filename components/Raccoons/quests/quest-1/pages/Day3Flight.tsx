@@ -2,60 +2,57 @@ import { useEffect, useRef, useState } from "react";
 import { initRouteLogic } from "../logic/initRouteLogic";
 import type { PageId } from "../QuestEngine";
 import { getMapSvg } from "@/utils/storageMaps";
+import countryNames from "@/utils/country_names.json";
+import FlightSecretsManager from "../flight/FlightSecretsManager";
+import DialogBox from "../flight/DialogBox";
+import type { DialogueStep } from "@/utils/flightDialogs";
+import { flightRouteDialogs } from "@/utils/flightDialogs";
+import FlightMap from "../logic/FlightMap";
 
 export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
-
-  // ---------- все useRef ----------
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const pinStartRef = useRef<HTMLDivElement>(null);
-  const pinEndRef = useRef<HTMLDivElement>(null);
   const racTextRef = useRef<HTMLDivElement>(null);
-  const svalMkRef = useRef<HTMLDivElement>(null);
-  const svgContainerRef = useRef<HTMLDivElement>(null);
 
   const [svgLoaded, setSvgLoaded] = useState(false);
+  const [userChoice, setUserChoice] = useState<
+    "straight" | "arc" | "zigzag" | null
+  >(null);
+  const [dialogueQueue, setDialogueQueue] = useState<DialogueStep[]>([]);
 
-  const start = { x: 0.33, y: 0.63 };
-  const sval = { x: 0.517, y: 0.015 };
+  // --- перевод ID страны в русское название ---
+  function getCountryRu(id: string): string {
+    const entry = (countryNames as Record<string, any>)[id];
+    return entry?.ru || id;
+  }
 
-  // ---------- загрузка карты из Supabase ----------
+  // --- слушатель для текстов от initRouteLogic ---
   useEffect(() => {
-    (async () => {
-      const svg = await getMapSvg("countries/countries_interactive.svg");
-      if (!svg) return;
-      if (svgContainerRef.current) {
-        svgContainerRef.current.innerHTML = svg;
-        setSvgLoaded(true);
+    function handleCountryEvent(ev: CustomEvent) {
+      const id = ev.detail;
+      const ruName = getCountryRu(id);
+      if (racTextRef.current) {
+        racTextRef.current.textContent = `Енот: «Вы летите над: ${ruName}»`;
       }
-    })();
+    }
+
+    window.addEventListener(
+      "quest-country",
+      handleCountryEvent as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "quest-country",
+        handleCountryEvent as EventListener
+      );
+    };
   }, []);
-
-  // ---------- инициализация логики маршрута ----------
-  useEffect(() => {
-    if (!svgLoaded) return;
-
-    initRouteLogic({
-      wrap: wrapRef.current!,
-      pathEl: pathRef.current!,
-      routeSvg: svgRef.current!,
-      pinStart: pinStartRef.current!,
-      pinEnd: pinEndRef.current!,
-      racText: racTextRef.current!,
-      svalMk: svalMkRef.current!,
-      start,
-      sval,
-    });
-
-  }, [svgLoaded]);
   // ======================================================
   // ✅ RENDER
   // ======================================================
   return (
     <div className="quest-page-bg">
-        <div className="polar-scenery" aria-hidden />
-        {/*ЗАГОЛОВОК */}
+      <div className="polar-scenery" aria-hidden />
+      {/*ЗАГОЛОВОК */}
       <div className="quest-title-wrapper">
         <img
           src="/quests/assets/banners/ribbon.webp"
@@ -66,74 +63,48 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
         <h1 className="quest-title-text">Прокладываем маршрут</h1>
       </div>
 
-        
-     <div className="quest-story-text" style={{ marginTop: "20px" }}>
-      <div className="quest-text-paper">
-        <div className="quest-text-inner">
-        <p className="quest-p quest-em">
-          Енот надевает лётный шлем и говорит:
-          </p>
-          <p className="quest-p">
-            «Роланд, ставь синюю кнопку на свой дом!»
-          </p>
-      </div>
-       </div>
-      </div>
-      
-      <div className="quest-row-story">
       <div className="quest-story-text" style={{ marginTop: "20px" }}>
         <div className="quest-text-paper">
-        <div className="quest-tips">
-          <p className="quest-hint-blue">Синяя точка — твой дом.</p>
-          <p className="quest-hint-red">Красная точка — Шпицберген.</p>
-          <p className="quest-hint-green">
-            Когда выберешь маршрут — прямой, дугой или зигзагом — енот покажет,
-            над какими странами вы пролетите.
-          </p>
-        </div>
-      </div>
-     </div>
-     
-      {/* ВИДЕО */}
-      <div className="quest-video-wrapper ice-window">
-        <div className="ice-window">
-          <video className="quest-video" autoPlay muted loop playsInline>
-            <source
-             src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/route.webm"
-              type="video/webm"
-            />
-          </video>
+          <div className="quest-text-inner">
+            <p className="quest-p quest-em">
+              Енот надевает лётный шлем и говорит:
+            </p>
+            <p className="quest-p">«Роланд, ставь синюю кнопку на свой дом!»</p>
+          </div>
         </div>
       </div>
 
-        
+      <div className="quest-row-story">
+        <div className="quest-story-text" style={{ marginTop: "20px" }}>
+          <div className="quest-text-paper">
+            <div className="quest-tips">
+              <p className="quest-hint-blue">Синяя точка — твой дом.</p>
+              <p className="quest-hint-red">Красная точка — Шпицберген.</p>
+              <p className="quest-hint-green">
+                Когда выберешь маршрут — прямой, дугой или зигзагом — енот
+                покажет, над какими странами вы пролетите. И поможет найти
+                лучший маршрут.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ВИДЕО */}
+        <div className="quest-video-wrapper ice-window">
+          <div className="ice-window">
+            <video className="quest-video" autoPlay muted loop playsInline>
+              <source
+                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/route.webm"
+                type="video/webm"
+              />
+            </video>
+          </div>
+        </div>
       </div>
 
       {/* MAP */}
-      <div className="map-center">
-      <div className="map-frame">
-        <div id="map-wrap" ref={wrapRef} className="quest-map">
-          <div ref={svgContainerRef}></div>
+      <FlightMap racTextRef={racTextRef} routeType={userChoice} />
 
-          <div ref={svalMkRef} id="svalbard-marker" className="quest-pin-svalbard"></div>
-          <div id="svalbard-label" className="quest-svalbard-label">Шпицберген</div>
-
-          <svg
-            ref={svgRef}
-            id="route-svg"
-            className="quest-route-svg"
-            viewBox="0 0 2000 856"
-            preserveAspectRatio="xMidYMid meet"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-          >
-            <path ref={pathRef} id="route-path" className="quest-route-path"></path>
-          </svg>
-
-          <div ref={pinStartRef} id="btn-start" className="quest-pin-start"></div>
-          <div ref={pinEndRef} id="btn-end" className="quest-pin-end"></div>
-        </div>
-      </div>
-      </div>
       <div className="raccoon-absolute">
         <video
           className="quest-raccoon-video"
@@ -146,15 +117,72 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
       </div>
       {/* BUTTONS */}
       <div className="quest-controls">
-        <button className="quest-route-btn" data-type="straight">Прямая</button>
-        <button className="quest-route-btn" data-type="arc">Дуга</button>
-        <button className="quest-route-btn" data-type="zigzag">Зигзаг</button>
+        <button
+          className={`quest-route-btn ${userChoice === "straight" ? "active" : ""}`}
+          data-type="straight"
+          onClick={() => {
+            setUserChoice("straight");
+            setDialogueQueue(
+              flightRouteDialogs.filter((d) => d.condition === "straight")
+            );
+          }}
+        >
+          Прямая
+        </button>
+
+        <button
+          className={`quest-route-btn ${userChoice === "arc" ? "active" : ""}`}
+          data-type="arc"
+          onClick={() => {
+            setUserChoice("arc");
+            setDialogueQueue(
+              flightRouteDialogs.filter((d) => d.condition === "arc")
+            );
+          }}
+        >
+          Дуга
+        </button>
+
+        <button
+          className={`quest-route-btn ${userChoice === "zigzag" ? "active" : ""}`}
+          data-type="zigzag"
+          onClick={() => {
+            setUserChoice("zigzag");
+            setDialogueQueue(
+              flightRouteDialogs.filter((d) => d.condition === "zigzag")
+            );
+          }}
+        >
+          Зигзаг
+        </button>
       </div>
 
       <div ref={racTextRef} id="raccoonText" className="quest-speech">
         Енот: «Выбери тип маршрута.»
       </div>
+
+      {/* SECOND DIALOG WINDOW — диалог о выборе маршрута */}
+      <div
+        className="flight-dialog-box-wrapper"
+        style={{
+          marginTop: "20px",
+          maxWidth: "600px",
+          marginLeft: "auto",
+          marginRight: "auto",
+          position: "relative",
+          zIndex: 40,
+        }}
+      >
+        <DialogBox
+          queue={dialogueQueue}
+          onNext={() => setDialogueQueue((q) => q.slice(1))}
+        />
+      </div>
+
+      {/* FLIGHT SECRETS MODULE */}
+      <div style={{ marginTop: "40px" }}>
+        <FlightSecretsManager />
+      </div>
     </div>
-     
   );
 }
