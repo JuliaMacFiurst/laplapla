@@ -929,12 +929,28 @@
 
 .raccoon-absolute {
   position: absolute;
-  bottom: -28px;         /* голова енота заходит на карту */
-  left: -10px;           /* чуть смещаем влево */
+  top: 345px;        /* голова енота заходит на карту */
+  left: -60px;           /* чуть смещаем влево */
   width: 300px;
   height: auto;
   z-index: 200000;
   pointer-events: none;  /* чтобы не перекрывал карту */
+}
+
+.raccoon-absolute video {
+  width: 350px;
+  height: auto;
+  display: block;
+}
+
+.bulldog-absolute {
+  position: absolute;
+  top: 345px;         /* голова собаки заходит на карту */
+  right: 10px;           /* чуть смещаем влево */
+  width: 200px;
+  height: auto;
+  z-index: 200000;
+  pointer-events: none;
 }
 
 .quest-raccoon-video {
@@ -956,7 +972,7 @@
   border: 3px solid #d48d2a;
 
   font-family: "Amatic SC", cursive;
-  font-size: 26px;
+  font-size: 22px;
   line-height: 1.35;
   font-weight: 600;
   color: #412100;
@@ -966,6 +982,88 @@
 
   position: relative;
   z-index: 100001;
+}
+
+.flight-dialog-box-wrapper {
+  margin-top: 20px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 40;
+}
+
+.quest-speech-cloud {
+  padding: 16px 20px;
+  border-radius: 18px;
+  border: 3px solid #d48d2a;
+  max-width: 600px;      
+  margin: 0 auto;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+/* === ОБЛАЧКО РЕЧИ С ХВОСТИКОМ === */
+
+.quest-speech-cloud-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Хвостик диалогового облака */
+.quest-speech-cloud-tail {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 3px solid #d48d2a;          /* общая рамка */
+  background: #fff9f0;                 /* тот же фон, что у облака */
+  border-radius: 6px;                  /* мягкое скругление основания */
+  z-index: -1;                         /* под облачком, чтобы не перекрывать текст */
+
+  /* базовая форма хвоста — маленький ромб */
+  width: 18px;
+  height: 18px;
+  transform: rotate(45deg);
+}
+
+/* Хвостик – слева, если говорит пилот */
+.tail--pilot {
+  left: -10px;
+  top: 22px;
+}
+
+/* Хвостик – справа, если говорит второй пилот */
+.tail--copilot {
+  right: -10px;
+  top: 22px;
+}
+
+.dialog-next-btn {
+  margin-top: 12px;
+  padding: 10px 20px;
+  font-size: 22px;
+  font-family: 'Amatic SC', cursive;
+  border-radius: 12px;
+  background-color: #f7c97f;
+  color: #4a2d00;
+  border: 3px solid #d48d2a;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #b07a22;
+  transition: 0.15s ease;
+}
+
+/* Ховер */
+.dialog-next-btn:hover {
+  background-color: #ffdfae;
+  box-shadow: 0 4px 0 #b07a22;
+  transform: translateY(-2px);
+}
+
+/* Нажатие */
+.dialog-next-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #996318;
 }
 
 /* КНОПКИ */
@@ -1016,4 +1114,161 @@
     opacity: 0.22;
     width: 65%;
   }
+}
+
+
+
+
+/************************************
+    ✈️  FLIGHT MINI TEST (INTERACTIVE)
+*************************************/
+
+.flight-mini-test-wrapper {
+  margin-top: 40px;
+  padding: 20px;
+  position: relative;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 10;
+}
+
+/* --- PROGRESS BAR --- */
+.flight-mini-progress {
+  width: 100%;
+  height: 10px;
+  background: #f0e3c8;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 2px solid #d48d2a;
+}
+.flight-mini-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd27a, #ffb347);
+  transition: width 0.4s ease-out;
+}
+
+/* --- SLIDE CONTAINER WITH COMIC OVERSHOOT ANIMATION --- */
+.flight-mini-test-slide {
+  background: #fff9f0;
+  border: 3px solid #d48d2a;
+  border-radius: 18px;
+  padding: 26px 22px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.16);
+  animation: comicSlideIn 0.45s cubic-bezier(.17, .89, .32, 1.27);
+}
+
+@keyframes comicSlideIn {
+  0%   { transform: translateX(40px) rotate(1deg) scale(0.92); opacity: 0; }
+  60%  { transform: translateX(-6px) rotate(-1deg) scale(1.03); opacity: 1; }
+  100% { transform: translateX(0) rotate(0) scale(1); }
+}
+
+/* --- ANSWERS LIST --- */
+.flight-test-answers {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 22px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.flight-test-answer {
+  padding: 12px 18px;
+  background: #fff;
+  border: 2px solid #c9b07a;
+  border-radius: 12px;
+  font-family: "Amatic SC", cursive;
+  font-size: 24px;
+  color: #4a2d00;
+  cursor: pointer;
+  transition: 0.25s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* hover */
+.flight-test-answer:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+  filter: brightness(1.04);
+}
+
+/* selected */
+.flight-test-answer.selected {
+  background: #ffe8bf;
+  border-color: #d48d2a;
+  transform: translateY(-3px);
+}
+
+/* correct */
+.flight-test-answer.correct {
+  background: #d9ffc8;
+  border-color: #7ad13b;
+}
+
+/* wrong */
+.flight-test-answer.wrong {
+  background: #ffd4d4;
+  border-color: #ff6a6a;
+}
+
+/* icons */
+.checkmark {
+  font-size: 26px;
+  color: #3fa022;
+}
+.cross {
+  font-size: 26px;
+  color: #d52b2b;
+}
+
+/* --- NAV BUTTONS --- */
+.mini-test-nav {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.nav-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 3px solid #d48d2a;
+  background: #ffe7bb;
+  cursor: pointer;
+  font-size: 26px;
+  font-family: "Amatic SC", cursive;
+  transition: 0.2s;
+  box-shadow: 0 3px 0 #b07a22;
+}
+.nav-btn:hover {
+  transform: translateY(-2px);
+  background: #fff0d0;
+}
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+/* --- FINISH SCREEN --- */
+.flight-mini-finish-screen {
+  margin-top: 30px;
+  padding: 30px;
+  background: #fff9f0;
+  border: 3px solid #d48d2a;
+  border-radius: 18px;
+  text-align: center;
+  animation: finishPop 0.5s cubic-bezier(.17,.89,.32,1.27);
+}
+
+@keyframes finishPop {
+  0%   { transform: scale(0.85) rotate(-1deg); opacity: 0; }
+  60%  { transform: scale(1.05) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
 }

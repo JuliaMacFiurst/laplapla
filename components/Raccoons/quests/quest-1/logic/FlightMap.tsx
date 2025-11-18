@@ -281,7 +281,31 @@ export default function FlightMap({
             <path ref={routePathRef} className="quest-route-path" />
           </svg>
         </div>
+
+        {/* Raccoon */}
+        <div className="raccoon-absolute">
+          <video
+          className="quest-raccoon-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/raccoon-points.webm"
+        />
+        </div>
+
+        {/* Bulldog */}
+        <div className="bulldog-absolute">
+          <video
+          className="quest-buldog-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/buldog-roland.webm"
+        />
       </div>
+    </div>
     </div>
   );
 }

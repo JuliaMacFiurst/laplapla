@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { initRouteLogic } from "../logic/initRouteLogic";
 import type { PageId } from "../QuestEngine";
-import { getMapSvg } from "@/utils/storageMaps";
 import countryNames from "@/utils/country_names.json";
-import FlightSecretsManager from "../flight/FlightSecretsManager";
 import DialogBox from "../flight/DialogBox";
 import type { DialogueStep } from "@/utils/flightDialogs";
 import { flightRouteDialogs } from "@/utils/flightDialogs";
 import FlightMap from "../logic/FlightMap";
+import FlightMiniTest from "../logic/MiniTest";
 
 export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   const racTextRef = useRef<HTMLDivElement>(null);
-
-  const [svgLoaded, setSvgLoaded] = useState(false);
   const [userChoice, setUserChoice] = useState<
     "straight" | "arc" | "zigzag" | null
   >(null);
@@ -83,8 +79,8 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
               <p className="quest-hint-green">
                 Когда выберешь маршрут — прямой, дугой или зигзагом — енот
                 покажет, над какими странами вы пролетите. И поможет найти
-                лучший маршрут.
-              </p>
+                лучший маршрут.</p>
+              <p className="quest-hint-red">Внимательно изучи обсуждения Логана и Роланда под картой и ответь на вопросы внизу страницы.</p>
             </div>
           </div>
         </div>
@@ -104,17 +100,6 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
 
       {/* MAP */}
       <FlightMap racTextRef={racTextRef} routeType={userChoice} />
-
-      <div className="raccoon-absolute">
-        <video
-          className="quest-raccoon-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/raccoon-points.webm"
-        />
-      </div>
       {/* BUTTONS */}
       <div className="quest-controls">
         <button
@@ -157,21 +142,9 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
         </button>
       </div>
 
-      <div ref={racTextRef} id="raccoonText" className="quest-speech">
-        Енот: «Выбери тип маршрута.»
-      </div>
-
       {/* SECOND DIALOG WINDOW — диалог о выборе маршрута */}
       <div
         className="flight-dialog-box-wrapper"
-        style={{
-          marginTop: "20px",
-          maxWidth: "600px",
-          marginLeft: "auto",
-          marginRight: "auto",
-          position: "relative",
-          zIndex: 40,
-        }}
       >
         <DialogBox
           queue={dialogueQueue}
@@ -179,10 +152,16 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
         />
       </div>
 
-      {/* FLIGHT SECRETS MODULE */}
-      <div style={{ marginTop: "40px" }}>
-        <FlightSecretsManager />
+      <div ref={racTextRef} id="raccoonText" className="quest-speech">
+        Енот: «Выбери тип маршрута.»
       </div>
-    </div>
+
+      {/* ORTHODROME MINI-TEST */}
+      <FlightMiniTest go={go} />
+
+        
+      </div>
+
+  
   );
 }

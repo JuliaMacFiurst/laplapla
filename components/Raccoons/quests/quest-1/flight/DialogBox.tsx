@@ -31,18 +31,9 @@ export default function DialogBox({
 
       <button
         onClick={onNext}
-        style={{
-          marginTop: "12px",
-          padding: "8px 14px",
-          fontSize: "16px",
-          borderRadius: "8px",
-          backgroundColor: "#3b82f6",
-          color: "white",
-          border: "none",
-          cursor: "pointer",
-        }}
+        className="dialog-next-btn"
       >
-        Далее
+        ⏭️ Далее
       </button>
     </div>
   );

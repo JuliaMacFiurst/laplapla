@@ -9,22 +9,26 @@ export default function SpeechCloud({
   speaker: "pilot" | "copilot";
   children: React.ReactNode;
 }) {
-  const bgColor = speaker === "pilot" ? "#d0e8ff" : "#ffe9a8";
+  const bgColor = speaker === "pilot" ? "#a7e1fe" : "#ffe9a8";
 
   return (
-    <div
-      style={{
-        padding: "16px 20px",
-        borderRadius: "18px",
-        background: bgColor,
-        border: "2px solid #00000020",
-        maxWidth: "600px",
-        margin: "0 auto",
-        fontSize: "18px",
-        lineHeight: "1.3",
-      }}
-    >
-      {children}
+    <div className="quest-speech-cloud-wrapper">
+      <div
+        className="quest-speech-cloud"
+        style={{ background: bgColor }}
+      >
+        {children}
+      </div>
+
+      {/* Tail */}
+      <div
+        className={
+          speaker === "pilot"
+            ? "quest-speech-cloud-tail tail--pilot"
+            : "quest-speech-cloud-tail tail--copilot"
+        }
+        style={{ background: bgColor }}
+      />
     </div>
   );
 }
