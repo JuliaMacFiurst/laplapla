@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { flightSecrets } from "@/utils/flightSecrets";
 import SpeechCloud from "./SpeechCloud";
 import InstrumentPanel from "./InstrumentPanel";
-import SteeringHandle from "./SteeringHandle";
+import SteeringHandle from "./SteeringYoke";
 import GoToNextButton from "./GoToNextButton";
 
 export default function FlightSecretsManager() {

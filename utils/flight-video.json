@@ -1,0 +1,49 @@
+{
+  "takeoff": [
+    { "id": "takeoff-1", "url": "https://cdn.pixabay.com/video/2020/08/16/47331-451164324_large.mp4" },
+    { "id": "takeoff-2", "url": "https://cdn.pixabay.com/video/2024/12/26/249000_large.mp4" }
+  ],
+  "landing": [
+    { "id": "landing-day", "url": "https://videos.pexels.com/video-files/4982866/4982866-hd_1080_1920_30fps.mp4" },
+    { "id": "landing-night", "url": "https://videos.pexels.com/video-files/5007168/5007168-hd_1080_1920_30fps.mp4" },
+    { "id": "landing-north", "url": "https://cdn.pixabay.com/video/2025/05/01/276047_large.mp4" }
+  ],
+  "low_altitude": [
+    { "id": "low_altitude-forest", "url": "https://videos.pexels.com/video-files/30291206/12985558_1080_1920_60fps.mp4" },
+    { "id": "low_altitude-mountains", "url": "https://videos.pexels.com/video-files/27322985/12118683_1440_2560_30fps.mp4" },
+    { "id": "low_altitude-island", "url": "https://cdn.pixabay.com/video/2020/08/16/47333-451297037_large.mp4" },
+    { "id": "low_altitude-north", "url": "https://cdn.pixabay.com/video/2020/08/25/48186-453427312_large.mp4" },
+    { "id": "low_altitude-city", "url": "https://cdn.pixabay.com/video/2024/05/04/210592_large.mp4" },
+    { "id": "low_altitude-green-fields", "url": "https://cdn.pixabay.com/video/2022/08/08/127121-737747542_large.mp4" }
+  ],
+  "clouds": [
+    { "id": "clouds-1", "url": "https://videos.pexels.com/video-files/4840443/4840443-uhd_2560_1440_25fps.mp4" },
+    { "id": "clouds-2", "url": "https://videos.pexels.com/video-files/31085276/13282702_1440_2560_32fps.mp4" },
+    { "id": "clouds-3", "url": "https://videos.pexels.com/video-files/11583238/11583238-hd_1920_1080_60fps.mp4" },
+    { "id": "clouds-4", "url": "https://videos.pexels.com/video-files/12860112/12860112-uhd_2560_1440_30fps.mp4" },
+    { "id": "clouds-5", "url": "https://cdn.pixabay.com/video/2020/08/16/47338-451444708_large.mp4" }
+  ],
+  "troposphere": [
+    { "id": "troposphere", "url": "https://videos.pexels.com/video-files/9669391/9669391-hd_1080_1920_30fps.mp4" }
+  ],
+  "stratosphere": [
+    { "id": "stratosphere-1", "url": "https://videos.pexels.com/video-files/32049182/13661811_1080_1920_30fps.mp4" },
+    { "id": "stratosphere-2", "url": "https://videos.pexels.com/video-files/20298081/20298081-uhd_1440_2560_60fps.mp4" },
+    { "id": "stratosphere-3", "url": "https://cdn.pixabay.com/video/2018/09/24/18390-291585321_large.mp4" }
+  ],
+  "special_weather": {
+    "storm": [
+      { "id": "storm-1", "url": "https://videos.pexels.com/video-files/854331/854331-hd_1920_1080_30fps.mp4" },
+        { "id": "storm-gets-better", "url": "https://videos.pexels.com/video-files/6608703/6608703-hd_1920_1080_30fps.mp4" }
+    ],
+    "turbulence": [
+      { "id": "turb-1", "url": "https://cdn.pixabay.com/video/2017/07/23/10851-226632936_large.mp4" }
+    ],
+    "aurora": [
+      { "id": "aurora-1", "url": "https://cdn.pixabay.com/video/2021/10/05/90877-629483574_large.mp4" }
+    ],
+    "wind": [
+      { "id": "wind-1", "url": "https://cdn.pixabay.com/video/2024/03/24/205427-926957416_large.mp4" }
+    ]
+  }
+}

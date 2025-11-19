@@ -1272,3 +1272,35 @@
   60%  { transform: scale(1.05) rotate(1deg); opacity: 1; }
   100% { transform: scale(1) rotate(0); }
 }
+
+
+/* --- ШТУРВАЛ --- */
+.plane-steering-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.plane-steering-wrapper > div {
+  width: 460px;      /* увеличить размер руля */
+  height: 460px;
+  transform-origin: center center; /* чтобы вращался правильно */
+}
+
+.flight-cockpit-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.flight-windshield {
+  position: relative;
+  z-index: 10; /* стекло сверху */
+}
+
+.flight-yoke-overlay {
+  position: absolute;
+  z-index: 20;
+  pointer-events: auto;
+}
