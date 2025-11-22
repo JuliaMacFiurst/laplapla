@@ -1,60 +1,62 @@
 "use client";
 
-import React from "react";
-import SecretLamp from "./SecretLamp";
+import React, { useEffect, useRef } from "react";
 
-interface InstrumentPanelProps {
-  secrets: { id: string; speaker: string; text: string }[];
-  unlocked: string[];
-}
+export default function InstrumentPanel({ onSwitch }: { onSwitch: (id: string) => void }) {
+  const svgRef = useRef<HTMLObjectElement>(null);
 
-export default function InstrumentPanel({ secrets, unlocked }: InstrumentPanelProps) {
-  const width = 350;
-  const height = 110;
-  const lampRadius = 12;
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
 
-  const lampSpacing = width / (secrets.length + 1);
+    function handleLoad() {
+      const svg = el.contentDocument;
+      if (!svg) return;
+
+      const clickableIds = [
+        "switcher-1",
+        "switcher-2",
+        "switcher-3",
+        "switcher-4",
+        "switcher-5",
+        "switcher-6",
+        "switcher-7",
+        "switcher-8",
+        "switcher-9",
+        "switcher-10",
+        "switcher-11",
+        "switcher-12",
+        "switcher-13",
+        "switcher-14",
+        "red-button-1",
+        "red-button-2",
+        "red-button-3"
+      ];
+
+      clickableIds.forEach((id) => {
+        const btn = svg.getElementById(id);
+        if (btn) {
+          btn.style.cursor = "pointer";
+          btn.addEventListener("click", () => onSwitch(id));
+        }
+      });
+    }
+
+    el.addEventListener("load", handleLoad);
+
+    return () => {
+      el.removeEventListener("load", handleLoad);
+    };
+  }, [onSwitch]);
 
   return (
-    <svg
-      width={width}
-      height={height}
-      style={{ display: "block", margin: "0 auto" }}
-    >
-      {/* Основная форма панели (дуга) */}
-      <path
-        d={`
-          M 10 20
-          Q ${width / 2} 0 ${width - 10} 20
-          L ${width - 10} ${height - 20}
-          Q ${width / 2} ${height} 10 ${height - 20}
-          Z
-        `}
-        fill="#4a5568"
-        stroke="#2d3748"
-        strokeWidth="3"
+    <div className="instrument-panel">
+      <object
+        ref={svgRef}
+        data="/quests/assets/decorations/pilot-pannel.svg"
+        type="image/svg+xml"
+        className="instrument-panel-svg"
       />
-
-      {/* Лампочки */}
-      {secrets.map((secret, index) => {
-        const cx = lampSpacing * (index + 1);
-        const cy = height - 45;
-
-        const isActive = unlocked.includes(secret.id);
-
-        return (
-          <g key={secret.id}>
-            <circle
-              cx={cx}
-              cy={cy}
-              r={lampRadius}
-              fill={isActive ? "#4caf50" : "#d93636"}
-              stroke="#1a1a1a"
-              strokeWidth="2"
-            />
-          </g>
-        );
-      })}
-    </svg>
+    </div>
   );
 }

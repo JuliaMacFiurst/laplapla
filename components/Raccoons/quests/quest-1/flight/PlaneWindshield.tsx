@@ -6,17 +6,22 @@ import flightVideos from "@/utils/flight-video.json";
 interface PlaneWindshieldProps {
   angle: number;
   pushPull: number;
+  hint: string | null;
+  onHintComplete: () => void;
 }
 
 export interface PlaneWindshieldRef {
   setVideoById: (id: string) => void;
 }
 
-const PlaneWindshield = forwardRef<PlaneWindshieldRef, PlaneWindshieldProps>(({ angle, pushPull }, ref) => {
+const PlaneWindshield = forwardRef<PlaneWindshieldRef, PlaneWindshieldProps>(
+  ({ angle, pushPull, hint, onHintComplete }, ref) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(
     "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/lamding-signal.webm"
   );
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [printed, setPrinted] = useState("");
+  const [showOk, setShowOk] = useState(false);
 
   function setVideoById(id: string) {
     let found: any = null;
@@ -50,6 +55,29 @@ const PlaneWindshield = forwardRef<PlaneWindshieldRef, PlaneWindshieldProps>(({ 
     setVideoById,
   }));
 
+  useEffect(() => {
+    if (!hint) {
+      setPrinted("");
+      setShowOk(false);
+      return;
+    }
+
+    setPrinted("");
+    setShowOk(false);
+
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setPrinted(hint.slice(0, i));
+      if (i >= hint.length) {
+        clearInterval(interval);
+        setTimeout(() => setShowOk(true), 300);
+      }
+    }, 35);
+
+    return () => clearInterval(interval);
+  }, [hint]);
+
   return (
     <div style={styles.frame}>
       <div style={styles.ratioBox}>
@@ -66,6 +94,21 @@ const PlaneWindshield = forwardRef<PlaneWindshieldRef, PlaneWindshieldProps>(({ 
               objectPosition: `${Math.max(25, Math.min(75, 50 + angle * 2))}% ${50 + pushPull * 0.5}%`
             }}
           />
+        )}
+      </div>
+      <div className="windshield-overlay">
+        {printed && <div className="green-hint">{printed}</div>}
+        {showOk && (
+          <button
+            className="hint-ok-btn"
+            onClick={() => {
+              onHintComplete();
+              setPrinted("");
+              setShowOk(false);
+            }}
+          >
+            Готово
+          </button>
         )}
       </div>
     </div>

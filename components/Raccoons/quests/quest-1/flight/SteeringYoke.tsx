@@ -12,12 +12,14 @@ export default function SteeringYoke({ onAngleChange }: SteeringYokeProps) {
   const [angle, setAngle] = useState(0);
   const [pushPull, setPushPull] = useState(0);
   const [shake, setShake] = useState(0);
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
     onAngleChange(angle, pushPull);
   }, [angle, pushPull, onAngleChange]);
 
   function onPointerDown(e: React.PointerEvent) {
+    setActive(true);
     const el = yokeRef.current;
     if (!el) return;
 
@@ -46,6 +48,7 @@ export default function SteeringYoke({ onAngleChange }: SteeringYokeProps) {
       document.removeEventListener("pointermove", onPointerMove);
       document.removeEventListener("pointerup", onPointerUp);
 
+      setActive(false);
       setAngle(0);
       setPushPull(0);
       setShake(0);
@@ -58,29 +61,21 @@ export default function SteeringYoke({ onAngleChange }: SteeringYokeProps) {
   return (
     <div
       ref={yokeRef}
-      onPointerDown={onPointerDown}
+      className={`yoke ${active ? "yoke-active" : "yoke-inactive"}`}
       style={{
-        position: "absolute",
-        left: "50%",
-        bottom: "-180px",
-        width: "460px",
-        height: "460px",
         transform: `
           translateX(-50%)
           translateX(${shake}px)
           rotate(${angle}deg)
           translateY(${pushPull}px)
         `,
-        transformOrigin: "50% 50%",
-        userSelect: "none",
-        touchAction: "none",
-        cursor: "grab",
-        zIndex: 2000,
         transition: shake === 0 ? "transform 0.15s ease-out" : "none",
-        pointerEvents: "auto"
+        pointerEvents: "none"
       }}
     >
+      <div className="yoke-handle" onPointerDown={onPointerDown} />
       <Image
+        className="yoke-img"
         src="/quests/assets/decorations/plane-yoke.svg"
         alt="plane yoke"
         fill

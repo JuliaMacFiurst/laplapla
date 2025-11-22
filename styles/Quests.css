@@ -459,6 +459,7 @@
   filter: brightness(0.96);
 }
 
+
 /************************************
   ПАНЕЛЬ СОХРАНЕНИЯ / ВЫХОДА
 *************************************/
@@ -925,6 +926,7 @@
   gap: 12px;
   position: relative;
   z-index: 99999;
+  pointer-events: none;
 }
 
 .raccoon-absolute {
@@ -1282,9 +1284,9 @@
 }
 
 .plane-steering-wrapper > div {
-  width: 460px;      /* увеличить размер руля */
-  height: 460px;
-  transform-origin: center center; /* чтобы вращался правильно */
+  width: 420px;
+  height: 420px;
+  transform-origin: center center;
 }
 
 .flight-cockpit-wrapper {
@@ -1292,6 +1294,7 @@
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
+  z-index: 1000;
 }
 
 .flight-windshield {
@@ -1299,8 +1302,190 @@
   z-index: 10; /* стекло сверху */
 }
 
-.flight-yoke-overlay {
+
+/************************************
+   ✈️  COCKPIT CONTROLS OVERLAY
+*************************************/
+.flight-cockpit-controls {
+ position: absolute;
+  bottom: -360px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 900px; /* та же ширина, что и кокпит */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+
+  pointer-events: auto; /* пропускает клики к панели и рулю */
+  z-index: 200; /* выше стекла */
+}
+
+.flight-cockpit-controls .instrument-panel {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  pointer-events: auto; /* можно нажимать кнопки */
+}
+
+.flight-cockpit-controls .yoke-container {
   position: absolute;
-  z-index: 20;
+  bottom: 195px; /* руль на панели */
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none; /* можно крутить */
+  z-index: 210;
+}
+
+/************************************
+   ✈️  INSTRUMENT PANEL (clean version)
+*************************************/
+.instrument-panel {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  pointer-events: auto; /* панель интерактивная */
+}
+
+
+.instrument-panel-svg {
+  display: block;
+  width: 100%;        /* ← ключ! */
+  height: auto;       /* ← важно */
+  max-width: 900px;   /* ← можно ограничить */
   pointer-events: auto;
+}
+
+/************************************
+   ✈️  STEERING YOKE (clean version)
+*************************************/
+.yoke {
+  position: absolute;
+  left: 50%;
+  bottom: -180px;            /* default resting position; can be adjusted */
+  width: 560px;
+  height: 560px;
+  transform-origin: 50% 50%;
+  user-select: none;
+  touch-action: none;
+  cursor: grab;
+  pointer-events: none;
+  z-index: 2000;
+}
+
+.yoke-handle {
+  position: absolute;
+
+  /* безопасная верхняя зона руля */
+  width: 100%;
+  height: 46%;
+
+  /* строго совпадает с верхней половиной руля */
+  top: 0;
+  left: 0;
+
+  pointer-events: auto;
+  cursor: grab;
+}
+.yoke-handle:active {
+  cursor: grabbing;
+}
+
+.yoke-img {
+  object-fit: contain;
+  pointer-events: none;
+}
+
+
+/************************************
+   ✈️  WINDSHIELD HINT OVERLAY
+*************************************/
+.windshield-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  padding: 20px;
+}
+
+.green-hint {
+  max-width: 80%;
+  font-family: "Courier New", monospace;
+  font-size: 26px;
+  line-height: 1.4;
+
+  color: #3cff8a;
+  text-shadow:
+    0 0 6px rgba(60, 255, 150, 0.8),
+    0 0 12px rgba(60, 255, 150, 0.7),
+    0 0 18px rgba(60, 255, 150, 0.45);
+
+  background: rgba(0, 0, 0, 0.35);
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 2px solid rgba(60, 255, 150, 0.5);
+
+  pointer-events: none; /* текст не перехватывает клики */
+  animation: hintPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+  0% {
+    opacity: 0.85;
+    text-shadow:
+      0 0 6px rgba(60, 255, 150, 0.7),
+      0 0 14px rgba(60, 255, 150, 0.55);
+  }
+  50% {
+    opacity: 1;
+    text-shadow:
+      0 0 14px rgba(60, 255, 150, 1),
+      0 0 22px rgba(60, 255, 150, 0.85);
+  }
+  100% {
+    opacity: 0.85;
+    text-shadow:
+      0 0 6px rgba(60, 255, 150, 0.7),
+      0 0 14px rgba(60, 255, 150, 0.55);
+  }
+}
+
+.hint-ok-btn {
+  margin-top: 20px;
+  padding: 10px 26px;
+  font-family: "Amatic SC", cursive;
+  font-size: 28px;
+  font-weight: 700;
+
+  background: rgba(40, 255, 140, 0.25);
+  color: #e8ffe8;
+
+  border: 2px solid rgba(60, 255, 150, 0.7);
+  border-radius: 14px;
+
+  cursor: pointer;
+  pointer-events: auto; /* кнопка кликаемая! */
+  transition: 0.25s ease;
+  text-shadow:
+    0 0 6px rgba(60, 255, 150, 0.8),
+    0 0 12px rgba(60, 255, 150, 0.7);
+}
+
+.hint-ok-btn:hover {
+  background: rgba(60, 255, 150, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(60, 255, 150, 0.7);
+}
+
+.hint-ok-btn:active {
+  transform: translateY(1px);
+  background: rgba(60, 255, 150, 0.3);
 }
