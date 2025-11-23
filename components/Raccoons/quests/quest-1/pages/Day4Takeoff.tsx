@@ -7,6 +7,7 @@ import SteeringYoke from "../flight/SteeringYoke";
 import { useState } from "react";
 import InstrumentPanel from "../flight/InstrumentPanel";
 import takeoffHints from "@/utils/takeoffHints";
+import CockpitHint from "../flight/CockpitHint";
 
 export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
   const windshieldRef = useRef<PlaneWindshieldRef>(null);
@@ -15,11 +16,41 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
   const [hint, setHint] = useState<string | null>(null);
 
   function handleSwitch(id: string) {
-    const text = (takeoffHints as any)[id];
-    if (text) {
-      setHint(text);
-      windshieldRef.current?.setVideoById(id.replace("switcher-", "takeoff-"));
+    // Показываем советы только для switcher-on
+    if (id.startsWith("switcher-on")) {
+      const text = (takeoffHints as any)[id];
+      if (text) setHint(text);
+    } else {
+      // switcher-off → закрываем подсказку
+      setHint(null);
     }
+
+    // Видео-карты под каждый свитчер
+    const videoMap: Record<string, string[]> = {
+      "switcher-on-1": ["takeoff-1", "takeoff-2"],
+      "switcher-on-2": ["low_altitude-forest", "low_altitude-island", "low_altitude-city"],
+      "switcher-on-3": ["low_altitude-mountains", "low_altitude-north", "low_altitude-green-fields"],
+      "switcher-on-4": ["takeoff-1"],
+      "switcher-on-5": ["clouds-1", "clouds-2"],
+      "switcher-on-6": ["clouds-3", "clouds-4"],
+      "switcher-on-7": ["clouds-5"],
+      "switcher-on-8": ["wind-1"],
+      "switcher-on-9": ["troposphere"],
+      "switcher-on-10": ["stratosphere-1", "stratosphere-2", "stratosphere-3"],
+      "switcher-on-11": ["storm-1", "storm-gets-better"],
+      "switcher-on-12": ["troposphere"],
+      "switcher-on-13": ["turb-1"],
+      "switcher-on-14": ["aurora-1"]
+    };
+
+    // Только switcher-on меняют видео
+    if (!id.startsWith("switcher-on")) return;
+
+    const list = videoMap[id];
+    if (!list) return;
+
+    const selected = list[Math.floor(Math.random() * list.length)];
+    windshieldRef.current?.setVideoById(selected);
   }
   return (
     <div className="quest-page-bg">
@@ -53,9 +84,12 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
       ref={windshieldRef}
       angle={angle}
       pushPull={pushPull}
-      hint={hint}
-      onHintComplete={() => setHint(null)}
     />
+      {hint && (
+        <div className="cockpit-hint-overlay">
+          <CockpitHint text={hint} onClose={() => setHint(null)} />
+        </div>
+      )}
   </div>
 
   <div className="flight-cockpit-controls">
@@ -76,23 +110,8 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
   </div>
 
 </div>
-      <div style={{ marginTop: "20px" }}>
-        <button onClick={() => windshieldRef.current?.setVideoById("takeoff-1")}>
-          Взлёт #1
-        </button>
-        <button onClick={() => windshieldRef.current?.setVideoById("takeoff-2")}>
-          Взлёт #2
-        </button>
-      </div>
 
-      <div className="quest-center-btn">
-        <button
-          className="dialog-next-btn"
-          onClick={() => go("day1")}
-        >
-          ⏭️ Вперёд!
-        </button>
-      </div>
+      
     </div>
   );
 }
