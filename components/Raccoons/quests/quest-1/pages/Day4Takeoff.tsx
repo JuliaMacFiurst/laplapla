@@ -72,7 +72,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
               Енот подмигивает: «Готовы? Это будет наш самый красивый взлёт!»
             </p>
             <p className="quest-p">
-              Крути штурвал и нажимай на кнопки, на выполняя команды опытных пилотов на экране.
+              Крути штурвал и нажимай на кнопки, выполняя команды опытных пилотов на экране.
             </p>
           </div>
         </div>
@@ -109,8 +109,57 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
 
   </div>
 
+{/* Spacer for cockpit area */}
 </div>
+<div style={{ height: "290px" }} />
 
+      <div className="quest-story-text" style={{ marginTop: "20px" }}>
+        <div className="quest-text-paper">
+          <div className="quest-text-inner">
+            <p className="quest-p">
+              Отличная работа, капитан! Смотри‑ка, что там виднеется внизу? Кажется, пора заходить на посадку!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="quest-video-wrapper ice-window">
+        <div className="ice-window">
+          <video className="quest-video" autoPlay muted loop playsInline>
+            <source src="/quests/assets/videos/approach-spitsbergen.mp4" type="video/mp4" />
+          </video>
+        </div>
+      </div>
+
+      <div className="quest-story-text" style={{ marginTop: "20px" }}>
+        <div className="quest-text-paper">
+          <div className="quest-text-inner">
+            <p className="quest-p">
+              Приземлились! Добро пожаловать в страну льдов и полярных лисиц.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    <div
+            className="quest-center ice-button-wrapper"
+            style={{ marginTop: "60px" }}
+          >
+
+      <div className="ice-button" onClick={() => go("day2")}>
+        <img
+          className="ice"
+          src="/quests/assets/buttons/ice-button-bg.svg"
+          alt="ice-btn"
+        />
+        <div className="ice-text">Навстречу приключениям!</div>
+        <img
+          className="penguin"
+          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+          alt="penguin"
+        />
+      </div>
+</div>
       
     </div>
   );
