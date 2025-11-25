@@ -171,8 +171,6 @@ export default function FlightMap({
 
     const wrap = wrapRef.current;
     const racText = racTextRef.current;
-    const routeSvg = routeSvgRef.current;
-    const pathEl = routePathRef.current;
     const pinStart = pinStartRef.current;
     const pinEnd = pinEndRef.current;
 
@@ -200,8 +198,6 @@ export default function FlightMap({
 
       initRouteLogic({
         wrap,
-        pathEl: routePathRef.current!,
-        routeSvg: routeSvgRef.current!,
         pinStart,
         pinEnd,
         racText,
