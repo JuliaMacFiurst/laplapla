@@ -49,7 +49,7 @@ export default function Day3Sail({ go }: { go: (id: PageId) => void }) {
 
       <div style={{ marginTop: "40px" }}>
         <SeaMap racTextRef={racTextRef} />
-        <div ref={racTextRef} className="raccoon-speech-box"></div>
+        <div ref={racTextRef} className="quest-speech"></div>
       </div>
 
       <div className="quest-center-btn">

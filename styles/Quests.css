@@ -1309,7 +1309,7 @@
 *************************************/
 .flight-cockpit-controls {
  position: absolute;
-  bottom: -360px;
+  bottom: -300px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -1581,4 +1581,18 @@
     0 0 24px rgba(173, 216, 255, 0.8),
     0 0 10px rgba(255, 255, 255, 1) inset;
   transform: translateY(-2px);
+}
+
+.raccoon-speech-box {
+  margin-top: 20px;
+  background: #ffffffcc;
+  border: 2px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 20px;
+  line-height: 1.4;
+  color: #222;
+  max-width: 900px;
+  width: 100%;
+  min-height: 60px;
 }

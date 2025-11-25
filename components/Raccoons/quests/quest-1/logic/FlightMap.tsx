@@ -162,6 +162,9 @@ export default function FlightMap({
         svgContainerRef.current.innerHTML = svgContent;
       }
       setSvgLoaded(true);
+      if (racTextRef.current) {
+  racTextRef.current.innerHTML = "Енот: «Нарисуй маршрут между портом и Шпицбергеном.»";
+}
     }
     loadSvg();
   }, []);
