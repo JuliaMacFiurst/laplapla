@@ -164,7 +164,7 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
             className="small-ice-button-wrapper"
           >
             <div className="quest-btn quest-next-btn"
-            onClick={() => go("day3flight")}
+            onClick={() => go("day3sail")}
             >
               {/* льдина */}
               <img

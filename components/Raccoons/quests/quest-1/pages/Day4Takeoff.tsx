@@ -123,13 +123,48 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
         </div>
       </div>
 
-      <div className="quest-video-wrapper ice-window">
-        <div className="ice-window">
-          <video className="quest-video" autoPlay muted loop playsInline>
-            <source src="/quests/assets/videos/approach-spitsbergen.mp4" type="video/mp4" />
-          </video>
-        </div>
-      </div>
+     <div className="ice-window">
+  <div className="youtube-wrapper">
+
+    <button
+      className="youtube-ice-unmute"
+      onClick={(event) => {
+        const iframe = document.querySelector<HTMLIFrameElement>(".quest-video");
+        if (!iframe) return;
+
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({
+            event: "command",
+            func: "unMute",
+            args: []
+          }),
+          "*"
+        );
+
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({
+            event: "command",
+            func: "playVideo",
+            args: []
+          }),
+          "*"
+        );
+
+        (event.target as HTMLButtonElement).style.display = "none";
+      }}
+    >
+      🔊 Включить звук
+    </button>
+
+    <iframe
+      className="quest-video"
+      src="https://www.youtube.com/embed/5NhIRwCq428?autoplay=1&mute=1&loop=1&playlist=5NhIRwCq428&controls=0&modestbranding=1&playsinline=1&enablejsapi=1"
+      title="Spitsbergen Flight"
+      allow="autoplay; encrypted-media; fullscreen"
+      allowFullScreen
+    />
+  </div>
+</div>
 
       <div className="quest-story-text" style={{ marginTop: "20px" }}>
         <div className="quest-text-paper">
