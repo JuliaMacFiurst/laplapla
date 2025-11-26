@@ -939,10 +939,13 @@
   pointer-events: none;  /* чтобы не перекрывал карту */
 }
 
-.raccoon-absolute video {
-  width: 350px;
+.quest-raccoon-video {
+  width: 270px;
   height: auto;
-  display: block;
+  object-fit: cover;
+  border-radius: 12px;
+  position: relative;
+  z-index: 200001;
 }
 
 .bulldog-absolute {
@@ -955,8 +958,18 @@
   pointer-events: none;
 }
 
-.quest-raccoon-video {
-  width: 270px;
+.raccoon-sailor-absolute {
+  position: absolute;
+  top: 345px;  
+  left: -90px;  
+  width: 300px;
+  height: auto;
+  z-index: 200000;
+  pointer-events: none;  /* чтобы не перекрывал карту */
+}
+
+.quest-sialor-video {
+  width: 300px;
   height: auto;
   object-fit: cover;
   border-radius: 12px;

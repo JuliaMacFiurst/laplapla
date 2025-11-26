@@ -45,17 +45,23 @@ export default function Day3Sail({ go }: { go: (id: PageId) => void }) {
             </div>
           </div>
         </div>
-        </div>
+        
 
+         {/* ВИДЕО */}
+        <div className="quest-video-wrapper ice-window">
+          <div className="ice-window">
+            <video className="quest-video" autoPlay muted loop playsInline>
+              <source
+                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/sail-route.webm"
+                type="video/webm"
+              />
+            </video>
+          </div>
+        </div>
+</div>
       <div style={{ marginTop: "40px" }}>
         <SeaMap racTextRef={racTextRef} />
         <div ref={racTextRef} className="quest-speech"></div>
-      </div>
-
-      <div className="quest-center-btn">
-        <button className="dialog-next-btn" onClick={() => go("day1")}>
-          ⏭️ Назад
-        </button>
       </div>
     </div>
   );

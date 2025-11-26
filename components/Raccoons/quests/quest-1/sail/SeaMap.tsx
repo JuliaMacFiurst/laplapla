@@ -444,6 +444,30 @@ export default function SeaMap({
               strokeLinecap="round"
             />
           </svg>
-        </div></div></div>
+        </div>
+         {/* Raccoon */}
+          <div className="raccoon-sailor-absolute">
+            <video
+              className="quest-sialor-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/sailor-raccoon.webm"
+            />
+          </div>
+
+          {/* Bulldog */}
+          <div className="bulldog-absolute">
+            <video
+              className="quest-buldog-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/buldog-roland.webm"
+            />
+          </div>
+        </div></div>
   );
 }
