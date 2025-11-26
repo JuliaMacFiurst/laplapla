@@ -5,7 +5,7 @@ import DialogBox from "../flight/DialogBox";
 import type { DialogueStep } from "@/utils/flightDialogs";
 import { flightRouteDialogs } from "@/utils/flightDialogs";
 import FlightMap from "../logic/FlightMap";
-import FlightMiniTest from "../logic/MiniTest";
+import FlightMiniTest from "../flight/FlightMiniTest";
 
 export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   const racTextRef = useRef<HTMLDivElement>(null);

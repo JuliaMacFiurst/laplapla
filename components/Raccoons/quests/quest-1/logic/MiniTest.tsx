@@ -1,4 +1,3 @@
-import type { PageId } from "../QuestEngine";
 import { useState, useRef, useEffect } from "react";
 
 type Question = {
@@ -7,37 +6,17 @@ type Question = {
   answers: { text: string; correct: boolean }[];
 };
 
-const questions: Question[] = [
-  {
-    text: "Как называется самый короткий путь между двумя точками на сфере?",
-    answers: [
-      { text: "Ортодромия", correct: true },
-      { text: "Суперпрямая турбо-линия 3000", correct: false },
-      { text: "Маршрут «как пойдёт»", correct: false },
-    ],
-  },
-  {
-    text:
-      "Почему на карте Меркатора ортодромия выглядит дугой?",
-    explanation:
-      "Карта Меркатора — это когда поверхность Земли разворачивают в прямоугольник. Такое «разворачивание» растягивает линии и прямые превращаются в дуги.",
-    answers: [
-      { text: "Потому что на сфере кратчайшая линия — дуга большого круга", correct: true },
-      { text: "Потому что Меркатор обожал радуги", correct: false },
-      { text: "Потому что карта любит загадочность", correct: false },
-    ],
-  },
-  {
-    text: "Можно ли применять ортодромию для маршрутов по воде?",
-    answers: [
-      { text: "Да, корабли тоже ходят по кратчайшим дугам", correct: true },
-      { text: "Только если капитан — магистр геодезии и ведьма", correct: false },
-      { text: "Нет, вода обижается на такие вычисления", correct: false },
-    ],
-  },
-];
-
-export default function FlightMiniTest({ go }: { go: (id: PageId) => void }) {
+export default function MiniTest({
+  questions,
+  finishTitle,
+  finishButtonText,
+  onFinish,
+}: {
+  questions: Question[];
+  finishTitle: string;
+  finishButtonText: string;
+  onFinish: () => void;
+}) {
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
@@ -151,13 +130,13 @@ export default function FlightMiniTest({ go }: { go: (id: PageId) => void }) {
       {finished && (
         <div className="flight-mini-finish-screen" ref={finishRef}>
           <h2 className="quest-h2" style={{ textAlign: "center", marginBottom: "20px" }}>
-            Ты — будущий пилот! 🚀
+            {finishTitle}
           </h2>
           <button
             className="dialog-next-btn"
-            onClick={() => go("day4_takeoff")}
+            onClick={onFinish}
           >
-            Идём на взлёт!✈️💨 ⏭️
+            {finishButtonText}
           </button>
         </div>
       )}
