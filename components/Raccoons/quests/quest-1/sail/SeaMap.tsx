@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
+import seaNames from "@/utils/sea_names.json";
+
+function translateSea(id: string) {
+  const entry = (seaNames as any)[id];
+  if (!entry) return id;
+  return entry.ru ?? id;
+}
 
 export default function SeaMap({
   racTextRef,
@@ -275,7 +282,7 @@ export default function SeaMap({
     // Если дошли сюда — маршрут успешный
     rac.innerHTML =
       "Енот улыбается: «Мы проплыли через: <strong>" +
-      [...touchedSeas].join(", ") +
+      [...touchedSeas].map(id => translateSea(id)).join(", ") +
       "</strong>»";
   }
 
