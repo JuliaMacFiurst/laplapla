@@ -5,6 +5,7 @@ import Day2 from "./pages/Day2";
 import Day3Flight from "./pages/Day3Flight";
 import Day3Sail from "./pages/Day3Sail";
 import Day4Takeoff from "./pages/Day4Takeoff";
+import Day4Sail from "./pages/Day4Sail";
 
 // дальше добавляем по мере создания
 
@@ -14,6 +15,7 @@ const PAGES = {
   day3flight: Day3Flight,
   day3sail: Day3Sail,
   day4_takeoff: Day4Takeoff,
+  day4_sail: Day4Sail,
   
 };
 

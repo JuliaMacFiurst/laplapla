@@ -21,7 +21,7 @@ export default function DialogBox({
   const current = queue[0];
 
   const cloudSpeaker: "pilot" | "copilot" =
-    current.speaker === "roland" ? "pilot" : "copilot";
+    current.speaker === "roland" ? "copilot" : "pilot";
 
   return (
     <div style={{ marginTop: "20px", textAlign: "center" }}>

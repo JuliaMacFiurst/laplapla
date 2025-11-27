@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { PageId } from "../QuestEngine";
 import SeaMap from "../sail/SeaMap";
+import { seaRouteDialogs } from "@/utils/seaRouteDialogs";
+import DialogBox from "../logic/DialogBox";
+import SailMiniTest from "../sail/SailMiniTest";
 
 export default function Day3Sail({ go }: { go: (id: PageId) => void }) {
   const racTextRef = useRef<HTMLDivElement | null>(null);
+  const [dialogueQueue, setDialogueQueue] = useState(seaRouteDialogs);
   return (
     <div className="quest-page-bg">
       <div className="polar-scenery" aria-hidden />
@@ -63,6 +67,17 @@ export default function Day3Sail({ go }: { go: (id: PageId) => void }) {
         <SeaMap racTextRef={racTextRef} />
         <div ref={racTextRef} className="quest-speech"></div>
       </div>
+      <div className="flight-dialog-box-wrapper" style={{ marginTop: "30px" }}>
+        <DialogBox
+          queue={dialogueQueue}
+          onNext={() => setDialogueQueue((q) => q.slice(1))}
+        />
+      </div>
+
+      {/* MINI TEST — морской тест */}
+<div style={{ marginTop: "50px" }}>
+  <SailMiniTest go={go} />
+</div>
     </div>
   );
 }

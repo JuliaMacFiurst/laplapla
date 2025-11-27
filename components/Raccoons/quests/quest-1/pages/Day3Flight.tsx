@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PageId } from "../QuestEngine";
 import countryNames from "@/utils/country_names.json";
-import DialogBox from "../flight/DialogBox";
+import DialogBox from "../logic/DialogBox";
 import type { DialogueStep } from "@/utils/flightDialogs";
 import { flightRouteDialogs } from "@/utils/flightDialogs";
 import FlightMap from "../logic/FlightMap";

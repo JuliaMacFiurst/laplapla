@@ -9,7 +9,7 @@ export default function SpeechCloud({
   speaker: "pilot" | "copilot";
   children: React.ReactNode;
 }) {
-  const bgColor = speaker === "pilot" ? "#a7e1fe" : "#ffe9a8";
+  const bgColor = speaker === "pilot" ? "#ffe9a8" : "#a7e1fe";
 
   return (
     <div className="quest-speech-cloud-wrapper">
