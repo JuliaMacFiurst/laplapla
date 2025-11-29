@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { PageId } from "../QuestEngine";
 import SeaMap from "../sail/SeaMap";
 import { seaRouteDialogs } from "@/utils/seaRouteDialogs";

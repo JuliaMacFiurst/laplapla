@@ -152,6 +152,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
         />
       </div>
 
+          {/* FIRST DIALOG WINDOW — монолог Логана про id */}
       <div ref={racTextRef} id="raccoonText" className="quest-speech">
         Енот: «Выбери тип маршрута.»
       </div>
