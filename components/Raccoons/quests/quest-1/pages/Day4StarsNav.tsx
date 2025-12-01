@@ -3,6 +3,7 @@
 import type { PageId } from "../QuestEngine";
 import StarsMap from "../sail/StarsMap";
 import DialogBoxStars from "../logic/DialogBoxStars";
+import DialogBoxStarsInteractive from "../logic/DialogBoxStarsInteractive";
 import { useRef, useState } from "react";
 import { starRouteDialogs, StarDialogueStep } from "@/utils/starRouteDialogs";
 
@@ -105,15 +106,45 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
             onStep={(stepId: string) => {
               console.log("[Day4StarsNav] onStep:", stepId);
 
+              // Пропускаем служебный шаг
               if (stepId === "first_click") {
                 return;
               }
 
+              // Разбор wrong-star:[id]
+              if (stepId.startsWith("wrong-star")) {
+                const parts = stepId.split(":");
+                const wrongId = parts[1]; // может быть undefined или "no_id"
+
+                // Ищем диалоговые строки для wrong-star
+                const wrongLines = starRouteDialogs.filter(
+                  (d) => d.condition === "wrong-star"
+                );
+
+                if (wrongLines.length > 0) {
+                  // создаём копию, чтобы не мутировать оригинал
+                  const cloned = wrongLines.map((line) => ({ ...line }));
+
+                  // Подстановка #id (если есть и не no_id)
+                  if (wrongId && wrongId !== "no_id") {
+                    cloned.forEach((line) => {
+                      line.text = line.text.replace("#id", wrongId);
+                    });
+                  }
+
+                  setMapDialogueQueue(cloned);
+                }
+
+                return;
+              }
+
+              // Остальные шаги: click_merak, click_dubhe, correct_line, finish
               const newLines = starRouteDialogs.filter(
                 (d) => d.condition === stepId
               );
+
               if (newLines.length > 0) {
-                setMapDialogueQueue((prev) => [...prev, ...newLines]);
+                setMapDialogueQueue(newLines);
               }
             }}
           />
@@ -143,11 +174,9 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
           {introDone && (
             <>
               {mapDialogueQueue.length > 0 && (
-                <DialogBoxStars
+                <DialogBoxStarsInteractive
+                  key={mapDialogueQueue[0]?.id}
                   queue={mapDialogueQueue}
-                  onNext={() => {
-                    setMapDialogueQueue((q) => q.slice(1));
-                  }}
                 />
               )}
             </>

@@ -18,7 +18,8 @@ type StepId =
   | "correct_line"
   | "wrong_line"
   | "click_polaris"
-  | "finish";
+  | "finish"
+  | `wrong-star:${string}`;
 
 const StarsMap = forwardRef(function StarsMap(
   {
@@ -38,7 +39,7 @@ const StarsMap = forwardRef(function StarsMap(
   const [foundStars, setFoundStars] = useState<string[]>([]);
 
   const [routeStep, setRouteStep] = useState<
-    "idle" | "waiting_merak_dubhe" | "waiting_polaris" | "completed"
+    "idle" | "waiting_merak" | "waiting_dubhe"  | "waiting_polaris" | "completed"
   >("idle");
 
   const [routeLine, setRouteLine] = useState<{
@@ -51,7 +52,7 @@ const StarsMap = forwardRef(function StarsMap(
   useImperativeHandle(ref, () => ({
     startRoute() {
       console.log("[StarsMap] startRoute()");
-      setRouteStep("waiting_merak_dubhe");
+      setRouteStep("waiting_merak");
     }
   }));
 
@@ -78,38 +79,47 @@ const StarsMap = forwardRef(function StarsMap(
       }
       const el = e.target as HTMLElement;
       const starEl = el.closest("[id]") as HTMLElement | null;
+
+      if (!starEl && routeStep === "waiting_merak") {
+        setTimeout(() => onStep?.("wrong-star:no_id"), 0);
+        // продолжаем выполнение — без return
+      }
+
       if (!starEl) return;
 
       const starId = starEl.id;
+      // === Всегда обновляем информацию енота о звезде ===
+      const info = starInfoList.find((s) => s.id === starId);
+      if (info && racTextRef.current) {
+        racTextRef.current.innerHTML = `Енот: «${info.name}. ${info.description}»`;
+      }
 
-      if (routeStep === "waiting_merak_dubhe") {
+      if (routeStep === "waiting_merak") {
         if (starId === "Merak-Star") {
           starEl.classList.add("star-glow-strong");
-          setFoundStars((prev) => {
-            const updated = prev.includes(starId) ? prev : [...prev, starId];
-            if (updated.includes("Merak-Star") && updated.includes("Dubhe-Star")) {
-              setTimeout(() => onStep?.("correct_line"), 0);
-              setRouteStep("waiting_polaris");
-            }
-            return updated;
-          });
+          setFoundStars((prev) => [...prev, starId]);
           setTimeout(() => onStep?.("click_merak"), 0);
+          setRouteStep("waiting_dubhe");
+          return;
         }
-        if (starId === "Dubhe-Star") {
-          starEl.classList.add("star-glow-strong");
-          setFoundStars((prev) => {
-            const updated = prev.includes(starId) ? prev : [...prev, starId];
-            if (updated.includes("Merak-Star") && updated.includes("Dubhe-Star")) {
-              setTimeout(() => onStep?.("correct_line"), 0);
-              setRouteStep("waiting_polaris");
-            }
-            return updated;
-          });
-          setTimeout(() => onStep?.("click_dubhe"), 0);
+        if (starId !== "Merak-Star") {
+          setTimeout(() => onStep?.(`wrong-star:${starId}`), 0);
+          return;
         }
       }
-      if (routeStep === "waiting_merak_dubhe" && starId !== "Merak-Star" && starId !== "Dubhe-Star") {
-        setTimeout(() => onStep?.("wrong_line"), 0);
+
+      if (routeStep === "waiting_dubhe") {
+        if (starId === "Dubhe-Star") {
+          starEl.classList.add("star-glow-strong");
+          setFoundStars((prev) => [...prev, starId]);
+          setTimeout(() => onStep?.("click_dubhe"), 0);
+          setRouteStep("waiting_polaris");
+          return;
+        }
+        if (starId !== "Dubhe-Star") {
+          setTimeout(() => onStep?.(`wrong-star:${starId}`), 0);
+          return;
+        }
       }
 
       if (routeStep === "waiting_polaris" && starId === "Polar-Star") {
@@ -146,10 +156,6 @@ const StarsMap = forwardRef(function StarsMap(
         }
       }
 
-      const info = starInfoList.find((s) => s.id === starId);
-      if (info && racTextRef.current) {
-        racTextRef.current.innerHTML = `Енот: «${info.name}. ${info.description}»`;
-      }
     }
 
     root.addEventListener("click", onClick);

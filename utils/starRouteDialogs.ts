@@ -7,6 +7,7 @@ export type StarDialogueStep = {
   condition:
     | "intro"
     | "click_merak"
+    | "wrong-star"
     | "click_dubhe"
     | "click_polaris"
     | "wrong_line"
@@ -37,21 +38,29 @@ export const starRouteDialogs: StarDialogueStep[] = [
   {
     id: "intro_4",
     speaker: "logan",
-    text: "Иногда достаточно трёх. Найди Мерак и Дубхе на карте звёздного неба и соедини их прямой линией — она укажет направление ⬆️!",
+    text: "Иногда достаточно трёх. Найди (1) Мерак и (2) Дубхе на карте звёздного неба и соедини их прямой линией — она укажет направление ⬆️!",
     condition: "intro"
+  },
+
+  // КЛИК НЕ ТУДА — нет id или неверная звезда
+  {
+    id: "wrong_id",
+    speaker: "logan",
+    text: "Найди на карте звезду, которая называется Мерак, и кликни по ней.",
+    condition: "wrong-star"
+  },
+  {
+    id: "wrong_id",
+    speaker: "logan",
+    text: "Это #id, а мы ищем Мерак. Попробуй ещё раз!",
+    condition: "wrong-star"
   },
 
   // КЛИК ПО МЕРАК
   {
     id: "merak_1",
     speaker: "logan",
-    text: "Отлично! Мерак — первая указательная звезда. Молодец, ты нашёл её!",
-    condition: "click_merak"
-  },
-  {
-    id: "merak_2",
-    speaker: "svensen",
-    text: "Первая есть! А дальше куда смотреть?",
+    text: "Отлично! Мерак — первая указательная звезда. Молодец! Теперь найди звезду под названием Дубхе.",
     condition: "click_merak"
   },
 
@@ -60,12 +69,6 @@ export const starRouteDialogs: StarDialogueStep[] = [
     id: "dubhe_1",
     speaker: "logan",
     text: "А вот и Дубхе! Теперь соедини её с Мераком — они показывают направление.",
-    condition: "click_dubhe"
-  },
-  {
-    id: "dubhe_2",
-    speaker: "svensen",
-    text: "Соединить… ой, надеюсь, линия не выйдет кривее морского коралла!",
     condition: "click_dubhe"
   },
 
