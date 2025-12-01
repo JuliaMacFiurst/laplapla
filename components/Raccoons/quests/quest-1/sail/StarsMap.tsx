@@ -12,6 +12,7 @@ import { starInfoList } from "@/utils/starInfo";
 import { StarDialogueStep } from "@/utils/starRouteDialogs";
 
 type StepId =
+  | "first_click"
   | "click_merak"
   | "click_dubhe"
   | "correct_line"
@@ -71,6 +72,10 @@ const StarsMap = forwardRef(function StarsMap(
     const root = svgContainerRef.current;
 
     function onClick(e: MouseEvent) {
+      // Предварительный клик до старта маршрута (routeStep === "idle")
+      if (routeStep === "idle") {
+        setTimeout(() => onStep?.("first_click"), 0);
+      }
       const el = e.target as HTMLElement;
       const starEl = el.closest("[id]") as HTMLElement | null;
       if (!starEl) return;
@@ -78,39 +83,39 @@ const StarsMap = forwardRef(function StarsMap(
       const starId = starEl.id;
 
       if (routeStep === "waiting_merak_dubhe") {
-        if (starId === "Merak") {
+        if (starId === "Merak-Star") {
           starEl.classList.add("star-glow-strong");
           setFoundStars((prev) => {
             const updated = prev.includes(starId) ? prev : [...prev, starId];
-            if (updated.includes("Merak") && updated.includes("Dubhe")) {
-              onStep?.("correct_line");
+            if (updated.includes("Merak-Star") && updated.includes("Dubhe-Star")) {
+              setTimeout(() => onStep?.("correct_line"), 0);
               setRouteStep("waiting_polaris");
             }
             return updated;
           });
-          onStep?.("click_merak");
+          setTimeout(() => onStep?.("click_merak"), 0);
         }
-        if (starId === "Dubhe") {
+        if (starId === "Dubhe-Star") {
           starEl.classList.add("star-glow-strong");
           setFoundStars((prev) => {
             const updated = prev.includes(starId) ? prev : [...prev, starId];
-            if (updated.includes("Merak") && updated.includes("Dubhe")) {
-              onStep?.("correct_line");
+            if (updated.includes("Merak-Star") && updated.includes("Dubhe-Star")) {
+              setTimeout(() => onStep?.("correct_line"), 0);
               setRouteStep("waiting_polaris");
             }
             return updated;
           });
-          onStep?.("click_dubhe");
+          setTimeout(() => onStep?.("click_dubhe"), 0);
         }
       }
-      if (routeStep === "waiting_merak_dubhe" && starId !== "Merak" && starId !== "Dubhe") {
-        onStep?.("wrong_line");
+      if (routeStep === "waiting_merak_dubhe" && starId !== "Merak-Star" && starId !== "Dubhe-Star") {
+        setTimeout(() => onStep?.("wrong_line"), 0);
       }
 
-      if (routeStep === "waiting_polaris" && starId === "Polaris") {
-        const merakEl = root.querySelector("#Merak") as HTMLElement | null;
-        const dubheEl = root.querySelector("#Dubhe") as HTMLElement | null;
-        const polarisEl = root.querySelector("#Polaris") as HTMLElement | null;
+      if (routeStep === "waiting_polaris" && starId === "Polar-Star") {
+        const merakEl = root.querySelector("#Merak-Star") as HTMLElement | null;
+        const dubheEl = root.querySelector("#Dubhe-Star") as HTMLElement | null;
+        const polarisEl = root.querySelector("#Polar-Star") as HTMLElement | null;
         if (merakEl && dubheEl && polarisEl) {
           const merakRect = merakEl.getBoundingClientRect();
           const dubheRect = dubheEl.getBoundingClientRect();
@@ -134,8 +139,8 @@ const StarsMap = forwardRef(function StarsMap(
           setRouteLine({ x1, y1, x2, y2 });
           polarisEl.classList.add("star-glow-strong");
 
-          onStep?.("click_polaris");
-          onStep?.("finish");
+          setTimeout(() => onStep?.("click_polaris"), 0);
+          setTimeout(() => onStep?.("finish"), 0);
 
           setRouteStep("completed");
         }

@@ -20,6 +20,17 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
 
   const [introDone, setIntroDone] = useState(false);
 
+  const handleMapClick = () => {
+    if (!introDone) {
+      const currentIntro = dialogueQueue[0];
+      if (currentIntro?.id === "intro_4") {
+        setIntroDone(true);
+        setDialogueQueue([]);
+        starsMapRef.current?.startRoute();
+      }
+    }
+  };
+
   return (
     <div className="quest-page-bg">
       <div className="polar-scenery" aria-hidden />
@@ -87,18 +98,26 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
       </div>
 
       <div style={{ marginTop: "40px" }}>
-        <StarsMap
-          ref={starsMapRef}
-          racTextRef={racTextRef}
-          onStep={(stepId: string) => {
-            const newLines = starRouteDialogs.filter(
-              (d) => d.condition === stepId
-            );
-            if (newLines.length > 0) {
-              setMapDialogueQueue((prev) => [...prev, ...newLines]);
-            }
-          }}
-        />
+        <div onClick={handleMapClick}>
+          <StarsMap
+            ref={starsMapRef}
+            racTextRef={racTextRef}
+            onStep={(stepId: string) => {
+              console.log("[Day4StarsNav] onStep:", stepId);
+
+              if (stepId === "first_click") {
+                return;
+              }
+
+              const newLines = starRouteDialogs.filter(
+                (d) => d.condition === stepId
+              );
+              if (newLines.length > 0) {
+                setMapDialogueQueue((prev) => [...prev, ...newLines]);
+              }
+            }}
+          />
+        </div>
 
         <div ref={racTextRef} id="raccoonText" className="quest-speech">
           Енот: «Нажми на звезду, чтобы узнать о ней!»
