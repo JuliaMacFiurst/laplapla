@@ -42,12 +42,9 @@ const StarsMap = forwardRef(function StarsMap(
     "idle" | "waiting_merak" | "waiting_dubhe"  | "waiting_polaris" | "completed"
   >("idle");
 
-  const [routeLine, setRouteLine] = useState<{
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-  } | null>(null);
+  const [routeLineProgress, setRouteLineProgress] = useState(0);
+
+  const [linePoints, setLinePoints] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 
   useImperativeHandle(ref, () => ({
   startRoute() {
@@ -124,7 +121,7 @@ const StarsMap = forwardRef(function StarsMap(
           starEl.classList.add("star-glow-strong");
           setFoundStars((prev) => [...prev, starId]);
           setTimeout(() => onStep?.("click_dubhe"), 0);
-          setRouteStep("waiting_polaris");
+          setTimeout(() => setRouteStep("waiting_polaris"), 0);
           return;
         }
         if (starId !== "Dubhe-Star") {
@@ -159,7 +156,6 @@ const StarsMap = forwardRef(function StarsMap(
             (polarisRect.top + polarisRect.bottom) / 2 -
             root.getBoundingClientRect().top;
 
-          setRouteLine({ x1, y1, x2, y2 });
           polarisEl.classList.add("star-glow-strong");
 
           setTimeout(() => onStep?.("click_polaris"), 0);
@@ -175,6 +171,41 @@ const StarsMap = forwardRef(function StarsMap(
     return () => root.removeEventListener("click", onClick);
   }, [svgLoaded, routeStep, onStep, racTextRef]);
 
+  useEffect(() => {
+    if (routeStep === "waiting_polaris" && svgContainerRef.current) {
+      const root = svgContainerRef.current;
+      const merakEl = root.querySelector("#Merak-Star") as HTMLElement | null;
+      const dubheEl = root.querySelector("#Dubhe-Star") as HTMLElement | null;
+      if (merakEl && dubheEl) {
+        const merakRect = merakEl.getBoundingClientRect();
+        const dubheRect = dubheEl.getBoundingClientRect();
+        const x1 =
+          (merakRect.left + merakRect.right) / 2 -
+          root.getBoundingClientRect().left;
+        const y1 =
+          (merakRect.top + merakRect.bottom) / 2 -
+          root.getBoundingClientRect().top;
+        const x2 =
+          (dubheRect.left + dubheRect.right) / 2 -
+          root.getBoundingClientRect().left;
+        const y2 =
+          (dubheRect.top + dubheRect.bottom) / 2 -
+          root.getBoundingClientRect().top;
+        setLinePoints({ x1, y1, x2, y2 });
+      }
+      let p = 0;
+      const id = setInterval(() => {
+        p += 0.02;
+        setRouteLineProgress(p);
+        if (p >= 1) clearInterval(id);
+      }, 30);
+      return () => clearInterval(id);
+    } else {
+      setRouteLineProgress(0);
+      setLinePoints(null);
+    }
+  }, [routeStep]);
+
   return (
     <div className="map-center">
       <div className="stars-map-frame">
@@ -182,7 +213,7 @@ const StarsMap = forwardRef(function StarsMap(
           <div className="stars-map" ref={wrapRef}>
             <div ref={svgContainerRef}></div>
 
-            {routeLine && (
+            {linePoints && (
               <svg
                 className="route-line"
                 style={{
@@ -195,10 +226,10 @@ const StarsMap = forwardRef(function StarsMap(
                 }}
               >
                 <line
-                  x1={routeLine.x1}
-                  y1={routeLine.y1}
-                  x2={routeLine.x2}
-                  y2={routeLine.y2}
+                  x1={linePoints.x1 - 7}
+                  y1={linePoints.y1 - 5}
+                  x2={linePoints.x1 - 7 + (linePoints.x2 - linePoints.x1) * Math.min(routeLineProgress, 1)}
+                  y2={linePoints.y1 - 5 + (linePoints.y2 - linePoints.y1) * Math.min(routeLineProgress, 1)}
                   stroke="yellow"
                   strokeWidth={2}
                   strokeLinecap="round"

@@ -83,7 +83,7 @@ export const starRouteDialogs: StarDialogueStep[] = [
   {
     id: "dubhe_1",
     speaker: "logan",
-    text: "А вот и Дубхе! Теперь соедини её с Мераком — они показывают направление.",
+    text: "А вот и Дубхе! Теперь мы соединим её линией с Мераком — они показывают направление к Полярной Звезде.",
     condition: "click_dubhe"
   },
 
