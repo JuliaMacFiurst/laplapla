@@ -42,9 +42,15 @@ const StarsMap = forwardRef(function StarsMap(
     "idle" | "waiting_merak" | "waiting_dubhe"  | "waiting_polaris" | "completed"
   >("idle");
 
+  const [finalLineLocked, setFinalLineLocked] = useState(false);
+
   const [routeLineProgress, setRouteLineProgress] = useState(0);
 
   const [linePoints, setLinePoints] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPoint, setDragPoint] = useState<{ x: number; y: number } | null>(null);
+  const dragActiveRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
   startRoute() {
@@ -200,11 +206,82 @@ const StarsMap = forwardRef(function StarsMap(
         if (p >= 1) clearInterval(id);
       }, 30);
       return () => clearInterval(id);
-    } else {
+    } else if (!finalLineLocked) {
       setRouteLineProgress(0);
       setLinePoints(null);
     }
   }, [routeStep]);
+
+  useEffect(() => {
+    const root = wrapRef.current;
+    if (!root) return;
+
+    function onPointerDown(e: PointerEvent) {
+      if (routeStep !== "waiting_polaris") return;
+      dragActiveRef.current = true;
+      setIsDragging(true);
+      const rect = root!.getBoundingClientRect();
+      setDragPoint({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+
+    function onPointerMove(e: PointerEvent) {
+      if (!dragActiveRef.current || routeStep !== "waiting_polaris") return;
+      const rect = root!.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setDragPoint({ x, y });
+    }
+
+    function onPointerUp(e: PointerEvent) {
+      if (!dragActiveRef.current) return;
+      dragActiveRef.current = false;
+      setIsDragging(false);
+
+      if (!svgContainerRef.current) return;
+
+      const polarisEl = svgContainerRef.current.querySelector("#Polar-Star") as HTMLElement | null;
+      if (!polarisEl) return;
+
+      const starRect = polarisEl.getBoundingClientRect();
+      const rootRect = svgContainerRef.current.getBoundingClientRect();
+
+      const starX = (starRect.left + starRect.right) / 2 - rootRect.left;
+      const starY = (starRect.top + starRect.bottom) / 2 - rootRect.top;
+
+      const dx = (dragPoint?.x ?? 0) - starX;
+      const dy = (dragPoint?.y ?? 0) - starY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 25) {
+        setFinalLineLocked(true);
+        setRouteStep("completed");
+
+        // Keep the dragPoint exactly on the Polar-Star center
+        setDragPoint({ x: starX, y: starY });
+
+        setTimeout(() => onStep?.("click_polaris"), 0);
+        setTimeout(() => onStep?.("finish"), 0);
+      } else {
+        // Collapse back
+        setFinalLineLocked(false);
+        setDragPoint(null);
+        setTimeout(() => onStep?.("wrong_line"), 0);
+      }
+    }
+
+    root.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+
+    return () => {
+      root.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [routeStep, dragPoint, onStep]);
 
   return (
     <div className="map-center">
@@ -234,6 +311,17 @@ const StarsMap = forwardRef(function StarsMap(
                   strokeWidth={2}
                   strokeLinecap="round"
                 />
+                {(isDragging || finalLineLocked) && dragPoint && (
+                  <line
+                    x1={linePoints.x2 - 7}
+                    y1={linePoints.y2 - 5}
+                    x2={dragPoint.x - 7}
+                    y2={dragPoint.y - 5}
+                    stroke="yellow"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
+                )}
               </svg>
             )}
           </div>
