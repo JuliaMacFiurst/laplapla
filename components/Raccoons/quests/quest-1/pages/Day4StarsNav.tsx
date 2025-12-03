@@ -4,7 +4,7 @@ import type { PageId } from "../QuestEngine";
 import StarsMap from "../sail/StarsMap";
 import DialogBoxStars from "../logic/DialogBoxStars";
 import DialogBoxStarsInteractive from "../logic/DialogBoxStarsInteractive";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { starRouteDialogs, StarDialogueStep } from "@/utils/starRouteDialogs";
 
 export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
@@ -18,6 +18,9 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
   const [mapDialogueQueue, setMapDialogueQueue] = useState<StarDialogueStep[]>(
     []
   );
+  const [finishDialogueQueue, setFinishDialogueQueue] = useState<StarDialogueStep[]>([]);
+  const [showVideo, setShowVideo] = useState(false);
+  const [fadeOutInteractive, setFadeOutInteractive] = useState(false);
 
   const [introDone, setIntroDone] = useState(false);
 
@@ -31,6 +34,17 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
       }
     }
   };
+
+  useEffect(() => {
+    if (showVideo) {
+      setTimeout(() => {
+        document.querySelector(".youtube-wrapper")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 300);
+    }
+  }, [showVideo]);
 
   return (
     <div className="quest-page-bg">
@@ -146,6 +160,23 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
                 return;
               }
 
+              if (stepId === "finish") {
+                const finishLines = starRouteDialogs.filter(
+                  (d) => d.id === "finish_1" || d.id === "finish_2"
+                );
+
+                // trigger fade-out of interactive box
+                setFadeOutInteractive(true);
+
+                // stop interactive dialogue
+                setMapDialogueQueue([]);
+
+                // load finish dialogue
+                setFinishDialogueQueue(finishLines);
+
+                return;
+              }
+
               // Остальные шаги: click_merak, click_dubhe, correct_line, finish
               const newLines = starRouteDialogs.filter(
                 (d) => d.condition === stepId
@@ -179,17 +210,81 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
             />
           )}
 
-          {introDone && (
-            <>
-              {mapDialogueQueue.length > 0 && (
-                <DialogBoxStarsInteractive
-                  key={mapDialogueQueue[0]?.id}
-                  queue={mapDialogueQueue}
-                />
-              )}
-            </>
+          {introDone && mapDialogueQueue.length > 0 && (
+            <div className={fadeOutInteractive ? "dialog-fade-out" : ""}>
+              <DialogBoxStarsInteractive
+                key={mapDialogueQueue[0]?.id}
+                queue={mapDialogueQueue}
+              />
+            </div>
+          )}
+
+          {finishDialogueQueue.length > 0 && (
+            <DialogBoxStars
+              queue={finishDialogueQueue}
+              onNext={() => {
+                const current = finishDialogueQueue[0];
+
+                if (current.id === "finish_1") {
+                  setShowVideo(true);
+                  setFinishDialogueQueue((q) => q.slice(1));
+                  return;
+                }
+
+                if (current.id === "finish_2") {
+                  setFinishDialogueQueue([]);
+                  return;
+                }
+
+                setFinishDialogueQueue((q) => q.slice(1));
+              }}
+            />
           )}
         </div>
+
+        {showVideo && (
+          <div className="ice-window" style={{ marginTop: "140px" }}>
+            <div className="youtube-wrapper">
+              <button
+                className="youtube-ice-unmute"
+                onClick={(event) => {
+                  const iframe = document.querySelector<HTMLIFrameElement>(".quest-video");
+                  if (!iframe) return;
+
+                  iframe.contentWindow?.postMessage(
+                    JSON.stringify({
+                      event: "command",
+                      func: "unMute",
+                      args: []
+                    }),
+                    "*"
+                  );
+
+                  iframe.contentWindow?.postMessage(
+                    JSON.stringify({
+                      event: "command",
+                      func: "playVideo",
+                      args: []
+                    }),
+                    "*"
+                  );
+
+                  (event.target as HTMLButtonElement).style.display = "none";
+                }}
+              >
+                🔊 Включить звук
+              </button>
+
+              <iframe
+                className="quest-video"
+                src="https://www.youtube.com/embed/CWf0_sdJOJI?enablejsapi=1"
+                title="Полярная звезда"
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

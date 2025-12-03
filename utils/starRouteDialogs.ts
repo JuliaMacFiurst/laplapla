@@ -94,26 +94,6 @@ export const starRouteDialogs: StarDialogueStep[] = [
     text: "Посмотри ещё раз — линия должна идти от ковша в сторону Полярной, вниз по карте.",
     condition: "wrong_line"
   },
-  {
-    id: "wrong_2",
-    speaker: "svensen",
-    text: "Ай-ай-ай! Значит, я наметила путь к пингвинам… Попробую снова!",
-    condition: "wrong_line"
-  },
-
-  // ПРАВИЛЬНАЯ ЛИНИЯ
-  {
-    id: "correct_1",
-    speaker: "logan",
-    text: "Да! Именно так моряки веками находили север. Линия ведёт прямо к Полярной!",
-    condition: "correct_line"
-  },
-  {
-    id: "correct_2",
-    speaker: "svensen",
-    text: "Значит, Полярная — это главный маяк на небе? Показывает север?",
-    condition: "correct_line"
-  },
 
   // КЛИК ПО ПОЛЯРНОЙ
   {
@@ -122,13 +102,6 @@ export const starRouteDialogs: StarDialogueStep[] = [
     text: "Вот она — Полярная! Она почти не двигается на небе, как настоящий небесный якорь.",
     condition: "click_polaris"
   },
-  {
-    id: "polaris_2",
-    speaker: "svensen",
-    text: "Якорь в небе… вот это красота!",
-    condition: "click_polaris"
-  },
-
   // ФИНАЛ
   {
     id: "finish_1",
