@@ -111,24 +111,32 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
                 return;
               }
 
-              // Разбор wrong-star:[id]
-              if (stepId.startsWith("wrong-star")) {
-                const parts = stepId.split(":");
-                const wrongId = parts[1]; // может быть undefined или "no_id"
+              // Разбор wrong-star:[humanName]
+              if (stepId.startsWith("wrong-star:")) {
+                const [, humanName] = stepId.split(":"); // например "Фекда" или "no_id"
 
-                // Ищем диалоговые строки для wrong-star
-                const wrongLines = starRouteDialogs.filter(
-                  (d) => d.condition === "wrong-star"
-                );
+                // Определяем, какое состояние сейчас активно
+                const merakPhase = starsMapRef.current?.getRouteStep?.() === "waiting_merak";
+                const dubhePhase = starsMapRef.current?.getRouteStep?.() === "waiting_dubhe";
+
+                // Выбираем нужный ключ ошибки
+                let dialogId = "";
+                if (merakPhase) {
+                  dialogId = humanName === "no_id" ? "wrong_merak_no_id" : "wrong_merak_wrong_id";
+                } else if (dubhePhase) {
+                  dialogId = humanName === "no_id" ? "wrong_dubhe_no_id" : "wrong_dubhe_wrong_id";
+                }
+
+                // Находим соответствующие строки диалога
+                const wrongLines = starRouteDialogs.filter((d) => d.id === dialogId);
 
                 if (wrongLines.length > 0) {
-                  // создаём копию, чтобы не мутировать оригинал
                   const cloned = wrongLines.map((line) => ({ ...line }));
 
-                  // Подстановка #id (если есть и не no_id)
-                  if (wrongId && wrongId !== "no_id") {
+                  // Подставляем красивое имя звезды
+                  if (humanName !== "no_id") {
                     cloned.forEach((line) => {
-                      line.text = line.text.replace("#id", wrongId);
+                      line.text = line.text.replace("#id", humanName);
                     });
                   }
 

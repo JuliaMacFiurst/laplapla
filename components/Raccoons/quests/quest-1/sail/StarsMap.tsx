@@ -50,11 +50,13 @@ const StarsMap = forwardRef(function StarsMap(
   } | null>(null);
 
   useImperativeHandle(ref, () => ({
-    startRoute() {
-      console.log("[StarsMap] startRoute()");
-      setRouteStep("waiting_merak");
-    }
-  }));
+  startRoute() {
+    setRouteStep("waiting_merak");
+  },
+  getRouteStep() {
+    return routeStep;
+  }
+}));
 
   useEffect(() => {
     async function loadSvg() {
@@ -80,9 +82,16 @@ const StarsMap = forwardRef(function StarsMap(
       const el = e.target as HTMLElement;
       const starEl = el.closest("[id]") as HTMLElement | null;
 
+      // Ошибка: клик мимо — для Мерака
       if (!starEl && routeStep === "waiting_merak") {
-        setTimeout(() => onStep?.("wrong-star:no_id"), 0);
-        // продолжаем выполнение — без return
+        setTimeout(() => onStep?.("wrong-star:merak_no_id"), 0);
+        return;
+      }
+
+      // Ошибка: клик мимо — для Дубхе
+      if (!starEl && routeStep === "waiting_dubhe") {
+        setTimeout(() => onStep?.("wrong-star:dubhe_no_id"), 0);
+        return;
       }
 
       if (!starEl) return;
@@ -103,7 +112,9 @@ const StarsMap = forwardRef(function StarsMap(
           return;
         }
         if (starId !== "Merak-Star") {
-          setTimeout(() => onStep?.(`wrong-star:${starId}`), 0);
+          const infoWrong = starInfoList.find((s) => s.id === starId);
+          const human = infoWrong ? infoWrong.name : "неизвестная звезда";
+          setTimeout(() => onStep?.(`wrong-star:${human}` as StepId), 0);
           return;
         }
       }
@@ -117,7 +128,9 @@ const StarsMap = forwardRef(function StarsMap(
           return;
         }
         if (starId !== "Dubhe-Star") {
-          setTimeout(() => onStep?.(`wrong-star:${starId}`), 0);
+          const infoWrong = starInfoList.find((s) => s.id === starId);
+          const human = infoWrong ? infoWrong.name : "неизвестная звезда";
+          setTimeout(() => onStep?.(`wrong-star:${human}` as StepId), 0);
           return;
         }
       }

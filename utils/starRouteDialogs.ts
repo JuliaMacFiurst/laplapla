@@ -6,13 +6,14 @@ export type StarDialogueStep = {
   text: string;
   condition:
     | "intro"
-    | "click_merak"
-    | "wrong-star"
-    | "click_dubhe"
-    | "click_polaris"
-    | "wrong_line"
-    | "correct_line"
-    | "finish";
+    | "first_click"
+  | "click_merak"
+  | "click_dubhe"
+  | "correct_line"
+  | "wrong_line"
+  | "click_polaris"
+  | "finish"
+  | `wrong-star:${string}`;
 };
 
 export const starRouteDialogs: StarDialogueStep[] = [
@@ -42,18 +43,32 @@ export const starRouteDialogs: StarDialogueStep[] = [
     condition: "intro"
   },
 
-  // КЛИК НЕ ТУДА — нет id или неверная звезда
+  // ОШИБКИ ПРИ ПОИСКЕ МЕРАКА
   {
-    id: "wrong_id",
+    id: "wrong_merak_no_id",
     speaker: "logan",
     text: "Найди на карте звезду, которая называется Мерак, и кликни по ней.",
-    condition: "wrong-star"
+    condition: "wrong-star:merak_no_id"
   },
   {
-    id: "wrong_id",
+    id: "wrong_merak_wrong_id",
     speaker: "logan",
     text: "Это #id, а мы ищем Мерак. Попробуй ещё раз!",
-    condition: "wrong-star"
+    condition: "wrong-star:merak_wrong_id"
+  },
+
+  // ОШИБКИ ПРИ ПОИСКЕ ДУБХЕ
+  {
+    id: "wrong_dubhe_no_id",
+    speaker: "logan",
+    text: "Найди на карте звезду, которая называется Дубхе и кликни по ней.",
+    condition: "wrong-star:dubhe_no_id"
+  },
+  {
+    id: "wrong_dubhe_wrong_id",
+    speaker: "logan",
+    text: "Это #id, а мы ищем Дубхе, попробуй ещё раз.",
+    condition: "wrong-star:dubhe_wrong_id"
   },
 
   // КЛИК ПО МЕРАК
