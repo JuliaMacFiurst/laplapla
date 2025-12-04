@@ -243,37 +243,9 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
         </div>
 
         {showVideo && (
-          <div className="ice-window" style={{ marginTop: "140px" }}>
-            <div className="youtube-wrapper">
-              <button
-                className="youtube-ice-unmute"
-                onClick={(event) => {
-                  const iframe = document.querySelector<HTMLIFrameElement>(".quest-video");
-                  if (!iframe) return;
-
-                  iframe.contentWindow?.postMessage(
-                    JSON.stringify({
-                      event: "command",
-                      func: "unMute",
-                      args: []
-                    }),
-                    "*"
-                  );
-
-                  iframe.contentWindow?.postMessage(
-                    JSON.stringify({
-                      event: "command",
-                      func: "playVideo",
-                      args: []
-                    }),
-                    "*"
-                  );
-
-                  (event.target as HTMLButtonElement).style.display = "none";
-                }}
-              >
-                🔊 Включить звук
-              </button>
+          <>
+          <div className="ice-window" style={{ marginTop: "100px" }}>
+            <div className="youtube-wrapper-polar-star">
 
               <iframe
                 className="quest-video"
@@ -284,8 +256,41 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
               />
             </div>
           </div>
-        )}
+       
+
+         <div className="quest-story-text" style={{ marginTop: "20px" }}>
+        <div className="quest-text-paper">
+          <div className="quest-text-inner">
+            <p className="quest-p">
+              Приплыли! Добро пожаловать в страну льдов и полярных лисиц.
+            </p>
+          </div>
+        </div>
       </div>
+
+    <div
+            className="quest-center ice-button-wrapper"
+            style={{ marginTop: "60px" }}
+          >
+
+      <div className="ice-button" onClick={() => go("day5_spitsbergen")}>
+        <img
+          className="ice"
+          src="/quests/assets/buttons/ice-button-bg.svg"
+          alt="ice-btn"
+        />
+        <div className="ice-text">Навстречу приключениям!</div>
+        <img
+          className="penguin"
+          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+          alt="penguin"
+        />
+      </div>
+</div>
+</>
+       )}
     </div>
+      </div>
+    
   );
 }

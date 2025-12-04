@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
 import { starInfoList } from "@/utils/starInfo";
-import { StarDialogueStep } from "@/utils/starRouteDialogs";
 
 type StepId =
   | "first_click"
@@ -35,8 +34,6 @@ const StarsMap = forwardRef(function StarsMap(
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
   const [svgLoaded, setSvgLoaded] = useState(false);
-
-  const [foundStars, setFoundStars] = useState<string[]>([]);
 
   const [routeStep, setRouteStep] = useState<
     "idle" | "waiting_merak" | "waiting_dubhe"  | "waiting_polaris" | "completed"
@@ -109,7 +106,6 @@ const StarsMap = forwardRef(function StarsMap(
       if (routeStep === "waiting_merak") {
         if (starId === "Merak-Star") {
           starEl.classList.add("star-glow-strong");
-          setFoundStars((prev) => [...prev, starId]);
           setTimeout(() => onStep?.("click_merak"), 0);
           setRouteStep("waiting_dubhe");
           return;
@@ -125,7 +121,6 @@ const StarsMap = forwardRef(function StarsMap(
       if (routeStep === "waiting_dubhe") {
         if (starId === "Dubhe-Star") {
           starEl.classList.add("star-glow-strong");
-          setFoundStars((prev) => [...prev, starId]);
           setTimeout(() => onStep?.("click_dubhe"), 0);
           setTimeout(() => setRouteStep("waiting_polaris"), 0);
           return;
@@ -143,24 +138,6 @@ const StarsMap = forwardRef(function StarsMap(
         const dubheEl = root.querySelector("#Dubhe-Star") as HTMLElement | null;
         const polarisEl = root.querySelector("#Polar-Star") as HTMLElement | null;
         if (merakEl && dubheEl && polarisEl) {
-          const merakRect = merakEl.getBoundingClientRect();
-          const dubheRect = dubheEl.getBoundingClientRect();
-          const polarisRect = polarisEl.getBoundingClientRect();
-
-          const x1 =
-            (merakRect.left + merakRect.right + dubheRect.left + dubheRect.right) /
-              4 -
-            root.getBoundingClientRect().left;
-          const y1 =
-            (merakRect.top + merakRect.bottom + dubheRect.top + dubheRect.bottom) /
-              4 -
-            root.getBoundingClientRect().top;
-          const x2 =
-            (polarisRect.left + polarisRect.right) / 2 -
-            root.getBoundingClientRect().left;
-          const y2 =
-            (polarisRect.top + polarisRect.bottom) / 2 -
-            root.getBoundingClientRect().top;
 
           polarisEl.classList.add("star-glow-strong");
 
@@ -185,19 +162,20 @@ const StarsMap = forwardRef(function StarsMap(
       if (merakEl && dubheEl) {
         const merakRect = merakEl.getBoundingClientRect();
         const dubheRect = dubheEl.getBoundingClientRect();
-        const x1 =
-          (merakRect.left + merakRect.right) / 2 -
-          root.getBoundingClientRect().left;
-        const y1 =
-          (merakRect.top + merakRect.bottom) / 2 -
-          root.getBoundingClientRect().top;
-        const x2 =
-          (dubheRect.left + dubheRect.right) / 2 -
-          root.getBoundingClientRect().left;
-        const y2 =
-          (dubheRect.top + dubheRect.bottom) / 2 -
-          root.getBoundingClientRect().top;
-        setLinePoints({ x1, y1, x2, y2 });
+        setLinePoints({
+          x1:
+            (merakRect.left + merakRect.right) / 2 -
+            root.getBoundingClientRect().left,
+          y1:
+            (merakRect.top + merakRect.bottom) / 2 -
+            root.getBoundingClientRect().top,
+          x2:
+            (dubheRect.left + dubheRect.right) / 2 -
+            root.getBoundingClientRect().left,
+          y2:
+            (dubheRect.top + dubheRect.bottom) / 2 -
+            root.getBoundingClientRect().top
+        });
       }
       let p = 0;
       const id = setInterval(() => {
@@ -235,7 +213,7 @@ const StarsMap = forwardRef(function StarsMap(
       setDragPoint({ x, y });
     }
 
-    function onPointerUp(e: PointerEvent) {
+    function onPointerUp() {
       if (!dragActiveRef.current) return;
       dragActiveRef.current = false;
       setIsDragging(false);
