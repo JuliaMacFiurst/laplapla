@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
 import Day1 from "./pages/Day1";
 import Day2 from "./pages/Day2";
@@ -31,11 +32,10 @@ const PAGE_ORDER: PageId[] = [
   "day5_spitsbergen",
 ];
 
-const devMode = typeof window !== "undefined" && window.location.search.includes("dev=1");
-
 export type PageId = keyof typeof PAGES;
 
 export default function QuestEngine() {
+  const router = useRouter();
   const [pageId, setPageId] = useState<PageId>("day1");
   const [devMode, setDevMode] = useState(false);
 
@@ -50,6 +50,30 @@ export default function QuestEngine() {
   return (
     <div>
       <Page go={setPageId} />
+      <div
+        style={{
+          position: "fixed",
+          top: "16px",
+          right: "16px",
+          fontSize: "24px",
+          cursor: "pointer",
+          zIndex: 10000,
+          background: "rgba(255,255,255,0.9)",
+          padding: "6px 10px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+        }}
+        onClick={() => {
+          const confirmed = window.confirm(
+            "Твой прогресс в квесте сейчас не сохранён.\nЕсли ты выйдешь, придётся начинать сначала. Выйти из квеста?"
+          );
+          if (confirmed) {
+            router.push("/raccoons");
+          }
+        }}
+      >
+        🏠 Домой
+      </div>
       {devMode && (
         <div
           style={{
