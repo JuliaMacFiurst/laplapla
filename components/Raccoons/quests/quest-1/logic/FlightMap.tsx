@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import {useEffect, useRef, useState } from "react";
 import { initRouteLogic } from "./initRouteLogic";
 import { getMapSvg } from "@/utils/storageMaps";
 import countryNames from "@/utils/country_names.json";

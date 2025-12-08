@@ -1,6 +1,6 @@
 // /pages/dog.tsx
 
-import React from 'react';
+
 
 const categories = [
   { name: 'Мультяшные персонажи', slug: 'cartoon-characters' },

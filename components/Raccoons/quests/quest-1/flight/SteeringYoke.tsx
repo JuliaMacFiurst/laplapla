@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import {useRef, useState, useEffect } from "react";
 import Image from "next/image";
 
 interface SteeringYokeProps {

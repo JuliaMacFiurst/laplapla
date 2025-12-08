@@ -1,6 +1,6 @@
 "use client";
 import type { PageId } from "../QuestEngine";
-import React from "react";
+
 
 export default function Day2({ go }: { go: (id: PageId) => void }) {
   return (

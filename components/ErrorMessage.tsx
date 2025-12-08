@@ -1,5 +1,5 @@
 
-import React from 'react';
+
 import type { ErrorMessageProps } from '../types'; // Import the updated type
 
 const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, customTitle }) => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import {useMemo, useState } from "react";
 import Head from "next/head";
 import ParrotMixer from "../components/ParrotMixer";
 import ParrotStoryCard from "../components/ParrotStoryCard";

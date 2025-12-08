@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import {useRef, useState, useEffect } from 'react';
 
 type HintPoint = [number, number, number, number, number]; // x, y, r, g, b
 

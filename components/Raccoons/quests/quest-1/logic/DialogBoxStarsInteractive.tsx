@@ -2,7 +2,7 @@
 
 "use client";
 
-import React from "react";
+
 import SpeechCloud from "./SpeechCloud";
 
 export interface StarDialogueStep {

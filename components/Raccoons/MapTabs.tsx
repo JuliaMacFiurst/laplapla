@@ -1,4 +1,4 @@
-import React from "react";
+
 
 type MapTabsProps = {
   selectedTab: "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food";

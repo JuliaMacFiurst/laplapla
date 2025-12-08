@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import {useEffect, useRef, useState } from "react";
 
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const base = `${SUPA}/storage/v1/object/public/characters/raccoons/raccoon_with_map`;

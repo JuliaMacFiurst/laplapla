@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import {useEffect, useRef } from "react";
 
 function waitForSVG(objectEl: HTMLObjectElement, callback: (svgDoc: Document) => void) {
   let tries = 0;
