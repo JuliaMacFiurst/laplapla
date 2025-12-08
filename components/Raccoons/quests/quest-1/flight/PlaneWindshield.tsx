@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useRef, useState, forwardRef, useImperativeHandle } from "react";
 import flightVideos from "@/utils/flight-video.json";
 
 interface PlaneWindshieldProps {

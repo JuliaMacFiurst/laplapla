@@ -18,7 +18,7 @@ export default function SteeringYoke({ onAngleChange }: SteeringYokeProps) {
     onAngleChange(angle, pushPull);
   }, [angle, pushPull, onAngleChange]);
 
-  function onPointerDown(e: React.PointerEvent) {
+  function onPointerDown(_e: React.PointerEvent) {
     setActive(true);
     const el = yokeRef.current;
     if (!el) return;

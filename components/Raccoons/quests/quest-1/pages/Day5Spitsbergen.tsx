@@ -1,7 +1,7 @@
 "use client";
 
 import type { PageId } from "../QuestEngine";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 export default function Day5Spitsbergen({ go }: { go: (id: PageId) => void }) {
   const [started, setStarted] = useState(false);

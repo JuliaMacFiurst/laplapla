@@ -18,7 +18,7 @@ export default function RaccoonsPage() {
         <meta name="description" content="Интерактивная карта от енотов-исследователей" />
       </Head>
 
-      <main className="min-h-screen bg-[#fdf6f0]">
+      <main className="min-h-screen">
         <div className="raccoons-home-wrapper">
           <div className="raccoons-header-container">
             <div className="raccoons-title-with-raccoon">

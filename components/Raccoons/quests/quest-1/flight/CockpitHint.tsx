@@ -10,12 +10,10 @@ export default function CockpitHint({
   onClose: () => void;
 }) {
   const [printed, setPrinted] = useState("");
-  const [showOk, setShowOk] = useState(false);
 
   useEffect(() => {
     if (!text) {
       setPrinted("");
-      setShowOk(false);
       return;
     }
 
@@ -27,7 +25,6 @@ export default function CockpitHint({
       // полностью напечатали текст → показать кнопку
       if (i >= text.length) {
         clearInterval(interval);
-        setTimeout(() => setShowOk(true), 250);
       }
     }, 30);
 
@@ -41,7 +38,6 @@ export default function CockpitHint({
         className="hint-close-btn"
         onClick={() => {
           setPrinted("");
-          setShowOk(false);
           onClose();
         }}
       >

@@ -1,4 +1,3 @@
-import countryNames from "@/utils/country_names.json";
 // initRouteLogic.ts
 
 export interface RouteLogicParams {
