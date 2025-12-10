@@ -3,109 +3,71 @@
 import type { PageId } from "../QuestEngine";
 import { useState } from "react";
 
-export default function Day5Spitsbergen({ go }: { go: (id: PageId) => void }) {
-  const [started, setStarted] = useState(false);
+type DoorId = "heat" | "lab" | "garage";
 
-  const handleStart = () => {
-    setStarted(true);
+export default function Day5Spitsbergen({ go }: { go: (id: PageId) => void }) {
+  const [openingDoor, setOpeningDoor] = useState<DoorId | null>(null);
+
+  const handleDoorClick = (door: DoorId) => {
+    setOpeningDoor(door);
+
+    // маленькая задержка, чтобы анимация "открытия" проигралась
+    setTimeout(() => {
+      if (door === "heat") go("day5_heat");
+      if (door === "lab") go("day5_lab");
+      if (door === "garage") go("day5_garage");
+    }, 400);
   };
 
-  return (
+return (
     <div className="quest-page-bg">
-      <div className="polar-scenery" aria-hidden />
-
       <div className="quest-title-wrapper">
         <img
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">На острове Шпицберген</h1>
+        <h1 className="quest-title-text">Полярная станция Шпицбергена</h1>
       </div>
 
-      <div className="quest-row-story">
-        <div className="quest-story-text" style={{ marginTop: "20px" }}>
-          <div className="quest-text-paper">
-            <div className="quest-text-inner">
-              <p className="quest-p">
-                <em className="quest-em">
-                  Ледяные ветры несут нас всё севернее… впереди —
-                  архипелаг Свалбард, а на нём суровый и прекрасный остров
-                  Шпицберген.
-                </em>
-              </p>
+      <div className="spitsbergen-station">
+        {/* фон станции */}
+        <img
+          className="station-bg"
+          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/Spitzbergen-station.webp"
+          alt="Полярная станция Шпицбергена"
+        />
 
-              <p className="quest-p">
-                <strong className="quest-strong">Логан:</strong>{" "}
-                Здесь люди научились жить бок о бок с полярными медведями,
-                а ночное небо сияет северным сиянием почти полгода подряд!
-              </p>
+        {/* дверь 1 — Тепловой модуль */}
+        <button
+          className={
+            "station-door station-door--heat station-door-inner" +
+            (openingDoor === "heat" ? " station-door--opening" : "")
+          }
+          onClick={() => handleDoorClick("heat")}
+          aria-label="Тепловой модуль"
+        />
 
-              <p className="quest-p">
-                <strong className="quest-strong">Свенсен:</strong>{" "}
-                — Ты только скажи — мы высаживаемся? Или продолжаем путь?
-              </p>
+        {/* дверь 2 — Лаборатория оборудования */}
+        <button
+          className={
+            "station-door station-door--lab station-door-inner" +
+            (openingDoor === "lab" ? " station-door--opening" : "")
+          }
+          onClick={() => handleDoorClick("lab")}
+          aria-label="Лаборатория оборудования"
+        />
 
-              {!started && (
-                <button
-                  className="dialog-next-btn"
-                  onClick={handleStart}
-                >
-                  🧭 Вперёд к ледяным берегам!
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="quest-vertical-video-wrapper ice-window">
-          <div className="ice-window">
-            <video
-              className="quest-vertical-video"
-              autoPlay
-              muted
-              loop
-              playsInline
-            >
-              <source
-                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/arctic-ship.webm"
-                type="video/webm"
-              />
-            </video>
-          </div>
-        </div>
+        {/* дверь 3 — Гараж */}
+        <button
+          className={
+            "station-door station-door--garage" +
+            (openingDoor === "garage" ? " station-door--opening" : "")
+          }
+          onClick={() => handleDoorClick("garage")}
+          aria-label="Гараж"
+        />
       </div>
-
-      {started && (
-        <div style={{ marginTop: "40px" }}>
-          <div className="quest-text-paper">
-            <div className="quest-text-inner">
-              <p className="quest-p">
-                <em className="quest-em">
-                  Мы приближаемся к одному из самых загадочных мест планеты.
-                </em>
-              </p>
-
-              <p className="quest-p">
-                Шпицберген встречает путешественников суровой природой,
-                древними горными породами и спокойствием, которое можно
-                ощутить только здесь, вдали от цивилизации.
-              </p>
-
-              <p className="quest-p">
-                Готов продолжить путь? Тогда — вперёд!
-              </p>
-
-              <button
-                className="dialog-next-btn"
-                onClick={() => go("day5_spitsbergen")}
-              >
-                🚢 Продолжить путешествие
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1714,3 +1714,125 @@
   width: 100%;
   min-height: 60px;
 }
+
+/* НАУЧНАЯ СТАЦИЯ */
+
+.spitsbergen-station {
+  position: relative;
+  width: 100%;
+  max-width: 1616px;
+  margin: 0 auto;
+}
+
+.station-bg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.station-door-inner {
+  position: absolute;
+  inset: 0;
+
+  background: #1a1a1a; /* тёмный фон внутри помещения — поменяй по вкусу */
+  z-index: 0;
+
+}
+
+.station-door {
+  position: absolute;
+  cursor: pointer;
+  background: none;
+  overflow: hidden; /* важно: чтобы дверь не вылезала за границы */
+}
+
+.station-door::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image: inherit;
+  background-size: inherit;
+  background-repeat: inherit;
+  background-position: inherit;
+
+  z-index: 2; /* дверное полотно */
+  transform-origin: left center;
+}
+
+/* Центральная дверь */
+.station-door--heat {
+  width: 7%;
+  height: 21%;
+  top: 58%;
+  left: 35%;
+
+  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/door--heat.svg");
+  background-size: 130% 110%;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  /* чтобы кнопка была кликабельной */
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* Правая ближняя */
+.station-door--garage {
+  clip-path: polygon(0% 6%, 90% 0%, 90% 100%, 0% 90%);
+    cursor: pointer;
+    width: 5%;
+    height: 31%;
+    top: 54%;
+    left: 65%;
+    background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/door--garage.svg");
+  background-size: 130% 110%;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  /* чтобы кнопка была кликабельной */
+  border: none;
+  padding: 0;
+}
+
+
+/* Правая дальняя */
+.station-door--lab {
+  clip-path: polygon(0% 6%, 90% 0%, 90% 100%, 0% 91%);
+  cursor: pointer;
+  width: 9%;
+  height: 53%;
+  top: 43%;
+  left: 87%;
+
+  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/door--lab.svg");
+  background-size: 130% 110%;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  /* чтобы кнопка была кликабельной */
+  border: none;
+  padding: 0;
+}
+
+
+/* Hover-подсветка зоны (для отладки можно включить фон) */
+.station-door:hover {
+  outline: 2px solid rgb(2, 254, 86);
+}
+
+/* Анимация "открытия": псевдо-3D поворот */
+.station-door--opening {
+  transform-origin: left center;
+  animation: doorOpen 0.35s ease-out forwards;
+}
+
+@keyframes doorOpen {
+  0% {
+    transform: perspective(600px) rotateY(0deg) scale(1);
+  }
+  100% {
+    transform: perspective(600px) rotateY(-80deg) scale(1);
+  }
+}
