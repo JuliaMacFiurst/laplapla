@@ -7,7 +7,11 @@ import Day3Flight from "./pages/Day3Flight";
 import Day3Sail from "./pages/Day3Sail";
 import Day4Takeoff from "./pages/Day4Takeoff";
 import Day4StarsNav from "./pages/Day4StarsNav"; 
-import Day5Spitsbergen from "./pages/Day5Spitsbergen"; 
+import Day5Spitsbergen from "./pages/Day5Spitsbergen";
+import Day5Garage from "./pages/station-doors/Day5Garage";
+import Day5Heat from "./pages/station-doors/Day5Heat";
+import Day5Lab from "./pages/station-doors/Day5Lab";
+import Day6Expedition from "./pages/Day6Expedition";
 
 // дальше добавляем по мере создания
 
@@ -19,6 +23,10 @@ const PAGES = {
   day4_takeoff: Day4Takeoff,
   day4_sail: Day4StarsNav,
   day5_spitsbergen: Day5Spitsbergen,
+  day5_garage: Day5Garage,
+  day5_heat: Day5Heat,
+  day5_lab: Day5Lab,
+  day6_expedition: Day6Expedition,
   
 };
 

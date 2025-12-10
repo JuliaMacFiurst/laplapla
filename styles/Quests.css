@@ -1836,3 +1836,76 @@
     transform: perspective(600px) rotateY(-80deg) scale(1);
   }
 }
+
+.station-label {
+  position: absolute;
+  z-index: 20;
+  font-family: "Amatic SC", cursive;          /* уменьшили шрифт */
+  font-weight: 500;
+  color: #7CFFB2;
+
+  /* Внутренняя тёмная обводка */
+  -webkit-text-stroke: 2px rgba(5, 90, 5, 0.85);
+
+  /* Неоновое сияние вокруг */
+  text-shadow:
+    0 0 4px #7CFFB2,
+    0 0 8px #4CFF99,
+    0 0 14px rgba(0,255,150,0.8);
+
+  pointer-events: none;
+  white-space: nowrap;
+  animation: neonFlicker 2.2s infinite alternate ease-in-out;
+}
+
+@keyframes neonFlicker {
+  0% { opacity: 0.85; text-shadow: 0 0 4px #7CFFB2, 0 0 8px #4CFF99, 0 0 14px rgba(0,255,150,0.8); }
+  10% { opacity: 0.7; }
+  20% { opacity: 1; }
+  30% { opacity: 0.9; }
+  40% { opacity: 0.75; }
+  50% { opacity: 1; }
+  60% { opacity: 0.8; }
+  70% { opacity: 1; }
+  80% { opacity: 0.9; }
+  90% { opacity: 1; }
+  100% { opacity: 0.85; }
+}
+
+.station-label--garage {
+  font-size: 18px;  
+  top: 49%;
+  left: 63%;
+  transform: translateX(50%) perspective(20px) rotateZ(-24deg) skewX(-20deg);
+  transform-origin: left center;
+}
+.station-label--heat {
+  font-size: 16px;  
+  top: 52%;
+  left: 39%;
+  transform: translateX(-50%);
+}
+.station-label--lab {
+  font-size: 26px;  
+    top: 35%;
+    left: 80%;
+    transform: translateX(50%) perspective(20px) rotateZ(-24deg) skewX(-15deg);
+  transform-origin: left center;
+}
+
+.station-center-video {
+  z-index: 5;
+    pointer-events: none;
+    width: 48%;
+    position: absolute;
+    top: 80%;
+    left: 40%;
+    transform: translate(-50%, -50%);
+}
+
+.station-video-element {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  overflow: hidden;
+}
