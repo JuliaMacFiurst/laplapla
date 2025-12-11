@@ -1874,21 +1874,21 @@
 
 .station-label--garage {
   font-size: 18px;  
-  top: 49%;
+  top: 50%;
   left: 63%;
   transform: translateX(50%) perspective(20px) rotateZ(-24deg) skewX(-20deg);
   transform-origin: left center;
 }
 .station-label--heat {
   font-size: 16px;  
-  top: 52%;
+  top: 53%;
   left: 39%;
   transform: translateX(-50%);
 }
 .station-label--lab {
   font-size: 26px;  
-    top: 35%;
-    left: 80%;
+    top: 36%;
+    left: 82%;
     transform: translateX(50%) perspective(20px) rotateZ(-24deg) skewX(-15deg);
   transform-origin: left center;
 }
