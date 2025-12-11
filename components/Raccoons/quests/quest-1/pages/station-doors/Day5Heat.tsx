@@ -17,14 +17,7 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
         <h1 className="quest-title-text">Тепловой модуль</h1>
       </div>
 
-      {/* Контейнер под сцену — аккуратное расположение */}
-      <div
-        style={{
-          marginTop: "260px",   // <-- теперь персонаж ниже заголовка
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
+      <div className="dressup-container">
         <CharacterStage
           characters={[
             {

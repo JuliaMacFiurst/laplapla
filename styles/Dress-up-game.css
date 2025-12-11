@@ -1,0 +1,221 @@
+.dressup-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+
+  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/dress-up-bg.webp");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: top center;
+
+  /* Автоматическая подстройка под размер окна */
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: 1600 / 900;
+}
+
+.dressup-content {
+  position: absolute;
+  inset: 0;              /* растягиваем поверх фона */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none; /* чтобы клики проходили только на интерактив */
+}
+
+/* Разрешаем клик только интерактиву внутри контента */
+.dressup-content button,
+.dressup-content .clickable,
+.dressup-content .conveyor-item {
+  pointer-events: auto;
+}
+
+.dressup-stage-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1600 / 900;
+  transform: translate(-50%, -50%);
+}
+
+.dressup-character {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0%;                 /* регулируй положение относительно фона */
+  width: 26%;                  /* пропорциональный масштаб на всех экранах */
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+
+  /* лёгкая подсветка во время игры */
+  transition: filter 0.25s ease;
+}
+
+.running .dressup-character {
+  filter: drop-shadow(0 0 12px rgba(255,255,255,0.4));
+}
+
+/* Контейнер всей игры — управляет позицией фона и персонажа */
+.dressup-container {
+  position: relative;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  overflow: hidden;
+
+  /* чтобы фон и персонаж были в нужном координатном слое */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  /* создаём контекст для абсолютного позиционирования персонажа */
+  isolation: isolate;
+}
+
+.dressup-belt {
+  position: absolute;
+  bottom: -1%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.7;
+
+  width: 100%;
+  max-width: 1600px; /* подстраивается под размер сцены */
+  height: auto;
+
+  pointer-events: none; /* чтобы клики уходили одежде, а не в картинку */
+
+  z-index: 5; /* выше фона, но ниже одежды и персонажа */
+}
+
+.dressup-scoreboard {
+  position: absolute;
+  top: 2%;
+  left: 2%;
+  width: 220px;
+  height: auto;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.dressup-scoreboard-values {
+  position: absolute;
+  top: 4%;
+  left: 4%;
+  width: 160px;
+  height: 80px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 8px;
+  z-index: 11;
+  font-family: "Amatic SC", cursive;
+  font-weight: bold;
+  font-size: 38px;
+  pointer-events: none;
+}
+
+.good-score {
+  color: #239a2c; /* мягкий зелёный */
+  text-shadow: 0 0 6px rgba(110, 255, 122, 0.6);
+}
+
+.bad-score {
+  color: #f61d1d; /* пастельный красный */
+  text-shadow: 0 0 6px rgba(255, 107, 107, 0.6);
+}
+
+.dressup-stopwatch {
+  position:absolute;
+  top:2%;
+  right:10%;
+  width:100px;
+  height:auto;
+  z-index:15;
+  pointer-events:none;
+}
+
+.stopwatch-bg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.stopwatch-hand {
+  position: absolute;
+
+  width: 47%;
+  height: auto;
+
+  top: 31%;
+  left: 31%;
+
+  /* Центр вращения — там, где шарик */
+  transform-origin: 38% 67%;
+
+  z-index: 16;
+  pointer-events: none;
+}
+
+.stopwatch-digits {
+  position:absolute;
+  top:74%;
+  right:43%;
+  height:40px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:"Amatic SC", cursive;
+  font-size:27px;
+  font-weight: 800px;
+  color:#d70000;
+  text-shadow:0 0 6px rgba(255,60,60,0.7);
+  z-index:17;
+  pointer-events:none;
+}
+
+.dressup-start-btn {
+  position: absolute;
+  z-index: 20;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 220px;
+  height: 220px;
+
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+
+  /* вместо градиента — картинка */
+  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/start-btn.webp");
+  background-size: contain;       /* чтобы целиком влезала */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: transparent;
+
+  /* лёгкая тень вокруг кнопки */
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.3),
+    inset 0 0 6px rgba(0, 0, 0, 0.15);
+
+  font-size: 0; /* текст не нужен, иконка в картинке */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* ПУЛЬСАЦИЯ остаётся */
+  animation: startPulse 2s ease-in-out infinite;
+}
+
+.dressup-start-btn:active {
+  transform: translateX(-50%) scale(0.92);
+}
