@@ -6,7 +6,6 @@ import CharacterStage from "../../logic/dress-up-game/CharacterStage";
 export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
   return (
     <div className="quest-page-bg">
-
       {/* Заголовок страницы */}
       <div className="quest-title-wrapper">
         <img
@@ -22,8 +21,20 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
           characters={[
             {
               name: "Stas",
-              img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Stas/Stas.webp"
-            }
+              img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Stas/Stas.webp",
+            },
+            {
+              name: "Clare",
+              img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Clare/Clare.webp",
+            },
+            {
+              name: "Sam",
+              img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Sam/Sam.webp",
+            },
+            {
+              name: "Matilda",
+              img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
+            },
           ]}
           onCharacterSelected={(char) => {
             console.log("Selected character:", char);
@@ -43,7 +54,6 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
           ← Вернуться на станцию
         </button>
       </div>
-
     </div>
   );
 }

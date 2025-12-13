@@ -200,7 +200,7 @@
   pointer-events: none;
 }
 
-.dressup-start-btn {
+.dressup-start-btn{
   position: absolute;
   z-index: 20;
   bottom: 30%;
@@ -236,6 +236,113 @@
 
 .dressup-start-btn:active {
   transform: translateX(-50%) scale(0.92);
+}
+
+.dressup-restart-btn {
+   position: absolute;
+  z-index: 20;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 220px;
+  height: 220px;
+
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+
+  /* вместо градиента — картинка */
+  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/restart-button.webp");
+  background-size: contain; /* чтобы целиком влезала */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: transparent;
+
+  /* лёгкая тень вокруг кнопки */
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3), inset 0 0 6px rgba(0, 0, 0, 0.15);
+
+  font-size: 0; /* текст не нужен, иконка в картинке */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* ПУЛЬСАЦИЯ остаётся */
+  animation: startPulse 2s ease-in-out infinite;
+}
+
+.dressup-restart-btn:active {
+  transform: translateX(-50%) scale(0.92) rotate(20deg);
+}
+
+.dressup-next-character-btn {
+   position: absolute;
+  z-index: 20;
+  bottom: 15%;
+  right: 5%;
+
+  width: 100px;
+  height: 100px;
+
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+
+  /* вместо градиента — картинка */
+  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/Next-button.webp");
+  background-size: contain; /* чтобы целиком влезала */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: transparent;
+
+  font-size: 0; /* текст не нужен, иконка в картинке */
+}
+
+.dressup-next-character-btn:active {
+  transform: scale(0.92);
+}
+
+.dressup-spinner {
+  position: absolute;
+  z-index: 21; /* выше кнопок */
+
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 160px;
+  height: 160px;
+
+  background-image: url("/spinners/game-spinner.webp");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  pointer-events: none; /* чтобы не блокировал игру */
+
+  animation: spinnerPulse 1.6s ease-in-out infinite,
+             spinnerRotate 2.4s linear infinite;
+}
+
+@keyframes spinnerRotate {
+  from {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+@keyframes spinnerPulse {
+  0%, 100% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 6px rgba(80, 200, 120, 0.4));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(80, 200, 120, 0.8));
+  }
 }
 
 .clothes-conveyor {
@@ -367,13 +474,19 @@
 }
 
 /* Нижние слои */
-.dressup-Winter-boots {
+.dressup-Summer-boots,
+.dressup-Summer-top,
+.dressup-Summer-skirt,
+.dressup-Summer-sandals,
+.dressup-Summer-socks,
+.dressup-Summer-dress {
   z-index: 11;
 }
 
 /* Брюки / юбка */
 .dressup-Summer-pants,
-.dressup-Mid-season-coat {
+.dressup-Mid-season-coat,
+.dressup-Summer-jacket {
   z-index: 12;
 }
 
@@ -383,12 +496,14 @@
 }
 
 /* Аксессуары */
-.dressup-Winter-scarf {
+.dressup-Winter-scarf,
+.dressup-Mid-season-scarf {
   z-index: 14;
 }
 
 /* Самый верх */
 .dressup-Winter-hat,
-.dressup-Summer-hat {
+.dressup-Summer-hat,
+.dressup-Winter-boots {
   z-index: 15;
 }

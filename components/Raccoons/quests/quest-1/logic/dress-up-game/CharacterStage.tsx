@@ -35,21 +35,35 @@ export default function CharacterStage({
     );
   }
 
-  // TEMPORARY FALLBACK: если персонажи не переданы, показываем Стаса
+  // TEMPORARY FALLBACK: если персонажи не переданы, показываем Стаса и Клэр
   const fallbackCharacters: Character[] = [
     {
       name: "Stas",
       img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Stas/Stas.webp",
     },
+    {
+      name: "Clare",
+      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Clare/Clare.webp",
+    },
+    {
+      name: "Sam",
+      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Sam/Sam.webp"
+    },
+    {
+      name: "Matilda",
+      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Matilda/Matilda.webp"
+    }
   ];
 
   const finalCharacters =
     characters.length > 0 ? characters : fallbackCharacters;
 
   const [index, setIndex] = useState(0);
+  const totalCharacters = finalCharacters.length;
   // const [canSwitch, setCanSwitch] = useState(false); // активируется после завершения ленты
   const [goodScore, setGoodScore] = useState(0);
   const [badScore, setBadScore] = useState(0);
+  const [allClothes, setAllClothes] = useState<ClothesItem[]>([]);
   const [clothes, setClothes] = useState<ClothesItem[]>([]);
   const [dressedItems, setDressedItems] = useState<{ id: string; season: string }[]>([]);
 
@@ -57,13 +71,18 @@ export default function CharacterStage({
   const [timerRunning, setTimerRunning] = useState(false);
   const [handRotation, setHandRotation] = useState(0);
 
+  const [characterLoading, setCharacterLoading] = useState(false);
+
   const safeIndex = Math.min(index, finalCharacters.length - 1);
   const current = finalCharacters[safeIndex];
 
   useEffect(() => {
     async function load() {
+      setCharacterLoading(true);
       const items = await loadClothesForCharacter(current.name);
+      setAllClothes(items);
       setClothes(items);
+      setCharacterLoading(false);
     }
     load();
   }, [current]);
@@ -171,6 +190,9 @@ export default function CharacterStage({
           <div className="good-score">+{goodScore}</div>
           <div className="bad-score">-{Math.abs(badScore)}</div>
         </div>
+        <div className="dressup-character-counter">
+          {index + 1} / {totalCharacters}
+        </div>
         <div className="dressup-stopwatch">
           <img
             src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/Stopwatch.webp"
@@ -217,29 +239,32 @@ export default function CharacterStage({
           })}
           </div>
         </div>
-        {/* КНОПКА СЛЕДУЮЩЕГО ПЕРСОНАЖА */}
-        {/*
-        <button
-          onClick={nextCharacter}
-          disabled={!canSwitch}
-          style={{
-            position: "absolute",
-            right: "-80px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            fontSize: "40px",
-            background: canSwitch ? "#fff" : "#999",
-            opacity: canSwitch ? 1 : 0.4,
-            border: "none",
-            borderRadius: "50%",
-            width: "60px",
-            height: "60px",
-            cursor: canSwitch ? "pointer" : "default",
-          }}
-        >
-          👉
-        </button>
-        */}
+        {/* TODO (final stage): accumulate character results into global score
+            and push dressed characters into final summary screen */}
+        {!timerRunning && timeLeft <= 0 && (
+          <button
+            className="dressup-next-character-btn"
+            onClick={() => {
+              const next = index + 1;
+
+              if (next >= finalCharacters.length) {
+                // TODO: здесь позже будет финальный экран со всеми персонажами и суммарным счётом
+                return;
+              }
+
+              setIndex(next);
+
+              // сброс состояния игры под нового персонажа
+              setTimerRunning(false);
+              setTimeLeft(15);
+              setHandRotation(0);
+              setGoodScore(0);
+              setBadScore(0);
+              setDressedItems([]);
+              setClothes([]);
+            }}
+          />
+        )}
 
         {/* ЛЕНТА С ОДЕЖДОЙ И КНОПКА СТАРТ */}
         <img
@@ -247,8 +272,40 @@ export default function CharacterStage({
           alt="clothes belt"
           className="dressup-belt"
         />
+        {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
         {!timerRunning && (
-          <button onClick={startGame} className="dressup-start-btn" />
+          characterLoading ? (
+            <img
+              src="/spinners/game-spinner.webp"
+              alt="loading"
+              className="dressup-spinner"
+            />
+          ) : (
+            <button onClick={startGame} className="dressup-start-btn" />
+          )
+        )}
+        {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
+        {!timerRunning && dressedItems.length > 0 && (
+          characterLoading ? (
+            <img
+              src="/spinners/game-spinner.webp"
+              alt="loading"
+              className="dressup-spinner"
+            />
+          ) : (
+            <button
+              className="dressup-restart-btn"
+              onClick={() => {
+                setClothes(allClothes);
+                setDressedItems([]);
+                setGoodScore(0);
+                setBadScore(0);
+                setTimeLeft(15);
+                setHandRotation(0);
+                setTimerRunning(true);
+              }}
+            />
+          )
         )}
 
         {timerRunning && clothes.length > 0 && (
