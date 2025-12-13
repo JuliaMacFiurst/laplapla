@@ -194,6 +194,7 @@ export default function CharacterStage({
             handleDrop(itemId);
           }}
         >
+          <div className="dressup-character-wrapper">
           <img
             src={current.img}
             alt={current.name}
@@ -214,6 +215,7 @@ export default function CharacterStage({
               />
             );
           })}
+          </div>
         </div>
         {/* КНОПКА СЛЕДУЮЩЕГО ПЕРСОНАЖА */}
         {/*

@@ -45,18 +45,36 @@
   transform: translate(-50%, -50%);
 }
 
-.dressup-character {
+.dressup-character-wrapper {
   position: absolute;
   left: 50%;
+  top: -0%;
   transform: translateX(-50%);
-  top: 0%; /* регулируй положение относительно фона */
-  width: 26%; /* пропорциональный масштаб на всех экранах */
+
+  width: 26%;
+  height: auto;
+
+  z-index: 10;
+}
+
+.dressup-character-wrapper.drag-over {
+  filter: drop-shadow(0 0 16px rgba(120, 255, 200, 0.6));
+}
+
+.dressup-character {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.dressup-clothing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: auto;
   pointer-events: none;
-  user-select: none;
-
-  /* лёгкая подсветка во время игры */
-  transition: filter 0.25s ease;
+  z-index: 20;
 }
 
 .running .dressup-character {
@@ -279,21 +297,7 @@
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
 }
 
-.dressup-character-wrapper {
-  position: absolute;
-  left: 50%;
-  top: 18%;
-  transform: translateX(-50%);
 
-  width: 26%;
-  height: auto;
-
-  z-index: 10;
-}
-
-.dressup-character-wrapper.drag-over {
-  filter: drop-shadow(0 0 16px rgba(120, 255, 200, 0.6));
-}
 
 .dressed-items-layer {
   position: absolute;
@@ -362,105 +366,29 @@
   }
 }
 
-/* ЗИМНЯЯ ОДЕЖДА */
+/* Нижние слои */
+.dressup-Winter-boots {
+  z-index: 11;
+}
 
-/* Куртка */
+/* Брюки / юбка */
+.dressup-Summer-pants,
+.dressup-Mid-season-coat {
+  z-index: 12;
+}
+
+/* Куртки / пальто */
 .dressup-Winter-jacket {
-  top: 22%;
-  left: 18%;
-  width: 64%;
   z-index: 13;
 }
 
-/* Шарф */
+/* Аксессуары */
 .dressup-Winter-scarf {
-  top: 16%;
-  left: 30%;
-  width: 40%;
   z-index: 14;
 }
 
-/* Перчатки */
-.dressup-Winter-gloves {
-  top: 38%;
-  left: 10%;
-  width: 80%;
-  z-index: 12;
-}
-
-/* Ботинки */
-.dressup-Winter-boots {
-  top: 70%;
-  left: 22%;
-  width: 56%;
-  z-index: 11;
-}
-
-.dressup-Mid-season-coat {
-  top: 24%;
-  left: 20%;
-  width: 60%;
-  z-index: 13;
-}
-
-/* =========================
-   MID-SEASON
-   ========================= */
-.dressup-Mid-season-coat {
-  top: 24%;
-  left: 20%;
-  width: 60%;
-  z-index: 13;
-}
-
-.dressup-Mid-season-hat {
-  top: 10%;
-  left: 34%;
-  width: 32%;
-  z-index: 15;
-}
-
-.dressup-Mid-season-gloves {
-  top: 40%;
-  left: 12%;
-  width: 76%;
-  z-index: 12;
-}
-
-.dressup-Mid-season-boots {
-  top: 70%;
-  left: 24%;
-  width: 52%;
-}
-
-/* =========================
-   SUMMER
-   ========================= */
-
-.dressup-Summer-top {
-  top: 26%;
-  left: 22%;
-  width: 56%;
-  z-index: 13;
-}
-
-.dressup-Summer-pants {
-  top: 48%;
-  left: 26%;
-  width: 48%;
-  z-index: 12;
-}
-
+/* Самый верх */
+.dressup-Winter-hat,
 .dressup-Summer-hat {
-  top: 8%;
-  left: 34%;
-  width: 32%;
   z-index: 15;
-}
-
-.dressup-Summer-boots {
-  top: 72%;
-  left: 26%;
-  width: 48%;
-  z-index: 11;
 }
