@@ -1,6 +1,5 @@
 .dressup-stage {
   position: relative;
-  width: 100%;
   max-width: 1600px;
   margin: 0 auto;
 
@@ -17,12 +16,16 @@
 
 .dressup-content {
   position: absolute;
-  inset: 0;              /* растягиваем поверх фона */
+  inset: 0; /* растягиваем поверх фона */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  pointer-events: none; /* чтобы клики проходили только на интерактив */
+  pointer-events: auto; /* чтобы клики проходили только на интерактив */
+}
+
+.dressup-content * {
+  pointer-events: auto;
 }
 
 /* Разрешаем клик только интерактиву внутри контента */
@@ -46,8 +49,8 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 0%;                 /* регулируй положение относительно фона */
-  width: 26%;                  /* пропорциональный масштаб на всех экранах */
+  top: 0%; /* регулируй положение относительно фона */
+  width: 26%; /* пропорциональный масштаб на всех экранах */
   height: auto;
   pointer-events: none;
   user-select: none;
@@ -57,7 +60,7 @@
 }
 
 .running .dressup-character {
-  filter: drop-shadow(0 0 12px rgba(255,255,255,0.4));
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4));
 }
 
 /* Контейнер всей игры — управляет позицией фона и персонажа */
@@ -132,13 +135,13 @@
 }
 
 .dressup-stopwatch {
-  position:absolute;
-  top:2%;
-  right:10%;
-  width:100px;
-  height:auto;
-  z-index:15;
-  pointer-events:none;
+  position: absolute;
+  top: 2%;
+  right: 10%;
+  width: 100px;
+  height: auto;
+  z-index: 15;
+  pointer-events: none;
 }
 
 .stopwatch-bg {
@@ -164,20 +167,19 @@
 }
 
 .stopwatch-digits {
-  position:absolute;
-  top:74%;
-  right:43%;
-  height:40px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-family:"Amatic SC", cursive;
-  font-size:27px;
-  font-weight: 800px;
-  color:#d70000;
-  text-shadow:0 0 6px rgba(255,60,60,0.7);
-  z-index:17;
-  pointer-events:none;
+  position: absolute;
+  top: 74%;
+  right: 43%;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: "Amatic SC", cursive;
+  font-size: 27px;
+  color: #d70000;
+  text-shadow: 0 0 6px rgba(255, 60, 60, 0.7);
+  z-index: 17;
+  pointer-events: none;
 }
 
 .dressup-start-btn {
@@ -196,15 +198,13 @@
 
   /* вместо градиента — картинка */
   background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/start-btn.webp");
-  background-size: contain;       /* чтобы целиком влезала */
+  background-size: contain; /* чтобы целиком влезала */
   background-repeat: no-repeat;
   background-position: center;
   background-color: transparent;
 
   /* лёгкая тень вокруг кнопки */
-  box-shadow:
-    0 0 12px rgba(0, 0, 0, 0.3),
-    inset 0 0 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3), inset 0 0 6px rgba(0, 0, 0, 0.15);
 
   font-size: 0; /* текст не нужен, иконка в картинке */
 
@@ -218,4 +218,249 @@
 
 .dressup-start-btn:active {
   transform: translateX(-50%) scale(0.92);
+}
+
+.clothes-conveyor {
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 100%;
+  max-width: 1600px;
+  height: 140px;
+
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+
+  z-index: 8;
+  pointer-events: auto; /* кликаем только по айтемам */
+}
+
+.clothes-conveyor-track {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+
+  flex-wrap: nowrap;
+}
+
+@keyframes conveyorMove {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-200%);
+  }
+}
+
+.conveyor-item {
+  height: auto; /* подбирай под высоту ленты */
+  width: 140px;
+  flex: 0 0 auto;
+
+  cursor: grab;
+  user-select: none;
+  pointer-events: auto;
+
+  transition: transform 0.2s ease, filter 0.2s ease;
+
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+.conveyor-item:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+.conveyor-item:hover {
+  transform: scale(1.08);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+.dressup-character-wrapper {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+
+  width: 26%;
+  height: auto;
+
+  z-index: 10;
+}
+
+.dressup-character-wrapper.drag-over {
+  filter: drop-shadow(0 0 16px rgba(120, 255, 200, 0.6));
+}
+
+.dressed-items-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.dressed-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: auto;
+
+  animation: dressAppear 0.25s ease-out forwards;
+}
+
+@keyframes dressAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.drop-success {
+  animation: successFlash 0.3s ease-out;
+}
+
+@keyframes successFlash {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(0, 255, 150, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(0, 255, 150, 0.9));
+  }
+  100% {
+    filter: none;
+  }
+}
+
+.drop-fail {
+  animation: failShake 0.3s ease-in-out;
+}
+
+@keyframes failShake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-4px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* ЗИМНЯЯ ОДЕЖДА */
+
+/* Куртка */
+.dressup-Winter-jacket {
+  top: 22%;
+  left: 18%;
+  width: 64%;
+  z-index: 13;
+}
+
+/* Шарф */
+.dressup-Winter-scarf {
+  top: 16%;
+  left: 30%;
+  width: 40%;
+  z-index: 14;
+}
+
+/* Перчатки */
+.dressup-Winter-gloves {
+  top: 38%;
+  left: 10%;
+  width: 80%;
+  z-index: 12;
+}
+
+/* Ботинки */
+.dressup-Winter-boots {
+  top: 70%;
+  left: 22%;
+  width: 56%;
+  z-index: 11;
+}
+
+.dressup-Mid-season-coat {
+  top: 24%;
+  left: 20%;
+  width: 60%;
+  z-index: 13;
+}
+
+/* =========================
+   MID-SEASON
+   ========================= */
+.dressup-Mid-season-coat {
+  top: 24%;
+  left: 20%;
+  width: 60%;
+  z-index: 13;
+}
+
+.dressup-Mid-season-hat {
+  top: 10%;
+  left: 34%;
+  width: 32%;
+  z-index: 15;
+}
+
+.dressup-Mid-season-gloves {
+  top: 40%;
+  left: 12%;
+  width: 76%;
+  z-index: 12;
+}
+
+.dressup-Mid-season-boots {
+  top: 70%;
+  left: 24%;
+  width: 52%;
+}
+
+/* =========================
+   SUMMER
+   ========================= */
+
+.dressup-Summer-top {
+  top: 26%;
+  left: 22%;
+  width: 56%;
+  z-index: 13;
+}
+
+.dressup-Summer-pants {
+  top: 48%;
+  left: 26%;
+  width: 48%;
+  z-index: 12;
+}
+
+.dressup-Summer-hat {
+  top: 8%;
+  left: 34%;
+  width: 32%;
+  z-index: 15;
+}
+
+.dressup-Summer-boots {
+  top: 72%;
+  left: 26%;
+  width: 48%;
+  z-index: 11;
 }

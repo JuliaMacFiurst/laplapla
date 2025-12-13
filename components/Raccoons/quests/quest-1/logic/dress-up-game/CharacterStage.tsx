@@ -47,10 +47,11 @@ export default function CharacterStage({
     characters.length > 0 ? characters : fallbackCharacters;
 
   const [index, setIndex] = useState(0);
-  const [canSwitch, setCanSwitch] = useState(false); // активируется после завершения ленты
+  // const [canSwitch, setCanSwitch] = useState(false); // активируется после завершения ленты
   const [goodScore, setGoodScore] = useState(0);
   const [badScore, setBadScore] = useState(0);
   const [clothes, setClothes] = useState<ClothesItem[]>([]);
+  const [dressedItems, setDressedItems] = useState<{ id: string; season: string }[]>([]);
 
   const [timeLeft, setTimeLeft] = useState(15);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -83,9 +84,10 @@ export default function CharacterStage({
   function startGame() {
     setTimeLeft(15);
     setTimerRunning(true);
-    setCanSwitch(false);
+    // setCanSwitch(false);
     setGoodScore(0);
     setBadScore(0);
+    setDressedItems([]);
 
     onStartGame();
 
@@ -94,7 +96,7 @@ export default function CharacterStage({
   }
 
   function nextCharacter() {
-    if (!canSwitch) return;
+    // if (!canSwitch) return;
 
     const next = (index + 1) % finalCharacters.length;
     setIndex(next);
@@ -104,6 +106,57 @@ export default function CharacterStage({
     setTimeLeft(15);
     setGoodScore(0);
     setBadScore(0);
+    setDressedItems([]);
+  }
+
+  function seasonFromId(id: string): "winter-clothes" | "summer-clothes" | "mid-season" {
+    if (id.startsWith("Winter-")) return "winter-clothes";
+    if (id.startsWith("Summer-")) return "summer-clothes";
+    // default for Mid-season-*
+    return "mid-season";
+  }
+
+  function handleDrop(itemId: string) {
+    console.log("[DressUp][DROP] raw itemId:", itemId);
+    if (!itemId) return;
+
+    // Normalize itemId: remove .webp extension and -dressed suffix if present
+    let normalizedId = itemId;
+    if (normalizedId.endsWith(".webp")) {
+      normalizedId = normalizedId.slice(0, -5);
+    }
+    if (normalizedId.endsWith("-dressed")) {
+      normalizedId = normalizedId.slice(0, -8);
+    }
+
+    console.log("[DressUp][DROP] normalizedId:", normalizedId);
+    console.log("[DressUp][DROP] current character:", current?.name);
+
+    if (dressedItems.some((di) => di.id === normalizedId)) {
+      console.log("[DressUp][DROP] already dressed:", normalizedId);
+      return;
+    }
+
+    const item = clothes.find((c) => c.id === normalizedId);
+    console.log("[DressUp][DROP] found item in clothes:", item);
+
+    if (!item) {
+      console.warn("[DressUp][DROP] item NOT found in clothes, ignoring drop:", normalizedId);
+      return;
+    }
+
+    const season = seasonFromId(normalizedId);
+    const dressedSrc = `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/${current.name}/${season}/${normalizedId}-dressed.webp`;
+    console.log("[DressUp][DROP] dressed image src:", dressedSrc);
+
+    if (item.score > 0) {
+      setGoodScore((s) => s + item.score);
+    } else {
+      setBadScore((s) => s + Math.abs(item.score));
+    }
+
+    setDressedItems((prev) => [...prev, { id: normalizedId, season }]);
+    setClothes((prev) => prev.filter((c) => c.id !== normalizedId));
   }
 
   return (
@@ -132,14 +185,38 @@ export default function CharacterStage({
         </div>
 
         {/* ПЕРСОНАЖ */}
-        <div className="dressup-stage-inner">
+        <div
+          className="dressup-stage-inner dressup-dropzone"
+          data-testid="dressup-dropzone"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            const itemId = e.dataTransfer.getData("text/plain");
+            handleDrop(itemId);
+          }}
+        >
           <img
             src={current.img}
             alt={current.name}
             className="dressup-character"
           />
+          {dressedItems.map(({ id, season }) => {
+            const src = `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
+            console.log("[DressUp][RENDER] dressed item:", id, src);
+
+            return (
+              <img
+                key={id}
+                src={src}
+                className={`dressup-clothing dressup-${id}`}
+                alt=""
+                onLoad={() => console.log("[DressUp][IMG LOADED]", src)}
+                onError={() => console.error("[DressUp][IMG ERROR]", src)}
+              />
+            );
+          })}
         </div>
         {/* КНОПКА СЛЕДУЮЩЕГО ПЕРСОНАЖА */}
+        {/*
         <button
           onClick={nextCharacter}
           disabled={!canSwitch}
@@ -160,6 +237,7 @@ export default function CharacterStage({
         >
           👉
         </button>
+        */}
 
         {/* ЛЕНТА С ОДЕЖДОЙ И КНОПКА СТАРТ */}
         <img
@@ -171,15 +249,10 @@ export default function CharacterStage({
           <button onClick={startGame} className="dressup-start-btn" />
         )}
 
-        {timerRunning && (
+        {timerRunning && clothes.length > 0 && (
           <ClothesConveyor
             items={clothes}
             speed={1.3}
-            onPick={(item) => {
-              console.log("Нажали на одежду", item);
-              if (item.score > 0) setGoodScore((s) => s + item.score);
-              else setBadScore((s) => s + Math.abs(item.score));
-            }}
           />
         )}
       </div>
