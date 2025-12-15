@@ -35,6 +35,14 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
               name: "Matilda",
               img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
             },
+            {
+              name: "Joe",
+              img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Joe/Joe.webp"
+            },
+            {
+              name: "Tamara",
+              img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Tamara/Tamara.webp"         
+            }
           ]}
           onCharacterSelected={(char) => {
             console.log("Selected character:", char);

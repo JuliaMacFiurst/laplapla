@@ -47,12 +47,20 @@ export default function CharacterStage({
     },
     {
       name: "Sam",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Sam/Sam.webp"
+      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Sam/Sam.webp",
     },
     {
       name: "Matilda",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Matilda/Matilda.webp"
-    }
+      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
+    },
+    {
+      name: "Joe",
+      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Joe/Joe.webp",
+    },
+    {
+      name: "Tamara",
+      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Tamara/Tamara.webp",
+    },
   ];
 
   const finalCharacters =
@@ -65,7 +73,9 @@ export default function CharacterStage({
   const [badScore, setBadScore] = useState(0);
   const [allClothes, setAllClothes] = useState<ClothesItem[]>([]);
   const [clothes, setClothes] = useState<ClothesItem[]>([]);
-  const [dressedItems, setDressedItems] = useState<{ id: string; season: string }[]>([]);
+  const [dressedItems, setDressedItems] = useState<
+    { id: string; season: string }[]
+  >([]);
 
   const [timeLeft, setTimeLeft] = useState(15);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -128,7 +138,9 @@ export default function CharacterStage({
     setDressedItems([]);
   }
 
-  function seasonFromId(id: string): "winter-clothes" | "summer-clothes" | "mid-season" {
+  function seasonFromId(
+    id: string
+  ): "winter-clothes" | "summer-clothes" | "mid-season" {
     if (id.startsWith("Winter-")) return "winter-clothes";
     if (id.startsWith("Summer-")) return "summer-clothes";
     // default for Mid-season-*
@@ -160,7 +172,10 @@ export default function CharacterStage({
     console.log("[DressUp][DROP] found item in clothes:", item);
 
     if (!item) {
-      console.warn("[DressUp][DROP] item NOT found in clothes, ignoring drop:", normalizedId);
+      console.warn(
+        "[DressUp][DROP] item NOT found in clothes, ignoring drop:",
+        normalizedId
+      );
       return;
     }
 
@@ -217,26 +232,26 @@ export default function CharacterStage({
           }}
         >
           <div className="dressup-character-wrapper">
-          <img
-            src={current.img}
-            alt={current.name}
-            className="dressup-character"
-          />
-          {dressedItems.map(({ id, season }) => {
-            const src = `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
-            console.log("[DressUp][RENDER] dressed item:", id, src);
+            <img
+              src={current.img}
+              alt={current.name}
+              className="dressup-character"
+            />
+            {dressedItems.map(({ id, season }) => {
+              const src = `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
+              console.log("[DressUp][RENDER] dressed item:", id, src);
 
-            return (
-              <img
-                key={id}
-                src={src}
-                className={`dressup-clothing dressup-${id}`}
-                alt=""
-                onLoad={() => console.log("[DressUp][IMG LOADED]", src)}
-                onError={() => console.error("[DressUp][IMG ERROR]", src)}
-              />
-            );
-          })}
+              return (
+                <img
+                  key={id}
+                  src={src}
+                  className={`dressup-clothing dressup-${id}`}
+                  alt=""
+                  onLoad={() => console.log("[DressUp][IMG LOADED]", src)}
+                  onError={() => console.error("[DressUp][IMG ERROR]", src)}
+                />
+              );
+            })}
           </div>
         </div>
         {/* TODO (final stage): accumulate character results into global score
@@ -273,8 +288,8 @@ export default function CharacterStage({
           className="dressup-belt"
         />
         {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
-        {!timerRunning && (
-          characterLoading ? (
+        {!timerRunning &&
+          (characterLoading ? (
             <img
               src="/spinners/game-spinner.webp"
               alt="loading"
@@ -282,11 +297,11 @@ export default function CharacterStage({
             />
           ) : (
             <button onClick={startGame} className="dressup-start-btn" />
-          )
-        )}
+          ))}
         {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
-        {!timerRunning && dressedItems.length > 0 && (
-          characterLoading ? (
+        {!timerRunning &&
+          dressedItems.length > 0 &&
+          (characterLoading ? (
             <img
               src="/spinners/game-spinner.webp"
               alt="loading"
@@ -305,14 +320,10 @@ export default function CharacterStage({
                 setTimerRunning(true);
               }}
             />
-          )
-        )}
+          ))}
 
         {timerRunning && clothes.length > 0 && (
-          <ClothesConveyor
-            items={clothes}
-            speed={1.3}
-          />
+          <ClothesConveyor items={clothes} speed={1.3} />
         )}
       </div>
     </div>
