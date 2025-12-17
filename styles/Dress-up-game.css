@@ -14,6 +14,22 @@
   aspect-ratio: 1600 / 900;
 }
 
+.final-summary-stage {
+   position: relative;
+  max-width: 1600px;
+  margin: 0 auto;
+
+  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/final-bg.webp");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: top center;
+
+  /* Автоматическая подстройка под размер окна */
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: 1600 / 900;
+}
+
 .dressup-content {
   position: absolute;
   inset: 0; /* растягиваем поверх фона */
@@ -150,6 +166,18 @@
 .bad-score {
   color: #f61d1d; /* пастельный красный */
   text-shadow: 0 0 6px rgba(255, 107, 107, 0.6);
+}
+
+.dressup-character-counter {
+  position: absolute;
+  top: 110px;          /* под табло очков */
+  left: 76px;          /* та же ось, что и scoreboard */
+  font-family: "Amatic SC", cursive;
+  font-size: 28px;
+  color: #1b9337;
+  text-shadow: 0 0 6px rgba(120, 255, 190, 0.6);
+  z-index: 20;
+  pointer-events: none;
 }
 
 .dressup-stopwatch {
@@ -474,36 +502,193 @@
 }
 
 /* Нижние слои */
+.dressup-Summer-skirt,
+.dressup-Summer-pants {
+  z-index: 10;
+}
+
 .dressup-Summer-boots,
 .dressup-Summer-top,
-.dressup-Summer-skirt,
 .dressup-Summer-sandals,
 .dressup-Summer-socks,
-.dressup-Summer-dress {
+.dressup-Summer-dress,
+.dressup-Winter-hat {
   z-index: 11;
 }
 
 /* Брюки / юбка */
 .dressup-Summer-pants,
 .dressup-Mid-season-coat,
-.dressup-Summer-jacket {
+.dressup-Summer-jacket,
+.dressup-Mid-season-sweater {
   z-index: 12;
 }
 
 /* Куртки / пальто */
-.dressup-Winter-jacket {
+.dressup-Winter-jacket,
+.dressup-Winter-jumpsuit {
   z-index: 13;
 }
 
 /* Аксессуары */
 .dressup-Winter-scarf,
-.dressup-Mid-season-scarf {
+.dressup-Mid-season-scarf,
+.dressup-Mid-season-boots {
   z-index: 14;
 }
 
 /* Самый верх */
-.dressup-Winter-hat,
 .dressup-Summer-hat,
 .dressup-Winter-boots {
   z-index: 15;
+}
+
+.final-summary-characters {
+  position: relative;
+  inset: 0;
+  width: 100%;
+  height: 100%; 
+  z-index: 10;
+
+  pointer-events: none; /* это финал, кликов не нужно */
+}
+
+.final-summary-avatar {
+  position: relative;
+  width: 100%;
+  transform: scale(0.9);
+  transform-origin: bottom center;
+}
+
+.final-summary-base {
+  width: 100%;
+  height: auto;
+}
+
+.final-summary-dressed-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: auto;
+
+  pointer-events: none;
+}
+
+.final-summary-slot {
+  position: absolute;
+
+  width: 18%;          /* подогнано под 6 персонажей */
+  max-width: 280px;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+
+  pointer-events: none;
+}
+
+.final-summary-slot-1 {
+  left: 6%;
+  top: 46%;
+  z-index: 6;
+}
+
+.final-summary-slot-2 {
+  left: 4%;
+  top: 24%;
+  z-index: 5;
+}
+
+.final-summary-slot-3 {
+  left: 40%;
+  top: 22%;
+}
+
+.final-summary-slot-4 {
+  left: 43%;
+  top: 55%;
+}
+
+.final-summary-slot-5 {
+  left: 77%;
+  top: 24%;
+}
+
+.final-summary-slot-6 {
+  left: 79%;
+  top: 47%;
+}
+
+.final-summary-total-score {
+  position: absolute;
+  bottom: 4%;              /* аккуратно над нижним краем сцены */
+  left: 50%;
+  transform: translateX(-50%);
+
+  font-family: "Amatic SC", cursive;
+  font-size: 56px;
+  font-weight: bold;
+
+  color: #1b9337;          /* фирменный зелёный */
+  text-shadow:
+    0 0 8px rgba(120, 255, 190, 0.7),
+    0 0 18px rgba(120, 255, 190, 0.45);
+
+  z-index: 30;
+  pointer-events: none;
+  text-align: center;
+}
+
+.final-summary-character-score {
+  margin-top: 8px;
+
+  font-family: "Amatic SC", cursive;
+  font-size: 34px;
+  font-weight: bold;
+
+  color: #22b455;          /* более яркий зелёный */
+  text-shadow:
+    0 0 6px rgba(120, 255, 180, 0.7),
+    0 0 12px rgba(120, 255, 180, 0.4);
+
+  text-align: center;
+  pointer-events: none;
+}
+
+.final-summary-character {
+  position: relative;
+  width: 100%;
+  height: auto;
+
+  display: block;
+
+  transform-origin: bottom center;
+}
+
+.final-summary-character {
+  transform: scale(0.95);
+}
+
+.final-summary-character .dressup-clothing {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: auto;
+}
+
+.final-summary-score {
+  margin-top: 6px;
+
+  font-family: "Amatic SC", cursive;
+  font-size: 28px;
+  font-weight: bold;
+
+  color: #1b9337;
+  text-shadow: 0 0 6px rgba(120, 255, 190, 0.6);
+
+  text-align: center;
 }

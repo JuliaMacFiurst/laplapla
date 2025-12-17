@@ -15,6 +15,7 @@ export const clothesScoreMap: Record<string, number> = {
   "Summer-dress": -1,
   "Summer-socks": -1,
   "Summer-jacket": -1,
+  "Summer-glasses": -1,
 
   "Mid-season-coat": 1,
   "Mid-season-hat": 1,

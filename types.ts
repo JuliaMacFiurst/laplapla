@@ -49,3 +49,31 @@ export interface LoadStoryOptions {
   inventStory?: boolean;
   generateForRandomChildrensBook?: boolean;
 }
+
+// =============================
+// Dress-up game (Quest-1 / Day5)
+// =============================
+
+export type DressUpSeason = "winter-clothes" | "summer-clothes" | "mid-season";
+
+export interface DressUpCharacter {
+  name: string;
+  img: string;
+}
+
+export interface DressedItem {
+  /** Base item id without extension and without -dressed suffix, e.g. "Winter-boots" */
+  id: string;
+  /** Folder name under the character directory */
+  season: DressUpSeason;
+}
+
+export interface CharacterResult {
+  character: DressUpCharacter;
+  dressedItems: DressedItem[];
+  goodScore: number;
+  badScore: number;
+  /** Convenience value: goodScore - badScore */
+  totalScore: number;
+  maxScore: number;
+}

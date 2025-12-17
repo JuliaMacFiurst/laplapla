@@ -3,20 +3,18 @@
 import { useEffect, useState } from "react";
 import ClothesConveyor, { ClothesItem } from "./ClothesConveyor";
 import { loadClothesForCharacter } from "./loadClothesForCharacter";
-
-interface Character {
-  name: string;
-  img: string;
-}
+import type { CharacterResult, DressUpSeason, DressedItem } from "@/types";
 
 export default function CharacterStage({
   characters,
   onCharacterSelected,
   onStartGame,
+  onCharacterFinished,
 }: {
-  characters: Character[];
-  onCharacterSelected: (char: Character) => void;
+  characters: { name: string; img: string }[];
+  onCharacterSelected: (char: { name: string; img: string }) => void;
   onStartGame: () => void;
+  onCharacterFinished: (result: CharacterResult) => void;
 }) {
   if (!characters || characters.length === 0) {
     return (
@@ -36,7 +34,7 @@ export default function CharacterStage({
   }
 
   // TEMPORARY FALLBACK: если персонажи не переданы, показываем Стаса и Клэр
-  const fallbackCharacters: Character[] = [
+  const fallbackCharacters = [
     {
       name: "Stas",
       img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Stas/Stas.webp",
@@ -63,6 +61,7 @@ export default function CharacterStage({
     },
   ];
 
+  const [characterFinished, setCharacterFinished] = useState(false);
   const finalCharacters =
     characters.length > 0 ? characters : fallbackCharacters;
 
@@ -73,9 +72,7 @@ export default function CharacterStage({
   const [badScore, setBadScore] = useState(0);
   const [allClothes, setAllClothes] = useState<ClothesItem[]>([]);
   const [clothes, setClothes] = useState<ClothesItem[]>([]);
-  const [dressedItems, setDressedItems] = useState<
-    { id: string; season: string }[]
-  >([]);
+  const [dressedItems, setDressedItems] = useState<DressedItem[]>([]);
 
   const [timeLeft, setTimeLeft] = useState(15);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -101,6 +98,7 @@ export default function CharacterStage({
     if (!timerRunning) return;
     if (timeLeft <= 0) {
       setTimerRunning(false);
+      setCharacterFinished(true);
       return;
     }
     const id = setInterval(() => {
@@ -117,6 +115,7 @@ export default function CharacterStage({
     setGoodScore(0);
     setBadScore(0);
     setDressedItems([]);
+    setCharacterFinished(false);
 
     onStartGame();
 
@@ -124,26 +123,9 @@ export default function CharacterStage({
     onCharacterSelected(current);
   }
 
-  function nextCharacter() {
-    // if (!canSwitch) return;
-
-    const next = (index + 1) % finalCharacters.length;
-    setIndex(next);
-
-    // сброс состояния
-    setTimerRunning(false);
-    setTimeLeft(15);
-    setGoodScore(0);
-    setBadScore(0);
-    setDressedItems([]);
-  }
-
-  function seasonFromId(
-    id: string
-  ): "winter-clothes" | "summer-clothes" | "mid-season" {
+  function seasonFromId(id: string): DressUpSeason {
     if (id.startsWith("Winter-")) return "winter-clothes";
     if (id.startsWith("Summer-")) return "summer-clothes";
-    // default for Mid-season-*
     return "mid-season";
   }
 
@@ -206,7 +188,7 @@ export default function CharacterStage({
           <div className="bad-score">-{Math.abs(badScore)}</div>
         </div>
         <div className="dressup-character-counter">
-          {index + 1} / {totalCharacters}
+          {index + 1} персонаж из {totalCharacters}
         </div>
         <div className="dressup-stopwatch">
           <img
@@ -256,20 +238,35 @@ export default function CharacterStage({
         </div>
         {/* TODO (final stage): accumulate character results into global score
             and push dressed characters into final summary screen */}
-        {!timerRunning && timeLeft <= 0 && (
+        {characterFinished && (
           <button
             className="dressup-next-character-btn"
             onClick={() => {
+              const result: CharacterResult = {
+                character: current,
+                dressedItems,
+                goodScore,
+                badScore,
+                totalScore: goodScore - badScore,
+                maxScore: allClothes.reduce(
+                  (sum, item) => sum + Math.max(item.score, 0),
+                  0
+                ),
+              };
+
+              onCharacterFinished(result);
+              setCharacterFinished(false);
+
               const next = index + 1;
 
               if (next >= finalCharacters.length) {
-                // TODO: здесь позже будет финальный экран со всеми персонажами и суммарным счётом
+                // последний персонаж — дальше управляет родитель (FinalSummary)
                 return;
               }
 
               setIndex(next);
 
-              // сброс состояния игры под нового персонажа
+              // сброс состояния под нового персонажа
               setTimerRunning(false);
               setTimeLeft(15);
               setHandRotation(0);
@@ -313,6 +310,7 @@ export default function CharacterStage({
               onClick={() => {
                 setClothes(allClothes);
                 setDressedItems([]);
+                setCharacterFinished(false);
                 setGoodScore(0);
                 setBadScore(0);
                 setTimeLeft(15);

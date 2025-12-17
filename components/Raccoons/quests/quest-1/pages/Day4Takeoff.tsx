@@ -181,7 +181,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
             style={{ marginTop: "60px" }}
           >
 
-      <div className="ice-button" onClick={() => go("day2")}>
+      <div className="ice-button" onClick={() => go("day5_spitsbergen")}>
         <img
           className="ice"
           src="/quests/assets/buttons/ice-button-bg.svg"
