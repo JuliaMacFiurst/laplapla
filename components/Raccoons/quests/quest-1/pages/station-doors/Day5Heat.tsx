@@ -81,14 +81,31 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
       </div>
 
       {/* Нижняя навигация */}
-      <div style={{ textAlign: "center", marginTop: "40px" }}>
-        <button
-          className="quest-next-btn"
-          onClick={() => go("day5_spitsbergen")}
-        >
-          ← Вернуться на станцию
-        </button>
-      </div>
+     <footer className="quest-footer">
+          <div
+            className="quest-center ice-button-wrapper"
+            style={{ marginTop: "60px" }}
+          >
+            <div className="ice-button" onClick={() => go("day5_spitsbergen")}>
+              {/* льдина */}
+              <img
+                className="ice"
+                src="/quests/assets/buttons/ice-button-bg.svg"
+                alt="ice-btn"
+              />
+
+              {/* текст */}
+              <div className="ice-text">Назад на научную станцию</div>
+
+              {/* пингвин */}
+              <img
+                className="penguin"
+                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+                alt="penguin"
+              />
+            </div>
+          </div>
+        </footer>
     </div>
   );
 }
