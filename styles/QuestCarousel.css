@@ -1,0 +1,242 @@
+.quest-card.featured {
+  position: relative;
+  width: 100%;
+  max-width: 980px;
+
+  aspect-ratio: 3 / 2; /* ключевая строка */
+  margin: 0 auto;
+
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.quest-card.featured .quest-image{
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: #eef4f7; /* подложка */
+}
+
+.quest-card.featured .quest-image img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;        /* 🔥 ключ */
+  object-position: center;    /* фокус */
+
+  display: block;
+}
+
+.quest-card.featured .quest-content {
+  position: absolute;
+  top: 20%;
+  right: 6%;
+
+  max-width: 40%;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+
+  color: #e07a18; /* тёплый оранжевый */
+  background: none;
+  padding: 0;
+}
+
+.quest-card.featured h3 {
+  font-size: clamp(28px, 4vw, 56px);
+  line-height: 1.05;
+  margin: 0;
+}
+
+.quest-card.featured p {
+  font-size: clamp(16px, 2vw, 22px);
+  color: #6b7c88;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .quest-card.featured .quest-content {
+    top: 10%;
+    right: 50%;
+    transform: translateX(50%);
+    max-width: 80%;
+    text-align: center;
+  }
+}
+
+.quest-play-button {
+  margin-top: 20px;
+
+  width: 294px;
+  height: 294px;
+  border-radius: 50%;
+
+  border: none;
+  cursor: pointer;
+
+  font-size: 66px;
+  color: #2c6fa3;
+
+  background: radial-gradient(
+    circle at top left,
+    #ffffff5c,
+    #dff1ff8e 40%,
+    #b8ddf681 70%
+  );
+
+  box-shadow:
+    0 8px 20px rgba(44, 111, 163, 0.35),
+    inset 0 2px 6px rgba(255, 255, 255, 0.9);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  animation: icePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes icePulse {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 8px 20px rgba(44, 111, 163, 0.35),
+      inset 0 2px 6px rgba(255, 255, 255, 0.9);
+  }
+
+  50% {
+    transform: scale(1.08);
+    box-shadow:
+      0 12px 28px rgba(44, 111, 163, 0.45),
+      inset 0 2px 10px rgba(255, 255, 255, 1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.quest-play-button:hover {
+  animation-play-state: paused;
+  transform: scale(1.15);
+
+  box-shadow:
+    0 14px 36px rgba(44, 111, 163, 0.55),
+    inset 0 2px 12px rgba(255, 255, 255, 1);
+}
+
+.quest-play-button:active {
+  transform: scale(0.92);
+
+  box-shadow:
+    0 4px 10px rgba(44, 111, 163, 0.35),
+    inset 0 4px 10px rgba(180, 220, 245, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quest-play-button {
+    animation: none;
+  }
+}
+
+.quest-play-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+  animation: none;
+  transform: none;
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.6);
+  filter: grayscale(0.6); 
+}
+
+/* Обертка карусели: кнопки + viewport */
+.quest-carousel {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Окно прокрутки */
+.quest-carousel-viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  /* scroll-snap */
+  scroll-snap-type: x mandatory;
+
+  /* приятный скролл */
+  scroll-behavior: smooth;
+
+  /* чтобы скролл-бар не резал дизайн (в Safari/Chrome будет по-разному) */
+  -webkit-overflow-scrolling: touch;
+
+  /* прячем вертикальную дрожь */
+  overscroll-behavior-x: contain;
+
+  /* если хочешь, чтобы «сосед» выглядывал — делаем боковые паддинги */
+  padding: 6px 500px 10px;
+}
+
+/* Трек: горизонтальная лента */
+.quest-carousel-track {
+  display: flex;
+  gap: 40px;
+
+  /* важно: ширина по контенту, иначе иногда snap ведет себя странно */
+  width: max-content;
+}
+
+/* Один слайд */
+.quest-carousel-slide {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+
+  /* ширина слайда: чтобы была видна часть следующей афиши */
+  flex: 0 0 clamp(280px, 78vw, 980px);
+}
+
+/* Контейнер постера */
+.quest-poster {
+  width: 100%;
+}
+
+/* Навигационные кнопки (минимум, чтобы были кликабельны) */
+.quest-carousel-nav {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+
+  font-size: 28px;
+  line-height: 1;
+
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quest-carousel-nav:active {
+  transform: scale(0.96);
+}
+
+/* На мобиле можно спрятать стрелки — свайп удобнее */
+@media (max-width: 640px) {
+  .quest-carousel {
+    grid-template-columns: 1fr;
+  }
+
+  .quest-carousel-nav {
+    display: none;
+  }
+}

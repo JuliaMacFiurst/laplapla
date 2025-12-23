@@ -123,7 +123,7 @@ useEffect(() => {
   let offsetX: number = 0;
   let offsetY: number = 0;
 
-  if (type === 'country' || type === 'flag') {
+  if (type === 'country' || type === 'flag' || type === 'culture' || type === 'food') {
     offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 200;
     offsetY = (containerRect.height - svgRect.height * optimalZoom) / 2 - 300;
   } else if (type === 'river') {

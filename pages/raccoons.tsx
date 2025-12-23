@@ -4,6 +4,8 @@ import Head from "next/head";
 import MapWrapper from "@/components/Raccoons/MapWrapper";
 import MapTabs from "@/components/Raccoons/MapTabs";
 import { RaccoonGuide } from "@/components/Raccoons/RaccoonGuide";
+import { QuestSection } from "@/components/Raccoons/QuestSection";
+import { quests } from "@/utils/quests.config";
 
 export default function RaccoonsPage() {
   const [activeTab, setActiveTab] = useState<
@@ -36,6 +38,12 @@ export default function RaccoonsPage() {
             <MapTabs selectedTab={activeTab} setSelectedTab={setActiveTab} />
           </div>
           <MapWrapper type={activeTab} />
+          <QuestSection
+            quests={[
+              quests.featured,
+              ...quests.upcoming,
+            ]}
+          />
         </div>
       </main>
     </>
