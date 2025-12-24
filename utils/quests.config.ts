@@ -5,7 +5,7 @@ export const COMING_SOON_IMAGES = [
 
 export const quests = {
   featured: {
-    id: 'north',
+    id: 'quest-1',
     title: 'К северным берегам',
     subtitle: 'Первый большой квест',
     image:

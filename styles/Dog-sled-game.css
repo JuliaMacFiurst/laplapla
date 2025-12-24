@@ -1,0 +1,162 @@
+.sled-part {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.sled-part:hover {
+  filter: drop-shadow(0 0 12px rgba(120, 255, 200, 0.6));
+}
+
+.sled-part.active {
+  filter: drop-shadow(0 0 18px rgba(80, 255, 180, 0.9));
+}
+
+.quest-centered-container {
+    position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* ВАЖНО */
+  min-height: 600px; 
+    margin: 0 auto;
+}
+
+.dogs-sled-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dogs-sled-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.garage-stage {
+  position: relative; /* ЯКОРЬ ДЛЯ ПОПАПА */
+  width: 100%;
+  height: 100%;
+}
+
+.garage-scene {
+  position: relative;
+  z-index: 1;
+}
+
+/* Весь попап поверх сцены */
+.preparation-popup {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50; /* выше SVG и сцены */
+}
+
+/* Затемнение фона */
+.preparation-popup__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Само окно */
+.preparation-popup__content {
+  position: relative;
+  z-index: 1;
+
+  background: #f5efe6;
+  border-radius: 18px;
+  padding: 24px 28px;
+  max-width: 420px;
+  width: 100%;
+
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  font-family: "Amatic SC", cursive;
+}
+
+/* Заголовок */
+.preparation-popup__title {
+  font-size: 32px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Описание */
+.preparation-popup__description {
+  font-size: 20px;
+  margin-bottom: 20px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* Кнопки выбора */
+.preparation-popup__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Одна опция */
+.preparation-popup__choice {
+  font-size: 18px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+
+  background: #e2bc81;
+  color: #2a1f12;
+
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.preparation-popup__choice:hover {
+  background: #f0d19a;
+  transform: translateY(-1px);
+}
+
+/* Кнопка закрытия */
+.preparation-popup__close {
+  margin-top: 16px;
+  font-size: 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.preparation-popup__close:hover {
+  opacity: 1;
+}
+
+.sled-part-reins {
+    fill: rgba(255, 255, 255, 0.35) !important;
+    stroke: rgba(0, 0, 0, 0.9) !important;
+    stroke-width: 3px !important;
+}
+
+.sled-part-reins:hover {
+    stroke: rgba(120, 255, 200, 0.9) !important;
+    stroke-width: 3px !important; 
+}  
+
+.sled-part {
+ 
+  cursor: pointer;
+  pointer-events: all;
+  stroke: transparent;
+  stroke-width: 0;
+
+  transition:
+    filter 0.15s ease,
+    stroke 0.15s ease,
+    stroke-width 0.15s ease;
+}
+
+.sled-part:hover {
+  stroke: rgba(120, 255, 200, 0.9);
+  stroke-width: 3px;
+
+  filter: drop-shadow(0 0 10px rgba(120, 255, 200, 0.9));
+}
