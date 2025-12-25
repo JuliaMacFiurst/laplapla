@@ -4,6 +4,7 @@ import type { PageId } from "../../QuestEngine";
 import { useState } from "react";
 import  DogsSledSVG  from "../../logic/dog-sled-game/DogsSledSVG";
 import PreparationPopup from "../../logic/dog-sled-game/PreparationPopup";
+import StatBar from "../../logic/dog-sled-game/StatBar";
 
 export type SledPart =
   | "reins"
@@ -30,11 +31,18 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
   const [activePart, setActivePart] = useState<SledPart | null>(null);
 
   const [prep, setPrep] = useState<PreparationResult>({
-    speedModifier: 1,
-    stability: 1,
-    stamina: 1,
-    risk: 0,
+    speedModifier: 0.1,
+    stability: 0.1,
+    stamina: 0.5,
+    risk: 1,
   });
+
+  function statLevel(value: number) {
+     if (value >= 0.9) return "is-max"; 
+    if (value < 0.3) return "is-danger";
+    if (value < 0.6) return "is-warning";
+    return "is-ok";
+  }
 
   return (
     <div className="quest-page-bg">
@@ -52,33 +60,52 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
 В снегах очень важно доверять своему транспорту и знать, в каком он состоянии.
       </p>
      <div className="quest-centered-container">
-      
-      {phase === "inspect" && (
-        <div className="garage-stage">
-          <div className="garage-scene">
-            <DogsSledSVG
-              activePart={activePart}
-              onSelect={(part: SledPart) => {
-                setActivePart(part);
-              }}
-            />
-          </div>
 
-          {activePart && (
-            <PreparationPopup
-              activePart={activePart}
-              prep={prep}
-              onApply={(patch) =>
-                setPrep((prev) => ({
-                  ...prev,
-                  ...patch,
-                }))
-              }
-              onClose={() => setActivePart(null)}
-            />
-          )}
-        </div>
-      )}
+          {phase === "inspect" && (
+  <div className="garage-stage">
+    <div className="garage-scene">
+      <DogsSledSVG
+        activePart={activePart}
+        onSelect={(part: SledPart) => {
+          setActivePart(part);
+        }}
+      />
+    </div>
+
+    {/* PANEL WITH STATS */}
+    <div className="garage-stats-panel">
+  <StatBar
+    values={{
+      stability: prep.stability,
+      stamina: prep.stamina,
+      speed: prep.speedModifier,
+      risk: prep.risk,
+    }}
+    levels={{
+      stability: statLevel(prep.stability),
+      stamina: statLevel(prep.stamina),
+      speed: statLevel(prep.speedModifier),
+      risk: statLevel(prep.risk),
+    }}
+  />
+</div>
+    {activePart && (
+      <PreparationPopup
+        activePart={activePart}
+        prep={prep}
+        onApply={(patch) =>
+          setPrep((prev) => ({
+            ...prev,
+            ...patch,
+          }))
+        }
+        onClose={() => setActivePart(null)}
+      />
+    )}
+  </div>
+)}
+
+  
 </div>
       {/* TODO:
           Добавить шкалы состояния и переход в phase="ride" после подготовки.

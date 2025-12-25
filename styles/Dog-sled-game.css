@@ -35,7 +35,7 @@
 .garage-stage {
   position: relative; /* ЯКОРЬ ДЛЯ ПОПАПА */
   width: 100%;
-  height: 100%;
+  min-height: 100vh; 
 }
 
 .garage-scene {
@@ -159,4 +159,153 @@
   stroke-width: 3px;
 
   filter: drop-shadow(0 0 10px rgba(120, 255, 200, 0.9));
+}
+
+.stat-panel-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.stat-panel-frame {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  max-width: 100%;
+  max-height: 100%;
+
+  z-index: 3;
+  pointer-events: none;
+}
+
+.garage-stats-panel {
+   position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+
+  width: clamp(320px, 70vw, 820px);
+  aspect-ratio: 520 / 150;
+
+  z-index: 6;
+  pointer-events: none;
+}
+
+.stat-bar {
+  position: relative;
+  width: 100%;
+  height: auto;
+}
+
+.stat-panel-fills {
+  position: absolute;
+  inset: 0;
+  z-index: 1; /* ПОД рамкой */
+  pointer-events: none;
+}
+
+.stat-panel-fill {
+  position: absolute;
+  height: 15%;
+  border-radius: 999px;
+  overflow: hidden;
+
+  /* фиксированная ширина шкалы */
+  width: 100%;
+}
+
+.stat-panel-fill-gradient {
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    to left,
+    #7dffb7 0%,
+    #7dffb7 45%,
+    #fffa73 50%,
+    #ffcc73 75%,
+    #ff715b 100%
+  );
+
+  /* ВАЖНО: больше НЕТ scaleX */
+  clip-path: inset(
+    0 calc(100% - (var(--value) * 100%)) 0 0
+  );
+
+}
+
+
+.stat-panel-fill-stability {
+  top: 50%;
+  left: 10%;
+  max-width: 25%;
+}
+
+.stat-panel-fill-stamina {
+  top: 50%;
+  left: 41%;
+  width: 25%;
+}
+
+.stat-panel-fill-speed {
+  top: 50%;
+  left: 70%;
+  width: 25%;
+}
+
+.stat-panel-fill-risk {
+  top: 30%;
+  left: 8%;
+  max-width: 84%;
+}
+
+/* 🔥 danger */
+/* 🔥 danger (но НЕ когда is-max) */
+.stat-panel-fill.is-danger:not(.is-max) {
+  animation: stat-pulse-danger 1.2s ease-in-out infinite;
+}
+
+/* ⚠️ warning */
+/* ⚠️ warning (но НЕ когда is-max) */
+.stat-panel-fill.is-warning:not(.is-max) {
+  animation: stat-flash-warning 1.6s ease-in-out infinite;
+}
+
+/* ✅ ok — вообще без анимаций */
+.stat-panel-fill.is-ok {
+  animation: none;
+}
+
+/* 🧊 MAX — финальное состояние, ГЛУШИТ ВСЁ */
+.stat-panel-fill.is-max{
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+@keyframes stat-flash-warning {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.25); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes stat-pulse-danger {
+  0% {
+    filter: brightness(1);
+    box-shadow: 0 0 0 rgba(255, 80, 80, 0);
+  }
+  50% {
+    filter: brightness(1.4);
+    box-shadow: 0 0 18px rgba(255, 80, 80, 0.8);
+  }
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 0 0 rgba(255, 80, 80, 0);
+  }
 }
