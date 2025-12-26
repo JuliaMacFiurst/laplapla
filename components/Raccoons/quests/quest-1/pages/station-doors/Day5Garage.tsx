@@ -5,6 +5,7 @@ import { useState } from "react";
 import  DogsSledSVG  from "../../logic/dog-sled-game/DogsSledSVG";
 import PreparationPopup from "../../logic/dog-sled-game/PreparationPopup";
 import StatBar from "../../logic/dog-sled-game/StatBar";
+import SledAnimationOverlay from "../../logic/dog-sled-game/SledAnimationOverlay";
 
 export type SledPart =
   | "reins"
@@ -13,7 +14,7 @@ export type SledPart =
   | "food"
   | "brake"
   | "skids"
-  | "cargo"
+  | "loads" 
   | "dogs";
 
 type GamePhase = "inspect" | "ride" | "result";
@@ -24,6 +25,14 @@ type PreparationResult = {
   stamina: number;
   risk: number;
 };
+
+type SledAnimation =
+  | null
+  | "loads"
+  | "water"
+  | "food"
+  | "dogs"
+  | "skids";
 
 export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
 
@@ -37,11 +46,47 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
     risk: 1,
   });
 
+  const [activeAnimation, setActiveAnimation] = useState<SledAnimation>(null);
+
   function statLevel(value: number) {
      if (value >= 0.9) return "is-max"; 
     if (value < 0.3) return "is-danger";
     if (value < 0.6) return "is-warning";
     return "is-ok";
+  }
+
+  function mapPartToAnimation(part: SledPart): SledAnimation {
+    switch (part) {
+      case "loads":
+      case "water":
+      case "food":
+      case "dogs":
+      case "skids":
+        return part;
+      default:
+        return null;
+    }
+  }
+
+  function applyPatchWithLogs(patch: Partial<PreparationResult>) {
+    setPrep((prev) => {
+      const keys: (keyof PreparationResult)[] = ["speedModifier", "stability", "stamina", "risk"];
+      const newValues: PreparationResult = { ...prev };
+
+      keys.forEach((key) => {
+        const patchValue = patch[key] ?? 0;
+        if (patchValue === 0) {
+          console.log(`${key}: unchanged`);
+        } else if (patchValue > 0) {
+          console.log(`${key}: increased by ${patchValue}`);
+        } else {
+          console.log(`${key}: decreased by ${-patchValue}`);
+        }
+        newValues[key] = Math.min(1, Math.max(0, prev[key] + patchValue));
+      });
+
+      return newValues;
+    });
   }
 
   return (
@@ -61,51 +106,58 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
       </p>
      <div className="quest-centered-container">
 
-          {phase === "inspect" && (
-  <div className="garage-stage">
-    <div className="garage-scene">
-      <DogsSledSVG
-        activePart={activePart}
-        onSelect={(part: SledPart) => {
-          setActivePart(part);
-        }}
-      />
-    </div>
+  {phase === "inspect" && (
+    <>
+      <div className="garage-scene">
+        <DogsSledSVG
+          activePart={activePart}
+          onSelect={(part) => setActivePart(part)}
+        />
 
-    {/* PANEL WITH STATS */}
-    <div className="garage-stats-panel">
-  <StatBar
-    values={{
-      stability: prep.stability,
-      stamina: prep.stamina,
-      speed: prep.speedModifier,
-      risk: prep.risk,
-    }}
-    levels={{
-      stability: statLevel(prep.stability),
-      stamina: statLevel(prep.stamina),
-      speed: statLevel(prep.speedModifier),
-      risk: statLevel(prep.risk),
-    }}
-  />
-</div>
-    {activePart && (
-      <PreparationPopup
-        activePart={activePart}
-        prep={prep}
-        onApply={(patch) =>
-          setPrep((prev) => ({
-            ...prev,
-            ...patch,
-          }))
-        }
-        onClose={() => setActivePart(null)}
-      />
-    )}
-  </div>
-)}
+        <SledAnimationOverlay
+          animation={activeAnimation}
+          onFinished={() => setActiveAnimation(null)}
+        />
+      </div>
 
-  
+      {/* ⬇️ ВНЕ сцены */}
+      <div className="garage-stats-panel">
+        <StatBar
+          values={{
+            stability: prep.stability,
+            stamina: prep.stamina,
+            speed: prep.speedModifier,
+            risk: prep.risk,
+          }}
+          levels={{
+            stability: statLevel(prep.stability),
+            stamina: statLevel(prep.stamina),
+            speed: statLevel(prep.speedModifier),
+            risk: statLevel(prep.risk),
+          }}
+        />
+      </div>
+
+      {activePart && (
+        <PreparationPopup
+          activePart={activePart}
+          prep={prep}
+          onApply={(patch) => applyPatchWithLogs(patch)}
+          onClose={() => setActivePart(null)}
+          onPlayAnimation={(part) => {
+             console.log("[ANIMATION REQUEST]", part);
+            const animation = mapPartToAnimation(part);
+            console.log("[ANIMATION MAPPED]", animation);
+
+            if (animation) {
+              setActiveAnimation(animation);
+            }
+          }}
+        />
+      )}
+    </>
+  )}
+
 </div>
       {/* TODO:
           Добавить шкалы состояния и переход в phase="ride" после подготовки.

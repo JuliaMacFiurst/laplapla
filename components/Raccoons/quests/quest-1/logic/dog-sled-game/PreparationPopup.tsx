@@ -9,7 +9,7 @@ export type SledPart =
   | "food"
   | "brake"
   | "skids"
-  | "cargo"
+  | "loads"
   | "dogs";
 
 export type PreparationResult = {
@@ -24,6 +24,7 @@ interface PreparationPopupProps {
   prep: PreparationResult;
   onApply: (patch: Partial<PreparationResult>) => void;
   onClose: () => void;
+  onPlayAnimation: (part: SledPart) => void;
 }
 
 const PART_DESCRIPTIONS: Record<SledPart, string> = {
@@ -33,44 +34,46 @@ const PART_DESCRIPTIONS: Record<SledPart, string> = {
   food: "Еда поддерживает силы упряжки.",
   brake: "Тормоз позволяет контролировать скорость на спусках.",
   skids: "Полозья влияют на скольжение и устойчивость.",
-  cargo: "Груз влияет на баланс и скорость.",
+  loads: "Груз влияет на баланс и скорость.",
   dogs: "Состояние собак — ключ к успешному заезду.",
 };
 
 const PART_CHOICES: Record<
   SledPart,
-  { label: string; patch: Partial<PreparationResult> }[]
+  { label: string;
+     patch: Partial<PreparationResult>;
+     playAnimation?: boolean }[]
 > = {
   reins: [
-    { label: "Проверить и подтянуть", patch: { stability: 0.2, risk: -0.1 } },
+    { label: "Проверить и подтянуть", patch: { stability: 0.2, risk: -0.1 }, playAnimation: true },
     { label: "Оставить как есть", patch: { risk: 0.1 } },
   ],
   harness: [
-    { label: "Отрегулировать упряжь", patch: { stamina: 0.2, stability: 0.1 } },
+    { label: "Отрегулировать упряжь", patch: { stamina: 0.2, stability: 0.1 }, playAnimation: true },
     { label: "Не трогать", patch: { risk: 0.1 } },
   ],
   water: [
-    { label: "Пополнить запас воды", patch: { stamina: 0.3 } },
+    { label: "Пополнить запас воды", patch: { stamina: 0.3 }, playAnimation: true },
     { label: "Сэкономить место", patch: { risk: 0.2 } },
   ],
   food: [
-    { label: "Взять дополнительный корм", patch: { stamina: 0.3 } },
+    { label: "Взять дополнительный корм", patch: { stamina: 0.3 }, playAnimation: true },
     { label: "Минимальный запас", patch: { risk: 0.2 } },
   ],
   brake: [
-    { label: "Проверить тормоз", patch: { stability: 0.3 } },
+    { label: "Проверить тормоз", patch: { stability: 0.3 }, playAnimation: true },
     { label: "Пропустить проверку", patch: { risk: 0.3 } },
   ],
   skids: [
-    { label: "Смазать полозья", patch: { speedModifier: 0.2 } },
+    { label: "Смазать полозья", patch: { speedModifier: 0.2 }, playAnimation: true },
     { label: "Оставить без изменений", patch: { risk: 0.1 } },
   ],
-  cargo: [
-    { label: "Распределить груз", patch: { stability: 0.2 } },
+  loads: [
+    { label: "Распределить груз", patch: { stability: 0.2 }, playAnimation: true },
     { label: "Не перекладывать", patch: { risk: 0.1 } },
   ],
   dogs: [
-    { label: "Осмотреть собак", patch: { stamina: 0.3, risk: -0.1 } },
+    { label: "Осмотреть собак", patch: { stamina: 0.3, risk: -0.1 }, playAnimation: true },
     { label: "Не задерживаться", patch: { risk: 0.2 } },
   ],
 };
@@ -79,6 +82,7 @@ export default function PreparationPopup({
   activePart,
   prep,
   onApply,
+  onPlayAnimation,
   onClose,
 }: PreparationPopupProps) {
   return (
@@ -96,7 +100,13 @@ export default function PreparationPopup({
               key={idx}
               className="preparation-popup__choice"
               onClick={() => {
+                // применяем изменения
                 onApply(choice.patch);
+
+                if (choice.playAnimation === true) {
+                  onPlayAnimation(activePart);
+                }
+
                 onClose();
               }}
             >

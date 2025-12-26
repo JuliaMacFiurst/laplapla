@@ -77,3 +77,11 @@ export interface CharacterResult {
   totalScore: number;
   maxScore: number;
 }
+
+export type SledAnimation =
+  | "loads"
+  | "water"
+  | "food"
+  | "dogs"
+  | "skids"
+  | null;
