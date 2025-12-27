@@ -38,6 +38,7 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
 
   const [phase, setPhase] = useState<GamePhase>("inspect");
   const [activePart, setActivePart] = useState<SledPart | null>(null);
+  const [showRideWarning, setShowRideWarning] = useState(false);
 
   const [prep, setPrep] = useState<PreparationResult>({
     speedModifier: 0.1,
@@ -88,6 +89,14 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
       return newValues;
     });
   }
+
+  function isDangerous(prep: PreparationResult) {
+  return (
+    prep.risk > 0.7 ||
+    prep.stability < 0.3 ||
+    prep.stamina < 0.3
+  );
+}
 
   return (
     <div className="quest-page-bg">
@@ -158,10 +167,53 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
     </>
   )}
 
+ <button
+  className="garage-start-ride-btn"
+  onClick={() => {
+    if (isDangerous(prep)) {
+      setShowRideWarning(true);
+    } else {
+      setPhase("ride");
+    }
+  }}
+>
+  🚀 Пробный заезд
+</button>
+
+{showRideWarning && (
+  <div className="garage-warning-overlay">
+    <div className="garage-warning-popup">
+      <h2>⚠️ Упряжь в опасном состоянии</h2>
+
+      <p>
+        Некоторые показатели критичны.
+        В снегах это может закончиться аварией.
+      </p>
+
+      <div className="garage-warning-actions">
+        <button
+          onClick={() => setShowRideWarning(false)}
+        >
+          🔧 Вернуться к подготовке
+        </button>
+
+        <button
+          className="danger"
+          onClick={() => {
+            setShowRideWarning(false);
+            setPhase("ride");
+          }}
+        >
+          ⚠️ Рискнуть и поехать
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 </div>
-      {/* TODO:
-          Добавить шкалы состояния и переход в phase="ride" после подготовки.
-      */}
+
+    
 
       {/* Нижняя навигация */}
      <footer className="quest-footer">
