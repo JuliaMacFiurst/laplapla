@@ -6,6 +6,7 @@ import  DogsSledSVG  from "../../logic/dog-sled-game/DogsSledSVG";
 import PreparationPopup from "../../logic/dog-sled-game/PreparationPopup";
 import StatBar from "../../logic/dog-sled-game/StatBar";
 import SledAnimationOverlay from "../../logic/dog-sled-game/SledAnimationOverlay";
+import DogSledRunStage from "../../logic/dog-sled-game/DogSledRunStage";
 
 export type SledPart =
   | "reins"
@@ -167,49 +168,57 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
     </>
   )}
 
- <button
-  className="garage-start-ride-btn"
-  onClick={() => {
-    if (isDangerous(prep)) {
-      setShowRideWarning(true);
-    } else {
-      setPhase("ride");
-    }
-  }}
->
-  🚀 Пробный заезд
-</button>
+  {phase === "ride" && (
+    <DogSledRunStage onExit={() => setPhase("inspect")} />
+  )}
 
-{showRideWarning && (
-  <div className="garage-warning-overlay">
-    <div className="garage-warning-popup">
-      <h2>⚠️ Упряжь в опасном состоянии</h2>
-
-      <p>
-        Некоторые показатели критичны.
-        В снегах это может закончиться аварией.
-      </p>
-
-      <div className="garage-warning-actions">
-        <button
-          onClick={() => setShowRideWarning(false)}
-        >
-          🔧 Вернуться к подготовке
-        </button>
-
-        <button
-          className="danger"
-          onClick={() => {
-            setShowRideWarning(false);
+  {phase === "inspect" && (
+    <>
+      <button
+        className="garage-start-ride-btn"
+        onClick={() => {
+          if (isDangerous(prep)) {
+            setShowRideWarning(true);
+          } else {
             setPhase("ride");
-          }}
-        >
-          ⚠️ Рискнуть и поехать
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          }
+        }}
+      >
+        🚀 Пробный заезд
+      </button>
+
+      {showRideWarning && (
+        <div className="garage-warning-overlay">
+          <div className="garage-warning-popup">
+            <h2>⚠️ Упряжь в опасном состоянии</h2>
+
+            <p>
+              Некоторые показатели критичны.
+              В снегах это может закончиться аварией.
+            </p>
+
+            <div className="garage-warning-actions">
+              <button
+                onClick={() => setShowRideWarning(false)}
+              >
+                🔧 Вернуться к подготовке
+              </button>
+
+              <button
+                className="danger"
+                onClick={() => {
+                  setShowRideWarning(false);
+                  setPhase("ride");
+                }}
+              >
+                ⚠️ Рискнуть и поехать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )}
 
 </div>
 

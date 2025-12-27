@@ -540,3 +540,217 @@
   50%  { box-shadow: 0 0 18px rgba(255, 90, 60, 0.45); }
   100% { box-shadow: 0 0 0 rgba(255, 90, 60, 0); }
 }
+
+.dog-sled-run-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  aspect-ratio: 1200 / 800;
+  margin: 0 auto;
+
+  overflow: hidden;
+  background: #cfe8ff; /* запасной фон */
+}
+
+.dog-sled-run-scene {
+  position: absolute;
+  inset: 0;
+
+  overflow: hidden;
+}
+
+.dog-sled-background {
+  position: absolute;
+  inset: 0;
+
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dog-sled-background-layer {
+  position: absolute;
+  inset: 0;
+
+  width: 200%;
+  height: 100%;
+
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: left bottom;
+
+  will-change: transform;
+}
+
+.dog-sled-world {
+  position: absolute;
+  inset: 0;
+
+  z-index: 10;
+  will-change: transform;
+}
+
+.dog-sled-track-segment {
+  position: absolute;
+  bottom: 0;
+
+  height: 260px; /* подгони под свои арты */
+  object-fit: contain;
+
+  pointer-events: none;
+}
+
+.dog-sled-entity {
+  position: absolute;
+  left: 200px; /* фиксированное положение по X */
+  bottom: 220px; /* «на трассе» */
+
+  z-index: 20;
+
+  transition: transform 0.08s linear;
+  will-change: transform;
+}
+
+.dog-sled-placeholder {
+  font-size: 48px;
+  user-select: none;
+}
+
+.dog-sled-run-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  margin-top: 10px; /* фон не ловит клики */
+  display: flex;
+  flex-direction: row;   /* кнопки в ряд */
+  gap: 16px;             /* расстояние между ними */
+
+  align-items: center;
+  justify-content: center;
+
+}
+
+.dog-sled-run-overlay button {
+  pointer-events: auto;
+
+  position: relative; /* ❗ вместо absolute */
+  
+  padding: 10px 18px;
+  font-family: "Amatic SC", system-ui, sans-serif;
+  font-size: 26px;
+  letter-spacing: 0.05em;
+
+  background: rgba(120, 20, 20, 0.85);
+  color: #fff;
+
+  border: 2px solid rgba(255, 180, 180, 0.9);
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0.2),
+    0 4px 14px rgba(0,0,0,0.35);
+
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dog-sled-run-overlay button:hover {
+  background: #f2f2f2;
+}
+
+.dog-sled-run-overlay button:hover {
+  background: rgba(180, 30, 30, 0.95);
+  transform: scale(1.05);
+  box-shadow:
+    0 0 12px rgba(255, 80, 80, 0.8),
+    0 6px 18px rgba(0,0,0,0.4);
+}
+
+.dog-sled-run-overlay button:active {
+  transform: scale(0.97);
+  box-shadow:
+    0 0 6px rgba(255, 80, 80, 0.6),
+    0 3px 10px rgba(0,0,0,0.35);
+}
+
+.dog-sled-run-overlay button:hover {
+  background: rgba(180, 30, 30, 0.95);
+  transform: scale(1.05);
+  box-shadow:
+    0 0 12px rgba(255, 80, 80, 0.8),
+    0 6px 18px rgba(0,0,0,0.4);
+}
+
+.dog-sled-run-overlay button:active {
+  transform: scale(0.97);
+  box-shadow:
+    0 0 6px rgba(255, 80, 80, 0.6),
+    0 3px 10px rgba(0,0,0,0.35);
+}
+
+.dog-sled-hud {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+
+  z-index: 40; /* 🔑 ВЫШЕ фона и сцены */
+
+  pointer-events: auto;
+}
+
+.dog-sled-stop-btn {
+  position: relative;
+
+  padding: 8px 16px;
+  font-family: "Amatic SC", cursive;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  background: linear-gradient(
+    to bottom,
+    #7a1e1e,
+    #4e0f0f
+  );
+
+  color: #fff;
+  border: 2px solid rgba(255, 200, 200, 0.8);
+  border-radius: 14px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.dog-sled-stop-btn:hover {
+  background: linear-gradient(
+    to bottom,
+    #9b2a2a,
+    #6a1a1a
+  );
+
+  transform: scale(1.05);
+
+  box-shadow:
+    0 0 14px rgba(255, 80, 80, 0.6),
+    0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.dog-sled-stop-btn:active {
+  transform: scale(0.97);
+
+  box-shadow:
+    0 0 6px rgba(255, 80, 80, 0.5),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+}
