@@ -236,7 +236,8 @@
   width: 100%;
 }
 
-.stat-panel-fill-gradient {
+
+.stat-panel-fill:not(.stat-panel-fill-risk) .stat-panel-fill-gradient {
   position: absolute;
   inset: 0;
 
@@ -254,6 +255,24 @@
     0 calc(100% - (var(--value) * 100%)) 0 0
   );
 
+}
+
+.stat-panel-fill-risk {
+  top: 30%;
+  left: 8%;
+  max-width: 84%;
+   background: linear-gradient(
+    to right, 
+    #7dffb7 0%,
+    #7dffb7 45%,
+    #fffa73 50%,
+    #ffcc73 75%,
+    #ff715b 100%
+  ); 
+
+  clip-path: inset(
+    0 calc(100% - (var(--value) * 100%)) 0 0
+  );
 }
 
 
@@ -275,11 +294,7 @@
   width: 25%;
 }
 
-.stat-panel-fill-risk {
-  top: 30%;
-  left: 8%;
-  max-width: 84%;
-}
+
 
 /* 🔥 danger */
 /* 🔥 danger (но НЕ когда is-max) */

@@ -45,36 +45,36 @@ const PART_CHOICES: Record<
      playAnimation?: boolean }[]
 > = {
   reins: [
-    { label: "Проверить и подтянуть", patch: { stability: 0.2, risk: -0.1 }, playAnimation: true },
-    { label: "Оставить как есть", patch: { risk: 0.1 } },
+    { label: "Проверить и подтянуть", patch: { stability: 0.2, risk: -0.1, speedModifier: 0.1 }, playAnimation: true },
+    { label: "Оставить как есть", patch: { risk: 0.1, stability: -0.3 } },
   ],
   harness: [
     { label: "Отрегулировать упряжь", patch: { stamina: 0.2, stability: 0.1 }, playAnimation: true },
-    { label: "Не трогать", patch: { risk: 0.1 } },
+    { label: "Не трогать", patch: { risk: 0.1, stability: -0.3 } },
   ],
   water: [
     { label: "Пополнить запас воды", patch: { stamina: 0.3 }, playAnimation: true },
-    { label: "Сэкономить место", patch: { risk: 0.2 } },
+    { label: "Сэкономить место", patch: { risk: 0.2, stamina: -0.2 } },
   ],
   food: [
     { label: "Взять дополнительный корм", patch: { stamina: 0.3 }, playAnimation: true },
-    { label: "Минимальный запас", patch: { risk: 0.2 } },
+    { label: "Минимальный запас", patch: { risk: 0.2, stamina: -0.1 } },
   ],
   brake: [
-    { label: "Проверить тормоз", patch: { stability: 0.3 }, playAnimation: true },
+    { label: "Проверить тормоз", patch: { stability: 0.3, risk: -0.3 }, playAnimation: true },
     { label: "Пропустить проверку", patch: { risk: 0.3 } },
   ],
   skids: [
     { label: "Смазать полозья", patch: { speedModifier: 0.2 }, playAnimation: true },
-    { label: "Оставить без изменений", patch: { risk: 0.1 } },
+    { label: "Оставить без изменений", patch: { risk: 0.1, stability: -0.1 } },
   ],
   loads: [
-    { label: "Распределить груз", patch: { stability: 0.2 }, playAnimation: true },
-    { label: "Не перекладывать", patch: { risk: 0.1 } },
+    { label: "Распределить груз", patch: { stability: 0.2, risk: -0.1  }, playAnimation: true },
+    { label: "Не перекладывать", patch: { risk: 0.2 } },
   ],
   dogs: [
-    { label: "Осмотреть собак", patch: { stamina: 0.3, risk: -0.1 }, playAnimation: true },
-    { label: "Не задерживаться", patch: { risk: 0.2 } },
+    { label: "Осмотреть собак", patch: { stamina: 0.3, risk: -0.1, speedModifier: 0.1  }, playAnimation: true },
+    { label: "Не задерживаться", patch: { risk: 0.2, speedModifier: -0.1, stamina: -0.3, stability: -0.2 } },
   ],
 };
 
