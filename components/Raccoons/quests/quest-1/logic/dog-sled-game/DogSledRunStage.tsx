@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BACKGROUND_LAYERS } from "./background/backgroundLayers";
 import { useObstacles } from "./track/useObstacles";
-import { OBSTACLES } from "./track/obstacles";
 import { SNOWDRIFT_VARIANTS } from "./track/obstacles";
 
 type Lane = "upper" | "lower";
@@ -27,6 +26,9 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const lastTimeRef = useRef<number | null>(null);
 
+  const scrollXRef = useRef(0);
+  const stageWidthRef = useRef(1200);
+
   const [phase, setPhase] = useState<Phase>("ready");
   const [isRunning, setIsRunning] = useState(false);
   const isRunningRef = useRef(isRunning);
@@ -37,13 +39,21 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   const [scrollX, setScrollX] = useState(0);
 
   // базовые параметры (позже придут из подготовки)
-  const speed = 220; // px/sec
-  const upperLaneY = 290;
-  const lowerLaneY = 380;
-
   const [stageWidth, setStageWidth] = useState(1200);
+  const [stageHeight, setStageHeight] = useState(800);
 
-  const obstacles = useObstacles();
+  // laneYRef для хранения нормализованных координат полос
+  const laneYRef = useRef({ upper: 0, lower: 0 });
+
+  // Параметры коридора движения
+  const [baseUpperLimit, setBaseUpperLimit] = useState(0);
+  const [baseLowerLimit, setBaseLowerLimit] = useState(0);
+  const snowbankOffset = 120;
+
+  // базовая скорость заезда (px/second)
+  const speed = 300;
+
+  const obstacles = useObstacles(scrollX, stageWidth);
 
   // Новое состояние для сугроба
   const [activeSnowbank, setActiveSnowbank] = useState<
@@ -51,22 +61,41 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   >(null);
   const activeSnowbankRef = useRef<"upper" | "lower" | null>(null);
 
-  // Параметры коридора движения
-  const baseUpperLimit = upperLaneY - 80;
-  const baseLowerLimit = lowerLaneY + 80;
-  const snowbankOffset = 120;
+  // 1) Добавить bigSnowbank состояние и ref
+  const [bigSnowbankX, setBigSnowbankX] = useState<number | null>(null);
+  const bigSnowbankXRef = useRef<number | null>(null);
+
+  // 2) Синхронизация ref с состоянием
+  useEffect(() => {
+    bigSnowbankXRef.current = bigSnowbankX;
+  }, [bigSnowbankX]);
 
   useEffect(() => {
     if (!stageRef.current) return;
 
     const update = () => {
-      setStageWidth(stageRef.current!.clientWidth);
+      const w = stageRef.current!.clientWidth;
+      const h = stageRef.current!.clientHeight;
+      stageWidthRef.current = w;
+      setStageWidth(w);
+      setStageHeight(h);
     };
 
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  useEffect(() => {
+    laneYRef.current.upper = stageHeight * 0.66;
+    laneYRef.current.lower = stageHeight * 0.8;
+
+    setBaseUpperLimit(laneYRef.current.upper - 80);
+    setBaseLowerLimit(laneYRef.current.lower + 80);
+  }, [stageHeight]);
+
+  // New constants for snowbank visual positioning
+  const snowbankHeight = stageHeight * 0.35;
 
   useEffect(() => {
     isRunningRef.current = isRunning;
@@ -108,6 +137,10 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   /* ───────────────────────── GAME LOOP ───────────────────────── */
 
   useEffect(() => {
+    function clamp(value: number, min: number, max: number) {
+      return Math.min(Math.max(value, min), max);
+    }
+
     function loop(t: number) {
       requestAnimationFrame(loop);
 
@@ -127,11 +160,24 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       // движение мира влево
       setScrollX((x) => {
         const newX = x + speed * dt;
+        scrollXRef.current = newX;
         return newX;
       });
 
+      // 3) Проверка выхода большого сугроба за экран
+      if (bigSnowbankXRef.current !== null) {
+        if (
+          bigSnowbankXRef.current - scrollXRef.current + stageWidthRef.current <
+          0
+        ) {
+          setActiveSnowbank(null);
+          setBigSnowbankX(null);
+        }
+      }
+
       // плавное стремление к нужной полосе
-      const targetY = lane === "upper" ? upperLaneY : lowerLaneY;
+      const targetY =
+        lane === "upper" ? laneYRef.current.upper : laneYRef.current.lower;
 
       // Вычисление ограничений по Y в зависимости от activeSnowbank
       let minAllowedY = baseUpperLimit;
@@ -144,11 +190,6 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         maxAllowedY = baseLowerLimit - snowbankOffset;
       }
 
-      // Функция clamp
-      function clamp(value: number, min: number, max: number) {
-        return Math.min(Math.max(value, min), max);
-      }
-
       setSledY((y) => {
         const nextY = y + (targetY - y) * 0.12;
         return clamp(nextY, minAllowedY, maxAllowedY);
@@ -156,32 +197,48 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     }
 
     requestAnimationFrame(loop);
-  }, []);
+  }, [lane, stageWidth, baseUpperLimit, baseLowerLimit, snowbankOffset]);
 
   useEffect(() => {
     if (!isRunning) {
+      activeSnowbankRef.current = null;
       setActiveSnowbank(null);
+      setBigSnowbankX(null);
       return;
     }
+    let nextTimer: number | null = null;
 
-    let hideTimer: number;
-    let interval: number;
+    const spawnSnowbank = () => {
+      if (activeSnowbankRef.current !== null) return;
 
-    function spawnSnowbank() {
       const side: "upper" | "lower" = Math.random() < 0.5 ? "upper" : "lower";
+
+      activeSnowbankRef.current = side;
       setActiveSnowbank(side);
+      // 4) Устанавливаем позицию большого сугроба
+      setBigSnowbankX(scrollXRef.current + stageWidthRef.current);
+    };
 
-      hideTimer = window.setTimeout(() => {
-        setActiveSnowbank(null);
-      }, 2500);
-    }
+    const scheduleNext = (ms: number) => {
+      if (nextTimer) window.clearTimeout(nextTimer);
+      nextTimer = window.setTimeout(() => {
+        if (!isRunningRef.current) return;
 
-    spawnSnowbank();
-    interval = window.setInterval(spawnSnowbank, 4000 + Math.random() * 2000);
+        // Try to spawn; if blocked, retry shortly until the current one clears.
+        if (activeSnowbankRef.current === null) {
+          spawnSnowbank();
+          scheduleNext(4000 + Math.random() * 2000);
+        } else {
+          scheduleNext(350); // keep polling until it clears
+        }
+      }, ms);
+    };
+
+    // First spawn quickly after starting, then loop.
+    scheduleNext(600);
 
     return () => {
-      clearTimeout(hideTimer);
-      clearInterval(interval);
+      if (nextTimer) window.clearTimeout(nextTimer);
     };
   }, [isRunning]);
 
@@ -190,7 +247,10 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   return (
     <div className="dog-sled-run-stage" ref={stageRef}>
       {/* SCENE */}
-      <div className="dog-sled-run-scene">
+      <div
+        className="dog-sled-run-scene"
+        style={{ position: "relative", width: "100%", height: "100%" }}
+      >
         <div className="dog-sled-background">
           {BACKGROUND_LAYERS.map((layer) => (
             <div
@@ -207,18 +267,27 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
           ))}
         </div>
 
-        <div className="dog-sled-obstacles">
+        <div
+          className="dog-sled-obstacles"
+          style={{ position: "absolute", inset: 0 }}
+        >
           {obstacles.map((obstacle) => {
-            const laneY = obstacle.lane === "upper" ? upperLaneY : lowerLaneY;
+            const left = obstacle.x - scrollX;
+            if (left < -200) return null;
+            const laneY =
+              obstacle.lane === "upper"
+                ? laneYRef.current.upper
+                : laneYRef.current.lower;
+            const top = obstacle.y !== undefined ? obstacle.y : laneY;
             return (
               <div
                 key={obstacle.id}
                 style={{
                   position: "absolute",
                   pointerEvents: "none",
-                  left: obstacle.x - scrollX,
-                  top: laneY,
-                  transform: "translateX(-50%)",
+                  left: left,
+                  top: top,
+                  transform: "translate(-50%, -50%)",
                   backgroundImage: `url(${obstacle.definition.src})`,
                 }}
               >
@@ -236,43 +305,86 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
               </div>
             );
           })}
-
-          {/* Рендер большого сугроба */}
-          {activeSnowbank === "upper" && (
-            <div
-              className="big-snowbank upper"
-              style={{
-                position: "absolute",
-                left: stageWidth / 2,
-                top: upperLaneY - 150,
-                transform: "translate(-50%, -100%)",
-                backgroundImage: `url(${SNOWDRIFT_VARIANTS.upper})`,
-                width: 420,
-                height: 420,
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "contain",
-                zIndex: 1000,
-              }}
-            />
-          )}
-          {activeSnowbank === "lower" && (
-            <div
-              className="big-snowbank lower"
-              style={{
-                position: "absolute",
-                left: stageWidth / 2,
-                top: lowerLaneY,
-                transform: "translate(-50%, -100%)",
-                backgroundImage: `url(${SNOWDRIFT_VARIANTS.lower})`,
-                width: 400,
-                height: 400,
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "contain",
-                zIndex: 900,
-              }}
-            />
-          )}
         </div>
+
+        {/* DEBUG: corridor */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: baseUpperLimit,
+            height: baseLowerLimit - baseUpperLimit,
+            background: "rgba(0, 255, 0, 0.08)",
+            pointerEvents: "none",
+            zIndex: 5,
+          }}
+        />
+
+        {/* DEBUG: upper clamp */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: baseUpperLimit,
+            height: 2,
+            background: "lime",
+            zIndex: 6,
+          }}
+        />
+
+        {/* DEBUG: lower clamp */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: baseLowerLimit,
+            height: 2,
+            background: "red",
+            zIndex: 6,
+          }}
+        />
+
+        {/* 5) Позиционирование больших сугробов через left без transform */}
+        {activeSnowbank === "upper" && bigSnowbankX !== null && (
+          <div
+            className="big-snowbank big-snowbank-upper"
+            style={{
+              position: "absolute",
+              left: bigSnowbankX - scrollX,
+              top: 0,
+              width: "100%",
+              height: "100%",
+              backgroundImage: `url(${SNOWDRIFT_VARIANTS.upper})`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "top center",
+              backgroundSize: "cover",
+              zIndex: 20,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+
+        {activeSnowbank === "lower" && bigSnowbankX !== null && (
+          <div
+            className="big-snowbank big-snowbank-lower"
+            style={{
+              position: "absolute",
+              left: bigSnowbankX - scrollX,
+              bottom: 0,
+              width: "100%",
+              height: "100%",
+              backgroundImage: `url(${SNOWDRIFT_VARIANTS.lower})`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "top center",
+              backgroundSize: "cover",
+              zIndex: 20,
+              pointerEvents: "none",
+            }}
+          />
+        )}
 
         {/* SLED */}
         <div

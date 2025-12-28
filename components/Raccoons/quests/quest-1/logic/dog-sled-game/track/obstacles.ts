@@ -1,4 +1,4 @@
-import { ObstacleDefinition, ObstacleType, SpecialObstacleType } from "./obstacleTypes";
+import { ObstacleDefinition, ObstacleType } from "./obstacleTypes";
 
 export const OBSTACLES: Partial<Record<ObstacleType, ObstacleDefinition>> = {
   tree: {
@@ -45,12 +45,3 @@ export const SNOWDRIFT_VARIANTS = {
 } as const;
 
 export type SnowdriftLane = keyof typeof SNOWDRIFT_VARIANTS;
-
-export function createBigSnowdrift(lane: SnowdriftLane): ObstacleDefinition {
-  return {
-    type: "snowdrift_big",
-    src: SNOWDRIFT_VARIANTS[lane],
-    hitRadius: 90,
-    severity: 0.5,
-  };
-}

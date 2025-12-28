@@ -13,7 +13,7 @@ export interface ObstacleInstance {
 
   // позиционирование
   x: number;          // мировые координаты (не screen!)
-  y: number;
+  y?: number
   lane: TrackLane;    // upper | lower
 
   // состояние

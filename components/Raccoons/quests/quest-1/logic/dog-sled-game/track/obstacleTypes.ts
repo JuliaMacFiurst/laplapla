@@ -15,3 +15,9 @@ export interface ObstacleDefinition {
   hitRadius: number;
   severity: number; // насколько сильно влияет
 }
+
+export type BigSnowbank = {
+  id: string;
+  side: "upper" | "lower";
+  x: number; // мировая координата
+};
