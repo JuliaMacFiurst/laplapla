@@ -2,27 +2,20 @@ import { ObstacleType } from "./obstacleTypes";
 
 export type TrackLane = "upper" | "lower";
 
-export interface Obstacle {
+export interface ObstacleInstance {
   id: string;
+
+  // логика
   type: ObstacleType;
-  segmentId: string;
-  x: number; // позиция внутри сегмента (в пикселях)
-  lane: TrackLane;
-}
 
-export type TrackSegmentType =
-  | "straight"
-  | "split"
-  | "merge"
-  | "curve-up"
-  | "curve-down";
+  // визуальный вариант (опционально)
+  variant?: "upper" | "lower";
 
-export interface TrackSegment {
-  id: string;
-  type: string;
-  src: string;
-  widthScreens: number; // ← ВАЖНО
-  yUpper: number;
-  yLower: number;
-  obstacles?: Obstacle[];
+  // позиционирование
+  x: number;          // мировые координаты (не screen!)
+  y: number;
+  lane: TrackLane;    // upper | lower
+
+  // состояние
+  passed?: boolean;   // чтобы не считать коллизию дважды
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { TRACK_SEGMENTS } from "./track/trackSegments";
 import { BACKGROUND_LAYERS } from "./background/backgroundLayers";
+import { useObstacles } from "./track/useObstacles";
+import { OBSTACLES } from "./track/obstacles";
+import { SNOWDRIFT_VARIANTS } from "./track/obstacles";
 
 type Lane = "upper" | "lower";
 type Phase = "ready" | "running" | "crash" | "finish";
@@ -36,26 +38,43 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
 
   // базовые параметры (позже придут из подготовки)
   const speed = 220; // px/sec
-  const upperLaneY = 260;
-  const lowerLaneY = 420;
+  const upperLaneY = 290;
+  const lowerLaneY = 380;
 
   const [stageWidth, setStageWidth] = useState(1200);
 
-useEffect(() => {
-  if (!stageRef.current) return;
+  const obstacles = useObstacles();
 
-  const update = () => {
-    setStageWidth(stageRef.current!.clientWidth);
-  };
+  // Новое состояние для сугроба
+  const [activeSnowbank, setActiveSnowbank] = useState<
+    "upper" | "lower" | null
+  >(null);
+  const activeSnowbankRef = useRef<"upper" | "lower" | null>(null);
 
-  update();
-  window.addEventListener("resize", update);
-  return () => window.removeEventListener("resize", update);
-}, []);
+  // Параметры коридора движения
+  const baseUpperLimit = upperLaneY - 80;
+  const baseLowerLimit = lowerLaneY + 80;
+  const snowbankOffset = 120;
 
-useEffect(() => {
-  isRunningRef.current = isRunning;
-}, [isRunning]);
+  useEffect(() => {
+    if (!stageRef.current) return;
+
+    const update = () => {
+      setStageWidth(stageRef.current!.clientWidth);
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
+
+  useEffect(() => {
+    activeSnowbankRef.current = activeSnowbank;
+  }, [activeSnowbank]);
 
   /* ───────────────────────── INPUT ───────────────────────── */
 
@@ -64,6 +83,7 @@ useEffect(() => {
     setIsRunning(false);
     setPhase("ready");
     lastTimeRef.current = null;
+    setActiveSnowbank(null);
   }
 
   useEffect(() => {
@@ -88,17 +108,16 @@ useEffect(() => {
   /* ───────────────────────── GAME LOOP ───────────────────────── */
 
   useEffect(() => {
-    if (!isRunning) return;
-
     function loop(t: number) {
+      requestAnimationFrame(loop);
+
       if (!isRunningRef.current) {
-        lastTimeRef.current = null;
+        lastTimeRef.current = t;
         return;
       }
 
       if (lastTimeRef.current == null) {
         lastTimeRef.current = t;
-        requestAnimationFrame(loop);
         return;
       }
 
@@ -106,24 +125,67 @@ useEffect(() => {
       lastTimeRef.current = t;
 
       // движение мира влево
-      setScrollX((x) => x + speed * dt);
+      setScrollX((x) => {
+        const newX = x + speed * dt;
+        return newX;
+      });
 
       // плавное стремление к нужной полосе
       const targetY = lane === "upper" ? upperLaneY : lowerLaneY;
-      setSledY((y) => y + (targetY - y) * 0.12);
 
-      requestAnimationFrame(loop);
+      // Вычисление ограничений по Y в зависимости от activeSnowbank
+      let minAllowedY = baseUpperLimit;
+      let maxAllowedY = baseLowerLimit;
+      if (activeSnowbankRef.current === "upper") {
+        minAllowedY = baseUpperLimit + snowbankOffset;
+        maxAllowedY = baseLowerLimit;
+      } else if (activeSnowbankRef.current === "lower") {
+        minAllowedY = baseUpperLimit;
+        maxAllowedY = baseLowerLimit - snowbankOffset;
+      }
+
+      // Функция clamp
+      function clamp(value: number, min: number, max: number) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      setSledY((y) => {
+        const nextY = y + (targetY - y) * 0.12;
+        return clamp(nextY, minAllowedY, maxAllowedY);
+      });
     }
 
     requestAnimationFrame(loop);
+  }, []);
+
+  useEffect(() => {
+    if (!isRunning) {
+      setActiveSnowbank(null);
+      return;
+    }
+
+    let hideTimer: number;
+    let interval: number;
+
+    function spawnSnowbank() {
+      const side: "upper" | "lower" = Math.random() < 0.5 ? "upper" : "lower";
+      setActiveSnowbank(side);
+
+      hideTimer = window.setTimeout(() => {
+        setActiveSnowbank(null);
+      }, 2500);
+    }
+
+    spawnSnowbank();
+    interval = window.setInterval(spawnSnowbank, 4000 + Math.random() * 2000);
 
     return () => {
-      lastTimeRef.current = null;
+      clearTimeout(hideTimer);
+      clearInterval(interval);
     };
-  }, [isRunning, lane]);
+  }, [isRunning]);
 
   /* ───────────────────────── UI ───────────────────────── */
-
 
   return (
     <div className="dog-sled-run-stage" ref={stageRef}>
@@ -135,36 +197,81 @@ useEffect(() => {
               key={layer.id}
               className="dog-sled-background-layer"
               style={{
-  backgroundImage: `url(${layer.src})`,
-  transform: `translateX(-${(scrollX * layer.speedMultiplier) % stageWidth}px)`,
-  zIndex: layer.zIndex,
-}}
+                backgroundImage: `url(${layer.src})`,
+                transform: `translateX(-${
+                  (scrollX * layer.speedMultiplier) % stageWidth
+                }px)`,
+                zIndex: layer.zIndex,
+              }}
             />
           ))}
         </div>
-        {/* WORLD LAYER (пока просто плейсхолдер) */}
-        <div
-          className="dog-sled-world"
-          style={{ transform: `translateX(-${scrollX}px)` }}
-        >
-          {TRACK_SEGMENTS.map((seg, i) => {
-            const left = TRACK_SEGMENTS
-              .slice(0, i)
-              .reduce((sum, s) => sum + s.widthScreens * stageWidth, 0);
 
+        <div className="dog-sled-obstacles">
+          {obstacles.map((obstacle) => {
+            const laneY = obstacle.lane === "upper" ? upperLaneY : lowerLaneY;
             return (
-              <img
-                key={seg.id}
-                src={seg.src}
-                className="dog-sled-track-segment"
+              <div
+                key={obstacle.id}
                 style={{
-                  left,
-                  width: seg.widthScreens * stageWidth,
+                  position: "absolute",
+                  pointerEvents: "none",
+                  left: obstacle.x - scrollX,
+                  top: laneY,
+                  transform: "translateX(-50%)",
+                  backgroundImage: `url(${obstacle.definition.src})`,
                 }}
-                draggable={false}
-              />
+              >
+                <div
+                  className="hitbox-debug"
+                  style={{
+                    width: obstacle.definition.hitRadius * 2,
+                    height: obstacle.definition.hitRadius * 2,
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: "translate(-50%, -50%)",
+                  }}
+                />
+              </div>
             );
           })}
+
+          {/* Рендер большого сугроба */}
+          {activeSnowbank === "upper" && (
+            <div
+              className="big-snowbank upper"
+              style={{
+                position: "absolute",
+                left: stageWidth / 2,
+                top: upperLaneY - 150,
+                transform: "translate(-50%, -100%)",
+                backgroundImage: `url(${SNOWDRIFT_VARIANTS.upper})`,
+                width: 420,
+                height: 420,
+                backgroundRepeat: "no-repeat",
+                backgroundSize: "contain",
+                zIndex: 1000,
+              }}
+            />
+          )}
+          {activeSnowbank === "lower" && (
+            <div
+              className="big-snowbank lower"
+              style={{
+                position: "absolute",
+                left: stageWidth / 2,
+                top: lowerLaneY,
+                transform: "translate(-50%, -100%)",
+                backgroundImage: `url(${SNOWDRIFT_VARIANTS.lower})`,
+                width: 400,
+                height: 400,
+                backgroundRepeat: "no-repeat",
+                backgroundSize: "contain",
+                zIndex: 900,
+              }}
+            />
+          )}
         </div>
 
         {/* SLED */}
@@ -172,39 +279,32 @@ useEffect(() => {
           className="dog-sled-entity"
           style={{ transform: `translateY(${sledY}px)` }}
         >
-          <div className="dog-sled-placeholder">
-            🐕‍🦺🐕‍🦺🐕‍🦺
-          </div>
+          <div className="dog-sled-placeholder">🐕‍🦺🐕‍🦺🐕‍🦺</div>
         </div>
       </div>
 
       {/* OVERLAY UI */}
       {phase === "ready" && (
         <div className="dog-sled-run-overlay">
-          <button onClick={() => {
-            setPhase("running");
-            setIsRunning(true);
-          }}>
+          <button
+            onClick={() => {
+              setPhase("running");
+              setIsRunning(true);
+            }}
+          >
             Начать заезд
           </button>
 
-          {onExit && (
-            <button onClick={onExit}>
-              ← Назад
-            </button>
-          )}
+          {onExit && <button onClick={onExit}>← Назад</button>}
         </div>
       )}
       {phase === "running" && (
         <div className="dog-sled-hud">
-          <button 
-          className="dog-sled-stop-btn"
-          onClick={handleStop}
-          >Стоп
+          <button className="dog-sled-stop-btn" onClick={handleStop}>
+            Стоп
           </button>
         </div>
       )}
-      
     </div>
   );
 }
