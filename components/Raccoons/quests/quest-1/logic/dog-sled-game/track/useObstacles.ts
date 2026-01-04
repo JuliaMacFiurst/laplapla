@@ -1,9 +1,34 @@
 "use client";
 
+/**
+ * useObstacles
+ * =================
+ *
+ * Ответственность этого хука:
+ * - спавнить препятствия в world‑координатах
+ * - гарантировать, что уже заспавненные obstacles НИКОГДА
+ *   не исчезают по геймдизайнерским причинам
+ * - уважать логические ограничения дороги (сужения, обочины),
+ *   получая их В ЯВНОМ ВИДЕ как blockedSegments
+ *
+ * ❗️Важно:
+ * - здесь НЕТ таймеров
+ * - здесь НЕТ знаний о визуале
+ * - здесь НЕТ знаний о Snowdrift как картинке
+ *
+ * Единственная точка принятия решений — МОМЕНТ СПАВНА.
+ */
+
 import { useMemo, useState, useRef, useEffect } from "react";
 import { OBSTACLES } from "./obstacles";
 import { ObstacleInstance, TrackLane } from "./trackTypes";
 import { ObstacleType, ObstacleDefinition } from "./obstacleTypes";
+
+interface BlockedSegment {
+  fromX: number;
+  toX: number;
+  blocksLane: TrackLane;
+}
 
 interface SpawnedObstacle extends ObstacleInstance {
   definition: ObstacleDefinition;
@@ -34,7 +59,11 @@ function createObstacle(
  * Generates obstacle instances in world coordinates.
  * For now this is static; later it can become procedural.
  */
-export function useObstacles(worldX: number, stageWidth: number): SpawnedObstacle[] {
+export function useObstacles(
+  worldX: number,
+  stageWidth: number,
+  blockedSegments: BlockedSegment[] = []
+): SpawnedObstacle[] {
   const [spawned, setSpawned] = useState<SpawnedObstacle[]>([]);
   const nextSpawnX = useRef(0);
   const shuffledBag = useRef<ObstacleType[]>([]);
@@ -67,11 +96,30 @@ export function useObstacles(worldX: number, stageWidth: number): SpawnedObstacl
         shuffledBag.current = shuffleArray(BAG);
       }
       const type = shuffledBag.current.pop()!;
-      const lane = LANES[laneIndex % 2];
-      const obstacle = createObstacle(type, lane, nextSpawnX.current);
-      newObstacles.push(obstacle);
+      let lane = LANES[laneIndex % 2];
 
-      laneIndex++;
+      const definition = OBSTACLES[type];
+      const hitRadius = definition?.hitRadius ?? 0;
+
+      const obsStartX = nextSpawnX.current - hitRadius;
+      const obsEndX = nextSpawnX.current + hitRadius;
+
+      // Проверяем: не убьёт ли этот obstacle проходимость
+      const conflicts = blockedSegments.some((seg) => {
+        const overlapsX =
+          obsEndX >= seg.fromX && obsStartX <= seg.toX;
+
+        const blocksPassage = seg.blocksLane !== lane;
+
+        return overlapsX && blocksPassage;
+      });
+
+      if (!conflicts) {
+        const obstacle = createObstacle(type, lane, nextSpawnX.current);
+        newObstacles.push(obstacle);
+        laneIndex++;
+      }
+
       nextSpawnX.current += SPAWN_STEP + Math.floor(Math.random() * 301);
     }
 
@@ -79,7 +127,7 @@ export function useObstacles(worldX: number, stageWidth: number): SpawnedObstacl
     newObstacles = newObstacles.filter(o => o.x >= worldX - stageWidth);
 
     setSpawned(newObstacles);
-  }, [worldX, stageWidth]);
+  }, [worldX, stageWidth, blockedSegments]);
 
   return spawned;
 }

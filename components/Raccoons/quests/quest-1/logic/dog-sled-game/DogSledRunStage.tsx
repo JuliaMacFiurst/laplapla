@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { BACKGROUND_LAYERS } from "./background/backgroundLayers";
 import { useObstacles } from "./track/useObstacles";
-import { SNOWDRIFT_VARIANTS } from "./track/obstacles";
+import { SnowDriftController } from "./SnowdriftController";
+import SnowDriftVisual from "./track/SnowDriftVisual";
 
 type Lane = "upper" | "lower";
 type Phase = "ready" | "running" | "crash" | "finish";
@@ -45,6 +46,29 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   // laneYRef для хранения нормализованных координат полос
   const laneYRef = useRef({ upper: 0, lower: 0 });
 
+  // ───────────────────────── SnowDriftController (логика обочин) ─────────────────────────
+  const snowDriftControllerRef = useRef<SnowDriftController | null>(null);
+  const activeSnowDriftIdRef = useRef<string | null>(null);
+
+  const ensureSnowDriftController = () => {
+    if (snowDriftControllerRef.current) return;
+
+    const w = stageWidthRef.current || 1200;
+    snowDriftControllerRef.current = new SnowDriftController({
+      // примерно раз в 4–6 секунд при speed=300: 1200–1800px
+      minGapX: 1400,
+      // длина сегмента: подстраиваемся под ширину окна, но в разумных пределах
+      minLength: Math.max(420, w * 0.55),
+      maxLength: Math.max(560, w * 0.75),
+      offsetY: snowbankOffset,
+    });
+  };
+
+  const resetSnowDrifts = () => {
+    snowDriftControllerRef.current = null;
+    activeSnowDriftIdRef.current = null;
+  };
+
   // Параметры коридора движения
   const [baseUpperLimit, setBaseUpperLimit] = useState(0);
   const [baseLowerLimit, setBaseLowerLimit] = useState(0);
@@ -53,22 +77,18 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   // базовая скорость заезда (px/second)
   const speed = 300;
 
-  const obstacles = useObstacles(scrollX, stageWidth);
+  // ───────────────────────── Obstacles ↔ Road constraints ─────────────────────────
+  const blockedSegments = snowDriftControllerRef.current
+    ? snowDriftControllerRef.current
+        .getSegments()
+        .map((s) => ({
+          fromX: s.fromX,
+          toX: s.toX,
+          blocksLane: s.blocksLane,
+        }))
+    : [];
 
-  // Новое состояние для сугроба
-  const [activeSnowbank, setActiveSnowbank] = useState<
-    "upper" | "lower" | null
-  >(null);
-  const activeSnowbankRef = useRef<"upper" | "lower" | null>(null);
-
-  // 1) Добавить bigSnowbank состояние и ref
-  const [bigSnowbankX, setBigSnowbankX] = useState<number | null>(null);
-  const bigSnowbankXRef = useRef<number | null>(null);
-
-  // 2) Синхронизация ref с состоянием
-  useEffect(() => {
-    bigSnowbankXRef.current = bigSnowbankX;
-  }, [bigSnowbankX]);
+  const obstacles = useObstacles(scrollX, stageWidth, blockedSegments);
 
   useEffect(() => {
     if (!stageRef.current) return;
@@ -95,15 +115,10 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   }, [stageHeight]);
 
   // New constants for snowbank visual positioning
-  const snowbankHeight = stageHeight * 0.35;
 
   useEffect(() => {
     isRunningRef.current = isRunning;
   }, [isRunning]);
-
-  useEffect(() => {
-    activeSnowbankRef.current = activeSnowbank;
-  }, [activeSnowbank]);
 
   /* ───────────────────────── INPUT ───────────────────────── */
 
@@ -112,7 +127,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     setIsRunning(false);
     setPhase("ready");
     lastTimeRef.current = null;
-    setActiveSnowbank(null);
+    resetSnowDrifts();
   }
 
   useEffect(() => {
@@ -164,35 +179,40 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         return newX;
       });
 
-      // 3) Проверка выхода большого сугроба за экран
-      if (bigSnowbankXRef.current !== null) {
-        if (
-          bigSnowbankXRef.current - scrollXRef.current + stageWidthRef.current <
-          0
-        ) {
-          setActiveSnowbank(null);
-          setBigSnowbankX(null);
+      // ───────────── SnowDriftController update (world-space) ─────────────
+      ensureSnowDriftController();
+
+      const controller = snowDriftControllerRef.current!;
+      const worldX = scrollXRef.current;
+      const spawnUntilX = worldX + stageWidthRef.current * 2;
+
+      controller.update(worldX, spawnUntilX);
+
+      // Берём первый сегмент, который пересекает видимую область (можно будет улучшить позже)
+      const viewLeft = worldX;
+      const viewRight = worldX + stageWidthRef.current;
+
+      const activeSeg = controller
+        .getSegments()
+        .find((s) => s.toX >= viewLeft && s.fromX <= viewRight);
+
+      if (!activeSeg) {
+        if (activeSnowDriftIdRef.current !== null) {
+          activeSnowDriftIdRef.current = null;
         }
+      } else if (activeSeg.id !== activeSnowDriftIdRef.current) {
+        // Активный сегмент сменился (или появился впервые)
+        activeSnowDriftIdRef.current = activeSeg.id;
+      
       }
 
-      // плавное стремление к нужной полосе
+      // плавное стремление к нужной полосе (без логики сужения дороги)
       const targetY =
         lane === "upper" ? laneYRef.current.upper : laneYRef.current.lower;
 
-      // Вычисление ограничений по Y в зависимости от activeSnowbank
-      let minAllowedY = baseUpperLimit;
-      let maxAllowedY = baseLowerLimit;
-      if (activeSnowbankRef.current === "upper") {
-        minAllowedY = baseUpperLimit + snowbankOffset;
-        maxAllowedY = baseLowerLimit;
-      } else if (activeSnowbankRef.current === "lower") {
-        minAllowedY = baseUpperLimit;
-        maxAllowedY = baseLowerLimit - snowbankOffset;
-      }
-
       setSledY((y) => {
         const nextY = y + (targetY - y) * 0.12;
-        return clamp(nextY, minAllowedY, maxAllowedY);
+        return clamp(nextY, baseUpperLimit, baseLowerLimit);
       });
     }
 
@@ -201,45 +221,13 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
 
   useEffect(() => {
     if (!isRunning) {
-      activeSnowbankRef.current = null;
-      setActiveSnowbank(null);
-      setBigSnowbankX(null);
+      resetSnowDrifts();
       return;
     }
-    let nextTimer: number | null = null;
 
-    const spawnSnowbank = () => {
-      if (activeSnowbankRef.current !== null) return;
-
-      const side: "upper" | "lower" = Math.random() < 0.5 ? "upper" : "lower";
-
-      activeSnowbankRef.current = side;
-      setActiveSnowbank(side);
-      // 4) Устанавливаем позицию большого сугроба
-      setBigSnowbankX(scrollXRef.current + stageWidthRef.current);
-    };
-
-    const scheduleNext = (ms: number) => {
-      if (nextTimer) window.clearTimeout(nextTimer);
-      nextTimer = window.setTimeout(() => {
-        if (!isRunningRef.current) return;
-
-        // Try to spawn; if blocked, retry shortly until the current one clears.
-        if (activeSnowbankRef.current === null) {
-          spawnSnowbank();
-          scheduleNext(4000 + Math.random() * 2000);
-        } else {
-          scheduleNext(350); // keep polling until it clears
-        }
-      }, ms);
-    };
-
-    // First spawn quickly after starting, then loop.
-    scheduleNext(600);
-
-    return () => {
-      if (nextTimer) window.clearTimeout(nextTimer);
-    };
+    // старт заезда: создаём контроллер (лениво) и сбрасываем активный сегмент
+    ensureSnowDriftController();
+    activeSnowDriftIdRef.current = null;
   }, [isRunning]);
 
   /* ───────────────────────── UI ───────────────────────── */
@@ -347,44 +335,20 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
           }}
         />
 
-        {/* 5) Позиционирование больших сугробов через left без transform */}
-        {activeSnowbank === "upper" && bigSnowbankX !== null && (
-          <div
-            className="big-snowbank big-snowbank-upper"
-            style={{
-              position: "absolute",
-              left: bigSnowbankX - scrollX,
-              top: 0,
-              width: "100%",
-              height: "100%",
-              backgroundImage: `url(${SNOWDRIFT_VARIANTS.upper})`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "top center",
-              backgroundSize: "cover",
-              zIndex: 20,
-              pointerEvents: "none",
-            }}
-          />
-        )}
-
-        {activeSnowbank === "lower" && bigSnowbankX !== null && (
-          <div
-            className="big-snowbank big-snowbank-lower"
-            style={{
-              position: "absolute",
-              left: bigSnowbankX - scrollX,
-              bottom: 0,
-              width: "100%",
-              height: "100%",
-              backgroundImage: `url(${SNOWDRIFT_VARIANTS.lower})`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "top center",
-              backgroundSize: "cover",
-              zIndex: 20,
-              pointerEvents: "none",
-            }}
-          />
-        )}
+        {/* ───────────────────────── SnowDrift visuals (from controller) ───────────────────────── */}
+        {snowDriftControllerRef.current &&
+          snowDriftControllerRef.current.getSegments().map((segment) => (
+            <SnowDriftVisual
+              key={segment.id}
+              segment={segment}
+              scrollX={scrollX}
+              stageWidth={stageWidth}
+              stageHeight={stageHeight}
+              baseUpperLimit={baseUpperLimit}
+              baseLowerLimit={baseLowerLimit}
+              debug
+            />
+          ))}
 
         {/* SLED */}
         <div
