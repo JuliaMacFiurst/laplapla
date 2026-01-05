@@ -15,7 +15,7 @@
  * Видео — источник истины для анимации.
  */
 
-import { useLayoutEffect, useRef, useState, useEffect } from "react";
+import { useRef, useEffect } from "react";
 
 /* ──────────────────────────────
  * Типы состояний саней
@@ -69,7 +69,7 @@ const DOG_SLED_VIDEOS: Record<DogSledState, DogSledVideoConfig> = {
  * ────────────────────────────── */
 
 interface DogSledProps {
-  /** вертикальная позиция саней (внутри road) */
+  /** вертикальная позиция саней ВНУТРИ road (Y-центр, а не top) */
   y: number;
 
   /** текущее состояние */
@@ -77,13 +77,13 @@ interface DogSledProps {
 
   /** масштаб (на будущее) */
   scale?: number;
-
-  /** верхняя граница дороги (локальная) */
-  clampTop?: number;
-
-  /** нижняя граница дороги (локальная) */
-  clampBottom?: number;
 }
+
+/* ──────────────────────────────
+ * Logical visual height constant
+ * ────────────────────────────── */
+
+const SLED_VISUAL_HEIGHT_PX = 230;
 
 /* ──────────────────────────────
  * Component
@@ -92,40 +92,8 @@ interface DogSledProps {
 export default function DogSled({
   y,
   state,
-  clampTop,
-  clampBottom,
 }: DogSledProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [sledHeight, setSledHeight] = useState(0);
-
-  useLayoutEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-
-    const measure = () => {
-      const rect = el.getBoundingClientRect();
-      setSledHeight(rect.height || 0);
-    };
-
-    measure();
-
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-
-    return () => ro.disconnect();
-  }, []);
-
-  // Новая логика вычисления clampedY с учётом высоты саней
-  const minY = typeof clampTop === "number" ? clampTop : 0;
-  const maxY =
-    typeof clampBottom === "number"
-      ? clampBottom - sledHeight
-      : Infinity;
-  const clampedY = Math.min(
-    Math.max(y, minY),
-    maxY
-  );
 
   const video = DOG_SLED_VIDEOS[state];
 
@@ -150,14 +118,15 @@ export default function DogSled({
 
   return (
     <div
-      ref={rootRef}
       className="dog-sled"
       style={{
         position: "absolute",
-        left: "30%",      // фиксированная позиция внутри дороги
-        top: clampedY,
+        left: "30%", // фиксированная позиция внутри дороги
+        top: y,
+        transform: "translateY(-50%)", // y = центр саней
         pointerEvents: "none",
         zIndex: 50,
+        willChange: "transform, top",
       }}
     >
       <video
@@ -169,8 +138,8 @@ export default function DogSled({
         playsInline
         style={{
           display: "block",
-          width: "50%",
-          height: "auto",
+          height: `${SLED_VISUAL_HEIGHT_PX}px`,
+          width: "auto",
         }}
       />
     </div>

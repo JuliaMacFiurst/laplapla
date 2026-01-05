@@ -38,7 +38,6 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   // дискретное положение саней внутри дороги: 0 = верх, ROAD_STEPS = низ
   const ROAD_STEPS = 5;
   const [sledStep, setSledStep] = useState(ROAD_STEPS);
-  const sledYRef = useRef<number>(0);
 
   const [scrollX, setScrollX] = useState(0);
   const [sledState, setSledState] = useState<DogSledState>("run_fast");
@@ -142,28 +141,37 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (!isRunningRef.current) return;
+      // логируем ВСЕ нажатия для отладки
+      console.log("[KEY]", e.key, "isRunning:", isRunningRef.current);
 
       // предотвращаем скролл страницы стрелками
-      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowRight") {
+      if (
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === "ArrowRight"
+      ) {
         e.preventDefault();
       }
 
-      // ───── Вертикальное управление ─────
+      // ───── Вертикальное управление (ВСЕГДА активно) ─────
       if (e.key === "ArrowUp" || e.key.toLowerCase() === "w") {
         setSledStep((s) => Math.max(0, s - 1));
       }
+
       if (e.key === "ArrowDown" || e.key.toLowerCase() === "s") {
         setSledStep((s) => Math.min(ROAD_STEPS, s + 1));
       }
 
-      // ───── Ускорение ─────
+      // ───── Остальная логика ТОЛЬКО при запущенной игре ─────
+      if (!isRunningRef.current) return;
+
+      // ускорение
       if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
         const now = performance.now();
         setBoostUntilTs(now + BOOST_DURATION_MS);
       }
 
-      // ───── Стоп ─────
+      // стоп
       if (e.key === "Escape") {
         handleStop();
       }
@@ -182,10 +190,10 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     const loop = (t: number) => {
       rafId = requestAnimationFrame(loop);
 
-      if (!isRunningRef.current) {
-        lastTimeRef.current = t;
-        return;
-      }
+      // if (!isRunningRef.current) {
+      //   lastTimeRef.current = t;
+      //   return;
+      // }
 
       if (lastTimeRef.current == null) {
         lastTimeRef.current = t;
@@ -195,13 +203,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       const dt = (t - lastTimeRef.current) / 1000;
       lastTimeRef.current = t;
 
-      // ───────── SLED Y SMOOTH MOVE ─────────
-      const targetSledY = SLED_BUFFER_Y + sledStep * stepSize;
-      if (sledYRef.current === 0) {
-        sledYRef.current = targetSledY;
-      } else {
-        sledYRef.current += (targetSledY - sledYRef.current) * 0.18;
-      }
+      if (!isRunningRef.current) return;
 
       // ───────── EASING / HIT ZONE LOGIC ─────────
       let inEasingZone = false;
@@ -236,7 +238,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         inHitZone = sledX >= hitStart && sledX <= hitEnd;
       }
 
-      // ───────── Scroll update (через setState, но один loop) ─────────
+      // ───────── Scroll update ─────────
       const now = performance.now();
       const isBoosting = boostUntilTs !== null && now < boostUntilTs;
 
@@ -253,7 +255,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         return smoothedX;
       });
 
-      // ───────── Sled state update (ТОЛЬКО при изменении) ─────────
+      // ───────── Sled state update ─────────
       if (inHitZone) {
         nextSledState = "crash";
       } else if (isBoosting) {
@@ -272,7 +274,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, []); // ⚠️ ПУСТОЙ dependency array
+  }, []);
 
   useEffect(() => {
     if (!isRunning) {
@@ -286,24 +288,18 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
 
   /* ───────────────────────── UI ───────────────────────── */
 
-  // ЛОКАЛЬНАЯ координата внутри road-контейнера (0..roadHeight)
-  const roadHeight = Math.max(0, baseLowerLimit - baseUpperLimit);
+  // ───────── DRIVE BAND ─────────
+  // Единственный источник истины: геометрия дороги
+  const roadHeight = baseLowerLimit - baseUpperLimit;
 
-  // буфер безопасности, чтобы сани не обрезались краями дороги
-  const SLED_BUFFER_Y = 25;
+  const ROAD_STEPS_SAFE = Math.max(1, ROAD_STEPS);
 
-  // доступная высота движения саней
-  const usableRoadHeight = Math.max(0, roadHeight - SLED_BUFFER_Y * 2);
+  // шаг движения строго по высоте дороги
+  const stepSize = roadHeight / ROAD_STEPS_SAFE;
 
-  // шаг перемещения (в среднем 5 кликов от верха до низа)
-  const stepSize = ROAD_STEPS > 0 ? usableRoadHeight / ROAD_STEPS : 0;
+  // позиция саней ВНУТРИ dog-sled-road
+  const targetSledY = sledStep * stepSize;
 
-  // позиция саней внутри дороги с учётом буфера
-  const targetSledY = SLED_BUFFER_Y + sledStep * stepSize;
-
-  // локальные границы для DogSled (в координатах road)
-  const sledClampTop = SLED_BUFFER_Y;
-  const sledClampBottom = roadHeight - SLED_BUFFER_Y;
 
   return (
     <div className="dog-sled-run-stage" ref={stageRef}>
@@ -406,10 +402,8 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
           }}
         >
           <DogSled
-            y={sledYRef.current}
+            y={targetSledY}
             state={sledState}
-            clampTop={sledClampTop}
-            clampBottom={sledClampBottom}
           />
         </div>
       </div>
