@@ -64,6 +64,20 @@ export function useObstacles(
   stageWidth: number,
   blockedSegments: BlockedSegment[] = []
 ): SpawnedObstacle[] {
+  const blockedKey = useMemo(() => {
+    return blockedSegments
+      .map(seg => `${seg.fromX}:${seg.toX}:${seg.blocksLane}`)
+      .join("|");
+  }, [blockedSegments]);
+
+  const stableBlockedSegments = useMemo(() => {
+    return blockedSegments.map(seg => ({
+      fromX: seg.fromX,
+      toX: seg.toX,
+      blocksLane: seg.blocksLane,
+    }));
+  }, [blockedKey]);
+
   const [spawned, setSpawned] = useState<SpawnedObstacle[]>([]);
   const nextSpawnX = useRef(0);
   const shuffledBag = useRef<ObstacleType[]>([]);
@@ -105,7 +119,7 @@ export function useObstacles(
       const obsEndX = nextSpawnX.current + hitRadius;
 
       // Проверяем: не убьёт ли этот obstacle проходимость
-      const conflicts = blockedSegments.some((seg) => {
+      const conflicts = stableBlockedSegments.some((seg) => {
         const overlapsX =
           obsEndX >= seg.fromX && obsStartX <= seg.toX;
 
@@ -126,8 +140,11 @@ export function useObstacles(
     // Filter out obstacles behind the view
     newObstacles = newObstacles.filter(o => o.x >= worldX - stageWidth);
 
-    setSpawned(newObstacles);
-  }, [worldX, stageWidth, blockedSegments]);
+    setSpawned((prev) => {
+      if (prev.length === newObstacles.length) return prev;
+      return newObstacles;
+    });
+  }, [worldX, stageWidth, stableBlockedSegments]);
 
   return spawned;
 }
