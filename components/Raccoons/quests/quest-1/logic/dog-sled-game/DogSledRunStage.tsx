@@ -289,16 +289,18 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   /* ───────────────────────── UI ───────────────────────── */
 
   // ───────── DRIVE BAND ─────────
-  // Единственный источник истины: геометрия дороги
   const roadHeight = baseLowerLimit - baseUpperLimit;
 
+  const BUFFER_Y = 30;
+  const DRIVE_BAND_HEIGHT = Math.max(0, roadHeight - BUFFER_Y * 2);
+
   const ROAD_STEPS_SAFE = Math.max(1, ROAD_STEPS);
+  const stepSize = DRIVE_BAND_HEIGHT / ROAD_STEPS_SAFE;
 
-  // шаг движения строго по высоте дороги
-  const stepSize = roadHeight / ROAD_STEPS_SAFE;
-
-  // позиция саней ВНУТРИ dog-sled-road
-  const targetSledY = sledStep * stepSize;
+  const targetSledY = Math.min(
+    DRIVE_BAND_HEIGHT,
+    Math.max(0, sledStep * stepSize)
+  );
 
 
   return (
@@ -396,14 +398,40 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
             right: 0,
             top: baseUpperLimit,
             height: baseLowerLimit - baseUpperLimit,
-            overflow: "hidden",
             pointerEvents: "none",
             zIndex: 40,
           }}
         >
-          <DogSled
-            y={targetSledY}
-            state={sledState}
+          {/* верхний буфер */}
+          <div
+            className="road-buffer road-buffer-top"
+            style={{
+              height: 20,
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* полоса движения */}
+          <div
+            className="road-drive-band"
+            style={{
+              position: "relative",
+              height: "calc(100% - 40px)", // 20px top + 20px bottom
+            }}
+          >
+            <DogSled
+              y={targetSledY}
+              state={sledState}
+            />
+          </div>
+
+          {/* нижний буфер */}
+          <div
+            className="road-buffer road-buffer-bottom"
+            style={{
+              height: 20,
+              pointerEvents: "none",
+            }}
           />
         </div>
       </div>
