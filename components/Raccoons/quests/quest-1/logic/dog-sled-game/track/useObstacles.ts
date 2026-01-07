@@ -21,7 +21,7 @@
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import { OBSTACLES } from "./obstacles";
-import { ObstacleInstance, TrackLane } from "./trackTypes";
+import { ObstacleInstance, TrackLane, getLaneY } from "./trackTypes";
 import { ObstacleType, ObstacleDefinition } from "./obstacleTypes";
 
 interface BlockedSegment {
@@ -35,11 +35,7 @@ interface SpawnedObstacle extends ObstacleInstance {
   yOffset?: number; // процент от высоты сцены, например 0.03
 }
 
-function createObstacle(
-  type: ObstacleType,
-  lane: TrackLane,
-  x: number
-): SpawnedObstacle {
+function createObstacle(type: ObstacleType, lane: TrackLane, x: number): SpawnedObstacle {
   const definition = OBSTACLES[type];
   if (!definition) {
     throw new Error(`Obstacle definition for type "${type}" not found`);
@@ -60,18 +56,19 @@ function createObstacle(
  * For now this is static; later it can become procedural.
  */
 export function useObstacles(
-  worldX: number,
+  spawnAnchorX: number,
   stageWidth: number,
+  stageHeight: number,
   blockedSegments: BlockedSegment[] = []
 ): SpawnedObstacle[] {
   const blockedKey = useMemo(() => {
     return blockedSegments
-      .map(seg => `${seg.fromX}:${seg.toX}:${seg.blocksLane}`)
+      .map((seg) => `${seg.fromX}:${seg.toX}:${seg.blocksLane}`)
       .join("|");
   }, [blockedSegments]);
 
   const stableBlockedSegments = useMemo(() => {
-    return blockedSegments.map(seg => ({
+    return blockedSegments.map((seg) => ({
       fromX: seg.fromX,
       toX: seg.toX,
       blocksLane: seg.blocksLane,
@@ -86,7 +83,6 @@ export function useObstacles(
   const LANES: TrackLane[] = ["upper", "lower"];
   const BAG: ObstacleType[] = ["tree", "trees", "log", "ice", "stakes", "snowdrift"];
 
-  // Helper to shuffle an array
   function shuffleArray<T>(array: T[]): T[] {
     const arr = array.slice();
     for (let i = arr.length - 1; i > 0; i--) {
@@ -96,21 +92,27 @@ export function useObstacles(
     return arr;
   }
 
+  // ⚠️ ВАЖНО: obstacles существуют в world-пространстве и не удаляются при уходе за экран
   useEffect(() => {
-    // Initialize the bag if empty
+    // 🔑 FIX: гарантируем, что спавн начинается впереди камеры
+    if (nextSpawnX.current === 0) {
+      nextSpawnX.current = spawnAnchorX + stageWidth;
+    }
+
     if (shuffledBag.current.length === 0) {
       shuffledBag.current = shuffleArray(BAG);
     }
 
     let newObstacles = [...spawned];
-    let laneIndex = newObstacles.length % 2; // alternate lanes based on count
+    let laneIndex = newObstacles.length % 2;
 
-    while (nextSpawnX.current < worldX + stageWidth * 2) {
+    while (nextSpawnX.current < spawnAnchorX + stageWidth * 2) {
       if (shuffledBag.current.length === 0) {
         shuffledBag.current = shuffleArray(BAG);
       }
+
       const type = shuffledBag.current.pop()!;
-      let lane = LANES[laneIndex % 2];
+      const lane = LANES[laneIndex % 2];
 
       const definition = OBSTACLES[type];
       const hitRadius = definition?.hitRadius ?? 0;
@@ -118,33 +120,30 @@ export function useObstacles(
       const obsStartX = nextSpawnX.current - hitRadius;
       const obsEndX = nextSpawnX.current + hitRadius;
 
-      // Проверяем: не убьёт ли этот obstacle проходимость
       const conflicts = stableBlockedSegments.some((seg) => {
-        const overlapsX =
-          obsEndX >= seg.fromX && obsStartX <= seg.toX;
-
+        const overlapsX = obsEndX >= seg.fromX && obsStartX <= seg.toX;
         const blocksPassage = seg.blocksLane !== lane;
-
         return overlapsX && blocksPassage;
       });
 
       if (!conflicts) {
-        const obstacle = createObstacle(type, lane, nextSpawnX.current);
-        newObstacles.push(obstacle);
+        newObstacles.push({
+          ...createObstacle(type, lane, nextSpawnX.current),
+          y: getLaneY(stageHeight, lane),
+        });
         laneIndex++;
       }
 
       nextSpawnX.current += SPAWN_STEP + Math.floor(Math.random() * 301);
     }
 
-    // Filter out obstacles behind the view
-    newObstacles = newObstacles.filter(o => o.x >= worldX - stageWidth);
+    // Removed filtering obstacles based on worldX and stageWidth to keep all spawned obstacles until marked passed
 
     setSpawned((prev) => {
       if (prev.length === newObstacles.length) return prev;
       return newObstacles;
     });
-  }, [worldX, stageWidth, stableBlockedSegments]);
+  }, [spawnAnchorX, stageWidth, stageHeight, stableBlockedSegments]);
 
   return spawned;
 }

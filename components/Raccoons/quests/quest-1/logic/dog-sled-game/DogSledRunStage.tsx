@@ -39,6 +39,9 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   const ROAD_STEPS = 5;
   const [sledStep, setSledStep] = useState(ROAD_STEPS);
 
+  // Ref for sticky slow_down effect
+  const slowDownUntilRef = useRef<number>(0);
+
   const [scrollX, setScrollX] = useState(0);
   const [sledState, setSledState] = useState<DogSledState>("run_fast");
 
@@ -91,6 +94,9 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
 
   const EASING_SPEED_MULT = 0.65;
 
+  // ───────── OBSTACLE COLLISION TUNING ─────────
+  const OBSTACLE_WARNING_RADIUS = 120;
+
   // ───────────────────────── Obstacles ↔ Road constraints ─────────────────────────
   const blockedSegments = snowDriftControllerRef.current
     ? snowDriftControllerRef.current.getSegments().map((s) => ({
@@ -99,8 +105,21 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         blocksLane: s.blocksLane,
       }))
     : [];
+    
+  const sledWorldX = scrollXRef.current + stageWidthRef.current * 0.3;
 
-  const obstacles = useObstacles(scrollX, stageWidth, blockedSegments);
+  const OBSTACLE_SPAWN_OFFSET_X = 300;
+
+  const obstacles = useObstacles(
+    sledWorldX + OBSTACLE_SPAWN_OFFSET_X,
+    stageWidth,
+    stageHeight,
+    blockedSegments
+  );
+  const obstaclesRef = useRef<any[]>([]);
+  useEffect(() => {
+    obstaclesRef.current = obstacles as any[];
+  }, [obstacles]);
 
   useEffect(() => {
     if (!stageRef.current) return;
@@ -142,7 +161,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       // логируем ВСЕ нажатия для отладки
-      console.log("[KEY]", e.key, "isRunning:", isRunningRef.current);
+      // (console.log("[KEY]", e.key, "isRunning:", isRunningRef.current);) // Optionally keep or remove
 
       // предотвращаем скролл страницы стрелками
       if (
@@ -190,11 +209,6 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     const loop = (t: number) => {
       rafId = requestAnimationFrame(loop);
 
-      // if (!isRunningRef.current) {
-      //   lastTimeRef.current = t;
-      //   return;
-      // }
-
       if (lastTimeRef.current == null) {
         lastTimeRef.current = t;
         return;
@@ -206,8 +220,8 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       if (!isRunningRef.current) return;
 
       // ───────── EASING / HIT ZONE LOGIC ─────────
-      let inEasingZone = false;
-      let inHitZone = false;
+      let inEasingZone = true;
+      let inHitZone = true;
       let nextSledState: DogSledState = sledState;
 
       ensureSnowDriftController();
@@ -226,7 +240,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         .find((s) => s.toX >= viewLeft && s.fromX <= viewRight);
 
       if (activeSeg) {
-        const sledX = worldX + stageWidthRef.current * 0.3;
+        const sledX = worldX + stageWidthRef.current * 0.2;
 
         const easingStart = activeSeg.fromX + EASING_ZONE_OFFSET_X;
         const easingEnd = easingStart + EASING_ZONE_WIDTH;
@@ -237,6 +251,52 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         inEasingZone = sledX >= easingStart && sledX <= easingEnd;
         inHitZone = sledX >= hitStart && sledX <= hitEnd;
       }
+
+      // ───────── SLED WORLD POSITION ─────────
+      const sledWorldX = scrollXRef.current + stageWidthRef.current * 0.3;
+      const sledLane: "upper" | "lower" =
+        sledStep <= ROAD_STEPS / 2 ? "upper" : "lower";
+
+      // ───────── OBSTACLE COLLISION STATE (single obstacle) ─────────
+      let obstacleHit = false;
+      let nextObstacle: any = null;
+
+      const sledCollisionX = sledWorldX;
+      const liveObstacles = obstaclesRef.current;
+
+      // берём ТОЛЬКО ближайшее препятствие впереди
+      nextObstacle = liveObstacles
+        .filter((o) => {
+          if (o.passed) return false;
+          if (o.type === "snowdrift") return false;
+          if (o.x < sledWorldX - 10) return false;
+
+          const obstacleStep = o.lane === "upper" ? 0 : ROAD_STEPS;
+          return Math.abs(sledStep - obstacleStep) <= 2;
+        })
+        .sort((a, b) => a.x - b.x)[0];
+
+      if (nextObstacle) {
+        const dx = nextObstacle.x - sledCollisionX;
+        const hitDistance = nextObstacle.definition.hitRadius + 60;
+
+        // замедление при приближении
+        if (dx > 0 && dx < OBSTACLE_WARNING_RADIUS) {
+          slowDownUntilRef.current = performance.now() + 400;
+        }
+
+        // столкновение
+        if (Math.abs(dx) <= hitDistance) {
+          obstacleHit = true;
+          nextObstacle.passed = true;
+        }
+
+        // полностью пройдено
+        if (dx < -hitDistance) {
+          nextObstacle.passed = true;
+        }
+      }
+
 
       // ───────── Scroll update ─────────
       const now = performance.now();
@@ -256,14 +316,12 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       });
 
       // ───────── Sled state update ─────────
-      if (inHitZone) {
+      if (obstacleHit) {
         nextSledState = "crash";
-      } else if (isBoosting) {
-        nextSledState = "run_fast";
-      } else if (inEasingZone) {
+      } else if (performance.now() < slowDownUntilRef.current || inEasingZone) {
         nextSledState = "slow_down";
       } else {
-        nextSledState = "run_tired";
+        nextSledState = isBoosting ? "run_fast" : "run_fast";
       }
 
       setSledState((prev) => (prev !== nextSledState ? nextSledState : prev));
@@ -275,6 +333,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       cancelAnimationFrame(rafId);
     };
   }, []);
+
 
   useEffect(() => {
     if (!isRunning) {
@@ -302,10 +361,12 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     Math.max(0, sledStep * stepSize)
   );
 
-
   return (
     <div className="dog-sled-run-stage" ref={stageRef}>
-      <div className="dog-sled-run-scene" style={{ position: "relative", width: "100%", height: "100%" }}>
+      <div
+        className="dog-sled-run-scene"
+        style={{ position: "relative", width: "100%", height: "100%" }}
+      >
         <div className="dog-sled-background">
           {BACKGROUND_LAYERS.map((layer) => (
             <div
@@ -313,20 +374,26 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
               className="dog-sled-background-layer"
               style={{
                 backgroundImage: `url(${layer.src})`,
-                transform: `translateX(-${(scrollX * layer.speedMultiplier) % stageWidth}px)`,
+                transform: `translateX(-${
+                  (scrollX * layer.speedMultiplier) % stageWidth
+                }px)`,
                 zIndex: layer.zIndex,
               }}
             />
           ))}
         </div>
 
-        <div className="dog-sled-obstacles" style={{ position: "absolute", inset: 0 }}>
+        <div
+          className="dog-sled-obstacles"
+          style={{ position: "absolute", inset: 0 }}
+        >
           {obstacles.map((obstacle) => {
             const left = obstacle.x - scrollX;
             if (left < -200) return null;
 
-            const laneY = obstacle.lane === "upper" ? laneYRef.current.upper : laneYRef.current.lower;
-            const top = obstacle.y !== undefined ? obstacle.y : laneY;
+            // мировая Y координата obstacle (1 раз определяем)
+
+            const top = obstacle.y;
 
             return (
               <div
@@ -371,23 +438,45 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         />
 
         {/* DEBUG upper/lower */}
-        <div style={{ position: "absolute", left: 0, right: 0, top: baseUpperLimit, height: 2, background: "lime", zIndex: 6 }} />
-        <div style={{ position: "absolute", left: 0, right: 0, top: baseLowerLimit, height: 2, background: "red", zIndex: 6 }} />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: baseUpperLimit,
+            height: 2,
+            background: "lime",
+            zIndex: 6,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: baseLowerLimit,
+            height: 2,
+            background: "red",
+            zIndex: 6,
+          }}
+        />
 
         {/* SnowDrift visuals */}
         {snowDriftControllerRef.current &&
-          snowDriftControllerRef.current.getSegments().map((segment) => (
-            <SnowDriftVisual
-              key={segment.id}
-              segment={segment}
-              scrollX={scrollX}
-              stageWidth={stageWidth}
-              stageHeight={stageHeight}
-              baseUpperLimit={baseUpperLimit}
-              baseLowerLimit={baseLowerLimit}
-              debug
-            />
-          ))}
+          snowDriftControllerRef.current
+            .getSegments()
+            .map((segment) => (
+              <SnowDriftVisual
+                key={segment.id}
+                segment={segment}
+                scrollX={scrollX}
+                stageWidth={stageWidth}
+                stageHeight={stageHeight}
+                baseUpperLimit={baseUpperLimit}
+                baseLowerLimit={baseLowerLimit}
+                debug
+              />
+            ))}
 
         {/* Road container */}
         <div
@@ -419,10 +508,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
               height: "calc(100% - 40px)", // 20px top + 20px bottom
             }}
           >
-            <DogSled
-              y={targetSledY}
-              state={sledState}
-            />
+            <DogSled y={targetSledY} state={sledState} />
           </div>
 
           {/* нижний буфер */}
