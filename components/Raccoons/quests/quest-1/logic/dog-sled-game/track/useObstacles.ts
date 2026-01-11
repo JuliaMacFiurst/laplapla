@@ -59,6 +59,7 @@ export function useObstacles(
   spawnAnchorX: number,
   stageWidth: number,
   stageHeight: number,
+  obstacleRateMultiplier: number = 1,
   blockedSegments: BlockedSegment[] = []
 ): SpawnedObstacle[] {
   const blockedKey = useMemo(() => {
@@ -79,7 +80,8 @@ export function useObstacles(
   const nextSpawnX = useRef(0);
   const shuffledBag = useRef<ObstacleType[]>([]);
 
-  const SPAWN_STEP = 900;
+  // базовый шаг спавна препятствий (px)
+  const BASE_SPAWN_STEP = 900;
   const LANES: TrackLane[] = ["upper", "lower"];
   const BAG: ObstacleType[] = ["tree", "trees", "log", "ice", "stakes", "snowdrift"];
 
@@ -134,7 +136,10 @@ export function useObstacles(
         laneIndex++;
       }
 
-      nextSpawnX.current += SPAWN_STEP + Math.floor(Math.random() * 301);
+      const spawnStep =
+        BASE_SPAWN_STEP / Math.max(0.5, obstacleRateMultiplier);
+      nextSpawnX.current +=
+        spawnStep + Math.floor(Math.random() * 301);
     }
 
     // Removed filtering obstacles based on worldX and stageWidth to keep all spawned obstacles until marked passed
@@ -143,7 +148,7 @@ export function useObstacles(
       if (prev.length === newObstacles.length) return prev;
       return newObstacles;
     });
-  }, [spawnAnchorX, stageWidth, stageHeight, stableBlockedSegments]);
+  }, [spawnAnchorX, stageWidth, stageHeight, obstacleRateMultiplier, stableBlockedSegments]);
 
   return spawned;
 }

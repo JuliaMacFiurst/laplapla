@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import DogSled, { DogSledState } from "./track/DogSled";
 import { BACKGROUND_LAYERS } from "./background/backgroundLayers";
 import { useObstacles } from "./track/useObstacles";
+import { buildSledRunConfig, PreparationResult } from "./track/useSledRunConfig";
 import { SnowDriftController } from "./SnowdriftController";
 import SnowDriftVisual from "./track/SnowDriftVisual";
 
 type Phase = "ready" | "running" | "crash" | "finish";
 
 export interface DogSledRunStageProps {
+  prep: PreparationResult;
   onExit?: () => void;
 }
 
@@ -24,7 +26,18 @@ export interface DogSledRunStageProps {
  * - подключение контроллеров (snowdrift)
  * - рендер препятствий и дороги
  */
-export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
+const DEFAULT_PREP: PreparationResult = {
+  speedModifier: 0,
+  stability: 1,
+  stamina: 1,
+  risk: 0,
+};
+
+export default function DogSledRunStage({
+  prep,
+  onExit,
+}: DogSledRunStageProps) {
+  console.log("[DOG SLED STAGE PROPS]", prep); 
   const stageRef = useRef<HTMLDivElement>(null);
   const lastTimeRef = useRef<number | null>(null);
 
@@ -102,7 +115,21 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   };
 
   // базовая скорость заезда (px/second)
-  const speed = 300;
+  // параметры берём из prep
+  const sledConfig = buildSledRunConfig(prep);
+
+  // DEBUG: log preparation and derived config once per mount / change
+  useEffect(() => {
+    console.log("[PREP]", {
+      speedModifier: prep.speedModifier,
+      stability: prep.stability,
+      stamina: prep.stamina,
+      risk: prep.risk,
+    });
+
+    console.log("[SLED CONFIG]", sledConfig);
+  }, [prep, sledConfig]);
+  const speed = sledConfig.baseSpeed;
 
   // ───────────────────────── SnowDrift interaction tuning ─────────────────────────
   const EASING_ZONE_WIDTH = 180;
@@ -141,6 +168,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     sledWorldX + OBSTACLE_SPAWN_OFFSET_X,
     stageWidth,
     stageHeight,
+    sledConfig.obstacleRateMultiplier,
     blockedSegments
   );
   const obstaclesRef = useRef<any[]>([]);
@@ -183,6 +211,8 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
     setPhase("ready");
     lastTimeRef.current = null;
     resetSnowDrifts();
+    boostUntilTsRef.current = null;
+    setBoostUntilTs(null);
   }
 
   useEffect(() => {
@@ -325,12 +355,43 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
           nextObstacle.passed = true;
         }
       }
-
+console.log("[RISK CHECK]", {
+   chance: sledConfig.riskBoostChance,
+  canStartNewBoost: !boostUntilTsRef.current,
+});
       // (throttled frame log removed)
+
+      // ───────── RISK BOOST (случайное резкое ускорение) ─────────
+      if (
+        sledConfig.riskBoostChance > 0 &&
+        !boostUntilTsRef.current &&
+        Math.random() < sledConfig.riskBoostChance
+      ) {
+        const nowTs = performance.now();
+        const duration = 300 + Math.random() * 300; // 300–600 ms
+        const until = nowTs + duration;
+
+        console.log("[RISK BOOST TRIGGERED]", {
+          at: nowTs.toFixed(0),
+          duration: duration.toFixed(0),
+          baseSpeed: speed,
+          riskBoostChance: sledConfig.riskBoostChance,
+        });
+
+        boostUntilTsRef.current = until;
+        setBoostUntilTs(until);
+      }
+
       // ───────── Scroll update ─────────
       const now = performance.now();
       const boostUntil = boostUntilTsRef.current;
       const isBoosting = boostUntil !== null && now < boostUntil;
+
+      // ───────── BOOST END RESET ─────────
+if (boostUntil !== null && now >= boostUntil) {
+  boostUntilTsRef.current = null;
+  setBoostUntilTs(null);
+}
 
       setScrollX((x) => {
         const effectiveSpeed = inEasingZone
@@ -385,7 +446,8 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       } else if (shouldSlow) {
         nextSledState = "slow_down";
       } else {
-        nextSledState = "run_fast";
+        // базовое состояние определяется подготовкой (stamina)
+  nextSledState = sledConfig.runStyle;
       }
 
       const decisionKey = `${prevState}->${nextSledState}|warn=${obstacleWarning}|hit=${obstacleHit}|obseq=${obstacleSequenceStateRef.current}`;
@@ -599,6 +661,10 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         <div className="dog-sled-run-overlay">
           <button
             onClick={() => {
+              // reset any previous boost state before starting a new run
+              boostUntilTsRef.current = null;
+              setBoostUntilTs(null);
+
               setPhase("running");
               setIsRunning(true);
               setSledStep(ROAD_STEPS);

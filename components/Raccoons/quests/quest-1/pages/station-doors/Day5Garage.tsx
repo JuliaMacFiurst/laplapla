@@ -169,7 +169,13 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
   )}
 
   {phase === "ride" && (
-    <DogSledRunStage onExit={() => setPhase("inspect")} />
+    <>
+     {console.log("[GARAGE → RIDE PREP]", prep)}
+    <DogSledRunStage
+      prep={prep}
+      onExit={() => setPhase("inspect")}
+    />
+    </>
   )}
 
   {phase === "inspect" && (
