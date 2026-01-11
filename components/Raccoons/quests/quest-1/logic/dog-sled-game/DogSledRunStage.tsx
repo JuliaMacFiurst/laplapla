@@ -1,27 +1,4 @@
 "use client";
-// ────────────── Structured Logging Helpers ──────────────
-const DEBUG_COLLISION = true;
-const DEBUG_FRAME_EVERY_N = 12; // throttle frame logs
-
-const logFrame = (data: any) => {
-  if (!DEBUG_COLLISION) return;
-  console.log("[FRAME]", data);
-};
-
-const logNext = (data: any) => {
-  if (!DEBUG_COLLISION) return;
-  console.log("[NEXT]", data);
-};
-
-const logDecision = (data: any) => {
-  if (!DEBUG_COLLISION) return;
-  console.log("[DECISION]", data);
-};
-
-const logCollision = (data: any) => {
-  if (!DEBUG_COLLISION) return;
-  console.log("[COLLISION]", data);
-};
 
 import { useEffect, useRef, useState } from "react";
 import DogSled, { DogSledState } from "./track/DogSled";
@@ -140,9 +117,9 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
   // const OBSTACLE_WARNING_RADIUS = 120; // removed: no longer used
 
   // ───────── OBSTACLE SEQUENCE TIMING ─────────
-  const HOOKED_DURATION_MS = 400;
-  const CRASH_DURATION_MS = 700;
-  const RECOVER_DURATION_MS = 600;
+  const HOOKED_DURATION_MS = 800;
+  const CRASH_DURATION_MS = 1000;
+  const RECOVER_DURATION_MS = 1000;
   const obstacleSequenceUntilRef = useRef<number>(0);
   const obstacleSequenceStateRef = useRef<DogSledState | null>(null);
 
@@ -155,8 +132,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       }))
     : [];
 
-  const worldX = scrollXRef.current;
-  const obstacleWorldX = scrollXRef.current + stageWidthRef.current * 0.3;
+  
   const sledWorldX = scrollXRef.current + stageWidthRef.current * 0.3;
 
   const OBSTACLE_SPAWN_OFFSET_X = 300;
@@ -335,7 +311,7 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       if (nextObstacle) {
         const dx = nextObstacle.x - sledCollisionX;
         const hitRadius = Number(nextObstacle?.definition?.hitRadius ?? 0);
-        const noseOffset = 60; // "нос" саней, чтобы столкновение срабатывало чуть раньше визуального центра
+        const noseOffset = 300; // "нос" саней, чтобы столкновение срабатывало чуть раньше визуального центра
         const hitDistance = hitRadius + noseOffset;
 
         // (no more warning/slowdown for obstacles)
@@ -348,40 +324,9 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
         if (dx < -hitDistance) {
           nextObstacle.passed = true;
         }
-
-        // minimal, useful logs for the selected obstacle
-        logNext({
-          id: nextObstacle.id,
-          type: nextObstacle.type,
-          obstacleX: nextObstacle.x,
-          sledWorldX,
-          dx,
-          hitRadius,
-          passed: nextObstacle.passed,
-          sledStep: currentSledStep,
-        });
-
-        logCollision({
-          id: nextObstacle.id,
-          dx,
-          hitDistance,
-          warning: obstacleWarning,
-          hit: obstacleHit,
-          slowDownUntil: slowDownUntilRef.current,
-        });
       }
 
-      // Throttled frame log
-      frameCounterRef.current += 1;
-      if (frameCounterRef.current % DEBUG_FRAME_EVERY_N === 0) {
-        logFrame({
-          worldX,
-          sledWorldX,
-          obstaclesCount: obstaclesRef.current.length,
-          sledState: sledStateRef.current,
-          slowDownRemainingMs: Math.max(0, slowDownUntilRef.current - performance.now()),
-        });
-      }
+      // (throttled frame log removed)
       // ───────── Scroll update ─────────
       const now = performance.now();
       const boostUntil = boostUntilTsRef.current;
@@ -446,17 +391,6 @@ export default function DogSledRunStage({ onExit }: DogSledRunStageProps) {
       const decisionKey = `${prevState}->${nextSledState}|warn=${obstacleWarning}|hit=${obstacleHit}|obseq=${obstacleSequenceStateRef.current}`;
       if (decisionKey !== lastDecisionRef.current) {
         lastDecisionRef.current = decisionKey;
-        logDecision({
-          from: prevState,
-          to: nextSledState,
-          obstacleId: nextObstacle?.id ?? null,
-          obstacleType: nextObstacle?.type ?? null,
-          obstacleWarning,
-          obstacleHit,
-          inEasingZone,
-          slowDownRemainingMs: Math.max(0, slowDownUntilRef.current - performance.now()),
-          obstacleSequenceState: obstacleSequenceStateRef.current,
-        });
       }
 
       if (prevState !== nextSledState) {
