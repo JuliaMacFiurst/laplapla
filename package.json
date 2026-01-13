@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "tts:generate": "ts-node scripts/generate_missing_tts.ts"
+    "tts:generate": "ts-node scripts/generate_missing_tts.ts",
+    "lint": "next lint"
   },
   "dependencies": {
     "@google/genai": "^1.5.1",

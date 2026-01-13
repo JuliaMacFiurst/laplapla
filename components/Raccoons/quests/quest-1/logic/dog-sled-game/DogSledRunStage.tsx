@@ -4,11 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import DogSled, { DogSledState } from "./track/DogSled";
 import { BACKGROUND_LAYERS } from "./background/backgroundLayers";
 import { useObstacles } from "./track/useObstacles";
+import { useBonusStars, BonusStar } from "./track/useBonusStars";
 import { buildSledRunConfig, PreparationResult } from "./track/useSledRunConfig";
 import { SnowDriftController } from "./SnowdriftController";
 import SnowDriftVisual from "./track/SnowDriftVisual";
+import FinishLine from "./FinishLine";
+import RunResultsOverlay from "./RunResultsOverlay";
 
 type Phase = "ready" | "running" | "crash" | "finish";
+
+const STAR_SPAWN_OFFSET_X = 400;
+const STAR_COLLECTION_DISTANCE = 220;
+const STAR_LANE_TOLERANCE = 2;
+const FINISH_DELAY_SECONDS = 90;
+const FINISH_SLOW_DURATION_MS = 1800;
 
 export interface DogSledRunStageProps {
   prep: PreparationResult;
@@ -26,18 +35,10 @@ export interface DogSledRunStageProps {
  * - подключение контроллеров (snowdrift)
  * - рендер препятствий и дороги
  */
-const DEFAULT_PREP: PreparationResult = {
-  speedModifier: 0,
-  stability: 1,
-  stamina: 1,
-  risk: 0,
-};
-
 export default function DogSledRunStage({
   prep,
   onExit,
-}: DogSledRunStageProps) {
-  console.log("[DOG SLED STAGE PROPS]", prep); 
+}: DogSledRunStageProps) { 
   const stageRef = useRef<HTMLDivElement>(null);
   const lastTimeRef = useRef<number | null>(null);
 
@@ -52,11 +53,13 @@ export default function DogSledRunStage({
   const ROAD_STEPS = 5;
   const [sledStep, setSledStep] = useState(ROAD_STEPS);
 
-  // Ref for sticky slow_down effect
-  const slowDownUntilRef = useRef<number>(0);
 
   const [scrollX, setScrollX] = useState(0);
   const [sledState, setSledState] = useState<DogSledState>("run_fast");
+  const [collectedStars, setCollectedStars] = useState(0);
+  const [crashCount, setCrashCount] = useState(0);
+  const [finishX, setFinishX] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   // ───────────────────────── Управление санями ─────────────────────────
   const [boostUntilTs, setBoostUntilTs] = useState<number | null>(null);
@@ -67,7 +70,10 @@ export default function DogSledRunStage({
   const sledStateRef = useRef<DogSledState>(sledState);
   const boostUntilTsRef = useRef<number | null>(boostUntilTs);
   const lastDecisionRef = useRef<string>("");
-  const frameCounterRef = useRef(0);
+  const phaseRef = useRef<Phase>("ready");
+  const finishXRef = useRef(0);
+  const finishSlowStartRef = useRef<number | null>(null);
+  const finishSlowCompleteRef = useRef(false);
 
   useEffect(() => {
     sledStepRef.current = sledStep;
@@ -80,6 +86,29 @@ export default function DogSledRunStage({
   useEffect(() => {
     boostUntilTsRef.current = boostUntilTs;
   }, [boostUntilTs]);
+
+  const sledConfig = buildSledRunConfig(prep);
+  const speed = sledConfig.baseSpeed;
+
+  useEffect(() => {
+    phaseRef.current = phase;
+
+    if (phase === "running") {
+      const targetFinish =
+        scrollXRef.current + speed * FINISH_DELAY_SECONDS;
+      finishXRef.current = targetFinish;
+      setFinishX(targetFinish);
+      finishSlowStartRef.current = null;
+      finishSlowCompleteRef.current = false;
+      setShowResults(false);
+    } else if (phase === "ready") {
+      finishXRef.current = 0;
+      setFinishX(0);
+      finishSlowStartRef.current = null;
+      finishSlowCompleteRef.current = false;
+      setShowResults(false);
+    }
+  }, [phase, speed]);
 
   // базовые параметры (позже придут из подготовки)
   const [stageWidth, setStageWidth] = useState(1200);
@@ -114,29 +143,9 @@ export default function DogSledRunStage({
     activeSnowDriftIdRef.current = null;
   };
 
-  // базовая скорость заезда (px/second)
-  // параметры берём из prep
-  const sledConfig = buildSledRunConfig(prep);
-
-  // DEBUG: log preparation and derived config once per mount / change
-  useEffect(() => {
-    console.log("[PREP]", {
-      speedModifier: prep.speedModifier,
-      stability: prep.stability,
-      stamina: prep.stamina,
-      risk: prep.risk,
-    });
-
-    console.log("[SLED CONFIG]", sledConfig);
-  }, [prep, sledConfig]);
-  const speed = sledConfig.baseSpeed;
-
   // ───────────────────────── SnowDrift interaction tuning ─────────────────────────
   const EASING_ZONE_WIDTH = 180;
   const EASING_ZONE_OFFSET_X = 40;
-
-  const HIT_ZONE_WIDTH = 140;
-  const HIT_ZONE_OFFSET_X = 120;
 
   const EASING_SPEED_MULT = 0.65;
 
@@ -149,6 +158,7 @@ export default function DogSledRunStage({
   const RECOVER_DURATION_MS = 1000;
   const obstacleSequenceUntilRef = useRef<number>(0);
   const obstacleSequenceStateRef = useRef<DogSledState | null>(null);
+  const collectedStarIdsRef = useRef<Set<string>>(new Set());
 
   // ───────────────────────── Obstacles ↔ Road constraints ─────────────────────────
   const blockedSegments = snowDriftControllerRef.current
@@ -163,6 +173,17 @@ export default function DogSledRunStage({
   const sledWorldX = scrollXRef.current + stageWidthRef.current * 0.3;
 
   const OBSTACLE_SPAWN_OFFSET_X = 300;
+  const [bonusStars, collectBonusStar] = useBonusStars(
+    sledWorldX + STAR_SPAWN_OFFSET_X,
+    stageWidth,
+    stageHeight,
+    1,
+    blockedSegments
+  );
+  const bonusStarsRef = useRef<BonusStar[]>([]);
+  useEffect(() => {
+    bonusStarsRef.current = bonusStars;
+  }, [bonusStars]);
 
   const obstacles = useObstacles(
     sledWorldX + OBSTACLE_SPAWN_OFFSET_X,
@@ -208,17 +229,33 @@ export default function DogSledRunStage({
 
   function handleStop() {
     setIsRunning(false);
+    phaseRef.current = "ready";
     setPhase("ready");
     lastTimeRef.current = null;
     resetSnowDrifts();
     boostUntilTsRef.current = null;
     setBoostUntilTs(null);
+    setCollectedStars(0);
+    setCrashCount(0);
+    setShowResults(false);
+    finishXRef.current = 0;
+    setFinishX(0);
+  }
+
+  function startRun() {
+    boostUntilTsRef.current = null;
+    setBoostUntilTs(null);
+    setCollectedStars(0);
+    setCrashCount(0);
+    setShowResults(false);
+    phaseRef.current = "running";
+    setPhase("running");
+    setIsRunning(true);
+    setSledStep(ROAD_STEPS);
   }
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      // логируем ВСЕ нажатия для отладки
-      // (console.log("[KEY]", e.key, "isRunning:", isRunningRef.current);) // Optionally keep or remove
 
       // предотвращаем скролл страницы стрелками
       if (
@@ -278,179 +315,205 @@ export default function DogSledRunStage({
 
       if (!isRunningRef.current) return;
 
-      // ───────── EASING / HIT ZONE LOGIC ─────────
+      const currentPhaseInitial = phaseRef.current;
+      let currentPhase = currentPhaseInitial;
+      let isRunningPhase = currentPhase === "running";
+      let isFinishing = currentPhase === "finish";
+
       let inEasingZone = false;
-      let inHitZone = false;
       let nextSledState: DogSledState = sledState;
 
-      ensureSnowDriftController();
-
-      const controller = snowDriftControllerRef.current!;
-      const worldX = scrollXRef.current;
-      const spawnUntilX = worldX + stageWidthRef.current * 2;
-
-      controller.update(worldX, spawnUntilX);
-
-      const viewLeft = worldX;
-      const viewRight = worldX + stageWidthRef.current;
-
-      const activeSeg = controller
-        .getSegments()
-        .find((s) => s.toX >= viewLeft && s.fromX <= viewRight);
-
-      if (activeSeg) {
-        const sledX = worldX + stageWidthRef.current * 0.3;
-
-        const easingStart = activeSeg.fromX + EASING_ZONE_OFFSET_X;
-        const easingEnd = easingStart + EASING_ZONE_WIDTH;
-
-        const hitStart = activeSeg.fromX + HIT_ZONE_OFFSET_X;
-        const hitEnd = hitStart + HIT_ZONE_WIDTH;
-
-        inEasingZone = sledX >= easingStart && sledX <= easingEnd;
-        inHitZone = sledX >= hitStart && sledX <= hitEnd;
-      }
-
-      // ───────── SLED WORLD POSITION ─────────
       const sledWorldX = scrollXRef.current + stageWidthRef.current * 0.3;
       const currentSledStep = sledStepRef.current;
 
-      // ───────── OBSTACLE COLLISION STATE (single obstacle, single source of truth) ─────────
-      let obstacleWarning = false;
-      let obstacleHit = false;
-      let nextObstacle: any = null;
+      if (isRunningPhase) {
+        ensureSnowDriftController();
 
-      const sledCollisionX = sledWorldX;
-      const liveObstacles = obstaclesRef.current;
+        const controller = snowDriftControllerRef.current!;
+        const worldX = scrollXRef.current;
+        const spawnUntilX = worldX + stageWidthRef.current * 2;
 
-      // Берём ТОЛЬКО ближайшее препятствие впереди, в "допустимой" полосе.
-      // Snowdrift исключаем: он работает через easing-zone.
-      nextObstacle = liveObstacles
-        .filter((o) => {
-          if (!o) return false;
-          if (o.passed) return false;
-          if (o.type === "snowdrift") return false;
-          // оставляем небольшой допуск назад, чтобы не терять объект на границе
-          if (o.x < sledWorldX - 40) return false;
+        controller.update(worldX, spawnUntilX);
 
-          const obstacleStep = o.lane === "upper" ? 0 : ROAD_STEPS;
-          return Math.abs(currentSledStep - obstacleStep) <= 2;
-        })
-        .sort((a, b) => a.x - b.x)[0];
+        const viewLeft = worldX;
+        const viewRight = worldX + stageWidthRef.current;
 
-      if (nextObstacle) {
-        const dx = nextObstacle.x - sledCollisionX;
-        const hitRadius = Number(nextObstacle?.definition?.hitRadius ?? 0);
-        const noseOffset = 300; // "нос" саней, чтобы столкновение срабатывало чуть раньше визуального центра
-        const hitDistance = hitRadius + noseOffset;
+        const activeSeg = controller
+          .getSegments()
+          .find((s) => s.toX >= viewLeft && s.fromX <= viewRight);
 
-        // (no more warning/slowdown for obstacles)
-        // hit
-        if (Math.abs(dx) <= hitDistance) {
-          obstacleHit = true;
+        if (activeSeg) {
+          const sledX = worldX + stageWidthRef.current * 0.3;
+
+          const easingStart = activeSeg.fromX + EASING_ZONE_OFFSET_X;
+          const easingEnd = easingStart + EASING_ZONE_WIDTH;
+
+          inEasingZone = sledX >= easingStart && sledX <= easingEnd;
         }
 
-        // mark passed once well behind
-        if (dx < -hitDistance) {
+        let obstacleHit = false;
+        let nextObstacle: any = null;
+
+        const sledCollisionX = sledWorldX;
+        const liveObstacles = obstaclesRef.current;
+
+        nextObstacle = liveObstacles
+          .filter((o) => {
+            if (!o) return false;
+            if (o.passed) return false;
+            if (o.type === "snowdrift") return false;
+            if (o.x < sledWorldX - 40) return false;
+
+            const obstacleStep = o.lane === "upper" ? 0 : ROAD_STEPS;
+            return Math.abs(currentSledStep - obstacleStep) <= 2;
+          })
+          .sort((a, b) => a.x - b.x)[0];
+
+        if (nextObstacle) {
+          const dx = nextObstacle.x - sledCollisionX;
+          const hitRadius = Number(nextObstacle?.definition?.hitRadius ?? 0);
+          const noseOffset = 300;
+          const hitDistance = hitRadius + noseOffset;
+
+          if (Math.abs(dx) <= hitDistance) {
+            obstacleHit = true;
+          }
+
+          if (dx < -hitDistance) {
+            nextObstacle.passed = true;
+          }
+        }
+
+        collectedStarIdsRef.current.clear();
+        for (const star of bonusStarsRef.current) {
+          if (collectedStarIdsRef.current.has(star.id)) {
+            continue;
+          }
+
+          const dx = star.x - sledCollisionX;
+          if (dx < -120 || dx > STAR_COLLECTION_DISTANCE) continue;
+
+          const starStep = star.lane === "upper" ? 0 : ROAD_STEPS;
+          if (Math.abs(currentSledStep - starStep) > STAR_LANE_TOLERANCE) continue;
+
+          collectedStarIdsRef.current.add(star.id);
+          collectBonusStar(star.id);
+          setCollectedStars((count) => count + 1);
+        }
+
+        if (
+          sledConfig.riskBoostChance > 0 &&
+          !boostUntilTsRef.current &&
+          Math.random() < sledConfig.riskBoostChance
+        ) {
+          const nowTs = performance.now();
+          const duration = 300 + Math.random() * 300;
+          const until = nowTs + duration;
+
+          boostUntilTsRef.current = until;
+          setBoostUntilTs(until);
+        }
+
+        if (finishXRef.current > 0 && sledWorldX >= finishXRef.current) {
+          currentPhase = "finish";
+          isRunningPhase = false;
+          isFinishing = true;
+          finishSlowStartRef.current = null;
+          finishSlowCompleteRef.current = false;
+          setShowResults(false);
+          phaseRef.current = "finish";
+          setPhase("finish");
+        }
+
+        const shouldSlow = inEasingZone;
+
+        if (
+          obstacleHit &&
+          nextObstacle &&
+          !nextObstacle.passed &&
+          !obstacleSequenceStateRef.current
+        ) {
           nextObstacle.passed = true;
+          obstacleSequenceStateRef.current = "hooked";
+          obstacleSequenceUntilRef.current = performance.now() + HOOKED_DURATION_MS;
+        }
+
+        if (obstacleSequenceStateRef.current) {
+          const now = performance.now();
+          if (now < obstacleSequenceUntilRef.current) {
+            nextSledState = obstacleSequenceStateRef.current;
+          } else {
+            if (obstacleSequenceStateRef.current === "hooked") {
+              obstacleSequenceStateRef.current = "crash";
+              obstacleSequenceUntilRef.current = now + CRASH_DURATION_MS;
+              nextSledState = "crash";
+              setCrashCount((count) => count + 1);
+            } else if (obstacleSequenceStateRef.current === "crash") {
+              obstacleSequenceStateRef.current = "recover";
+              obstacleSequenceUntilRef.current = now + RECOVER_DURATION_MS;
+              nextSledState = "recover";
+            } else {
+              obstacleSequenceStateRef.current = null;
+              nextSledState = "run_fast";
+            }
+          }
+        } else if (shouldSlow) {
+          nextSledState = "slow_down";
+        } else {
+          nextSledState = sledConfig.runStyle;
         }
       }
-console.log("[RISK CHECK]", {
-   chance: sledConfig.riskBoostChance,
-  canStartNewBoost: !boostUntilTsRef.current,
-});
-      // (throttled frame log removed)
 
-      // ───────── RISK BOOST (случайное резкое ускорение) ─────────
-      if (
-        sledConfig.riskBoostChance > 0 &&
-        !boostUntilTsRef.current &&
-        Math.random() < sledConfig.riskBoostChance
-      ) {
-        const nowTs = performance.now();
-        const duration = 300 + Math.random() * 300; // 300–600 ms
-        const until = nowTs + duration;
-
-        console.log("[RISK BOOST TRIGGERED]", {
-          at: nowTs.toFixed(0),
-          duration: duration.toFixed(0),
-          baseSpeed: speed,
-          riskBoostChance: sledConfig.riskBoostChance,
-        });
-
-        boostUntilTsRef.current = until;
-        setBoostUntilTs(until);
-      }
-
-      // ───────── Scroll update ─────────
       const now = performance.now();
       const boostUntil = boostUntilTsRef.current;
       const isBoosting = boostUntil !== null && now < boostUntil;
 
-      // ───────── BOOST END RESET ─────────
-if (boostUntil !== null && now >= boostUntil) {
-  boostUntilTsRef.current = null;
-  setBoostUntilTs(null);
-}
+      let effectiveSpeed = speed;
+      if (isFinishing) {
+        if (finishSlowStartRef.current === null) {
+          finishSlowStartRef.current = now;
+        }
+
+        const elapsed = Math.min(
+          FINISH_SLOW_DURATION_MS,
+          now - (finishSlowStartRef.current ?? now)
+        );
+        const progress = Math.min(1, elapsed / FINISH_SLOW_DURATION_MS);
+        const finishFactor = Math.max(0, 1 - progress);
+
+        effectiveSpeed = speed * finishFactor;
+
+        if (progress >= 1 && !finishSlowCompleteRef.current) {
+          finishSlowCompleteRef.current = true;
+          setIsRunning(false);
+          setShowResults(true);
+        }
+      } else if (inEasingZone) {
+        effectiveSpeed = speed * EASING_SPEED_MULT;
+      } else if (isBoosting) {
+        effectiveSpeed = speed * 1.6;
+      }
+
+      if (boostUntil !== null && now >= boostUntil) {
+        boostUntilTsRef.current = null;
+        setBoostUntilTs(null);
+      }
 
       setScrollX((x) => {
-        const effectiveSpeed = inEasingZone
-          ? speed * EASING_SPEED_MULT
-          : isBoosting
-          ? speed * 1.6
-          : speed;
-
         const targetX = x + effectiveSpeed * dt;
         const smoothedX = x + (targetX - x) * 0.85;
         scrollXRef.current = smoothedX;
         return smoothedX;
       });
 
-      // ───────── Sled state update (single decision) ─────────
       const prevState = sledStateRef.current;
-      // shouldSlow only considers snowdrift (inEasingZone)
-      const shouldSlow = inEasingZone;
-
-      // ───────── OBSTACLE SEQUENCE STATE MACHINE ─────────
-      // 1. Start sequence if hit detected and not already in sequence
-      if (
-        obstacleHit &&
-        nextObstacle &&
-        !nextObstacle.passed &&
-        !obstacleSequenceStateRef.current
-      ) {
-        nextObstacle.passed = true;
-        obstacleSequenceStateRef.current = "hooked";
-        obstacleSequenceUntilRef.current = performance.now() + HOOKED_DURATION_MS;
-      }
-
-      // 2. Obstacle sequence overrides
-      if (obstacleSequenceStateRef.current) {
-        const now = performance.now();
-        if (now < obstacleSequenceUntilRef.current) {
-          nextSledState = obstacleSequenceStateRef.current;
-        } else {
-          if (obstacleSequenceStateRef.current === "hooked") {
-            obstacleSequenceStateRef.current = "crash";
-            obstacleSequenceUntilRef.current = now + CRASH_DURATION_MS;
-            nextSledState = "crash";
-          } else if (obstacleSequenceStateRef.current === "crash") {
-            obstacleSequenceStateRef.current = "recover";
-            obstacleSequenceUntilRef.current = now + RECOVER_DURATION_MS;
-            nextSledState = "recover";
-          } else {
-            obstacleSequenceStateRef.current = null;
-            nextSledState = "run_fast";
-          }
-        }
-      } else if (shouldSlow) {
+      if (isFinishing) {
         nextSledState = "slow_down";
-      } else {
-        // базовое состояние определяется подготовкой (stamina)
-  nextSledState = sledConfig.runStyle;
+      } else if (!isRunningPhase) {
+        nextSledState = sledConfig.runStyle;
       }
 
-      const decisionKey = `${prevState}->${nextSledState}|warn=${obstacleWarning}|hit=${obstacleHit}|obseq=${obstacleSequenceStateRef.current}`;
+      const decisionKey = `${prevState}->${nextSledState}|phase=${currentPhase}`;
       if (decisionKey !== lastDecisionRef.current) {
         lastDecisionRef.current = decisionKey;
       }
@@ -541,18 +604,34 @@ if (boostUntil !== null && now >= boostUntil) {
                   backgroundImage: `url(${obstacle.definition.src})`,
                 }}
               >
-                <div
-                  className="hitbox-debug"
-                  style={{
-                    width: obstacle.definition.hitRadius * 2,
-                    height: obstacle.definition.hitRadius * 2,
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    transform: "translate(-50%, -50%)",
-                  }}
-                />
               </div>
+            );
+          })}
+        </div>
+
+        {finishX > 0 && (
+          <FinishLine
+            finishX={finishX}
+            scrollX={scrollX}
+            stageWidth={stageWidth}
+          />
+        )}
+
+        <div className="dog-sled-stars">
+          {bonusStars.map((star) => {
+            const left = star.x - scrollX;
+            if (left < -200) return null;
+
+            return (
+              <div
+                key={star.id}
+                className="dog-sled-star"
+                style={{
+                  position: "absolute",
+                  left,
+                  top: star.y,
+                }}
+              />
             );
           })}
         </div>
@@ -565,7 +644,7 @@ if (boostUntil !== null && now >= boostUntil) {
             right: 0,
             top: baseUpperLimit,
             height: baseLowerLimit - baseUpperLimit,
-            background: "rgba(0, 255, 0, 0.08)",
+            //background: "rgba(0, 255, 0, 0.08)",
             pointerEvents: "none",
             zIndex: 5,
           }}
@@ -579,7 +658,7 @@ if (boostUntil !== null && now >= boostUntil) {
             right: 0,
             top: baseUpperLimit,
             height: 2,
-            background: "lime",
+            //background: "lime",
             zIndex: 6,
           }}
         />
@@ -590,7 +669,7 @@ if (boostUntil !== null && now >= boostUntil) {
             right: 0,
             top: baseLowerLimit,
             height: 2,
-            background: "red",
+            //background: "red",
             zIndex: 6,
           }}
         />
@@ -600,16 +679,15 @@ if (boostUntil !== null && now >= boostUntil) {
           snowDriftControllerRef.current
             .getSegments()
             .map((segment) => (
-              <SnowDriftVisual
-                key={segment.id}
-                segment={segment}
-                scrollX={scrollX}
-                stageWidth={stageWidth}
-                stageHeight={stageHeight}
-                baseUpperLimit={baseUpperLimit}
-                baseLowerLimit={baseLowerLimit}
-                debug
-              />
+            <SnowDriftVisual
+              key={segment.id}
+              segment={segment}
+              scrollX={scrollX}
+              stageWidth={stageWidth}
+              stageHeight={stageHeight}
+              baseUpperLimit={baseUpperLimit}
+              baseLowerLimit={baseLowerLimit}
+            />
             ))}
 
         {/* Road container */}
@@ -659,19 +737,7 @@ if (boostUntil !== null && now >= boostUntil) {
       {/* OVERLAY UI */}
       {phase === "ready" && (
         <div className="dog-sled-run-overlay">
-          <button
-            onClick={() => {
-              // reset any previous boost state before starting a new run
-              boostUntilTsRef.current = null;
-              setBoostUntilTs(null);
-
-              setPhase("running");
-              setIsRunning(true);
-              setSledStep(ROAD_STEPS);
-            }}
-          >
-            Начать заезд
-          </button>
+          <button onClick={startRun}>Начать заезд</button>
 
           {onExit && <button onClick={onExit}>← Назад</button>}
         </div>
@@ -679,10 +745,25 @@ if (boostUntil !== null && now >= boostUntil) {
 
       {phase === "running" && (
         <div className="dog-sled-hud">
+          <div className="dog-sled-star-counter">
+            <span className="dog-sled-star-icon" aria-hidden="true">
+              ⭐
+            </span>
+            <span className="dog-sled-star-value">{collectedStars}</span>
+          </div>
           <button className="dog-sled-stop-btn" onClick={handleStop}>
             Стоп
           </button>
         </div>
+      )}
+
+      {phase === "finish" && showResults && (
+        <RunResultsOverlay
+          stars={collectedStars}
+          crashes={crashCount}
+          onRetry={startRun}
+          onExit={onExit}
+        />
       )}
     </div>
   );

@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 export type SledPart =
   | "reins"
   | "harness"
@@ -80,7 +78,6 @@ const PART_CHOICES: Record<
 
 export default function PreparationPopup({
   activePart,
-  prep,
   onApply,
   onPlayAnimation,
   onClose,

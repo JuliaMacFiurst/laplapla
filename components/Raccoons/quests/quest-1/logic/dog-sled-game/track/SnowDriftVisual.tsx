@@ -37,19 +37,13 @@ interface SnowDriftVisualProps {
 
   /** ширина сцены (чтобы overlay совпадал с фоном по масштабу) */
   stageWidth?: number;
-
-  /** debug: показывать hit-zone */
-  debug?: boolean;
 }
 
 export default function SnowDriftVisual({
   segment,
   scrollX,
-  baseUpperLimit,
-  baseLowerLimit,
   stageHeight,
   stageWidth,
-  debug = false,
 }: SnowDriftVisualProps) {
   /**
    * ─────────────────────────
@@ -71,25 +65,25 @@ export default function SnowDriftVisual({
   // ⚙️ НАСТРАИВАЕМЫЕ ПАРАМЕТРЫ HIT-ZONE
   // Эти параметры НИКОГДА не влияют на визуал, только на физику столкновения.
   // ширина опасной зоны
-  const HIT_ZONE_WIDTH = 340;
+  //const HIT_ZONE_WIDTH = 340;
   // базовое смещение hit-zone относительно начала сегмента
   // (+) вправо, (-) влево
-  const HIT_ZONE_OFFSET_X = 250;
+  //const HIT_ZONE_OFFSET_X = 250;
   // дополнительная «тонкая» ручка для подстройки ощущений
   // полезна, если hit-zone кажется слишком "впереди" или "позади"
-  const HIT_ZONE_FINE_TUNE_X = 250;
+  //const HIT_ZONE_FINE_TUNE_X = 250;
 
-  const isUpper = segment.blocksLane === "upper";
+  
 
   /**
    * Hit-zone в координатах СЦЕНЫ
    * (совпадает с визуальным телом сугроба)
    */
-  const hitTop = isUpper
-    ? baseUpperLimit
-    : baseLowerLimit - segment.offsetY;
+  //const hitTop = isUpper
+    //? baseUpperLimit
+    //: baseLowerLimit - segment.offsetY;
 
-  const hitHeight = segment.offsetY;
+  //const hitHeight = segment.offsetY;
 
   return (
     <>
@@ -124,21 +118,6 @@ export default function SnowDriftVisual({
         />
       </div>
 
-      {/* ───────────── HIT-ZONE ───────────── */}
-      {debug && (
-        <div
-          style={{
-            position: "absolute",
-            left: segmentLeft + HIT_ZONE_OFFSET_X + HIT_ZONE_FINE_TUNE_X,
-            top: hitTop,
-            width: HIT_ZONE_WIDTH,
-            height: hitHeight,
-            background: "rgba(255, 0, 0, 0.35)",
-            pointerEvents: "none",
-            zIndex: 30,
-          }}
-        />
-      )}
     </>
   );
 }

@@ -33,7 +33,7 @@ function handleSvgClick(
   }
 }
 
-export default function DogsSledSVG({ activePart, onSelect }: Props) {
+export default function DogsSledSVG({ onSelect }: Props) {
   return (
       <svg
         className="dogs-sled-svg"
