@@ -11,34 +11,7 @@ Goal: ship a safe, free demo that cannot burn paid API money, then gradually ena
 
 ---
 
-## Priority 1: Dog Sled Game polish + finish
 
-### 1) Collectible stars (bonuses)
-- Add collectible bonus items: "stars" that can be collected by colliding with them.
-- Add top HUD (absolute positioned) with collected stars count.
-- Stars should NOT trigger crash/hit; they are collectible, not obstacles.
-
-Acceptance criteria:
-- Stars spawn during run.
-- When sled intersects star: star disappears + counter increments + (optional) small feedback effect.
-- HUD is visible, stable, and updates instantly.
-
-### 2) Finish line + results screen
-- Remove all visible debug hit-zones (snowdrift/obstacle debug visuals).
-- Add a visible finish object that spawns on the right and moves into view.
-- When finish is crossed:
-  - game ends
-  - sled slows down smoothly and stops
-  - results UI shows:
-    - stars collected
-    - number of obstacle crashes (count of crash state triggers)
-
-Acceptance criteria:
-- Finish reliably ends the run (no extra obstacles after finish).
-- Smooth slowdown looks intentional (not a sudden freeze).
-- Results screen shows correct totals.
-
----
 
 ## Priority 2: Next gameplay blocks in Quest 1
 

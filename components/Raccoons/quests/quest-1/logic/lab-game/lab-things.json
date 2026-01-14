@@ -1,0 +1,171 @@
+[
+  {
+    "id": "underwear",
+    "label": "Термобельё",
+    "score": 1,
+    "loganComment": "О да! Без этого даже мой хвост замёрзнет."
+  },
+  {
+    "id": "warm-boots",
+    "label": "Полярные сапоги",
+    "score": 1,
+    "loganComment": "Отлично! Пальцы скажут спасибо."
+  },
+  {
+    "id": "sleeping-bag",
+    "label": "Тёплый спальный мешок",
+    "score": 1,
+    "loganComment": "Спать в тепле — половина успеха экспедиции!"
+  },
+  {
+    "id": "tent",
+    "label": "Полярная палатка",
+    "score": 1,
+    "loganComment": "Надёжный дом посреди снега. Берём!"
+  },
+  {
+    "id": "burner",
+    "label": "Газовая горелка",
+    "score": 1,
+    "loganComment": "Горячий чай спасает даже енотов."
+  },
+  {
+    "id": "thermos",
+    "label": "Термос",
+    "score": 1,
+    "loganComment": "Ммм… горячо и приятно!"
+  },
+  {
+    "id": "high-calorie-food",
+    "label": "Высококалорийная еда",
+    "score": 1,
+    "loganComment": "Вот это топливо для долгого пути!"
+  },
+  {
+    "id": "navigator-map",
+    "label": "Навигатор и карта",
+    "score": 1,
+    "loganComment": "Без карты мы уйдём не туда. Проверено."
+  },
+  {
+    "id": "first-aid-kit",
+    "label": "Аптечка",
+    "score": 1,
+    "loganComment": "Лучше пусть не пригодится, но пусть будет."
+  },
+  {
+    "id": "headlamp",
+    "label": "Налобный фонарь",
+    "score": 1,
+    "loganComment": "Свет в темноте — настоящий герой!"
+  },
+  {
+    "id": "sunglasses",
+    "label": "Солнечные очки",
+    "score": 1,
+    "loganComment": "Снег ослепляет. Очки — умный выбор."
+  },
+  {
+    "id": "satellite-phone",
+    "label": "Спутниковая связь",
+    "score": 1,
+    "loganComment": "Если что — позовём помощь."
+  },
+  {
+    "id": "shovel",
+    "label": "Лёгкая лопата",
+    "score": 1,
+    "loganComment": "Снег сам себя не уберёт."
+  },
+  {
+    "id": "notebook",
+    "label": "Блокнот и карандаш",
+    "score": 1,
+    "loganComment": "Учёные всё записывают. Даже еноты."
+  },
+  {
+    "id": "signaling-instruments",
+    "label": "Сигнальные средства",
+    "score": 1,
+    "loganComment": "Пусть все знают, где мы!"
+  },
+
+  {
+    "id": "inflatable-ring",
+    "label": "Надувной круг",
+    "score": -1,
+    "loganComment": "Плавать? Тут?! Смело…"
+  },
+  {
+    "id": "flip-flops",
+    "label": "Пляжные шлёпки",
+    "score": -1,
+    "loganComment": "Очень холодная идея."
+  },
+  {
+    "id": "umbrella",
+    "label": "Зонтик",
+    "score": -1,
+    "loganComment": "Ветер унесёт его быстрее мыслей."
+  },
+  {
+    "id": "swim-wear",
+    "label": "Купальник",
+    "score": -1,
+    "loganComment": "Храбро. Но нет."
+  },
+  {
+    "id": "microwave",
+    "label": "Микроволновка",
+    "score": -1,
+    "loganComment": "А розетку ты тоже взял?"
+  },
+  {
+    "id": "cactus",
+    "label": "Кактус",
+    "score": -1,
+    "loganComment": "Он не переживёт Арктику. И я тоже."
+  },
+  {
+    "id": "rollers",
+    "label": "Роликовые коньки",
+    "score": -1,
+    "loganComment": "Лёд тут совсем не для этого."
+  },
+  {
+    "id": "teddy-bear",
+    "label": "Плюшевый медведь",
+    "score": -1,
+    "loganComment": "Настоящие медведи могут обидеться."
+  },
+  {
+    "id": "hair-drawer",
+    "label": "Фен для волос",
+    "score": -1,
+    "loganComment": "Ветер справится лучше."
+  },
+  {
+    "id": "lampshade",
+    "label": "Настольная лампа",
+    "score": -1,
+    "loganComment": "Уютно, но бесполезно."
+  },
+  {
+    "id": "sambrero",
+    "label": "Сомбреро",
+    "score": -1,
+    "loganComment": "Солнце есть. Тепла нет."
+  },
+  {
+    "id": "balloons",
+    "label": "Воздушные шарики",
+    "score": -1,
+    "loganComment": "Полетят красиво. И навсегда."
+  },
+  {
+    "id": "aquarium",
+    "label": "Аквариум",
+    "score": -1,
+    "loganComment": "Рыбке тут не понравится."
+  }
+]
