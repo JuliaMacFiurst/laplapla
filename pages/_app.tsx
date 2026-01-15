@@ -11,6 +11,7 @@ import '../styles/Quests.css';
 import '../styles/Dress-up-game.css'
 import '../styles/QuestCarousel.css';
 import '../styles/Dog-sled-game.css';
+import '../styles/LabGame.css'
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from "next/script";

@@ -71,7 +71,7 @@
   window.showBrowserLog = function () {
     console.group("🦝 BrowserCapture – Last events");
     lastEvents.forEach((ev, i) =>
-      console.log(`${i + 1}.`, ev.type, ev)
+      console.debug(`${i + 1}.`, ev.type, ev)
     );
     console.groupEnd();
   };
