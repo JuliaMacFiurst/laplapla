@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import Backpack from "./Backpack";
 import FallingThingLane from "./FallingThingLane";
 import LoganComment from "./LoganComment";
@@ -13,7 +15,26 @@ export default function LabGameStage() {
     isFinished,
     isBackpackActive,
     loganComment,
+    backpackLane,
+    moveBackpackLane,
   } = useLabGameState();
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+        return;
+      }
+
+      event.preventDefault();
+      moveBackpackLane(event.key === "ArrowLeft" ? -1 : 1);
+    };
+
+    window.addEventListener("keydown", handleKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [moveBackpackLane]);
 
   return (
     <div className="lab-game-stage">
@@ -40,7 +61,7 @@ export default function LabGameStage() {
           ))}
         </div>
 
-        <Backpack active={isBackpackActive} />
+        <Backpack active={isBackpackActive} laneIndex={backpackLane} />
         <LoganComment comment={loganComment} />
 
         {isFinished && (

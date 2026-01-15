@@ -89,7 +89,9 @@ export function useLabGameState() {
   const [isBackpackActive, setBackpackActive] = useState(false);
   const [handledCount, setHandledCount] = useState(0);
   const [isFinished, setFinished] = useState(false);
-  const [backpackLane] = useState(Math.floor(FALLING_LANE_COUNT / 2));
+  const [backpackLane, setBackpackLane] = useState(
+    Math.floor(FALLING_LANE_COUNT / 2)
+  );
 
   const loganTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backpackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -186,6 +188,16 @@ export function useLabGameState() {
 
     nextItemIndexRef.current = pointer;
   }, [orderedQueue, totalThings]);
+
+  const moveBackpackLane = useCallback((delta: number) => {
+    setBackpackLane((prev) => {
+      const next = Math.max(
+        0,
+        Math.min(prev + delta, FALLING_LANE_COUNT - 1)
+      );
+      return next;
+    });
+  }, []);
 
   const handleLaneResult = useCallback(
     (laneIndex: number, item: LabThing | null, caught: boolean) => {
@@ -337,5 +349,7 @@ export function useLabGameState() {
     totalThings,
     handledCount,
     onLaneResult: handleLaneResult,
+    backpackLane,
+    moveBackpackLane,
   };
 }

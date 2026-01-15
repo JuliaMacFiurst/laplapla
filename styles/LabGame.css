@@ -54,7 +54,7 @@
   transform: translate(-50%, 0);
   transition: transform 0.1s linear;
   pointer-events: none;
-  z-index: 4;
+  z-index: 5;
 }
 
 .lab-game-score-log {
@@ -93,6 +93,8 @@
   max-width: 320px;
   width: 100%;
   height: auto;
+  z-index: 5;
+  transition: left 0.2s ease;
 }
 
 .lab-game-backpack img,
@@ -100,6 +102,10 @@
   width: 100%;
   height: auto;
   display: block;
+}
+
+.lab-game-backpack video {
+  border-radius: 18px;
 }
 
 .logan-comment {
@@ -121,15 +127,6 @@
   border-style: solid;
   border-color: rgba(0, 0, 0, 0.7) transparent transparent transparent;
 }
-
-.lab-game-backpack {
-  z-index: 5;
-}
-
-.lab-game-backpack video {
-  border-radius: 18px;
-}
-
 
 .logan-comment p {
   margin: 0;
