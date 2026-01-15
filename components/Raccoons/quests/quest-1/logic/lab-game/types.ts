@@ -20,10 +20,10 @@ export interface ScoreEntry {
 
 export const FALLING_LANE_COUNT = 3;
 export const FALLING_START_Y = -90;
-export const FALLING_SPEED_MIN = 0.5;
-export const FALLING_SPEED_MAX = 0.7;
-export const FALLING_CATCH_LINE = 500;
-export const FALLING_REMOVAL_LINE = 800;
+export const FALLING_SPEED_MIN = 3;
+export const FALLING_SPEED_MAX = 4;
+export const FALLING_CATCH_LINE = 450;
+export const FALLING_REMOVAL_LINE = 520;
 export const BASE_URL =
   "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/lab-game/lab-things";
 export const BACKPACK_IMAGE_URL =

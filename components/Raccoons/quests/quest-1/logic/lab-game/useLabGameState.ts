@@ -1,4 +1,4 @@
-"use client";
+  "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LabThing } from "./types";
@@ -13,6 +13,7 @@ import {
   ScoreEntry,
 } from "./types";
 import labThings from "./lab-things.json";
+
 
 const shuffleArray = <T,>(source: T[]): T[] => {
   const items = [...source];
@@ -73,12 +74,20 @@ const createInitialLanes = (items: LabThing[]): LaneState[] =>
   }));
 
 export function useLabGameState() {
+  const lastPositiveLaneRef = useRef<number>(-1);
+
   const [orderedQueue] = useState<LabThing[]>(() =>
     buildOrderedQueue(labThings as LabThing[])
   );
   const [lanes, setLanes] = useState<LaneState[]>(() =>
     createInitialLanes(orderedQueue)
   );
+  const lanesRef = useRef<LaneState[]>(lanes);
+
+  useEffect(() => {
+    lanesRef.current = lanes;
+  }, [lanes]);
+
   const nextItemIndexRef = useRef(
     Math.min(FALLING_LANE_COUNT, orderedQueue.length)
   );
@@ -159,19 +168,46 @@ export function useLabGameState() {
   
 
   const spawnTriple = useCallback(() => {
-    if (nextItemIndexRef.current >= totalThings) {
-      return;
-    }
-
-    let pointer = nextItemIndexRef.current;
-
     setLanes((prev) => {
-      const updated = prev.map((lane) => {
-        if (pointer >= totalThings || lane.item) {
+      let pointer = nextItemIndexRef.current;
+      if (pointer >= totalThings) return prev;
+
+      // определяем lane для полезного предмета по кругу
+      const positiveLane =
+        (lastPositiveLaneRef.current + 1) % FALLING_LANE_COUNT;
+      lastPositiveLaneRef.current = positiveLane;
+
+      const usedIds = new Set<string>();
+      const nextLanes = prev.map((lane) => {
+        if (lane.item) return lane;
+        if (pointer >= totalThings) return lane;
+
+        let nextItem = orderedQueue[pointer];
+
+        // если это lane для полезного предмета — ищем первый положительный
+        if (lane.laneIndex === positiveLane) {
+          let search = pointer;
+          while (search < totalThings) {
+            const candidate = orderedQueue[search];
+            if (candidate.score > 0 && !usedIds.has(candidate.id)) {
+              nextItem = candidate;
+              // меняем местами в очереди, чтобы не потерять порядок
+              [orderedQueue[pointer], orderedQueue[search]] = [
+                orderedQueue[search],
+                orderedQueue[pointer],
+              ];
+              break;
+            }
+            search++;
+          }
+        }
+
+        if (usedIds.has(nextItem.id)) {
           return lane;
         }
 
-        const nextItem = orderedQueue[pointer++];
+        usedIds.add(nextItem.id);
+        pointer += 1;
 
         return {
           ...lane,
@@ -183,10 +219,9 @@ export function useLabGameState() {
         };
       });
 
-      return updated;
+      nextItemIndexRef.current = pointer;
+      return nextLanes;
     });
-
-    nextItemIndexRef.current = pointer;
   }, [orderedQueue, totalThings]);
 
   const moveBackpackLane = useCallback((delta: number) => {
@@ -211,6 +246,12 @@ export function useLabGameState() {
 
       if (caught) {
         setScoreTotal((prev) => prev + item.score);
+        console.log(
+          "[SCORE APPLY]",
+          item.label,
+          "score:",
+          item.score
+        );
         setScoreLog((prev) =>
           [
             { id: item.id, label: item.label, score: item.score },
@@ -260,49 +301,91 @@ export function useLabGameState() {
         caught: boolean;
       }[] = [];
 
-      setLanes((prev) =>
-        prev.map((lane) => {
-          if (!lane.item) {
-            return lane;
-          }
+      const prevLanes = lanesRef.current;
 
-          const nextY = lane.y + lane.speed * delta;
-          const reachedEnd = nextY >= FALLING_REMOVAL_LINE;
-          const canCatch =
-            nextY >= FALLING_CATCH_LINE &&
-            lane.laneIndex === backpackLane;
+      const nextLanes: LaneState[] = prevLanes.map((lane) => {
+        if (!lane.item) {
+          return lane;
+        }
 
-          if (canCatch || reachedEnd) {
-            events.push({
-              laneIndex: lane.laneIndex,
-              item: lane.item,
-              caught: canCatch,
-            });
-            return {
-              ...lane,
-              item: null,
-            };
-          }
+        const nextY = lane.y + lane.speed * delta;
+        const reachedEnd = nextY >= FALLING_REMOVAL_LINE;
+        const canCatch =
+          lane.laneIndex === backpackLane &&
+          nextY >= FALLING_CATCH_LINE &&
+          nextY < FALLING_REMOVAL_LINE;
 
-          const shouldLogProgress =
-            Math.floor(nextY) % 150 === 0 &&
-            nextY > 0 &&
-            nextY < FALLING_REMOVAL_LINE;
+        if (canCatch) {
+          console.log(
+            "[CATCH CHECK]",
+            "lane:",
+            lane.laneIndex,
+            "backpack:",
+            backpackLane,
+            "y:",
+            nextY.toFixed(1)
+          );
+        }
 
-          if (shouldLogProgress) {
-            console.log(
-              `[LabGame] lane ${lane.laneIndex} is falling: ${lane.item.label} y=${nextY.toFixed(
-                1
-              )}`
-            );
-          }
+        if (reachedEnd) {
+          console.log(
+            "[REMOVE CHECK]",
+            "lane:",
+            lane.laneIndex,
+            lane.item.label,
+            "y:",
+            nextY.toFixed(1)
+          );
+        }
+
+        if (canCatch) {
+          events.push({
+            laneIndex: lane.laneIndex,
+            item: lane.item,
+            caught: true,
+          });
 
           return {
             ...lane,
-            y: nextY,
+            item: null,
           };
-        })
-      );
+        }
+
+        if (reachedEnd) {
+          events.push({
+            laneIndex: lane.laneIndex,
+            item: lane.item,
+            caught: false,
+          });
+
+          return {
+            ...lane,
+            item: null,
+          };
+        }
+
+        const shouldLogProgress =
+          Math.floor(nextY) % 150 === 0 &&
+          nextY > 0 &&
+          nextY < FALLING_REMOVAL_LINE;
+
+        if (shouldLogProgress) {
+          console.log(
+            `[LabGame] lane ${lane.laneIndex} is falling: ${lane.item.label} y=${nextY.toFixed(
+              1
+            )}`
+          );
+        }
+
+        return {
+          ...lane,
+          y: nextY,
+        };
+      });
+
+      // commit state + keep ref in sync for the next RAF tick
+      lanesRef.current = nextLanes;
+      setLanes(nextLanes);
 
       events.forEach((event) =>
         handleLaneResult(event.laneIndex, event.item, event.caught)

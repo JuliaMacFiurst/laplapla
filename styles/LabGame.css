@@ -32,7 +32,7 @@
 .lab-game-lane {
   height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* allow items to fall past lane bounds */
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
   display: flex;
@@ -52,7 +52,6 @@
   width: 52px;
   height: auto;
   transform: translate(-50%, 0);
-  transition: transform 0.1s linear;
   pointer-events: none;
   z-index: 5;
 }
