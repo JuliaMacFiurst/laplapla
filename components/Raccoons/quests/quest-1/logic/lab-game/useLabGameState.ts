@@ -11,6 +11,7 @@ import {
   FALLING_START_Y,
   LaneState,
   ScoreEntry,
+  FallingThingStatus,
 } from "./types";
 import labThings from "./lab-things.json";
 
@@ -68,9 +69,10 @@ const createInitialLanes = (items: LabThing[]): LaneState[] =>
   Array.from({ length: FALLING_LANE_COUNT }, (_, laneIndex) => ({
     laneIndex,
     item: items[laneIndex] ?? null,
-    y: FALLING_START_Y - Math.random() * 40,
+    y: FALLING_START_Y - Math.random() * (FALLING_SPEED_MAX - FALLING_SPEED_MIN),
     speed:
       FALLING_SPEED_MIN + Math.random() * (FALLING_SPEED_MAX - FALLING_SPEED_MIN),
+    status: items[laneIndex] ? "falling" : undefined,
   }));
 
 export function useLabGameState() {
@@ -106,6 +108,12 @@ export function useLabGameState() {
   const backpackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const lastTimestampRef = useRef(0);
+  const randomSpeed = () =>
+    FALLING_SPEED_MIN +
+    Math.random() * (FALLING_SPEED_MAX - FALLING_SPEED_MIN);
+  const statusTimersRef = useRef(
+    new Map<number, ReturnType<typeof setTimeout>>()
+  );
 
   const totalThings = orderedQueue.length;
 
@@ -130,6 +138,9 @@ export function useLabGameState() {
       clearTimeout(backpackTimerRef.current);
       backpackTimerRef.current = null;
     }
+
+    statusTimersRef.current.forEach(clearTimeout);
+    statusTimersRef.current.clear();
   }, []);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
@@ -164,8 +175,6 @@ export function useLabGameState() {
       backpackTimerRef.current = null;
     }, 4200);
   }, []);
-
-  
 
   const spawnTriple = useCallback(() => {
     setLanes((prev) => {
@@ -213,9 +222,8 @@ export function useLabGameState() {
           ...lane,
           item: nextItem,
           y: FALLING_START_Y,
-          speed:
-            FALLING_SPEED_MIN +
-            Math.random() * (FALLING_SPEED_MAX - FALLING_SPEED_MIN),
+          speed: randomSpeed(),
+          status: "falling" as const,
         };
       });
 
@@ -223,6 +231,37 @@ export function useLabGameState() {
       return nextLanes;
     });
   }, [orderedQueue, totalThings]);
+
+  const scheduleLaneReset = useCallback(
+    (laneIndex: number, delay: number) => {
+      if (statusTimersRef.current.has(laneIndex)) {
+        clearTimeout(statusTimersRef.current.get(laneIndex)!);
+      }
+
+      const timer = setTimeout(() => {
+        statusTimersRef.current.delete(laneIndex);
+
+        setLanes((prev) =>
+          prev.map((lane) =>
+            lane.laneIndex === laneIndex
+              ? {
+                  ...lane,
+                  item: null,
+                  status: undefined,
+                  y: FALLING_START_Y,
+                  speed: randomSpeed(),
+                }
+              : lane
+          )
+        );
+
+        spawnTriple();
+      }, delay);
+
+      statusTimersRef.current.set(laneIndex, timer);
+    },
+    [spawnTriple]
+  );
 
   const moveBackpackLane = useCallback((delta: number) => {
     setBackpackLane((prev) => {
@@ -234,48 +273,36 @@ export function useLabGameState() {
     });
   }, []);
 
+  type LaneEvent = {
+    laneIndex: number;
+    item: LabThing;
+    status: FallingThingStatus;
+  };
+
   const handleLaneResult = useCallback(
-    (laneIndex: number, item: LabThing | null, caught: boolean) => {
-      if (!item) {
-        return;
-      }
+    (laneIndex: number, item: LabThing, status: FallingThingStatus) => {
+      setHandledCount((prev) => Math.min(prev + 1, totalThings));
 
-      setHandledCount((prev) =>
-        Math.min(prev + 1, totalThings)
-      );
-
-      if (caught) {
+      if (status === "caught") {
         setScoreTotal((prev) => prev + item.score);
-        console.log(
-          "[SCORE APPLY]",
-          item.label,
-          "score:",
-          item.score
-        );
+        console.log("[SCORE APPLY]", item.label, "score:", item.score);
         setScoreLog((prev) =>
           [
             { id: item.id, label: item.label, score: item.score },
             ...prev,
           ].slice(0, 6)
-          );
+        );
         setCaughtThings((prev) => [...prev, item]);
         triggerLoganComment(item.loganComment);
         triggerBackpackPulse();
         console.log(
           `[LabGame] lane ${laneIndex} caught: ${item.label} (${item.score >= 0 ? "+" : ""}${item.score})`
         );
-        spawnTriple();
       } else {
         console.log(`[LabGame] lane ${laneIndex} missed: ${item.label}`);
-        spawnTriple();
       }
     },
-    [
-      spawnTriple,
-      triggerBackpackPulse,
-      triggerLoganComment,
-      totalThings,
-    ]
+    [totalThings, triggerBackpackPulse, triggerLoganComment]
   );
 
   const animate = useCallback(
@@ -295,16 +322,12 @@ export function useLabGameState() {
       );
       lastTimestampRef.current = timestamp;
 
-      const events: {
-        laneIndex: number;
-        item: LabThing;
-        caught: boolean;
-      }[] = [];
+      const events: LaneEvent[] = [];
 
       const prevLanes = lanesRef.current;
 
       const nextLanes: LaneState[] = prevLanes.map((lane) => {
-        if (!lane.item) {
+        if (!lane.item || lane.status !== "falling") {
           return lane;
         }
 
@@ -316,51 +339,39 @@ export function useLabGameState() {
           nextY < FALLING_REMOVAL_LINE;
 
         if (canCatch) {
-          console.log(
-            "[CATCH CHECK]",
-            "lane:",
-            lane.laneIndex,
-            "backpack:",
-            backpackLane,
-            "y:",
-            nextY.toFixed(1)
-          );
-        }
-
-        if (reachedEnd) {
-          console.log(
-            "[REMOVE CHECK]",
-            "lane:",
-            lane.laneIndex,
-            lane.item.label,
-            "y:",
-            nextY.toFixed(1)
-          );
-        }
-
-        if (canCatch) {
-          events.push({
-            laneIndex: lane.laneIndex,
-            item: lane.item,
-            caught: true,
-          });
+          const currentItem = lane.item;
+          if (currentItem) {
+            events.push({
+              laneIndex: lane.laneIndex,
+              item: currentItem,
+              status: "caught",
+            });
+            scheduleLaneReset(lane.laneIndex, 300);
+          }
 
           return {
             ...lane,
-            item: null,
+            y: FALLING_CATCH_LINE,
+            speed: 0,
+            status: "caught",
           };
         }
 
         if (reachedEnd) {
-          events.push({
-            laneIndex: lane.laneIndex,
-            item: lane.item,
-            caught: false,
-          });
+          const currentItem = lane.item;
+          if (currentItem) {
+            events.push({
+              laneIndex: lane.laneIndex,
+              item: currentItem,
+              status: "missed",
+            });
+            scheduleLaneReset(lane.laneIndex, 200);
+          }
 
           return {
             ...lane,
-            item: null,
+            status: "missed",
+            speed: 0,
           };
         }
 
@@ -388,12 +399,12 @@ export function useLabGameState() {
       setLanes(nextLanes);
 
       events.forEach((event) =>
-        handleLaneResult(event.laneIndex, event.item, event.caught)
+        handleLaneResult(event.laneIndex, event.item, event.status)
       );
 
       animationFrameRef.current = requestAnimationFrame(animate);
     },
-    [backpackLane, handleLaneResult, isFinished]
+    [backpackLane, handleLaneResult, isFinished, scheduleLaneReset]
   );
 
   useEffect(() => {

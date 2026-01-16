@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import type { LaneState } from "./types";
 import { BASE_URL } from "./types";
 
@@ -8,16 +9,19 @@ export interface FallingThingLaneProps {
 }
 
 export default function FallingThingLane({ lane }: FallingThingLaneProps) {
+  const statusClass = lane.status ? `lab-game-thing--${lane.status}` : "";
+  const inlineStyle: CSSProperties = {
+    "--lane-y": `${lane.y}px`,
+  };
+
   return (
     <div className="lab-game-lane">
       {lane.item && (
         <img
           src={`${BASE_URL}/${lane.item.id}.webp`}
           alt={lane.item.label}
-          className="lab-game-thing"
-          style={{
-            transform: `translate(-50%, ${lane.y}px)`,
-          }}
+          className={`lab-game-thing ${statusClass}`}
+          style={inlineStyle}
         />
       )}
     </div>

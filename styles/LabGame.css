@@ -51,9 +51,21 @@
   left: 50%;
   width: 52px;
   height: auto;
-  transform: translate(-50%, 0);
+  transform: translate(-50%, var(--lane-y, 0px));
+  transition: transform 0.25s ease, opacity 0.3s ease;
   pointer-events: none;
   z-index: 5;
+}
+
+.lab-game-thing--caught {
+  transform: translate(-50%, var(--lane-y, 0px)) scale(0.35);
+  opacity: 0;
+  z-index: 20;
+}
+
+.lab-game-thing--missed {
+  opacity: 0;
+  z-index: 4;
 }
 
 .lab-game-score-log {

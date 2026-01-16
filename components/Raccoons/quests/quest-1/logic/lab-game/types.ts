@@ -5,11 +5,14 @@ export interface LabThing {
   loganComment: string;
 }
 
+export type FallingThingStatus = "falling" | "caught" | "missed";
+
 export interface LaneState {
   laneIndex: number;
   item: LabThing | null;
   y: number;
   speed: number;
+  status?: FallingThingStatus;
 }
 
 export interface ScoreEntry {
