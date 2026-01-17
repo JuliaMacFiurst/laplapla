@@ -212,3 +212,130 @@
 .lab-game-stage-wrapper {
   margin-top: 32px;
 }
+
+.lab-game-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 10, 0.7);
+  border-radius: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+}
+
+.lab-game-overlay-card,
+.lab-game-final-content {
+  text-align: center;
+  background: rgba(9, 13, 32, 0.85);
+  padding: 24px;
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+.lab-game-start-overlay .lab-game-overlay-card h2 {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.lab-game-start-button {
+  font-family: Amatic SC, cursive;
+  font-size: 28px;
+  font-weight: 700;
+  padding: 22px 48px;
+  border-radius: 40px;
+  border: none;
+  cursor: pointer;
+  color: #0b1b14;
+  background: linear-gradient(135deg, #9fffd0, #5de7a3);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.45),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.15);
+  animation: startPulse 2.2s ease-in-out infinite;
+}
+
+.lab-game-start-button:hover {
+  transform: scale(1.05);
+}
+
+@keyframes startPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+
+/* ===== FINAL SCREEN ===== */
+
+.final-score {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.final-backpack-area {
+  position: relative;
+  width: 360px;
+  height: 260px;
+  margin: 0 auto 24px;
+}
+
+.final-backpack {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 180px;
+  z-index: 2;
+}
+
+.final-caught-things {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.final-caught-thing {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  animation: popIn 0.4s ease-out both;
+}
+
+.lab-game-restart-button {
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: 600;
+  padding: 14px 32px;
+  border-radius: 28px;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  background: linear-gradient(135deg, #5aa6ff, #7cd7ff);
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.4),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.lab-game-restart-button:hover {
+  transform: scale(1.04);
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

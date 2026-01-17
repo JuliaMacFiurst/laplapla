@@ -9,15 +9,19 @@ import { useLabGameState } from "./useLabGameState";
 
 export default function LabGameStage() {
   const {
-    lanes,
-    score,
-    scoreLog,
-    isFinished,
-    isBackpackActive,
-    loganComment,
-    backpackLane,
-    moveBackpackLane,
-  } = useLabGameState();
+  lanes,
+  score,
+  scoreLog,
+  isFinished,
+  isBackpackActive,
+  loganComment,
+  backpackLane,
+  moveBackpackLane,
+  gameStarted,
+  startGame,
+  resetGame,
+  caughtThings,
+} = useLabGameState();
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -39,34 +43,79 @@ export default function LabGameStage() {
   return (
     <div className="lab-game-stage">
       <div className="lab-game-board">
-        <div className="lab-game-scoreboard">
-          <span>Счёт: {score}</span>
-          <div className="lab-game-score-log">
-            {scoreLog.map((entry) => (
-              <span
-                key={entry.id}
-                className={
-                  entry.score >= 0 ? "score-positive" : "score-negative"
-                }
-              >
-                {entry.label}: {entry.score >= 0 ? `+${entry.score}` : entry.score}
-              </span>
-            ))}
-          </div>
+        {!gameStarted && (
+   <div className="lab-game-overlay lab-game-start-overlay">
+            <div className="lab-game-overlay-card">
+                  <h2>Лабораторная мини-игра</h2>
+              <p>Соберите только предметы, полезные в полярной экспедиции!</p>
+    <button
+      className="lab-game-start-button"
+      onClick={startGame}
+    >
+      Начать игру
+    </button>
+  </div>
         </div>
+)}
+        {gameStarted && (
+          <>
+            <div className="lab-game-scoreboard">
+              <span>Счёт: {score}</span>
+              <div className="lab-game-score-log">
+                {scoreLog.map((entry) => (
+                  <span
+                    key={entry.id}
+                    className={
+                      entry.score >= 0 ? "score-positive" : "score-negative"
+                    }
+                  >
+                    {entry.label}: {entry.score >= 0 ? `+${entry.score}` : entry.score}
+                  </span>
+                ))}
+              </div>
+            </div>
 
-        <div className="lab-game-lanes">
-          {lanes.map((lane) => (
-            <FallingThingLane key={lane.laneIndex} lane={lane} />
-          ))}
-        </div>
+            <div className="lab-game-lanes">
+              {lanes.map((lane) => (
+                <FallingThingLane key={lane.laneIndex} lane={lane} />
+              ))}
+            </div>
 
-        <Backpack active={isBackpackActive} laneIndex={backpackLane} />
-        <LoganComment comment={loganComment} />
-
+            <Backpack active={isBackpackActive} laneIndex={backpackLane} />
+            <LoganComment comment={loganComment} />
+          </>
+        )}
         {isFinished && (
           <div className="lab-game-final-overlay">
-            <div className="final-content">Игра готова!</div>
+            <div className="final-content">
+              <h2 className="final-score">Итоговый счёт: {score}</h2>
+
+              <div className="final-backpack-area">
+                <img
+                  src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/lab-game/backpack-pic.png"
+                  alt="Рюкзак"
+                  className="final-backpack"
+                />
+
+                <div className="final-caught-things">
+                  {caughtThings.map((item) => (
+                    <img
+                      key={item.id}
+                      src={`https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/lab-game/lab-things/${item.id}.webp`}
+                      alt={item.label}
+                      className="final-caught-thing"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                className="lab-game-restart-button"
+                onClick={resetGame}
+              >
+                Играть заново
+              </button>
+            </div>
           </div>
         )}
       </div>

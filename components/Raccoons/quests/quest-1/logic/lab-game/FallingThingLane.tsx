@@ -10,9 +10,10 @@ export interface FallingThingLaneProps {
 
 export default function FallingThingLane({ lane }: FallingThingLaneProps) {
   const statusClass = lane.status ? `lab-game-thing--${lane.status}` : "";
-  const inlineStyle: CSSProperties = {
+
+  const inlineStyle = {
     "--lane-y": `${lane.y}px`,
-  };
+  } as CSSProperties;
 
   return (
     <div className="lab-game-lane">
