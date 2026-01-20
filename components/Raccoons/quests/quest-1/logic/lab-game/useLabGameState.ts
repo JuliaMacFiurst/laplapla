@@ -15,6 +15,7 @@ import {
 } from "./types";
 import labThings from "./lab-things.json";
 
+const GAME_DURATION_MS = 45_000;
 
 const shuffleArray = <T,>(source: T[]): T[] => {
   const items = [...source];
@@ -77,6 +78,7 @@ const createInitialLanes = (): LaneState[] =>
 export function useLabGameState() {
   const [gameStarted, setGameStarted] = useState(false);
   const gameStartedRef = useRef(false);
+  const finishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const orderedQueueRef = useRef<LabThing[]>([]);
   const [queueSize, setQueueSize] = useState(0);
@@ -168,10 +170,6 @@ export function useLabGameState() {
   }, []);
 
   const spawnNextItem = useCallback(() => {
-    console.log("[SPAWN ATTEMPT]", {
-      nextItemIndex: nextItemIndexRef.current,
-      total: orderedQueueRef.current.length,
-    });
     setLanes(prev => {
       let pointer = nextItemIndexRef.current;
       if (pointer >= orderedQueueRef.current.length) return prev;
@@ -188,11 +186,6 @@ export function useLabGameState() {
           speed: randomSpeed(),
           status: "falling" as FallingThingStatus,
         };
-      });
-
-      console.log("[SPAWN RESULT]", {
-        newPointer: pointer,
-        lanesWithItems: next.filter(l => l.item !== null).map(l => l.laneIndex),
       });
 
       nextItemIndexRef.current = pointer;
@@ -254,12 +247,6 @@ export function useLabGameState() {
 
   const handleLaneResult = useCallback(
     (_laneIndex: number, item: LabThing, status: FallingThingStatus) => {
-      console.log("[HANDLE RESULT]", {
-        status,
-        item: item.id,
-        handledBefore: "(see next log)",
-        total: orderedQueueRef.current.length,
-      });
       setHandledCount((v) => v + 1);
 
       if (status === "caught") {
@@ -281,12 +268,6 @@ export function useLabGameState() {
 
   const animate = useCallback(
     (timestamp: number) => {
-      console.log("[ANIMATE TICK]", {
-        gameStarted,
-        isFinished,
-        nextItemIndex: nextItemIndexRef.current,
-        activeLanes: lanesRef.current.filter(l => l.item !== null).map(l => l.laneIndex),
-      });
       if (isFinished) {
         animationFrameRef.current = null;
         return;
@@ -377,7 +358,6 @@ export function useLabGameState() {
   );
 
   useEffect(() => {
-    console.log("[RAF EFFECT]", { gameStarted, isFinished });
     if (!gameStarted || isFinished) {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -400,31 +380,21 @@ export function useLabGameState() {
     };
   }, [animate, gameStarted, isFinished]);
 
-  useEffect(() => {
-    if (!gameStarted || isFinished) return;
-
-    const total = orderedQueueRef.current.length;
-    const noActive = lanes.every((l) => l.item === null);
-    const done = handledCount >= total && total > 0 && noActive;
-
-    if (done) {
-      console.log("[FINISH CONFIRMED]", { handledCount, total });
-      setFinished(true);
-    }
-  }, [handledCount, lanes, gameStarted, isFinished]);
+  // Removed effect that computed finish based on handledCount and lanes per instructions
 
   const startGame = useCallback(() => {
     if (gameStartedRef.current) return;
-    console.log("[START]", {
-      queueSize: orderedQueueRef.current.length,
-      nextItemIndex: nextItemIndexRef.current,
-    });
 
     rebuildQueue();
 
     setHandledCount(0);
 
     setFinished(false);
+
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
 
     gameStartedRef.current = true;
     setGameStarted(true);
@@ -436,10 +406,19 @@ export function useLabGameState() {
 
     // spawn immediately so player doesn't wait
     spawnNextItem();
+
+    finishTimerRef.current = setTimeout(() => {
+      setFinished(true);
+    }, GAME_DURATION_MS);
   }, [rebuildQueue, spawnNextItem]);
 
   const resetGame = useCallback(() => {
     clearTimers();
+
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
 
     laneResetTimersRef.current.forEach((t) => clearTimeout(t));
     laneResetTimersRef.current.clear();

@@ -47,7 +47,7 @@ export default function LabGameStage() {
    <div className="lab-game-overlay lab-game-start-overlay">
             <div className="lab-game-overlay-card">
                   <h2>Лабораторная мини-игра</h2>
-              <p>Соберите только предметы, полезные в полярной экспедиции!</p>
+              <p className="lab-game-start-capture">Соберите только предметы, полезные в полярной экспедиции!</p>
     <button
       className="lab-game-start-button"
       onClick={startGame}
@@ -89,13 +89,11 @@ export default function LabGameStage() {
           <div className="lab-game-final-overlay">
             <div className="final-content">
               <h2 className="final-score">Итоговый счёт: {score}</h2>
+              <p className="lab-final-caption">
+                Ты берёшь с собой в полярную экспедицию:
+              </p>
 
               <div className="final-backpack-area">
-                <img
-                  src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/lab-game/backpack-pic.png"
-                  alt="Рюкзак"
-                  className="final-backpack"
-                />
 
                 <div className="final-caught-things">
                   {caughtThings.map((item) => (

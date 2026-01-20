@@ -124,7 +124,7 @@
   padding: 12px 16px;
   background: rgba(0, 0, 0, 0.7);
   border-radius: 16px;
-  font-size: 14px;
+  font-size: 30px;
   line-height: 1.4;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
@@ -302,8 +302,8 @@
 }
 
 .final-caught-thing {
-  width: 56px;
-  height: 56px;
+  width: 76px;
+  height: 76px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
@@ -312,7 +312,8 @@
 
 .lab-game-restart-button {
   margin-top: 20px;
-  font-size: 20px;
+  font-family: Amatic SC, cursive;
+  font-size: 36px;
   font-weight: 600;
   padding: 14px 32px;
   border-radius: 28px;
@@ -338,4 +339,9 @@
     transform: scale(1);
     opacity: 1;
   }
+}
+
+
+.lab-game-start-capture, .lab-final-caption {
+  font-size: 22px;
 }
