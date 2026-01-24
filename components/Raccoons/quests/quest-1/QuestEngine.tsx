@@ -12,6 +12,7 @@ import Day5Garage from "./pages/station-doors/Day5Garage";
 import Day5Heat from "./pages/station-doors/Day5Heat";
 import Day5Lab from "./pages/station-doors/Day5Lab";
 import Day6Expedition from "./pages/Day6Expedition";
+import Day7TreasureOfTimes from "./pages/Day7TreasureOfTimes";
 
 // дальше добавляем по мере создания
 
@@ -27,6 +28,7 @@ const PAGES = {
   day5_heat: Day5Heat,
   day5_lab: Day5Lab,
   day6_expedition: Day6Expedition,
+  day7_treasure_of_times: Day7TreasureOfTimes,
   
 };
 
@@ -38,6 +40,11 @@ const PAGE_ORDER: PageId[] = [
   "day4_takeoff",
   "day4_sail",
   "day5_spitsbergen",
+  "day5_garage",
+  "day5_heat",
+  "day5_lab",
+  "day6_expedition",
+  "day7_treasure_of_times",
 ];
 
 export type PageId = keyof typeof PAGES;

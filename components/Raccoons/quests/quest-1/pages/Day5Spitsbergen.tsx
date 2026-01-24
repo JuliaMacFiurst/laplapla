@@ -7,9 +7,6 @@ type DoorId = "heat" | "lab" | "garage";
 
 export default function Day5Spitsbergen({ go }: { go: (id: PageId) => void }) {
   const [openingDoor, setOpeningDoor] = useState<DoorId | null>(null);
-  const [completed, setCompleted] = useState<{heat:boolean; lab:boolean; garage:boolean}>({
-    heat:false, lab:false, garage:false
-  });
 
   const handleDoorClick = (door: DoorId) => {
     setOpeningDoor(door);
@@ -18,15 +15,12 @@ export default function Day5Spitsbergen({ go }: { go: (id: PageId) => void }) {
     setTimeout(() => {
       if (door === "heat") {
         go("day5_heat");
-        setCompleted(prev => ({...prev, heat:true}));
       }
       if (door === "lab") {
         go("day5_lab");
-        setCompleted(prev => ({...prev, lab:true}));
       }
       if (door === "garage") {
         go("day5_garage");
-        setCompleted(prev => ({...prev, garage:true}));
       }
     }, 400);
   };
@@ -145,16 +139,32 @@ return (
           <div className="station-door-inner"></div>
         </button>
       </div>
-      {completed.heat && completed.lab && completed.garage && (
-        <div style={{ textAlign: "center", marginTop: "40px" }}>
-          <button
-            className="quest-next-btn"
-            onClick={() => go("day6_expedition")}
-          >
-            Продолжить путешествие →
-          </button>
+      <footer className="quest-footer">
+        <div
+          className="quest-center ice-button-wrapper"
+          style={{ marginTop: "60px" }}
+        >
+          <div className="ice-button" onClick={() => go("day6_expedition")}>
+            {/* льдина */}
+            <img
+              className="ice"
+              src="/quests/assets/buttons/ice-button-bg.svg"
+              alt="ice-btn"
+            />
+
+            {/* текст */}
+            <div className="ice-text">Вперед, в полярную экспедицию</div>
+
+            {/* пингвин */}
+            <img
+              className="penguin"
+              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+              alt="penguin"
+            />
+          </div>
         </div>
-      )}
+      </footer>
+      
     </div>
   );
 }
