@@ -3,7 +3,7 @@ import { Lang } from "../i18n";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "ru", label: "RU" },
-  { code: "he", label: "עברית" },
+  { code: "he", label: "HE" },
   { code: "en", label: "EN" },
 ];
 

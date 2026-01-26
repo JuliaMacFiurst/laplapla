@@ -19,6 +19,30 @@ type DictionaryShape = {
     };
     cta: string;
   };
+
+  about: {
+    title: string;
+    what: {
+      title: string;
+      text: string;
+    };
+    forWho: {
+      title: string;
+      text: string;
+    };
+    author: {
+      title: string;
+      text: string;
+    };
+    access: {
+      title: string;
+      text: string;
+    };
+    language: {
+      title: string;
+      text: string;
+    };
+  };
 };
 
 export const dictionaries: Record<Lang, DictionaryShape> = {

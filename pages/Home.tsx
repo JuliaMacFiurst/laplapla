@@ -28,6 +28,7 @@ export default function Home() {
   // 2) localStorage "laplapla_lang"
   // 3) browser language
   const [lang, setLang] = useState<Lang>("ru");
+  const [menuHover, setMenuHover] = useState(false);
 
   useEffect(() => {
     const qLang = normalizeLang(router.query.lang);
@@ -56,19 +57,42 @@ export default function Home() {
   return (
     <div className="home-wrapper" dir={dir}>
       <div className="top-bar">
-        <div className="menu-button">☰</div>
+        <div
+          className="menu-wrapper"
+          onMouseEnter={() => setMenuHover(true)}
+          onMouseLeave={() => setMenuHover(false)}
+        >
+          <div
+            className="menu-button"
+            onClick={() => router.push("/about")}
+          >
+            ☰
+          </div>
+
+          {menuHover && (
+            <div className="menu-preview">
+              <div className="menu-item">О проекте</div>
+              <div className="menu-item">Для кого</div>
+              <div className="menu-item">Доступ</div>
+              <div className="menu-item">Язык</div>
+            </div>
+          )}
+        </div>
+
         <LanguageSwitcher current={lang} />
       </div>
 
       <header className="site-header">
+        {/*
         <img
           src="/laplapla-logo.webp"
           alt={t.title}
           className="site-logo"
         />
+        */}
         <div className="header-text">
-          <h1 className="title">{t.title}</h1>
-          <h2 className="subtitle">{t.subtitle}</h2>
+          <h1 className="page-title">{t.title}</h1>
+          <h2 className="page-subtitle">{t.subtitle}</h2>
         </div>
       </header>
 
