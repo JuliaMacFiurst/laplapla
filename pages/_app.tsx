@@ -1,4 +1,5 @@
 // pages/_app.tsx
+import TopBar from "../components/TopBar";
 import '../styles/Home.css'; // глобальный стиль
 import '../styles/CapybaraPage.css';
 import '../styles/CatPage.css'; // Ошибка: Не удается найти модуль "../styles/ArtGalleryModal.css" или связанные с ним объявления типов.
@@ -12,6 +13,7 @@ import '../styles/Dress-up-game.css'
 import '../styles/QuestCarousel.css';
 import '../styles/Dog-sled-game.css';
 import '../styles/LabGame.css'
+import '../styles/About.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from "next/script";
@@ -40,7 +42,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         src="/js/browser-capture.js"
       />
 
-      <Component {...pageProps} />
+      <div className="app-layout">
+        <TopBar />
+        <Component {...pageProps} />
+      </div>
       <div id="modal-root"></div>
       <div id="popup-root"></div>
     </>

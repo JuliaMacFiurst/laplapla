@@ -1,39 +1,31 @@
-import { ABOUT_SECTIONS, AboutSectionKey, Lang, dictionaries } from "../i18n";
-
 interface AboutContentProps {
-  lang: Lang;
-  mode: "list" | "section";
-  section?: AboutSectionKey;
+  mode: "preview" | "section";
+  title: string;
+  text: string;
 }
 
 export default function AboutContent({
-  lang,
   mode,
-  section,
+  title,
+  text,
 }: AboutContentProps) {
-  const t = dictionaries[lang].about;
-
-  // Рендер списка всех секций (для /about)
-  if (mode === "list") {
+  // Короткая версия для плитки (/about)
+  if (mode === "preview") {
     return (
-      <div className="about-content">
-        {ABOUT_SECTIONS.map((key) => (
-          <section key={key} className="about-section">
-            <h2>{t[key].title}</h2>
-            <p>{t[key].text}</p>
-          </section>
-        ))}
+      <div className="about-card-content">
+        <h2>{title}</h2>
+        <p>{text}</p>
       </div>
     );
   }
 
-  // Рендер одной секции (для /about/[section])
-  if (mode === "section" && section) {
+  // Полная версия для страницы секции (/about/[section])
+  if (mode === "section") {
     return (
       <div className="about-content">
         <section className="about-section">
-          <h2>{t[section].title}</h2>
-          <p>{t[section].text}</p>
+          <h2>{title}</h2>
+          <p>{text}</p>
         </section>
       </div>
     );

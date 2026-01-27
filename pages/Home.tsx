@@ -1,24 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/router";
 
-import { dictionaries, ABOUT_SECTIONS, type Lang } from "../i18n";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-
-function normalizeLang(input: unknown): Lang {
-  const s = (Array.isArray(input) ? input[0] : input) ?? "";
-  const raw = String(s).toLowerCase();
-
-  // Accept: ru, he, en, or locale-like values: ru-RU, he-IL, en-US
-  const base = raw.split("-")[0];
-  if (base === "ru" || base === "he" || base === "en") return base;
-  return "ru";
-}
-
-function detectBrowserLang(): Lang {
-  if (typeof window === "undefined") return "ru";
-  const nav = (navigator.language || "").toLowerCase();
-  return normalizeLang(nav);
-}
+import { dictionaries, type Lang } from "../i18n";
 
 export default function Home() {
   const router = useRouter();
@@ -27,86 +10,17 @@ export default function Home() {
   // 1) ?lang=he|en|ru
   // 2) localStorage "laplapla_lang"
   // 3) browser language
-  const [lang, setLang] = useState<Lang>("ru");
-  const [menuHover, setMenuHover] = useState(false);
-  const [closeTimer, setCloseTimer] = useState<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    const qLang = normalizeLang(router.query.lang);
-
-    if (typeof window !== "undefined") {
-      const stored = normalizeLang(window.localStorage.getItem("laplapla_lang"));
-      const browser = detectBrowserLang();
-
-      const nextLang = qLang !== "ru" || String(router.query.lang ?? "")
-        ? qLang
-        : (stored !== "ru" || window.localStorage.getItem("laplapla_lang")
-            ? stored
-            : browser);
-
-      setLang(nextLang);
-    } else {
-      setLang(qLang);
-    }
-  }, [router.query.lang]);
+  const lang = (Array.isArray(router.query.lang)
+    ? router.query.lang[0]
+    : router.query.lang) as Lang || "ru";
 
   const t = useMemo(() => dictionaries[lang].home, [lang]);
-
-  const openMenu = () => {
-    if (closeTimer) {
-      clearTimeout(closeTimer);
-      setCloseTimer(null);
-    }
-    setMenuHover(true);
-  };
-
-  const scheduleCloseMenu = () => {
-    const timer = setTimeout(() => {
-      setMenuHover(false);
-    }, 120); // лёгкая задержка
-    setCloseTimer(timer);
-  };
 
   // Optional: set RTL for Hebrew without touching global layout yet
   const dir = lang === "he" ? "rtl" : "ltr";
 
   return (
     <div className="home-wrapper" dir={dir}>
-      <div className="top-bar">
-        <div
-          className="menu-wrapper"
-          onMouseEnter={openMenu}
-          onMouseLeave={scheduleCloseMenu}
-        >
-          <div
-            className="menu-button"
-            onClick={() => router.push("/about")}
-          >
-            ☰
-          </div>
-
-          {menuHover && (
-            <div
-              className="menu-preview"
-              onMouseEnter={openMenu}
-              onMouseLeave={scheduleCloseMenu}
-            >
-              {ABOUT_SECTIONS.map((key) => (
-                <div
-                  key={key}
-                  className="menu-item"
-                  onClick={() => router.push(`/about/${key}`)}
-                >
-                  {dictionaries[lang].about[key].title}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <LanguageSwitcher current={lang} />
-      </div>
-
       <header className="site-header">
         {/*
         <img

@@ -1,0 +1,202 @@
+/* =========================
+   ABOUT PAGE LAYOUT
+========================= */
+
+.about-page {
+  min-height: 100vh;
+  padding-top: 80px; /* место под back button */
+}
+
+/* =========================
+   ABOUT LIST (вертикальный список)
+========================= */
+
+.about-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  margin-top: 40px;
+  margin-bottom: 60px;
+}
+
+/* =========================
+   ABOUT CARD (плитка)
+========================= */
+
+.about-card {
+  cursor: pointer;
+
+  padding: 28px 32px;
+  border-radius: 28px;
+
+  background: linear-gradient(
+    135deg,
+    #fff7d6,
+    #ffe4ec,
+    #ede9ff
+  );
+
+  background-size: 200% 200%;
+  animation: about-card-gradient 10s ease infinite;
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.12);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hover — карточка «поднимается» */
+.about-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+/* Active — мягкое нажатие */
+.about-card:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* =========================
+   ABOUT CARD CONTENT
+========================= */
+
+.about-card-content h2 {
+  margin: 0 0 12px;
+
+  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-size: 36px;
+  font-weight: 700;
+
+  color: #4b3b6a;
+}
+
+.about-card-content p {
+  margin: 0;
+
+  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-size: 20px;
+  line-height: 1.6;
+
+  color: #5f5675;
+  max-width: 720px;
+}
+
+/* =========================
+   ABOUT SECTION PAGE (деталка)
+========================= */
+
+.about-content {
+  margin-top: 32px;
+}
+
+.about-section h2 {
+  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-size: 48px;
+  margin-bottom: 20px;
+
+  color: #4b3b6a;
+}
+
+.about-section p {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-size: 20px;
+  line-height: 1.7;
+
+  color: #5f5675;
+  max-width: 760px;
+}
+
+/* =========================
+   RTL FIXES (Hebrew)
+========================= */
+
+[dir="rtl"] .about-card-content h2,
+[dir="rtl"] .about-section h2 {
+  text-align: right;
+}
+
+[dir="rtl"] .about-card-content p,
+[dir="rtl"] .about-section p {
+  text-align: right;
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+
+@keyframes about-card-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* =========================
+   ABOUT CARD COLORS (по порядку)
+========================= */
+
+/* 1 — ванильно-розовый */
+.about-card:nth-child(1) {
+  background: linear-gradient(
+    135deg,
+    #fff7d6,
+    #ffe4ec
+  );
+}
+
+/* 2 — мятно-голубой */
+.about-card:nth-child(2) {
+  background: linear-gradient(
+    135deg,
+    #e6fff7,
+    #e0f2ff
+  );
+}
+
+/* 3 — лавандово-розовый */
+.about-card:nth-child(3) {
+  background: linear-gradient(
+    135deg,
+    #f3e8ff,
+    #ffe4f1
+  );
+}
+
+/* 4 — абрикосово-сиреневый */
+.about-card:nth-child(4) {
+  background: linear-gradient(
+    135deg,
+    #fff1dc,
+    #ede9ff
+  );
+}
+
+/* 5 — лимонно-небесный */
+.about-card:nth-child(5) {
+  background: linear-gradient(
+    135deg,
+    #fffbd6,
+    #e6f0ff
+  );
+}
+
+/* Повтор цикла, если карточек больше */
+.about-card:nth-child(6n + 1) {
+  background: linear-gradient(
+    135deg,
+    #fff7d6,
+    #ffe4ec
+  );
+}

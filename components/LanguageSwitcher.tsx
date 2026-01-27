@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { Lang } from "../i18n";
 
 const LANGS: { code: Lang; label: string }[] = [
@@ -7,8 +8,19 @@ const LANGS: { code: Lang; label: string }[] = [
   { code: "en", label: "EN" },
 ];
 
-export default function LanguageSwitcher({ current }: { current: Lang }) {
+export default function LanguageSwitcher() {
   const router = useRouter();
+  const [current, setCurrent] = useState<Lang>("ru");
+
+  useEffect(() => {
+    const queryLang = router.query.lang as Lang | undefined;
+    const storedLang =
+      typeof window !== "undefined"
+        ? (window.localStorage.getItem("laplapla_lang") as Lang | null)
+        : null;
+
+    setCurrent(queryLang || storedLang || "ru");
+  }, [router.query.lang]);
 
   const switchLang = (lang: Lang) => {
     if (typeof window !== "undefined") {

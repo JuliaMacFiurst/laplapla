@@ -1,16 +1,19 @@
 import { useRouter } from "next/router";
-import { Lang, AboutSectionKey, ABOUT_SECTIONS } from "../../i18n";
+import { useEffect, useState } from "react";
+import { Lang, AboutSectionKey, ABOUT_SECTIONS, dictionaries } from "../../i18n";
 import AboutContent from "../../components/AboutContent";
+import BackButton from "../../components/BackButton";
 
 export default function AboutSectionPage() {
   const router = useRouter();
+  const [lang, setLang] = useState<Lang>("ru");
 
-  const lang =
-    (router.query.lang as Lang) ||
-    (typeof window !== "undefined"
-      ? (localStorage.getItem("lang") as Lang)
-      : null) ||
-    "ru";
+  useEffect(() => {
+    const storedLang = localStorage.getItem("lang") as Lang | null;
+    const queryLang = router.query.lang as Lang | undefined;
+
+    setLang(queryLang || storedLang || "ru");
+  }, [router.query.lang]);
 
   const section = router.query.section as AboutSectionKey | undefined;
 
@@ -19,9 +22,19 @@ export default function AboutSectionPage() {
     return null;
   }
 
+  const sectionData = dictionaries[lang].about[section];
+
   return (
     <main className="about-page" dir={lang === "he" ? "rtl" : "ltr"}>
-      <AboutContent lang={lang} mode="section" section={section} />
+      <div className="home-wrapper">
+        <BackButton />
+
+        <AboutContent
+          mode="section"
+          title={sectionData.title}
+          text={sectionData.text}
+        />
+      </div>
     </main>
   );
 }
