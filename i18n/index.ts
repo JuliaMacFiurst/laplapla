@@ -42,8 +42,23 @@ type DictionaryShape = {
       title: string;
       text: string;
     };
+    collaboration: {
+      title: string;
+      text: string;
+    };
   };
 };
+
+export const ABOUT_SECTIONS = [
+  "what",
+  "forWho",
+  "author",
+  "access",
+  "language",
+  "collaboration",
+] as const;
+
+export type AboutSectionKey = typeof ABOUT_SECTIONS[number];
 
 export const dictionaries: Record<Lang, DictionaryShape> = {
   ru,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 
-import { dictionaries, type Lang } from "../i18n";
+import { dictionaries, ABOUT_SECTIONS, type Lang } from "../i18n";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 
 function normalizeLang(input: unknown): Lang {
@@ -29,6 +29,7 @@ export default function Home() {
   // 3) browser language
   const [lang, setLang] = useState<Lang>("ru");
   const [menuHover, setMenuHover] = useState(false);
+  const [closeTimer, setCloseTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const qLang = normalizeLang(router.query.lang);
@@ -51,6 +52,21 @@ export default function Home() {
 
   const t = useMemo(() => dictionaries[lang].home, [lang]);
 
+  const openMenu = () => {
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      setCloseTimer(null);
+    }
+    setMenuHover(true);
+  };
+
+  const scheduleCloseMenu = () => {
+    const timer = setTimeout(() => {
+      setMenuHover(false);
+    }, 120); // лёгкая задержка
+    setCloseTimer(timer);
+  };
+
   // Optional: set RTL for Hebrew without touching global layout yet
   const dir = lang === "he" ? "rtl" : "ltr";
 
@@ -59,8 +75,8 @@ export default function Home() {
       <div className="top-bar">
         <div
           className="menu-wrapper"
-          onMouseEnter={() => setMenuHover(true)}
-          onMouseLeave={() => setMenuHover(false)}
+          onMouseEnter={openMenu}
+          onMouseLeave={scheduleCloseMenu}
         >
           <div
             className="menu-button"
@@ -70,11 +86,20 @@ export default function Home() {
           </div>
 
           {menuHover && (
-            <div className="menu-preview">
-              <div className="menu-item">О проекте</div>
-              <div className="menu-item">Для кого</div>
-              <div className="menu-item">Доступ</div>
-              <div className="menu-item">Язык</div>
+            <div
+              className="menu-preview"
+              onMouseEnter={openMenu}
+              onMouseLeave={scheduleCloseMenu}
+            >
+              {ABOUT_SECTIONS.map((key) => (
+                <div
+                  key={key}
+                  className="menu-item"
+                  onClick={() => router.push(`/about/${key}`)}
+                >
+                  {dictionaries[lang].about[key].title}
+                </div>
+              ))}
             </div>
           )}
         </div>

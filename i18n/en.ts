@@ -34,5 +34,9 @@ export const en = {
       title: "Language",
       text: "You can change the interface language at any time.",
     },
+    collaboration: {
+      title: "Collaboration",
+      text: "We are open to collaborations, partnerships, and interesting ideas. If you feel that our projects resonate with you, feel free to reach out.",
+    },
   },
 } as const;
