@@ -31,11 +31,55 @@ body {
   gap: 4px;
   padding: 6px;
 
-  background: #fff6cc; /* нежно-жёлтая капсула */
+  background: #fef5ca; /* нежно-жёлтая капсула */
   border-radius: 999px;
 
   height: auto;
   width: fit-content;
+}
+
+/* ────────────── Top bar layout (Menu ↔ Language) ────────────── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  padding: 12px 16px;
+  gap: 12px;
+
+  /* чтобы элементы не прыгали на узких экранах */
+  box-sizing: border-box;
+}
+
+/* В RTL визуально меняем стороны местами */
+[dir="rtl"] .top-bar {
+  flex-direction: row;
+}
+
+/* На всякий случай: дети top-bar не растягиваются */
+.top-bar > .lang-switcher,
+.top-bar > .menu-wrapper
+ {
+  flex: 0 0 auto;
+}
+
+/* LTR (ru/en): lang слева, бургер справа */
+.top-bar > .lang-switcher {
+  order: 1;
+}
+
+.top-bar > .menu-wrapper {
+  order: 2;
+}
+
+/* RTL (he): зеркально — бургер слева, lang справа */
+[dir="rtl"] .top-bar > .menu-wrapper {
+  order: 1;
+}
+
+[dir="rtl"] .top-bar > .lang-switcher {
+  order: 2;
 }
 
 .lang-switcher button {
@@ -63,25 +107,116 @@ body {
 
 .menu-wrapper {
   position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
 .menu-preview {
   position: absolute;
-  top: 50px;
+  top: calc(100% + 10px); /* всегда сразу под бургером */
   inset-inline-end: 0;
-  background: #fffdf6;
+
+  min-width: 240px;
+  padding: 10px;
+
+  background: linear-gradient(180deg, #fffdf6 0%, #fff3d6 100%);
   border: 2px solid #c7b7e2;
-  border-radius: 12px;
-  padding: 8px 10px;
-  margin-top: 6px;
-  z-index: 10;
+  border-radius: 16px;
+
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
+
+  z-index: 20;
+
+  transform-origin: top right;
+  animation: menuPop 150ms ease-out, menuFloat 2400ms ease-in-out 200ms infinite;
+}
+
+@keyframes menuPop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menuFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(1px) scale(1);
+  }
+}
+
+/* "хвостик" пузырька */
+.menu-preview::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  inset-inline-end: 18px;
+  width: 16px;
+  height: 16px;
+
+  background: linear-gradient(180deg, #fffdf6 0%, #fff3d6 100%);
+  border-left: 2px solid #c7b7e2;
+  border-top: 2px solid #c7b7e2;
+
+  transform: rotate(45deg);
+  border-top-left-radius: 4px;
+}
+
+/* RTL: чтобы анимация/якорь ощущались естественно */
+[dir="rtl"] .menu-preview {
+  transform-origin: top left;
 }
 
 .menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 8px 10px;
+  border-radius: 12px;
+
   font-family: 'Amatic SC', 'Caveat', cursive;
-  font-size: 22px;
-  padding: 4px 6px;
-  cursor: default;
+  font-size: 26px;
+  line-height: 1;
+
+  color: #2a2a2a;
+  cursor: pointer;
+
+  user-select: none;
+  transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.menu-item:hover {
+  background: rgba(255, 179, 167, 0.45);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.menu-item:active {
+  transform: translateY(0);
+}
+
+.menu-item::after {
+  content: "›";
+  opacity: 0.5;
+  font-size: 28px;
+}
+
+/* Hebrew (RTL) needs page direction RTL, but menu items should read like LTR (text left, arrow right) */
+[dir="rtl"] .menu-item {
+  direction: ltr;
+  text-align: left;
+}
+
+[dir="rtl"] .menu-item::after {
+  content: "›";
 }
 
 .home-wrapper {
@@ -91,8 +226,6 @@ body {
 }
 
 .menu-button {
-  position: absolute;
-  top: 0;
   inset-inline-end: 20px; /* вместо right */
   width: 40px;
   height: 40px;
@@ -115,6 +248,8 @@ body {
   line-height: 1.2;
   z-index: 10;
 }
+
+
 
 /* Анимация градиента */
 @keyframes gradient-flow {
