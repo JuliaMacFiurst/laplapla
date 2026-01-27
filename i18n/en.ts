@@ -13,22 +13,22 @@ export const en = {
     cta: "Explore",
   },
   about: {
-    title: "About",
+    title: "About the Project",
     what: {
-      title: "What this is",
-      text: "LapLapLa is a cozy learning space where curiosity, play, and knowledge live together.",
+      title: "What is it",
+      text: "LapLapLa is a learning space where kids and grown-ups don’t just discover new things, but learn to turn knowledge into creativity.",
     },
     forWho: {
       title: "Who it is for",
-      text: "For kids and grown-ups who enjoy learning without pressure or boredom.",
+      text: "For kids and grown-ups who enjoy exploring, asking questions, and turning knowledge into ideas.",
     },
     author: {
       title: "Author",
-      text: "Created by Yulia. You can get in touch via email or social media.",
+      text: "Get to know the creator of the project.",
     },
     access: {
       title: "Access",
-      text: "Some content is free. Advanced features are available with a subscription.",
+      text: "Some materials are available for free. Extended features are unlocked with a subscription.",
     },
     language: {
       title: "Language",
@@ -36,7 +36,7 @@ export const en = {
     },
     collaboration: {
       title: "Collaboration",
-      text: "We are open to collaborations, partnerships, and interesting ideas. If you feel that our projects resonate with you, feel free to reach out.",
+      text: "We are open to collaborations, partnerships, and interesting ideas. If our projects resonate with you, we’d love to connect.",
     },
   },
 } as const;
