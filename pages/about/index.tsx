@@ -3,6 +3,15 @@ import { useEffect, useState } from "react";
 import { Lang, ABOUT_SECTIONS } from "../../i18n";
 import AboutContent from "../../components/AboutContent";
 
+const ABOUT_ICONS: Record<string, string> = {
+  what: "/icons/about-icons/chicken.webp",
+  forWho: "/icons/about-icons/bears.webp",
+  author: "/icons/about-icons/mum.webp",
+  access: "/icons/about-icons/chest.webp",
+  language: "/icons/about-icons/lang.webp",
+  collaboration: "/icons/about-icons/paws.webp",
+};
+
 export default function AboutPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("ru");
@@ -29,6 +38,7 @@ export default function AboutPage() {
                 mode="preview"
                 title={require("../../i18n").dictionaries[lang].about[section].title}
                 preview={require("../../i18n").dictionaries[lang].about[section].preview}
+                icon={ABOUT_ICONS[section]}
               />
             </article>
           ))}

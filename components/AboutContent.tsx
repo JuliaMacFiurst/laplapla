@@ -3,6 +3,7 @@ interface AboutContentProps {
   title: string;
   preview?: string;
   full?: string;
+  icon?: string;
 }
 
 function renderFullText(text: string) {
@@ -36,13 +37,23 @@ export default function AboutContent({
   title,
   preview,
   full,
+  icon,
 }: AboutContentProps) {
   // Короткая версия для плитки (/about)
   if (mode === "preview") {
     return (
       <div className="about-card-content">
-        <h2>{title}</h2>
-        <p>{preview}</p>
+        <div className="about-card-text">
+          <h2>{title}</h2>
+          <p>{preview}</p>
+        </div>
+        {icon && (
+          <img
+            src={icon}
+            alt=""
+            className="about-card-sticker"
+          />
+        )}
       </div>
     );
   }
