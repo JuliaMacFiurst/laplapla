@@ -24,27 +24,33 @@ type DictionaryShape = {
     title: string;
     what: {
       title: string;
-      text: string;
+      preview: string;
+      full: string;
     };
     forWho: {
       title: string;
-      text: string;
+      preview: string;
+      full: string;
     };
     author: {
       title: string;
-      text: string;
+      preview: string;
+      full: string;
     };
     access: {
       title: string;
-      text: string;
+      preview: string;
+      full: string;
     };
     language: {
       title: string;
-      text: string;
+      preview: string;
+      full: string;
     };
     collaboration: {
       title: string;
-      text: string;
+      preview: string;
+      full: string;
     };
   };
 };

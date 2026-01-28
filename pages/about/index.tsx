@@ -28,7 +28,7 @@ export default function AboutPage() {
               <AboutContent
                 mode="preview"
                 title={require("../../i18n").dictionaries[lang].about[section].title}
-                text={require("../../i18n").dictionaries[lang].about[section].text}
+                preview={require("../../i18n").dictionaries[lang].about[section].preview}
               />
             </article>
           ))}

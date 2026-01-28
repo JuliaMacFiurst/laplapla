@@ -32,7 +32,8 @@ export default function AboutSectionPage() {
         <AboutContent
           mode="section"
           title={sectionData.title}
-          text={sectionData.text}
+          
+          full={sectionData.full}
         />
       </div>
     </main>

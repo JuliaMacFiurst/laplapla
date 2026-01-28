@@ -50,14 +50,10 @@ body {
 
   /* чтобы элементы не прыгали на узких экранах */
   box-sizing: border-box;
+
+  /* RTL: фиксируем layout как LTR, RTL только для текста */
 }
 
-/* В RTL визуально меняем стороны местами */
-[dir="rtl"] .top-bar {
-  flex-direction: row;
-}
-
-/* На всякий случай: дети top-bar не растягиваются */
 .top-bar > .lang-switcher,
 .top-bar > .menu-wrapper
  {
@@ -73,13 +69,13 @@ body {
   order: 2;
 }
 
-/* RTL (he): зеркально — бургер слева, lang справа */
-[dir="rtl"] .top-bar > .menu-wrapper {
-  order: 1;
+/* RTL: фиксируем layout как LTR, RTL только для текста */
+[dir="rtl"] .top-bar {
+  direction: ltr;
 }
 
-[dir="rtl"] .top-bar > .lang-switcher {
-  order: 2;
+[dir="rtl"] .top-bar * {
+  direction: rtl;
 }
 
 .lang-switcher button {
@@ -537,7 +533,7 @@ body {
 .back-button {
   position: fixed;
   top: 16px;
-  inset-inline-end: 16px; /* right в LTR, left в RTL */
+  right: 16px; /* right в LTR, left в RTL */
 
   padding: 10px 18px;
   border-radius: 999px;
