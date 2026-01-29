@@ -14,6 +14,7 @@ import '../styles/QuestCarousel.css';
 import '../styles/Dog-sled-game.css';
 import '../styles/LabGame.css'
 import '../styles/About.css';
+import '../styles/video-section.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from "next/script";

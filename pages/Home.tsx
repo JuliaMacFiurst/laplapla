@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/router";
 
 import { dictionaries, type Lang } from "../i18n";
+import { VideoSection } from "../components/video/VideoSection";
 
 export default function Home() {
   const router = useRouter();
@@ -69,6 +70,8 @@ export default function Home() {
           <div className="label">{t.sections.comingSoon}</div>
         </div>
       </div>
+
+      <VideoSection lang={lang} />
     </div>
   );
 }

@@ -11,7 +11,28 @@ export const en = {
       comingSoon: "Coming Soon",
     },
     cta: "Explore",
+    
   },
+
+  video: {
+      title: "Cute explanations",
+      subtitle: "Simple and playful videos about tricky things",
+      shortsTitle: "Quick and visual",
+      videosTitle: "A bit more detail",
+      searchPlaceholder: "Search for a video or topic…",
+      searchHint: "Search will be available soon",
+      categories: {
+        space: "Space",
+        nature: "Nature",
+        animals: "Animals",
+        human: "Humans",
+        music: "Music",
+        art: "Art",
+        math: "Math",
+        physics: "Physics",
+      },
+    },
+    
   about: {
     title: "About the Project",
     what: {

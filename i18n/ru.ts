@@ -12,6 +12,24 @@ export const ru = {
     },
     cta: "Исследовать",
   },
+  video: {
+      title: "Лапусичные видео",
+      subtitle: "Простые и весёлые видео о сложных вещах",
+      shortsTitle: "Коротко и наглядно",
+      videosTitle: "Чуть подробнее",
+      searchPlaceholder: "Найти видео или тему…",
+      searchHint: "Поиск скоро станет доступен",
+      categories: {
+        space: "Космос",
+        nature: "Природа",
+        animals: "Животные",
+        human: "Человек",
+        music: "Музыка",
+        art: "Рисование",
+        math: "Математика",
+        physics: "Физика",
+      },
+    },
   about: {
     title: "О проекте",
     what: {

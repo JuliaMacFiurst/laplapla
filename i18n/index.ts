@@ -54,6 +54,28 @@ type DictionaryShape = {
       full: string;
     };
   };
+
+  video: {
+    title: string;
+    subtitle?: string;
+
+    shortsTitle: string;
+    videosTitle: string;
+
+    searchPlaceholder: string;
+    searchHint: string;
+
+    categories: {
+      space: string;
+      nature: string;
+      animals: string;
+      human: string;
+      music: string;
+      art: string;
+      math: string;
+      physics: string;
+    };
+  };
 };
 
 export const ABOUT_SECTIONS = [
