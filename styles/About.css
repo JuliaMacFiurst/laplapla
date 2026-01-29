@@ -128,6 +128,25 @@
 }
 
 /* =========================
+   HEBREW FONT (Varela Round)
+========================= */
+
+/* Основной текст на иврите */
+[dir="rtl"] .about-card-content p,
+[dir="rtl"] .about-full-content,
+[dir="rtl"] .about-full-content p,
+[dir="rtl"] .about-full-content li {
+  font-family: 'Varela Round', system-ui, sans-serif;
+}
+
+/* Заголовки на иврите оставляем лаплапловскими */
+[dir="rtl"] .about-card-content h2,
+[dir="rtl"] .about-section h2,
+[dir="rtl"] .about-full-content h3 {
+  font-family: 'Amatic SC', 'Caveat', cursive;
+}
+
+/* =========================
    ANIMATIONS
 ========================= */
 
