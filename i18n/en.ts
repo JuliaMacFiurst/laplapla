@@ -210,6 +210,7 @@ and that they feel comfortable, curious, and safe here.
 LapLapLa grew out of personal experience, openness to change, and a wish to create a space where learning, play, trying things out, and making mistakes are all welcome — without pressure or fear.
 
 I’m always open to conversation, and I’m genuinely excited to connect with the people who find their way here, so we can keep shaping this space together — slowly, thoughtfully, and at a human pace.`,
+image: "/images/about/my-photo.webp",
     },
     access: {
       title: "Access",

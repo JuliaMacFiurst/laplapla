@@ -4,6 +4,7 @@ interface AboutContentProps {
   preview?: string;
   full?: string;
   icon?: string;
+  image?: string;
 }
 
 function renderFullText(text: string) {
@@ -38,6 +39,7 @@ export default function AboutContent({
   preview,
   full,
   icon,
+  image,
 }: AboutContentProps) {
   // Короткая версия для плитки (/about)
   if (mode === "preview") {
@@ -64,7 +66,11 @@ export default function AboutContent({
       <div className="about-content">
         <section className="about-section">
           <h2>{title}</h2>
-          <p>{preview}</p>
+          {image && (
+            <div className="about-author-image">
+              <img src={image} alt="" />
+            </div>
+          )}
           {full && (
             <div className="about-full-content">
               {renderFullText(full)}

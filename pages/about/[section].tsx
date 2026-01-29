@@ -24,6 +24,11 @@ export default function AboutSectionPage() {
 
   const sectionData = dictionaries[lang].about[section];
 
+  const image =
+    typeof sectionData === "object" && "image" in sectionData
+      ? (sectionData as { image?: string }).image
+      : undefined;
+
   return (
     <main className="about-page" dir={lang === "he" ? "rtl" : "ltr"}>
       <div className="home-wrapper">
@@ -32,8 +37,8 @@ export default function AboutSectionPage() {
         <AboutContent
           mode="section"
           title={sectionData.title}
-          
           full={sectionData.full}
+          image={image}
         />
       </div>
     </main>

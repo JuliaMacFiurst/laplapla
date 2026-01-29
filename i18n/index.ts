@@ -36,6 +36,7 @@ type DictionaryShape = {
       title: string;
       preview: string;
       full: string;
+      image?: "/images/about/my-photo.webp";
     };
     access: {
       title: string;
@@ -67,7 +68,8 @@ export const ABOUT_SECTIONS = [
 export type AboutSectionKey = typeof ABOUT_SECTIONS[number];
 
 export const dictionaries: Record<Lang, DictionaryShape> = {
-  ru,
-  he,
-  en,
+  ru: ru as DictionaryShape,
+  he: he as DictionaryShape,
+  en: en as DictionaryShape,
 };
+
