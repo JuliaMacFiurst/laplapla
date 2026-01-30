@@ -65,13 +65,19 @@ type DictionaryShape = {
     searchPlaceholder: string;
     searchHint: string;
 
+    emptyShorts: string;
+    openVideo: string;
+    backToList: string;
+
     categories: {
-      space: string;
+      science: string;
       nature: string;
-      animals: string;
-      human: string;
-      music: string;
+      space: string;
       art: string;
+      music: string;
+      human: string;
+      all: string;
+      animals: string;
       math: string;
       physics: string;
     };
@@ -94,4 +100,3 @@ export const dictionaries: Record<Lang, DictionaryShape> = {
   he: he as DictionaryShape,
   en: en as DictionaryShape,
 };
-

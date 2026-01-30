@@ -1,166 +1,118 @@
+/* ────────────── Video Player Overlay ────────────── */
 
+.video-player-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
 
-/* ────────────── Video Section ────────────── */
-
-.video-section {
-  margin-top: 56px;
-  padding: 24px 0;
-}
-
-.video-section-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.video-section-title {
-  font-size: 32px;
-  margin-bottom: 6px;
-}
-
-.video-section-subtitle {
-  font-size: 16px;
-  opacity: 0.7;
-}
-
-/* ────────────── Controls ────────────── */
-
-.video-section-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-/* ────────────── Search ────────────── */
-
-.video-search {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.video-search-input {
-  padding: 12px 16px;
-  border-radius: 16px;
-  border: 1px solid #e6e0f2;
-  font-size: 16px;
-  background: #faf8ff;
-}
-
-.video-search-input:disabled {
-  opacity: 0.6;
-}
-
-.video-search-hint {
-  font-size: 12px;
-  opacity: 0.6;
-  padding-left: 8px;
-}
-
-/* ────────────── Categories ────────────── */
-
-.video-categories {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.video-category-chip {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid #e0d9f2;
-  background: #f6f2ff;
-  font-size: 14px;
-  cursor: default;
-  opacity: 0.7;
-}
-
-/* ────────────── Blocks ────────────── */
-
-.video-section-block {
-  margin-bottom: 36px;
-}
-
-.video-block-title {
-  font-size: 20px;
-  margin-bottom: 12px;
-}
-
-/* ────────────── Shorts ────────────── */
-
-.shorts-row {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-}
-
-.short-card {
-  min-width: 120px;
-  background: #f7f4ff;
-  border-radius: 18px;
-  padding: 8px;
-  flex-shrink: 0;
-}
-
-.short-thumbnail {
-  height: 160px;
-  border-radius: 14px;
-  background: #e9e3ff;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  background: rgba(15, 12, 30, 0.65);
+  backdrop-filter: blur(6px);
+  overscroll-behavior: contain;
 }
 
-.short-placeholder-icon {
-  font-size: 24px;
-  opacity: 0.5;
-}
+/* ────────────── Player Window (base) ────────────── */
 
-.short-title {
-  font-size: 12px;
-  margin-top: 6px;
-  text-align: center;
-  opacity: 0.7;
-}
-
-/* ────────────── Videos ────────────── */
-
-.videos-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-}
-
-.video-card {
-  background: #f9f7ff;
-  border-radius: 20px;
+.video-player-window {
+  position: relative;
+  background: #000;
   overflow: hidden;
+
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  animation: player-appear 180ms ease-out;
 }
 
-.video-thumbnail {
-  height: 140px;
-  background: #e7e1ff;
+/* ────────────── VIDEO (horizontal) ────────────── */
+
+.video-player-window.video {
+  width: min(92vw, 960px);
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+}
+
+/* ────────────── SHORTS (vertical) ────────────── */
+
+.video-player-window.short {
+  width: min(90vw, 420px);
+  aspect-ratio: 9 / 16;
+  border-radius: 20px;
+}
+
+/* ────────────── Iframe ────────────── */
+
+.video-player-window iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #000;
+}
+
+/* ────────────── Close Button ────────────── */
+
+.video-player-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+
+  font-size: 18px;
+  cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  transition: background 120ms ease, transform 120ms ease;
 }
 
-.video-placeholder-icon {
-  font-size: 28px;
-  opacity: 0.4;
+.video-player-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
 }
 
-.video-info {
-  padding: 14px 16px;
+/* ────────────── Animations ────────────── */
+
+@keyframes player-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.video-title {
-  font-size: 15px;
-  margin-bottom: 4px;
-}
+/* ────────────── Mobile behaviour ────────────── */
 
-.video-meta {
-  font-size: 12px;
-  opacity: 0.6;
+@media (max-width: 640px) {
+  /* Long videos: modal feel */
+  .video-player-window.video {
+    width: 100vw;
+    aspect-ratio: 16 / 9;
+    border-radius: 0;
+  }
+
+  /* Shorts: real full-screen feed */
+  .video-player-window.short {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: auto;
+    border-radius: 0;
+  }
 }

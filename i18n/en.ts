@@ -11,33 +11,36 @@ export const en = {
       comingSoon: "Coming Soon",
     },
     cta: "Explore",
-    
   },
 
   video: {
-      title: "Cute explanations",
-      subtitle: "Simple and playful videos about tricky things",
-      shortsTitle: "Quick science bites",
-      videosTitle: "A bit more detail",
-      searchPlaceholder: "Search for a video or topic…",
-      searchHint: "Search will be available soon",
-      categories: {
-        space: "Space",
-        nature: "Nature",
-        animals: "Animals",
-        human: "Humans",
-        music: "Music",
-        art: "Art",
-        math: "Math",
-        physics: "Physics",
-      },
+    title: "Cute explanations",
+    subtitle: "Simple and playful videos about tricky things",
+    shortsTitle: "Quick science bites",
+    videosTitle: "A bit more detail",
+    searchPlaceholder: "Search for a video or topic…",
+    searchHint: "Search will be available soon",
+    emptyShorts: "Videos will appear here soon",
+    openVideo: "Open video",
+    backToList: "Back",
+    categories: {
+      space: "Space",
+      nature: "Nature",
+      animals: "Animals",
+      human: "Humans",
+      music: "Music",
+      art: "Art",
+      math: "Math",
+      physics: "Physics",
     },
-    
+  },
+
   about: {
     title: "About the Project",
     what: {
       title: "What is it",
-      preview: "LapLapLa is a learning space where kids and grown-ups don’t just discover new things, but learn to turn knowledge into creativity.",
+      preview:
+        "LapLapLa is a learning space where kids and grown-ups don’t just discover new things, but learn to turn knowledge into creativity.",
       full: `### What is LapLapLa 
 
 
@@ -144,7 +147,8 @@ and technology becomes a natural extension of human thinking.`,
     },
     forWho: {
       title: "Who it is for",
-      preview: "For kids and grown-ups who enjoy exploring, asking questions, and turning knowledge into ideas.",
+      preview:
+        "For kids and grown-ups who enjoy exploring, asking questions, and turning knowledge into ideas.",
       full: `### Who this project is for
 
 LapLapLa is designed for children and adults living in a world where information is more accessible than ever, yet meaning and direction still need to be discovered rather than given.
@@ -181,7 +185,7 @@ together with children or alongside them.
 
 LapLapLa does not divide people by age or level of expertise.  
 It brings together those who value curiosity  
-even as the world becomes faster and more complex.`
+even as the world becomes faster and more complex.`,
     },
     author: {
       title: "Author",
@@ -231,11 +235,12 @@ and that they feel comfortable, curious, and safe here.
 LapLapLa grew out of personal experience, openness to change, and a wish to create a space where learning, play, trying things out, and making mistakes are all welcome — without pressure or fear.
 
 I’m always open to conversation, and I’m genuinely excited to connect with the people who find their way here, so we can keep shaping this space together — slowly, thoughtfully, and at a human pace.`,
-image: "/images/about/my-photo.webp",
+      image: "/images/about/my-photo.webp",
     },
     access: {
       title: "Access",
-      preview: "Some materials are available for free. Extended features are unlocked with a subscription.",
+      preview:
+        "Some materials are available for free. Extended features are unlocked with a subscription.",
       full: `### Access and subscription
 
 LapLapLa is currently running in test mode.
@@ -279,7 +284,8 @@ Just curiosity, humor, and the feeling that language is something alive — not 
     },
     collaboration: {
       title: "Collaboration",
-      preview: "We are open to collaborations, partnerships, and interesting ideas. If our projects resonate with you, we’d love to connect.",
+      preview:
+        "We are open to collaborations, partnerships, and interesting ideas. If our projects resonate with you, we’d love to connect.",
       full: `### About collaboration
 
 LapLapLa is a living project, and it’s important to me that it doesn’t grow in isolation.

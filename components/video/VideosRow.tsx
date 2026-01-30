@@ -1,29 +1,57 @@
 import { dictionaries, type Lang } from "../../i18n";
+import { LongVideoItem } from "../../content/videos";
 
 type VideosRowProps = {
   lang: Lang;
+  items: LongVideoItem[];
+  onSelectVideo: (id: string) => void;
 };
 
-export function VideosRow({ lang }: VideosRowProps) {
+export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
   const t = dictionaries[lang].video;
+
+  if (!items.length) {
+    return (
+      <div className="videos-row-empty">
+        {t.subtitle ?? ""}
+      </div>
+    );
+  }
+
   return (
     <div className="videos-row">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} className="video-card">
-          <div className="video-thumbnail">
-            <span className="video-placeholder-icon">▶</span>
-          </div>
+      {items.map((item) => {
+        const youtubeId =
+          item.youtubeIds[lang] ?? item.youtubeIds.en;
 
-          <div className="video-info">
-            <div className="video-title">
-              {t.videosTitle}
+        const thumbnail = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+
+        return (
+          <button
+            key={item.id}
+            className="video-card"
+            onClick={() => onSelectVideo(item.id)}
+            aria-label={t.videosTitle}
+          >
+            <div className="video-thumbnail">
+              <img src={thumbnail} alt="" loading="lazy" />
+              <span className="video-play-icon">▶</span>
             </div>
-            <div className="video-meta">
-              {t.subtitle ?? ""}
+
+            <div className="video-info">
+              <div className="video-title">
+                {t.videosTitle}
+              </div>
+
+              {item.durationLabel && (
+                <div className="video-meta">
+                  {item.durationLabel}
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      ))}
+          </button>
+        );
+      })}
     </div>
   );
 }
