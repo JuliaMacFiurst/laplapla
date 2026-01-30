@@ -1,6 +1,11 @@
+import { dictionaries, type Lang } from "../../i18n";
 
+type VideosRowProps = {
+  lang: Lang;
+};
 
-export function VideosRow() {
+export function VideosRow({ lang }: VideosRowProps) {
+  const t = dictionaries[lang].video;
   return (
     <div className="videos-row">
       {Array.from({ length: 6 }).map((_, index) => (
@@ -11,10 +16,10 @@ export function VideosRow() {
 
           <div className="video-info">
             <div className="video-title">
-              Простое объяснение сложной темы
+              {t.videosTitle}
             </div>
             <div className="video-meta">
-              6–10 минут · образовательное видео
+              {t.subtitle ?? ""}
             </div>
           </div>
         </div>

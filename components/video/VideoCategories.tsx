@@ -1,26 +1,16 @@
+import { dictionaries, type Lang } from "../../i18n";
 
+type VideoCategoriesProps = {
+  lang: Lang;
+};
 
-const CATEGORIES = [
-  "Космос",
-  "Природа",
-  "Животные",
-  "Человек",
-  "Музыка",
-  "Рисование",
-  "Математика",
-  "Физика",
-];
-
-export function VideoCategories() {
+export function VideoCategories({ lang }: VideoCategoriesProps) {
+  const categories = dictionaries[lang].video.categories;
   return (
     <div className="video-categories">
-      {CATEGORIES.map((category) => (
-        <button
-          key={category}
-          className="video-category-chip"
-          disabled
-        >
-          {category}
+      {Object.entries(categories).map(([key, label]) => (
+        <button key={key} className="video-category-chip" disabled>
+          {label}
         </button>
       ))}
     </div>

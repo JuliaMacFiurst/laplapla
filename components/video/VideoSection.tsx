@@ -21,20 +21,20 @@ export function VideoSection({ lang }: { lang: Lang }) {
 
       {/* Поиск и категории */}
       <div className="video-section-controls">
-        <VideoSearch />
-        <VideoCategories />
+        <VideoSearch lang={lang} />
+        <VideoCategories lang={lang} />
       </div>
 
       {/* Shorts */}
       <div className="video-section-block">
         <h3 className="video-block-title">{t.shortsTitle}</h3>
-        <ShortsRow />
+        <ShortsRow lang={lang} />
       </div>
 
       {/* Обычные видео */}
       <div className="video-section-block">
         <h3 className="video-block-title">{t.videosTitle}</h3>
-        <VideosRow />
+        <VideosRow lang={lang} />
       </div>
     </section>
   );

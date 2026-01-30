@@ -1,6 +1,11 @@
+import { dictionaries, type Lang } from "../../i18n";
 
+type ShortsRowProps = {
+  lang: Lang;
+};
 
-export function ShortsRow() {
+export function ShortsRow({ lang }: ShortsRowProps) {
+  const t = dictionaries[lang].video;
   return (
     <div className="shorts-row">
       {Array.from({ length: 8 }).map((_, index) => (
@@ -9,7 +14,7 @@ export function ShortsRow() {
             <span className="short-placeholder-icon">▶</span>
           </div>
           <div className="short-title">
-            Видео-объяснялка
+            {t.shortsTitle}
           </div>
         </div>
       ))}

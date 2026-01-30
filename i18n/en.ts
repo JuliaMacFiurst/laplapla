@@ -17,7 +17,7 @@ export const en = {
   video: {
       title: "Cute explanations",
       subtitle: "Simple and playful videos about tricky things",
-      shortsTitle: "Quick and visual",
+      shortsTitle: "Quick science bites",
       videosTitle: "A bit more detail",
       searchPlaceholder: "Search for a video or topic…",
       searchHint: "Search will be available soon",

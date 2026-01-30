@@ -1,15 +1,20 @@
+import { dictionaries, type Lang } from "../../i18n";
 
-export function VideoSearch() {
+type VideoSearchProps = {
+  lang: Lang;
+};
+
+export function VideoSearch({ lang }: VideoSearchProps) {
   return (
     <div className="video-search">
       <input
         type="text"
         className="video-search-input"
-        placeholder="Найти видео или тему…"
+        placeholder={dictionaries[lang].video.searchPlaceholder}
         disabled
       />
       <div className="video-search-hint">
-        🔍 Поиск скоро станет доступен
+        {dictionaries[lang].video.searchHint}
       </div>
     </div>
   );
