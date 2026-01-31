@@ -1,47 +1,53 @@
+import type { VideoItem } from "./index";
 
-
-// --------------------
-// Long-form videos
-// --------------------
-//
-// Suggested safe educational channels:
-// - Kurzgesagt – In a Nutshell
-// - SciShow
-// - Veritasium
-// - SmarterEveryDay
-// - TED-Ed
-//
-// Same rules apply: manual review only.
-
-export const videos = [
+export const videos: VideoItem[] = [
   {
-    id: "video-nature-1",
-    categoryKey: "nature",
-    durationLabel: "—",
-    youtubeIds: {
-      en: "6NMgODTdCaY",
-      ru: "6NMgODTdCaY",
-      he: "6NMgODTdCaY",
+    id: "science-why-sky-blue",
+    format: "video",
+    categoryKey: "science",
+
+    title: {
+      en: "Why Is the Sky Blue?",
+      ru: "Почему небо голубое?",
+      he: "למה השמיים כחולים?",
     },
+
+    contentLanguages: ["en", "ru", "he"],
+
+    source: {
+      platform: "youtube",
+      channelHandle: "@veritasium",
+    },
+
+    languageDependency: "spoken",
+    youtubeId: "AAAA",
+
+    durationLabel: "5:20",
+    status: "approved",
   },
+
   {
-    id: "video-nature-2",
-    categoryKey: "nature",
-    durationLabel: "—",
-    youtubeIds: {
-      en: "BthfXVCRWEQ",
-      ru: "BthfXVCRWEQ",
-      he: "BthfXVCRWEQ",
+    id: "animals-cute-dogs",
+    format: "video",
+    categoryKey: "animals",
+
+    title: {
+      en: "Cute Dogs Compilation",
+      ru: "Подборка милых собак",
+      he: "אוסף כלבים חמודים",
     },
-  },
-  {
-    id: "video-science-1",
-    categoryKey: "nature",
-    durationLabel: "—",
-    youtubeIds: {
-      en: "PyiCHWfBQPY",
-      ru: "PyiCHWfBQPY",
-      he: "PyiCHWfBQPY",
+
+    contentLanguages: ["en"],
+
+    source: {
+      platform: "youtube",
+      channelHandle: "@animalplanet",
     },
+
+    languageDependency: "spoken",
+    youtubeId: "BBBB",
+
+    durationLabel: "8:10",
+    status: "approved",
   },
 ];

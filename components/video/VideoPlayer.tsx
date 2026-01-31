@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import type { AnyVideo } from "../../content/videos";
+import { useEffect, useRef, useState } from "react";
+import type { VideoItem } from "../../content/videos";
 
 type LanguageKey = "en" | "ru" | "he";
 
 type VideoPlayerProps = {
-  items: AnyVideo[];
+  items: VideoItem[];
   startIndex: number;
   lang: LanguageKey;
   onClose: () => void;
@@ -16,31 +16,21 @@ type VideoPlayerProps = {
 export function VideoPlayer({
   items,
   startIndex,
-  lang,
   onClose,
   variant = "video",
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(startIndex);
+
+  useEffect(() => {
+    setCurrentIndex(startIndex);
+  }, [startIndex]);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    const child = el.children[startIndex] as HTMLElement | undefined;
-    if (!child) return;
-
-    child.scrollIntoView({
-      behavior: "auto",
-      block: "start",
-      inline: "start",
-    });
-  }, [startIndex]);
-
-  const scrollToIndex = (index: number) => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const child = el.children[index] as HTMLElement | undefined;
+    const child = el.children[currentIndex] as HTMLElement | undefined;
     if (!child) return;
 
     child.scrollIntoView({
@@ -48,16 +38,14 @@ export function VideoPlayer({
       block: "start",
       inline: "start",
     });
-  };
+  }, [currentIndex]);
 
   const handlePrev = () => {
-    if (startIndex <= 0) return;
-    scrollToIndex(startIndex - 1);
+    setCurrentIndex((i) => Math.max(0, i - 1));
   };
 
   const handleNext = () => {
-    if (startIndex >= items.length - 1) return;
-    scrollToIndex(startIndex + 1);
+    setCurrentIndex((i) => Math.min(items.length - 1, i + 1));
   };
 
   return (
@@ -103,9 +91,12 @@ export function VideoPlayer({
             scrollSnapType: variant === "short" ? "y mandatory" : "x mandatory",
           }}
         >
-          {items.map((item) => {
-            const youtubeId =
-              item.youtubeIds[lang] || item.youtubeIds.en;
+          {items.map((item, index) => {
+            const youtubeId = item.youtubeId;
+
+            if (!youtubeId) {
+              return null;
+            }
 
             return (
               <div
@@ -113,12 +104,14 @@ export function VideoPlayer({
                 className="video-player-slide"
                 style={{ scrollSnapAlign: "start" }}
               >
-                <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1&controls=1`}
-                  title="Embedded video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {index === currentIndex && (
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1&controls=1`}
+                    title="Embedded video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                )}
               </div>
             );
           })}

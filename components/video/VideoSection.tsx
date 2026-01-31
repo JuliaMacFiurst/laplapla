@@ -10,7 +10,7 @@ import {
   videos,
   shorts,
   VideoCategoryKey,
-  AnyVideo,
+  VideoItem,
 } from "../../content/videos";
 import { VideoPlayer } from "./VideoPlayer";
 
@@ -20,7 +20,7 @@ export function VideoSection({ lang }: { lang: Lang }) {
 
   // выбранный плейлист для overlay-плеера: items + стартовый индекс + тип (short/video)
   const [activePlaylist, setActivePlaylist] = useState<{
-    items: AnyVideo[];
+    items: VideoItem[];
     startIndex: number;
     variant: "short" | "video";
   } | null>(null);

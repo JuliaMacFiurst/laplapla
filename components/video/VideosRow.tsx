@@ -1,16 +1,28 @@
 import { dictionaries, type Lang } from "../../i18n";
-import { LongVideoItem } from "../../content/videos";
+import type { VideoItem } from "../../content/videos";
 
 type VideosRowProps = {
   lang: Lang;
-  items: LongVideoItem[];
+  items: VideoItem[];
   onSelectVideo: (id: string) => void;
 };
 
 export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
   const t = dictionaries[lang].video;
 
-  if (!items.length) {
+  const videos = items.filter((item) => {
+    if (item.format !== "video") return false;
+
+    // visual — язык не важен, показываем всегда
+    if (item.languageDependency === "visual") {
+      return true;
+    }
+
+    // spoken — показываем только если язык поддерживается
+    return item.contentLanguages.includes(lang);
+  });
+
+  if (!videos.length) {
     return (
       <div className="videos-row-empty">
         {t.subtitle ?? ""}
@@ -20,9 +32,13 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
 
   return (
     <div className="videos-row">
-      {items.map((item) => {
-        const youtubeId =
-          item.youtubeIds[lang] ?? item.youtubeIds.en;
+      {videos.map((item) => {
+        // Жёсткий guard: если у видео нет youtubeId — карточку не показываем
+        const youtubeId = item.youtubeId;
+
+        if (!youtubeId) {
+          return null;
+        }
 
         const thumbnail = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
 
@@ -40,7 +56,7 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
 
             <div className="video-info">
               <div className="video-title">
-                {t.videosTitle}
+                {item.title?.[lang] ?? item.title?.en ?? item.id}
               </div>
 
               {item.durationLabel && (

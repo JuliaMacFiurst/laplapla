@@ -49,38 +49,61 @@
 // ====================
 
 /**
- * Базовый тип для любого видео в проекте.
- * Используется и для shorts, и для длинных видео.
+ * Единая сущность видео в проекте.
+ * Используется как канонический формат данных
+ * и полностью соответствует будущему хранению в БД.
  */
+import type { VideoCategoryKey } from "./categories";
 export type VideoItem = {
-  id: string;               // внутренний стабильный id
-  title?: {                 // пользовательские заголовки по языкам
+  id: string;
+  categoryKey: VideoCategoryKey;
+
+  format: "short" | "video";
+
+  /** Критичность языка для понимания */
+  languageDependency: "spoken" | "visual";
+
+  /** Реально допустимые языки */
+  contentLanguages: Array<"en" | "ru" | "he">;
+
+  title?: {
     en?: string;
     ru?: string;
     he?: string;
   };
-  categoryKey: string;      // ключ категории (из categories.ts)
-  youtubeIds: {
-    en: string;
-    ru: string;
-    he: string;
+
+  source: {
+    platform: "youtube";
+    channelHandle?: string;
+    channelUrl?: string;
   };
+
+  /** Основной embed (95% случаев) */
+  youtubeId: string;
+
+  /** Редкий случай: разные версии */
+  youtubeIds?: {
+    en?: string;
+    ru?: string;
+    he?: string;
+  };
+
+  durationLabel?: string;
+  status?: "draft" | "approved" | "hidden";
 };
 
-/**
- * Тип для длинных видео.
- * Расширяет базовый VideoItem.
- */
-export type LongVideoItem = VideoItem & {
-  durationLabel?: string; // отображаемая длительность (например: "12:40")
-};
+// ====================
+// Агрегаторы данных
+// ====================
+
+import { videos } from "./videos";
+import { shorts } from "./shorts";
 
 /**
- * Объединённый тип для любого видео.
- * Используется UI (VideoSection, VideoPlayer),
- * когда не важно, short это или long video.
+ * Все видео проекта (shorts + long-form).
+ * Используется ТОЛЬКО для чтения и фильтрации.
  */
-export type AnyVideo = VideoItem | LongVideoItem;
+export const allVideos: VideoItem[] = [...videos, ...shorts];
 
 // ====================
 // Реэкспорт данных

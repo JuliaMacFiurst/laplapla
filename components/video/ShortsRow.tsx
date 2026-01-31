@@ -10,7 +10,19 @@ type ShortsRowProps = {
 export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
   const t = dictionaries[lang].video;
 
-  if (!items.length) {
+  const shorts = items.filter((item) => {
+    if (item.format !== "short") return false;
+
+    // visual — язык не важен, показываем всегда
+    if (item.languageDependency === "visual") {
+      return true;
+    }
+
+    // spoken — показываем только если язык поддерживается
+    return item.contentLanguages.includes(lang);
+  });
+
+  if (!shorts.length) {
     return (
       <div className="shorts-row-empty">
         {t.emptyShorts ?? "Скоро здесь появятся видео"}
@@ -20,15 +32,20 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
 
   return (
     <div className="shorts-row">
-      {items.map((item) => {
-        const youtubeId = item.youtubeIds[lang] ?? item.youtubeIds.en;
+      {shorts.map((item) => {
+        const youtubeId = item.youtubeId;
+
+        if (!youtubeId) {
+          return null;
+        }
+
         const thumbnail = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
 
         return (
           <button
             key={item.id}
             className="short-card"
-            onClick={() => onSelectVideo(item.id)}
+            onClick={() => onSelectVideo(youtubeId)}
             aria-label={t.openVideo ?? "Открыть видео"}
           >
             <div className="short-thumbnail">
