@@ -54,6 +54,11 @@
  */
 export type VideoItem = {
   id: string;               // внутренний стабильный id
+  title?: {                 // пользовательские заголовки по языкам
+    en?: string;
+    ru?: string;
+    he?: string;
+  };
   categoryKey: string;      // ключ категории (из categories.ts)
   youtubeIds: {
     en: string;

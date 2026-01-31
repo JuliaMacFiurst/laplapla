@@ -37,7 +37,7 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
             </div>
 
             <div className="short-title">
-              {(t.categories as Record<string, string>)[item.categoryKey] ?? item.categoryKey}
+              {item.title?.[lang] ?? item.title?.en ?? item.id}
             </div>
           </button>
         );
