@@ -23,6 +23,8 @@ export const ru = {
     openVideo: "Открыть видео",
     backToList: "Назад",
     categories: {
+      all: "Все",
+      science: "Наука",
       space: "Космос",
       nature: "Природа",
       animals: "Животные",

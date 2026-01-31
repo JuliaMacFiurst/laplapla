@@ -24,6 +24,8 @@ export const en = {
     openVideo: "Open video",
     backToList: "Back",
     categories: {
+      all: "All",
+      science: "Science",
       space: "Space",
       nature: "Nature",
       animals: "Animals",

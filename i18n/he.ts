@@ -314,6 +314,8 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
     openVideo: "פתח סרטון",
     backToList: "חזרה",
     categories: {
+      all: "הכל",
+      science: "מדע",
       space: "חלל",
       nature: "טבע",
       animals: "חיות",

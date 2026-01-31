@@ -1,6 +1,6 @@
 export const animalsShorts = [
   {
-    id: "animals-cute-rabbit",
+    id: "Cute Rabbit",
     categoryKey: "animals",
     youtubeIds: {
       en: "IZMbqcn2wR8",
@@ -9,7 +9,7 @@ export const animalsShorts = [
     },
   },
 {
-    id: "animals-cute-cangaroo",
+    id: "Cute Kangaroo",
     categoryKey: "animals",
     youtubeIds: {
       en: "6pRNg7Z-4QU",

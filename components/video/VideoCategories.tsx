@@ -13,6 +13,7 @@ import { dictionaries, Lang } from "../../i18n";
 // ===== ДАННЫЕ (whitelist категорий) =====
 
 export const videoCategories = [
+  { key: "animals", icon: "🐾" },
   { key: "science", icon: "🔬" },
   { key: "nature", icon: "🌿" },
   { key: "space", icon: "🚀" },

@@ -70,6 +70,13 @@ export type LongVideoItem = VideoItem & {
   durationLabel?: string; // отображаемая длительность (например: "12:40")
 };
 
+/**
+ * Объединённый тип для любого видео.
+ * Используется UI (VideoSection, VideoPlayer),
+ * когда не важно, short это или long video.
+ */
+export type AnyVideo = VideoItem | LongVideoItem;
+
 // ====================
 // Реэкспорт данных
 // ====================

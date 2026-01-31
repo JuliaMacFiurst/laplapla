@@ -3,6 +3,11 @@
 // All user-facing labels must come from i18n dictionaries.
 
 export const videoCategories = [
+    {
+    key: "animals",
+    icon: "🐾",
+    description: "All about animals and wildlife",
+    },
   {
     key: "science",
     icon: "🔬",

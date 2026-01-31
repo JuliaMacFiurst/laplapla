@@ -9,47 +9,40 @@ import { dictionaries, Lang } from "../../i18n";
 import {
   videos,
   shorts,
-  VideoItem,
-  LongVideoItem,
   VideoCategoryKey,
+  AnyVideo,
 } from "../../content/videos";
 import { VideoPlayer } from "./VideoPlayer";
 
-type AnyVideo = VideoItem | LongVideoItem;
 
 export function VideoSection({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].video;
 
-  // выбранное видео для overlay-плеера: id + тип (short/video)
-  const [activeSelection, setActiveSelection] = useState<{
-    id: string;
-    kind: "short" | "video";
+  // выбранный плейлист для overlay-плеера: items + стартовый индекс + тип (short/video)
+  const [activePlaylist, setActivePlaylist] = useState<{
+    items: AnyVideo[];
+    startIndex: number;
+    variant: "short" | "video";
   } | null>(null);
 
-  const openShort = (id: string) => setActiveSelection({ id, kind: "short" });
+  const openShort = (id: string) => {
+    const items = filteredShorts;
+    const startIndex = items.findIndex((v) => v.id === id);
+    setActivePlaylist({ items, startIndex, variant: "short" });
+  };
+
   const openVideo = (id: string) => {
-  console.log("[VideoSection] openVideo called with id:", id);
-  setActiveSelection({ id, kind: "video" });
-};
-  const closePlayer = () => setActiveSelection(null);
+    const items = filteredVideos;
+    const startIndex = items.findIndex((v) => v.id === id);
+    setActivePlaylist({ items, startIndex, variant: "video" });
+  };
+
+  const closePlayer = () => setActivePlaylist(null);
 
   // активная категория для фильтрации (null = все)
   const [activeCategoryKey, setActiveCategoryKey] =
     useState<VideoCategoryKey | null>(null);
 
-  // объединённый whitelist всех разрешённых видео
-  const allVideos: AnyVideo[] = [...shorts, ...videos];
-
-  // ищем видео ТОЛЬКО в whitelist
- const activeVideo = activeSelection
-  ? allVideos.find((v) => v.id === activeSelection.id)
-  : null;
-
-console.log("[VideoSection] activeSelection:", activeSelection);
-console.log(
-  "[VideoSection] activeVideo found:",
-  activeVideo ? activeVideo.id : null
-);
 
   const filteredShorts = activeCategoryKey
     ? shorts.filter((s) => s.categoryKey === activeCategoryKey)
@@ -58,11 +51,6 @@ console.log(
   const filteredVideos = activeCategoryKey
     ? videos.filter((v) => v.categoryKey === activeCategoryKey)
     : videos;
-
-    {console.log(
-  "[VideoSection] render VideoPlayer?",
-  Boolean(activeVideo && activeSelection)
-)}
 
   return (
     <section className="video-section">
@@ -83,10 +71,12 @@ console.log(
       </div>
 
       {/* Встроенный просмотр видео (без рекомендаций) */}
-      {activeVideo && activeSelection && (
+      {activePlaylist && (
         <VideoPlayer
-          youtubeId={activeVideo.youtubeIds[lang] ?? activeVideo.youtubeIds.en}
-          variant={activeSelection.kind}
+          items={activePlaylist.items}
+          startIndex={activePlaylist.startIndex}
+          variant={activePlaylist.variant}
+          lang={lang}
           onClose={closePlayer}
         />
       )}
