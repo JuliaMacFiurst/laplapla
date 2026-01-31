@@ -19,7 +19,7 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
     }
 
     // spoken — показываем только если язык поддерживается
-    return item.contentLanguages.includes(lang);
+    return Array.isArray(item.contentLanguages) && item.contentLanguages.includes(lang);
   });
 
   if (!videos.length) {

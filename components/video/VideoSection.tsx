@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { VideoSearch } from "./VideoSearch";
 import { VideoCategories } from "./VideoCategories";
 import { ShortsRow } from "./ShortsRow";
@@ -6,17 +6,39 @@ import { VideosRow } from "./VideosRow";
 import { dictionaries, Lang } from "../../i18n";
 
 // ⚠️ ВАЖНО: импорт ТОЛЬКО через index.ts видеомодуля
-import {
-  videos,
-  shorts,
-  VideoCategoryKey,
-  VideoItem,
-} from "../../content/videos";
+import type { VideoCategoryKey, VideoItem } from "../../content/videos";
 import { VideoPlayer } from "./VideoPlayer";
 
 
 export function VideoSection({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].video;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVideos() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/get-videos?lang=${lang}`);
+        const data = await res.json();
+        if (!cancelled) {
+          setAllVideos(data);
+        }
+      } catch (e) {
+        console.error("[VideoSection] failed to load videos", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadVideos();
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
+  const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // выбранный плейлист для overlay-плеера: items + стартовый индекс + тип (short/video)
   const [activePlaylist, setActivePlaylist] = useState<{
@@ -43,14 +65,21 @@ export function VideoSection({ lang }: { lang: Lang }) {
   const [activeCategoryKey, setActiveCategoryKey] =
     useState<VideoCategoryKey | null>(null);
 
+  const filteredShorts = allVideos.filter(
+    (v) =>
+      v.format === "short" &&
+      (!activeCategoryKey || v.categoryKey === activeCategoryKey)
+  );
 
-  const filteredShorts = activeCategoryKey
-    ? shorts.filter((s) => s.categoryKey === activeCategoryKey)
-    : shorts;
+  const filteredVideos = allVideos.filter(
+    (v) =>
+      v.format === "video" &&
+      (!activeCategoryKey || v.categoryKey === activeCategoryKey)
+  );
 
-  const filteredVideos = activeCategoryKey
-    ? videos.filter((v) => v.categoryKey === activeCategoryKey)
-    : videos;
+  if (loading) {
+    return <div className="video-section">Загрузка…</div>;
+  }
 
   return (
     <section className="video-section">
