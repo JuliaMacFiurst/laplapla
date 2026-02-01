@@ -66,7 +66,6 @@ export function VideoSection({ lang }: { lang: Lang }) {
   const openShort = (youtubeId: string) => {
     const items = filteredShorts;
     const startIndex = items.findIndex((v) => v.youtubeId === youtubeId);
-    console.log("openShort", youtubeId, startIndex);
     // If we can't find it, don't silently fall back to 0 (it looks like “always plays first”).
     if (startIndex < 0) {
       console.warn(

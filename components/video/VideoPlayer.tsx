@@ -19,7 +19,6 @@ export function VideoPlayer({
   onClose,
   variant = "video",
 }: VideoPlayerProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const playableItems = useMemo(
     () => items.filter((item) => Boolean(item.youtubeId)),
     [items]
@@ -35,20 +34,6 @@ export function VideoPlayer({
     );
   }, [startIndex, playableItems.length]);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const child = el.children[currentIndex] as HTMLElement | undefined;
-    if (!child) return;
-
-    child.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-      inline: "start",
-    });
-  }, [currentIndex]);
-
   const handlePrev = () => {
     setCurrentIndex((i) => Math.max(0, i - 1));
   };
@@ -57,18 +42,26 @@ export function VideoPlayer({
     setCurrentIndex((i) => Math.min(playableItems.length - 1, i + 1));
   };
 
-  const handleScroll = () => {
-    const el = containerRef.current;
-    if (!el) return;
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const SWIPE_THRESHOLD = 40;
 
-    const size =
-      variant === "short" ? el.clientHeight || 1 : el.clientWidth || 1;
-    const offset = variant === "short" ? el.scrollTop : el.scrollLeft;
-    const index = Math.round(offset / size);
-    const clamped = Math.max(0, Math.min(playableItems.length - 1, index));
+  const onSwipeStart = (x: number, y: number) => {
+    swipeStart.current = { x, y };
+  };
 
-    if (clamped !== currentIndex) {
-      setCurrentIndex(clamped);
+  const onSwipeEnd = (x: number, y: number) => {
+    if (!swipeStart.current) return;
+
+    const dx = x - swipeStart.current.x;
+    const dy = y - swipeStart.current.y;
+    swipeStart.current = null;
+
+    if (variant === "short") {
+      if (dy > SWIPE_THRESHOLD) handlePrev();
+      else if (dy < -SWIPE_THRESHOLD) handleNext();
+    } else {
+      if (dx > SWIPE_THRESHOLD) handlePrev();
+      else if (dx < -SWIPE_THRESHOLD) handleNext();
     }
   };
 
@@ -81,8 +74,6 @@ export function VideoPlayer({
             onClick={(e) => {
               e.stopPropagation();
               handlePrev();
-              const prevIndex = (currentIndex - 1 + playableItems.length) % playableItems.length;
-              console.log("prev", playableItems[prevIndex]?.youtubeId);
             }}
             aria-label="Previous video"
           >
@@ -94,8 +85,6 @@ export function VideoPlayer({
             onClick={(e) => {
               e.stopPropagation();
               handleNext();
-              const nextIndex = (currentIndex + 1) % playableItems.length;
-              console.log("next", playableItems[nextIndex]?.youtubeId);
             }}
             aria-label="Next video"
           >
@@ -107,19 +96,22 @@ export function VideoPlayer({
       <div
         className={`video-player-window ${variant}`}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => onSwipeStart(e.clientX, e.clientY)}
+        onMouseUp={(e) => onSwipeEnd(e.clientX, e.clientY)}
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          if (t) onSwipeStart(t.clientX, t.clientY);
+        }}
+        onTouchEnd={(e) => {
+          const t = e.changedTouches[0];
+          if (t) onSwipeEnd(t.clientX, t.clientY);
+        }}
       >
         <button className="video-player-close" onClick={onClose}>
           ✕
         </button>
 
-        <div
-          className={`video-player-content ${variant}`}
-          ref={containerRef}
-          style={{
-            scrollSnapType: variant === "short" ? "y mandatory" : "x mandatory",
-          }}
-          onScroll={handleScroll}
-        >
+        <div className={`video-player-content ${variant}`}>
           {(() => {
             const item = playableItems[currentIndex];
             if (!item || !item.youtubeId) return null;
@@ -134,7 +126,7 @@ export function VideoPlayer({
               >
                 <iframe
                   key={youtubeId}
-                  src={`https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1&controls=1&autoplay=1`}
+                  src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0&loop=1&playlist=${youtubeId}`}
                   title={`Embedded video ${currentIndex + 1}`}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen

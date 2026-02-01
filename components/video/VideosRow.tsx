@@ -4,7 +4,7 @@ import type { VideoItem } from "../../content/videos";
 type VideosRowProps = {
   lang: Lang;
   items: VideoItem[];
-  onSelectVideo: (id: string) => void;
+  onSelectVideo: (youtubeId: string) => void;
 };
 
 export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
@@ -33,9 +33,9 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
   return (
     <div className="videos-row">
       {videos.map((item) => {
-        // Жёсткий guard: если у видео нет youtubeId — карточку не показываем
         const youtubeId = item.youtubeId;
 
+        // Жёсткий guard: если нет embed — карточку не показываем
         if (!youtubeId) {
           return null;
         }
@@ -44,10 +44,10 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
 
         return (
           <button
-            key={item.id}
+            key={youtubeId}
             className="video-card"
-            onClick={() => onSelectVideo(item.youtubeId)}
-            aria-label={t.videosTitle}
+            onClick={() => onSelectVideo(youtubeId)}
+            aria-label={t.openVideo ?? "Открыть видео"}
           >
             <div className="video-thumbnail">
               <img src={thumbnail} alt="" loading="lazy" />
@@ -60,9 +60,7 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
               </div>
 
               {item.durationLabel && (
-                <div className="video-meta">
-                  {item.durationLabel}
-                </div>
+                <div className="video-meta">{item.durationLabel}</div>
               )}
             </div>
           </button>
