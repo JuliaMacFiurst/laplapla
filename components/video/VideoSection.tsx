@@ -9,9 +9,34 @@ import { dictionaries, Lang } from "../../i18n";
 import type { VideoCategoryKey, VideoItem } from "../../content/videos";
 import { VideoPlayer } from "./VideoPlayer";
 
-
 export function VideoSection({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].video;
+
+  const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // активная категория для фильтрации (null = все)
+  const [activeCategoryKey, setActiveCategoryKey] =
+    useState<VideoCategoryKey | null>(null);
+
+  const filteredShorts = allVideos.filter(
+    (v) =>
+      v.format === "short" &&
+      (!activeCategoryKey || v.categoryKey === activeCategoryKey),
+  );
+
+  const filteredVideos = allVideos.filter(
+    (v) =>
+      v.format === "video" &&
+      (!activeCategoryKey || v.categoryKey === activeCategoryKey),
+  );
+
+  // выбранный плейлист для overlay-плеера: items + стартовый индекс + тип (short/video)
+  const [activePlaylist, setActivePlaylist] = useState<{
+    items: VideoItem[];
+    startIndex: number;
+    variant: "short" | "video";
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,45 +62,54 @@ export function VideoSection({ lang }: { lang: Lang }) {
     };
   }, [lang]);
 
-  const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // выбранный плейлист для overlay-плеера: items + стартовый индекс + тип (short/video)
-  const [activePlaylist, setActivePlaylist] = useState<{
-    items: VideoItem[];
-    startIndex: number;
-    variant: "short" | "video";
-  } | null>(null);
-
-  const openShort = (id: string) => {
+  // ✅ Единственный источник истины: YouTube embed id (youtubeId)
+  const openShort = (youtubeId: string) => {
     const items = filteredShorts;
-    const startIndex = items.findIndex((v) => v.id === id);
-    setActivePlaylist({ items, startIndex, variant: "short" });
+    const startIndex = items.findIndex((v) => v.youtubeId === youtubeId);
+    console.log("openShort", youtubeId, startIndex);
+    // If we can't find it, don't silently fall back to 0 (it looks like “always plays first”).
+    if (startIndex < 0) {
+      console.warn(
+        "[VideoSection] openShort: youtubeId not found in filteredShorts",
+        {
+          youtubeId,
+          available: items.map((x) => x.youtubeId),
+        },
+      );
+
+      return;
+    }
+
+    setActivePlaylist({
+      items,
+      startIndex,
+      variant: "short",
+    });
   };
 
-  const openVideo = (id: string) => {
+  const openVideo = (youtubeId: string) => {
     const items = filteredVideos;
-    const startIndex = items.findIndex((v) => v.id === id);
-    setActivePlaylist({ items, startIndex, variant: "video" });
+    const startIndex = items.findIndex((v) => v.youtubeId === youtubeId);
+
+    if (startIndex < 0) {
+      console.warn(
+        "[VideoSection] openVideo: youtubeId not found in filteredVideos",
+        {
+          youtubeId,
+          available: items.map((x) => x.youtubeId),
+        },
+      );
+      return;
+    }
+
+    setActivePlaylist({
+      items,
+      startIndex,
+      variant: "video",
+    });
   };
 
   const closePlayer = () => setActivePlaylist(null);
-
-  // активная категория для фильтрации (null = все)
-  const [activeCategoryKey, setActiveCategoryKey] =
-    useState<VideoCategoryKey | null>(null);
-
-  const filteredShorts = allVideos.filter(
-    (v) =>
-      v.format === "short" &&
-      (!activeCategoryKey || v.categoryKey === activeCategoryKey)
-  );
-
-  const filteredVideos = allVideos.filter(
-    (v) =>
-      v.format === "video" &&
-      (!activeCategoryKey || v.categoryKey === activeCategoryKey)
-  );
 
   if (loading) {
     return <div className="video-section">Загрузка…</div>;
@@ -102,6 +136,7 @@ export function VideoSection({ lang }: { lang: Lang }) {
       {/* Встроенный просмотр видео (без рекомендаций) */}
       {activePlaylist && (
         <VideoPlayer
+          key={`${activePlaylist.variant}-${activePlaylist.startIndex}`}
           items={activePlaylist.items}
           startIndex={activePlaylist.startIndex}
           variant={activePlaylist.variant}

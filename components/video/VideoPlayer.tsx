@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { VideoItem } from "../../content/videos";
 
 type LanguageKey = "en" | "ru" | "he";
@@ -20,11 +20,20 @@ export function VideoPlayer({
   variant = "video",
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(startIndex);
+  const playableItems = useMemo(
+    () => items.filter((item) => Boolean(item.youtubeId)),
+    [items]
+  );
+
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    Math.max(0, Math.min(playableItems.length - 1, startIndex))
+  );
 
   useEffect(() => {
-    setCurrentIndex(startIndex);
-  }, [startIndex]);
+    setCurrentIndex(
+      Math.max(0, Math.min(playableItems.length - 1, startIndex))
+    );
+  }, [startIndex, playableItems.length]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -45,18 +54,35 @@ export function VideoPlayer({
   };
 
   const handleNext = () => {
-    setCurrentIndex((i) => Math.min(items.length - 1, i + 1));
+    setCurrentIndex((i) => Math.min(playableItems.length - 1, i + 1));
+  };
+
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const size =
+      variant === "short" ? el.clientHeight || 1 : el.clientWidth || 1;
+    const offset = variant === "short" ? el.scrollTop : el.scrollLeft;
+    const index = Math.round(offset / size);
+    const clamped = Math.max(0, Math.min(playableItems.length - 1, index));
+
+    if (clamped !== currentIndex) {
+      setCurrentIndex(clamped);
+    }
   };
 
   return (
     <div className="video-player-overlay" onClick={onClose}>
-      {items.length > 1 && (
+      {playableItems.length > 1 && (
         <>
           <button
             className="video-player-arrow prev"
             onClick={(e) => {
               e.stopPropagation();
               handlePrev();
+              const prevIndex = (currentIndex - 1 + playableItems.length) % playableItems.length;
+              console.log("prev", playableItems[prevIndex]?.youtubeId);
             }}
             aria-label="Previous video"
           >
@@ -68,6 +94,8 @@ export function VideoPlayer({
             onClick={(e) => {
               e.stopPropagation();
               handleNext();
+              const nextIndex = (currentIndex + 1) % playableItems.length;
+              console.log("next", playableItems[nextIndex]?.youtubeId);
             }}
             aria-label="Next video"
           >
@@ -90,31 +118,30 @@ export function VideoPlayer({
           style={{
             scrollSnapType: variant === "short" ? "y mandatory" : "x mandatory",
           }}
+          onScroll={handleScroll}
         >
-          {items.map((item, index) => {
-            const youtubeId = item.youtubeId;
+          {(() => {
+            const item = playableItems[currentIndex];
+            if (!item || !item.youtubeId) return null;
 
-            if (!youtubeId) {
-              return null;
-            }
+            const youtubeId = item.youtubeId;
 
             return (
               <div
-                key={item.id}
+                key={youtubeId}
                 className="video-player-slide"
                 style={{ scrollSnapAlign: "start" }}
               >
-                {index === currentIndex && (
-                  <iframe
-                    src={`https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1&controls=1`}
-                    title="Embedded video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                )}
+                <iframe
+                  key={youtubeId}
+                  src={`https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1&controls=1&autoplay=1`}
+                  title={`Embedded video ${currentIndex + 1}`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
               </div>
             );
-          })}
+          })()}
         </div>
       </div>
     </div>

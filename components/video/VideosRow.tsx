@@ -46,7 +46,7 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
           <button
             key={item.id}
             className="video-card"
-            onClick={() => onSelectVideo(item.id)}
+            onClick={() => onSelectVideo(item.youtubeId)}
             aria-label={t.videosTitle}
           >
             <div className="video-thumbnail">

@@ -43,9 +43,11 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
 
         return (
           <button
-            key={item.id}
+            key={item.youtubeId}
             className="short-card"
-            onClick={() => onSelectVideo(youtubeId)}
+            onClick={() => 
+              onSelectVideo(item.youtubeId)
+            }
             aria-label={t.openVideo ?? "Открыть видео"}
           >
             <div className="short-thumbnail">
