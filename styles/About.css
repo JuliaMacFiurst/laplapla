@@ -294,78 +294,56 @@
   text-align: center;
   margin-bottom: 24px;
 }
+
 .about-card-sticker {
   position: absolute;
   width: 196px;
   height: auto;
 
-  right: 24px;
+  inset-inline-end: 24px;
   top: 24px;
 
   transform-origin: center;
   pointer-events: none;
-
   opacity: 0.85;
+
+  --sticker-mirror: scaleX(1);
 }
 
 .about-card:nth-child(1) .about-card-sticker {
   top: 16px;
-  right: 28px;
-  transform: rotate(-8deg) scale(0.95);
+  inset-inline-end: 28px;
+  transform: var(--sticker-mirror) rotate(-6deg) scale(1);
 }
 
 .about-card:nth-child(2) .about-card-sticker {
   top: auto;
   bottom: 20px;
-  right: 32px;
-  transform: rotate(6deg) scale(1);
+  inset-inline-end: 32px;
+  transform: var(--sticker-mirror) rotate(-6deg) scale(1);
 }
 
 .about-card:nth-child(3) .about-card-sticker {
   top: 20px;
-  right: 12px;
-  transform: rotate(-4deg) scale(1.05);
+  inset-inline-end: 12px;
+  transform: var(--sticker-mirror) rotate(-4deg) scale(1.05);
 }
 
 .about-card:nth-child(4) .about-card-sticker {
   top: auto;
   bottom: 16px;
-  right: 20px;
-  transform: rotate(10deg) scale(0.9);
+  inset-inline-end: 20px;
+  transform: var(--sticker-mirror) rotate(10deg) scale(0.9);
 }
 
 .about-card:nth-child(5) .about-card-sticker {
   top: 18px;
-  right: 36px;
-  transform: rotate(-12deg) scale(1);
+  inset-inline-end: 36px;
+  transform: var(--sticker-mirror) rotate(-12deg) scale(1);
 }
 
 [dir="rtl"] .about-card-sticker {
-  right: auto;
-  left: 24px;
-}
-
-[dir="rtl"] .about-card:nth-child(1) .about-card-sticker {
-  left: 28px;
-}
-
-[dir="rtl"] .about-card:nth-child(2) .about-card-sticker {
-  left: 32px;
-}
-
-[dir="rtl"] .about-card:nth-child(3) .about-card-sticker {
-  left: 12px;
-}
-
-[dir="rtl"] .about-card:nth-child(4) .about-card-sticker {
-  left: 20px;
-}
-
-[dir="rtl"] .about-card:nth-child(5) .about-card-sticker {
-  left: 36px;
-}
-[dir="rtl"] .about-card:nth-child(5) .about-card-sticker {
-  left: 36px;
+  --sticker-mirror: scaleX(-1);
 }
 
 /* =========================
@@ -409,4 +387,3 @@
     max-width: 90%;
   }
 }
-
