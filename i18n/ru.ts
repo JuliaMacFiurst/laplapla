@@ -18,7 +18,7 @@ export const ru = {
     shortsTitle: "Коротко и наглядно",
     videosTitle: "Чуть подробнее",
     searchPlaceholder: "Найти видео или тему…",
-    searchHint: "Поиск скоро станет доступен",
+    searchHint: "Исследуйте и ищете видео по разным темам",
     emptyShorts: "Скоро здесь появятся видео",
     openVideo: "Открыть видео",
     backToList: "Назад",

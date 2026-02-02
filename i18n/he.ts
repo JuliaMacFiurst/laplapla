@@ -309,7 +309,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
     shortsTitle: "קצר וברור",
     videosTitle: "קצת יותר לעומק",
     searchPlaceholder: "לחפש סרטון או נושא…",
-    searchHint: "החיפוש יהיה זמין בקרוב",
+    searchHint: "גלו וחפשו סרטונים בנושאים שונים",
     emptyShorts: "בקרוב יופיעו כאן סרטונים",
     openVideo: "פתח סרטון",
     backToList: "חזרה",

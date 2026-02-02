@@ -1,5 +1,14 @@
 import { dictionaries, Lang } from "../../i18n";
 
+const CATEGORY_COLORS = [
+  "pink",
+  "lilac",
+  "mint",
+  "peach",
+  "sky",
+  "lemon",
+] as const;
+
 /**
  * Video categories whitelist.
  *
@@ -43,10 +52,10 @@ export function VideoCategories({
   const t = dictionaries[lang].video.categories;
 
   return (
-    <div className="video-categories">
+    <div lang={lang} className="video-categories">
       {/* Кнопка "Все" */}
       <button
-        className={`video-category-chip ${
+        className={`video-category-chip ${CATEGORY_COLORS[0]} ${
           activeCategoryKey === null ? "active" : ""
         }`}
         onClick={() => onSelectCategory(null)}
@@ -54,7 +63,8 @@ export function VideoCategories({
         {t.all}
       </button>
 
-      {videoCategories.map((category) => {
+      {videoCategories.map((category, index) => {
+        const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
         const label = t[category.key];
 
         if (!label) {
@@ -66,7 +76,7 @@ export function VideoCategories({
         return (
           <button
             key={category.key}
-            className={`video-category-chip ${
+            className={`video-category-chip ${color} ${
               activeCategoryKey === category.key ? "active" : ""
             }`}
             onClick={() => onSelectCategory(category.key)}

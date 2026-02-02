@@ -15,11 +15,27 @@ export default async function handler(
     // Язык интерфейса сайта
     const lang = (req.query.lang as "en" | "ru" | "he") ?? "en";
 
-    // Забираем ВСЕ одобренные видео
-    const { data, error } = await supabase
-      .from("videos")
-      .select("*")
-      .eq("status", "approved");
+    // Поисковый запрос
+    const q =
+      typeof req.query.q === "string" && req.query.q.trim().length > 0
+        ? req.query.q.trim().toLowerCase()
+        : null;
+
+    let data: any[] | null = null;
+    let error: any = null;
+
+    if (q) {
+      const rpcResult = await supabase.rpc("search_videos", { q });
+      data = rpcResult.data;
+      error = rpcResult.error;
+    } else {
+      const selectResult = await supabase
+        .from("videos")
+        .select("*")
+        .eq("status", "approved");
+      data = selectResult.data;
+      error = selectResult.error;
+    }
 
     if (error) {
       console.error("[get-videos] Supabase error:", error);
@@ -51,12 +67,14 @@ export default async function handler(
       categoryKey: video.category_key,
       languageDependency: video.language_dependency,
       contentLanguages: video.content_languages,
+      tags: video.tags,
       title: video.title,
       source: video.source,
       youtubeId: video.youtube_id,
       durationLabel: video.duration_label,
       status: video.status,
     }));
+
 
     return res.status(200).json(normalized);
   } catch (e) {

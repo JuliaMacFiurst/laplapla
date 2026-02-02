@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { normalizeSearchQuery } from "../../utils/normalizeSearchQuery";
 import { VideoSearch } from "./VideoSearch";
 import { VideoCategories } from "./VideoCategories";
 import { ShortsRow } from "./ShortsRow";
@@ -14,6 +15,7 @@ export function VideoSection({ lang }: { lang: Lang }) {
 
   const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // активная категория для фильтрации (null = все)
   const [activeCategoryKey, setActiveCategoryKey] =
@@ -22,13 +24,17 @@ export function VideoSection({ lang }: { lang: Lang }) {
   const filteredShorts = allVideos.filter(
     (v) =>
       v.format === "short" &&
-      (!activeCategoryKey || v.categoryKey === activeCategoryKey),
+      (searchQuery.trim() !== "" ||
+        !activeCategoryKey ||
+        v.categoryKey === activeCategoryKey),
   );
 
   const filteredVideos = allVideos.filter(
     (v) =>
       v.format === "video" &&
-      (!activeCategoryKey || v.categoryKey === activeCategoryKey),
+      (searchQuery.trim() !== "" ||
+        !activeCategoryKey ||
+        v.categoryKey === activeCategoryKey),
   );
 
   // выбранный плейлист для overlay-плеера: items + стартовый индекс + тип (short/video)
@@ -61,6 +67,55 @@ export function VideoSection({ lang }: { lang: Lang }) {
       cancelled = true;
     };
   }, [lang]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timeoutId: NodeJS.Timeout;
+
+    async function fetchVideos(query: string) {
+      try {
+        const res = await fetch(
+          `/api/get-videos?lang=${lang}&q=${encodeURIComponent(query)}`,
+        );
+        const data = await res.json();
+        if (!cancelled) {
+          setAllVideos(data);
+        }
+      } catch (e) {
+        console.error("[VideoSection] failed to search videos", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    if (searchQuery.trim() === "") {
+      // if empty query, reload default videos
+      setLoading(true);
+      fetch(`/api/get-videos?lang=${lang}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled) {
+            setAllVideos(data);
+          }
+        })
+        .catch((e) => {
+          console.error("[VideoSection] failed to load videos", e);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    } else {
+      timeoutId = setTimeout(() => {
+        const normalized = normalizeSearchQuery(searchQuery);
+        fetchVideos(normalized);
+      }, 400);
+    }
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [searchQuery, lang]);
 
   // ✅ Единственный источник истины: YouTube embed id (youtubeId)
   const openShort = (youtubeId: string) => {
@@ -124,7 +179,13 @@ export function VideoSection({ lang }: { lang: Lang }) {
 
       {/* Поиск и категории */}
       <div className="video-section-controls">
-        <VideoSearch lang={lang} />
+        <VideoSearch
+          lang={lang}
+          query={searchQuery}
+          onChange={(value) => {
+            setSearchQuery(value);
+          }}
+        />
         <VideoCategories
           lang={lang}
           activeCategoryKey={activeCategoryKey}
@@ -143,6 +204,14 @@ export function VideoSection({ lang }: { lang: Lang }) {
           onClose={closePlayer}
         />
       )}
+
+      {searchQuery.trim() !== "" &&
+        filteredShorts.length === 0 &&
+        filteredVideos.length === 0 && (
+          <div className="video-empty-state">
+            Ничего не найдено
+          </div>
+        )}
 
       {/* Shorts */}
       <div className="video-section-block">

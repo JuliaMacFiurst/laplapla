@@ -66,6 +66,9 @@ export type VideoItem = {
   /** Реально допустимые языки */
   contentLanguages: Array<"en" | "ru" | "he">;
 
+  /** Внутренние поисковые теги (не отображаются на фронте) */
+  tags?: string[];
+
   title?: {
     en?: string;
     ru?: string;

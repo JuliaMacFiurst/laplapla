@@ -1,6 +1,15 @@
 import { dictionaries, type Lang } from "../../i18n";
 import type { VideoItem } from "../../content/videos";
 
+const VIDEO_CARD_COLORS = [
+  "pink",
+  "lilac",
+  "mint",
+  "peach",
+  "sky",
+  "lemon",
+] as const;
+
 type VideosRowProps = {
   lang: Lang;
   items: VideoItem[];
@@ -32,7 +41,8 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
 
   return (
     <div className="videos-row">
-      {videos.map((item) => {
+      {videos.map((item, index) => {
+        const color = VIDEO_CARD_COLORS[index % VIDEO_CARD_COLORS.length];
         const youtubeId = item.youtubeId;
 
         // Жёсткий guard: если нет embed — карточку не показываем
@@ -45,7 +55,7 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
         return (
           <button
             key={youtubeId}
-            className="video-card"
+            className={`video-card ${color}`}
             onClick={() => onSelectVideo(youtubeId)}
             aria-label={t.openVideo ?? "Открыть видео"}
           >

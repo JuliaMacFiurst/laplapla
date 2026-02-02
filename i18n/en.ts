@@ -19,7 +19,7 @@ export const en = {
     shortsTitle: "Quick science bites",
     videosTitle: "A bit more detail",
     searchPlaceholder: "Search for a video or topic…",
-    searchHint: "Search will be available soon",
+    searchHint: "Explore and find videos on different topics",
     emptyShorts: "Videos will appear here soon",
     openVideo: "Open video",
     backToList: "Back",
