@@ -80,6 +80,7 @@ type DictionaryShape = {
       animals: string;
       math: string;
       physics: string;
+      technology: string;
     };
   };
 };

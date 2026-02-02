@@ -38,6 +38,14 @@ export const videoCategories = [
     icon: "🧠",
     description: "Human body, mind, society",
   },
+  { key: "math",
+    icon: "➗",
+    description: "Mathematics and numbers",
+  },
+  { key: "technology",
+    icon: "💻",
+    description: "Technology, engineering, inventions",
+  },
 ] as const;
 
 // Union of allowed category keys, derived from the whitelist above

@@ -34,6 +34,7 @@ export const en = {
       art: "Art",
       math: "Math",
       physics: "Physics",
+      technology: "Technology",
     },
   },
 

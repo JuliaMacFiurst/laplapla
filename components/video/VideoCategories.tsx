@@ -20,6 +20,8 @@ export const videoCategories = [
   { key: "art", icon: "🎨" },
   { key: "music", icon: "🎵" },
   { key: "human", icon: "🧠" },
+  { key: "technology", icon: "💻" },
+  { key: "math", icon: "➗" },
 ] as const;
 
 export type VideoCategoryKey =

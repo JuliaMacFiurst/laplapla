@@ -10,6 +10,15 @@ type ShortsRowProps = {
 export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
   const t = dictionaries[lang].video;
 
+  const SHORT_COLORS = [
+    "pink",
+    "lilac",
+    "mint",
+    "peach",
+    "sky",
+    "lemon",
+  ] as const;
+
   const shorts = items.filter((item) => {
     if (item.format !== "short") return false;
 
@@ -32,7 +41,7 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
 
   return (
     <div className="shorts-row">
-      {shorts.map((item) => {
+      {shorts.map((item, index) => {
         const youtubeId = item.youtubeId;
 
         if (!youtubeId) {
@@ -41,10 +50,13 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
 
         const thumbnail = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
 
+        const color =
+          SHORT_COLORS[index % SHORT_COLORS.length];
+
         return (
           <button
             key={item.youtubeId}
-            className="short-card"
+            className={`short-card ${color}`}
             onClick={() => 
               onSelectVideo(item.youtubeId)
             }

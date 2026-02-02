@@ -33,6 +33,7 @@ export const ru = {
       art: "Рисование",
       math: "Математика",
       physics: "Физика",
+      technology: "Технологии",
     },
   },
   about: {
