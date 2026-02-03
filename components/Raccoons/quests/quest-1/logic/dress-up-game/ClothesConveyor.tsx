@@ -11,11 +11,18 @@ export interface ClothesItem {
 export default function ClothesConveyor({
   items,
   speed = 1.2,
+  onItemReleased,
 }: {
   items: ClothesItem[];
   speed?: number; // px per frame
+  onItemReleased?: (id: string, x: number, y: number) => void;
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+
+  const draggingItemRef = useRef<{
+    id: string;
+    el: HTMLImageElement;
+  } | null>(null);
 
   // Анимация движения
   useEffect(() => {
@@ -38,6 +45,25 @@ export default function ClothesConveyor({
   // Дублируем items → items для бесконечной ленты
   const doubled = [...items, ...items];
 
+  const finishDrag = (x?: number, y?: number) => {
+    if (!draggingItemRef.current) return;
+
+    const { id, el } = draggingItemRef.current;
+
+    el.classList.remove("dragging");
+    el.style.position = "";
+    el.style.left = "";
+    el.style.top = "";
+    el.style.pointerEvents = "";
+    el.style.zIndex = "";
+
+    if (typeof x === "number" && typeof y === "number") {
+      onItemReleased?.(id, x, y);
+    }
+
+    draggingItemRef.current = null;
+  };
+
   return (
   <div className="clothes-conveyor">
     <div ref={trackRef} className="clothes-conveyor-track">
@@ -45,16 +71,34 @@ export default function ClothesConveyor({
         <img
           key={`${item.id}-${index}`}
           src={item.img}
-          draggable
           className="conveyor-item"
-          onDragStart={(e) => {
+          onPointerDown={(e) => {
             const cleanId = item.id.replace(/-dressed$/, "");
-            e.dataTransfer.setData("text/plain", cleanId);
-            e.dataTransfer.effectAllowed = "move";
+
+            draggingItemRef.current = {
+              id: cleanId,
+              el: e.currentTarget,
+            };
+
+            e.currentTarget.setPointerCapture(e.pointerId);
             e.currentTarget.classList.add("dragging");
           }}
-          onDragEnd={(e) => {
-            e.currentTarget.classList.remove("dragging");
+          onPointerMove={(e) => {
+            if (!draggingItemRef.current) return;
+
+            const el = draggingItemRef.current.el;
+
+            el.style.position = "fixed";
+            el.style.left = `${e.clientX - el.width / 2}px`;
+            el.style.top = `${e.clientY - el.height / 2}px`;
+            el.style.pointerEvents = "none";
+            el.style.zIndex = "9999";
+          }}
+          onPointerUp={(e) => {
+            finishDrag(e.clientX, e.clientY);
+          }}
+          onPointerCancel={() => {
+            finishDrag();
           }}
         />
       ))}

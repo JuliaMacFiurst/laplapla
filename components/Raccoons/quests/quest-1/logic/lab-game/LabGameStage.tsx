@@ -81,7 +81,16 @@ export default function LabGameStage() {
               ))}
             </div>
 
-            <Backpack active={isBackpackActive} laneIndex={backpackLane} />
+            <Backpack
+              active={isBackpackActive}
+              laneIndex={backpackLane}
+              onLaneDrag={(nextLane) => {
+                const delta = nextLane - backpackLane;
+                if (delta !== 0) {
+                  moveBackpackLane(delta);
+                }
+              }}
+            />
             <LoganComment comment={loganComment} />
           </>
         )}

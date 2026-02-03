@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import ClothesConveyor, { ClothesItem } from "./ClothesConveyor";
 import { loadClothesForCharacter } from "./loadClothesForCharacter";
 import type { CharacterResult, DressUpSeason, DressedItem } from "@/types";
@@ -79,6 +79,8 @@ export default function CharacterStage({
   const [handRotation, setHandRotation] = useState(0);
 
   const [characterLoading, setCharacterLoading] = useState(false);
+
+  const dropzoneRef = useRef<HTMLDivElement | null>(null);
 
   const safeIndex = Math.min(index, finalCharacters.length - 1);
   const current = finalCharacters[safeIndex];
@@ -175,6 +177,27 @@ export default function CharacterStage({
     setClothes((prev) => prev.filter((c) => c.id !== normalizedId));
   }
 
+  function tryDropFromPointer(
+    itemId: string,
+    x: number,
+    y: number
+  ) {
+    const zone = dropzoneRef.current;
+    if (!zone) return;
+
+    const rect = zone.getBoundingClientRect();
+
+    const inside =
+      x >= rect.left &&
+      x <= rect.right &&
+      y >= rect.top &&
+      y <= rect.bottom;
+
+    if (inside) {
+      handleDrop(itemId);
+    }
+  }
+
   return (
     <div className="dressup-stage">
       <div className="dressup-content">
@@ -205,13 +228,9 @@ export default function CharacterStage({
 
         {/* ПЕРСОНАЖ */}
         <div
+          ref={dropzoneRef}
           className="dressup-stage-inner dressup-dropzone"
           data-testid="dressup-dropzone"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            const itemId = e.dataTransfer.getData("text/plain");
-            handleDrop(itemId);
-          }}
         >
           <div className="dressup-character-wrapper">
             <img
@@ -321,7 +340,13 @@ export default function CharacterStage({
           ))}
 
         {timerRunning && clothes.length > 0 && (
-          <ClothesConveyor items={clothes} speed={1.3} />
+          <ClothesConveyor
+            items={clothes}
+            speed={1.3}
+            onItemReleased={(id, x, y) => {
+              tryDropFromPointer(id, x, y);
+            }}
+          />
         )}
       </div>
     </div>

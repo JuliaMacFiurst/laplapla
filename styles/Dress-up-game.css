@@ -416,6 +416,7 @@
   cursor: grab;
   user-select: none;
   pointer-events: auto;
+  touch-action: none;
 
   transition: transform 0.2s ease, filter 0.2s ease;
 
