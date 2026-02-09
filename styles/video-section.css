@@ -505,3 +505,15 @@
 .video-title:lang(he) {
   font-family: "Varela Round", system-ui, sans-serif;
 }
+
+/* ────────────── RTL arrows (dir="rtl") ────────────── */
+/* In RTL we want PREV on the right, NEXT on the left */
+[dir="rtl"] .video-player-arrow.prev {
+  left: auto;
+  right: 150px;
+}
+
+[dir="rtl"] .video-player-arrow.next {
+  right: auto;
+  left: 150px;
+}

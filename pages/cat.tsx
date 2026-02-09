@@ -131,8 +131,9 @@ export default function CatPage() {
         Случайный вопрос 🎲
       </button>
       <img src="/cat/mouse-hanging.webp" className="hanging-mouse" />
-      <img src="/cat/ball.webp" alt="Клубочек" className="rolling-ball" />
+      
       <footer className="giphy-footer">
+        <img src="/cat/ball.webp" alt="Клубочек" className="rolling-ball" />
         <p className="giphy-attribution-text">GIFs powered by</p>
         <img src="/giphy-logo.webp" alt="GIPHY Logo" className="giphy-logo" />
         <p className="pexels-credit">
