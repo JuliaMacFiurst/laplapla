@@ -19,10 +19,25 @@ export function VideoPlayer({
   onClose,
   variant = "video",
 }: VideoPlayerProps) {
-  const playableItems = useMemo(
-    () => items.filter((item) => Boolean(item.youtubeId)),
-    [items]
-  );
+  // --- mobile / tablet detection (touch-first devices) ---
+  const isTouchDevice = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.matchMedia("(pointer: coarse)").matches
+    );
+  }, []);
+
+  const mobileUnplayableIdsRef = useRef<Set<string>>(new Set());
+
+  const playableItems = useMemo(() => {
+    const base = items.filter((item) => Boolean(item.youtubeId));
+    if (!isTouchDevice) return base;
+    return base.filter(
+      (item) => !mobileUnplayableIdsRef.current.has(item.youtubeId!)
+    );
+  }, [items, isTouchDevice]);
 
   const [currentIndex, setCurrentIndex] = useState(() =>
     Math.max(0, Math.min(playableItems.length - 1, startIndex))
@@ -34,12 +49,88 @@ export function VideoPlayer({
     );
   }, [startIndex, playableItems.length]);
 
+  // --- autoplay failure detection ---
+  const startTimeoutRef = useRef<number | null>(null);
+  const autoSkipCountRef = useRef(0);
+  const MAX_AUTO_SKIPS = 5;
+  const START_TIMEOUT_MS = 3000;
+  const userInteractedRef = useRef(false);
+  const videoLoadedRef = useRef(false);
+
+  const clearStartTimeout = () => {
+    if (startTimeoutRef.current !== null) {
+      window.clearTimeout(startTimeoutRef.current);
+      startTimeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    clearStartTimeout();
+    userInteractedRef.current = false;
+    videoLoadedRef.current = false;
+
+    if (!isTouchDevice) return;
+
+    // reset skip counter if user manually navigates
+    const dynamicTimeout =
+      autoSkipCountRef.current > 2 ? 800 : START_TIMEOUT_MS;
+
+    startTimeoutRef.current = window.setTimeout(() => {
+      if (userInteractedRef.current || videoLoadedRef.current) {
+        clearStartTimeout();
+        return;
+      }
+      autoSkipCountRef.current += 1;
+
+      if (autoSkipCountRef.current >= MAX_AUTO_SKIPS) {
+        clearStartTimeout();
+        onClose();
+        return;
+      }
+
+      markCurrentAsUnplayableAndAdvance();
+    }, dynamicTimeout);
+
+    return () => {
+      clearStartTimeout();
+    };
+  }, [currentIndex, isTouchDevice]);
+
+  const markCurrentAsUnplayableAndAdvance = () => {
+    const item = playableItems[currentIndex];
+    if (!item?.youtubeId) return;
+
+    mobileUnplayableIdsRef.current.add(item.youtubeId);
+
+    setCurrentIndex((i) => {
+      const next = Math.min(
+        playableItems.length - 2,
+        Math.max(0, i)
+      );
+      return next;
+    });
+  };
+
   const handlePrev = () => {
+    autoSkipCountRef.current = 0;
     setCurrentIndex((i) => Math.max(0, i - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((i) => Math.min(playableItems.length - 1, i + 1));
+    autoSkipCountRef.current = 0;
+    setCurrentIndex((i) => {
+      let next = i + 1;
+      while (
+        next < playableItems.length &&
+        isTouchDevice &&
+        mobileUnplayableIdsRef.current.has(
+          playableItems[next].youtubeId!
+        )
+      ) {
+        next++;
+      }
+      return Math.min(playableItems.length - 1, next);
+    });
   };
 
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -96,9 +187,15 @@ export function VideoPlayer({
       <div
         className={`video-player-window ${variant}`}
         onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => onSwipeStart(e.clientX, e.clientY)}
+        onMouseDown={(e) => {
+          userInteractedRef.current = true;
+          clearStartTimeout();
+          onSwipeStart(e.clientX, e.clientY);
+        }}
         onMouseUp={(e) => onSwipeEnd(e.clientX, e.clientY)}
         onTouchStart={(e) => {
+          userInteractedRef.current = true;
+          clearStartTimeout();
           const t = e.touches[0];
           if (t) onSwipeStart(t.clientX, t.clientY);
         }}
@@ -107,7 +204,13 @@ export function VideoPlayer({
           if (t) onSwipeEnd(t.clientX, t.clientY);
         }}
       >
-        <button className="video-player-close" onClick={onClose}>
+        <button
+          className="video-player-close"
+          onClick={() => {
+            clearStartTimeout();
+            onClose();
+          }}
+        >
           ✕
         </button>
 
@@ -130,6 +233,11 @@ export function VideoPlayer({
                   title={`Embedded video ${currentIndex + 1}`}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  onLoad={() => {
+                    videoLoadedRef.current = true;
+                    autoSkipCountRef.current = 0;
+                    clearStartTimeout();
+                  }}
                 />
               </div>
             );

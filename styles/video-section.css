@@ -257,6 +257,7 @@
 }
 
 .video-title {
+  font-family: 'Amatic SC', bold;
   font-size: 18px;
   margin-bottom: 4px;
 }
@@ -498,5 +499,9 @@
 }
 
 .video-category-chip:lang(he) {
+  font-family: "Varela Round", system-ui, sans-serif;
+}
+
+.video-title:lang(he) {
   font-family: "Varela Round", system-ui, sans-serif;
 }
