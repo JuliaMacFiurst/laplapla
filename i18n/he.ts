@@ -303,6 +303,34 @@ LapLapLa הוא פרויקט חי, וחשוב לי שהוא לא יתפתח לב
 LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מראש.`,
     },
   },
+  cats: {
+  title: "חתולים יסבירו",
+  subtitle: "המון חתולים קטנים שמסבירים על כל דבר בעולם",
+
+  examplesTitle: "אפשר לשאול למשל:",
+  examples: {
+    engine: "איך עובד מנוע בעירה פנימית?",
+    passionarity: "מה זה פסיונריות?",
+    dreams: "למה אנשים חולמים?",
+  },
+
+  inputPlaceholder: "או שאפשר לשאול שאלה משלך",
+  askButton: "לשאול!",
+  thinkingShort: "החתולים חושבים...",
+  thinkingLong: "החתולים חושבים על התשובה לשאלה שלך...",
+
+  randomQuestion: "שאלה אקראית 🎲",
+
+  errors: {
+    generic: "משהו השתבש.",
+    server: "אירעה שגיאה בפנייה לשרת",
+  },
+
+  attribution: {
+    gifsPoweredBy: "GIFs באדיבות",
+    videoProvidedBy: "וידאו באדיבות",
+  },
+},
   video: {
     title: "הסברים חמודים",
     subtitle: "סרטונים פשוטים ושובבים על דברים שנראים מסובכים",

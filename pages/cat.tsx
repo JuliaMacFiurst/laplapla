@@ -1,6 +1,23 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/router";
+import { dictionaries } from "../i18n";
 
 export default function CatPage() {
+  const router = useRouter();
+
+  // Priority:
+  // 1) ?lang=he|en|ru
+  // 2) localStorage "laplapla_lang"
+  // 3) browser / default
+  const lang = (Array.isArray(router.query.lang)
+    ? router.query.lang[0]
+    : router.query.lang) as keyof typeof dictionaries || "ru";
+
+  const t = useMemo(() => dictionaries[lang]?.cats ?? dictionaries.ru.cats, [lang]);
+
+  // Optional: RTL support (local to page)
+  const dir = lang === "he" ? "rtl" : "ltr";
+
   const [inputText, setInputText] = useState("");
   const [slides, setSlides] = useState<{ text: string; image?: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,33 +42,33 @@ export default function CatPage() {
       const data = await response.json();
       setSlides(data.slides);
     } catch (err) {
-      setError("Что-то пошло не так.");
+      setError(t.errors.generic);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="cat-page-container">
-      <h1 className="cat-page-title page-title">Котики объяснят</h1>
-      <p className="cat-page-subtitle page-subtitle">Много маленьких котиков объяснят тебе всё на свете</p>
-      <p className="example-title">Примеры:</p>
+    <div className="cat-page-container" dir={dir}>
+      <h1 className="cat-page-title page-title">{t.title}</h1>
+      <p className="cat-page-subtitle page-subtitle">{t.subtitle}</p>
+      <p className="example-title">{t.examplesTitle}</p>
       <div className="example-buttons">
-        <button className="example-button" onClick={() => setInputText("Как работает двигатель внутреннего сгорания?")}>
-          Как работает двигатель внутреннего сгорания?
+        <button className="example-button" onClick={() => setInputText(t.examples.engine)}>
+          {t.examples.engine}
         </button>
-        <button className="example-button" onClick={() => setInputText("Что такое пассионарность?")}>
-          Что такое пассионарность?
+        <button className="example-button" onClick={() => setInputText(t.examples.passionarity)}>
+          {t.examples.passionarity}
         </button>
-        <button className="example-button" onClick={() => setInputText("Зачем человеку сны?")}>
-          Зачем человеку сны?
+        <button className="example-button" onClick={() => setInputText(t.examples.dreams)}>
+          {t.examples.dreams}
         </button>
       </div>
       <div className="input-wrapper search-input-wrapper">
         <input
           className="question-input search-input"
           type="text"
-          placeholder="Или задай свой вопрос"
+          placeholder={t.inputPlaceholder}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
         />
@@ -60,7 +77,7 @@ export default function CatPage() {
           onClick={handleGenerate}
           disabled={loading}
         >
-          {loading ? "Котики думают..." : "Задать!"}
+          {loading ? t.thinkingShort : t.askButton}
         </button>
       </div>
       {error && <p className="error-message">{error}</p>}
@@ -68,7 +85,7 @@ export default function CatPage() {
         {loading ? (
   <div className="cat-spinner-wrapper">
     <img src="/spinners/CatSpinner.svg" alt="Котик думает..." width={64} height={64} />
-    <p className="cat-spinner-text">Котики думают над ответом на твой вопрос...</p>
+    <p className="cat-spinner-text">{t.thinkingLong}</p>
   </div>
 ) : (
           <div className="slide-scroll-wrapper">
@@ -123,21 +140,21 @@ export default function CatPage() {
           setInputText(data.prompt || "");
           setSlides(data.slides);
         } catch (err) {
-          setError("Что-то пошло не так.");
+          setError(t.errors.generic);
         } finally {
           setLoading(false);
         }
       }}>
-        Случайный вопрос 🎲
+        {t.randomQuestion}
       </button>
       <img src="/cat/mouse-hanging.webp" className="hanging-mouse" />
       
       <footer className="giphy-footer">
         <img src="/cat/ball.webp" alt="Клубочек" className="rolling-ball" />
-        <p className="giphy-attribution-text">GIFs powered by</p>
+        <p className="giphy-attribution-text">{t.attribution.gifsPoweredBy}</p>
         <img src="/giphy-logo.webp" alt="GIPHY Logo" className="giphy-logo" />
         <p className="pexels-credit">
-  Видео предоставлено <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">Pexels</a>.
+  {t.attribution.videoProvidedBy} <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">Pexels</a>.
 </p>
       </footer>
     </div>

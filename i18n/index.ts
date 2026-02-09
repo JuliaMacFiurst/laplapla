@@ -83,6 +83,35 @@ type DictionaryShape = {
       technology: string;
     };
   };
+
+  cats: {
+    title: string;
+    subtitle: string;
+
+    examplesTitle: string;
+    examples: {
+      engine: string;
+      passionarity: string;
+      dreams: string;
+    };
+
+    inputPlaceholder: string;
+    askButton: string;
+    thinkingShort: string;
+    thinkingLong: string;
+
+    randomQuestion: string;
+
+    errors: {
+      generic: string;
+      server: string;
+    };
+
+    attribution: {
+      gifsPoweredBy: string;
+      videoProvidedBy: string;
+    };
+  };
 };
 
 export const ABOUT_SECTIONS = [

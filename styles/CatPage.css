@@ -268,7 +268,7 @@ html, body {
 .rolling-ball {
   position: absolute;
   bottom: 10px;
-  left: 10px;
+  left: -270px;
   width: 120px;
   z-index: 5;
   pointer-events: auto;
@@ -311,6 +311,8 @@ html, body {
 }
 
 .giphy-footer {
+  position: relative;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;

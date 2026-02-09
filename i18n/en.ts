@@ -12,7 +12,34 @@ export const en = {
     },
     cta: "Explore",
   },
+cats: {
+  title: "Cats Explain",
+  subtitle: "Lots of little cats explaining anything and everything",
 
+  examplesTitle: "Try asking:",
+  examples: {
+    engine: "How does an internal combustion engine work?",
+    passionarity: "What is passionarity?",
+    dreams: "Why do humans dream?",
+  },
+
+  inputPlaceholder: "Or ask your own question",
+  askButton: "Ask!",
+  thinkingShort: "The cats are thinking...",
+  thinkingLong: "The cats are thinking about your question...",
+
+  randomQuestion: "Random question 🎲",
+
+  errors: {
+    generic: "Something went wrong.",
+    server: "There was a problem contacting the server.",
+  },
+
+  attribution: {
+    gifsPoweredBy: "GIFs powered by",
+    videoProvidedBy: "Video provided by",
+  },
+},
   video: {
     title: "Cute explanations",
     subtitle: "Simple and playful videos about tricky things",
