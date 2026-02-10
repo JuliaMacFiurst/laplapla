@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 import { ABOUT_SECTIONS, dictionaries } from "../i18n";
 import { Lang } from "../i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
-import BackButton from "./BackButton";
+import HomeButton from "./HomeButton";
 
 export default function TopBar() {
   const router = useRouter();
@@ -70,7 +70,7 @@ export default function TopBar() {
           )}
         </div>
       ) : (
-        <BackButton />
+        <HomeButton />
       )}
 
       {/* Правая зона — язык */}

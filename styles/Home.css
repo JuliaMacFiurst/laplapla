@@ -538,7 +538,7 @@ body {
   margin-top: 5px;
 }
 
-.back-button {
+.home-button{
   position: fixed;
   top: 16px;
   right: 16px; /* right в LTR, left в RTL */
@@ -570,12 +570,12 @@ body {
   z-index: 50;
 }
 
-.back-button:hover {
+.home-button:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
 }
 
-.back-button:active {
+.home-button:active {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
 }
