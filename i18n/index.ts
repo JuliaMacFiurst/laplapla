@@ -105,6 +105,7 @@ type DictionaryShape = {
     errors: {
       generic: string;
       server: string;
+      catsAiNotAvailable: string;
     };
 
     attribution: {

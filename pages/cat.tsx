@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import { dictionaries } from "../i18n";
+import { CAT_PRESETS } from "../content/cats";
 
 export default function CatPage() {
   const router = useRouter();
@@ -9,14 +10,68 @@ export default function CatPage() {
   // 1) ?lang=he|en|ru
   // 2) localStorage "laplapla_lang"
   // 3) browser / default
-  const lang = (Array.isArray(router.query.lang)
+  const queryLang = Array.isArray(router.query.lang)
     ? router.query.lang[0]
-    : router.query.lang) as keyof typeof dictionaries || "ru";
+    : router.query.lang;
+
+  const storedLang =
+    typeof window !== "undefined"
+      ? (localStorage.getItem("laplapla_lang") as keyof typeof dictionaries | null)
+      : null;
+
+  const lang: keyof typeof dictionaries =
+    (queryLang as keyof typeof dictionaries) ||
+    storedLang ||
+    "ru";
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("laplapla_lang", lang);
+    }
+  }, [lang]);
 
   const t = useMemo(() => dictionaries[lang]?.cats ?? dictionaries.ru.cats, [lang]);
 
   // Optional: RTL support (local to page)
   const dir = lang === "he" ? "rtl" : "ltr";
+
+  // Temporary mode: presets only (no AI yet)
+  const PRESETS_ONLY = true;
+
+  const presetsForLang = useMemo(
+    () => CAT_PRESETS.filter((p) => p.lang === lang),
+    [lang]
+  );
+
+  const findPresetByKey = (key: string) =>
+    presetsForLang.find((p) => p.id.startsWith(key));
+
+  const applyPreset = (preset: typeof presetsForLang[number]) => {
+    const key = preset.id.split("-")[0]; // engine | dreams | passionarity
+    setActivePresetKey(key);
+  };
+
+  const [activePresetKey, setActivePresetKey] = useState<string | null>(null);
+
+  const activePreset = useMemo(() => {
+    if (!activePresetKey) return null;
+
+    return presetsForLang.find((p) =>
+      p.id.startsWith(activePresetKey)
+    ) || null;
+  }, [activePresetKey, presetsForLang]);
+
+  useEffect(() => {
+    if (!activePreset) return;
+
+    setInputText(activePreset.prompt);
+    setSlides(
+      activePreset.slides.map((s) => ({
+        text: s.text,
+        image: s.mediaUrl,
+      }))
+    );
+  }, [activePreset]);
 
   const [inputText, setInputText] = useState("");
   const [slides, setSlides] = useState<{ text: string; image?: string }[]>([]);
@@ -54,13 +109,33 @@ export default function CatPage() {
       <p className="cat-page-subtitle page-subtitle">{t.subtitle}</p>
       <p className="example-title">{t.examplesTitle}</p>
       <div className="example-buttons">
-        <button className="example-button" onClick={() => setInputText(t.examples.engine)}>
+        <button
+          className="example-button"
+          onClick={() => {
+            const preset = findPresetByKey("engine");
+            if (preset) applyPreset(preset);
+          }}
+        >
           {t.examples.engine}
         </button>
-        <button className="example-button" onClick={() => setInputText(t.examples.passionarity)}>
+
+        <button
+          className="example-button"
+          onClick={() => {
+            const preset = findPresetByKey("passionarity");
+            if (preset) applyPreset(preset);
+          }}
+        >
           {t.examples.passionarity}
         </button>
-        <button className="example-button" onClick={() => setInputText(t.examples.dreams)}>
+
+        <button
+          className="example-button"
+          onClick={() => {
+            const preset = findPresetByKey("dreams");
+            if (preset) applyPreset(preset);
+          }}
+        >
           {t.examples.dreams}
         </button>
       </div>
@@ -74,7 +149,13 @@ export default function CatPage() {
         />
         <button
           className="ask-button search-button"
-          onClick={handleGenerate}
+          onClick={() => {
+            if (PRESETS_ONLY) {
+              setError(t.errors.catsAiNotAvailable);
+              return;
+            }
+            handleGenerate();
+          }}
           disabled={loading}
         >
           {loading ? t.thinkingShort : t.askButton}
@@ -118,32 +199,14 @@ export default function CatPage() {
           </div>
         )}
       </div>
-      <button className="random-question-button random-book-button" onClick={async () => {
-        setLoading(true);
+      <button className="random-question-button random-book-button" onClick={() => {
         setError(null);
-        setSlides([]);
-        try {
-          const response = await fetch('/api/cat-slides', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-          });
+        if (!presetsForLang.length) return;
 
-          if (!response.ok) {
-            throw new Error('Ошибка при запросе к серверу');
-          }
+        const preset =
+          presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
 
-          const data = await response.json();
-          if (!data.prompt) {
-            console.warn("Сервер не вернул prompt. Проверь API /api/cat-slides.");
-          }
-          setInputText(data.prompt || "");
-          setSlides(data.slides);
-        } catch (err) {
-          setError(t.errors.generic);
-        } finally {
-          setLoading(false);
-        }
+        applyPreset(preset);
       }}>
         {t.randomQuestion}
       </button>

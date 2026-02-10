@@ -344,3 +344,10 @@ html, body {
   display: block;
   margin: 0 auto;
 }
+
+.cat-page-container[dir="rtl"] p,
+.cat-page-container[dir="rtl"] button,
+.cat-page-container[dir="rtl"] input,
+.cat-page-container[dir="rtl"] .cat-slide-text {
+  font-family: "Varela Round", system-ui, sans-serif;
+}

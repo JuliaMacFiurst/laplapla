@@ -33,6 +33,7 @@ cats: {
   errors: {
     generic: "Something went wrong.",
     server: "There was a problem contacting the server.",
+    catsAiNotAvailable: "Cats can’t answer yet. Try the “Random question” button 🐾",
   },
 
   attribution: {
