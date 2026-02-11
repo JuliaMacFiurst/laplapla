@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import { dictionaries } from "../i18n";
-import { CAT_PRESETS } from "../content/cats";
+import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../content/cats";
 
 export default function CatPage() {
   const router = useRouter();
@@ -40,6 +40,11 @@ export default function CatPage() {
 
   const presetsForLang = useMemo(
     () => CAT_PRESETS.filter((p) => p.lang === lang),
+    [lang]
+  );
+
+  const textPresetsForLang = useMemo(
+    () => CAT_TEXT_PRESETS.filter((p) => p.lang === lang),
     [lang]
   );
 
@@ -87,7 +92,10 @@ export default function CatPage() {
       const response = await fetch('/api/cat-slides', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: inputText }),
+        body: JSON.stringify({
+          prompt: inputText,
+          lang,
+        }),
       });
 
       if (!response.ok) {
@@ -199,15 +207,54 @@ export default function CatPage() {
           </div>
         )}
       </div>
-      <button className="random-question-button random-book-button" onClick={() => {
-        setError(null);
-        if (!presetsForLang.length) return;
+      <button
+        className="random-question-button random-book-button"
+        onClick={async () => {
+          setError(null);
+          setSlides([]);
 
-        const preset =
-          presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
+          const allPresets = [
+            ...presetsForLang.map((p) => ({ type: "full" as const, preset: p })),
+            ...textPresetsForLang.map((p) => ({ type: "text" as const, preset: p })),
+          ];
 
-        applyPreset(preset);
-      }}>
+          if (!allPresets.length) return;
+
+          const randomItem =
+            allPresets[Math.floor(Math.random() * allPresets.length)];
+
+          // FULL PRESET (уже есть слайды)
+          if (randomItem.type === "full") {
+            applyPreset(randomItem.preset);
+            return;
+          }
+
+          // TEXT PRESET (нужно получить картинки через API)
+          setLoading(true);
+          try {
+            const response = await fetch("/api/cat-slides", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                prompt: randomItem.preset.prompt,
+                lang,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to fetch slides");
+            }
+
+            const data = await response.json();
+            setInputText(randomItem.preset.prompt);
+            setSlides(data.slides);
+          } catch (e) {
+            setError(t.errors.generic);
+          } finally {
+            setLoading(false);
+          }
+        }}
+      >
         {t.randomQuestion}
       </button>
       <img src="/cat/mouse-hanging.webp" className="hanging-mouse" />

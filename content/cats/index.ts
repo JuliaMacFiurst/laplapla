@@ -7,6 +7,10 @@ import { CAT_PRESETS_RU } from "./presets/ru";
 import { CAT_PRESETS_EN } from "./presets/en";
 import { CAT_PRESETS_HE } from "./presets/he";
 
+import { CAT_TEXT_PRESETS_RU } from "./presets-text/ru";
+import { CAT_TEXT_PRESETS_EN } from "./presets-text/en";
+import { CAT_TEXT_PRESETS_HE } from "./presets-text/he";
+
 // -----------------------------------------------------------------------------
 // Shared types
 // -----------------------------------------------------------------------------
@@ -27,6 +31,13 @@ export type CatPreset = {
   slides: CatPresetSlide[];
 };
 
+export type CatTextPreset = {
+  id: string;         // stable id
+  lang: "ru" | "en" | "he";
+  prompt: string;     // вопрос
+  texts: string[];    // ТОЛЬКО тексты слайдов
+};
+
 // -----------------------------------------------------------------------------
 // Aggregated export
 // -----------------------------------------------------------------------------
@@ -35,4 +46,10 @@ export const CAT_PRESETS: CatPreset[] = [
   ...CAT_PRESETS_RU,
   ...CAT_PRESETS_EN,
   ...CAT_PRESETS_HE,
+];
+
+export const CAT_TEXT_PRESETS: CatTextPreset[] = [
+  ...CAT_TEXT_PRESETS_RU,
+  ...CAT_TEXT_PRESETS_EN,
+  ...CAT_TEXT_PRESETS_HE,
 ];
