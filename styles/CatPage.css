@@ -149,6 +149,7 @@ html, body {
 .error-message {
   color: #ef4444;
   margin-top: 0.5rem;
+  font-family: "Varela Round", system-ui, sans-serif;
 }
 
 .slide-container {

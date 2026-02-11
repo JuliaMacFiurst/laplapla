@@ -141,43 +141,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
         </button>
       </div>
       {error && <p className="error-message">{error}</p>}
-      <div className="slide-container">
-        {loading ? (
-  <div className="cat-spinner-wrapper">
-    <img src="/spinners/CatSpinner.svg" alt="Котик думает..." width={64} height={64} />
-    <p className="cat-spinner-text">{t.thinkingLong}</p>
-  </div>
-) : (
-          <div className="slide-scroll-wrapper">
-            {slides.map((slide, idx) => {
-              if (!slide.text || !slide.image) return null;
 
-              return (
-                <div key={idx} className="cat-slide">
-                  {slide.image.endsWith('.mp4') ? (
-                    <video
-                      className="cat-slide-video"
-                      controls
-                      autoPlay
-                      muted
-                      playsInline
-                    >
-                      <source src={slide.image} type="video/mp4" />
-                      Ваш браузер не поддерживает видео.
-                    </video>
-                  ) : (
-                    <img src={slide.image} alt={`Slide ${idx + 1}`} className="cat-slide-image" />
-                  )}
-                  <div
-                    className="cat-slide-text"
-                    dangerouslySetInnerHTML={{ __html: slide.text }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
       <button
         className="random-question-button random-book-button"
         onClick={async () => {
@@ -228,6 +192,45 @@ export default function CatPage({ lang }: { lang: Lang }) {
       >
         {t.randomQuestion}
       </button>
+      
+      <div className="slide-container">
+        {loading ? (
+  <div className="cat-spinner-wrapper">
+    <img src="/spinners/CatSpinner.svg" alt="Котик думает..." width={64} height={64} />
+    <p className="cat-spinner-text">{t.thinkingLong}</p>
+  </div>
+) : (
+          <div className="slide-scroll-wrapper">
+            {slides.map((slide, idx) => {
+              if (!slide.text || !slide.image) return null;
+
+              return (
+                <div key={idx} className="cat-slide">
+                  {slide.image.endsWith('.mp4') ? (
+                    <video
+                      className="cat-slide-video"
+                      controls
+                      autoPlay
+                      muted
+                      playsInline
+                    >
+                      <source src={slide.image} type="video/mp4" />
+                      Ваш браузер не поддерживает видео.
+                    </video>
+                  ) : (
+                    <img src={slide.image} alt={`Slide ${idx + 1}`} className="cat-slide-image" />
+                  )}
+                  <div
+                    className="cat-slide-text"
+                    dangerouslySetInnerHTML={{ __html: slide.text }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
       <img src="/cat/mouse-hanging.webp" className="hanging-mouse" />
       
       <footer className="giphy-footer">
