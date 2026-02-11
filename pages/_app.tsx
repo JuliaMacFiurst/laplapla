@@ -16,10 +16,43 @@ import '../styles/LabGame.css'
 import '../styles/About.css';
 import '../styles/video-section.css';
 import type { AppProps } from 'next/app';
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const [lang, setLang] = useState<"ru" | "en" | "he" | null>(null);
+
+  // Determine language once on client
+  useEffect(() => {
+    const queryLang = Array.isArray(router.query.lang)
+      ? router.query.lang[0]
+      : router.query.lang;
+
+    const cookieMatch = document.cookie.match(/(?:^|; )laplapla_lang=([^;]+)/);
+    const cookieLang = cookieMatch ? cookieMatch[1] : null;
+
+    const detected =
+      queryLang === "ru" || queryLang === "en" || queryLang === "he"
+        ? queryLang
+        : cookieLang === "ru" || cookieLang === "en" || cookieLang === "he"
+        ? cookieLang
+        : "ru";
+
+    setLang(detected as "ru" | "en" | "he");
+
+    // Persist to cookie
+    document.cookie = `laplapla_lang=${detected}; path=/; max-age=31536000`;
+
+    // Set dir globally
+    document.documentElement.dir = detected === "he" ? "rtl" : "ltr";
+  }, [router.query.lang]);
+
+  // Prevent hydration mismatch
+  if (!lang) return null;
+
   return (
     <>
       <Head>
@@ -44,8 +77,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       />
 
       <div className="app-layout">
-        <TopBar />
-        <Component {...pageProps} />
+        <TopBar lang={lang} />
+        <Component {...pageProps} lang={lang} />
       </div>
       <div id="modal-root"></div>
       <div id="popup-root"></div>

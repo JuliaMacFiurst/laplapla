@@ -1,39 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/router";
-import { dictionaries } from "../i18n";
+import { dictionaries, Lang } from "../i18n";
 import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../content/cats";
 
-export default function CatPage() {
-  const router = useRouter();
-
-  // Priority:
-  // 1) ?lang=he|en|ru
-  // 2) localStorage "laplapla_lang"
-  // 3) browser / default
-  const queryLang = Array.isArray(router.query.lang)
-    ? router.query.lang[0]
-    : router.query.lang;
-
-  const storedLang =
-    typeof window !== "undefined"
-      ? (localStorage.getItem("laplapla_lang") as keyof typeof dictionaries | null)
-      : null;
-
-  const lang: keyof typeof dictionaries =
-    (queryLang as keyof typeof dictionaries) ||
-    storedLang ||
-    "ru";
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("laplapla_lang", lang);
-    }
-  }, [lang]);
-
-  const t = useMemo(() => dictionaries[lang]?.cats ?? dictionaries.ru.cats, [lang]);
-
-  // Optional: RTL support (local to page)
-  const dir = lang === "he" ? "rtl" : "ltr";
+export default function CatPage({ lang }: { lang: Lang }) {
+  const t = dictionaries[lang].cats;
 
   // Temporary mode: presets only (no AI yet)
   const PRESETS_ONLY = true;
@@ -66,9 +36,10 @@ export default function CatPage() {
     ) || null;
   }, [activePresetKey, presetsForLang]);
 
+  // Keep this useEffect (for activePreset) as is
+  
   useEffect(() => {
     if (!activePreset) return;
-
     setInputText(activePreset.prompt);
     setSlides(
       activePreset.slides.map((s) => ({
@@ -112,7 +83,7 @@ export default function CatPage() {
   };
 
   return (
-    <div className="cat-page-container" dir={dir}>
+    <div className="cat-page-container">
       <h1 className="cat-page-title page-title">{t.title}</h1>
       <p className="cat-page-subtitle page-subtitle">{t.subtitle}</p>
       <p className="example-title">{t.examplesTitle}</p>

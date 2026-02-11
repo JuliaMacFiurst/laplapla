@@ -1,5 +1,3 @@
-
-
 import { useRouter } from "next/router";
 import { useState, useRef } from "react";
 import { ABOUT_SECTIONS, dictionaries } from "../i18n";
@@ -7,14 +5,13 @@ import { Lang } from "../i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import HomeButton from "./HomeButton";
 
-export default function TopBar() {
+type TopBarProps = {
+  lang: Lang;
+};
+
+export default function TopBar({ lang }: TopBarProps) {
   const router = useRouter();
   const isHome = router.pathname === "/";
-
-  const lang =
-    (Array.isArray(router.query.lang)
-      ? router.query.lang[0]
-      : router.query.lang) as Lang || "ru";
 
   const [menuHover, setMenuHover] = useState(false);
   const closeTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -44,7 +41,12 @@ export default function TopBar() {
         >
           <div
             className="menu-button"
-            onClick={() => router.push(`/about?lang=${lang}`)}
+            onClick={() =>
+              router.push({
+                pathname: "/about",
+                query: { lang },
+              })
+            }
           >
             ☰
           </div>
@@ -60,7 +62,10 @@ export default function TopBar() {
                   key={key}
                   className="menu-item"
                   onClick={() =>
-                    router.push(`/about/${key}?lang=${lang}`)
+                    router.push({
+                      pathname: `/about/${key}`,
+                      query: { lang },
+                    })
                   }
                 >
                   {dictionaries[lang].about[key].title}

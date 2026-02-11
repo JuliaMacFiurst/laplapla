@@ -345,9 +345,6 @@ html, body {
   margin: 0 auto;
 }
 
-.cat-page-container[dir="rtl"] p,
-.cat-page-container[dir="rtl"] button,
-.cat-page-container[dir="rtl"] input,
-.cat-page-container[dir="rtl"] .cat-slide-text {
+html[dir="rtl"] .cat-slide {
   font-family: "Varela Round", system-ui, sans-serif;
 }
