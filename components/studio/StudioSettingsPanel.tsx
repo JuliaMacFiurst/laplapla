@@ -8,6 +8,9 @@ interface StudioSettingsPanelProps {
   onAddMusic: () => void;
   onRecordVoice: () => void;
   onExport: () => void;
+  onDeleteAll: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
 export default function StudioSettingsPanel({
@@ -18,6 +21,9 @@ export default function StudioSettingsPanel({
   onAddMusic,
   onRecordVoice,
   onExport,
+  onDeleteAll,
+  onUndo,
+  onRedo,
 }: StudioSettingsPanelProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -46,6 +52,18 @@ export default function StudioSettingsPanel({
         <button onClick={onAddMusic}>Add Music</button>
         <button onClick={onRecordVoice}>Record Voice</button>
         <button onClick={onExport}>Export</button>
+        <button onClick={onUndo}>Undo</button>
+        <button onClick={onRedo}>Redo</button>
+        <button
+          onClick={() => {
+            if (confirm("Удалить всё слайдшоу?")) {
+              onDeleteAll();
+            }
+          }}
+          style={{ background: "#ffe5e5" }}
+        >
+          🗑 Delete All
+        </button>
       </div>
     </div>
   );

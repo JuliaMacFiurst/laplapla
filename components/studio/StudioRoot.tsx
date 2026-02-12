@@ -36,6 +36,8 @@ interface StudioRootProps {
 export default function StudioRoot({ initialSlides }: StudioRootProps) {
   const [project, setProject] = useState<StudioProject>(createInitialProject);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+  const [history, setHistory] = useState<StudioProject[]>([]);
+  const [future, setFuture] = useState<StudioProject[]>([]);
 
   const activeSlide = project.slides[activeSlideIndex];
 
@@ -104,7 +106,13 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
     saveProject(newProject);
   }, [initialSlides]);
 
+  function pushHistory(current: StudioProject) {
+    setHistory((prev) => [...prev, current]);
+    setFuture([]);
+  }
+
   function updateSlide(updatedSlide: StudioSlide) {
+    pushHistory(project);
     const updatedSlides = [...project.slides];
     updatedSlides[activeSlideIndex] = updatedSlide;
 
@@ -116,6 +124,7 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
   }
 
   function addSlide() {
+    pushHistory(project);
     const newSlide = createEmptySlide();
 
     setProject({
@@ -127,6 +136,48 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
     setActiveSlideIndex(project.slides.length);
   }
 
+  function deleteSlide(index: number) {
+    if (project.slides.length === 1) return;
+
+    pushHistory(project);
+
+    const updatedSlides = project.slides.filter((_, i) => i !== index);
+
+    setProject({
+      ...project,
+      slides: updatedSlides,
+      updatedAt: Date.now(),
+    });
+
+    setActiveSlideIndex(Math.max(0, index - 1));
+  }
+
+  function deleteAll() {
+    pushHistory(project);
+    setProject(createInitialProject());
+    setActiveSlideIndex(0);
+  }
+
+  function undo() {
+    if (history.length === 0) return;
+
+    const previous = history[history.length - 1];
+
+    setFuture((f) => [project, ...f]);
+    setHistory((h) => h.slice(0, -1));
+    setProject(previous);
+  }
+
+  function redo() {
+    if (future.length === 0) return;
+
+    const next = future[0];
+
+    setHistory((h) => [...h, project]);
+    setFuture((f) => f.slice(1));
+    setProject(next);
+  }
+
   return (
     <div style={{ padding: 24 }}>
       <SlideList
@@ -134,6 +185,7 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
         activeIndex={activeSlideIndex}
         onSelect={setActiveSlideIndex}
         onAdd={addSlide}
+        onDelete={deleteSlide}
       />
 
       <SlideCanvas9x16 slide={activeSlide} />
@@ -157,6 +209,9 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
         onAddMusic={() => console.log("add music")}
         onRecordVoice={() => console.log("record voice")}
         onExport={() => console.log("export")}
+        onDeleteAll={deleteAll}
+        onUndo={undo}
+        onRedo={redo}
       />
     </div>
   );
