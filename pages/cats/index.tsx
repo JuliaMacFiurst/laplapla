@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { dictionaries, Lang } from "../i18n";
-import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../content/cats";
+import { dictionaries, Lang } from "../../i18n";
+import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
+import CatsLayout from "@/components/Cats/CatsLayout";
+import { useRouter } from "next/router";
 
 export default function CatPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
 
-  // Temporary mode: presets only (no AI yet)
   const PRESETS_ONLY = true;
 
   const presetsForLang = useMemo(
@@ -21,25 +22,24 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const findPresetByKey = (key: string) =>
     presetsForLang.find((p) => p.id.startsWith(key));
 
-  const applyPreset = (preset: typeof presetsForLang[number]) => {
-    const key = preset.id.split("-")[0]; // engine | dreams | passionarity
-    setActivePresetKey(key);
-  };
-
   const [activePresetKey, setActivePresetKey] = useState<string | null>(null);
+  const [inputText, setInputText] = useState("");
+  const [slides, setSlides] = useState<{ text: string; image?: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const activePreset = useMemo(() => {
     if (!activePresetKey) return null;
-
-    return presetsForLang.find((p) =>
-      p.id.startsWith(activePresetKey)
-    ) || null;
+    return (
+      presetsForLang.find((p) =>
+        p.id.startsWith(activePresetKey)
+      ) || null
+    );
   }, [activePresetKey, presetsForLang]);
 
-  // Keep this useEffect (for activePreset) as is
-  
   useEffect(() => {
     if (!activePreset) return;
+
     setInputText(activePreset.prompt);
     setSlides(
       activePreset.slides.map((s) => ({
@@ -49,10 +49,10 @@ export default function CatPage({ lang }: { lang: Lang }) {
     );
   }, [activePreset]);
 
-  const [inputText, setInputText] = useState("");
-  const [slides, setSlides] = useState<{ text: string; image?: string }[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const applyPreset = (preset: typeof presetsForLang[number]) => {
+    const key = preset.id.split("-")[0];
+    setActivePresetKey(key);
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -60,33 +60,32 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setSlides([]);
 
     try {
-      const response = await fetch('/api/cat-slides', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: inputText,
-          lang,
-        }),
+      const response = await fetch("/api/cat-slides", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: inputText, lang }),
       });
 
       if (!response.ok) {
-        throw new Error('Ошибка при запросе к серверу');
+        throw new Error("Ошибка при запросе к серверу");
       }
 
       const data = await response.json();
       setSlides(data.slides);
-    } catch (err) {
+    } catch {
       setError(t.errors.generic);
     } finally {
       setLoading(false);
     }
   };
 
+  const router = useRouter();
+
   return (
-    <div className="cat-page-container">
-      <h1 className="cat-page-title page-title">{t.title}</h1>
-      <p className="cat-page-subtitle page-subtitle">{t.subtitle}</p>
+    <CatsLayout active="view" lang={lang}>
+
       <p className="example-title">{t.examplesTitle}</p>
+
       <div className="example-buttons">
         <button
           className="example-button"
@@ -118,6 +117,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
           {t.examples.dreams}
         </button>
       </div>
+
       <div className="input-wrapper search-input-wrapper">
         <input
           className="question-input search-input"
@@ -140,6 +140,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
           {loading ? t.thinkingShort : t.askButton}
         </button>
       </div>
+
       {error && <p className="error-message">{error}</p>}
 
       <button
@@ -158,13 +159,11 @@ export default function CatPage({ lang }: { lang: Lang }) {
           const randomItem =
             allPresets[Math.floor(Math.random() * allPresets.length)];
 
-          // FULL PRESET (уже есть слайды)
           if (randomItem.type === "full") {
             applyPreset(randomItem.preset);
             return;
           }
 
-          // TEXT PRESET (нужно получить картинки через API)
           setLoading(true);
           try {
             const response = await fetch("/api/cat-slides", {
@@ -176,14 +175,12 @@ export default function CatPage({ lang }: { lang: Lang }) {
               }),
             });
 
-            if (!response.ok) {
-              throw new Error("Failed to fetch slides");
-            }
+            if (!response.ok) throw new Error("Failed to fetch slides");
 
             const data = await response.json();
             setInputText(randomItem.preset.prompt);
             setSlides(data.slides);
-          } catch (e) {
+          } catch {
             setError(t.errors.generic);
           } finally {
             setLoading(false);
@@ -192,21 +189,26 @@ export default function CatPage({ lang }: { lang: Lang }) {
       >
         {t.randomQuestion}
       </button>
-      
+
       <div className="slide-container">
         {loading ? (
-  <div className="cat-spinner-wrapper">
-    <img src="/spinners/CatSpinner.svg" alt="Котик думает..." width={64} height={64} />
-    <p className="cat-spinner-text">{t.thinkingLong}</p>
-  </div>
-) : (
+          <div className="cat-spinner-wrapper">
+            <img
+              src="/spinners/CatSpinner.svg"
+              alt="Котик думает..."
+              width={64}
+              height={64}
+            />
+            <p className="cat-spinner-text">{t.thinkingLong}</p>
+          </div>
+        ) : (
           <div className="slide-scroll-wrapper">
             {slides.map((slide, idx) => {
               if (!slide.text || !slide.image) return null;
 
               return (
                 <div key={idx} className="cat-slide">
-                  {slide.image.endsWith('.mp4') ? (
+                  {slide.image.endsWith(".mp4") ? (
                     <video
                       className="cat-slide-video"
                       controls
@@ -215,11 +217,15 @@ export default function CatPage({ lang }: { lang: Lang }) {
                       playsInline
                     >
                       <source src={slide.image} type="video/mp4" />
-                      Ваш браузер не поддерживает видео.
                     </video>
                   ) : (
-                    <img src={slide.image} alt={`Slide ${idx + 1}`} className="cat-slide-image" />
+                    <img
+                      src={slide.image}
+                      alt={`Slide ${idx + 1}`}
+                      className="cat-slide-image"
+                    />
                   )}
+
                   <div
                     className="cat-slide-text"
                     dangerouslySetInnerHTML={{ __html: slide.text }}
@@ -230,17 +236,35 @@ export default function CatPage({ lang }: { lang: Lang }) {
           </div>
         )}
       </div>
-      
+
+      {slides.length > 0 && (
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <button
+            className="edit-slides-button"
+            onClick={() => {
+  sessionStorage.setItem("catsSlides", JSON.stringify(slides));
+  router.push("/cats/studio");
+}}
+          >
+            Редактировать в студии
+          </button>
+        </div>
+      )}
+
       <img src="/cat/mouse-hanging.webp" className="hanging-mouse" />
-      
+
       <footer className="giphy-footer">
         <img src="/cat/ball.webp" alt="Клубочек" className="rolling-ball" />
         <p className="giphy-attribution-text">{t.attribution.gifsPoweredBy}</p>
         <img src="/giphy-logo.webp" alt="GIPHY Logo" className="giphy-logo" />
         <p className="pexels-credit">
-  {t.attribution.videoProvidedBy} <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">Pexels</a>.
-</p>
+          {t.attribution.videoProvidedBy}{" "}
+          <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">
+            Pexels
+          </a>
+          .
+        </p>
       </footer>
-    </div>
+    </CatsLayout>
   );
 }

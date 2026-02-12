@@ -15,6 +15,8 @@ export const en = {
 cats: {
   title: "Cats Explain",
   subtitle: "Lots of little cats explaining anything and everything",
+  studioTab: "Paw Studio",
+  studioSubtitle: "Create your own cat explanations and videos",
 
   examplesTitle: "Try asking:",
   examples: {

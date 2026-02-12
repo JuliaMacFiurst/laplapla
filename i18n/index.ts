@@ -87,6 +87,8 @@ type DictionaryShape = {
   cats: {
     title: string;
     subtitle: string;
+    studioTab: string;
+    studioSubtitle: string;
 
     examplesTitle: string;
     examples: {

@@ -37,7 +37,7 @@ export default function Home() {
       </header>
 
       <div className="grid">
-        <div className="card" onClick={() => router.push("/cat")}> 
+        <div className="card" onClick={() => router.push("/cats")}> 
           <img src="/images/cat.webp" alt={t.sections.cats} />
           <div className="label">{t.sections.cats}</div>
         </div>
