@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import CatsLayout from "@/components/Cats/CatsLayout";
-import { Lang } from "@/i18n";
+import { Lang, dictionaries } from "@/i18n";
 import { useEffect, useState } from "react";
 
 // Dynamically load StudioRoot (important later when ffmpeg is added)
@@ -11,6 +11,7 @@ const StudioRoot = dynamic(
 );
 
 export default function CatsStudioPage({ lang }: { lang: Lang }) {
+    const t = dictionaries[lang].cats;
   const router = useRouter();
 
   const [initialSlides, setInitialSlides] = useState<
@@ -60,7 +61,7 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
           className="back-to-cats-button"
           onClick={() => router.push("/cats")}
         >
-          ← Вернуться к котикам
+          ← {t.backButton}
         </button>
       <video
         className="cat-paw-video"

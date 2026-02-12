@@ -1,3 +1,5 @@
+
+
 export const he = {
   home: {
     title: "LapLapLa",
@@ -308,6 +310,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   subtitle: "המון חתולים קטנים שמסבירים על כל דבר בעולם",
   studioTab: "סטודיו ההסברים",
   studioSubtitle: "ליצור הסברים משלך עם עזרה של חתולים",
+  backButton: "חזרה לחתולים",
 
   examplesTitle: "אפשר לשאול למשל:",
   examples: {

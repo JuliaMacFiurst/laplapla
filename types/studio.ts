@@ -4,6 +4,8 @@ export type StudioSlide = {
   mediaUrl?: string
   bgColor: string
   textColor: string
+  audioUrl?: string
+  musicTracks?: string[]
 }
 
 export type StudioProject = {

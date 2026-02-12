@@ -1,6 +1,6 @@
 "use client";
 
-import { CharacterResult, DressedItem } from "@/types";
+import { CharacterResult, DressedItem } from "@/types/types";
 
 export default function FinalSummary({
   results,

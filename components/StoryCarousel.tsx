@@ -1,5 +1,5 @@
 import {useState, useEffect, JSX } from 'react';
-import type { ProcessedStory } from '../types';
+import type { ProcessedStory } from '../types/types';
 import { fallbackImages } from '../constants';
 
 interface StoryCarouselProps {

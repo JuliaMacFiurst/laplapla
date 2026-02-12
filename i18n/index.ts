@@ -89,6 +89,7 @@ type DictionaryShape = {
     subtitle: string;
     studioTab: string;
     studioSubtitle: string;
+    backButton: string;
 
     examplesTitle: string;
     examples: {

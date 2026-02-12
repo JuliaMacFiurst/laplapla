@@ -17,6 +17,7 @@ export const ru = {
     subtitle: "Много маленьких котиков объяснят тебе всё на свете",
     studioTab: "Лапковая студия",
     studioSubtitle: "Создавай свои видео с объяснялками",
+    backButton: "Вернуться к котикам",
 
     examplesTitle: "Примеры:",
     examples: {

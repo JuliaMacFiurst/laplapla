@@ -16,7 +16,8 @@ cats: {
   title: "Cats Explain",
   subtitle: "Lots of little cats explaining anything and everything",
   studioTab: "Paw Studio",
-  studioSubtitle: "Create your own cat explanations and videos",
+  studioSubtitle: "Create your own explanation videos",
+  backButton: "Back to cats",
 
   examplesTitle: "Try asking:",
   examples: {

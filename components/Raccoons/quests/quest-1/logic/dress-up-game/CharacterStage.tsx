@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import ClothesConveyor, { ClothesItem } from "./ClothesConveyor";
 import { loadClothesForCharacter } from "./loadClothesForCharacter";
-import type { CharacterResult, DressUpSeason, DressedItem } from "@/types";
+import type { CharacterResult, DressUpSeason, DressedItem } from "@/types/types";
 
 export default function CharacterStage({
   characters,

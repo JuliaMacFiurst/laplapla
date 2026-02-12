@@ -1,5 +1,5 @@
 import {useState, useEffect, useCallback, FormEvent } from 'react';
-import type { ProcessedStory, GeminiBookStory, SentenceSlide, LoadStoryOptions } from '../types';
+import type { ProcessedStory, GeminiBookStory, SentenceSlide, LoadStoryOptions } from '../types/types';
 import { KAWAII_BACKGROUND_COLORS } from '../constants';
 import { getBackgroundForSentence } from '../utils/getBackgroundForSentence';
 import StoryCarousel from '../components/StoryCarousel';

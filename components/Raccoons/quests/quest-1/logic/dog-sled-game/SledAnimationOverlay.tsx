@@ -1,6 +1,6 @@
 "use client";
 
-import type { SledAnimation } from "../../../../../../types";
+import type { SledAnimation } from "../../../../../../types/types";
 
 interface Props {
   animation: SledAnimation;

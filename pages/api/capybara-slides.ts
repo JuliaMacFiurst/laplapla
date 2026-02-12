@@ -3,7 +3,7 @@ import axios from 'axios';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GEMINI_MODEL_NAME } from '../../constants';
 import { fallbackImages } from '../../constants';
-import type { GeminiBookStory, LoadStoryOptions } from '../../types';
+import type { GeminiBookStory, LoadStoryOptions } from '../../types/types';
 import { PREDEFINED_CHILDRENS_BOOKS } from '../../data/predefinedBooks';
 import { prompts } from '@/utils/prompts'
 

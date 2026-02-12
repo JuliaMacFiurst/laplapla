@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { PageId } from "../../QuestEngine";
 import CharacterStage from "../../logic/dress-up-game/CharacterStage";
-import type { CharacterResult } from "@/types";
+import type { CharacterResult } from "@/types/types";
 import FinalSummary from "../../logic/dress-up-game/FinalSummary";
 
 export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
