@@ -7,10 +7,9 @@ import SlideCanvas9x16 from "./SlideCanvas9x16";
 import SlideTextEditor from "./SlideTextEditor";
 import StudioSettingsPanel from "./StudioSettingsPanel";
 
+import { saveProject, loadProject } from "@/lib/studioStorage";
 
-interface StudioRootProps {
-  initialSlides?: { text: string; image?: string }[];
-}
+const PROJECT_ID = "current-studio-project";
 
 function createEmptySlide(): StudioSlide {
   return {
@@ -24,10 +23,14 @@ function createEmptySlide(): StudioSlide {
 
 function createInitialProject(): StudioProject {
   return {
-    id: crypto.randomUUID(),
+    id: PROJECT_ID,
     slides: [createEmptySlide()],
     updatedAt: Date.now(),
   };
+}
+
+interface StudioRootProps {
+  initialSlides?: { text: string; image?: string }[];
 }
 
 export default function StudioRoot({ initialSlides }: StudioRootProps) {
@@ -36,10 +39,51 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
 
   const activeSlide = project.slides[activeSlideIndex];
 
+  // Restore saved project on mount (only if no external slides arrive)
+  useEffect(() => {
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+
+      // If slides from Cats were provided, do not restore old project
+      if (initialSlides && initialSlides.length > 0) return;
+
+      const saved = await loadProject(PROJECT_ID);
+      if (saved) {
+        setProject(saved);
+      }
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  // Autosave every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      saveProject(project);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [project]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   useEffect(() => {
     if (!initialSlides || initialSlides.length === 0) return;
 
-    const mappedSlides: StudioSlide[] = initialSlides.map((s) => ({
+    const mappedSlides: StudioSlide[] = initialSlides.map((s: { text: string; image?: string }) => ({
       id: crypto.randomUUID(),
       text: s.text,
       mediaUrl: s.image,
@@ -47,13 +91,17 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
       textColor: "#000000",
     }));
 
-    setProject({
-      id: crypto.randomUUID(),
+    const newProject: StudioProject = {
+      id: PROJECT_ID,
       slides: mappedSlides,
       updatedAt: Date.now(),
-    });
+    };
 
+    setProject(newProject);
     setActiveSlideIndex(0);
+
+    // Immediately overwrite saved project with external slides
+    saveProject(newProject);
   }, [initialSlides]);
 
   function updateSlide(updatedSlide: StudioSlide) {

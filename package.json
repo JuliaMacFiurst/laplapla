@@ -13,13 +13,13 @@
     "@google/genai": "^1.5.1",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.50.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.5",
     "dotenv": "^17.2.3",
-    "next": "^16.0.7",
+    "idb": "^8.0.3",
+    "next": "^16.1.6",
     "openai": "^5.5.1",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "react-router-dom": "^7.6.2"
+    "react-dom": "^19.2.1"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",
