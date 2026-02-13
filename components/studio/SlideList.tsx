@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { StudioSlide } from "@/types/studio";
 
 interface SlideListProps {
@@ -15,58 +16,74 @@ export default function SlideList({
   onAdd,
   onDelete,
 }: SlideListProps) {
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollLeft = () => {
+    listRef.current?.scrollBy({ left: -150, behavior: "smooth" });
+  };
+
+  const scrollRight = () => {
+    listRef.current?.scrollBy({ left: 150, behavior: "smooth" });
+  };
+
   return (
-    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-      {slides.map((slide, index) => (
-        <div key={slide.id} style={{ position: "relative" }}>
-          <button
-            onClick={() => onSelect(index)}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 6,
-              border: index === activeIndex ? "2px solid black" : "1px solid #ccc",
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            {index + 1}
-          </button>
-
-          <button
-            onClick={() => {
-              if (confirm("Удалить этот слайд?")) {
-                onDelete(index);
-              }
-            }}
-            style={{
-              position: "absolute",
-              top: -6,
-              right: -6,
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              border: "1px solid #ccc",
-              background: "white",
-              fontSize: 12,
-              cursor: "pointer",
-            }}
-          >
-            ×
-          </button>
-        </div>
-      ))}
-
+    <div style={{ display: "flex", alignItems: "center", maxWidth: 490 }}>
       <button
-        onClick={onAdd}
+        onClick={scrollLeft}
+        className="slide-scroll-arrow"
+        type="button"
+      >
+        ‹
+      </button>
+
+      <div
+        ref={listRef}
+        className="slide-list"
         style={{
-          padding: "6px 10px",
-          borderRadius: 6,
-          border: "1px solid #ccc",
-          background: "#f3f3f3",
-          cursor: "pointer",
+          display: "flex",
+          gap: 8,
+          overflowX: "auto",
+          scrollBehavior: "smooth",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
         }}
       >
-        +
+        {slides.map((slide, index) => (
+          <div key={slide.id} className="slide-thumb-wrap">
+            <button
+              onClick={() => onSelect(index)}
+              className={`slide-thumb${index === activeIndex ? " slide-thumb-active" : ""}`}
+            >
+              {index + 1}
+            </button>
+
+            <button
+              onClick={() => {
+                if (confirm("Удалить этот слайд?")) {
+                  onDelete(index);
+                }
+              }}
+              className="slide-delete"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        <button
+          onClick={onAdd}
+          className="slide-thumb slide-add"
+        >
+          +
+        </button>
+      </div>
+
+      <button
+        onClick={scrollRight}
+        className="slide-scroll-arrow"
+        type="button"
+      >
+        ›
       </button>
     </div>
   );

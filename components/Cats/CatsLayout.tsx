@@ -16,7 +16,7 @@ export default function CatsLayout({ children, active, lang }: CatsLayoutProps) 
   const pageSubtitle = active === "studio" ? t.studioSubtitle : t.subtitle;
 
   return (
-    <div className="cat-page-container">
+    <div className={active === "studio" ? "studio-layout-wrapper" : "cat-page-container"}>
       
     <h1 className="cat-page-title page-title">{pageTitle}</h1>
      <p className="cat-page-subtitle page-subtitle">{pageSubtitle}</p>

@@ -1,7 +1,10 @@
 import type { StudioSlide } from "@/types/studio";
+import SlideTextEditor from "./SlideTextEditor";
 
 interface StudioSettingsPanelProps {
   slide: StudioSlide;
+  textValue: string;
+  onChangeText: (text: string) => void;
   onChangeTextColor: (color: string) => void;
   onChangeBgColor: (color: string) => void;
   onAddMedia: () => void;
@@ -26,6 +29,8 @@ interface StudioSettingsPanelProps {
 
 export default function StudioSettingsPanel({
   slide,
+  textValue,
+  onChangeText,
   onChangeTextColor,
   onChangeBgColor,
   onAddMedia,
@@ -48,8 +53,14 @@ export default function StudioSettingsPanel({
   onChangeTextBgOpacity,
 }: StudioSettingsPanelProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+    <div
+      className="studio-panel"
+      style={{ display: "flex", flexDirection: "column", gap: 3 }}
+    >
+      <div
+        className="studio-section"
+        style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+      >
         <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
           Цвет фона:
           <input
@@ -61,27 +72,54 @@ export default function StudioSettingsPanel({
       </div>
 
       {/* Media Controls */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div
+        className="studio-section"
+        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+      >
         <strong>Media</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={onAddMedia}>Add Media</button>
-          <button onClick={onSetFitCover}>Fill</button>
-          <button onClick={onSetFitContain}>Fit</button>
+          <button className="studio-button btn-peach" onClick={onAddMedia}>
+            Add Media
+          </button>
+          <button className="studio-button btn-yellow" onClick={onSetFitCover}>
+            Fill
+          </button>
+          <button className="studio-button btn-mint" onClick={onSetFitContain}>
+            Fit
+          </button>
         </div>
       </div>
 
       {/* Position Controls */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div
+        className="studio-section"
+        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+      >
         <strong>Position</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => onSetPositionTop?.()}>Top</button>
-          <button onClick={() => onSetPositionCenter?.()}>Center</button>
-          <button onClick={() => onSetPositionBottom?.()}>Bottom</button>
+          <button className="studio-button btn-lavender" onClick={() => onSetPositionTop?.()}>
+            Top
+          </button>
+          <button
+            className="studio-button btn-blue"
+            onClick={() => onSetPositionCenter?.()}
+          >
+            Center
+          </button>
+          <button
+            className="studio-button btn-pink"
+            onClick={() => onSetPositionBottom?.()}
+          >
+            Bottom
+          </button>
         </div>
       </div>
 
       {/* Text Controls */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div
+        className="studio-section"
+        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+      >
         <strong>Text</strong>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -94,13 +132,19 @@ export default function StudioSettingsPanel({
           </label>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => onSetTextTop?.()}>Top</button>
-          <button onClick={() => onSetTextCenter?.()}>Center</button>
-          <button onClick={() => onSetTextBottom?.()}>Bottom</button>
+          <button className="studio-button btn-lavender" onClick={() => onSetTextTop?.()}>
+            Top
+          </button>
+          <button className="studio-button btn-blue" onClick={() => onSetTextCenter?.()}>
+            Center
+          </button>
+          <button className="studio-button btn-pink" onClick={() => onSetTextBottom?.()}>
+            Bottom
+          </button>
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <button onClick={() => onToggleTextBg?.()}>
+          <button className="studio-button btn-mint" onClick={() => onToggleTextBg?.()}>
             {slide.textBgEnabled ? "Disable Text BG" : "Enable Text BG"}
           </button>
 
@@ -125,24 +169,43 @@ export default function StudioSettingsPanel({
             </>
           )}
         </div>
+        <div style={{ marginTop: 12 }}>
+          <SlideTextEditor
+            value={textValue}
+            onChange={onChangeText}
+          />
+        </div>
       </div>
 
       {/* Audio & Export */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div
+        className="studio-section"
+        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+      >
         <strong>Audio & Export</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={onAddMusic}>Add Music</button>
-          <button onClick={onRecordVoice}>Record Voice</button>
-          <button onClick={onExport}>Export</button>
-          <button onClick={onUndo}>Undo</button>
-          <button onClick={onRedo}>Redo</button>
+          <button className="studio-button btn-blue" onClick={onAddMusic}>
+            Add Music
+          </button>
+          <button className="studio-button btn-lavender" onClick={onRecordVoice}>
+            Record Voice
+          </button>
+          <button className="studio-button btn-peach" onClick={onExport}>
+            Export
+          </button>
+          <button className="studio-button btn-yellow" onClick={onUndo}>
+            Undo
+          </button>
+          <button className="studio-button btn-yellow" onClick={onRedo}>
+            Redo
+          </button>
           <button
+            className="studio-button studio-button-danger"
             onClick={() => {
               if (confirm("Удалить всё слайдшоу?")) {
                 onDeleteAll();
               }
             }}
-            style={{ background: "#ffe5e5" }}
           >
             🗑 Delete All
           </button>

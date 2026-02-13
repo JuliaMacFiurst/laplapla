@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import type { StudioProject, StudioSlide } from "@/types/studio";
 import SlideList from "./SlideList";
 import SlideCanvas9x16 from "./SlideCanvas9x16";
-import SlideTextEditor from "./SlideTextEditor";
 import StudioSettingsPanel from "./StudioSettingsPanel";
 
 import { saveProject, loadProject } from "@/lib/studioStorage";
@@ -181,76 +180,84 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <SlideList
-        slides={project.slides}
-        activeIndex={activeSlideIndex}
-        onSelect={setActiveSlideIndex}
-        onAdd={addSlide}
-        onDelete={deleteSlide}
-      />
+    <div className="studio-root">
+      <div className="studio-layout">
+        <div className="studio-left">
+          <SlideList
+            slides={project.slides}
+            activeIndex={activeSlideIndex}
+            onSelect={setActiveSlideIndex}
+            onAdd={addSlide}
+            onDelete={deleteSlide}
+          />
 
-      <SlideCanvas9x16 slide={activeSlide} />
+          <div className="studio-canvas-wrapper">
+            <SlideCanvas9x16 slide={activeSlide} />
+          </div>
 
-      <SlideTextEditor
-        value={activeSlide.text}
-        onChange={(text) =>
-          updateSlide({ ...activeSlide, text })
-        }
-      />
+        </div>
 
-      <StudioSettingsPanel
-        slide={activeSlide}
-        onChangeTextColor={(color) =>
-          updateSlide({ ...activeSlide, textColor: color })
-        }
-        onChangeBgColor={(color) =>
-          updateSlide({ ...activeSlide, bgColor: color })
-        }
-        onAddMedia={() => setIsMediaOpen(true)}
-        onAddMusic={() => console.log("add music")}
-        onRecordVoice={() => console.log("record voice")}
-        onExport={() => console.log("export")}
-        onSetFitCover={() =>
-          updateSlide({ ...activeSlide, mediaFit: "cover" })
-        }
-        onSetFitContain={() =>
-          updateSlide({ ...activeSlide, mediaFit: "contain" })
-        }
-        onSetPositionTop={() =>
-          updateSlide({ ...activeSlide, mediaPosition: "top" })
-        }
-        onSetPositionCenter={() =>
-          updateSlide({ ...activeSlide, mediaPosition: "center" })
-        }
-        onSetPositionBottom={() =>
-          updateSlide({ ...activeSlide, mediaPosition: "bottom" })
-        }
-        onSetTextTop={() =>
-          updateSlide({ ...activeSlide, textPosition: "top" })
-        }
-        onSetTextCenter={() =>
-          updateSlide({ ...activeSlide, textPosition: "center" })
-        }
-        onSetTextBottom={() =>
-          updateSlide({ ...activeSlide, textPosition: "bottom" })
-        }
-        onToggleTextBg={() =>
-          updateSlide({
-            ...activeSlide,
-            textBgEnabled: !activeSlide.textBgEnabled,
-          })
-        }
-        onChangeTextBgColor={(color) =>
-          updateSlide({ ...activeSlide, textBgColor: color })
-        }
-        onChangeTextBgOpacity={(opacity) =>
-          updateSlide({ ...activeSlide, textBgOpacity: opacity })
-        }
-        onDeleteAll={deleteAll}
-        onUndo={undo}
-        onRedo={redo}
-      />
+        <div className="studio-right">
+          <div className="studio-panel">
+            <StudioSettingsPanel
+              slide={activeSlide}
+              textValue={activeSlide.text}
+              onChangeText={(text) =>
+                updateSlide({ ...activeSlide, text })
+              }
+              onChangeTextColor={(color) =>
+                updateSlide({ ...activeSlide, textColor: color })
+              }
+              onChangeBgColor={(color) =>
+                updateSlide({ ...activeSlide, bgColor: color })
+              }
+              onAddMedia={() => setIsMediaOpen(true)}
+              onAddMusic={() => console.log("add music")}
+              onRecordVoice={() => console.log("record voice")}
+              onExport={() => console.log("export")}
+              onSetFitCover={() =>
+                updateSlide({ ...activeSlide, mediaFit: "cover" })
+              }
+              onSetFitContain={() =>
+                updateSlide({ ...activeSlide, mediaFit: "contain" })
+              }
+              onSetPositionTop={() =>
+                updateSlide({ ...activeSlide, mediaPosition: "top" })
+              }
+              onSetPositionCenter={() =>
+                updateSlide({ ...activeSlide, mediaPosition: "center" })
+              }
+              onSetPositionBottom={() =>
+                updateSlide({ ...activeSlide, mediaPosition: "bottom" })
+              }
+              onSetTextTop={() =>
+                updateSlide({ ...activeSlide, textPosition: "top" })
+              }
+              onSetTextCenter={() =>
+                updateSlide({ ...activeSlide, textPosition: "center" })
+              }
+              onSetTextBottom={() =>
+                updateSlide({ ...activeSlide, textPosition: "bottom" })
+              }
+              onToggleTextBg={() =>
+                updateSlide({
+                  ...activeSlide,
+                  textBgEnabled: !activeSlide.textBgEnabled,
+                })
+              }
+              onChangeTextBgColor={(color) =>
+                updateSlide({ ...activeSlide, textBgColor: color })
+              }
+              onChangeTextBgOpacity={(opacity) =>
+                updateSlide({ ...activeSlide, textBgOpacity: opacity })
+              }
+              onDeleteAll={deleteAll}
+              onUndo={undo}
+              onRedo={redo}
+            />
+          </div>
+        </div>
+      </div>
       <MediaPickerModal
         isOpen={isMediaOpen}
         onClose={() => setIsMediaOpen(false)}
