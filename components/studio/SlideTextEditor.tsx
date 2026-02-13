@@ -1,17 +1,22 @@
+import { dictionaries, type Lang } from "@/i18n";
+
 interface SlideTextEditorProps {
+  lang: Lang;
   value: string;
   onChange: (value: string) => void;
 }
 
 export default function SlideTextEditor({
+  lang,
   value,
   onChange,
 }: SlideTextEditorProps) {
+  const t = dictionaries[lang].cats.studio
   return (
     <textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder="Введите текст..."
+      placeholder={t.textPlaceholder}
       style={{
         width: 360,
         height: 100,

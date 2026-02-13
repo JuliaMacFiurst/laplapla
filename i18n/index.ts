@@ -133,8 +133,49 @@ type DictionaryShape = {
       undo: string;
       redo: string;
       deleteAll: string;
+      confirmDeleteAll: string;
+      textPlaceholder: string;
+      confirmDeleteSlide: string;
+      bgColor: string;
+      media: string;
+      position: string;
+      text: string;
+      audioAndExport: string;
+
+      mediaPicker: {
+  tabGiphy: string;
+  tabPexels: string;
+  tabUpload: string;
+  searchPlaceholder: string;
+  searchButton: string;
+  loading: string;
+
+  giphyNoticeTitle: string;
+  giphyRule1: string;
+  giphyRule2: string;
+  giphyTerms: string;
+
+  pexelsNoticeTitle: string;
+  pexelsRule1: string;
+  pexelsRule2: string;
+  pexelsRule3: string;
+
+  uploadConfirm: string;
+  uploadFormatsInfo: string;
+
+  errorConfirmRights: string;
+  errorSvgBlocked: string;
+  errorUnsupported: string;
+  errorImageTooLarge: string;
+  errorVideoTooLarge: string;
+  errorVideoTooLong: string;
+  errorVideoMetadata: string;
+}
     };
+
+    
   };
+  
 
   footer: {
     terms: string;

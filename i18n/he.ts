@@ -352,7 +352,48 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   export: "ייצוא",
   undo: "בטל",
   redo: "בצע שוב",
-  deleteAll: "מחק הכל"
+  deleteAll: "מחק הכל",
+  confirmDeleteAll: "האם אתה בטוח שברצונך למחוק את כל הסליידים? פעולה זו לא ניתנת לביטול.",
+  textPlaceholder: "הקלד כאן את הטקסט שלך...",
+  confirmDeleteSlide: "האם אתה בטוח שברצונך למחוק את הסלייד הזה? פעולה זו לא ניתנת לביטול.", 
+  bgColor: "צבע רקע",
+  media: "מדיה",
+  position: "מיקום",
+  text: "טקסט",
+  audioAndExport: "אודיו וייצוא",
+  
+  mediaPicker: {
+  tabGiphy: "GIPHY",
+  tabPexels: "Pexels",
+  tabUpload: "העלאה",
+  
+
+  searchPlaceholder: "חיפוש מדיה...",
+  searchButton: "חיפוש",
+  loading: "טוען...",
+
+  giphyNoticeTitle: "GIFs מ-GIPHY ✨ אנא השתמשו בכבוד ולפי הכללים.",
+  giphyRule1: "אין להסיר סימני מים או קרדיט.",
+  giphyRule2: "אין להשתמש בהקשרים מזיקים או לא חוקיים.",
+  giphyTerms: "תנאי שימוש",
+
+  pexelsNoticeTitle: "סרטונים מ-Pexels 🎥 יש לוודא שהשימוש עומד ברישיון.",
+  pexelsRule1: "חופשי לשימוש תחת רישיון Pexels.",
+  pexelsRule2: "אין למכור או להפיץ כקבצים עצמאיים.",
+  pexelsRule3: "כבדו פרטיות והימנעו מהטעיה.",
+
+  uploadConfirm: "אני מאשרת שיש לי זכויות על הקובץ (או שהוא חופשי לשימוש) והוא אינו מכיל תוכן לא ראוי.",
+
+  uploadFormatsInfo: "מותרים: JPG, PNG, WEBP (עד 10MB) ו-MP4, WEBM (עד 25MB). SVG חסום.",
+
+  errorConfirmRights: "יש לאשר שיש לכם זכויות על הקובץ.",
+  errorSvgBlocked: "קבצי SVG אינם מותרים.",
+  errorUnsupported: "סוג קובץ לא נתמך.",
+  errorImageTooLarge: "התמונה גדולה מדי.",
+  errorVideoTooLarge: "הווידאו גדול מדי.",
+  errorVideoTooLong: "הווידאו ארוך מדי.",
+  errorVideoMetadata: "לא ניתן לקרוא נתוני וידאו."
+} 
 }
 },
   video: {

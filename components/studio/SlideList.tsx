@@ -1,7 +1,9 @@
 import { useRef } from "react";
 import type { StudioSlide } from "@/types/studio";
+import { dictionaries, type Lang } from "@/i18n";
 
 interface SlideListProps {
+  lang: Lang;
   slides: StudioSlide[];
   activeIndex: number;
   onSelect: (index: number) => void;
@@ -10,6 +12,7 @@ interface SlideListProps {
 }
 
 export default function SlideList({
+  lang,
   slides,
   activeIndex,
   onSelect,
@@ -21,7 +24,7 @@ export default function SlideList({
   const scrollLeft = () => {
     listRef.current?.scrollTo({ left: 0, behavior: "smooth" });
   };
-
+const t = dictionaries[lang].cats.studio
   const scrollRight = () => {
     listRef.current?.scrollBy({ left: 150, behavior: "smooth" });
   };
@@ -62,7 +65,7 @@ export default function SlideList({
 
             <button
               onClick={() => {
-                if (confirm("Удалить этот слайд?")) {
+                if (confirm(t.confirmDeleteSlide)) {
                   onDelete(index);
                 }
               }}

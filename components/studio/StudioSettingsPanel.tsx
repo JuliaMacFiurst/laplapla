@@ -66,7 +66,7 @@ export default function StudioSettingsPanel({
         style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
       >
         <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          Цвет фона:
+          {t.bgColor}:
           <input
             type="color"
             value={slide.bgColor}
@@ -80,7 +80,7 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>Media</strong>
+        <strong>{t.media}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-peach" onClick={onAddMedia}>
             {t.addMedia}
@@ -99,7 +99,7 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>Position</strong>
+        <strong>{t.position}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-lavender" onClick={() => onSetPositionTop?.()}>
             {t.top}
@@ -124,7 +124,7 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>Text</strong>
+        <strong>{t.text}</strong>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {t.textColor}:
@@ -175,6 +175,7 @@ export default function StudioSettingsPanel({
         </div>
         <div style={{ marginTop: 12 }}>
           <SlideTextEditor
+            lang={lang}
             value={textValue}
             onChange={onChangeText}
           />
@@ -186,7 +187,7 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>Audio & Export</strong>
+        <strong>{t.audioAndExport}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-blue" onClick={onAddMusic}>
             {t.addMusic}
@@ -206,7 +207,7 @@ export default function StudioSettingsPanel({
           <button
             className="studio-button studio-button-danger"
             onClick={() => {
-              if (confirm("Удалить всё слайдшоу?")) {
+              if (confirm(t.confirmDeleteAll)) {
                 onDeleteAll();
               }
             }}

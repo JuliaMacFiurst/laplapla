@@ -60,7 +60,48 @@ export const en = {
   export: "Export",
   undo: "Undo",
   redo: "Redo",
-  deleteAll: "Delete All"
+  deleteAll: "Delete All",
+  confirmDeleteAll: "Are you sure you want to delete the entire slideshow?",
+  textPlaceholder: "Enter text for this slide",
+  confirmDeleteSlide: "Are you sure you want to delete this slide?",
+  bgColor: "Background Color",
+  media: "Media",
+  position: "Position",
+  text: "Text",
+  audioAndExport: "Audio & Export",
+
+  mediaPicker: {
+  tabGiphy: "GIPHY",
+  tabPexels: "Pexels",
+  tabUpload: "Upload",
+  
+
+  searchPlaceholder: "Search media...",
+  searchButton: "Search",
+  loading: "Loading...",
+
+  giphyNoticeTitle: "GIFs by GIPHY ✨ Please use them kindly and respect creators.",
+  giphyRule1: "Do not remove watermarks or attribution.",
+  giphyRule2: "Do not use in harmful or illegal contexts.",
+  giphyTerms: "Terms of Service",
+
+  pexelsNoticeTitle: "Videos by Pexels 🎥 Please ensure your usage respects the license.",
+  pexelsRule1: "Free to use under the Pexels license.",
+  pexelsRule2: "No resale or redistribution as standalone files.",
+  pexelsRule3: "Respect privacy and avoid misleading usage.",
+
+  uploadConfirm: "I confirm I own the rights to this file (or it is free/allowed to use) and it does not contain unsafe or inappropriate content.",
+
+  uploadFormatsInfo: "Allowed: JPG, PNG, WEBP (max 10MB) and MP4, WEBM (max 25MB). SVG is blocked.",
+
+  errorConfirmRights: "Please confirm you own the rights to this file.",
+  errorSvgBlocked: "SVG files are not allowed.",
+  errorUnsupported: "Unsupported file type. Allowed: JPG, PNG, WEBP, MP4, WEBM.",
+  errorImageTooLarge: "Image is too large.",
+  errorVideoTooLarge: "Video is too large.",
+  errorVideoTooLong: "Video is too long.",
+  errorVideoMetadata: "Could not read video metadata."
+}
 }
   },
   video: {

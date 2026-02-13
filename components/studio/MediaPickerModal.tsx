@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { dictionaries, Lang } from "@/i18n";
 
 interface MediaPickerModalProps {
+  lang: Lang;
   isOpen: boolean;
   onClose: () => void;
   onSelect: (payload: { url: string; mediaType: "image" | "video" }) => void;
 }
 
 export default function MediaPickerModal({
+  lang,
   isOpen,
   onClose,
   onSelect,
@@ -17,6 +20,8 @@ export default function MediaPickerModal({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const t = dictionaries[lang].cats.studio.mediaPicker;
 
   const [confirmRights, setConfirmRights] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -98,7 +103,7 @@ export default function MediaPickerModal({
 console.log("UPLOAD:", file.type, file.name);
     // Require rights confirmation
     if (!confirmRights) {
-      setUploadError("Please confirm you own the rights to this file (or it is allowed to use).");
+      setUploadError(t.errorConfirmRights);
       // Reset input so selecting the same file again triggers onChange
       input.value = "";
       return;
@@ -107,7 +112,7 @@ console.log("UPLOAD:", file.type, file.name);
     // Block SVG explicitly (XSS risk)
     const lowerName = file.name.toLowerCase();
     if (file.type === "image/svg+xml" || lowerName.endsWith(".svg")) {
-      setUploadError("SVG files are not allowed.");
+      setUploadError(t.errorSvgBlocked);
       input.value = "";
       return;
     }
@@ -123,19 +128,19 @@ console.log("UPLOAD:", file.type, file.name);
       lowerName.endsWith(".webm");
 
     if (!isImage && !isVideo) {
-      setUploadError("Unsupported file type. Allowed: JPG, PNG, WEBP, MP4, WEBM.");
+      setUploadError(t.errorUnsupported);
       input.value = "";
       return;
     }
 
     if (isImage && file.size > MAX_IMAGE_BYTES) {
-      setUploadError(`Image is too large. Max ${MAX_IMAGE_MB}MB.`);
+      setUploadError(t.errorImageTooLarge);
       input.value = "";
       return;
     }
 
     if (isVideo && file.size > MAX_VIDEO_BYTES) {
-      setUploadError(`Video is too large. Max ${MAX_VIDEO_MB}MB.`);
+      setUploadError(t.errorVideoTooLarge);
       input.value = "";
       return;
     }
@@ -153,7 +158,7 @@ console.log("UPLOAD:", file.type, file.name);
         URL.revokeObjectURL(tempUrl);
 
         if (duration > MAX_VIDEO_SECONDS) {
-          setUploadError(`Video is too long. Max ${MAX_VIDEO_SECONDS} seconds.`);
+          setUploadError(t.errorVideoTooLong);
           input.value = "";
           return;
         }
@@ -174,7 +179,7 @@ console.log("UPLOAD:", file.type, file.name);
 
       video.onerror = () => {
         URL.revokeObjectURL(tempUrl);
-        setUploadError("Could not read video metadata.");
+        setUploadError(t.errorVideoMetadata);
         input.value = "";
       };
 
@@ -226,9 +231,9 @@ console.log("UPLOAD:", file.type, file.name);
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-          <button onClick={() => setActiveTab("giphy")}>GIPHY</button>
-          <button onClick={() => setActiveTab("pexels")}>Pexels</button>
-          <button onClick={() => setActiveTab("upload")}>Upload</button>
+          <button onClick={() => setActiveTab("giphy")}>{t.tabGiphy}</button>
+          <button onClick={() => setActiveTab("pexels")}>{t.tabPexels}</button>
+          <button onClick={() => setActiveTab("upload")}>{t.tabUpload}</button>
         </div>
 
         {activeTab !== "upload" && (
@@ -237,10 +242,10 @@ console.log("UPLOAD:", file.type, file.name);
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search media..."
+              placeholder={t.searchPlaceholder}
               style={{ flex: 1, padding: 8 }}
             />
-            <button onClick={handleSearch}>Search</button>
+            <button onClick={handleSearch}>{t.searchButton}</button>
           </div>
         )}
 
@@ -254,11 +259,11 @@ console.log("UPLOAD:", file.type, file.name);
             }}
           >
             <p style={{ margin: "0 0 6px 0" }}>
-              GIFs by GIPHY ✨ Please use them kindly and respect creators.
+              {t.giphyNoticeTitle}
             </p>
             <ul style={{ margin: 0, paddingLeft: 16 }}>
-              <li>Do not remove watermarks or attribution.</li>
-              <li>Do not use in harmful or illegal contexts.</li>
+              <li>{t.giphyRule1}</li>
+              <li>{t.giphyRule2}</li>
               <li>
                 Follow GIPHY’s official{" "}
                 <a
@@ -266,7 +271,7 @@ console.log("UPLOAD:", file.type, file.name);
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Terms of Service
+                  {t.giphyTerms}
                 </a>
                 .
               </li>
@@ -284,12 +289,12 @@ console.log("UPLOAD:", file.type, file.name);
             }}
           >
             <p style={{ margin: "0 0 6px 0" }}>
-              Videos by Pexels 🎥 Please make sure your usage respects the license.
+              {t.pexelsNoticeTitle}
             </p>
             <ul style={{ margin: 0, paddingLeft: 16 }}>
-              <li>Free for use under the Pexels license.</li>
-              <li>No resale or redistribution as standalone files.</li>
-              <li>Respect privacy and avoid misleading usage.</li>
+              <li>{t.pexelsRule1}</li>
+              <li>{t.pexelsRule2}</li>
+              <li>{t.pexelsRule3}</li>
             </ul>
           </div>
         )}
@@ -304,7 +309,7 @@ console.log("UPLOAD:", file.type, file.name);
                 style={{ marginTop: 4 }}
               />
               <span style={{ fontSize: 14, lineHeight: 1.35 }}>
-                I confirm I own the rights to this file (or it is free/allowed to use), and it does not contain unsafe or inappropriate content.
+                {t.uploadConfirm}
               </span>
             </label>
 
@@ -321,7 +326,7 @@ console.log("UPLOAD:", file.type, file.name);
             )}
 
             <p style={{ fontSize: 12, margin: 0, opacity: 0.75 }}>
-              Allowed formats: JPG, PNG, WEBP (max {MAX_IMAGE_MB}MB) and MP4, WEBM (max {MAX_VIDEO_MB}MB). SVG is blocked.
+              {t.uploadFormatsInfo}
             </p>
           </div>
         )}
@@ -335,7 +340,7 @@ console.log("UPLOAD:", file.type, file.name);
             gap: 12,
           }}
         >
-          {loading && <p>Loading...</p>}
+          {loading && <p>{t.loading}</p>}
 
           {!loading &&
             results.map((url, index) => (

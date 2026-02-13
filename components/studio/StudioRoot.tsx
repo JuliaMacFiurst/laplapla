@@ -185,6 +185,7 @@ export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
       <div className="studio-layout">
         <div className="studio-left">
           <SlideList
+            lang={lang}
             slides={project.slides}
             activeIndex={activeSlideIndex}
             onSelect={setActiveSlideIndex}
@@ -193,7 +194,7 @@ export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
           />
 
           <div className="studio-canvas-wrapper">
-            <SlideCanvas9x16 slide={activeSlide} />
+            <SlideCanvas9x16 slide={activeSlide} lang={lang} />
           </div>
 
         </div>
@@ -261,6 +262,7 @@ export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
         </div>
       </div>
       <MediaPickerModal
+        lang={lang}
         isOpen={isMediaOpen}
         onClose={() => setIsMediaOpen(false)}
         onSelect={({ url, mediaType }) => {

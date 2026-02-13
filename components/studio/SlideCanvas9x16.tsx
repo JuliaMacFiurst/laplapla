@@ -1,15 +1,19 @@
 import type { StudioSlide } from "@/types/studio";
+import { dictionaries, type Lang } from "@/i18n";
 
 interface SlideCanvasProps {
   slide: StudioSlide;
+  lang: Lang;
 }
 
-export default function SlideCanvas9x16({ slide }: SlideCanvasProps) {
+export default function SlideCanvas9x16({ slide, lang }: SlideCanvasProps) {
   const mediaUrl = slide.mediaUrl;
 
   const isVideo = slide.mediaType === "video";
 
   const fitMode: "cover" | "contain" = slide.mediaFit ?? "cover";
+
+  const t = dictionaries[lang].cats.studio
 
   const positionMap: Record<
     "top" | "center" | "bottom",
@@ -38,6 +42,7 @@ export default function SlideCanvas9x16({ slide }: SlideCanvasProps) {
   const textBgEnabled = slide.textBgEnabled ?? false;
   const textBgColor = slide.textBgColor ?? "#000000";
   const textBgOpacity = slide.textBgOpacity ?? 0.6;
+  
 
   function hexToRgba(hex: string, alpha: number) {
     const cleaned = hex.replace("#", "");
@@ -113,7 +118,7 @@ export default function SlideCanvas9x16({ slide }: SlideCanvasProps) {
           borderRadius: textBgEnabled ? 12 : 0,
         }}
       >
-        {slide.text || "Введите текст слайда"}
+        {slide.text || t.textPlaceholder}
       </div>
     </div>
   );
