@@ -6,6 +6,12 @@ export type StudioSlide = {
   textColor: string
   audioUrl?: string
   musicTracks?: string[]
+  mediaFit?: "cover" | "contain";
+  mediaPosition?: "top" | "center" | "bottom";
+  textPosition?: "top" | "center" | "bottom";
+  textBgEnabled?: boolean;
+  textBgColor?: string;
+  textBgOpacity?: number;
 }
 
 export type StudioProject = {

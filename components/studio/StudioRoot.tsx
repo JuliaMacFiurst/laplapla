@@ -8,6 +8,7 @@ import SlideTextEditor from "./SlideTextEditor";
 import StudioSettingsPanel from "./StudioSettingsPanel";
 
 import { saveProject, loadProject } from "@/lib/studioStorage";
+import MediaPickerModal from "./MediaPickerModal";
 
 const PROJECT_ID = "current-studio-project";
 
@@ -38,6 +39,7 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [history, setHistory] = useState<StudioProject[]>([]);
   const [future, setFuture] = useState<StudioProject[]>([]);
+  const [isMediaOpen, setIsMediaOpen] = useState(false);
 
   const activeSlide = project.slides[activeSlideIndex];
 
@@ -205,13 +207,57 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
         onChangeBgColor={(color) =>
           updateSlide({ ...activeSlide, bgColor: color })
         }
-        onAddMedia={() => console.log("add media")}
+        onAddMedia={() => setIsMediaOpen(true)}
         onAddMusic={() => console.log("add music")}
         onRecordVoice={() => console.log("record voice")}
         onExport={() => console.log("export")}
+        onSetFitCover={() =>
+          updateSlide({ ...activeSlide, mediaFit: "cover" })
+        }
+        onSetFitContain={() =>
+          updateSlide({ ...activeSlide, mediaFit: "contain" })
+        }
+        onSetPositionTop={() =>
+          updateSlide({ ...activeSlide, mediaPosition: "top" })
+        }
+        onSetPositionCenter={() =>
+          updateSlide({ ...activeSlide, mediaPosition: "center" })
+        }
+        onSetPositionBottom={() =>
+          updateSlide({ ...activeSlide, mediaPosition: "bottom" })
+        }
+        onSetTextTop={() =>
+          updateSlide({ ...activeSlide, textPosition: "top" })
+        }
+        onSetTextCenter={() =>
+          updateSlide({ ...activeSlide, textPosition: "center" })
+        }
+        onSetTextBottom={() =>
+          updateSlide({ ...activeSlide, textPosition: "bottom" })
+        }
+        onToggleTextBg={() =>
+          updateSlide({
+            ...activeSlide,
+            textBgEnabled: !activeSlide.textBgEnabled,
+          })
+        }
+        onChangeTextBgColor={(color) =>
+          updateSlide({ ...activeSlide, textBgColor: color })
+        }
+        onChangeTextBgOpacity={(opacity) =>
+          updateSlide({ ...activeSlide, textBgOpacity: opacity })
+        }
         onDeleteAll={deleteAll}
         onUndo={undo}
         onRedo={redo}
+      />
+      <MediaPickerModal
+        isOpen={isMediaOpen}
+        onClose={() => setIsMediaOpen(false)}
+        onSelect={(url) => {
+          updateSlide({ ...activeSlide, mediaUrl: url });
+          setIsMediaOpen(false);
+        }}
       />
     </div>
   );
