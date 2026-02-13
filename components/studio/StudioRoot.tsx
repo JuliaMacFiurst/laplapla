@@ -5,7 +5,7 @@ import type { StudioProject, StudioSlide } from "@/types/studio";
 import SlideList from "./SlideList";
 import SlideCanvas9x16 from "./SlideCanvas9x16";
 import StudioSettingsPanel from "./StudioSettingsPanel";
-
+import type { Lang } from "@/i18n";
 import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
 
@@ -30,10 +30,11 @@ function createInitialProject(): StudioProject {
 }
 
 interface StudioRootProps {
+    lang: Lang;
   initialSlides?: { text: string; image?: string }[];
 }
 
-export default function StudioRoot({ initialSlides }: StudioRootProps) {
+export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
   const [project, setProject] = useState<StudioProject>(createInitialProject);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [history, setHistory] = useState<StudioProject[]>([]);
@@ -200,6 +201,7 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
         <div className="studio-right">
           <div className="studio-panel">
             <StudioSettingsPanel
+              lang={lang}
               slide={activeSlide}
               textValue={activeSlide.text}
               onChangeText={(text) =>
@@ -261,8 +263,13 @@ export default function StudioRoot({ initialSlides }: StudioRootProps) {
       <MediaPickerModal
         isOpen={isMediaOpen}
         onClose={() => setIsMediaOpen(false)}
-        onSelect={(url) => {
-          updateSlide({ ...activeSlide, mediaUrl: url });
+        onSelect={({ url, mediaType }) => {
+          updateSlide({
+            ...activeSlide,
+            mediaUrl: url,
+            mediaType,
+          });
+
           setIsMediaOpen(false);
         }}
       />

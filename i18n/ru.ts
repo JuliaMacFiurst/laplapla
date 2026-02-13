@@ -18,6 +18,7 @@ export const ru = {
     studioTab: "Лапковая студия",
     studioSubtitle: "Создавай свои видео с объяснялками",
     backButton: "Вернуться к котикам",
+    editInStudio: "Редактировать в студии",
 
     examplesTitle: "Примеры:",
     examples: {
@@ -44,6 +45,23 @@ export const ru = {
       gifsPoweredBy: "GIFs powered by",
       videoProvidedBy: "Видео предоставлено",
     },
+    studio: {
+  addMedia: "Добавить медиа",
+  fill: "Заполнить",
+  fit: "По размеру",
+  top: "Сверху",
+  center: "По центру",
+  bottom: "Снизу",
+  textColor: "Цвет текста",
+  enableTextBg: "Включить фон текста",
+  disableTextBg: "Убрать фон текста",
+  addMusic: "Добавить музыку",
+  recordVoice: "Записать голос",
+  export: "Экспорт",
+  undo: "Отменить",
+  redo: "Повторить",
+  deleteAll: "Удалить всё"
+}
   },
   video: {
     title: "Лапусечные видео",
@@ -329,4 +347,10 @@ LapLapLa — живой проект, и мне важно, чтобы он ра
 LapLapLa растёт через диалог, а не по заранее заданному плану.`,
     },
   },
+  footer: {
+    terms: "Условия использования",
+    privacy: "Политика конфиденциальности",
+    licenses: "Лицензии",
+  },
+  
 } as const;

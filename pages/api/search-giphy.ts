@@ -27,7 +27,7 @@ export default async function handler(
     const searchParams = new URLSearchParams({
       api_key: apiKey,
       q: query,
-      limit: "24",
+      limit: "60",
       rating: "g",
     });
 

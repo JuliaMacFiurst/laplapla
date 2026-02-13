@@ -8,6 +8,7 @@ export type StudioSlide = {
   musicTracks?: string[]
   mediaFit?: "cover" | "contain";
   mediaPosition?: "top" | "center" | "bottom";
+  mediaType?: "image" | "video";
   textPosition?: "top" | "center" | "bottom";
   textBgEnabled?: boolean;
   textBgColor?: string;

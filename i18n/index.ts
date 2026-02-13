@@ -104,6 +104,7 @@ type DictionaryShape = {
     thinkingLong: string;
 
     randomQuestion: string;
+    editInStudio: string;
 
     errors: {
       generic: string;
@@ -115,6 +116,30 @@ type DictionaryShape = {
       gifsPoweredBy: string;
       videoProvidedBy: string;
     };
+
+    studio: {
+      addMedia: string;
+      fill: string;
+      fit: string;
+      top: string;
+      center: string;
+      bottom: string;
+      textColor: string;
+      enableTextBg: string;
+      disableTextBg: string;
+      addMusic: string;
+      recordVoice: string;
+      export: string;
+      undo: string;
+      redo: string;
+      deleteAll: string;
+    };
+  };
+
+  footer: {
+    terms: string;
+    privacy: string;
+    licenses: string;
   };
 };
 

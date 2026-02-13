@@ -21,9 +21,13 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
+import { dictionaries } from "../i18n";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const isQuestPage = router.pathname.startsWith("/quest");
+  const isCatsPage = router.pathname.startsWith("/cats");
+  const isCapybaraPage = router.pathname.startsWith("/capybara");
   const [lang, setLang] = useState<"ru" | "en" | "he" | null>(null);
 
   // Determine language once on client
@@ -53,6 +57,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   // Prevent hydration mismatch
   if (!lang) return null;
+  const t = dictionaries[lang];
 
   return (
     <>
@@ -80,6 +85,53 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <div className="app-layout">
         <TopBar lang={lang} />
         <Component {...pageProps} lang={lang} />
+
+        {!isQuestPage && (
+          <div className="footer-stack">
+            <footer className="unified-footer">
+              <div className="footer-left">
+                <div className="footer-links">
+                  <a onClick={() => router.push("/terms")}>{t.footer.terms}</a>
+                  <a onClick={() => router.push("/privacy")}>{t.footer.privacy}</a>
+                  <a onClick={() => router.push("/licenses")}>{t.footer.licenses}</a>
+                </div>
+                <div className="footer-copy">
+                  © {new Date().getFullYear()} LapLapLa
+                </div>
+              </div>
+
+             {(isCatsPage || isCapybaraPage) && (
+                <div className="footer-right">
+                  <div>
+                    Gif's provided by{" "}
+                    <a
+                      href="https://www.giphy.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GIPHY
+                    </a>
+                  </div>
+                  <img
+                    src="/giphy-logo.webp"
+                    alt="GIPHY Logo"
+                    className="giphy-logo"
+                  />
+                  <div>
+                    Videos provided by{" "}
+                    <a
+                      href="https://www.pexels.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Pexels
+                    </a>
+                  </div>
+                </div>
+              )}
+            </footer>
+          </div>
+        )}
       </div>
       <div id="modal-root"></div>
       <div id="popup-root"></div>

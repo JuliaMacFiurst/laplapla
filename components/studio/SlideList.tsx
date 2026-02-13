@@ -19,7 +19,7 @@ export default function SlideList({
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const scrollLeft = () => {
-    listRef.current?.scrollBy({ left: -150, behavior: "smooth" });
+    listRef.current?.scrollTo({ left: 0, behavior: "smooth" });
   };
 
   const scrollRight = () => {
@@ -27,7 +27,7 @@ export default function SlideList({
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", maxWidth: 490 }}>
+    <div style={{ display: "flex", alignItems: "center", width: 490 }}>
       <button
         onClick={scrollLeft}
         className="slide-scroll-arrow"
@@ -46,6 +46,9 @@ export default function SlideList({
           scrollBehavior: "smooth",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
+          flex: 1,
+          margin: "0 8px",
+          justifyContent: "flex-start",
         }}
       >
         {slides.map((slide, index) => (

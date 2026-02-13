@@ -311,6 +311,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   studioTab: "סטודיו ההסברים",
   studioSubtitle: "ליצור הסברים משלך עם עזרה של חתולים",
   backButton: "חזרה לחתולים",
+  editInStudio: "לערוך בסטודיו",
 
   examplesTitle: "אפשר לשאול למשל:",
   examples: {
@@ -336,6 +337,23 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
     gifsPoweredBy: "GIFs באדיבות",
     videoProvidedBy: "וידאו באדיבות",
   },
+  studio: {
+  addMedia: "הוספת מדיה",
+  fill: "מילוי",
+  fit: "התאמה",
+  top: "למעלה",
+  center: "מרכז",
+  bottom: "למטה",
+  textColor: "צבע טקסט",
+  enableTextBg: "הפעל רקע לטקסט",
+  disableTextBg: "בטל רקע לטקסט",
+  addMusic: "הוספת מוזיקה",
+  recordVoice: "הקלטת קול",
+  export: "ייצוא",
+  undo: "בטל",
+  redo: "בצע שוב",
+  deleteAll: "מחק הכל"
+}
 },
   video: {
     title: "הסברים חמודים",
@@ -360,5 +378,10 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
       physics: "פיזיקה",
       technology: "טכנולוגיה",
     },
+  },
+  footer: {
+    terms: "תנאי שימוש",
+    privacy: "מדיניות פרטיות",
+    licenses: "רישיונות",
   },
 } as const;

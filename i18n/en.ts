@@ -12,38 +12,57 @@ export const en = {
     },
     cta: "Explore",
   },
-cats: {
-  title: "Cats Explain",
-  subtitle: "Lots of little cats explaining anything and everything",
-  studioTab: "Paw Studio",
-  studioSubtitle: "Create your own explanation videos",
-  backButton: "Back to cats",
+  cats: {
+    title: "Cats Explain",
+    subtitle: "Lots of little cats explaining anything and everything",
+    studioTab: "Paw Studio",
+    studioSubtitle: "Create your own explanation videos",
+    backButton: "Back to cats",
+    editInStudio: "Edit in Studio",
 
-  examplesTitle: "Try asking:",
-  examples: {
-    engine: "How does an internal combustion engine work?",
-    passionarity: "What is passionarity?",
-    dreams: "Why do humans dream?",
+    examplesTitle: "Try asking:",
+    examples: {
+      engine: "How does an internal combustion engine work?",
+      passionarity: "What is passionarity?",
+      dreams: "Why do humans dream?",
+    },
+
+    inputPlaceholder: "Or ask your own question",
+    askButton: "Ask!",
+    thinkingShort: "The cats are thinking...",
+    thinkingLong: "The cats are thinking about your question...",
+
+    randomQuestion: "Random question 🎲",
+
+    errors: {
+      generic: "Something went wrong.",
+      server: "There was a problem contacting the server.",
+      catsAiNotAvailable:
+        "Cats can’t answer yet. Try the “Random question” button 🐾",
+    },
+
+    attribution: {
+      gifsPoweredBy: "GIFs powered by",
+      videoProvidedBy: "Video provided by",
+    },
+    studio: {
+  addMedia: "Add Media",
+  fill: "Fill",
+  fit: "Fit",
+  top: "Top",
+  center: "Center",
+  bottom: "Bottom",
+  textColor: "Text Color",
+  enableTextBg: "Enable Text Background",
+  disableTextBg: "Disable Text Background",
+  addMusic: "Add Music",
+  recordVoice: "Record Voice",
+  export: "Export",
+  undo: "Undo",
+  redo: "Redo",
+  deleteAll: "Delete All"
+}
   },
-
-  inputPlaceholder: "Or ask your own question",
-  askButton: "Ask!",
-  thinkingShort: "The cats are thinking...",
-  thinkingLong: "The cats are thinking about your question...",
-
-  randomQuestion: "Random question 🎲",
-
-  errors: {
-    generic: "Something went wrong.",
-    server: "There was a problem contacting the server.",
-    catsAiNotAvailable: "Cats can’t answer yet. Try the “Random question” button 🐾",
-  },
-
-  attribution: {
-    gifsPoweredBy: "GIFs powered by",
-    videoProvidedBy: "Video provided by",
-  },
-},
   video: {
     title: "Cute explanations",
     subtitle: "Simple and playful videos about tricky things",
@@ -345,5 +364,10 @@ I’d be very happy to connect.
 
 LapLapLa grows through dialogue, not through a fixed master plan.`,
     },
+  },
+  footer: {
+    terms: "Terms of Service",
+    privacy: "Privacy Policy",
+    licenses: "Licensing & Credits",
   },
 } as const;

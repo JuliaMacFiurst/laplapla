@@ -1,13 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
+import { fetchVideoFromPexels } from "@/lib/pexelsVideo";
 
 if (!process.env.GIPHY_API_KEY) {
   throw new Error("GIPHY_API_KEY is not set in environment variables.");
 }
 
 const apiKey = process.env.GIPHY_API_KEY;
-const pexelsKey = process.env.PEXELS_API_KEY;
-console.log('🔑 PEXELS_API_KEY is', Boolean(pexelsKey));
 
 // TODO: Future cat questions (not implemented yet)
 // This list is kept only as a reference and must NOT be used in runtime.
@@ -143,44 +142,6 @@ async function fetchGifFromGiphy(query: string, used: Set<string>): Promise<stri
     return chosen;
   }
 
-  return null;
-}
-
-async function fetchVideoFromPexels(query: string): Promise<string | null> {
-  console.log("🎞 PEXELS search:", query);
-  const searchParams = new URLSearchParams({
-    query,
-    per_page: '10',
-    orientation: 'portrait',
-    size: 'medium',
-    min_duration: '3',
-    max_duration: '15'
-  });
-
-  const response = await fetch(`https://api.pexels.com/videos/search?${searchParams.toString()}`, {
-    headers: {
-      Authorization: pexelsKey || '',
-    },
-  });
-
-  const json = await response.json();
-  console.log('📦 Pexels response JSON:', JSON.stringify(json, null, 2));
-
-  const videos = json?.videos
-    ?.filter((v: any) => v?.video_files?.length)
-    .map((v: any) =>
-      v.video_files.find((f: any) =>
-        f.quality === 'sd' && f.width <= 1080 && f.height <= 1920 && f.file_type === 'video/mp4'
-      )?.link
-    )
-    .filter(Boolean);
-
-  if (videos?.length) {
-    console.log('🎞 Available videos:', videos);
-    return videos[Math.floor(Math.random() * videos.length)];
-  }
-
-  console.log('❌ No suitable Pexels videos found for query:', query);
   return null;
 }
 

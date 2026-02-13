@@ -246,25 +246,14 @@ export default function CatPage({ lang }: { lang: Lang }) {
   router.push("/cats/studio");
 }}
           >
-            Редактировать в студии
+            {t.editInStudio}
           </button>
         </div>
       )}
 
       <img src="/cat/mouse-hanging.webp" className="hanging-mouse" />
 
-      <footer className="giphy-footer">
-        <img src="/cat/ball.webp" alt="Клубочек" className="rolling-ball" />
-        <p className="giphy-attribution-text">{t.attribution.gifsPoweredBy}</p>
-        <img src="/giphy-logo.webp" alt="GIPHY Logo" className="giphy-logo" />
-        <p className="pexels-credit">
-          {t.attribution.videoProvidedBy}{" "}
-          <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">
-            Pexels
-          </a>
-          .
-        </p>
-      </footer>
+     <img src="/cat/ball.webp" alt="Ball" className="rolling-ball" />
     </CatsLayout>
   );
 }

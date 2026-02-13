@@ -11,6 +11,7 @@ html, body {
   padding: 1rem;
   min-height: 100%;
   display: flex;
+  
   flex-direction: column;
 }
 
@@ -308,11 +309,11 @@ html, body {
 }
 
 .rolling-ball {
-  position: absolute;
-  bottom: 10px;
-  left: -270px;
+  position: fixed;
+  bottom: 0;
+  left: 20px;
   width: 120px;
-  z-index: 5;
+  z-index: 50;
   pointer-events: auto;
   transition: transform 0.2s ease;
 }

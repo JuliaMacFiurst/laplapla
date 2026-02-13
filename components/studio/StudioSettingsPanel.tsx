@@ -1,7 +1,9 @@
 import type { StudioSlide } from "@/types/studio";
 import SlideTextEditor from "./SlideTextEditor";
+import { dictionaries, type Lang } from "@/i18n";
 
 interface StudioSettingsPanelProps {
+  lang: Lang;
   slide: StudioSlide;
   textValue: string;
   onChangeText: (text: string) => void;
@@ -28,6 +30,7 @@ interface StudioSettingsPanelProps {
 }
 
 export default function StudioSettingsPanel({
+  lang,
   slide,
   textValue,
   onChangeText,
@@ -52,6 +55,7 @@ export default function StudioSettingsPanel({
   onChangeTextBgColor,
   onChangeTextBgOpacity,
 }: StudioSettingsPanelProps) {
+  const t = dictionaries[lang].cats.studio
   return (
     <div
       className="studio-panel"
@@ -79,13 +83,13 @@ export default function StudioSettingsPanel({
         <strong>Media</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-peach" onClick={onAddMedia}>
-            Add Media
+            {t.addMedia}
           </button>
           <button className="studio-button btn-yellow" onClick={onSetFitCover}>
-            Fill
+            {t.fill}
           </button>
           <button className="studio-button btn-mint" onClick={onSetFitContain}>
-            Fit
+            {t.fit}
           </button>
         </div>
       </div>
@@ -98,19 +102,19 @@ export default function StudioSettingsPanel({
         <strong>Position</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-lavender" onClick={() => onSetPositionTop?.()}>
-            Top
+            {t.top}
           </button>
           <button
             className="studio-button btn-blue"
             onClick={() => onSetPositionCenter?.()}
           >
-            Center
+            {t.center}
           </button>
           <button
             className="studio-button btn-pink"
             onClick={() => onSetPositionBottom?.()}
           >
-            Bottom
+            {t.bottom}
           </button>
         </div>
       </div>
@@ -123,7 +127,7 @@ export default function StudioSettingsPanel({
         <strong>Text</strong>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            Text Color:
+            {t.textColor}:
             <input
               type="color"
               value={slide.textColor}
@@ -133,19 +137,19 @@ export default function StudioSettingsPanel({
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-lavender" onClick={() => onSetTextTop?.()}>
-            Top
+            {t.top}
           </button>
           <button className="studio-button btn-blue" onClick={() => onSetTextCenter?.()}>
-            Center
+            {t.center}
           </button>
           <button className="studio-button btn-pink" onClick={() => onSetTextBottom?.()}>
-            Bottom
+            {t.bottom}
           </button>
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <button className="studio-button btn-mint" onClick={() => onToggleTextBg?.()}>
-            {slide.textBgEnabled ? "Disable Text BG" : "Enable Text BG"}
+            {slide.textBgEnabled ? t.disableTextBg : t.enableTextBg}
           </button>
 
           {slide.textBgEnabled && (
@@ -185,19 +189,19 @@ export default function StudioSettingsPanel({
         <strong>Audio & Export</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-blue" onClick={onAddMusic}>
-            Add Music
+            {t.addMusic}
           </button>
           <button className="studio-button btn-lavender" onClick={onRecordVoice}>
-            Record Voice
+            {t.recordVoice}
           </button>
           <button className="studio-button btn-peach" onClick={onExport}>
-            Export
+            {t.export}
           </button>
           <button className="studio-button btn-yellow" onClick={onUndo}>
-            Undo
+            {t.undo}
           </button>
           <button className="studio-button btn-yellow" onClick={onRedo}>
-            Redo
+            {t.redo}
           </button>
           <button
             className="studio-button studio-button-danger"
@@ -207,7 +211,7 @@ export default function StudioSettingsPanel({
               }
             }}
           >
-            🗑 Delete All
+            🗑 {t.deleteAll}
           </button>
         </div>
       </div>

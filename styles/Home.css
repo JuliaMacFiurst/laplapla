@@ -146,6 +146,103 @@ body {
   }
 }
 
+
+/* ────────────── Unified Kawaii Footer ────────────── */
+
+.footer-stack {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 40px;
+  padding: 0 24px 24px 24px;
+  box-sizing: border-box;
+}
+
+.unified-footer {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 20px;
+
+  padding: 16px 22px;
+  border-radius: 20px;
+
+  background: linear-gradient(
+    135deg,
+    #fde7f3,
+    #fff4c2,
+    #e9ddff,
+    #d6f5ff
+  );
+  background-size: 200% 200%;
+  animation: footerGradient 10s ease infinite;
+
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+  font-family: 'Amatic SC', cursive;
+  font-size: 22px;
+  color: #333;
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 18px;
+}
+
+.footer-links a {
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.footer-links a:nth-child(1) { color: #ff7aa2; }
+.footer-links a:nth-child(2) { color: #7c9cff; }
+.footer-links a:nth-child(3) { color: #9b8cff; }
+
+.footer-links a:hover {
+  transform: translateY(-2px);
+  opacity: 0.8;
+}
+
+.footer-copy {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.giphy-logo {
+  height: 22px;
+  width: auto;
+}
+
+.footer-right a {
+  color: #ff8a65;
+  text-decoration: none;
+}
+
+.footer-right a:hover {
+  opacity: 0.7;
+}
+
+/* soft animated gradient */
+@keyframes footerGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 @keyframes menuFloat {
   0%,
   100% {
@@ -591,3 +688,4 @@ body {
     background-position: 0% 50%;
   }
 }
+

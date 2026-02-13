@@ -7,11 +7,7 @@ interface SlideCanvasProps {
 export default function SlideCanvas9x16({ slide }: SlideCanvasProps) {
   const mediaUrl = slide.mediaUrl;
 
-  const isVideo = mediaUrl
-    ? [".webm", ".mp4"].some((ext) =>
-        mediaUrl.toLowerCase().endsWith(ext)
-      )
-    : false;
+  const isVideo = slide.mediaType === "video";
 
   const fitMode: "cover" | "contain" = slide.mediaFit ?? "cover";
 
