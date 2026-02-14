@@ -206,58 +206,54 @@ console.log("UPLOAD:", file.type, file.name);
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
+      className="media-modal-overlay"
       onClick={onClose}
     >
       <div
-        style={{
-          width: 800,
-          maxHeight: "80vh",
-          background: "white",
-          borderRadius: 16,
-          padding: 24,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
+        className="media-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-          <button onClick={() => setActiveTab("giphy")}>{t.tabGiphy}</button>
-          <button onClick={() => setActiveTab("pexels")}>{t.tabPexels}</button>
-          <button onClick={() => setActiveTab("upload")}>{t.tabUpload}</button>
+        <div className="media-tabs">
+          <button
+            className={`media-tab-button ${activeTab === "giphy" ? "active" : ""}`}
+            onClick={() => setActiveTab("giphy")}
+          >
+            {t.tabGiphy}
+          </button>
+          <button
+            className={`media-tab-button ${activeTab === "pexels" ? "active" : ""}`}
+            onClick={() => setActiveTab("pexels")}
+          >
+            {t.tabPexels}
+          </button>
+          <button
+            className={`media-tab-button ${activeTab === "upload" ? "active" : ""}`}
+            onClick={() => setActiveTab("upload")}
+          >
+            {t.tabUpload}
+          </button>
         </div>
 
         {activeTab !== "upload" && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <div className="media-search-row">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.searchPlaceholder}
-              style={{ flex: 1, padding: 8 }}
+              className="media-search-input"
             />
-            <button onClick={handleSearch}>{t.searchButton}</button>
+            <button
+              className="media-search-button"
+              onClick={handleSearch}
+            >
+              {t.searchButton}
+            </button>
           </div>
         )}
 
         {activeTab === "giphy" && (
-          <div
-            style={{
-              fontSize: 12,
-              opacity: 0.75,
-              margin: "-6px 0 12px 0",
-              lineHeight: 1.35,
-            }}
-          >
+          <div className="media-notice media-notice-warning">
             <p style={{ margin: "0 0 6px 0" }}>
               {t.giphyNoticeTitle}
             </p>
@@ -280,14 +276,7 @@ console.log("UPLOAD:", file.type, file.name);
         )}
 
         {activeTab === "pexels" && (
-          <div
-            style={{
-              fontSize: 12,
-              opacity: 0.75,
-              margin: "-6px 0 12px 0",
-              lineHeight: 1.35,
-            }}
-          >
+          <div className="media-notice">
             <p style={{ margin: "0 0 6px 0" }}>
               {t.pexelsNoticeTitle}
             </p>
@@ -300,8 +289,8 @@ console.log("UPLOAD:", file.type, file.name);
         )}
 
         {activeTab === "upload" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div className="media-upload-section">
+            <label className="media-upload-confirm">
               <input
                 type="checkbox"
                 checked={confirmRights}
@@ -314,39 +303,32 @@ console.log("UPLOAD:", file.type, file.name);
             </label>
 
             <input
+              className="media-upload-input"
               type="file"
               accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,image/jpeg,image/png,image/webp,video/mp4,video/webm"
               onChange={handleUpload}
             />
 
             {uploadError && (
-              <p style={{ color: "#b00020", fontSize: 14, margin: 0 }}>
+              <p className="media-upload-error">
                 {uploadError}
               </p>
             )}
 
-            <p style={{ fontSize: 12, margin: 0, opacity: 0.75 }}>
+            <p className="media-upload-info">
               {t.uploadFormatsInfo}
             </p>
           </div>
         )}
 
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-            gap: 12,
-          }}
-        >
+        <div className="media-results-grid">
           {loading && <p>{t.loading}</p>}
 
           {!loading &&
             results.map((url, index) => (
               <div
                 key={index}
-                style={{ cursor: "pointer" }}
+                className="media-result-item"
                 onClick={() => {
                   const lower = url.toLowerCase();
                   const isVideo = lower.endsWith(".mp4") || lower.endsWith(".webm");
@@ -361,13 +343,13 @@ console.log("UPLOAD:", file.type, file.name);
                     playsInline
                     preload="metadata"
                     controls
-                    style={{ width: "100%", borderRadius: 8 }}
+                    className="media-preview-video"
                   />
                 ) : (
                   <img
                     src={url}
                     alt=""
-                    style={{ width: "100%", borderRadius: 8 }}
+                    className="media-preview-image"
                   />
                 )}
               </div>

@@ -73,19 +73,6 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
         muted
         playsInline
       />
-
-      <footer className="giphy-footer">
-        <img src="/cat/ball.webp" alt="Клубочек" className="rolling-ball" />
-        <p className="giphy-attribution-text">{t.attribution.gifsPoweredBy}</p>
-        <img src="/giphy-logo.webp" alt="GIPHY Logo" className="giphy-logo" />
-        <p className="pexels-credit">
-          {t.attribution.videoProvidedBy}{" "}
-          <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">
-            Pexels
-          </a>
-          .
-        </p>
-      </footer>
     </CatsLayout>
   );
 }

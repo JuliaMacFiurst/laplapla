@@ -210,7 +210,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  font-family: 'Amatic SC', bold;
+  font-family: 'Amatic SC', cursive;
   font-size: 20px;
   color: #5a4a5f;
 }
@@ -257,6 +257,7 @@
 
 /* ALIGN BUTTON WRAPPER */
 .studio-align-button {
+  position: relative;
   width: 48px;
   height: 48px;
   padding: 0;
@@ -312,4 +313,218 @@
 /* Hover effect */
 .studio-align-button:hover {
   transform: scale(1.08);
+}
+
+.media-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 10, 30, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.media-modal {
+  width: 820px;
+  max-height: 85vh;
+  background: linear-gradient(180deg, #fff8fd 0%, #fef6ff 100%);
+  border-radius: 28px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+  border: 3px solid #ffe6fb;
+  font-family: "Nunito", "Comic Sans MS", cursive;
+}
+
+.media-tabs {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.media-tab-button {
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #f8eaff;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+}
+
+.media-tab-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+}
+
+.media-tab-button.active {
+  background: #ffb8ec;
+  color: white;
+  box-shadow: 0 8px 16px rgba(255, 120, 210, 0.4);
+}
+
+.media-search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.media-search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 2px solid #f4d6ff;
+  outline: none;
+  background: white;
+  font-size: 15px;
+  transition: 0.2s ease;
+}
+
+.media-search-input:focus {
+  border-color: #ff9be3;
+  box-shadow: 0 0 0 3px rgba(255, 155, 227, 0.2);
+}
+
+.media-search-button {
+  padding: 10px 18px;
+  border-radius: 18px;
+  border: none;
+  background: linear-gradient(145deg, #ffd1f7, #ffb4ec);
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.media-search-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(255, 120, 210, 0.3);
+}
+
+.media-notice {
+  font-size: 13px;
+  margin: -6px 0 14px 0;
+  line-height: 1.4;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #f9f3ff;
+}
+
+.media-notice-warning {
+  background: #fff0f4;
+  border: 2px solid #ffb3c2;
+}
+
+.media-notice-warning p {
+  color: #c4003a;
+  font-weight: 600;
+}
+
+.media-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.media-upload-confirm {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+}
+
+.media-upload-input {
+  padding: 10px;
+  border-radius: 16px;
+  border: 2px dashed #f5b5ff;
+  background: #fff9ff;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.media-upload-input:hover {
+  background: #ffeaff;
+}
+
+.media-upload-error {
+  color: #d1003a;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.media-upload-info {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.media-results-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.media-result-item {
+  cursor: pointer;
+  border-radius: 18px;
+  overflow: hidden;
+  transition: 0.25s ease;
+  border: 2px solid transparent;
+}
+
+.media-result-item:hover {
+  transform: scale(1.04);
+  border-color: #ffb8ec;
+  box-shadow: 0 10px 20px rgba(255, 120, 210, 0.3);
+}
+
+.media-preview-image,
+.media-preview-video {
+  width: 100%;
+  border-radius: 16px;
+  display: block;
+}
+
+
+.studio-align-button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: #fff;
+  color: #4b3f57;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: "Amatic SC", cursive;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.studio-align-button::before {
+  content: "";
+  position: absolute;
+  bottom: 108%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #fff transparent transparent transparent;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.studio-align-button:hover::after,
+.studio-align-button:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }

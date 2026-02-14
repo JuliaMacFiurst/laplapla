@@ -165,7 +165,7 @@ export default function StudioSettingsPanel({
             className="studio-button btn-peach studio-align-button"
             onClick={() => onSetAlignLeft?.()}
             aria-label={t.alignLeft}
-            title={t.alignLeft}
+            data-tooltip={t.alignLeft}
           >
             <span className="align-icon align-left">
               <span />
@@ -178,7 +178,7 @@ export default function StudioSettingsPanel({
             className="studio-button btn-yellow studio-align-button"
             onClick={() => onSetAlignCenter?.()}
             aria-label={t.alignCenter}
-            title={t.alignCenter}
+            data-tooltip={t.alignCenter}
           >
             <span className="align-icon align-center">
               <span />
@@ -191,7 +191,7 @@ export default function StudioSettingsPanel({
             className="studio-button btn-mint studio-align-button"
             onClick={() => onSetAlignRight?.()}
             aria-label={t.alignRight}
-            title={t.alignRight}
+            data-tooltip={t.alignRight}
           >
             <span className="align-icon align-right">
               <span />
