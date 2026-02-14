@@ -30,11 +30,11 @@ function createInitialProject(): StudioProject {
 }
 
 interface StudioRootProps {
-    lang: Lang;
+  lang: Lang;
   initialSlides?: { text: string; image?: string }[];
 }
 
-export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
+export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
   const [project, setProject] = useState<StudioProject>(createInitialProject);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [history, setHistory] = useState<StudioProject[]>([]);
@@ -87,13 +87,15 @@ export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
   useEffect(() => {
     if (!initialSlides || initialSlides.length === 0) return;
 
-    const mappedSlides: StudioSlide[] = initialSlides.map((s: { text: string; image?: string }) => ({
-      id: crypto.randomUUID(),
-      text: s.text,
-      mediaUrl: s.image,
-      bgColor: "#ffffff",
-      textColor: "#000000",
-    }));
+    const mappedSlides: StudioSlide[] = initialSlides.map(
+      (s: { text: string; image?: string }) => ({
+        id: crypto.randomUUID(),
+        text: s.text,
+        mediaUrl: s.image,
+        bgColor: "#ffffff",
+        textColor: "#000000",
+      }),
+    );
 
     const newProject: StudioProject = {
       id: PROJECT_ID,
@@ -196,7 +198,6 @@ export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
           <div className="studio-canvas-wrapper">
             <SlideCanvas9x16 slide={activeSlide} lang={lang} />
           </div>
-
         </div>
 
         <div className="studio-right">
@@ -205,9 +206,7 @@ export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
               lang={lang}
               slide={activeSlide}
               textValue={activeSlide.text}
-              onChangeText={(text) =>
-                updateSlide({ ...activeSlide, text })
-              }
+              onChangeText={(text) => updateSlide({ ...activeSlide, text })}
               onChangeTextColor={(color) =>
                 updateSlide({ ...activeSlide, textColor: color })
               }
@@ -253,6 +252,18 @@ export default function StudioRoot({ lang,initialSlides }: StudioRootProps) {
               }
               onChangeTextBgOpacity={(opacity) =>
                 updateSlide({ ...activeSlide, textBgOpacity: opacity })
+              }
+              onSetAlignLeft={() =>
+                updateSlide({ ...activeSlide, textAlign: "left" })
+              }
+              onSetAlignCenter={() =>
+                updateSlide({ ...activeSlide, textAlign: "center" })
+              }
+              onSetAlignRight={() =>
+                updateSlide({ ...activeSlide, textAlign: "right" })
+              }
+              onChangeFontSize={(size) =>
+                updateSlide({ ...activeSlide, fontSize: size })
               }
               onDeleteAll={deleteAll}
               onUndo={undo}

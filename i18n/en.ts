@@ -69,6 +69,10 @@ export const en = {
   position: "Position",
   text: "Text",
   audioAndExport: "Audio & Export",
+  alignLeft: "Align Left",
+  alignCenter: "Align Center",
+  alignRight: "Align Right",
+  fontSize: "Font Size",
 
   mediaPicker: {
   tabGiphy: "GIPHY",

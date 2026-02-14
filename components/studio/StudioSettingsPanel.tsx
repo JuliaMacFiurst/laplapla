@@ -27,6 +27,11 @@ interface StudioSettingsPanelProps {
   onToggleTextBg?: () => void;
   onChangeTextBgColor?: (color: string) => void;
   onChangeTextBgOpacity?: (opacity: number) => void;
+  fontSize?: number;
+  onChangeFontSize?: (size: number) => void;
+  onSetAlignLeft?: () => void;
+  onSetAlignCenter?: () => void;
+  onSetAlignRight?: () => void;
 }
 
 export default function StudioSettingsPanel({
@@ -54,6 +59,11 @@ export default function StudioSettingsPanel({
   onToggleTextBg,
   onChangeTextBgColor,
   onChangeTextBgOpacity,
+  fontSize,
+  onChangeFontSize,
+  onSetAlignLeft,
+  onSetAlignCenter,
+  onSetAlignRight,
 }: StudioSettingsPanelProps) {
   const t = dictionaries[lang].cats.studio
   return (
@@ -65,10 +75,11 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
       >
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <label className="studio-label">
           {t.bgColor}:
           <input
             type="color"
+            className="studio-color-picker"
             value={slide.bgColor}
             onChange={(e) => onChangeBgColor(e.target.value)}
           />
@@ -80,7 +91,7 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>{t.media}</strong>
+        <strong className="studio-label">{t.media}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-peach" onClick={onAddMedia}>
             {t.addMedia}
@@ -99,7 +110,7 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>{t.position}</strong>
+        <strong className="studio-label">{t.position}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-lavender" onClick={() => onSetPositionTop?.()}>
             {t.top}
@@ -124,12 +135,13 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>{t.text}</strong>
+        <strong className="studio-label">{t.text}</strong>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <label className="studio-label">
             {t.textColor}:
             <input
               type="color"
+              className="studio-color-picker"
               value={slide.textColor}
               onChange={(e) => onChangeTextColor(e.target.value)}
             />
@@ -147,6 +159,65 @@ export default function StudioSettingsPanel({
           </button>
         </div>
 
+        {/* Text Alignment */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            className="studio-button btn-peach studio-align-button"
+            onClick={() => onSetAlignLeft?.()}
+            aria-label={t.alignLeft}
+            title={t.alignLeft}
+          >
+            <span className="align-icon align-left">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+
+          <button
+            className="studio-button btn-yellow studio-align-button"
+            onClick={() => onSetAlignCenter?.()}
+            aria-label={t.alignCenter}
+            title={t.alignCenter}
+          >
+            <span className="align-icon align-center">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+
+          <button
+            className="studio-button btn-mint studio-align-button"
+            onClick={() => onSetAlignRight?.()}
+            aria-label={t.alignRight}
+            title={t.alignRight}
+          >
+            <span className="align-icon align-right">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        </div>
+
+        {/* Font Size Slider */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <label className="studio-label">
+            {t.fontSize}
+          </label>
+          <input
+            type="range"
+            min={16}
+            max={120}
+            step={2}
+            value={fontSize ?? 48}
+            onChange={(e) =>
+              onChangeFontSize?.(Number(e.target.value))
+            }
+          />
+        </div>
+
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <button className="studio-button btn-mint" onClick={() => onToggleTextBg?.()}>
             {slide.textBgEnabled ? t.disableTextBg : t.enableTextBg}
@@ -156,6 +227,7 @@ export default function StudioSettingsPanel({
             <>
               <input
                 type="color"
+                className="studio-color-picker"
                 value={slide.textBgColor ?? "#000000"}
                 onChange={(e) => onChangeTextBgColor?.(e.target.value)}
               />
@@ -187,7 +259,7 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong>{t.audioAndExport}</strong>
+        <strong className="studio-label">{t.audioAndExport}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-blue" onClick={onAddMusic}>
             {t.addMusic}

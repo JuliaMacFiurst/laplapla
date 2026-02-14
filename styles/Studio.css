@@ -58,19 +58,46 @@
 }
 
 .studio-button {
-  padding: 12px 18px;
-  border-radius: 16px;
+  padding: 14px 22px;
+  border-radius: 18px;
   border: none;
   cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  font-size: 17px;
+  font-family: 'Nunito', 'Comic Sans MS', cursive, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: #4b3f57;
+  transition: all 0.15s ease;
   appearance: none;
   outline: none;
+
+  /* пластиковый эффект */
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.15),      /* нижняя "ножка" */
+    0 10px 20px rgba(0, 0, 0, 0.08),  /* внешняя тень */
+    inset 0 2px 4px rgba(255, 255, 255, 0.6), /* верхний блик */
+    inset 0 -4px 6px rgba(0, 0, 0, 0.08);     /* нижний внутренний объем */
+
+  position: relative;
+  top: 0;
 }
 
 .studio-button:hover {
   transform: translateY(-2px);
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.18),
+    0 14px 24px rgba(0, 0, 0, 0.12),
+    inset 0 2px 6px rgba(255, 255, 255, 0.7),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.studio-button:active {
+  top: 4px;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.1),
+    inset 0 3px 6px rgba(0, 0, 0, 0.15);
+  transform: none;
 }
 
 .studio-button-active {
@@ -176,4 +203,113 @@
     position: static;
     width: 100%;
   }
+}
+
+/* Общий стиль для всех label в студии */
+.studio-label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: 'Amatic SC', bold;
+  font-size: 20px;
+  color: #5a4a5f;
+}
+
+.studio-color-picker {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: transparent;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.8),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.15),
+    0 6px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.studio-color-picker:hover {
+  transform: scale(1.08);
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.9),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.2),
+    0 8px 14px rgba(0, 0, 0, 0.12);
+}
+
+.studio-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 50%;
+}
+
+.studio-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.studio-color-picker::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+/* ALIGN BUTTON WRAPPER */
+.studio-align-button {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ICON CONTAINER */
+.align-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== LEFT ALIGN (triangle pointing left) ===== */
+.align-left::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 14px solid #4b3f57;
+}
+
+/* ===== RIGHT ALIGN (triangle pointing right) ===== */
+.align-right::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 14px solid #4b3f57;
+}
+
+/* ===== CENTER ALIGN (three centered bars) ===== */
+.align-center {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 22px;
+}
+
+.align-center span {
+  display: block;
+  height: 3px;
+  width: 80%;
+  margin: 0 auto;
+  border-radius: 6px;
+  background: #4b3f57;
+}
+
+/* Hover effect */
+.studio-align-button:hover {
+  transform: scale(1.08);
 }

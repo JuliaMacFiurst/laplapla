@@ -13,6 +13,8 @@ export type StudioSlide = {
   textBgEnabled?: boolean;
   textBgColor?: string;
   textBgOpacity?: number;
+  fontSize?: number;
+  textAlign?: "left" | "center" | "right";
 }
 
 export type StudioProject = {

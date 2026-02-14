@@ -69,6 +69,10 @@ export const ru = {
   position: "Позиция",
   text: "Текст",
   audioAndExport: "Аудио и экспорт",
+  alignLeft: "Выровнять текст по левому краю",
+  alignCenter: "Выровнять текст по центру",
+  alignRight: "Выровнять текст по правому краю",
+  fontSize: "Размер шрифта",
 
   mediaPicker: {
   tabGiphy: "GIPHY",

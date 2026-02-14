@@ -24,6 +24,7 @@ export default function SlideTextEditor({
         borderRadius: 8,
         border: "1px solid #ccc",
         fontFamily: "'Amatic SC', cursive",
+        fontSize: 24,
       }}
     />
   );

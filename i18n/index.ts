@@ -141,6 +141,10 @@ type DictionaryShape = {
       position: string;
       text: string;
       audioAndExport: string;
+      alignLeft: string;
+      alignCenter: string;
+      alignRight: string;
+      fontSize: string;
 
       mediaPicker: {
   tabGiphy: string;

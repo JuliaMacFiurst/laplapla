@@ -9,6 +9,7 @@ interface SlideCanvasProps {
 export default function SlideCanvas9x16({ slide, lang }: SlideCanvasProps) {
   const mediaUrl = slide.mediaUrl;
 
+
   const isVideo = slide.mediaType === "video";
 
   const fitMode: "cover" | "contain" = slide.mediaFit ?? "cover";
@@ -108,7 +109,8 @@ export default function SlideCanvas9x16({ slide, lang }: SlideCanvasProps) {
           zIndex: 1,
           color: slide.textColor,
           fontFamily: "'Amatic SC', cursive",
-          fontSize: 28,
+          fontSize: slide.fontSize,
+          textAlign: slide.textAlign,
           whiteSpace: "pre-wrap",
           padding: 16,
           margin: 16,

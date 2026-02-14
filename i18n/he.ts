@@ -361,7 +361,11 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   position: "מיקום",
   text: "טקסט",
   audioAndExport: "אודיו וייצוא",
-  
+  alignLeft: "יישור טקסט לשמאל",
+  alignCenter: "יישור טקסט למרכז",
+  alignRight: "יישור טקסט לימין",
+  fontSize: "גודל טקסט",
+
   mediaPicker: {
   tabGiphy: "GIPHY",
   tabPexels: "Pexels",
