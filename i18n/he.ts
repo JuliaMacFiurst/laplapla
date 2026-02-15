@@ -347,8 +347,6 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   textColor: "צבע טקסט",
   enableTextBg: "הפעל רקע לטקסט",
   disableTextBg: "בטל רקע לטקסט",
-  addMusic: "הוספת מוזיקה",
-  recordVoice: "הקלטת קול",
   export: "ייצוא",
   undo: "בטל",
   redo: "בצע שוב",

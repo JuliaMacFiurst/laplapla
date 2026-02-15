@@ -55,8 +55,6 @@ export const en = {
   textColor: "Text Color",
   enableTextBg: "Enable Text Background",
   disableTextBg: "Disable Text Background",
-  addMusic: "Add Music",
-  recordVoice: "Record Voice",
   export: "Export",
   undo: "Undo",
   redo: "Redo",

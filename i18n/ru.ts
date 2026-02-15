@@ -55,8 +55,6 @@ export const ru = {
   textColor: "Цвет текста",
   enableTextBg: "Включить фон текста",
   disableTextBg: "Убрать фон текста",
-  addMusic: "Добавить музыку",
-  recordVoice: "Записать голос",
   export: "Экспорт",
   undo: "Отменить",
   redo: "Повторить",

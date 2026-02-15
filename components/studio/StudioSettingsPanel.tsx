@@ -10,8 +10,6 @@ interface StudioSettingsPanelProps {
   onChangeTextColor: (color: string) => void;
   onChangeBgColor: (color: string) => void;
   onAddMedia: () => void;
-  onAddMusic: () => void;
-  onRecordVoice: () => void;
   onExport: () => void;
   onDeleteAll: () => void;
   onUndo: () => void;
@@ -42,8 +40,6 @@ export default function StudioSettingsPanel({
   onChangeTextColor,
   onChangeBgColor,
   onAddMedia,
-  onAddMusic,
-  onRecordVoice,
   onExport,
   onDeleteAll,
   onUndo,
@@ -261,12 +257,6 @@ export default function StudioSettingsPanel({
       >
         <strong className="studio-label">{t.audioAndExport}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="studio-button btn-blue" onClick={onAddMusic}>
-            {t.addMusic}
-          </button>
-          <button className="studio-button btn-lavender" onClick={onRecordVoice}>
-            {t.recordVoice}
-          </button>
           <button className="studio-button btn-peach" onClick={onExport}>
             {t.export}
           </button>

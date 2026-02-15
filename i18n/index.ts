@@ -127,8 +127,6 @@ type DictionaryShape = {
       textColor: string;
       enableTextBg: string;
       disableTextBg: string;
-      addMusic: string;
-      recordVoice: string;
       export: string;
       undo: string;
       redo: string;

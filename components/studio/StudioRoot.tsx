@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import AudioEngine, { type AudioEngineHandle } from "./AudioEngine";
+import MusicPanel from "./MusicPanel";
 import type { StudioProject, StudioSlide } from "@/types/studio";
 import SlideList from "./SlideList";
 import SlideCanvas9x16 from "./SlideCanvas9x16";
@@ -18,6 +20,8 @@ function createEmptySlide(): StudioSlide {
     mediaUrl: undefined,
     bgColor: "#ffffff",
     textColor: "#000000",
+    voiceUrl: undefined,
+    voiceDuration: undefined,
   };
 }
 
@@ -40,6 +44,101 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
   const [history, setHistory] = useState<StudioProject[]>([]);
   const [future, setFuture] = useState<StudioProject[]>([]);
   const [isMediaOpen, setIsMediaOpen] = useState(false);
+
+  // Локальный аудио-движок для музыки всего слайдшоу (до 4 дорожек)
+  const audioEngineRef = useRef<AudioEngineHandle | null>(null);
+
+  // --- Voice recording per slide ---
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function startVoiceRecording() {
+    if (isRecording) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+
+      recordedChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+
+        // Persistable URL (survives reload): store as data: URL in project.
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+
+        const audio = new Audio(dataUrl);
+        await new Promise((resolve) => {
+          audio.onloadedmetadata = () => resolve(true);
+        });
+
+        const duration = audio.duration;
+
+        updateSlide({
+          ...activeSlide,
+          voiceUrl: dataUrl,
+          voiceDuration: duration,
+        });
+
+        // Immediately persist project after voice recording
+        setTimeout(async () => {
+          setIsSaving(true);
+          await saveProject({
+            ...project,
+            slides: project.slides.map((s, i) =>
+              i === activeSlideIndex
+                ? { ...s, voiceUrl: dataUrl, voiceDuration: duration }
+                : s,
+            ),
+            updatedAt: Date.now(),
+          });
+          setLastSavedAt(Date.now());
+          setIsSaving(false);
+        }, 0);
+
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Voice recording failed", err);
+    }
+  }
+
+  function stopVoiceRecording() {
+    if (!mediaRecorderRef.current) return;
+    mediaRecorderRef.current.stop();
+    mediaRecorderRef.current = null;
+    setIsRecording(false);
+  }
+
+  function removeVoiceFromSlide() {
+    if (activeSlide.voiceUrl && activeSlide.voiceUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(activeSlide.voiceUrl);
+    }
+
+    updateSlide({
+      ...activeSlide,
+      voiceUrl: undefined,
+      voiceDuration: undefined,
+    });
+  }
 
   const activeSlide = project.slides[activeSlideIndex];
 
@@ -67,8 +166,11 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
 
   // Autosave every 4 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      saveProject(project);
+    const interval = setInterval(async () => {
+      setIsSaving(true);
+      await saveProject(project);
+      setLastSavedAt(Date.now());
+      setIsSaving(false);
     }, 4000);
 
     return () => clearInterval(interval);
@@ -198,6 +300,26 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
           <div className="studio-canvas-wrapper">
             <SlideCanvas9x16 slide={activeSlide} lang={lang} />
           </div>
+          <div className="studio-save-indicator">
+            {isSaving && <span className="saving">Сохраняем…</span>}
+            {!isSaving && lastSavedAt && (
+              <span className="saved">
+                Сохранено
+              </span>
+            )}
+          </div>
+          <AudioEngine ref={audioEngineRef} maxTracks={4} />
+          {/* Музыкальная панель: управляет общим фоновым сопровождением всего проекта */}
+          <MusicPanel
+            engineRef={audioEngineRef}
+            isRecording={isRecording}
+            onStartRecording={startVoiceRecording}
+            onStopRecording={stopVoiceRecording}
+            voiceUrl={activeSlide.voiceUrl}
+            voiceDuration={activeSlide.voiceDuration}
+            onRemoveVoice={removeVoiceFromSlide}
+          />
+          
         </div>
 
         <div className="studio-right">
@@ -214,8 +336,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
                 updateSlide({ ...activeSlide, bgColor: color })
               }
               onAddMedia={() => setIsMediaOpen(true)}
-              onAddMusic={() => console.log("add music")}
-              onRecordVoice={() => console.log("record voice")}
+              
               onExport={() => console.log("export")}
               onSetFitCover={() =>
                 updateSlide({ ...activeSlide, mediaFit: "cover" })
@@ -270,6 +391,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
               onRedo={redo}
             />
           </div>
+          
         </div>
       </div>
       <MediaPickerModal

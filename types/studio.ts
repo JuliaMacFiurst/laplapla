@@ -15,6 +15,8 @@ export type StudioSlide = {
   textBgOpacity?: number;
   fontSize?: number;
   textAlign?: "left" | "center" | "right";
+  voiceUrl?: string;
+  voiceDuration?: number;
 }
 
 export type StudioProject = {
