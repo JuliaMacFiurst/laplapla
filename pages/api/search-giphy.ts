@@ -10,7 +10,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { query } = req.body;
+  const { query, offset = 0 } = req.body;
 
   if (!query || typeof query !== "string") {
     return res.status(400).json({ error: "Missing search query" });
@@ -27,7 +27,8 @@ export default async function handler(
     const searchParams = new URLSearchParams({
       api_key: apiKey,
       q: query,
-      limit: "60",
+      limit: "50",
+      offset: String(offset),
       rating: "g",
     });
 
@@ -47,7 +48,18 @@ export default async function handler(
       ?.map((gif: any) => gif?.images?.original?.url)
       ?.filter(Boolean) || [];
 
-    return res.status(200).json({ gifs });
+    const totalCount = data?.pagination?.total_count ?? 0;
+    const count = data?.pagination?.count ?? 0;
+    const nextOffset = offset + count;
+
+    return res.status(200).json({
+      gifs,
+      pagination: {
+        totalCount,
+        count,
+        nextOffset,
+      },
+    });
   } catch (err) {
     console.error("GIPHY search error:", err);
     return res.status(500).json({ error: "Internal server error" });

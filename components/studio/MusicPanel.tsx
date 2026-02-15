@@ -19,6 +19,7 @@
 import { useState, useRef, useEffect, type RefObject } from "react";
 import { ParrotPreset, PARROT_PRESETS } from "@/utils/parrot-presets";
 import type { AudioEngineHandle } from "./AudioEngine";
+import { dictionaries, Lang } from "@/i18n";
 
 type Track = {
   id: string;
@@ -37,11 +38,13 @@ type MusicPanelProps = {
   voiceUrl?: string;
   voiceDuration?: number;
   onRemoveVoice: () => void;
+  lang: Lang;
 };
 
 export default function MusicPanel({
   engineRef,
   isRecording,
+  lang,
   onStartRecording,
   onStopRecording,
   voiceUrl,
@@ -51,6 +54,8 @@ export default function MusicPanel({
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const presets: ParrotPreset[] = PARROT_PRESETS;
   const [activeTracks, setActiveTracks] = useState<Track[]>([]);
+
+  const t = dictionaries[lang].cats.studio
 
   // --- Restore tracks from sessionStorage on mount ---
   useEffect(() => {
@@ -98,12 +103,12 @@ export default function MusicPanel({
   return (
     <div className="studio-panel" style={{ marginTop: 24 }}>
         <div className="studio-section">
-            <strong className="studio-label">Аудио</strong>
+            <strong className="studio-label">{t.audio}</strong>
              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       <button className="studio-button btn-blue"
         onClick={() => setIsOpen(true)}
       >
-        Добавить музыку
+        {t.addMusic}
       </button>
           <button
             onClick={() => {
@@ -116,7 +121,7 @@ export default function MusicPanel({
             className="studio-button btn-mint"
           >
             <span>
-              {isRecording ? "⏹ Остановить запись" : "🎙 Озвучка слайда"}
+              {isRecording ? t.stopRecording : t.recordVoice}
             </span>
 
             {isRecording && (
@@ -145,7 +150,7 @@ export default function MusicPanel({
           }}
         >
           <div style={{ marginBottom: 12, fontWeight: 600 }}>
-            Озвучка текущего слайда
+            {t.voiceTrack}
           </div>
 
           <div
@@ -174,7 +179,7 @@ export default function MusicPanel({
 
           {voiceDuration && (
             <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>
-              Длительность: {voiceDuration.toFixed(1)} сек.
+              {t.voiceDuration}: {voiceDuration.toFixed(1)} {t.sec}.
             </div>
           )}
         </div>
@@ -191,12 +196,12 @@ export default function MusicPanel({
       >
        
         <div style={{ marginBottom: 12, fontWeight: 600 }}>
-          Аудиодорожки слайд-шоу
+            {t.currentTracks}
         </div>
 
         {activeTracks.length === 0 && (
           <div style={{ opacity: 0.6, fontSize: 14 }}>
-            Пока нет добавленных лупов
+            {t.noActiveTracks}
           </div>
         )}
 
@@ -344,12 +349,12 @@ export default function MusicPanel({
               }}
             >
               <div style={{ marginBottom: 12, fontWeight: 600 }}>
-                Выбранные дорожки
+                {t.activeTracks}
               </div>
 
               {activeTracks.length === 0 && (
                 <div style={{ opacity: 0.6, fontSize: 14 }}>
-                  Пока нет добавленных лупов
+                  {t.noActiveTracks}
                 </div>
               )}
 

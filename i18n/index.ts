@@ -130,6 +130,7 @@ type DictionaryShape = {
       export: string;
       undo: string;
       redo: string;
+      preview: string;
       deleteAll: string;
       confirmDeleteAll: string;
       textPlaceholder: string;
@@ -138,11 +139,27 @@ type DictionaryShape = {
       media: string;
       position: string;
       text: string;
-      audioAndExport: string;
+      actionsAndExport: string;
       alignLeft: string;
       alignCenter: string;
       alignRight: string;
       fontSize: string;
+      closePreview: string;
+      saved: string;
+
+      // Audio / Music
+      addMusic: string;
+      recordVoice: string;
+      stopRecording: string;
+      currentTracks: string;
+      activeTracks: string;
+      noActiveTracks: string;
+      voiceTrack: string;
+      voiceDuration: string;
+      sec: string;
+
+      // Optional grouped audio namespace (if used as t.audio.*)
+      audio: string;
 
       mediaPicker: {
   tabGiphy: string;
@@ -151,6 +168,7 @@ type DictionaryShape = {
   searchPlaceholder: string;
   searchButton: string;
   loading: string;
+  loadMore: string;
 
   giphyNoticeTitle: string;
   giphyRule1: string;

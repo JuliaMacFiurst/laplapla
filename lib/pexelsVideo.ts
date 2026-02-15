@@ -9,11 +9,7 @@ export async function searchPexelsVideos(
 ): Promise<string[]> {
   const searchParams = new URLSearchParams({
     query,
-    per_page: "10",
-    orientation: "portrait",
-    size: "medium",
-    min_duration: "3",
-    max_duration: "15",
+    per_page: "40",
   });
 
   const response = await fetch(
@@ -35,11 +31,9 @@ export async function searchPexelsVideos(
   const videos = json?.videos
     ?.filter((v: any) => v?.video_files?.length)
     .map((v: any) =>
-      v.video_files.find((f: any) =>
-        f.quality === "sd" &&
-        f.width <= 1080 &&
-        f.height <= 1920 &&
-        f.file_type === "video/mp4"
+      v.video_files.find(
+        (f: any) =>
+          f.file_type === "video/mp4"
       )?.link
     )
     .filter(Boolean) as string[];

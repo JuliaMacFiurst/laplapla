@@ -16,10 +16,14 @@ export default function MediaPickerModal({
   onClose,
   onSelect,
 }: MediaPickerModalProps) {
-  const [activeTab, setActiveTab] = useState<"giphy" | "pexels" | "upload">("giphy");
+  const [activeTab, setActiveTab] = useState<"giphy" | "pexels" | "upload">(
+    "giphy",
+  );
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const t = dictionaries[lang].cats.studio.mediaPicker;
 
@@ -50,6 +54,8 @@ export default function MediaPickerModal({
   useEffect(() => {
     setResults([]);
     setQuery("");
+    setOffset(0);
+    setHasMore(false);
   }, [activeTab]);
 
   useEffect(() => {
@@ -63,29 +69,33 @@ export default function MediaPickerModal({
     if (!query.trim()) return;
 
     setLoading(true);
-    setResults([]);
+    setOffset(0);
 
     try {
       if (activeTab === "giphy") {
         const res = await fetch("/api/search-giphy", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query }),
+          body: JSON.stringify({ query, offset: 0 }),
         });
 
         const data = await res.json();
-        setResults(data.gifs || []);
+        const items = data.gifs || [];
+        setResults(items);
+        setHasMore(items.length >= 20);
       }
 
       if (activeTab === "pexels") {
         const res = await fetch("/api/search-pexels-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query }),
+          body: JSON.stringify({ query, offset: 0 }),
         });
 
         const data = await res.json();
-        setResults(data.videos || []);
+        const items = data.videos || [];
+        setResults(items);
+        setHasMore(items.length >= 20);
       }
     } catch (err) {
       console.error("Media search error:", err);
@@ -94,13 +104,54 @@ export default function MediaPickerModal({
     }
   }
 
+  async function handleLoadMore() {
+    if (!query.trim()) return;
+
+    const nextOffset = offset + 20;
+    setLoading(true);
+
+    try {
+      if (activeTab === "giphy") {
+        const res = await fetch("/api/search-giphy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, offset: nextOffset }),
+        });
+
+        const data = await res.json();
+        const items = data.gifs || [];
+        setResults((prev) => [...prev, ...items]);
+        setOffset(nextOffset);
+        setHasMore(items.length >= 20);
+      }
+
+      if (activeTab === "pexels") {
+        const res = await fetch("/api/search-pexels-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, offset: nextOffset }),
+        });
+
+        const data = await res.json();
+        const items = data.videos || [];
+        setResults((prev) => [...prev, ...items]);
+        setOffset(nextOffset);
+        setHasMore(items.length >= 20);
+      }
+    } catch (err) {
+      console.error("Load more error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     setUploadError(null);
-    
+
     const input = e.target;
     const file = input.files?.[0];
     if (!file) return;
-console.log("UPLOAD:", file.type, file.name);
+    console.log("UPLOAD:", file.type, file.name);
     // Require rights confirmation
     if (!confirmRights) {
       setUploadError(t.errorConfirmRights);
@@ -118,7 +169,11 @@ console.log("UPLOAD:", file.type, file.name);
     }
 
     // Allowlist formats
-    const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    const allowedImageTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ]);
 
     const isImage = allowedImageTypes.has(file.type);
 
@@ -205,14 +260,8 @@ console.log("UPLOAD:", file.type, file.name);
   if (!isOpen) return null;
 
   return (
-    <div
-      className="media-modal-overlay"
-      onClick={onClose}
-    >
-      <div
-        className="media-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="media-modal-overlay" onClick={onClose}>
+      <div className="media-modal" onClick={(e) => e.stopPropagation()}>
         <div className="media-tabs">
           <button
             className={`media-tab-button ${activeTab === "giphy" ? "active" : ""}`}
@@ -243,10 +292,7 @@ console.log("UPLOAD:", file.type, file.name);
               placeholder={t.searchPlaceholder}
               className="media-search-input"
             />
-            <button
-              className="media-search-button"
-              onClick={handleSearch}
-            >
+            <button className="media-search-button" onClick={handleSearch}>
               {t.searchButton}
             </button>
           </div>
@@ -254,9 +300,7 @@ console.log("UPLOAD:", file.type, file.name);
 
         {activeTab === "giphy" && (
           <div className="media-notice media-notice-warning">
-            <p style={{ margin: "0 0 6px 0" }}>
-              {t.giphyNoticeTitle}
-            </p>
+            <p style={{ margin: "0 0 6px 0" }}>{t.giphyNoticeTitle}</p>
             <ul style={{ margin: 0, paddingLeft: 16 }}>
               <li>{t.giphyRule1}</li>
               <li>{t.giphyRule2}</li>
@@ -277,9 +321,7 @@ console.log("UPLOAD:", file.type, file.name);
 
         {activeTab === "pexels" && (
           <div className="media-notice">
-            <p style={{ margin: "0 0 6px 0" }}>
-              {t.pexelsNoticeTitle}
-            </p>
+            <p style={{ margin: "0 0 6px 0" }}>{t.pexelsNoticeTitle}</p>
             <ul style={{ margin: 0, paddingLeft: 16 }}>
               <li>{t.pexelsRule1}</li>
               <li>{t.pexelsRule2}</li>
@@ -309,15 +351,9 @@ console.log("UPLOAD:", file.type, file.name);
               onChange={handleUpload}
             />
 
-            {uploadError && (
-              <p className="media-upload-error">
-                {uploadError}
-              </p>
-            )}
+            {uploadError && <p className="media-upload-error">{uploadError}</p>}
 
-            <p className="media-upload-info">
-              {t.uploadFormatsInfo}
-            </p>
+            <p className="media-upload-info">{t.uploadFormatsInfo}</p>
           </div>
         )}
 
@@ -331,7 +367,8 @@ console.log("UPLOAD:", file.type, file.name);
                 className="media-result-item"
                 onClick={() => {
                   const lower = url.toLowerCase();
-                  const isVideo = lower.endsWith(".mp4") || lower.endsWith(".webm");
+                  const isVideo =
+                    lower.endsWith(".mp4") || lower.endsWith(".webm");
                   onSelect({ url, mediaType: isVideo ? "video" : "image" });
                   onClose();
                 }}
@@ -339,21 +376,29 @@ console.log("UPLOAD:", file.type, file.name);
                 {url.endsWith(".mp4") || url.endsWith(".webm") ? (
                   <video
                     src={url}
+                    autoPlay
+                    loop
                     muted
                     playsInline
                     preload="metadata"
-                    controls
                     className="media-preview-video"
                   />
                 ) : (
-                  <img
-                    src={url}
-                    alt=""
-                    className="media-preview-image"
-                  />
+                  <img src={url} alt="" className="media-preview-image" />
                 )}
               </div>
             ))}
+          {!loading && hasMore && (
+            <div className="media-load-more-wrapper">
+              <button
+                className={`media-load-more-button ${loading ? "loading" : ""}`}
+                disabled={loading}
+                onClick={handleLoadMore}
+              >
+                {t.loadMore || "Загрузить ещё"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -2,21 +2,26 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import type { StudioSlide } from "@/types/studio";
+import { dictionaries, type Lang } from "@/i18n";
 
 interface StudioPreviewPlayerProps {
   slides: StudioSlide[];
   musicEngineRef: React.RefObject<any>;
   onClose: () => void;
+  lang: Lang;
 }
 
 export default function StudioPreviewPlayer({
   slides,
   musicEngineRef,
+  lang,
   onClose,
 }: StudioPreviewPlayerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const voiceRef = useRef<HTMLAudioElement | null>(null);
+
+  const t = dictionaries[lang].cats.studio
 
   const currentSlide = slides[currentIndex];
 
@@ -74,7 +79,7 @@ export default function StudioPreviewPlayer({
 
   return (
     <div className="studio-preview-player">
-      <button onClick={onClose}>Close Preview</button>
+      <button className="preview-close-button" onClick={onClose}>{t.closePreview}</button>
 
       <div
         className="preview-canvas-9x16"

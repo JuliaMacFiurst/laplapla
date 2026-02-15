@@ -350,6 +350,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   export: "ייצוא",
   undo: "בטל",
   redo: "בצע שוב",
+  preview: "תצוגה מקדימה",
   deleteAll: "מחק הכל",
   confirmDeleteAll: "האם אתה בטוח שברצונך למחוק את כל הסליידים? פעולה זו לא ניתנת לביטול.",
   textPlaceholder: "הקלד כאן את הטקסט שלך...",
@@ -358,11 +359,18 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   media: "מדיה",
   position: "מיקום",
   text: "טקסט",
-  audioAndExport: "אודיו וייצוא",
+  saved: "נשמר",
+
+  audio: "אודיו",
+  actionsAndExport: "פעולות וייצוא",
   alignLeft: "יישור טקסט לשמאל",
   alignCenter: "יישור טקסט למרכז",
   alignRight: "יישור טקסט לימין",
   fontSize: "גודל טקסט",
+  closePreview: "סגור תצוגה מקדימה",
+  voiceTrack: "הקלטת קול",
+  voiceDuration: "משך ההקלטה",
+  sec: "שניות",
 
   mediaPicker: {
   tabGiphy: "GIPHY",
@@ -373,6 +381,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   searchPlaceholder: "חיפוש מדיה...",
   searchButton: "חיפוש",
   loading: "טוען...",
+  loadMore: "טען עוד",
 
   giphyNoticeTitle: "GIFs מ-GIPHY ✨ אנא השתמשו בכבוד ולפי הכללים.",
   giphyRule1: "אין להסיר סימני מים או קרדיט.",

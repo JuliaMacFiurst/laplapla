@@ -58,6 +58,7 @@ export const ru = {
   export: "Экспорт",
   undo: "Отменить",
   redo: "Повторить",
+  preview: "Предпросмотр",
   deleteAll: "Удалить всё",
   confirmDeleteAll: "Удалить всё слайдшоу?",
   textPlaceholder: "Напиши что-нибудь...",
@@ -66,11 +67,25 @@ export const ru = {
   media: "Медиа",
   position: "Позиция",
   text: "Текст",
-  audioAndExport: "Аудио и экспорт",
+  actionsAndExport: "Действия и Экспорт",
   alignLeft: "Выровнять текст по левому краю",
   alignCenter: "Выровнять текст по центру",
   alignRight: "Выровнять текст по правому краю",
   fontSize: "Размер шрифта",
+  closePreview: "Закрыть предпросмотр",
+  saved: "Сохранено",
+
+  audio: "Аудио",
+  addMusic: "Добавить музыку",
+  recordVoice: "Записать голос",
+  stopRecording: "Остановить запись",
+  currentTracks: "Текущие дорожки",
+  activeTracks: "Активные дорожки",
+  noActiveTracks: "Нет активных дорожек",
+  voiceTrack: "Озвучка текущего слайда",
+  voiceDuration: "Длительность",
+  sec: "сек",
+
 
   mediaPicker: {
   tabGiphy: "GIPHY",
@@ -80,6 +95,7 @@ export const ru = {
   searchPlaceholder: "Поиск медиа...",
   searchButton: "Найти",
   loading: "Загрузка...",
+  loadMore: "Загрузить ещё",
 
   giphyNoticeTitle: "GIF от GIPHY ✨ Используйте их бережно и уважайте авторов.",
   giphyRule1: "Не удаляйте водяные знаки и атрибуцию.",

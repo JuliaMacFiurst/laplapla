@@ -258,10 +258,10 @@ export default function StudioSettingsPanel({
         className="studio-section"
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
-        <strong className="studio-label">{t.audioAndExport}</strong>
+        <strong className="studio-label">{t.actionsAndExport}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="studio-button btn-blue" onClick={onPreview}>
-            Предпросмотр
+            {t.preview}
           </button>
           <button className="studio-button btn-peach" onClick={onExport}>
             {t.export}

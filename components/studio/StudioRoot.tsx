@@ -8,7 +8,7 @@ import SlideList from "./SlideList";
 import SlideCanvas9x16 from "./SlideCanvas9x16";
 import StudioSettingsPanel from "./StudioSettingsPanel";
 import StudioPreviewPlayer from "./StudioPreviewPlayer";
-import type { Lang } from "@/i18n";
+import { Lang, dictionaries } from "@/i18n";
 import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
 
@@ -57,6 +57,8 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const t = dictionaries[lang].cats.studio
 
   async function startVoiceRecording() {
     if (isRecording) return;
@@ -307,6 +309,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
 
             {isPreviewOpen && (
               <StudioPreviewPlayer
+                lang={lang}
                 slides={project.slides}
                 musicEngineRef={audioEngineRef}
                 onClose={() => setIsPreviewOpen(false)}
@@ -318,13 +321,14 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
             {isSaving && <span className="saving">Сохраняем…</span>}
             {!isSaving && lastSavedAt && (
               <span className="saved">
-                Сохранено
+                {t.saved} 
               </span>
             )}
           </div>
           <AudioEngine ref={audioEngineRef} maxTracks={4} />
           {/* Музыкальная панель: управляет общим фоновым сопровождением всего проекта */}
           <MusicPanel
+            lang={lang}
             engineRef={audioEngineRef}
             isRecording={isRecording}
             onStartRecording={startVoiceRecording}
