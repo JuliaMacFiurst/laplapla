@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -21,6 +19,19 @@ export default function StudioPreviewPlayer({
   const voiceRef = useRef<HTMLAudioElement | null>(null);
 
   const currentSlide = slides[currentIndex];
+
+  // --- Start music when preview mounts, stop on unmount
+  useEffect(() => {
+    if (musicEngineRef?.current?.playAll) {
+      musicEngineRef.current.playAll();
+    }
+
+    return () => {
+      if (musicEngineRef?.current?.pauseAll) {
+        musicEngineRef.current.pauseAll();
+      }
+    };
+  }, []);
 
   // --- Auto duration logic (voice or default 3s)
   useEffect(() => {
@@ -44,6 +55,11 @@ export default function StudioPreviewPlayer({
   useEffect(() => {
     if (!currentSlide?.voiceUrl) return;
 
+    if (voiceRef.current) {
+      voiceRef.current.pause();
+      voiceRef.current.currentTime = 0;
+    }
+
     const audio = new Audio(currentSlide.voiceUrl);
     voiceRef.current = audio;
     audio.play().catch(() => {});
@@ -52,7 +68,7 @@ export default function StudioPreviewPlayer({
       audio.pause();
       audio.currentTime = 0;
     };
-  }, [currentIndex]);
+  }, [currentSlide?.voiceUrl]);
 
   if (!currentSlide) return null;
 
@@ -69,6 +85,14 @@ export default function StudioPreviewPlayer({
           aspectRatio: "9 / 16",
           overflow: "hidden",
           backgroundColor: currentSlide.bgColor || "#000",
+          display: "flex",
+          justifyContent: "center",
+          alignItems:
+            currentSlide.textPosition === "top"
+              ? "flex-start"
+              : currentSlide.textPosition === "bottom"
+              ? "flex-end"
+              : "center",
         }}
       >
         {/* MEDIA */}
@@ -82,17 +106,15 @@ export default function StudioPreviewPlayer({
                 loop
                 style={{
                   position: "absolute",
-                  width:
-                    currentSlide.mediaFit === "contain" ? "100%" : "auto",
-                  height:
-                    currentSlide.mediaFit === "cover" ? "100%" : "auto",
+                  width: "100%",
+                  height: "100%",
                   objectFit: currentSlide.mediaFit || "cover",
                   objectPosition:
                     currentSlide.mediaPosition === "top"
-                      ? "top"
+                      ? "center top"
                       : currentSlide.mediaPosition === "bottom"
-                      ? "bottom"
-                      : "center",
+                      ? "center bottom"
+                      : "center center",
                 }}
               />
             ) : (
@@ -101,17 +123,15 @@ export default function StudioPreviewPlayer({
                 alt=""
                 style={{
                   position: "absolute",
-                  width:
-                    currentSlide.mediaFit === "contain" ? "100%" : "auto",
-                  height:
-                    currentSlide.mediaFit === "cover" ? "100%" : "auto",
+                  width: "100%",
+                  height: "100%",
                   objectFit: currentSlide.mediaFit || "cover",
                   objectPosition:
                     currentSlide.mediaPosition === "top"
-                      ? "top"
+                      ? "center top"
                       : currentSlide.mediaPosition === "bottom"
-                      ? "bottom"
-                      : "center",
+                      ? "center bottom"
+                      : "center center",
                 }}
               />
             )}
@@ -122,22 +142,7 @@ export default function StudioPreviewPlayer({
         {currentSlide.text && (
           <div
             style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
               padding: 20,
-              top:
-                currentSlide.textPosition === "top"
-                  ? 40
-                  : currentSlide.textPosition === "bottom"
-                  ? "auto"
-                  : "50%",
-              bottom:
-                currentSlide.textPosition === "bottom" ? 40 : "auto",
-              transform:
-                currentSlide.textPosition === "center"
-                  ? "translateY(-50%)"
-                  : "none",
               textAlign: currentSlide.textAlign || "center",
               fontSize: currentSlide.fontSize || 28,
               fontFamily: currentSlide.fontFamily || "'Amatic SC', cursive",
@@ -146,7 +151,11 @@ export default function StudioPreviewPlayer({
                 currentSlide.textBgEnabled
                   ? `rgba(0,0,0,${currentSlide.textBgOpacity ?? 0.5})`
                   : "transparent",
+              display: "inline-block",
+              maxWidth: "90%",
               borderRadius: currentSlide.textBgEnabled ? 16 : 0,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
             }}
           >
             {currentSlide.text}
