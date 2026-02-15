@@ -4,12 +4,14 @@ interface SlideTextEditorProps {
   lang: Lang;
   value: string;
   onChange: (value: string) => void;
+  fontFamily: string;
 }
 
 export default function SlideTextEditor({
   lang,
   value,
   onChange,
+  fontFamily,
 }: SlideTextEditorProps) {
   const t = dictionaries[lang].cats.studio
   return (
@@ -23,7 +25,7 @@ export default function SlideTextEditor({
         padding: 8,
         borderRadius: 8,
         border: "1px solid #ccc",
-        fontFamily: "'Amatic SC', cursive",
+        fontFamily,
         fontSize: 24,
       }}
     />

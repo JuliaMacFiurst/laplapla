@@ -1,5 +1,3 @@
-
-
 /**
  * AudioEngine — локальный движок управления музыкальными лупами в Studio.
  *
@@ -35,6 +33,7 @@ export type AudioEngineHandle = {
   removeTrack: (id: string) => void;
   setVolume: (id: string, volume: number) => void;
   playAll: () => void;
+  pauseAll: () => void;
   stopAll: () => void;
   getTracks: () => AudioTrack[];
 };
@@ -94,6 +93,12 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     }
   };
 
+  const pauseAll = () => {
+    for (const audio of audioMapRef.current.values()) {
+      audio.pause();
+    }
+  };
+
   const stopAll = () => {
     for (const audio of audioMapRef.current.values()) {
       audio.pause();
@@ -110,6 +115,7 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     removeTrack,
     setVolume,
     playAll,
+    pauseAll,
     stopAll,
     getTracks,
   }));

@@ -17,10 +17,14 @@ export type StudioSlide = {
   textAlign?: "left" | "center" | "right";
   voiceUrl?: string;
   voiceDuration?: number;
+  fontWeight?: number;
+  fontStyle?: "normal" | "italic";
+  fontFamily?: string;
 }
 
 export type StudioProject = {
   id: string
   slides: StudioSlide[]
   updatedAt: number
+  fontFamily?: string;
 }

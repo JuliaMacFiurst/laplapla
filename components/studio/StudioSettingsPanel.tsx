@@ -30,6 +30,7 @@ interface StudioSettingsPanelProps {
   onSetAlignLeft?: () => void;
   onSetAlignCenter?: () => void;
   onSetAlignRight?: () => void;
+  onPreview: () => void;
 }
 
 export default function StudioSettingsPanel({
@@ -60,6 +61,7 @@ export default function StudioSettingsPanel({
   onSetAlignLeft,
   onSetAlignCenter,
   onSetAlignRight,
+  onPreview,
 }: StudioSettingsPanelProps) {
   const t = dictionaries[lang].cats.studio
   return (
@@ -246,6 +248,7 @@ export default function StudioSettingsPanel({
             lang={lang}
             value={textValue}
             onChange={onChangeText}
+            fontFamily="'Amatic SC', cursive"
           />
         </div>
       </div>
@@ -257,6 +260,9 @@ export default function StudioSettingsPanel({
       >
         <strong className="studio-label">{t.audioAndExport}</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="studio-button btn-blue" onClick={onPreview}>
+            Предпросмотр
+          </button>
           <button className="studio-button btn-peach" onClick={onExport}>
             {t.export}
           </button>

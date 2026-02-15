@@ -7,6 +7,7 @@ import type { StudioProject, StudioSlide } from "@/types/studio";
 import SlideList from "./SlideList";
 import SlideCanvas9x16 from "./SlideCanvas9x16";
 import StudioSettingsPanel from "./StudioSettingsPanel";
+import StudioPreviewPlayer from "./StudioPreviewPlayer";
 import type { Lang } from "@/i18n";
 import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
@@ -30,6 +31,7 @@ function createInitialProject(): StudioProject {
     id: PROJECT_ID,
     slides: [createEmptySlide()],
     updatedAt: Date.now(),
+    fontFamily: "'Amatic SC', cursive",
   };
 }
 
@@ -44,6 +46,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
   const [history, setHistory] = useState<StudioProject[]>([]);
   const [future, setFuture] = useState<StudioProject[]>([]);
   const [isMediaOpen, setIsMediaOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Локальный аудио-движок для музыки всего слайдшоу (до 4 дорожек)
   const audioEngineRef = useRef<AudioEngineHandle | null>(null);
@@ -298,7 +301,18 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
           />
 
           <div className="studio-canvas-wrapper">
-            <SlideCanvas9x16 slide={activeSlide} lang={lang} />
+            {!isPreviewOpen && (
+              <SlideCanvas9x16 slide={activeSlide} lang={lang} />
+            )}
+
+            {isPreviewOpen && (
+              <StudioPreviewPlayer
+                slides={project.slides}
+                musicEngineRef={audioEngineRef}
+                onClose={() => setIsPreviewOpen(false)}
+                
+              />
+            )}
           </div>
           <div className="studio-save-indicator">
             {isSaving && <span className="saving">Сохраняем…</span>}
@@ -336,7 +350,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
                 updateSlide({ ...activeSlide, bgColor: color })
               }
               onAddMedia={() => setIsMediaOpen(true)}
-              
+              onPreview={() => setIsPreviewOpen(true)}
               onExport={() => console.log("export")}
               onSetFitCover={() =>
                 updateSlide({ ...activeSlide, mediaFit: "cover" })
