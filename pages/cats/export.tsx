@@ -1,21 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import StudioPreviewPlayer from "@/components/studio/StudioPreviewPlayer";
+import AudioEngine, { type AudioEngineHandle } from "@/components/studio/AudioEngine";
+import type { Track } from "@/components/studio/MusicPanel";
 import { loadProject } from "@/lib/studioStorage";
 import type { StudioSlide } from "@/types/studio";
 import { useRouter } from "next/router";
 import { recordPreviewDom } from "@/lib/recordPreviewDom";
+import { cropAndConvert, preloadFFmpeg } from "@/lib/cropAndConvert";
 
 export default function StudioExportPage() {
   const [slides, setSlides] = useState<StudioSlide[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState<number | null>(null);
+  const audioEngineRef = useRef<AudioEngineHandle | null>(null);
   const router = useRouter();
+
+  const [projectData, setProjectData] = useState<any>(null);
 
   useEffect(() => {
     async function init() {
       const project = await loadProject("current-studio-project");
-      if (project?.slides) {
+      if (!project) return;
+
+      setProjectData(project);
+
+      if (project.slides) {
         setSlides(project.slides);
       }
     }
@@ -23,11 +34,41 @@ export default function StudioExportPage() {
   }, []);
 
   useEffect(() => {
+    if (!projectData?.musicTracks?.length) return;
+    if (!audioEngineRef.current) return;
+
+    projectData.musicTracks.forEach((track: Track) => {
+      audioEngineRef.current?.addTrack?.(track);
+      audioEngineRef.current?.setVolume?.(track.id, track.volume);
+    });
+
+    // attempt autoplay
+    audioEngineRef.current.playAll?.();
+  }, [projectData]);
+
+  useEffect(() => {
     document.body.classList.add("export-mode");
 
     return () => {
       document.body.classList.remove("export-mode");
     };
+  }, []);
+
+  useEffect(() => {
+    preloadFFmpeg().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    // Try to start music on mount (may be blocked by Chrome autoplay policy)
+    const timer = setTimeout(() => {
+      if (audioEngineRef.current?.playAll) {
+        try {
+          audioEngineRef.current.playAll();
+        } catch {}
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -76,13 +117,28 @@ export default function StudioExportPage() {
       }, 0) * 1000;
 
     try {
-      const blob = await recordPreviewDom(totalDuration);
+      // Ensure audio context resumes after user gesture
+      if (audioEngineRef.current?.playAll) {
+        try {
+          audioEngineRef.current.playAll();
+        } catch {}
+      }
 
-      const url = URL.createObjectURL(blob);
+      const rawBlob = await recordPreviewDom(totalDuration);
+
+      setProcessingProgress(0);
+
+      const finalBlob = await cropAndConvert(rawBlob, (p) => {
+        setProcessingProgress(p);
+      });
+
+      const url = URL.createObjectURL(finalBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "studio-video.webm";
+      a.download = "studio-video.mp4";
       a.click();
+
+      setProcessingProgress(null);
     } finally {
       document.body.classList.remove("recording-mode");
       setIsRecording(false);
@@ -107,11 +163,17 @@ export default function StudioExportPage() {
       >
         ←
       </button>
+      {processingProgress !== null && (
+        <div className="export-processing-indicator">
+          Processing: {Math.round(processingProgress * 100)}%
+        </div>
+      )}
       <div className="export-stage-wrapper">
         <div className="export-canvas">
+          <AudioEngine ref={audioEngineRef} maxTracks={4} />
           <StudioPreviewPlayer
             slides={slides}
-            musicEngineRef={{ current: null }}
+            musicEngineRef={audioEngineRef}
             lang="ru"
             onClose={() => {}}
           />

@@ -31,6 +31,7 @@ function createInitialProject(): StudioProject {
   return {
     id: PROJECT_ID,
     slides: [createEmptySlide()],
+    musicTracks: [],
     updatedAt: Date.now(),
     fontFamily: "'Amatic SC', cursive",
   };
@@ -210,6 +211,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
     const newProject: StudioProject = {
       id: PROJECT_ID,
       slides: mappedSlides,
+      musicTracks: [],
       updatedAt: Date.now(),
     };
 
@@ -233,6 +235,15 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
     setProject({
       ...project,
       slides: updatedSlides,
+      updatedAt: Date.now(),
+    });
+  }
+
+  function updateMusicTracks(tracks: StudioProject["musicTracks"]) {
+    pushHistory(project);
+    setProject({
+      ...project,
+      musicTracks: tracks,
       updatedAt: Date.now(),
     });
   }
@@ -381,6 +392,8 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
           <MusicPanel
             lang={lang}
             engineRef={audioEngineRef}
+            initialTracks={project.musicTracks}
+            onTracksChange={updateMusicTracks}
             isRecording={isRecording}
             onStartRecording={startVoiceRecording}
             onStopRecording={stopVoiceRecording}
@@ -406,7 +419,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
               }
               onAddMedia={() => setIsMediaOpen(true)}
               onPreview={() => setIsPreviewOpen(true)}
-              onExport={() => window.open("/cats/export", "_blank")}
+              onExport={() => window.open("/cats/export")}
               onSetFitCover={() =>
                 updateSlide({ ...activeSlide, mediaFit: "cover" })
               }

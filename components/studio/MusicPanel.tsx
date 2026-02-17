@@ -21,7 +21,7 @@ import { ParrotPreset, PARROT_PRESETS } from "@/utils/parrot-presets";
 import type { AudioEngineHandle } from "./AudioEngine";
 import { dictionaries, Lang } from "@/i18n";
 
-type Track = {
+export type Track = {
   id: string;
   label: string;
   src: string;
@@ -30,6 +30,10 @@ type Track = {
 
 type MusicPanelProps = {
   engineRef: RefObject<AudioEngineHandle | null>;
+
+  // Sync tracks with parent project
+  initialTracks?: Track[];
+  onTracksChange?: (tracks: Track[]) => void;
 
   // Voice recording for current slide
   isRecording: boolean;
@@ -43,6 +47,8 @@ type MusicPanelProps = {
 
 export default function MusicPanel({
   engineRef,
+  initialTracks,
+  onTracksChange,
   isRecording,
   lang,
   onStartRecording,
@@ -57,24 +63,17 @@ export default function MusicPanel({
 
   const t = dictionaries[lang].cats.studio
 
-  // --- Restore tracks from sessionStorage on mount ---
+  // --- Restore tracks from initialTracks on mount or when changed ---
   useEffect(() => {
-    const raw = sessionStorage.getItem("studio-music-tracks");
-    if (!raw) return;
+    if (!initialTracks || initialTracks.length === 0) return;
 
-    try {
-      const parsed: Track[] = JSON.parse(raw);
-      setActiveTracks(parsed);
+    setActiveTracks(initialTracks);
 
-      // restore into AudioEngine
-      parsed.forEach((track) => {
-        engineRef?.current?.addTrack?.(track);
-        engineRef?.current?.setVolume?.(track.id, track.volume);
-      });
-    } catch (e) {
-      console.warn("Failed to restore music tracks", e);
-    }
-  }, []);
+    initialTracks.forEach((track) => {
+      engineRef?.current?.addTrack?.(track);
+      engineRef?.current?.setVolume?.(track.id, track.volume);
+    });
+  }, [initialTracks]);
 
   // --- Persist tracks whenever they change ---
   useEffect(() => {
@@ -82,6 +81,10 @@ export default function MusicPanel({
       "studio-music-tracks",
       JSON.stringify(activeTracks)
     );
+  }, [activeTracks]);
+
+  useEffect(() => {
+    onTracksChange?.(activeTracks);
   }, [activeTracks]);
 
   useEffect(() => {

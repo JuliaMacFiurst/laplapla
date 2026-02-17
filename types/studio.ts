@@ -1,3 +1,5 @@
+import type { Track } from "@/components/studio/MusicPanel";
+
 export type StudioSlide = {
   id: string
   text: string
@@ -5,7 +7,6 @@ export type StudioSlide = {
   bgColor: string
   textColor: string
   audioUrl?: string
-  musicTracks?: string[]
   mediaFit?: "cover" | "contain";
   mediaPosition?: "top" | "center" | "bottom";
   mediaType?: "image" | "video";
@@ -27,4 +28,5 @@ export type StudioProject = {
   slides: StudioSlide[]
   updatedAt: number
   fontFamily?: string;
+  musicTracks: Track[];
 }

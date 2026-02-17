@@ -53,9 +53,14 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     // если трек уже есть — не добавляем повторно
     if (audioMapRef.current.has(track.id)) return;
 
-    const audio = new Audio(track.src);
+    const audio = document.createElement("audio");
+    audio.src = track.src;
     audio.loop = true;
     audio.volume = track.volume ?? 1;
+    audio.preload = "auto";
+    audio.style.display = "none";
+
+    document.body.appendChild(audio);
 
     audioMapRef.current.set(track.id, audio);
     tracksRef.current.push(track);
@@ -66,6 +71,9 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
+      if (audio.parentElement) {
+        audio.parentElement.removeChild(audio);
+      }
       audioMapRef.current.delete(id);
     }
 
@@ -124,6 +132,11 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
   useEffect(() => {
     return () => {
       stopAll();
+      for (const audio of audioMapRef.current.values()) {
+        if (audio.parentElement) {
+          audio.parentElement.removeChild(audio);
+        }
+      }
       audioMapRef.current.clear();
       tracksRef.current = [];
     };

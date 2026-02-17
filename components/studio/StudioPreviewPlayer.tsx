@@ -61,25 +61,6 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
     };
   }, [currentIndex, slides, currentSlide]);
 
-  // --- Play voice per slide
-  useEffect(() => {
-    if (!currentSlide?.voiceUrl) return;
-
-    if (voiceRef.current) {
-      voiceRef.current.pause();
-      voiceRef.current.currentTime = 0;
-    }
-
-    const audio = new Audio(currentSlide.voiceUrl);
-    voiceRef.current = audio;
-    audio.play().catch(() => {});
-
-    return () => {
-      audio.pause();
-      audio.currentTime = 0;
-    };
-  }, [currentSlide?.voiceUrl]);
-
   if (!currentSlide) return null;
 
   return (
@@ -154,6 +135,17 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
               />
             )}
           </>
+        )}
+
+        {currentSlide.voiceUrl && (
+          <audio
+            key={currentSlide.id}
+            ref={voiceRef}
+            src={currentSlide.voiceUrl}
+            autoPlay
+            playsInline
+            preload="auto"
+          />
         )}
 
         {/* TEXT */}
