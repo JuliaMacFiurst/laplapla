@@ -9,6 +9,7 @@ interface SlideListProps {
   onSelect: (index: number) => void;
   onAdd: () => void;
   onDelete: (index: number) => void;
+  onReorder: (from: number, to: number) => void;
 }
 
 export default function SlideList({
@@ -18,6 +19,7 @@ export default function SlideList({
   onSelect,
   onAdd,
   onDelete,
+  onReorder,
 }: SlideListProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -27,6 +29,22 @@ export default function SlideList({
 const t = dictionaries[lang].cats.studio
   const scrollRight = () => {
     listRef.current?.scrollBy({ left: 150, behavior: "smooth" });
+  };
+
+  const handleDragStart = (index: number) => (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", index.toString());
+  };
+
+  const handleDrop = (index: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const fromIndex = Number(e.dataTransfer.getData("text/plain"));
+    if (!isNaN(fromIndex) && fromIndex !== index) {
+      onReorder(fromIndex, index);
+    }
+  };
+
+  const allowDrop = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   return (
@@ -55,7 +73,14 @@ const t = dictionaries[lang].cats.studio
         }}
       >
         {slides.map((slide, index) => (
-          <div key={slide.id} className="slide-thumb-wrap">
+          <div
+            key={slide.id}
+            className="slide-thumb-wrap"
+            draggable
+            onDragStart={handleDragStart(index)}
+            onDragOver={allowDrop}
+            onDrop={handleDrop(index)}
+          >
             <button
               onClick={() => onSelect(index)}
               className={`slide-thumb${index === activeIndex ? " slide-thumb-active" : ""}`}

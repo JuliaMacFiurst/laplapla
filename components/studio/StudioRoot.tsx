@@ -68,8 +68,43 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
     if (isRecording) return;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const rawStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          channelCount: 1,
+          sampleRate: 48000,
+        },
+      });
+
+      // --- Light audio processing via AudioContext ---
+      const audioCtx = new AudioContext({ sampleRate: 48000 });
+      const source = audioCtx.createMediaStreamSource(rawStream);
+
+      const compressor = audioCtx.createDynamicsCompressor();
+      compressor.threshold.value = -20;
+      compressor.knee.value = 20;
+      compressor.ratio.value = 3;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = "highpass";
+      highpass.frequency.value = 80; // remove low rumble
+
+      const destination = audioCtx.createMediaStreamDestination();
+
+      source.connect(highpass);
+      highpass.connect(compressor);
+      compressor.connect(destination);
+
+      const stream = destination.stream;
+
+      const recorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+        audioBitsPerSecond: 192000,
+      });
 
       recordedChunksRef.current = [];
 
@@ -116,6 +151,8 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
           return updatedProject;
         });
 
+        rawStream.getTracks().forEach((track) => track.stop());
+        audioCtx.close();
         stream.getTracks().forEach((track) => track.stop());
       };
 
@@ -359,6 +396,21 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
             onSelect={setActiveSlideIndex}
             onAdd={addSlide}
             onDelete={deleteSlide}
+            onReorder={(from, to) => {
+              setProject((prev) => {
+                const slides = [...prev.slides];
+                const [moved] = slides.splice(from, 1);
+                slides.splice(to, 0, moved);
+
+                return {
+                  ...prev,
+                  slides,
+                  updatedAt: Date.now(),
+                };
+              });
+
+              setActiveSlideIndex(to);
+            }}
           />
 
           <div className="studio-canvas-wrapper">
