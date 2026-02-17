@@ -60,6 +60,9 @@ export default function MusicPanel({
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const presets: ParrotPreset[] = PARROT_PRESETS;
   const [activeTracks, setActiveTracks] = useState<Track[]>([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const [recordSeconds, setRecordSeconds] = useState(0);
 
   const t = dictionaries[lang].cats.studio
 
@@ -96,6 +99,20 @@ export default function MusicPanel({
     };
   }, []);
 
+  // Recording timer
+  useEffect(() => {
+    if (!isRecording) {
+      setRecordSeconds(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setRecordSeconds((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
   const [isOpen, setIsOpen] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
@@ -121,23 +138,26 @@ export default function MusicPanel({
                 onStartRecording?.();
               }
             }}
-            className="studio-button btn-mint"
+            className={`studio-button ${isRecording ? "btn-pink" : "btn-mint"}`}
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
           >
-            <span>
-              {isRecording ? t.stopRecording : t.recordVoice}
-            </span>
-
             {isRecording && (
               <span
                 style={{
                   width: 10,
                   height: 10,
                   borderRadius: "50%",
-                  background: "#ffffff",
+                  background: "#ff0000",
                   animation: "pulse-record 1s infinite",
                 }}
               />
             )}
+
+            <span>
+              {isRecording
+                ? `${t.stopRecording} (${recordSeconds}s)`
+                : t.recordVoice}
+            </span>
           </button>
         </div>
         </div>
@@ -260,31 +280,19 @@ export default function MusicPanel({
         ))}
 
         {activeTracks.length > 0 && (
-          <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
+          <div style={{ marginTop: 14 }}>
             <button
-              onClick={() => engineRef?.current?.playAll?.()}
-              style={{
-                padding: "8px 16px",
-                borderRadius: 12,
-                border: "none",
-                background: "#8bc34a",
-                cursor: "pointer",
+              onClick={() => {
+                if (isPlaying) {
+                  engineRef?.current?.stopAll?.();
+                } else {
+                  engineRef?.current?.playAll?.();
+                }
+                setIsPlaying(!isPlaying);
               }}
+              className={`studio-button ${isPlaying ? "btn-pink" : "btn-blue"}`}
             >
-              ▶ Play
-            </button>
-            <button
-              onClick={() => engineRef?.current?.stopAll?.()}
-              style={{
-                padding: "8px 16px",
-                borderRadius: 12,
-                border: "none",
-                background: "#f44336",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              ■ Stop
+              {isPlaying ? "⏸ Pause" : "▶ Play"}
             </button>
           </div>
         )}
@@ -413,31 +421,19 @@ export default function MusicPanel({
               ))}
 
               {activeTracks.length > 0 && (
-                <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+                <div style={{ marginTop: 12 }}>
                   <button
-                    onClick={() => engineRef?.current?.playAll?.()}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: "#8bc34a",
-                      cursor: "pointer",
+                    onClick={() => {
+                      if (isPlaying) {
+                        engineRef?.current?.stopAll?.();
+                      } else {
+                        engineRef?.current?.playAll?.();
+                      }
+                      setIsPlaying(!isPlaying);
                     }}
+                    className={`studio-button ${isPlaying ? "btn-pink" : "btn-blue"}`}
                   >
-                    ▶ Play
-                  </button>
-                  <button
-                    onClick={() => engineRef?.current?.stopAll?.()}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: "#f44336",
-                      color: "#fff",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ■ Stop
+                    {isPlaying ? "⏸ Pause" : "▶ Play"}
                   </button>
                 </div>
               )}

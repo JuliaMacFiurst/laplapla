@@ -97,27 +97,24 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
 
         const duration = audio.duration;
 
-        updateSlide({
-          ...activeSlide,
-          voiceUrl: dataUrl,
-          voiceDuration: duration,
-        });
+        setProject((prev) => {
+          const updatedSlides = prev.slides.map((s, i) =>
+            i === activeSlideIndex
+              ? { ...s, voiceUrl: dataUrl, voiceDuration: duration }
+              : s
+          );
 
-        // Immediately persist project after voice recording
-        setTimeout(async () => {
-          setIsSaving(true);
-          await saveProject({
-            ...project,
-            slides: project.slides.map((s, i) =>
-              i === activeSlideIndex
-                ? { ...s, voiceUrl: dataUrl, voiceDuration: duration }
-                : s,
-            ),
+          const updatedProject = {
+            ...prev,
+            slides: updatedSlides,
             updatedAt: Date.now(),
-          });
-          setLastSavedAt(Date.now());
-          setIsSaving(false);
-        }, 0);
+          };
+
+          // Persist immediately using fresh state
+          saveProject(updatedProject);
+
+          return updatedProject;
+        });
 
         stream.getTracks().forEach((track) => track.stop());
       };

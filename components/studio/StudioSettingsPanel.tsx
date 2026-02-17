@@ -209,10 +209,11 @@ export default function StudioSettingsPanel({
             min={16}
             max={120}
             step={2}
-            value={fontSize ?? 48}
+            value={slide.fontSize ?? fontSize ?? 48}
             onChange={(e) =>
               onChangeFontSize?.(Number(e.target.value))
             }
+            style={{ width: "100%" }}
           />
         </div>
 
