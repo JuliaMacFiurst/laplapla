@@ -16,6 +16,7 @@ import '../styles/LabGame.css'
 import '../styles/About.css';
 import '../styles/video-section.css';
 import '../styles/Studio.css';
+import '../styles/export.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -27,6 +28,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isQuestPage = router.pathname.startsWith("/quest");
   const isCatsPage = router.pathname.startsWith("/cats");
+  const isExportPage = router.pathname === "/cats/export";
   const isCapybaraPage = router.pathname.startsWith("/capybara");
   const [lang, setLang] = useState<"ru" | "en" | "he" | null>(null);
 
@@ -83,10 +85,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       />
 
       <div className="app-layout">
-        <TopBar lang={lang} />
+        {!isExportPage && <TopBar lang={lang} />}
         <Component {...pageProps} lang={lang} />
 
-        {!isQuestPage && (
+        {!isQuestPage && !isExportPage && (
           <div className="footer-stack">
             <footer className="unified-footer">
               <div className="footer-left">

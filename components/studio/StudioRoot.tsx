@@ -11,6 +11,7 @@ import StudioPreviewPlayer from "./StudioPreviewPlayer";
 import { Lang, dictionaries } from "@/i18n";
 import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
+import { recordPreviewDom } from "@/lib/recordPreviewDom";
 
 const PROJECT_ID = "current-studio-project";
 
@@ -59,6 +60,8 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const t = dictionaries[lang].cats.studio
+
+  const previewRef = useRef<HTMLDivElement>(null);
 
   async function startVoiceRecording() {
     if (isRecording) return;
@@ -289,6 +292,54 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
     setProject(next);
   }
 
+  async function exportPreviewAsWebm() {
+    // Ensure preview is visible
+    setIsPreviewOpen(true);
+
+    // Wait for preview to mount
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Try to fullscreen only the preview container
+    if (previewRef.current) {
+      try {
+        await previewRef.current.requestFullscreen();
+      } catch (e) {
+        console.warn("Fullscreen not allowed", e);
+      }
+    }
+
+    // Calculate total duration (voiceDuration or default 3 seconds)
+    const totalDurationMs =
+      project.slides.reduce((acc, s) => {
+        const d =
+          s.voiceDuration && s.voiceDuration > 0
+            ? s.voiceDuration
+            : 3;
+        return acc + d;
+      }, 0) * 1000;
+
+    try {
+      const blob = await recordPreviewDom(totalDurationMs);
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "studio-preview.webm";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+    } finally {
+      // Exit fullscreen if active
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch {}
+      }
+      setIsPreviewOpen(false);
+    }
+  }
+
   return (
     <div className="studio-root">
       <div className="studio-layout">
@@ -309,11 +360,11 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
 
             {isPreviewOpen && (
               <StudioPreviewPlayer
-                lang={lang}
+                ref={previewRef}
                 slides={project.slides}
                 musicEngineRef={audioEngineRef}
+                lang={lang}
                 onClose={() => setIsPreviewOpen(false)}
-                
               />
             )}
           </div>
@@ -355,7 +406,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
               }
               onAddMedia={() => setIsMediaOpen(true)}
               onPreview={() => setIsPreviewOpen(true)}
-              onExport={() => console.log("export")}
+              onExport={() => window.open("/cats/export", "_blank")}
               onSetFitCover={() =>
                 updateSlide({ ...activeSlide, mediaFit: "cover" })
               }

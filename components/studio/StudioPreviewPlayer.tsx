@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, forwardRef } from "react";
 import type { StudioSlide } from "@/types/studio";
 import { dictionaries, type Lang } from "@/i18n";
 
@@ -11,17 +11,22 @@ interface StudioPreviewPlayerProps {
   lang: Lang;
 }
 
-export default function StudioPreviewPlayer({
-  slides,
-  musicEngineRef,
-  lang,
-  onClose,
-}: StudioPreviewPlayerProps) {
+const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>(
+  function StudioPreviewPlayer({
+    slides,
+    musicEngineRef,
+    lang,
+    onClose,
+  }, containerRef) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const voiceRef = useRef<HTMLAudioElement | null>(null);
 
   const t = dictionaries[lang].cats.studio
+
+  const isExportMode =
+    typeof document !== "undefined" &&
+    document.body.classList.contains("export-mode");
 
   const currentSlide = slides[currentIndex];
 
@@ -79,14 +84,22 @@ export default function StudioPreviewPlayer({
 
   return (
     <div className="studio-preview-player">
-      <button className="preview-close-button" onClick={onClose}>{t.closePreview}</button>
+      {!isExportMode && (
+        <button
+          className="preview-close-button"
+          onClick={onClose}
+        >
+          {t.closePreview}
+        </button>
+      )}
 
       <div
+        ref={containerRef}
         className="preview-canvas-9x16"
         style={{
           position: "relative",
-          width: 360,
-          height: 640,
+          width: isExportMode ? 1080 : 360,
+          height: isExportMode ? 1920 : 640,
           aspectRatio: "9 / 16",
           overflow: "hidden",
           backgroundColor: currentSlide.bgColor || "#000",
@@ -149,7 +162,9 @@ export default function StudioPreviewPlayer({
             style={{
               padding: 20,
               textAlign: currentSlide.textAlign || "center",
-              fontSize: currentSlide.fontSize || 28,
+              fontSize: isExportMode
+                ? (currentSlide.fontSize || 28) * (1080 / 360)
+                : currentSlide.fontSize || 28,
               fontFamily: currentSlide.fontFamily || "'Amatic SC', cursive",
               color: currentSlide.textColor || "#fff",
               background:
@@ -170,3 +185,6 @@ export default function StudioPreviewPlayer({
     </div>
   );
 }
+);
+
+export default StudioPreviewPlayer;
