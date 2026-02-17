@@ -9,6 +9,7 @@ import type { StudioSlide } from "@/types/studio";
 import { useRouter } from "next/router";
 import { recordPreviewDom } from "@/lib/recordPreviewDom";
 import { cropAndConvert, preloadFFmpeg } from "@/lib/cropAndConvert";
+import { dictionaries, type Lang } from "@/i18n";
 
 export default function StudioExportPage() {
   const [slides, setSlides] = useState<StudioSlide[]>([]);
@@ -18,9 +19,15 @@ export default function StudioExportPage() {
   const audioEngineRef = useRef<AudioEngineHandle | null>(null);
   const router = useRouter();
 
+  const lang: Lang = (router.query.lang as Lang) || "ru";
+  const t = dictionaries[lang].cats.export;
+
   const [projectData, setProjectData] = useState<any>(null);
   const [resetSignal, setResetSignal] = useState(0);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+
+  const [isFinished, setIsFinished] = useState(false);
+  const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
 
   // Pause preview audio while tutorial is open
   useEffect(() => {
@@ -162,11 +169,8 @@ export default function StudioExportPage() {
       });
 
       const url = URL.createObjectURL(finalBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "studio-video.mp4";
-      a.click();
-
+      setFinalVideoUrl(url);
+      setIsFinished(true);
       setProcessingProgress(null);
     } finally {
       document.body.classList.remove("recording-mode");
@@ -176,26 +180,106 @@ export default function StudioExportPage() {
     }
   }
 
+  function ShareModal({ videoUrl }: { videoUrl: string }) {
+    return (
+      <div className="export-share-modal">
+        <div className="export-confetti-layer">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <span key={i} className="export-confetti-piece" />
+          ))}
+        </div>
+
+        <div className="export-share-card">
+          <div className="export-share-title">{t.videoReady}</div>
+
+          <button
+            className="studio-button button-blue"
+            onClick={() => {
+              const a = document.createElement("a");
+              a.href = videoUrl;
+              a.download = "studio-video.mp4";
+              a.click();
+            }}
+          >
+            {t.download}
+          </button>
+
+          <button
+            className="studio-button button-pitch"
+            onClick={() => {
+              navigator.clipboard.writeText(t.shareDescription);
+            }}
+          >
+            {t.copyDescription}
+          </button>
+
+          {navigator.share && (
+            <button
+              className="studio-button btn-mint"
+              onClick={async () => {
+                try {
+                  await navigator.share({
+                    title: "Моё видео",
+                    text: t.shareDescription,
+                    url: videoUrl,
+                  });
+                } catch {}
+              }}
+            >
+              {t.share}
+            </button>
+          )}
+
+          <div className="export-share-links">
+            <a
+              href={`https://t.me/share/url?url=${encodeURIComponent(videoUrl)}`}
+              target="_blank"
+            >Telegram</a>
+            <a
+              href="https://www.youtube.com/upload"
+              target="_blank"
+            >YouTube</a>
+            <a
+              href="https://www.instagram.com/"
+              target="_blank"
+            >Instagram</a>
+          </div>
+
+          <button
+            className="studio-button btn-mint"
+            onClick={() => router.push("/cats/studio")}
+          >
+            {t.createAnother}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!slides.length) return null;
 
   return (
     <div className="export-root">
-      <button
-        className="export-record-button"
-        onClick={startRecording}
-        disabled={isRecording || isTutorialOpen}
-      >
-        {isRecording
-          ? "Recording..."
-          : isTutorialOpen
-          ? "Закройте подсказку"
-          : "Record"}
-      </button>
+      {!isFinished ? (
+        <button
+          className="export-record-button"
+          onClick={startRecording}
+          disabled={isRecording || isTutorialOpen}
+        >
+          {isRecording
+            ? t.recording
+            : isTutorialOpen
+            ? t.closeTutorial
+            : t.record}
+        </button>
+      ) : finalVideoUrl ? (
+        <ShareModal videoUrl={finalVideoUrl} />
+      ) : null}
       <button
         className="export-help-button"
         onClick={() => setIsTutorialOpen(true)}
       >
-        Как сохранить моё видео?
+        {t.howToSave}
       </button>
       <button
         className="export-back-button"
@@ -208,7 +292,7 @@ export default function StudioExportPage() {
         <div className="export-processing-overlay">
           <div className="export-processing-card">
             <div className="export-processing-title">
-              Сохраняем видео…
+              {t.processing}
             </div>
 
             <div className="export-progress-bar">
@@ -224,9 +308,9 @@ export default function StudioExportPage() {
                     const elapsed = (Date.now() - processingStartTime) / 1000;
                     const estimatedTotal = elapsed / processingProgress;
                     const remaining = Math.max(0, estimatedTotal - elapsed);
-                    return `Осталось ~${Math.ceil(remaining)} сек`;
+                    return `${t.remaining} ~${Math.ceil(remaining)} ${t.seconds}`;
                   })()
-                : "Подготовка…"}
+                : t.preparing}
             </div>
           </div>
         </div>
@@ -235,7 +319,7 @@ export default function StudioExportPage() {
         <div className="export-recording-indicator">
           <div className="export-recording-dot" />
           <div className="export-recording-text">
-            Идёт запись… Не двигайте мышку
+            {t.recordingHint}
           </div>
           <div className="export-recording-bar">
             <div className="export-recording-bar-fill" />
@@ -249,7 +333,7 @@ export default function StudioExportPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="export-tutorial-header">
-              Как сохранить видео
+              {t.tutorialTitle}
               <button
                 className="export-tutorial-close"
                 onClick={() => setIsTutorialOpen(false)}
@@ -267,7 +351,7 @@ export default function StudioExportPage() {
             />
 
             <div className="export-tutorial-text">
-              Выберите окно «/export» при записи экрана и включите запись звука вкладки.
+              {t.tutorialText}
             </div>
           </div>
         </div>
@@ -278,7 +362,7 @@ export default function StudioExportPage() {
           <StudioPreviewPlayer
             slides={slides}
             musicEngineRef={audioEngineRef}
-            lang="ru"
+            lang={lang}
             onClose={() => {}}
             isExternalRecording={isRecording}
             resetSignal={resetSignal}

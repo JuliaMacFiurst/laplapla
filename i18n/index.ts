@@ -150,6 +150,7 @@ type DictionaryShape = {
       // Audio / Music
       addMusic: string;
       recordVoice: string;
+      improveVoice: string;
       stopRecording: string;
       currentTracks: string;
       activeTracks: string;
@@ -193,6 +194,25 @@ type DictionaryShape = {
 }
     };
 
+    export: {
+      videoReady: string;
+      download: string;
+      copyDescription: string;
+      share: string;
+      createAnother: string;
+      record: string;
+      recording: string;
+      closeTutorial: string;
+      howToSave: string;
+      processing: string;
+      remaining: string;
+      seconds: string;
+      preparing: string;
+      recordingHint: string;
+      tutorialTitle: string;
+      tutorialText: string;
+      shareDescription: string;
+    };
     
   };
   

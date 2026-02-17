@@ -42,6 +42,7 @@ type MusicPanelProps = {
   voiceUrl?: string;
   voiceDuration?: number;
   onRemoveVoice: () => void;
+  onEnhanceVoice?: () => void;
   lang: Lang;
 };
 
@@ -56,6 +57,7 @@ export default function MusicPanel({
   voiceUrl,
   voiceDuration,
   onRemoveVoice,
+  onEnhanceVoice,
 }: MusicPanelProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const presets: ParrotPreset[] = PARROT_PRESETS;
@@ -184,6 +186,16 @@ export default function MusicPanel({
             }}
           >
             <audio src={voiceUrl} controls style={{ flex: 1 }} />
+
+            {onEnhanceVoice && (
+              <button
+                onClick={onEnhanceVoice}
+                className="studio-button btn-blue"
+                style={{ whiteSpace: "nowrap" }}
+              >
+                ✨ {t.improveVoice}
+              </button>
+            )}
 
             <button
               onClick={onRemoveVoice}

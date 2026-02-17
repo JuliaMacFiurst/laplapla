@@ -369,6 +369,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   fontSize: "גודל טקסט",
   closePreview: "סגור תצוגה מקדימה",
   voiceTrack: "הקלטת קול",
+  improveVoice: "שפר קול",
   voiceDuration: "משך ההקלטה",
   sec: "שניות",
 
@@ -405,7 +406,31 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
   errorVideoTooLong: "הווידאו ארוך מדי.",
   errorVideoMetadata: "לא ניתן לקרוא נתוני וידאו."
 } 
-}
+},
+
+export: {
+      videoReady: "הסרטון שלך מוכן!",
+      download: "הורד את הסרטון",
+      copyDescription: "העתק תיאור לסרטון",
+      share: "שתף",
+      createAnother: "צור סרטון חדש",
+      record: "הקלט",
+      recording: "הקלטה...",
+      closeTutorial: "סגור הדרכה",
+
+      howToSave: "איך לשמור את הסרטון שלי?",
+      processing: "מעבד וידאו…",
+      remaining: "נותר",
+      seconds: "שניות",
+      preparing: "מכין את הסרטון שלך להורדה…",
+      recordingHint: "בחרו באפשרות הקלטת הטאב כדי להקליט את המסך עם הסאונד של הוידאו.",
+
+      tutorialTitle: "הדרכה קצרה להקלטת המסך",
+      tutorialText:
+        "1. לחצו על כפתור ההקלטה.\n2. בחלון שנפתח בחרו את לשונית /export.\n3. אשרו גישה למסך ולשמע של הלשונית.\n4. המתינו לסיום ההקלטה והעיבוד.",
+      shareDescription: "הסרטון הזה נוצר ב-LapLapLa Studio — נסו ליצור אחד משלכם! https://laplapla.com/cats. חלק מהתמונות והאנימציות באדיבות GIPHY ו-Pexels.",
+    },
+
 },
   video: {
     title: "הסברים חמודים",

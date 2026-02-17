@@ -81,6 +81,7 @@ export const en = {
   audio: "Audio",
   addMusic: "Add Music",
   recordVoice: "Record Voice",
+  improveVoice: "Improve Voice",
   stopRecording: "Stop Recording",
   currentTracks: "Current Tracks",
   activeTracks: "Active Tracks",
@@ -118,8 +119,33 @@ export const en = {
   errorVideoTooLarge: "Video is too large.",
   errorVideoTooLong: "Video is too long.",
   errorVideoMetadata: "Could not read video metadata."
-}
-}
+},
+
+}, 
+
+export: {
+      videoReady: "Your video is ready!",
+      download: "Download",
+      copyDescription: "Copy description",
+      share: "Share",
+      createAnother: "Create another video",
+      record: "Record",
+      recording: "Recording...",
+      closeTutorial: "Close tutorial",
+
+      howToSave: "How to save my video?",
+      processing: "Processing video…",
+      remaining: "Remaining",
+      seconds: "sec",
+      preparing: "Preparing…",
+      recordingHint: "Recording… Do not move your mouse or switch tabs.",
+
+      tutorialTitle: "How to save your video",
+      tutorialText:
+        "Select the /export window when recording your screen and enable tab audio recording.",
+      shareDescription: "Video created in LapLapLa Studio — try creating your own! https://laplapla.com/cats. Some images and animations provided by GIPHY and Pexels.",
+    },
+
   },
   video: {
     title: "Cute explanations",

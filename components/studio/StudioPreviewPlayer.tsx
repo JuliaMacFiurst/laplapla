@@ -56,6 +56,11 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
         } catch {}
       }
 
+      // Restore music in case it was ducked
+      try {
+        musicEngineRef?.current?.restoreMusic?.();
+      } catch {}
+
       // Restart background music from the beginning (if supported)
       try {
         musicEngineRef?.current?.pauseAll?.();
@@ -190,6 +195,21 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
               autoPlay
               playsInline
               preload="auto"
+              onPlay={() => {
+                try {
+                  musicEngineRef?.current?.duckMusic?.();
+                } catch {}
+              }}
+              onEnded={() => {
+                try {
+                  musicEngineRef?.current?.restoreMusic?.();
+                } catch {}
+              }}
+              onPause={() => {
+                try {
+                  musicEngineRef?.current?.restoreMusic?.();
+                } catch {}
+              }}
             />
           )}
 

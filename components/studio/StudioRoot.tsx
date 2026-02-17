@@ -12,6 +12,7 @@ import { Lang, dictionaries } from "@/i18n";
 import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
 import { recordPreviewDom } from "@/lib/recordPreviewDom";
+import { useRouter } from "next/router";
 
 const PROJECT_ID = "current-studio-project";
 
@@ -61,6 +62,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const t = dictionaries[lang].cats.studio
+  const router = useRouter();
 
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +171,133 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current = null;
     setIsRecording(false);
+  }
+
+  function bufferToWav(buffer: AudioBuffer): Blob {
+    const numOfChan = buffer.numberOfChannels;
+    const length = buffer.length * numOfChan * 2 + 44;
+    const bufferArray = new ArrayBuffer(length);
+    const view = new DataView(bufferArray);
+
+    let offset = 0;
+    const writeString = (str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset++, str.charCodeAt(i));
+      }
+    };
+
+    writeString("RIFF");
+    view.setUint32(offset, 36 + buffer.length * numOfChan * 2, true);
+    offset += 4;
+    writeString("WAVE");
+    writeString("fmt ");
+    view.setUint32(offset, 16, true);
+    offset += 4;
+    view.setUint16(offset, 1, true);
+    offset += 2;
+    view.setUint16(offset, numOfChan, true);
+    offset += 2;
+    view.setUint32(offset, buffer.sampleRate, true);
+    offset += 4;
+    view.setUint32(offset, buffer.sampleRate * numOfChan * 2, true);
+    offset += 4;
+    view.setUint16(offset, numOfChan * 2, true);
+    offset += 2;
+    view.setUint16(offset, 16, true);
+    offset += 2;
+    writeString("data");
+    view.setUint32(offset, buffer.length * numOfChan * 2, true);
+    offset += 4;
+
+    const channels = [];
+    for (let i = 0; i < numOfChan; i++) {
+      channels.push(buffer.getChannelData(i));
+    }
+
+    for (let i = 0; i < buffer.length; i++) {
+      for (let channel = 0; channel < numOfChan; channel++) {
+        let sample = Math.max(-1, Math.min(1, channels[channel][i]));
+        view.setInt16(offset, sample * 0x7fff, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([view], { type: "audio/wav" });
+  }
+
+  async function enhanceVoiceRecording() {
+    if (!activeSlide.voiceUrl) return;
+
+    try {
+      const response = await fetch(activeSlide.voiceUrl);
+      const arrayBuffer = await response.arrayBuffer();
+
+      const audioCtx = new AudioContext({ sampleRate: 48000 });
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+      const offlineCtx = new OfflineAudioContext(
+        1,
+        audioBuffer.length,
+        48000
+      );
+
+      const source = offlineCtx.createBufferSource();
+      source.buffer = audioBuffer;
+
+      const compressor = offlineCtx.createDynamicsCompressor();
+      compressor.threshold.value = -18;
+      compressor.knee.value = 20;
+      compressor.ratio.value = 3;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+
+      const highpass = offlineCtx.createBiquadFilter();
+      highpass.type = "highpass";
+      highpass.frequency.value = 80;
+
+      const presence = offlineCtx.createBiquadFilter();
+      presence.type = "peaking";
+      presence.frequency.value = 3000;
+      presence.gain.value = 3;
+      presence.Q.value = 1;
+
+      source.connect(highpass);
+      highpass.connect(compressor);
+      compressor.connect(presence);
+      presence.connect(offlineCtx.destination);
+
+      source.start();
+      const renderedBuffer = await offlineCtx.startRendering();
+
+      const wavBlob = bufferToWav(renderedBuffer);
+
+      const reader = new FileReader();
+      const dataUrl: string = await new Promise((resolve) => {
+        reader.onloadend = () => resolve(String(reader.result));
+        reader.readAsDataURL(wavBlob);
+      });
+
+      setProject((prev) => {
+        const updatedSlides = prev.slides.map((s, i) =>
+          i === activeSlideIndex
+            ? { ...s, voiceUrl: dataUrl }
+            : s
+        );
+
+        const updatedProject = {
+          ...prev,
+          slides: updatedSlides,
+          updatedAt: Date.now(),
+        };
+
+        saveProject(updatedProject);
+        return updatedProject;
+      });
+
+      audioCtx.close();
+    } catch (err) {
+      console.error("Enhance voice failed", err);
+    }
   }
 
   function removeVoiceFromSlide() {
@@ -449,6 +578,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
             voiceUrl={activeSlide.voiceUrl}
             voiceDuration={activeSlide.voiceDuration}
             onRemoveVoice={removeVoiceFromSlide}
+            onEnhanceVoice={enhanceVoiceRecording}
           />
           
         </div>
@@ -468,7 +598,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
               }
               onAddMedia={() => setIsMediaOpen(true)}
               onPreview={() => setIsPreviewOpen(true)}
-              onExport={() => window.open("/cats/export")}
+              onExport={() => router.push(`/cats/export?lang=${lang}`)}
               onSetFitCover={() =>
                 updateSlide({ ...activeSlide, mediaFit: "cover" })
               }

@@ -47,6 +47,8 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
   const tracksRef = useRef<AudioTrack[]>([]);
   const audioMapRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
+  const musicMultiplierRef = useRef<number>(1);
+
   const addTrack = (track: AudioTrack) => {
     if (tracksRef.current.length >= maxTracks) return;
 
@@ -56,7 +58,8 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     const audio = document.createElement("audio");
     audio.src = track.src;
     audio.loop = true;
-    audio.volume = track.volume ?? 1;
+    const baseVolume = typeof track.volume === "number" ? track.volume : 1;
+    audio.volume = baseVolume * musicMultiplierRef.current;
     audio.preload = "auto";
     audio.style.display = "none";
 
@@ -82,8 +85,9 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
 
   const setVolume = (id: string, volume: number) => {
     const audio = audioMapRef.current.get(id);
+    const baseVolume = typeof volume === "number" ? volume : 1;
     if (audio) {
-      audio.volume = volume;
+      audio.volume = baseVolume * musicMultiplierRef.current;
     }
 
     tracksRef.current = tracksRef.current.map((t) =>
@@ -92,7 +96,13 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
   };
 
   const playAll = async () => {
-    for (const audio of audioMapRef.current.values()) {
+    for (const track of tracksRef.current) {
+      const audio = audioMapRef.current.get(track.id);
+      if (!audio) continue;
+
+      const baseVolume = typeof track.volume === "number" ? track.volume : 1;
+      audio.volume = baseVolume * musicMultiplierRef.current;
+
       try {
         await audio.play();
       } catch (e) {
@@ -118,6 +128,28 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     return tracksRef.current;
   };
 
+  const duckMusic = () => {
+    musicMultiplierRef.current = 0.4; // reduce music
+    for (const track of tracksRef.current) {
+      const audio = audioMapRef.current.get(track.id);
+      if (audio) {
+        const baseVolume = typeof track.volume === "number" ? track.volume : 1;
+        audio.volume = baseVolume * musicMultiplierRef.current;
+      }
+    }
+  };
+
+  const restoreMusic = () => {
+    musicMultiplierRef.current = 1;
+    for (const track of tracksRef.current) {
+      const audio = audioMapRef.current.get(track.id);
+      if (audio) {
+        const baseVolume = typeof track.volume === "number" ? track.volume : 1;
+        audio.volume = baseVolume * musicMultiplierRef.current;
+      }
+    }
+  };
+
   useImperativeHandle(ref, () => ({
     addTrack,
     removeTrack,
@@ -126,6 +158,8 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     pauseAll,
     stopAll,
     getTracks,
+    duckMusic,
+    restoreMusic,
   }));
 
   // При размонтировании компонента останавливаем всё
