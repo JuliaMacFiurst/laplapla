@@ -289,6 +289,12 @@ export default function MediaPickerModal({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
               placeholder={t.searchPlaceholder}
               className="media-search-input"
             />
