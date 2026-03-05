@@ -585,6 +585,18 @@
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
 }
 
+.lesson-canvas-wrapper {
+  position: relative;
+}
+
+.lesson-canvas-bg,
+.lesson-canvas-color,
+.lesson-canvas-draw {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 /* Адаптив: уменьшить шрифт на узких экранах */
 @media (max-width: 420px) {
   .dog-bubble { font-size: 14px; }
