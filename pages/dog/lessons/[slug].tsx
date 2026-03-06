@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import { buildRegionMap } from "@/utils/buildRegionMap";
 import { paintRegionFast } from "@/utils/paintRegionFast";
+import { waveFill } from "@/utils/waveFill";
 // Color seed placed by a paw click
 type ColorSeed = {
   x: number;
@@ -225,7 +226,7 @@ export default function LessonPlayer() {
 
     if (!ctx || !regionDataRef.current) return;
 
-    paintRegionFast(ctx, regionDataRef.current, 0, [255, 0, 0]);
+    waveFill(ctx, regionDataRef.current, seedsRef.current)
 
     // здесь позже запустим анимацию заливки
   };
