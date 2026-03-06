@@ -219,8 +219,18 @@ export default function LessonPlayer() {
 
   // Simple click-to-color prototype: clicking the canvas colors the region that was clicked
   const handleCanvasColorClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // ignore click if user is currently drawing
+    if (isDrawing.current) return;
+
     const canvas = colorCanvasRef.current;
-    if (!canvas || !regionDataRef.current) return;
+    if (!canvas) return;
+
+    // ensure region map exists
+    if (!regionDataRef.current) {
+      computeRegionMap();
+    }
+
+    if (!regionDataRef.current) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = Math.floor(e.clientX - rect.left);
@@ -455,6 +465,7 @@ export default function LessonPlayer() {
         return [...prev, ctxCopy];
       });
       isDrawing.current = true;
+      // while drawing we disable color click logic
       const { x, y } = getCoordinates(e);
       ctx.globalCompositeOperation = isEraserRef.current
         ? "destination-out"
@@ -467,6 +478,9 @@ export default function LessonPlayer() {
     const endDrawing = () => {
       isDrawing.current = false;
       ctx.beginPath();
+
+      // drawing changed → region map is no longer valid
+      regionDataRef.current = null;
     };
 
 
@@ -672,7 +686,6 @@ export default function LessonPlayer() {
                 ref={colorCanvasRef}
                 width={512}
                 height={512}
-                onClick={handleCanvasColorClick}
               ></canvas>
 
               <canvas
@@ -681,6 +694,7 @@ export default function LessonPlayer() {
                 ref={drawingCanvasRef}
                 width={512}
                 height={512}
+                onClick={handleCanvasColorClick}
               ></canvas>
             </div>
             <div
