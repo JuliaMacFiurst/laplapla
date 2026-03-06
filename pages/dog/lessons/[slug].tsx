@@ -2,6 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import { buildRegionMap } from "@/utils/buildRegionMap";
 import { paintRegionFast } from "@/utils/paintRegionFast";
+// Color seed placed by a paw click
+type ColorSeed = {
+  x: number;
+  y: number;
+  regionId: number;
+  color: [number, number, number];
+};
 import ArtGalleryModal from "@/components/ArtGalleryModal";
 import { useRouter } from "next/router";
 
@@ -112,6 +119,8 @@ export default function LessonPlayer() {
   const [hasStarted, setHasStarted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
+  // stored paw seeds
+  const seedsRef = useRef<ColorSeed[]>([]);
   const [showColorizer, setShowColorizer] = useState(false);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const colorCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -174,6 +183,13 @@ export default function LessonPlayer() {
   // Для плавных кистей: храним hue и прогресс градиента
   const hueRef = useRef(0);
   const gradientProgressRef = useRef(0);
+  const pawImgRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/dog/paw.svg";
+    pawImgRef.current = img;
+  }, []);
 
   const computeRegionMap = () => {
     const drawingCanvas = drawingCanvasRef.current;
@@ -214,6 +230,53 @@ export default function LessonPlayer() {
     // здесь позже запустим анимацию заливки
   };
 
+  // Helper to draw a paw marker for a color seed
+  const drawSeedPaw = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    color: [number, number, number],
+  ) => {
+    const img = pawImgRef.current;
+    if (!img || !img.complete) return;
+
+    const [r, g, b] = color;
+    const size = 24 + Math.random() * 8;
+    const angle = (Math.random() - 0.5) * 0.4;
+
+    ctx.save();
+
+    // move origin to click position
+    ctx.translate(x, y);
+
+    // rotate paw slightly for natural look
+    ctx.rotate(angle);
+
+    // create offscreen canvas for tinting
+    const off = document.createElement("canvas");
+    off.width = size;
+    off.height = size;
+
+    const offCtx = off.getContext("2d");
+    if (!offCtx) {
+      ctx.restore();
+      return;
+    }
+
+    // draw original SVG into offscreen canvas
+    offCtx.drawImage(img, 0, 0, size, size);
+
+    // tint only the shape
+    offCtx.globalCompositeOperation = "source-in";
+    offCtx.fillStyle = `rgb(${r},${g},${b})`;
+    offCtx.fillRect(0, 0, size, size);
+
+    // stamp the result onto main canvas
+    ctx.drawImage(off, -size / 2, -size / 2);
+
+    ctx.restore();
+  };
+
   // Simple click-to-color prototype: clicking the canvas colors the region that was clicked
   const handleCanvasColorClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // раскраска доступна только после нажатия "Раскрасить"
@@ -242,17 +305,21 @@ export default function LessonPlayer() {
 
     if (regionId < 0) return;
 
+    // create seed color from current brush color
+    const hex = brushColorRef.current;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const color: [number, number, number] = [r, g, b];
+
+    // store seed
+    seedsRef.current.push({ x, y, regionId, color });
+
+    // draw paw marker
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // random color for testing
-    const color: [number, number, number] = [
-      Math.floor(Math.random() * 255),
-      Math.floor(Math.random() * 255),
-      Math.floor(Math.random() * 255),
-    ];
-
-    paintRegionFast(ctx, regionDataRef.current, regionId, color);
+    drawSeedPaw(ctx, x, y, color);
   };
 
   const [fibiSpeech, setFibiSpeech] = useState<string>("");
