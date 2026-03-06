@@ -111,27 +111,27 @@ export default function LessonPlayer() {
   >("normal");
   const [hasStarted, setHasStarted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null)
+  const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
   const [showColorizer, setShowColorizer] = useState(false);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const colorCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const debugRenderRegions = () => {
-  const drawingCanvas = drawingCanvasRef.current
-  const colorCanvas = colorCanvasRef.current
+    const drawingCanvas = drawingCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
 
-  if (!drawingCanvas || !colorCanvas) return
-  const cctx = colorCanvas.getContext("2d");
-  if (!cctx) return;
+    if (!drawingCanvas || !colorCanvas) return;
+    const cctx = colorCanvas.getContext("2d");
+    if (!cctx) return;
 
-  if (!regionDataRef.current) {
-    computeRegionMap()
-  }
+    if (!regionDataRef.current) {
+      computeRegionMap();
+    }
 
-  const result = regionDataRef.current
-  if (!result) return
+    const result = regionDataRef.current;
+    if (!result) return;
 
-  const { width, height, regionMap } = result
+    const { width, height, regionMap } = result;
 
     const out = cctx.createImageData(width, height);
     const data = out.data;
@@ -170,6 +170,7 @@ export default function LessonPlayer() {
   };
 
   const isDrawing = useRef(false);
+  const [isDrawingState, setIsDrawingState] = useState(false);
   // Для плавных кистей: храним hue и прогресс градиента
   const hueRef = useRef(0);
   const gradientProgressRef = useRef(0);
@@ -185,7 +186,7 @@ export default function LessonPlayer() {
       0,
       0,
       drawingCanvas.width,
-      drawingCanvas.height
+      drawingCanvas.height,
     );
 
     regionDataRef.current = buildRegionMap(imageData);
@@ -193,35 +194,33 @@ export default function LessonPlayer() {
     console.log(
       "Region map built:",
       regionDataRef.current?.regionCount,
-      "regions"
+      "regions",
     );
   };
 
   const handleColorize = () => {
+    setShowColorizer(true);
     if (!regionDataRef.current) {
       computeRegionMap();
     }
 
-    const colorCanvas = colorCanvasRef.current
-    const ctx = colorCanvas?.getContext("2d")
+    const colorCanvas = colorCanvasRef.current;
+    const ctx = colorCanvas?.getContext("2d");
 
-    if (!ctx || !regionDataRef.current) return
+    if (!ctx || !regionDataRef.current) return;
 
-    paintRegionFast(
-      ctx,
-      regionDataRef.current,
-      0,
-      [255, 0, 0]
-    )
+    paintRegionFast(ctx, regionDataRef.current, 0, [255, 0, 0]);
 
     // здесь позже запустим анимацию заливки
   };
 
   // Simple click-to-color prototype: clicking the canvas colors the region that was clicked
   const handleCanvasColorClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // раскраска доступна только после нажатия "Раскрасить"
+    if (!showColorizer) return;
+
     // ignore click if user is currently drawing
     if (isDrawing.current) return;
-
     const canvas = colorCanvasRef.current;
     if (!canvas) return;
 
@@ -392,6 +391,10 @@ export default function LessonPlayer() {
 
     const draw = (e: MouseEvent | TouchEvent) => {
       if (!isDrawing.current || !ctx) return;
+      // user is dragging → switch cursor to pencil
+      if (!isDrawingState) {
+        setIsDrawingState(true);
+      }
       const { x, y } = getCoordinates(e);
 
       ctx.globalCompositeOperation = isEraserRef.current
@@ -465,6 +468,7 @@ export default function LessonPlayer() {
         return [...prev, ctxCopy];
       });
       isDrawing.current = true;
+      // do NOT switch cursor yet; wait until actual movement
       // while drawing we disable color click logic
       const { x, y } = getCoordinates(e);
       ctx.globalCompositeOperation = isEraserRef.current
@@ -477,12 +481,12 @@ export default function LessonPlayer() {
 
     const endDrawing = () => {
       isDrawing.current = false;
+      setIsDrawingState(false);
       ctx.beginPath();
 
       // drawing changed → region map is no longer valid
       regionDataRef.current = null;
     };
-
 
     canvas.addEventListener("mousedown", startDrawing);
     canvas.addEventListener("mousemove", draw);
@@ -672,13 +676,15 @@ export default function LessonPlayer() {
               </div>
             </div>
             <div className="lesson-canvas-wrapper">
-              <canvas
-                id="lesson-canvas"
-                className="lesson-canvas-bg"
-                ref={canvasRef}
-                width={512}
-                height={512}
-              ></canvas>
+              {!showColorizer && (
+                <canvas
+                  id="lesson-canvas"
+                  className="lesson-canvas-bg"
+                  ref={canvasRef}
+                  width={512}
+                  height={512}
+                ></canvas>
+              )}
 
               <canvas
                 id="color-canvas"
@@ -695,6 +701,13 @@ export default function LessonPlayer() {
                 width={512}
                 height={512}
                 onClick={handleCanvasColorClick}
+                style={{
+                  cursor: showColorizer
+                    ? isDrawingState
+                      ? "url('/dog/pencile.png') 0 32, auto"
+                      : "url('/dog/paw.svg') 16 16, auto"
+                    : "url('/dog/pencile.png') 0 32, auto",
+                }}
               ></canvas>
             </div>
             <div
@@ -708,7 +721,7 @@ export default function LessonPlayer() {
                   size={220}
                   speech={
                     currentStepIndex === lesson.steps.length - 1
-                      ? "А я знаю, кто ещё из знаменитых художников такое рисовал!"
+                      ? "А я canvasкто ещё из знаменитых художников такое рисовал!"
                       : fibiSpeech
                   }
                 />
