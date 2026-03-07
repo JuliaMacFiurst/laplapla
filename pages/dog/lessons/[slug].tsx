@@ -584,10 +584,22 @@ export default function LessonPlayer() {
         setIsDrawingState(true);
       }
       const { x, y } = getCoordinates(e);
+      // if eraser is active, also erase from the color canvas
+      const colorCanvas = colorCanvasRef.current;
+      const colorCtx = colorCanvas?.getContext("2d");
 
-      ctx.globalCompositeOperation = isEraserRef.current
+      const erasing = isEraserRef.current;
+
+      ctx.globalCompositeOperation = erasing
         ? "destination-out"
         : "source-over";
+
+      if (colorCtx && erasing) {
+        colorCtx.globalCompositeOperation = "destination-out";
+        colorCtx.lineWidth = brushSizeRef.current;
+        colorCtx.lineJoin = "round";
+        colorCtx.lineCap = "round";
+      }
       applyBrushSettings(ctx);
 
       // --- Обновляем hue и gradientProgress для плавных кистей ---
@@ -653,6 +665,12 @@ export default function LessonPlayer() {
         }
 
         ctx.stroke();
+        if (colorCtx && erasing && prev) {
+          colorCtx.beginPath();
+          colorCtx.moveTo(prev.x, prev.y);
+          colorCtx.lineTo(x, y);
+          colorCtx.stroke();
+        }
         ctx.beginPath();
         ctx.moveTo(midX, midY);
         lastPointRef.current = { x, y };
@@ -704,6 +722,11 @@ export default function LessonPlayer() {
           ctx.shadowBlur = 0; // Disable any shadow for normal brush
         }
         ctx.stroke();
+        if (colorCtx && erasing) {
+          colorCtx.beginPath();
+          colorCtx.arc(x, y, brushSizeRef.current * 0.5, 0, Math.PI * 2);
+          colorCtx.fill();
+        }
         ctx.beginPath();
         ctx.moveTo(x, y);
         lastPointRef.current = { x, y };
