@@ -95,7 +95,7 @@ function detectLineMask(
       mask[p] = 1;
     } else {
       // temporarily mark as possible anti-alias candidate
-      mask[p] = y < lineThreshold + 25 ? 2 : 0;
+      mask[p] = y < lineThreshold + 45 ? 2 : 0;
     }
   }
 
@@ -106,11 +106,16 @@ function detectLineMask(
       const i = row + x;
       if (mask[i] !== 2) continue;
 
+      // absorb diagonal anti‑alias pixels so color regions reach closer to the line
       const hasLineNeighbor =
         mask[i - 1] === 1 ||
         mask[i + 1] === 1 ||
         mask[i - width] === 1 ||
-        mask[i + width] === 1;
+        mask[i + width] === 1 ||
+        mask[i - width - 1] === 1 ||
+        mask[i - width + 1] === 1 ||
+        mask[i + width - 1] === 1 ||
+        mask[i + width + 1] === 1;
 
       mask[i] = hasLineNeighbor ? 1 : 0;
     }

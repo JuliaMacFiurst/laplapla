@@ -122,6 +122,9 @@ export default function LessonPlayer() {
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
   // stored paw seeds
   const seedsRef = useRef<ColorSeed[]>([]);
+  // кэш размеров регионов (чтобы не считать каждый раз)
+  const regionSizeCacheRef = useRef<Map<number, number>>(new Map());
+
   const [showColorizer, setShowColorizer] = useState(false);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const colorCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -185,6 +188,8 @@ export default function LessonPlayer() {
   // Для плавных кистей: храним hue и прогресс градиента
   const hueRef = useRef(0);
   const gradientProgressRef = useRef(0);
+  // previous point for light bezier smoothing
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const pawImgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -255,6 +260,10 @@ export default function LessonPlayer() {
     ctx.save();
     ctx.translate(x, y);
 
+    // small natural paw rotation (-18° .. +18°)
+    const angle = (Math.random() - 0.5) * 0.6;
+    ctx.rotate(angle);
+
     const off = document.createElement("canvas");
     off.width = size;
     off.height = size;
@@ -276,6 +285,39 @@ export default function LessonPlayer() {
     ctx.drawImage(off, -size / 2, -size / 2);
 
     ctx.restore();
+  };
+
+  // if user clicks on a line or anti-aliased border, try to find nearest fillable region
+  const findNearestRegion = (
+    x: number,
+    y: number,
+    regionMap: Int32Array,
+    width: number,
+    height: number,
+    radius = 4,
+  ) => {
+    const start = y * width + x;
+    if (regionMap[start] >= 0) return { x, y, regionId: regionMap[start] };
+
+    for (let r = 1; r <= radius; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+
+          const idx = ny * width + nx;
+          const region = regionMap[idx];
+
+          if (region >= 0) {
+            return { x: nx, y: ny, regionId: region };
+          }
+        }
+      }
+    }
+
+    return null;
   };
 
   // Simple click-to-color prototype: clicking the canvas colors the region that was clicked
@@ -301,10 +343,48 @@ export default function LessonPlayer() {
 
     const { width, regionMap } = regionDataRef.current;
 
-    const pixelIndex = y * width + x;
-    const regionId = regionMap[pixelIndex];
+    // --- Use nearest region search ---
+    const nearest = findNearestRegion(
+      x,
+      y,
+      regionMap,
+      width,
+      regionDataRef.current.height,
+    );
+    if (!nearest) return;
 
-    if (regionId < 0) return;
+    const { x: seedX, y: seedY, regionId } = nearest;
+
+    // --- проверяем, не является ли область очень маленькой ---
+    let regionSize = regionSizeCacheRef.current.get(regionId);
+
+    if (regionSize === undefined) {
+      const { regionMap } = regionDataRef.current!;
+      let count = 0;
+
+      for (let i = 0; i < regionMap.length; i++) {
+        if (regionMap[i] === regionId) count++;
+      }
+
+      regionSize = count;
+      regionSizeCacheRef.current.set(regionId, regionSize);
+    }
+
+    const TINY_REGION_THRESHOLD = 12;
+
+    if (regionSize < TINY_REGION_THRESHOLD) {
+      const colorCanvas = colorCanvasRef.current;
+      const ctx = colorCanvas?.getContext("2d");
+
+      if (ctx) {
+        const hex = brushColorRef.current;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+
+        paintRegionFast(ctx, regionDataRef.current!, regionId, [r, g, b]);
+      }
+    }
 
     // create seed color from current brush color
     const hex = brushColorRef.current;
@@ -314,14 +394,38 @@ export default function LessonPlayer() {
     const color: [number, number, number] = [r, g, b];
 
     // store seed
-    seedsRef.current.push({ x, y, regionId, color });
+    seedsRef.current.push({ x: seedX, y: seedY, regionId, color });
 
-    // draw paw marker on overlay canvas
+    // draw paw marker on overlay canvas with bounce animation
     const pawCanvas = pawOverlayCanvasRef.current;
     const pawCtx = pawCanvas?.getContext("2d");
 
     if (pawCtx) {
-      drawSeedPaw(pawCtx, x, y, color);
+      // draw the paw once (permanent marker)
+      drawSeedPaw(pawCtx, seedX, seedY, color);
+
+      const bounceFrames = 8;
+      let frame = 0;
+
+      const animate = () => {
+        // very soft ripple wave only (no clearing of previous paws)
+        const rippleRadius = frame * 4;
+
+        pawCtx.save();
+        pawCtx.beginPath();
+        pawCtx.arc(seedX, seedY, rippleRadius, 0, Math.PI * 2);
+        pawCtx.strokeStyle = `rgba(${color[0]},${color[1]},${color[2]},${0.10 - frame * 0.02})`;
+        pawCtx.lineWidth = 1;
+        pawCtx.stroke();
+        pawCtx.restore();
+
+        frame++;
+        if (frame <= bounceFrames) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      animate();
     }
   };
 
@@ -359,14 +463,26 @@ export default function LessonPlayer() {
   }, []);
   // Функция для применения текущих настроек кисти к контексту
   const applyBrushSettings = (ctx: CanvasRenderingContext2D) => {
+    // base width
     ctx.lineWidth = brushSizeRef.current;
-    // Используем brushStyleRef и brushColorRef внутри условных блоков
+
+    // enable canvas smoothing so edges are less pixelated
+    ctx.imageSmoothingEnabled = true;
+
     const style = brushStyleRef.current;
     const color = brushColorRef.current;
+
+    // Always use round geometry to avoid sharp pixel corners
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
     ctx.strokeStyle = color;
-    const isSmooth = style === "smooth" || style === "watercolor";
-    ctx.lineJoin = isSmooth ? "round" : "miter";
-    ctx.lineCap = isSmooth ? "round" : "butt";
+
+    // watercolor / smooth brushes keep extra softness
+    if (style === "watercolor" || style === "smooth") {
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+    }
   };
 
   useEffect(() => {
@@ -480,55 +596,116 @@ export default function LessonPlayer() {
       const style = brushStyleRef.current;
       const color = brushColorRef.current;
 
-      ctx.lineTo(x, y);
-      if (style === "sparkle") {
-        for (let i = 0; i < 5; i++) {
-          const offsetX = Math.random() * 10 - 5;
-          const offsetY = Math.random() * 10 - 5;
-          ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-          ctx.beginPath();
-          ctx.arc(
-            x + offsetX,
-            y + offsetY,
-            1 + Math.random() * 1.5,
-            0,
-            2 * Math.PI,
+      // --- Very light Bezier smoothing for drawn lines ---
+      const prev = lastPointRef.current;
+      if (prev) {
+        const midX = (prev.x + x) * 0.5;
+        const midY = (prev.y + y) * 0.5;
+
+        ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+
+        if (style === "sparkle") {
+          for (let i = 0; i < 5; i++) {
+            const offsetX = Math.random() * 10 - 5;
+            const offsetY = Math.random() * 10 - 5;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.beginPath();
+            ctx.arc(
+              x + offsetX,
+              y + offsetY,
+              1 + Math.random() * 1.5,
+              0,
+              2 * Math.PI,
+            );
+            ctx.fill();
+          }
+        } else if (style === "rainbow") {
+          ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 50%)`;
+        } else if (style === "chameleon") {
+          ctx.strokeStyle = `hsl(${(hueRef.current + 180) % 360}, 70%, 50%)`;
+        } else if (style === "gradient") {
+          const r = Math.floor(
+            255 * (1 - gradientProgressRef.current) +
+              100 * gradientProgressRef.current,
           );
-          ctx.fill();
+          const g = Math.floor(
+            100 * (1 - gradientProgressRef.current) +
+              200 * gradientProgressRef.current,
+          );
+          const b = Math.floor(
+            150 * (1 - gradientProgressRef.current) +
+              255 * gradientProgressRef.current,
+          );
+          ctx.strokeStyle = `rgba(${r},${g},${b},0.7)`;
+        } else if (style === "neon") {
+          ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 70%)`;
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = 10;
+        } else if (style === "watercolor") {
+          ctx.strokeStyle = `${color}30`; // добавляем прозрачность к текущему цвету
+          ctx.lineJoin = "round";
+          ctx.lineCap = "round";
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.shadowBlur = 0; // Disable any shadow for normal brush
         }
-      } else if (style === "rainbow") {
-        ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 50%)`;
-      } else if (style === "chameleon") {
-        ctx.strokeStyle = `hsl(${(hueRef.current + 180) % 360}, 70%, 50%)`;
-      } else if (style === "gradient") {
-        const r = Math.floor(
-          255 * (1 - gradientProgressRef.current) +
-            100 * gradientProgressRef.current,
-        );
-        const g = Math.floor(
-          100 * (1 - gradientProgressRef.current) +
-            200 * gradientProgressRef.current,
-        );
-        const b = Math.floor(
-          150 * (1 - gradientProgressRef.current) +
-            255 * gradientProgressRef.current,
-        );
-        ctx.strokeStyle = `rgba(${r},${g},${b},0.7)`;
-      } else if (style === "neon") {
-        ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 70%)`;
-        ctx.shadowColor = ctx.strokeStyle;
-        ctx.shadowBlur = 10;
-      } else if (style === "watercolor") {
-        ctx.strokeStyle = `${color}30`; // добавляем прозрачность к текущему цвету
-        ctx.lineJoin = "round";
-        ctx.lineCap = "round";
-        ctx.shadowBlur = 0;
+
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(midX, midY);
+        lastPointRef.current = { x, y };
       } else {
-        ctx.shadowBlur = 0; // Disable any shadow for normal brush
+        ctx.lineTo(x, y);
+        if (style === "sparkle") {
+          for (let i = 0; i < 5; i++) {
+            const offsetX = Math.random() * 10 - 5;
+            const offsetY = Math.random() * 10 - 5;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.beginPath();
+            ctx.arc(
+              x + offsetX,
+              y + offsetY,
+              1 + Math.random() * 1.5,
+              0,
+              2 * Math.PI,
+            );
+            ctx.fill();
+          }
+        } else if (style === "rainbow") {
+          ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 50%)`;
+        } else if (style === "chameleon") {
+          ctx.strokeStyle = `hsl(${(hueRef.current + 180) % 360}, 70%, 50%)`;
+        } else if (style === "gradient") {
+          const r = Math.floor(
+            255 * (1 - gradientProgressRef.current) +
+              100 * gradientProgressRef.current,
+          );
+          const g = Math.floor(
+            100 * (1 - gradientProgressRef.current) +
+              200 * gradientProgressRef.current,
+          );
+          const b = Math.floor(
+            150 * (1 - gradientProgressRef.current) +
+              255 * gradientProgressRef.current,
+          );
+          ctx.strokeStyle = `rgba(${r},${g},${b},0.7)`;
+        } else if (style === "neon") {
+          ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 70%)`;
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = 10;
+        } else if (style === "watercolor") {
+          ctx.strokeStyle = `${color}30`; // добавляем прозрачность к текущему цвету
+          ctx.lineJoin = "round";
+          ctx.lineCap = "round";
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.shadowBlur = 0; // Disable any shadow for normal brush
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        lastPointRef.current = { x, y };
       }
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
     };
 
     const startDrawing = (e: MouseEvent | TouchEvent) => {
@@ -547,13 +724,14 @@ export default function LessonPlayer() {
       applyBrushSettings(ctx);
       ctx.beginPath();
       ctx.moveTo(x, y);
+      lastPointRef.current = { x, y };
     };
 
     const endDrawing = () => {
       isDrawing.current = false;
       setIsDrawingState(false);
       ctx.beginPath();
-
+      lastPointRef.current = null;
       // drawing changed → region map is no longer valid
       regionDataRef.current = null;
     };

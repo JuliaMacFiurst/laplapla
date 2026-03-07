@@ -115,7 +115,56 @@ export function waveFill(
           if (progress < -edgeSoftness) continue
 
           const index = py * width + px
-          if (regionMap[index] !== regionId) continue
+          const rm = regionMap[index]
+
+          // allow paint slightly into anti‑alias pixels near the region
+          let antiAliasPixel = false
+          let antiAliasDistance = 0
+          if (rm !== regionId) {
+            if (rm === -1) {
+              const isRegionAt = (qx: number, qy: number) => {
+                if (qx < 0 || qy < 0 || qx >= width || qy >= height) return false
+                return regionMap[qy * width + qx] === regionId
+              }
+
+              // first anti‑alias ring: direct 8-neighbour touch
+              const touchesRegion1 =
+                isRegionAt(px - 1, py) ||
+                isRegionAt(px + 1, py) ||
+                isRegionAt(px, py - 1) ||
+                isRegionAt(px, py + 1) ||
+                isRegionAt(px - 1, py - 1) ||
+                isRegionAt(px + 1, py - 1) ||
+                isRegionAt(px - 1, py + 1) ||
+                isRegionAt(px + 1, py + 1)
+
+              // second anti‑alias ring: 2px away, still very weak
+              const touchesRegion2 =
+                isRegionAt(px - 2, py) ||
+                isRegionAt(px + 2, py) ||
+                isRegionAt(px, py - 2) ||
+                isRegionAt(px, py + 2) ||
+                isRegionAt(px - 2, py - 1) ||
+                isRegionAt(px - 2, py + 1) ||
+                isRegionAt(px + 2, py - 1) ||
+                isRegionAt(px + 2, py + 1) ||
+                isRegionAt(px - 1, py - 2) ||
+                isRegionAt(px + 1, py - 2) ||
+                isRegionAt(px - 1, py + 2) ||
+                isRegionAt(px + 1, py + 2) ||
+                isRegionAt(px - 2, py - 2) ||
+                isRegionAt(px + 2, py - 2) ||
+                isRegionAt(px - 2, py + 2) ||
+                isRegionAt(px + 2, py + 2)
+
+              if (!touchesRegion1 && !touchesRegion2) continue
+
+              antiAliasPixel = true
+              antiAliasDistance = touchesRegion1 ? 1 : 2
+            } else {
+              continue
+            }
+          }
 
           const i = index * 4
 
@@ -143,6 +192,12 @@ export function waveFill(
 
           // base watercolor weight
           let weight = falloff * 0.18
+
+          // paint anti‑alias pixels much more gently so color does not cross the contour
+          if (antiAliasPixel) {
+            // first ring gets a bit more color, second ring only a whisper
+            weight *= antiAliasDistance === 1 ? 0.45 : 0.18
+          }
 
           // increase influence of fresh paint
           weight += falloff * pigmentBoost * 0.35
