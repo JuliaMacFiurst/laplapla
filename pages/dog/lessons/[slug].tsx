@@ -131,56 +131,59 @@ export default function LessonPlayer() {
   const pawOverlayCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const debugRenderRegions = () => {
-    const drawingCanvas = drawingCanvasRef.current;
     const colorCanvas = colorCanvasRef.current;
 
-    if (!drawingCanvas || !colorCanvas) return;
-    const cctx = colorCanvas.getContext("2d");
-    if (!cctx) return;
+    if (!colorCanvas) return;
+
+    const ctx = colorCanvas.getContext("2d");
+    if (!ctx) return;
 
     if (!regionDataRef.current) {
       computeRegionMap();
     }
 
-    const result = regionDataRef.current;
-    if (!result) return;
+    const regionData = regionDataRef.current;
+    if (!regionData) return;
 
-    const { width, height, regionMap } = result;
+    const { regionMap, width, height, regionCount } = regionData;
 
-    const out = cctx.createImageData(width, height);
-    const data = out.data;
+    // clear canvas
+    ctx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
 
-    const regionColors: Record<number, [number, number, number]> = {};
+    // distribute seeds across the canvas so waveFill spreads everywhere
+    const debugSeeds: ColorSeed[] = [];
 
-    for (let i = 0; i < regionMap.length; i++) {
-      const region = regionMap[i];
-      const idx = i * 4;
+    // place roughly one seed per visual block (~2cm area)
+    const STEP = 80;
 
-      if (region < 0) {
-        data[idx] = 0;
-        data[idx + 1] = 0;
-        data[idx + 2] = 0;
-        data[idx + 3] = 0;
-        continue;
+    for (let by = 0; by < height; by += STEP) {
+      for (let bx = 0; bx < width; bx += STEP) {
+
+        let found = false;
+
+        // search inside the block for a valid region pixel
+        for (let y = by; y < Math.min(by + STEP, height) && !found; y++) {
+          for (let x = bx; x < Math.min(bx + STEP, width) && !found; x++) {
+            const idx = y * width + x;
+            const regionId = regionMap[idx];
+
+            if (regionId < 0) continue;
+
+            const color: [number, number, number] = [
+              Math.floor(Math.random() * 255),
+              Math.floor(Math.random() * 255),
+              Math.floor(Math.random() * 255),
+            ];
+
+            debugSeeds.push({ x, y, regionId, color });
+            found = true;
+          }
+        }
       }
-
-      if (!regionColors[region]) {
-        regionColors[region] = [
-          Math.floor(Math.random() * 255),
-          Math.floor(Math.random() * 255),
-          Math.floor(Math.random() * 255),
-        ];
-      }
-
-      const [r, g, b] = regionColors[region];
-
-      data[idx] = r;
-      data[idx + 1] = g;
-      data[idx + 2] = b;
-      data[idx + 3] = 200;
     }
 
-    cctx.putImageData(out, 0, 0);
+    // fill regions using the same wave fill used by the colorizer
+    waveFill(ctx, regionData, debugSeeds);
   };
 
   const isDrawing = useRef(false);
