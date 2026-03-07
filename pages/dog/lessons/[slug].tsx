@@ -33,7 +33,7 @@ function DogImage({
 }: {
   name: "fibi" | "frank";
   pose: string; // one of your pose filenames without extension
-  speech?: string;
+  speech?: React.ReactNode;
   size?: number;
 }) {
   const [showAnim, setShowAnim] = useState(false);
@@ -158,7 +158,6 @@ export default function LessonPlayer() {
 
     for (let by = 0; by < height; by += STEP) {
       for (let bx = 0; bx < width; bx += STEP) {
-
         let found = false;
 
         // search inside the block for a valid region pixel
@@ -417,7 +416,7 @@ export default function LessonPlayer() {
         pawCtx.save();
         pawCtx.beginPath();
         pawCtx.arc(seedX, seedY, rippleRadius, 0, Math.PI * 2);
-        pawCtx.strokeStyle = `rgba(${color[0]},${color[1]},${color[2]},${0.10 - frame * 0.02})`;
+        pawCtx.strokeStyle = `rgba(${color[0]},${color[1]},${color[2]},${0.1 - frame * 0.02})`;
         pawCtx.lineWidth = 1;
         pawCtx.stroke();
         pawCtx.restore();
@@ -804,53 +803,6 @@ export default function LessonPlayer() {
         <div>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
           <div className="lesson-controls">
-            {!hasStarted && (
-              <button
-                id="start-button"
-                className="lesson-button lesson-button-start"
-                onClick={() => {
-                  setCurrentStepIndex(0);
-                  drawStepOnCanvas(0);
-                  // --- Применяем настройки кисти для drawingCanvasRef сразу при старте ---
-                  const canvas = drawingCanvasRef.current;
-                  const ctx = canvas?.getContext("2d");
-                  if (ctx) applyBrushSettings(ctx);
-                  setHasStarted(true);
-                }}
-              >
-                <div className="lesson-start-text">Старт!</div>
-                <svg
-                  width="200"
-                  height="200"
-                  viewBox="0 0 100 100"
-                  className="lesson-play-icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    <linearGradient
-                      id="rainbowGradient"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="100%"
-                    >
-                      <stop offset="40%" stopColor="#d7c5f0" />
-                      <stop offset="60%" stopColor="#c5e9f7" />
-                      <stop offset="80%" stopColor="#ffd1a6" />
-                      <stop offset="100%" stopColor="#ffe1d6" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M30,20 L70,50 L30,80 Z" fill="url(#rainbowGradient)">
-                    <animate
-                      attributeName="fill-opacity"
-                      values="1;0.5;1"
-                      dur="2s"
-                      repeatCount="indefinite"
-                    />
-                  </path>
-                </svg>
-              </button>
-            )}
             <button
               className="lesson-button lesson-button-next"
               onClick={() => {
@@ -867,30 +819,31 @@ export default function LessonPlayer() {
                 : "Готово!✅"}
             </button>
             {lesson && currentStepIndex === lesson.steps.length - 1 && (
-              <div style={{ marginTop: "10px", textAlign: "center" }}>
+              <div className="lesson-color-controls">
                 <button
-                  className="lesson-button lesson-button-colorize"
+                  className={`lesson-button lesson-button-colorize ${
+                    currentStepIndex === lesson.steps.length - 1
+                      ? "active"
+                      : "disabled"
+                  }`}
                   onClick={handleColorize}
+                  disabled={currentStepIndex !== lesson.steps.length - 1}
                 >
-                  🌈 Раскрасить скетч!
+                  🌈 Раскрасить скетч
                 </button>
 
                 <button
-                  className="lesson-button"
-                  style={{ marginTop: "10px" }}
+                  className={`lesson-button lesson-button-colorize-auto ${
+                    currentStepIndex === lesson.steps.length - 1
+                      ? "active"
+                      : "disabled"
+                  }`}
                   onClick={debugRenderRegions}
                 >
-                  🧪 Debug регионы
+                  🧪 Автоматическое раскрашивание
                 </button>
               </div>
             )}
-            <div className="lesson-step-counter">
-              {lesson && currentStepIndex >= 0 && (
-                <p>
-                  {currentStepIndex + 1} шаг из {lesson.steps.length}
-                </p>
-              )}
-            </div>
           </div>
           <div className="lesson-main-row">
             <div
@@ -907,7 +860,11 @@ export default function LessonPlayer() {
                   <DogImage
                     name="frank"
                     pose={frankPose}
-                    speech={lesson.steps[currentStepIndex].frank}
+                    speech={
+                      currentStepIndex === lesson.steps.length - 1
+                        ? "Очень красиво получилось! Теперь давай добавим цвета 🎨!"
+                        : lesson.steps[currentStepIndex].frank
+                    }
                     size={220}
                   />
                 ) : (
@@ -924,9 +881,69 @@ export default function LessonPlayer() {
                     />
                   </>
                 )}
+                <div className="lesson-dog-name">Фрэнк</div>
               </div>
             </div>
             <div className="lesson-canvas-wrapper">
+              {!hasStarted && (
+                <button
+                  id="start-button"
+                  className="lesson-button-start"
+                  onClick={() => {
+                    setCurrentStepIndex(0);
+                    drawStepOnCanvas(0);
+                    // --- Применяем настройки кисти для drawingCanvasRef сразу при старте ---
+                    const canvas = drawingCanvasRef.current;
+                    const ctx = canvas?.getContext("2d");
+                    if (ctx) applyBrushSettings(ctx);
+                    setHasStarted(true);
+                  }}
+                >
+                  <div className="lesson-start-text">Старт!</div>
+                  <svg
+                    width="200"
+                    height="200"
+                    viewBox="0 0 100 100"
+                    className="lesson-play-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="rainbowGradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                      >
+                        <stop offset="40%" stopColor="#d7c5f0" />
+                        <stop offset="60%" stopColor="#c5e9f7" />
+                        <stop offset="80%" stopColor="#ffd1a6" />
+                        <stop offset="100%" stopColor="#ffe1d6" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M30,20 L70,50 L30,80 Z"
+                      fill="url(#rainbowGradient)"
+                    >
+                      <animate
+                        attributeName="fill-opacity"
+                        values="1;0.5;1"
+                        dur="2s"
+                        repeatCount="indefinite"
+                      />
+                    </path>
+                  </svg>
+                </button>
+              )}
+              <div className="lesson-step-counter">
+                {lesson && currentStepIndex >= 0 && (
+                  <p>
+                    <strong>{currentStepIndex + 1}</strong> шаг из{" "}
+                    {lesson.steps.length}
+                  </p>
+                )}
+              </div>
+
               {!showColorizer && (
                 <canvas
                   id="lesson-canvas"
@@ -979,39 +996,48 @@ export default function LessonPlayer() {
                   pose={fibiPose}
                   size={220}
                   speech={
-                    currentStepIndex === lesson.steps.length - 1
-                      ? "А я canvasкто ещё из знаменитых художников такое рисовал!"
-                      : fibiSpeech
+                    currentStepIndex === lesson.steps.length - 1 ? (
+                      <>
+                        <div>
+                          А я знаю, кто ещё из знаменитых художников такое
+                          рисовал!
+                        </div>
+
+                        <button
+                          className="art-gallery-open-button"
+                          onClick={() => setShowGallery(true)}
+                          style={{ marginTop: "8px" }}
+                        >
+                          🖼 Открыть галерею
+                        </button>
+                      </>
+                    ) : (
+                      fibiSpeech
+                    )
                   }
                 />
+                {/* Кнопка открытия галереи вынесена отдельно */}
+
+                <div className="lesson-dog-name">Фиби</div>
               </div>
-              {/* Кнопка открытия галереи вынесена отдельно */}
-              {currentStepIndex === lesson.steps.length - 1 && (
-                <div className="art-gallery-button-wrapper">
-                  <button
-                    className="art-gallery-open-button"
-                    onClick={() => setShowGallery(true)}
-                  >
-                    Открыть галерею
-                  </button>
-                </div>
-              )}
             </div>
           </div>
-          <div className="lesson-toolbar">
-            <label>Толщина кисти: </label>
-            <input
-              type="range"
-              min={1}
-              max={20}
-              value={brushSize}
-              onChange={(e) => setBrushSize(Number(e.target.value))}
-            />
+
+
+          <div className="lesson-tools-panel">
+            <div className="lesson-tools-panel-1">
             <button
               className="lesson-button lesson-button-eraser"
               onClick={() => setIsEraser((prev) => !prev)}
             >
-              {isEraser ? "Кисть" : "Ластик"}
+              <>
+                <img
+                  src={isEraser ? "/dog/brush.png" : "/dog/erraser.png"}
+                  alt=""
+                  className="lesson-tool-icon"
+                />
+                {isEraser ? "КИСТЬ" : "ЛАСТИК"}
+              </>
             </button>
             <button
               className="lesson-button"
@@ -1025,7 +1051,14 @@ export default function LessonPlayer() {
                 }
               }}
             >
-              Отменить
+              <>
+                <img
+                  src="/dog/backward.png"
+                  alt=""
+                  className="lesson-tool-icon"
+                />
+                ОТМЕНИТЬ
+              </>
             </button>
             <button
               className="lesson-button lesson-button-clear"
@@ -1058,7 +1091,14 @@ export default function LessonPlayer() {
                 }
               }}
             >
-              Очистить
+              <>
+                <img
+                  src="/dog/clear.png"
+                  alt=""
+                  className="lesson-tool-icon"
+                />
+                ОЧИСТИТЬ
+              </>
             </button>
             <button
               className="lesson-button lesson-button-save"
@@ -1086,10 +1126,28 @@ export default function LessonPlayer() {
                 link.click();
               }}
             >
-              Сохранить
+              <>
+                <img
+                  src="/dog/save.png"
+                  alt=""
+                  className="lesson-tool-icon"
+                />
+                СОХРАНИТЬ
+              </>
             </button>
-          </div>
-          <div className="lesson-brush-settings">
+            </div>
+
+           <div className="lesson-tools-panel-1">
+            <label>ТОЛЩИНА КИСТИ: </label>
+            <input
+              type="range"
+              min={1}
+              max={20}
+              value={brushSize}
+              onChange={(e) => setBrushSize(Number(e.target.value))}
+            />
+
+            <div className="lesson-brush-settings">
             <label>Цвет кисти: </label>
             <input
               type="color"
@@ -1122,6 +1180,9 @@ export default function LessonPlayer() {
               <option value="watercolor">Акварель</option>
             </select>
           </div>
+          </div>
+          </div>
+          
 
           {/* Модалка галереи */}
           {showGallery &&

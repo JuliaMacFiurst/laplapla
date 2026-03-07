@@ -8,7 +8,7 @@
   text-align: center;
   font-size: 3rem;
   margin-bottom: 2rem;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
 }
 
 .lessons-grid {
@@ -54,20 +54,33 @@
 .lesson-title {
   font-size: 1.5rem;
   margin: 0;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   color: #333;
   z-index: 1;
   position: relative;
 }
 
 .lesson-start-button {
-  font-size: 1.2rem;
-  padding: 0.5rem 1rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  font-size: 1.4rem;
+  padding: 12px 22px;
+
   background-color: #ffc6d0;
-  border: none;
-  border-radius: 6px;
+  border: 2px solid white;
+  border-radius: 12px;
+
   cursor: pointer;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  z-index: 10;
 }
 
 .lesson-image--placeholder {
@@ -84,7 +97,6 @@
 
 /*стили для страницы загрузки уроков*/
 
-
 .lesson-container {
   display: flex;
   justify-content: center;
@@ -100,39 +112,163 @@
   justify-content: center;
 }
 
-.lesson-canvas-wrapper {
-  flex: 1;
+.lesson-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+
+  padding: 14px 22px;
+  margin: 20px auto;
+
+  background: #fff7e8; /* нежный ванильный */
+  border: 3px solid #ffffff; /* белый контур */
+  border-radius: 18px;
+
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.lesson-tools-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+
+  padding: 14px 18px;
+
+  background: linear-gradient(135deg,#fff7e8,#ffeedd);
+  border: 3px solid #ffffff;
+  border-radius: 18px;
+
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.12),
+    inset 0 2px 4px rgba(255,255,255,0.7);
+}
+
+.lesson-tools-panel-1,
+.lesson-tools-panel-2 {
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
+.lesson-tools-panel-2 {
+  margin-top: 6px;
+}
 
-.lesson-controls {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
+.lesson-tools-panel label {
+  font-family: "Amatic SC", cursive;
+  font-size: 1.6rem;
+}
+
+.lesson-tools-panel input[type="range"] {
+  accent-color: #ff9fc1;
+}
+
+.lesson-tools-panel input[type="color"] {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+
+  box-shadow:
+    0 4px 10px rgba(0,0,0,0.15),
+    inset 0 2px 4px rgba(255,255,255,0.7);
+
+  background: white;
+}
+
+.lesson-tools-panel input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.lesson-tools-panel input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.lesson-tools-panel input[type="color"]:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 14px rgba(0,0,0,0.18),
+    inset 0 2px 4px rgba(255,255,255,0.7);
+}
+
+.lesson-tools-panel select {
+  font-family: "Amatic SC", cursive;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  padding: 4px 6px;
 }
 
 .lesson-button-start {
-  font-size: 1.4rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: 'Amatic SC', cursive;
-  transition: background-color 0.3s ease;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 10;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+
+  width: 220px;
+  height: 220px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(145deg, #ffe8d1, #c0faff);
+  border: 6px solid #ffffff;
+  border-radius: 40px;
+
+  font-family: "Amatic SC", cursive;
+  font-size: 2rem;
   font-weight: bold;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.08em;
+
+  color: #2f2f2f;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 18px 35px rgba(0, 0, 0, 0.18),
+    inset 0 3px 8px rgba(255, 255, 255, 0.7);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
+
+  z-index: 10;
+}
+
+.lesson-color-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.lesson-button {
+  border-radius: 12px;
+  padding: 10px 16px;
+  border: 0;
+  background: #ffffff;
+  font-weight: 600;
+
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.08s ease;
+  font-family: Amatic SC, cursive;
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.lesson-button:hover {
+  transform: translateY(-1px);
 }
 
 .lesson-button-start.restarted {
@@ -142,24 +278,30 @@
 }
 
 .lesson-button-start:hover {
-  background-color: #8ccfe8;
+  transform: translate(-50%, -52%);
+  box-shadow:
+    0 22px 40px rgba(0, 0, 0, 0.22),
+    inset 0 3px 8px rgba(255, 255, 255, 0.7);
+  filter: brightness(1.05);
 }
 
 .lesson-button-next {
   font-size: 1.4rem;
-  padding: 0.5rem 1rem;
   background-color: #ffe2b6;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
-  font-family: 'Amatic SC', cursive;
-  transition: background-color 0.3s ease;
+  font-family: "Amatic SC", cursive;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: bold;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-  width: 160px;
+  width: 200px;
   max-height: 70px;
+
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: 2px solid white;
+  transition: all 0.25s ease;
 }
 
 .lesson-button-next:hover {
@@ -185,25 +327,90 @@
   border-radius: 8px;
 }
 
+.lesson-dog-name {
+  margin-top: 6px;
+
+  font-family: "Amatic SC", cursive;
+  font-size: 1.6rem;
+  font-weight: bold;
+
+  color: #ff6fa5;
+
+  text-align: center;
+
+  background: linear-gradient(135deg, #fff3b0, #ffd1dc);
+  padding: 4px 12px;
+  border-radius: 14px;
+
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6);
+}
+
+/* звездочки по бокам */
+.lesson-dog-name::before {
+  content: "✨ ";
+}
+
+.lesson-dog-name::after {
+  content: " ✨";
+}
+
+lesson-dog-name::before,
+.lesson-dog-name::after {
+  animation: dogStarTwinkle 2.5s ease-in-out infinite;
+}
+
+@keyframes dogStarTwinkle {
+  0% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.6; transform: scale(0.9); }
+}
+
 .lesson-canvas-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   position: relative;
+
   width: 512px;
   height: 512px;
   margin-bottom: 10px;
+
+  background: #ffffff;
+  border-radius: 18px;
+
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+
+  padding: 50px 16px 16px 16px;
+}
+
+.lesson-canvas-bg,
+.lesson-canvas-color,
+.lesson-canvas-draw,
+.lesson-canvas-paw-overlay {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
 }
 
 .lesson-canvas-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
   z-index: 1;
   border: 1px solid #ccc;
 }
 
 .lesson-canvas-draw {
-  position: absolute;
-  top: 0;
-  left: 0;
   z-index: 2;
   touch-action: none;
   background-color: transparent;
@@ -212,19 +419,19 @@
 .lesson-toolbar {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .lesson-toolbar label:first-of-type {
   font-size: 1.6rem;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
 }
 
 .lesson-brush-settings label {
   font-size: 1.6rem;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
 }
 
 .lesson-toolbar button:nth-child(1) {
@@ -238,14 +445,24 @@
 .lesson-button-eraser {
   background-color: #d8ccff;
   border: none;
+  font-family: Amatic SC, cursive;
+  font-size: 1.4rem;
+  font-weight: bold;
 }
 
 .lesson-button-clear {
   background-color: #c6ffd6;
+  font-family: Amatic SC, cursive;
+  font-size: 1.4rem;
+  font-weight: bold;
 }
 
 .lesson-button-save {
   background-color: #f5ccff;
+  font-family: Amatic SC, cursive;
+  font-size: 1.4rem;
+  font-weight: bold;
+
 }
 
 .lesson-toolbar button:nth-child(4) {
@@ -253,19 +470,20 @@
 }
 
 .lesson-toolbar button,
-.lesson-button-eraser
-.lesson-button-clear,
+.lesson-button-eraser .lesson-button-clear,
 .lesson-button-save {
   border: none;
   padding: 0.5rem 1rem;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   border-radius: 6px;
   cursor: pointer;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   text-transform: uppercase;
   font-weight: bold;
   letter-spacing: 0.05em;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
@@ -277,10 +495,11 @@
 }
 
 .lesson-brush-settings {
-  margin-bottom: 10px;
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .lesson-brush-settings button {
@@ -288,12 +507,14 @@
   font-size: 1.3rem;
   border: none;
   border-radius: 6px;
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   text-transform: uppercase;
   font-weight: bold;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
@@ -318,44 +539,115 @@
   background-color: #dcc6ff;
 }
 
-
-.lesson-brush-settings input {
-  min-width: 70px;
+.lesson-step-counter {
+  position: absolute;
+  top: 5px;
+  right: 5%;
+  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+  z-index: 5;
 }
 
+.lesson-step-counter p {
+  margin: 0;
+  font-weight: 600;
+  color: #676767;
+}
 
-
-
-.lesson-step-counter {
-  font-family: 'Amatic SC', cursive;
-  font-size: 1.4rem;
-  font-weight: bold;
-  text-align: center;
-  margin-top: 0.5rem;
-  color: #444;
+.lesson-step-counter strong {
+  font-weight: 800;
+  color: #333;
 }
 
 .lesson-button-colorize {
-  padding: 14px 24px;
-  border: 5px double #87ceeb; /* нежно-голубая двойная рамка */
-  background: linear-gradient(145deg, #e0f7ff, #ffffff); /* светло-голубой градиент */
-  border-radius: 16px;
-  font-size: 28px;
-  font-weight: bold;
-  color: #005f73;
+  font-size: 1.4rem;
+  background-color: #ffe2b6;
+  border: none;
   cursor: pointer;
-  box-shadow: 0 0 15px 5px rgba(135, 206, 235, 0.6);
-  animation: pulse-highlight 1.5s infinite, wiggle 2s infinite;
-  transition: transform 0.2s ease;
-  font-family: 'Amatic SC', cursive;
-  position: absolute;
-  bottom: 430px; /* расположение над пузырём */
-  left: 230px;
-  z-index: 10;
+  font-family: "Amatic SC", cursive;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  width: 250px;
+  max-height: 70px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: 2px solid white;
+  transition: all 0.25s ease;
 }
 
 .lesson-button-colorize:hover {
-  transform: scale(1.1);
+  transform: translateY(-4px);
+}
+
+.lesson-button-colorize.disabled {
+  background: #d9d9d9;
+  color: #888;
+  border-color: #e5e5e5;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.lesson-button-colorize.active {
+  background: linear-gradient(135deg, #ffd1a6, #ffe1d6, #c5e9f7, #d7c5f0);
+  color: #3a3a3a;
+  border-color: white;
+  cursor: pointer;
+
+  animation: colorizePulse 1.6s infinite;
+}
+
+@keyframes colorizePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 180, 120, 0);
+  }
+
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(255, 180, 120, 0.6);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 180, 120, 0);
+  }
+}
+
+.lesson-button-colorize-auto {
+  font-size: 1.4rem;
+  background-color: #ffe2b6;
+  border: none;
+  cursor: pointer;
+  font-family: "Amatic SC", cursive;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  max-height: 70px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: 2px solid white;
+  transition: all 0.25s ease;
+}
+
+.lesson-button-colorize-auto:hover {
+  transform: translateY(-4px);
+}
+
+.lesson-button-colorize-auto.disabled {
+  background: #d9d9d9;
+  color: #888;
+  border-color: #e5e5e5;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.lesson-button-colorize-auto.active {
+  background: linear-gradient(135deg, #ffb3a0, #fffbbf, #e4b6ff, #cbffd8);
+  color: #3a3a3a;
+  border-color: white;
+  cursor: pointer;
 }
 
 .colorizer-container {
@@ -416,7 +708,6 @@
   z-index: 7;
 }
 
-
 .colorizer-button-undo {
   background-color: #ffd3e2; /* Нежно-розовый */
   color: #4a4a4a;
@@ -438,7 +729,7 @@
 }
 
 .colorizer-action-button {
-  font-family: 'Amatic SC', cursive;
+  font-family: "Amatic SC", cursive;
   font-size: 1.6rem;
   font-weight: bold;
   padding: 10px 20px;
@@ -453,7 +744,9 @@
   transform: translate(-50%, -50%);
   animation: bounceGlow 2s infinite ease-in-out;
   cursor: pointer;
-  transition: transform 0.3s ease, filter 0.2s ease;
+  transition:
+    transform 0.3s ease,
+    filter 0.2s ease;
   z-index: 4;
 }
 
@@ -475,7 +768,8 @@
 }
 
 @keyframes bounceGlow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 12px rgba(255, 235, 59, 0.6);
     transform: translate(-50%, -50%) scale(1);
   }
@@ -514,6 +808,21 @@
   margin-top: 20px;
 }
 
+.lesson-tool-icon {
+  width: 30px;
+  height: 30px;
+  margin-right: 6px;
+
+  object-fit: contain;
+  pointer-events: none;
+
+  transition: transform 0.15s ease;
+}
+
+.lesson-button:hover .lesson-tool-icon {
+  transform: scale(1.15);
+}
+
 .colorizer-result-img {
   position: absolute;
   top: 0;
@@ -536,7 +845,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;           /* как было раньше */
+  gap: 10px; /* как было раньше */
 }
 
 /* Картинка песика */
@@ -553,14 +862,14 @@
   left: 50%;
   transform: translateX(-50%);
   bottom: 100%;
-  margin-bottom: 12px;   
-  width: 200px;           /* расстояние над головой */
+  margin-bottom: 12px;
+  width: 200px; /* расстояние над головой */
   max-width: min(320px, 90vw);
   padding: 8px 12px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.82);
-  border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   font-size: 28px;
   line-height: 1.25;
   text-align: left;
@@ -578,33 +887,20 @@
   width: 14px;
   height: 14px;
   background: inherit;
-  border-left: 1px solid rgba(0,0,0,0.08);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   transform: translateX(-50%) rotate(45deg);
   border-radius: 2px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
-}
-
-.lesson-canvas-wrapper {
-  position: relative;
-}
-
-.lesson-canvas-bg,
-.lesson-canvas-color,
-.lesson-canvas-draw {
-  position: absolute;
-  top: 0;
-  left: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
 }
 
 /* Адаптив: уменьшить шрифт на узких экранах */
 @media (max-width: 420px) {
-  .dog-bubble { font-size: 14px; }
+  .dog-bubble {
+    font-size: 14px;
+  }
 }
 
 .lesson-canvas-paw-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
   pointer-events: none;
 }

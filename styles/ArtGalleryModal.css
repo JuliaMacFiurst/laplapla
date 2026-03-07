@@ -92,13 +92,6 @@
   100% { opacity: 0; transform: translateY(0); }
 }
 
-.art-gallery-button-wrapper {
-  position: absolute;
-  bottom: 420px; /* расположение над пузырём */
-  right: 240px;
-  z-index: 10;
-}
-
 .art-gallery-open-button {
   padding: 14px 24px;
   border: 5px double #ff1493; /* ярко-розовая двойная рамка */
