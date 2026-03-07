@@ -127,6 +127,7 @@ export default function LessonPlayer() {
     | "watercolor"
   >("normal");
   const [hasStarted, setHasStarted] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
   // stored paw seeds
@@ -926,6 +927,45 @@ export default function LessonPlayer() {
   return () => window.removeEventListener("keydown", handleKey);
 }, []);
 
+  // --- Custom restart logic for lesson ---
+  const restartLesson = () => {
+    const drawingCanvas = drawingCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
+    const pawCanvas = pawOverlayCanvasRef.current;
+
+    setShowColorizer(false);
+
+    const dCtx = drawingCanvas?.getContext("2d");
+    const cCtx = colorCanvas?.getContext("2d");
+    const pCtx = pawCanvas?.getContext("2d");
+
+    if (drawingCanvas && dCtx) {
+      dCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    }
+
+    if (colorCanvas && cCtx) {
+      cCtx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
+    }
+
+    if (pawCanvas && pCtx) {
+      pCtx.clearRect(0, 0, pawCanvas.width, pawCanvas.height);
+    }
+
+    setUndoStack([]);
+    setRedoStack([]);
+
+    seedsRef.current = [];
+    regionDataRef.current = null;
+
+    setCurrentStepIndex(0);
+
+    setTimeout(() => {
+      drawStepOnCanvas(0);
+    }, 0);
+
+    setShowRestartConfirm(false);
+  };
+
   return (
     <div className="lesson-container">
       {lesson ? (
@@ -935,17 +975,35 @@ export default function LessonPlayer() {
             <button
               className="lesson-button lesson-button-next"
               onClick={() => {
+                if (!lesson) return;
+
+                // --- Start lesson ---
+                if (!hasStarted) {
+                  setHasStarted(true);
+                  setCurrentStepIndex(0);
+                  drawStepOnCanvas(0);
+                  return;
+                }
+
+                // --- Restart lesson ---
+                if (currentStepIndex === lesson.steps.length - 1) {
+                  setShowRestartConfirm(true);
+                  return;
+                }
+
+                // --- Normal next step ---
                 const nextIndex = currentStepIndex + 1;
-                if (lesson && nextIndex < lesson.steps.length) {
+                if (nextIndex < lesson.steps.length) {
                   setCurrentStepIndex(nextIndex);
                   drawStepOnCanvas(nextIndex);
-                  if (!hasStarted) setHasStarted(true);
                 }
               }}
             >
-              {currentStepIndex < lesson.steps.length - 1
-                ? "Следующий шаг 🐾"
-                : "Готово!✅"}
+              {!hasStarted
+                ? "Начать урок"
+                : currentStepIndex === lesson.steps.length - 1
+                ? "Повторить урок"
+                : "Следующий шаг 🐾"}
             </button>
             {lesson && currentStepIndex === lesson.steps.length - 1 && (
               <div className="lesson-color-controls">
@@ -1518,6 +1576,41 @@ export default function LessonPlayer() {
               </div>
             </div>
           </div>
+
+          {/* Custom restart confirmation modal */}
+          {showRestartConfirm && (
+            <div className="lesson-restart-modal">
+              <div className="lesson-restart-modal-box">
+
+                <div className="lesson-restart-frank">
+                  <div className="lesson-restart-frank-bubble">
+                    Точно стереть рисунок?
+                    <br />
+                    Я уже к нему привык 🐾
+                  </div>
+
+                  <img src="/dog/frank.webp" alt="Frank" />
+                </div>
+
+                <div className="lesson-restart-modal-buttons">
+                  <button
+                    className="lesson-button"
+                    onClick={() => setShowRestartConfirm(false)}
+                  >
+                    Отмена
+                  </button>
+
+                  <button
+                    className="lesson-button lesson-button-clear"
+                    onClick={restartLesson}
+                  >
+                    Стереть
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
 
           {/* Модалка галереи */}
           {showGallery &&

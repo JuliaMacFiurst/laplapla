@@ -443,7 +443,7 @@ lesson-dog-name::before,
 }
 
 .lesson-button-eraser {
-  background-color: #d8ccff;
+  background-color: #d3ffcf;
   border: none;
   font-family: Amatic SC, cursive;
   font-size: 1.4rem;
@@ -451,7 +451,7 @@ lesson-dog-name::before,
 }
 
 .lesson-button-clear {
-  background-color: #c6ffd6;
+  background-color: #ffd1d1;
   font-family: Amatic SC, cursive;
   font-size: 1.4rem;
   font-weight: bold;
@@ -903,4 +903,101 @@ lesson-dog-name::before,
 
 .lesson-canvas-paw-overlay {
   pointer-events: none;
+}
+
+
+/* затемнение фона */
+.lesson-restart-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+
+  background: rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+}
+
+/* само окно */
+.lesson-restart-modal-box {
+  background: #ffffff;
+
+  border-radius: 16px;
+  padding: 26px 30px;
+
+  box-shadow:
+    0 12px 30px rgba(0,0,0,0.15),
+    0 2px 8px rgba(0,0,0,0.08);
+
+  max-width: 360px;
+  text-align: center;
+
+  font-family: "Amatic SC", cursive;
+  font-size: 28px;
+
+
+  animation: lessonModalPop 0.18s ease-out;
+}
+
+/* текст */
+.lesson-restart-modal-box p {
+  margin: 8px 0;
+  font-size: 28px;
+  color: #333;
+}
+
+/* кнопки */
+.lesson-restart-modal-buttons {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* контейнер Фрэнка внутри попапа */
+.lesson-restart-frank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* картинка Фрэнка */
+.lesson-restart-frank img {
+  width: 140px;
+  height: auto;
+  object-fit: contain;
+}
+
+/* облачко речи Фрэнка */
+.lesson-restart-frank-bubble {
+  background: #fff7e8;
+  border: 2px solid white;
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-size: 26px;
+  line-height: 1.25;
+  text-align: center;
+  margin-bottom: 8px;
+
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.12),
+    inset 0 2px 4px rgba(255,255,255,0.7);
+}
+
+/* анимация появления */
+@keyframes lessonModalPop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
