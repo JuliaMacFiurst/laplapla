@@ -125,6 +125,7 @@ export default function LessonPlayer() {
   const [showColorizer, setShowColorizer] = useState(false);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const colorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pawOverlayCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const debugRenderRegions = () => {
     const drawingCanvas = drawingCanvasRef.current;
@@ -226,7 +227,14 @@ export default function LessonPlayer() {
 
     if (!ctx || !regionDataRef.current) return;
 
-    waveFill(ctx, regionDataRef.current, seedsRef.current)
+    waveFill(ctx, regionDataRef.current, seedsRef.current);
+    // убрать лапки после начала раскрашивания
+    const pawCanvas = pawOverlayCanvasRef.current;
+    const pawCtx = pawCanvas?.getContext("2d");
+
+    if (pawCtx && pawCanvas) {
+      pawCtx.clearRect(0, 0, pawCanvas.width, pawCanvas.height);
+    }
 
     // здесь позже запустим анимацию заливки
   };
@@ -242,18 +250,11 @@ export default function LessonPlayer() {
     if (!img || !img.complete) return;
 
     const [r, g, b] = color;
-    const size = 24 + Math.random() * 8;
-    const angle = (Math.random() - 0.5) * 0.4;
+    const size = 26;
 
     ctx.save();
-
-    // move origin to click position
     ctx.translate(x, y);
 
-    // rotate paw slightly for natural look
-    ctx.rotate(angle);
-
-    // create offscreen canvas for tinting
     const off = document.createElement("canvas");
     off.width = size;
     off.height = size;
@@ -264,15 +265,14 @@ export default function LessonPlayer() {
       return;
     }
 
-    // draw original SVG into offscreen canvas
+    // рисуем SVG
     offCtx.drawImage(img, 0, 0, size, size);
 
-    // tint only the shape
+    // перекрашиваем лапку
     offCtx.globalCompositeOperation = "source-in";
     offCtx.fillStyle = `rgb(${r},${g},${b})`;
     offCtx.fillRect(0, 0, size, size);
 
-    // stamp the result onto main canvas
     ctx.drawImage(off, -size / 2, -size / 2);
 
     ctx.restore();
@@ -316,11 +316,13 @@ export default function LessonPlayer() {
     // store seed
     seedsRef.current.push({ x, y, regionId, color });
 
-    // draw paw marker
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    // draw paw marker on overlay canvas
+    const pawCanvas = pawOverlayCanvasRef.current;
+    const pawCtx = pawCanvas?.getContext("2d");
 
-    drawSeedPaw(ctx, x, y, color);
+    if (pawCtx) {
+      drawSeedPaw(pawCtx, x, y, color);
+    }
   };
 
   const [fibiSpeech, setFibiSpeech] = useState<string>("");
@@ -758,6 +760,14 @@ export default function LessonPlayer() {
                 id="color-canvas"
                 className="lesson-canvas-color"
                 ref={colorCanvasRef}
+                width={512}
+                height={512}
+              ></canvas>
+
+              <canvas
+                id="paw-overlay-canvas"
+                className="lesson-canvas-paw-overlay"
+                ref={pawOverlayCanvasRef}
                 width={512}
                 height={512}
               ></canvas>

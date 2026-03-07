@@ -1,5 +1,3 @@
-
-
 /**
  * buildRegionMap.ts
  *
@@ -23,8 +21,9 @@ export type BuildRegionMapOptions = {
   /**
    * Luminance threshold for considering a pixel part of a line.
    * Lower => stricter (fewer pixels are considered line).
+   * default 200 (captures anti-alias pixels around strokes)
    */
-  lineThreshold?: number; // default 170
+  lineThreshold?: number; // default 200 (captures anti-alias pixels around strokes)
 
   /**
    * Treat near-transparent pixels as empty (not a line).
@@ -35,8 +34,9 @@ export type BuildRegionMapOptions = {
    * Expand detected lines by N pixels (simple dilation).
    * This helps close small gaps and prevents spill between regions.
    * 0 = no expansion.
+   * default 2 (absorbs anti-alias border around lines)
    */
-  lineGrowRadius?: number; // default 1
+  lineGrowRadius?: number; // default 2 (absorbs anti-alias border around lines)
 
   /**
    * Skip (merge into "background") tiny regions of size <= this.
@@ -90,8 +90,35 @@ function detectLineMask(
     const b = data[i + 2];
     const y = luminance(r, g, b);
 
-    // "Line" = dark-ish pixel
-    mask[p] = y < lineThreshold ? 1 : 0;
+    // "Line" = dark pixel OR anti-aliased edge close to a dark pixel
+    if (y < lineThreshold) {
+      mask[p] = 1;
+    } else {
+      // temporarily mark as possible anti-alias candidate
+      mask[p] = y < lineThreshold + 25 ? 2 : 0;
+    }
+  }
+
+  // Second pass: absorb anti-alias pixels next to lines
+  for (let y = 1; y < height - 1; y++) {
+    const row = y * width;
+    for (let x = 1; x < width - 1; x++) {
+      const i = row + x;
+      if (mask[i] !== 2) continue;
+
+      const hasLineNeighbor =
+        mask[i - 1] === 1 ||
+        mask[i + 1] === 1 ||
+        mask[i - width] === 1 ||
+        mask[i + width] === 1;
+
+      mask[i] = hasLineNeighbor ? 1 : 0;
+    }
+  }
+
+  // normalize any remaining candidates
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i] === 2) mask[i] = 0;
   }
 
   return mask;
@@ -267,9 +294,9 @@ export function buildRegionMap(
   const width = imageData.width;
   const height = imageData.height;
 
-  const lineThreshold = options.lineThreshold ?? 170;
+  const lineThreshold = options.lineThreshold ?? 200;
   const alphaThreshold = options.alphaThreshold ?? 8;
-  const lineGrowRadius = options.lineGrowRadius ?? 1;
+  const lineGrowRadius = options.lineGrowRadius ?? 2;
   const minRegionSize = options.minRegionSize ?? 0;
   const returnRegionSizes = options.returnRegionSizes ?? false;
 

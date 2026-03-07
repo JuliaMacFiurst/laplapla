@@ -601,3 +601,10 @@
 @media (max-width: 420px) {
   .dog-bubble { font-size: 14px; }
 }
+
+.lesson-canvas-paw-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
