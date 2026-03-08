@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { artFacts } from "@/content/dogs/artFacts";
 import ReactDOM from "react-dom";
 import { buildRegionMap } from "@/utils/buildRegionMap";
 import { paintRegionFast } from "@/utils/paintRegionFast";
@@ -476,7 +477,37 @@ export default function LessonPlayer() {
     }
   };
 
-  const [fibiSpeech, setFibiSpeech] = useState<string>("");
+  
+  const [randomArtFact, setRandomArtFact] = useState("");
+  const shuffledFactsRef = useRef<string[]>([]);
+
+  // --- Fibi intro phrase logic ---
+  const introVariants = ["Хочешь секрет:", "Слушай!", "Говорят...", "А ты знаешь?", "Псс, по секрету...", "Знаешь что?"];
+  const lastIntroRef = useRef<number | null>(null);
+  const [fibiIntro, setFibiIntro] = useState(introVariants[0]);
+
+  useEffect(() => {
+    // shuffle facts once when lesson starts
+    if (shuffledFactsRef.current.length === 0) {
+      const shuffled = [...artFacts].sort(() => Math.random() - 0.5);
+      shuffledFactsRef.current = shuffled;
+    }
+
+    const facts = shuffledFactsRef.current;
+    const index = currentStepIndex % facts.length;
+
+    setRandomArtFact(facts[index]);
+
+    // choose intro phrase different from the previous one
+    let nextIndex = Math.floor(Math.random() * introVariants.length);
+    if (lastIntroRef.current !== null && introVariants.length > 1) {
+      while (nextIndex === lastIntroRef.current) {
+        nextIndex = Math.floor(Math.random() * introVariants.length);
+      }
+    }
+    lastIntroRef.current = nextIndex;
+    setFibiIntro(introVariants[nextIndex]);
+  }, [currentStepIndex]);
 
   // refs для brushSize, brushColor, brushStyle, isEraser
   const brushSizeRef = useRef(brushSize);
@@ -530,13 +561,6 @@ export default function LessonPlayer() {
       ctx.lineCap = "round";
     }
   };
-
-  useEffect(() => {
-    // Временно отключаем генерацию речи Фиби через ИИ
-    // Позже здесь появится новая механика персонажа
-    setFibiSpeech("");
-    return () => {};
-  }, [lesson, currentStepIndex]);
 
   const drawStepOnCanvas = (stepIndex: number) => {
     if (
@@ -1186,10 +1210,8 @@ export default function LessonPlayer() {
                     currentStepIndex === lesson.steps.length - 1 ? (
                       <>
                         <div>
-                          А я знаю, кто ещё из знаменитых художников такое
-                          рисовал!
+                          🎨 А я знаю какой художник тоже такое рисовал!
                         </div>
-
                         <button
                           className="art-gallery-open-button"
                           onClick={() => setShowGallery(true)}
@@ -1199,7 +1221,11 @@ export default function LessonPlayer() {
                         </button>
                       </>
                     ) : (
-                      fibiSpeech
+                      <div>
+                        🎨 {fibiIntro}
+                        <br />
+                        {randomArtFact}
+                      </div>
                     )
                   }
                 />
