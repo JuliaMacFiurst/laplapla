@@ -118,6 +118,7 @@ export default function LessonPlayer() {
   const [undoStack, setUndoStack] = useState<UndoState[]>([]);
   const [_redoStack, setRedoStack] = useState<UndoState[]>([]);
   const [brushColor, setBrushColor] = useState<string>("#000000");
+  const [brushOpacity, setBrushOpacity] = useState<number>(1);
   const [brushStyle, setBrushStyle] = useState<
     | "normal"
     | "smooth"
@@ -130,6 +131,11 @@ export default function LessonPlayer() {
   >("normal");
   const [hasStarted, setHasStarted] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [animationMenuOpen, setAnimationMenuOpen] = useState(false);
+  const [animationMode, setAnimationMode] = useState<
+    "puzzle" | "flow" | "mix" | "replay" | null
+  >(null);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
   // stored paw seeds
@@ -144,6 +150,16 @@ export default function LessonPlayer() {
 
   const debugRenderRegions = () => {
     const colorCanvas = colorCanvasRef.current;
+    // On tablets / touch devices we clear seed history to prevent slowdown
+    const isTouchDevice =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+
+    if (isTouchDevice) {
+      seedsRef.current = [];
+      setUndoStack([]);
+      setRedoStack([]);
+    }
 
     if (!colorCanvas) return;
 
@@ -246,7 +262,10 @@ export default function LessonPlayer() {
 
     if (!ctx || !regionDataRef.current) return;
 
-    waveFill(ctx, regionDataRef.current, seedsRef.current);
+    if (seedsRef.current.length > 0) {
+      // fill all placed paw seeds so every paw becomes a colored region
+      waveFill(ctx, regionDataRef.current, seedsRef.current);
+    }
     // убрать лапки после начала раскрашивания
     const pawCanvas = pawOverlayCanvasRef.current;
     const pawCtx = pawCanvas?.getContext("2d");
@@ -445,6 +464,12 @@ export default function LessonPlayer() {
     // store seed
     seedsRef.current.push({ x: seedX, y: seedY, regionId, color });
 
+    // ограничиваем количество лапок чтобы планшеты не тормозили
+    const MAX_SEEDS = 80;
+    if (seedsRef.current.length > MAX_SEEDS) {
+      seedsRef.current.shift();
+    }
+
     // draw paw marker on overlay canvas with bounce animation
     const pawOverlay = pawOverlayCanvasRef.current;
     const pawCtx = pawOverlay?.getContext("2d");
@@ -455,6 +480,17 @@ export default function LessonPlayer() {
 
       const bounceFrames = 8;
       let frame = 0;
+
+      // ограничиваем количество ripple анимаций
+      const MAX_RIPPLES = 5;
+
+      if (!(window as any)._activeRipples) {
+        (window as any)._activeRipples = 0;
+      }
+
+      if ((window as any)._activeRipples >= MAX_RIPPLES) return;
+
+      (window as any)._activeRipples++;
 
       const animate = () => {
         // very soft ripple wave only (no clearing of previous paws)
@@ -471,6 +507,8 @@ export default function LessonPlayer() {
         frame++;
         if (frame <= bounceFrames) {
           requestAnimationFrame(animate);
+        } else {
+          (window as any)._activeRipples--;
         }
       };
 
@@ -478,12 +516,18 @@ export default function LessonPlayer() {
     }
   };
 
-  
   const [randomArtFact, setRandomArtFact] = useState("");
   const shuffledFactsRef = useRef<string[]>([]);
 
   // --- Fibi intro phrase logic ---
-  const introVariants = ["Хочешь секрет:", "Слушай!", "Говорят...", "А ты знаешь?", "Псс, по секрету...", "Знаешь что?"];
+  const introVariants = [
+    "Хочешь секрет:",
+    "Слушай!",
+    "Говорят...",
+    "А ты знаешь?",
+    "Псс, по секрету...",
+    "Знаешь что?",
+  ];
   const lastIntroRef = useRef<number | null>(null);
   const [fibiIntro, setFibiIntro] = useState(introVariants[0]);
 
@@ -513,6 +557,7 @@ export default function LessonPlayer() {
   // refs для brushSize, brushColor, brushStyle, isEraser
   const brushSizeRef = useRef(brushSize);
   const brushColorRef = useRef(brushColor);
+  const brushOpacityRef = useRef(brushOpacity);
   const brushStyleRef = useRef(brushStyle);
   const isEraserRef = useRef(isEraser);
   // useEffect для обновления ref при изменении brushSize
@@ -523,6 +568,9 @@ export default function LessonPlayer() {
   useEffect(() => {
     brushColorRef.current = brushColor;
   }, [brushColor]);
+  useEffect(() => {
+    brushOpacityRef.current = brushOpacity;
+  }, [brushOpacity]);
   // useEffect для обновления ref при изменении brushStyle
   useEffect(() => {
     brushStyleRef.current = brushStyle;
@@ -554,6 +602,7 @@ export default function LessonPlayer() {
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
 
+    ctx.globalAlpha = brushOpacityRef.current;
     ctx.strokeStyle = color;
 
     // watercolor / smooth brushes keep extra softness
@@ -682,10 +731,30 @@ export default function LessonPlayer() {
       // --- Very light Bezier smoothing for drawn lines ---
       const prev = lastPointRef.current;
       if (prev) {
-        const midX = (prev.x + x) * 0.5;
-        const midY = (prev.y + y) * 0.5;
+        // Interpolate intermediate points to prevent gaps in fast moves
+        const dx = x - prev.x;
+        const dy = y - prev.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
 
-        ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+        // dynamic taper for normal brush (line narrows at stroke end)
+        const styleNow = brushStyleRef.current;
+        if (styleNow === "smooth" || styleNow === "normal") {
+          const base = brushSizeRef.current;
+          const speedFactor = Math.min(dist * 0.05, 0.6);
+          const dynamicWidth = base * (1 - speedFactor);
+          ctx.lineWidth = Math.max(base * 0.35, dynamicWidth);
+        }
+
+        const step = Math.max(1, brushSizeRef.current * 0.4);
+        const segments = Math.ceil(dist / step);
+
+        for (let i = 1; i <= segments; i++) {
+          const t = i / segments;
+          const ix = prev.x + dx * t;
+          const iy = prev.y + dy * t;
+
+          ctx.lineTo(ix, iy);
+        }
 
         if (style === "sparkle") {
           for (let i = 0; i < 5; i++) {
@@ -725,10 +794,50 @@ export default function LessonPlayer() {
           ctx.shadowColor = ctx.strokeStyle;
           ctx.shadowBlur = 10;
         } else if (style === "watercolor") {
-          ctx.strokeStyle = `${color}30`; // добавляем прозрачность к текущему цвету
+          // watercolor spreading effect
+
           ctx.lineJoin = "round";
           ctx.lineCap = "round";
-          ctx.shadowBlur = 0;
+          ctx.strokeStyle = color;
+
+          // base wet stroke
+          ctx.globalAlpha = 0.15;
+          ctx.lineWidth = brushSizeRef.current * 2.4;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = brushSizeRef.current * 0.8;
+          ctx.stroke();
+
+          // soft diffusion layer
+          ctx.globalAlpha = 0.08;
+          ctx.lineWidth = brushSizeRef.current * 3.8;
+          ctx.shadowBlur = brushSizeRef.current * 1.8;
+          ctx.stroke();
+
+          // outer water bloom
+          ctx.globalAlpha = 0.04;
+          ctx.lineWidth = brushSizeRef.current * 5.5;
+          ctx.shadowBlur = brushSizeRef.current * 3;
+          ctx.stroke();
+
+          // pigment diffusion particles
+          for (let i = 0; i < 8; i++) {
+            const dx = x + (Math.random() - 0.5) * brushSizeRef.current * 4;
+            const dy = y + (Math.random() - 0.5) * brushSizeRef.current * 4;
+
+            ctx.globalAlpha = 0.03 + Math.random() * 0.05;
+
+            ctx.beginPath();
+            ctx.arc(
+              dx,
+              dy,
+              Math.random() * brushSizeRef.current * 0.7,
+              0,
+              Math.PI * 2,
+            );
+
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
         } else {
           ctx.shadowBlur = 0; // Disable any shadow for normal brush
         }
@@ -741,7 +850,7 @@ export default function LessonPlayer() {
           colorCtx.stroke();
         }
         ctx.beginPath();
-        ctx.moveTo(midX, midY);
+        ctx.moveTo(x, y);
         lastPointRef.current = { x, y };
       } else {
         ctx.lineTo(x, y);
@@ -783,10 +892,50 @@ export default function LessonPlayer() {
           ctx.shadowColor = ctx.strokeStyle;
           ctx.shadowBlur = 10;
         } else if (style === "watercolor") {
-          ctx.strokeStyle = `${color}30`; // добавляем прозрачность к текущему цвету
+          // watercolor spreading effect
+
           ctx.lineJoin = "round";
           ctx.lineCap = "round";
-          ctx.shadowBlur = 0;
+          ctx.strokeStyle = color;
+
+          // base wet stroke
+          ctx.globalAlpha = 0.15;
+          ctx.lineWidth = brushSizeRef.current * 2.4;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = brushSizeRef.current * 0.8;
+          ctx.stroke();
+
+          // soft diffusion layer
+          ctx.globalAlpha = 0.08;
+          ctx.lineWidth = brushSizeRef.current * 3.8;
+          ctx.shadowBlur = brushSizeRef.current * 1.8;
+          ctx.stroke();
+
+          // outer water bloom
+          ctx.globalAlpha = 0.04;
+          ctx.lineWidth = brushSizeRef.current * 5.5;
+          ctx.shadowBlur = brushSizeRef.current * 3;
+          ctx.stroke();
+
+          // pigment diffusion particles
+          for (let i = 0; i < 8; i++) {
+            const dx = x + (Math.random() - 0.5) * brushSizeRef.current * 4;
+            const dy = y + (Math.random() - 0.5) * brushSizeRef.current * 4;
+
+            ctx.globalAlpha = 0.03 + Math.random() * 0.05;
+
+            ctx.beginPath();
+            ctx.arc(
+              dx,
+              dy,
+              Math.random() * brushSizeRef.current * 0.7,
+              0,
+              Math.PI * 2,
+            );
+
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
         } else {
           ctx.shadowBlur = 0; // Disable any shadow for normal brush
         }
@@ -917,40 +1066,35 @@ export default function LessonPlayer() {
   }, [currentStepIndex]);
 
   useEffect(() => {
-  const handleKey = (e: KeyboardEvent) => {
+    const handleKey = (e: KeyboardEvent) => {
+      const isUndo =
+        (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z";
 
-    const isUndo =
-      (e.ctrlKey || e.metaKey) &&
-      !e.shiftKey &&
-      e.key.toLowerCase() === "z";
+      const isRedo =
+        (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z";
 
-    const isRedo =
-      (e.ctrlKey || e.metaKey) &&
-      e.shiftKey &&
-      e.key.toLowerCase() === "z";
+      if (isUndo) {
+        e.preventDefault();
+        const btn = document.querySelector(
+          ".lesson-button img[src='/dog/backward.png']",
+        )?.parentElement as HTMLButtonElement | null;
 
-    if (isUndo) {
-      e.preventDefault();
-      const btn = document.querySelector(
-        ".lesson-button img[src='/dog/backward.png']"
-      )?.parentElement as HTMLButtonElement | null;
+        btn?.click();
+      }
 
-      btn?.click();
-    }
+      if (isRedo) {
+        e.preventDefault();
+        const btn = document.querySelector(
+          ".lesson-button-redo",
+        ) as HTMLButtonElement | null;
 
-    if (isRedo) {
-      e.preventDefault();
-      const btn = document.querySelector(
-        ".lesson-button-redo"
-      ) as HTMLButtonElement | null;
+        btn?.click();
+      }
+    };
 
-      btn?.click();
-    }
-  };
-
-  window.addEventListener("keydown", handleKey);
-  return () => window.removeEventListener("keydown", handleKey);
-}, []);
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
 
   // --- Custom restart logic for lesson ---
   const restartLesson = () => {
@@ -993,7 +1137,9 @@ export default function LessonPlayer() {
 
   return (
     <div className="lesson-container">
-      <BackButton href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`} />
+      <BackButton
+        href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`}
+      />
       {lesson ? (
         <div>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
@@ -1028,8 +1174,8 @@ export default function LessonPlayer() {
               {!hasStarted
                 ? "Начать урок"
                 : currentStepIndex === lesson.steps.length - 1
-                ? "Повторить урок"
-                : "Следующий шаг 🐾"}
+                  ? "Повторить урок"
+                  : "Следующий шаг 🐾"}
             </button>
             {lesson && currentStepIndex === lesson.steps.length - 1 && (
               <div className="lesson-color-controls">
@@ -1055,9 +1201,65 @@ export default function LessonPlayer() {
                 >
                   🧪 Автоматическое раскрашивание
                 </button>
+
+                <button
+                  className="lesson-button lesson-button-animate"
+                  onClick={() => {
+                    setAnimationMenuOpen(true);
+                  }}
+                >
+                  ✨ Оживить картинку
+                </button>
               </div>
             )}
           </div>
+          {animationMenuOpen && (
+            <div className="lesson-animation-menu">
+              <button
+                className="lesson-animation-button btn-mint"
+                onClick={() => {
+                  setFrankPose(getRandomPose(frankPoses));
+                  setAnimationMode("puzzle");
+                  setAnimationMenuOpen(false);
+                }}
+              >
+                🧩 Сделать пазл
+              </button>
+
+              <button
+                className="lesson-animation-button btn-blue"
+                onClick={() => {
+                  setFrankPose(getRandomPose(frankPoses));
+                  setAnimationMode("flow");
+                  setAnimationMenuOpen(false);
+                }}
+              >
+                🌊 Перетекание краски
+              </button>
+
+              <button
+                className="lesson-animation-button btn-pink"
+                onClick={() => {
+                  setFrankPose(getRandomPose(frankPoses));
+                  setAnimationMode("mix");
+                  setAnimationMenuOpen(false);
+                }}
+              >
+                🎨 Смешать краски
+              </button>
+
+              <button
+                className="lesson-animation-button btn-yellow"
+                onClick={() => {
+                  setFrankPose(getRandomPose(frankPoses));
+                  setAnimationMode("replay");
+                  setAnimationMenuOpen(false);
+                }}
+              >
+                🎬 Проиграть процесс
+              </button>
+            </div>
+          )}
           <div className="lesson-main-row">
             <div
               className="lesson-frank"
@@ -1074,9 +1276,26 @@ export default function LessonPlayer() {
                     name="frank"
                     pose={frankPose}
                     speech={
-                      currentStepIndex === lesson.steps.length - 1
-                        ? "Очень красиво получилось! Теперь давай добавим цвета 🎨!"
-                        : lesson.steps[currentStepIndex].frank
+                      animationMenuOpen
+                        ? "Выбирай что хочешь сделать со своим рисунком!"
+                        : animationMode === "puzzle"
+                          ? "Упс! Твой шедевр рассыпался на части. Давай соберём его обратно!"
+                          : animationMode === "flow"
+                            ? (
+                                typeof window !== "undefined" &&
+                                ("ontouchstart" in window || navigator.maxTouchPoints > 0)
+                                  ? "Попробуй наклонить планшет и посмотри, что будет!"
+                                  : "Наклони холст со своей картиной вправо или влево с помощью стрелочек и посмотри, что будет."
+                              )
+                            : animationMode === "mix"
+                              ? "Проведи мышкой или стилусом по своей работе и посмотри, что произойдёт."
+                              : animationMode === "replay"
+                                ? "Теперь ты можешь посмотреть, как создавался этот шедевр от начала и до конца."
+                                : (
+                                    currentStepIndex === lesson.steps.length - 1
+                                      ? "Очень красиво получилось! Теперь давай добавим цвета 🎨!"
+                                      : lesson.steps[currentStepIndex].frank
+                                  )
                     }
                     size={220}
                   />
@@ -1440,7 +1659,12 @@ export default function LessonPlayer() {
 
                         const fadeStep = () => {
                           dCtx.fillStyle = `rgba(255,255,255,0.1)`;
-                          dCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+                          dCtx.fillRect(
+                            0,
+                            0,
+                            drawingCanvas.width,
+                            drawingCanvas.height,
+                          );
 
                           alpha -= 0.1;
 
@@ -1448,16 +1672,31 @@ export default function LessonPlayer() {
                             requestAnimationFrame(fadeStep);
                           } else {
                             // clear drawing
-                            dCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+                            dCtx.clearRect(
+                              0,
+                              0,
+                              drawingCanvas.width,
+                              drawingCanvas.height,
+                            );
 
                             // clear color fill
                             if (colorCanvas && cCtx) {
-                              cCtx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
+                              cCtx.clearRect(
+                                0,
+                                0,
+                                colorCanvas.width,
+                                colorCanvas.height,
+                              );
                             }
 
                             // clear paw overlay
                             if (pawCanvas && pCtx) {
-                              pCtx.clearRect(0, 0, pawCanvas.width, pawCanvas.height);
+                              pCtx.clearRect(
+                                0,
+                                0,
+                                pawCanvas.width,
+                                pawCanvas.height,
+                              );
                             }
 
                             // reset color seeds
@@ -1541,7 +1780,7 @@ export default function LessonPlayer() {
                     tempCtx.fillText(
                       "LapLapLa",
                       x + LOGO_WIDTH / 2,
-                      y + LOGO_HEIGHT + 16
+                      y + LOGO_HEIGHT + 16,
                     );
 
                     const link = document.createElement("a");
@@ -1579,6 +1818,15 @@ export default function LessonPlayer() {
                   value={brushColor}
                   onChange={(e) => setBrushColor(e.target.value)}
                 />
+                <label style={{ marginLeft: "10px" }}>Прозрачность: </label>
+                <input
+                  type="range"
+                  min={0.05}
+                  max={1}
+                  step={0.05}
+                  value={brushOpacity}
+                  onChange={(e) => setBrushOpacity(Number(e.target.value))}
+                />
                 <label style={{ marginLeft: "10px" }}>Стиль кисти: </label>
                 <select
                   value={brushStyle}
@@ -1612,12 +1860,10 @@ export default function LessonPlayer() {
           {showRestartConfirm && (
             <div className="lesson-restart-modal">
               <div className="lesson-restart-modal-box">
-
                 <div className="lesson-restart-frank">
                   <div className="lesson-restart-frank-bubble">
                     Точно стереть рисунок?
-                    <br />
-                    Я уже к нему привык 🐾
+                    <br />Я уже к нему привык 🐾
                   </div>
 
                   <img src="/dog/frank.webp" alt="Frank" />
@@ -1638,7 +1884,6 @@ export default function LessonPlayer() {
                     Стереть
                   </button>
                 </div>
-
               </div>
             </div>
           )}

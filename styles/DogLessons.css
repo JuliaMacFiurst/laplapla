@@ -1001,3 +1001,35 @@ lesson-dog-name::before,
     opacity: 1;
   }
 }
+
+.lesson-animation-menu {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 10px 0 10px 0;
+}
+
+.lesson-animation-button {
+
+  background: rgba(255,255,255,0.8);
+  border: 2px solid white;
+
+  border-radius: 12px;
+
+  padding: 8px 14px;
+
+  font-family: 'Amatic SC', cursive;
+  font-size: 20px;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.lesson-animation-button:hover {
+
+  transform: translateY(-3px);
+
+  background: rgba(255,255,255,1);
+}
