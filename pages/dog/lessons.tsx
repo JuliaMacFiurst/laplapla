@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
+import BackButton from '../../components/BackButton';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,6 +41,10 @@ export default function LessonsPage() {
           const fetchSignedUrls = async () => {
             const signedLessons = await Promise.all(
               lessonsWithPublicUrls.map(async (lesson) => {
+                // если превью отсутствует в базе — пропускаем создание signed URL
+                if (!lesson.preview) {
+                  return { ...lesson, preview: '' };
+                }
                 try {
                   const { data: signedUrlData, error: signedUrlError } =
                     await supabase.storage
@@ -68,6 +73,7 @@ export default function LessonsPage() {
 
   return (
     <main className="lessons-page">
+       <BackButton href={"/dog"}/>
       <h1 className="lessons-title page-title">Выбери урок</h1>
       <div className="lessons-grid">
         {lessons.map((lesson) => (
@@ -80,7 +86,7 @@ export default function LessonsPage() {
             <div className="lesson-info">
               <h2 className="lesson-title">{lesson.title}</h2>
               <button
-                className="lesson-start-button"
+                className="lessons-button"
                 onClick={() => router.push(`/dog/lessons/${lesson.slug}`)}
               >
                 Начать рисовать

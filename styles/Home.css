@@ -689,3 +689,28 @@ body {
   }
 }
 
+.back-button {
+  position: absolute;
+  top: 70px;          /* ниже TopBar */
+  left: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 12px;
+  border: none;
+
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
+  cursor: pointer;
+  font-size: 20px;
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  z-index: 50;
+}

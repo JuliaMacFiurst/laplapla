@@ -13,6 +13,7 @@ type ColorSeed = {
 };
 import ArtGalleryModal from "@/components/ArtGalleryModal";
 import { useRouter } from "next/router";
+import BackButton from "@/components/BackButton";
 
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -992,6 +993,7 @@ export default function LessonPlayer() {
 
   return (
     <div className="lesson-container">
+      <BackButton href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`} />
       {lesson ? (
         <div>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
@@ -1189,6 +1191,9 @@ export default function LessonPlayer() {
                 height={512}
                 onClick={handleCanvasColorClick}
                 style={{
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                  touchAction: "none",
                   cursor: showColorizer
                     ? isDrawingState
                       ? "url('/dog/pencile.png') 0 32, auto"
