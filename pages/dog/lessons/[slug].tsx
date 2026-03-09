@@ -148,6 +148,7 @@ export default function LessonPlayer() {
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
   const colorCanvasRef = useRef<HTMLCanvasElement>(null);
   const pawOverlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const puzzleSourceCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const debugRenderRegions = () => {
     const colorCanvas = colorCanvasRef.current;
@@ -1265,27 +1266,28 @@ export default function LessonPlayer() {
                 onClick={() => {
                   setFrankPose(getRandomPose(frankPoses));
 
-                  // сохраняем текущий рисунок перед входом в пазл
+                  // build combined canvas for puzzle source
                   const drawing = drawingCanvasRef.current;
                   const color = colorCanvasRef.current;
                   const paw = pawOverlayCanvasRef.current;
+                  if (!drawing) return;
 
-                  if (drawing && color && paw) {
-                    const snapshot = document.createElement("canvas");
-                    snapshot.width = drawing.width;
-                    snapshot.height = drawing.height;
+                  const combined = document.createElement("canvas");
+                  combined.width = drawing.width;
+                  combined.height = drawing.height;
 
-                    const ctx = snapshot.getContext("2d")!;
+                  const cctx = combined.getContext("2d");
 
-                    ctx.fillStyle = "#fff";
-                    ctx.fillRect(0, 0, snapshot.width, snapshot.height);
+                  if (cctx) {
+                    cctx.fillStyle = "#ffffff";
+                    cctx.fillRect(0, 0, combined.width, combined.height);
 
-                    ctx.drawImage(color, 0, 0);
-                    ctx.drawImage(drawing, 0, 0);
-                    ctx.drawImage(paw, 0, 0);
-
-                    drawingCanvasRef.current = snapshot;
+                    if (color) cctx.drawImage(color, 0, 0);
+                    if (drawing) cctx.drawImage(drawing, 0, 0);
+                    if (paw) cctx.drawImage(paw, 0, 0);
                   }
+
+                  puzzleSourceCanvasRef.current = combined;
 
                   setAnimationMode("puzzle");
                   setAnimationMenuOpen(false);
@@ -1448,7 +1450,6 @@ export default function LessonPlayer() {
                   <button
                     className="lesson-puzzle-close"
                     onClick={() => {
-                      // exit puzzle mode and return to drawing state
                       setAnimationMode(null);
                     }}
                   >
@@ -1456,10 +1457,7 @@ export default function LessonPlayer() {
                   </button>
                   <div className="lesson-puzzle-board">
                     <PuzzleCanvas
-                      sourceCanvas={drawingCanvasRef.current!}
-                      drawingCanvas={drawingCanvasRef.current}
-                      colorCanvas={colorCanvasRef.current}
-                      pawCanvas={pawOverlayCanvasRef.current}
+                      sourceCanvas={puzzleSourceCanvasRef.current!}
                     />
                   </div>
 
@@ -1530,44 +1528,49 @@ export default function LessonPlayer() {
                 )
               )}
 
-              {animationMode !== "puzzle" && (
-                <>
-                  <canvas
-                    id="color-canvas"
-                    className="lesson-canvas-color"
-                    ref={colorCanvasRef}
-                    width={512}
-                    height={512}
-                  ></canvas>
+              <>
+                <canvas
+                  id="color-canvas"
+                  className="lesson-canvas-color"
+                  ref={colorCanvasRef}
+                  width={512}
+                  height={512}
+                  style={{
+                    display: animationMode === "puzzle" ? "none" : "block",
+                  }}
+                ></canvas>
 
-                  <canvas
-                    id="paw-overlay-canvas"
-                    className="lesson-canvas-paw-overlay"
-                    ref={pawOverlayCanvasRef}
-                    width={512}
-                    height={512}
-                  ></canvas>
+                <canvas
+                  id="paw-overlay-canvas"
+                  className="lesson-canvas-paw-overlay"
+                  ref={pawOverlayCanvasRef}
+                  width={512}
+                  height={512}
+                  style={{
+                    display: animationMode === "puzzle" ? "none" : "block",
+                  }}
+                ></canvas>
 
-                  <canvas
-                    id="drawing-canvas"
-                    className="lesson-canvas-draw"
-                    ref={drawingCanvasRef}
-                    width={512}
-                    height={512}
-                    onClick={handleCanvasColorClick}
-                    style={{
-                      userSelect: "none",
-                      WebkitUserSelect: "none",
-                      touchAction: "none",
-                      cursor: showColorizer
-                        ? isDrawingState
-                          ? "url('/dog/pencile.png') 0 32, auto"
-                          : "url('/dog/paw.svg') 16 16, auto"
-                        : "url('/dog/pencile.png') 0 32, auto",
-                    }}
-                  ></canvas>
-                </>
-              )}
+                <canvas
+                  id="drawing-canvas"
+                  className="lesson-canvas-draw"
+                  ref={drawingCanvasRef}
+                  width={512}
+                  height={512}
+                  onClick={handleCanvasColorClick}
+                  style={{
+                    display: animationMode === "puzzle" ? "none" : "block",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    touchAction: "none",
+                    cursor: showColorizer
+                      ? isDrawingState
+                        ? "url('/dog/pencile.png') 0 32, auto"
+                        : "url('/dog/paw.svg') 16 16, auto"
+                      : "url('/dog/pencile.png') 0 32, auto",
+                  }}
+                ></canvas>
+              </>
             </div>
             <div
               className="lesson-fibi"

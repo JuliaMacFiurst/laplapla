@@ -5,16 +5,10 @@ import { PuzzleEngine } from "./PuzzleEngine";
 
 type Props = {
   sourceCanvas: HTMLCanvasElement;
-  drawingCanvas: HTMLCanvasElement | null;
-  colorCanvas: HTMLCanvasElement | null;
-  pawCanvas: HTMLCanvasElement | null;
 };
 
 export default function PuzzleCanvas({
   sourceCanvas,
-  drawingCanvas,
-  colorCanvas,
-  pawCanvas,
 }: Props) {
   console.log("PuzzleCanvas mounted");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -195,13 +189,13 @@ export default function PuzzleCanvas({
               img.style.userSelect = "none";
               img.style.pointerEvents = "auto";
 
-              img.addEventListener("mousedown", (ev) => {
+              img.onmousedown = (ev) => {
                 ev.preventDefault();
                 draggingPieceRef.current = piece;
                 dragSourceRef.current = "tray";
                 draggedTrayImgRef.current = img!;
                 img!.style.opacity = "0.35";
-              });
+              };
 
               // put piece back at the start of the tray
               trayRef.current.prepend(img);
@@ -240,42 +234,9 @@ export default function PuzzleCanvas({
     }
 
     async function init() {
-      // Build a combined canvas so the puzzle includes lines, colors and paw stamps
       if (!sourceCanvas) return;
 
-      const combined = document.createElement("canvas");
-
-      // Force puzzle generation to match the visible board size
-      combined.width = canvas.width;
-      combined.height = canvas.height;
-
-      const combinedCtx = combined.getContext("2d") as CanvasRenderingContext2D;
-
-      // base white background
-      combinedCtx.fillStyle = "#ffffff";
-      combinedCtx.fillRect(0, 0, combined.width, combined.height);
-
-      // draw layers in correct order
-      if (colorCanvas)
-        combinedCtx.drawImage(
-          colorCanvas,
-          0,
-          0,
-          combined.width,
-          combined.height,
-        );
-      if (drawingCanvas)
-        combinedCtx.drawImage(
-          drawingCanvas,
-          0,
-          0,
-          combined.width,
-          combined.height,
-        );
-      if (pawCanvas)
-        combinedCtx.drawImage(pawCanvas, 0, 0, combined.width, combined.height);
-
-      await engine.init(combined);
+      await engine.init(sourceCanvas);
 
       trayRef.current = document.querySelector(
         ".lesson-puzzle-tray-inner",
@@ -294,13 +255,13 @@ export default function PuzzleCanvas({
           img.style.userSelect = "none";
           img.style.pointerEvents = "auto";
 
-          img.addEventListener("mousedown", (ev) => {
+          img.onmousedown = (ev) => {
             ev.preventDefault();
             draggingPieceRef.current = piece;
             dragSourceRef.current = "tray";
             draggedTrayImgRef.current = img;
             img.style.opacity = "0.35";
-          });
+          };
 
           trayRef.current!.appendChild(img);
         });
@@ -429,7 +390,7 @@ export default function PuzzleCanvas({
       document.removeEventListener("mousemove", handleGlobalMouseMove);
       document.removeEventListener("mouseup", handleGlobalMouseUp);
     };
-  }, [sourceCanvas, drawingCanvas, colorCanvas, pawCanvas]);
+  }, [sourceCanvas]);
 
   function getMousePos(e: React.MouseEvent) {
     const rect = canvasRef.current!.getBoundingClientRect();
