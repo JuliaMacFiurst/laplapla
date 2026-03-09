@@ -7,9 +7,7 @@ type Props = {
   sourceCanvas: HTMLCanvasElement;
 };
 
-export default function PuzzleCanvas({
-  sourceCanvas,
-}: Props) {
+export default function PuzzleCanvas({ sourceCanvas }: Props) {
   console.log("PuzzleCanvas mounted");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<PuzzleEngine | null>(null);
@@ -45,7 +43,7 @@ export default function PuzzleCanvas({
 
     function handleGlobalMouseMove(e: MouseEvent) {
       const piece = draggingPieceRef.current;
-      if (!piece) return;
+      if (!piece || piece.locked) return;
 
       const pos = getCanvasPoint(e.clientX, e.clientY);
 
@@ -410,6 +408,8 @@ export default function PuzzleCanvas({
     const pos = getMousePos(e);
 
     const piece = [...engine.pieces].reverse().find((p) => {
+      if (p.locked) return false;
+
       return (
         pos.x >= p.x &&
         pos.x <= p.x + p.canvas.width &&
@@ -431,7 +431,7 @@ export default function PuzzleCanvas({
 
   function handleMouseMove(e: React.MouseEvent) {
     const piece = draggingPieceRef.current;
-    if (!piece || dragSourceRef.current !== "board") return;
+    if (!piece || piece.locked || dragSourceRef.current !== "board") return;
 
     const engine = engineRef.current;
     if (!engine) return;
