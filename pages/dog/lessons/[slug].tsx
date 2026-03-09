@@ -14,6 +14,7 @@ type ColorSeed = {
 import ArtGalleryModal from "@/components/ArtGalleryModal";
 import { useRouter } from "next/router";
 import BackButton from "@/components/BackButton";
+import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
 
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -251,6 +252,7 @@ export default function LessonPlayer() {
     );
   };
 
+
   const handleColorize = () => {
     setShowColorizer(true);
     if (!regionDataRef.current) {
@@ -356,7 +358,8 @@ export default function LessonPlayer() {
   // Simple click-to-color prototype: clicking the canvas colors the region that was clicked
   const handleCanvasColorClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // раскраска доступна только после нажатия "Раскрасить"
-    if (!showColorizer) return;
+    // и должна быть полностью отключена в режиме пазла
+    if (!showColorizer || animationMode === "puzzle") return;
 
     // ignore click if user is currently drawing
     if (isDrawing.current) return;
@@ -1376,50 +1379,83 @@ export default function LessonPlayer() {
                 )}
               </div>
 
-              {!showColorizer && (
-                <canvas
-                  id="lesson-canvas"
-                  className="lesson-canvas-bg"
-                  ref={canvasRef}
-                  width={512}
-                  height={512}
-                ></canvas>
+              {animationMode === "puzzle" ? (
+                <div className="lesson-puzzle-mode">
+                  <button
+                    className="lesson-puzzle-close"
+                    onClick={() => {
+                      // exit puzzle mode and return to drawing state
+                      setAnimationMode(null);
+                    }}
+                  >
+                    ✕
+                  </button>
+                  <div className="lesson-puzzle-board">
+                    <PuzzleCanvas
+                      sourceCanvas={drawingCanvasRef.current!}
+                      drawingCanvas={drawingCanvasRef.current}
+                      colorCanvas={colorCanvasRef.current}
+                      pawCanvas={pawOverlayCanvasRef.current}
+                    />
+                  </div>
+
+                  {/* tray for puzzle pieces (махсан) */}
+                  <div className="lesson-puzzle-tray" style={{ position: "fixed", bottom: 0, left: 0, width: "100vw", zIndex: 20 }}>
+                    <div className="lesson-puzzle-tray-inner">
+                      {/* pieces will appear here later */}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                !showColorizer && (
+                  <canvas
+                    id="lesson-canvas"
+                    className="lesson-canvas-bg"
+                    ref={canvasRef}
+                    width={512}
+                    height={512}
+                  ></canvas>
+                )
               )}
 
-              <canvas
-                id="color-canvas"
-                className="lesson-canvas-color"
-                ref={colorCanvasRef}
-                width={512}
-                height={512}
-              ></canvas>
+              {animationMode !== "puzzle" && (
+                <>
+                  <canvas
+                    id="color-canvas"
+                    className="lesson-canvas-color"
+                    ref={colorCanvasRef}
+                    width={512}
+                    height={512}
+                  ></canvas>
 
-              <canvas
-                id="paw-overlay-canvas"
-                className="lesson-canvas-paw-overlay"
-                ref={pawOverlayCanvasRef}
-                width={512}
-                height={512}
-              ></canvas>
+                  <canvas
+                    id="paw-overlay-canvas"
+                    className="lesson-canvas-paw-overlay"
+                    ref={pawOverlayCanvasRef}
+                    width={512}
+                    height={512}
+                  ></canvas>
 
-              <canvas
-                id="drawing-canvas"
-                className="lesson-canvas-draw"
-                ref={drawingCanvasRef}
-                width={512}
-                height={512}
-                onClick={handleCanvasColorClick}
-                style={{
-                  userSelect: "none",
-                  WebkitUserSelect: "none",
-                  touchAction: "none",
-                  cursor: showColorizer
-                    ? isDrawingState
-                      ? "url('/dog/pencile.png') 0 32, auto"
-                      : "url('/dog/paw.svg') 16 16, auto"
-                    : "url('/dog/pencile.png') 0 32, auto",
-                }}
-              ></canvas>
+                  <canvas
+                    id="drawing-canvas"
+                    className="lesson-canvas-draw"
+                    ref={drawingCanvasRef}
+                    width={512}
+                    height={512}
+                    onClick={handleCanvasColorClick}
+                    style={{
+                      userSelect: "none",
+                      WebkitUserSelect: "none",
+                      touchAction: "none",
+                      cursor: showColorizer
+                        ? isDrawingState
+                          ? "url('/dog/pencile.png') 0 32, auto"
+                          : "url('/dog/paw.svg') 16 16, auto"
+                        : "url('/dog/pencile.png') 0 32, auto",
+                    }}
+                  ></canvas>
+                </>
+              )}
             </div>
             <div
               className="lesson-fibi"
@@ -1460,7 +1496,8 @@ export default function LessonPlayer() {
             </div>
           </div>
 
-          <div className="lesson-tools-panel">
+          {animationMode !== "puzzle" && (
+            <div className="lesson-tools-panel">
             <div className="lesson-tools-panel-1">
               <button
                 className="lesson-button lesson-button-eraser"
@@ -1854,7 +1891,8 @@ export default function LessonPlayer() {
                 </select>
               </div>
             </div>
-          </div>
+            </div>
+          )}
 
           {/* Custom restart confirmation modal */}
           {showRestartConfirm && (

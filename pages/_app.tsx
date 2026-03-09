@@ -17,6 +17,7 @@ import '../styles/About.css';
 import '../styles/video-section.css';
 import '../styles/Studio.css';
 import '../styles/export.css';
+import '../styles/Puzzle.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
