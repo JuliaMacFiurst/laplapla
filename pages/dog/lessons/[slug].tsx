@@ -252,7 +252,6 @@ export default function LessonPlayer() {
     );
   };
 
-
   const handleColorize = () => {
     setShowColorizer(true);
     if (!regionDataRef.current) {
@@ -1068,6 +1067,49 @@ export default function LessonPlayer() {
     setFibiPose(getRandomPose(fibiPoses));
   }, [currentStepIndex]);
 
+  const [frankSpeechOverride, setFrankSpeechOverride] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      if (e?.detail?.text) {
+        setFrankSpeechOverride(e.detail.text);
+
+        // auto‑clear the message after a few seconds
+        setTimeout(() => {
+          setFrankSpeechOverride(null);
+        }, 3500);
+      }
+    };
+
+    window.addEventListener("frank-speech", handler);
+
+    return () => {
+      window.removeEventListener("frank-speech", handler);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePuzzleWin = () => {
+      // play victory sound
+      const audio = new Audio("/sounds/you-win.mp3");
+      audio.volume = 0.8;
+      audio.play().catch(() => {});
+
+      // after celebration, return to normal canvas mode
+      setTimeout(() => {
+        setAnimationMode(null);
+      }, 2200);
+    };
+
+    window.addEventListener("puzzle-win", handlePuzzleWin);
+
+    return () => {
+      window.removeEventListener("puzzle-win", handlePuzzleWin);
+    };
+  }, []);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const isUndo =
@@ -1222,6 +1264,29 @@ export default function LessonPlayer() {
                 className="lesson-animation-button btn-mint"
                 onClick={() => {
                   setFrankPose(getRandomPose(frankPoses));
+
+                  // сохраняем текущий рисунок перед входом в пазл
+                  const drawing = drawingCanvasRef.current;
+                  const color = colorCanvasRef.current;
+                  const paw = pawOverlayCanvasRef.current;
+
+                  if (drawing && color && paw) {
+                    const snapshot = document.createElement("canvas");
+                    snapshot.width = drawing.width;
+                    snapshot.height = drawing.height;
+
+                    const ctx = snapshot.getContext("2d")!;
+
+                    ctx.fillStyle = "#fff";
+                    ctx.fillRect(0, 0, snapshot.width, snapshot.height);
+
+                    ctx.drawImage(color, 0, 0);
+                    ctx.drawImage(drawing, 0, 0);
+                    ctx.drawImage(paw, 0, 0);
+
+                    drawingCanvasRef.current = snapshot;
+                  }
+
                   setAnimationMode("puzzle");
                   setAnimationMenuOpen(false);
                 }}
@@ -1279,26 +1344,25 @@ export default function LessonPlayer() {
                     name="frank"
                     pose={frankPose}
                     speech={
-                      animationMenuOpen
-                        ? "Выбирай что хочешь сделать со своим рисунком!"
-                        : animationMode === "puzzle"
-                          ? "Упс! Твой шедевр рассыпался на части. Давай соберём его обратно!"
-                          : animationMode === "flow"
-                            ? (
-                                typeof window !== "undefined" &&
-                                ("ontouchstart" in window || navigator.maxTouchPoints > 0)
-                                  ? "Попробуй наклонить планшет и посмотри, что будет!"
-                                  : "Наклони холст со своей картиной вправо или влево с помощью стрелочек и посмотри, что будет."
-                              )
-                            : animationMode === "mix"
-                              ? "Проведи мышкой или стилусом по своей работе и посмотри, что произойдёт."
-                              : animationMode === "replay"
-                                ? "Теперь ты можешь посмотреть, как создавался этот шедевр от начала и до конца."
-                                : (
-                                    currentStepIndex === lesson.steps.length - 1
-                                      ? "Очень красиво получилось! Теперь давай добавим цвета 🎨!"
-                                      : lesson.steps[currentStepIndex].frank
-                                  )
+                      frankSpeechOverride
+                        ? frankSpeechOverride
+                        : animationMenuOpen
+                          ? "Выбирай что хочешь сделать со своим рисунком!"
+                          : animationMode === "puzzle"
+                            ? "Упс! Твой шедевр рассыпался на части. Давай соберём его обратно!"
+                            : animationMode === "flow"
+                              ? typeof window !== "undefined" &&
+                                ("ontouchstart" in window ||
+                                  navigator.maxTouchPoints > 0)
+                                ? "Попробуй наклонить планшет и посмотри, что будет!"
+                                : "Наклони холст со своей картиной вправо или влево с помощью стрелочек и посмотри, что будет."
+                              : animationMode === "mix"
+                                ? "Проведи мышкой или стилусом по своей работе и посмотри, что произойдёт."
+                                : animationMode === "replay"
+                                  ? "Теперь ты можешь посмотреть, как создавался этот шедевр от начала и до конца."
+                                  : currentStepIndex === lesson.steps.length - 1
+                                    ? "Очень красиво получилось! Теперь давай добавим цвета 🎨!"
+                                    : lesson.steps[currentStepIndex].frank
                     }
                     size={220}
                   />
@@ -1400,10 +1464,58 @@ export default function LessonPlayer() {
                   </div>
 
                   {/* tray for puzzle pieces (махсан) */}
-                  <div className="lesson-puzzle-tray" style={{ position: "fixed", bottom: 0, left: 0, width: "100vw", zIndex: 20 }}>
-                    <div className="lesson-puzzle-tray-inner">
+                  <div
+                    className="lesson-puzzle-tray"
+                    style={{
+                      position: "fixed",
+                      bottom: 0,
+                      left: 0,
+                      width: "100vw",
+                      zIndex: 20,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "6px",
+                    }}
+                  >
+                    <button
+                      className="lesson-puzzle-scroll-left"
+                      onClick={() => {
+                        const el = document.querySelector(
+                          ".lesson-puzzle-tray-inner",
+                        ) as HTMLElement | null;
+                        el?.scrollBy({ left: -200, behavior: "smooth" });
+                      }}
+                    >
+                      ◀
+                    </button>
+
+                    <div
+                      className="lesson-puzzle-tray-inner"
+                      style={{
+                        overflowX: "auto",
+                        overflowY: "hidden",
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                        display: "flex",
+                        gap: "10px",
+                        padding: "4px 10px",
+                      }}
+                    >
                       {/* pieces will appear here later */}
                     </div>
+
+                    <button
+                      className="lesson-puzzle-scroll-right"
+                      onClick={() => {
+                        const el = document.querySelector(
+                          ".lesson-puzzle-tray-inner",
+                        ) as HTMLElement | null;
+                        el?.scrollBy({ left: 200, behavior: "smooth" });
+                      }}
+                    >
+                      ▶
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -1498,107 +1610,24 @@ export default function LessonPlayer() {
 
           {animationMode !== "puzzle" && (
             <div className="lesson-tools-panel">
-            <div className="lesson-tools-panel-1">
-              <button
-                className="lesson-button lesson-button-eraser"
-                onClick={() => setIsEraser((prev) => !prev)}
-              >
-                <>
-                  <img
-                    src={isEraser ? "/dog/brush.png" : "/dog/erraser.png"}
-                    alt=""
-                    className="lesson-tool-icon"
-                  />
-                  {isEraser ? "КИСТЬ" : "ЛАСТИК"}
-                </>
-              </button>
-              <button
-                className="lesson-button"
-                onClick={() => {
-                  if (undoStack.length === 0) return;
-
-                  const drawingCanvas = drawingCanvasRef.current;
-                  const colorCanvas = colorCanvasRef.current;
-                  const pawCanvas = pawOverlayCanvasRef.current;
-
-                  const dCtx = drawingCanvas?.getContext("2d");
-                  const cCtx = colorCanvas?.getContext("2d");
-                  const pCtx = pawCanvas?.getContext("2d");
-
-                  const previous = undoStack[undoStack.length - 1];
-
-                  // capture CURRENT canvas state so redo can restore it
-                  let currentState: UndoState | null = null;
-
-                  if (
-                    drawingCanvas &&
-                    colorCanvas &&
-                    pawCanvas &&
-                    dCtx &&
-                    cCtx &&
-                    pCtx
-                  ) {
-                    currentState = {
-                      drawing: dCtx.getImageData(
-                        0,
-                        0,
-                        drawingCanvas.width,
-                        drawingCanvas.height,
-                      ),
-                      color: cCtx.getImageData(
-                        0,
-                        0,
-                        colorCanvas.width,
-                        colorCanvas.height,
-                      ),
-                      paw: pCtx.getImageData(
-                        0,
-                        0,
-                        pawCanvas.width,
-                        pawCanvas.height,
-                      ),
-                      seeds: [...seedsRef.current],
-                    };
-
-                    // restore previous state
-                    if (previous.drawing instanceof ImageData) {
-                      dCtx.putImageData(previous.drawing, 0, 0);
-                    }
-
-                    if (previous.color instanceof ImageData) {
-                      cCtx.putImageData(previous.color, 0, 0);
-                    }
-
-                    if (previous.paw instanceof ImageData) {
-                      pCtx.putImageData(previous.paw, 0, 0);
-                    }
-
-                    seedsRef.current = [...previous.seeds];
-                  }
-
-                  // update stacks
-                  setUndoStack((prev) => prev.slice(0, -1));
-                  if (currentState) {
-                    setRedoStack((prev) => [...prev, currentState]);
-                  }
-                }}
-              >
-                <>
-                  <img
-                    src="/dog/backward.png"
-                    alt=""
-                    className="lesson-tool-icon"
-                  />
-                  ОТМЕНИТЬ
-                </>
-              </button>
-              <button
-                className="lesson-button lesson-button-redo"
-                onClick={() => {
-                  setRedoStack((prevRedo) => {
-                    if (prevRedo.length === 0) return prevRedo;
-
-                    const state = prevRedo[prevRedo.length - 1];
+              <div className="lesson-tools-panel-1">
+                <button
+                  className="lesson-button lesson-button-eraser"
+                  onClick={() => setIsEraser((prev) => !prev)}
+                >
+                  <>
+                    <img
+                      src={isEraser ? "/dog/brush.png" : "/dog/erraser.png"}
+                      alt=""
+                      className="lesson-tool-icon"
+                    />
+                    {isEraser ? "КИСТЬ" : "ЛАСТИК"}
+                  </>
+                </button>
+                <button
+                  className="lesson-button"
+                  onClick={() => {
+                    if (undoStack.length === 0) return;
 
                     const drawingCanvas = drawingCanvasRef.current;
                     const colorCanvas = colorCanvasRef.current;
@@ -1608,6 +1637,11 @@ export default function LessonPlayer() {
                     const cCtx = colorCanvas?.getContext("2d");
                     const pCtx = pawCanvas?.getContext("2d");
 
+                    const previous = undoStack[undoStack.length - 1];
+
+                    // capture CURRENT canvas state so redo can restore it
+                    let currentState: UndoState | null = null;
+
                     if (
                       drawingCanvas &&
                       colorCanvas &&
@@ -1616,8 +1650,7 @@ export default function LessonPlayer() {
                       cCtx &&
                       pCtx
                     ) {
-                      // capture CURRENT state so Undo works after Redo
-                      const currentState: UndoState = {
+                      currentState = {
                         drawing: dCtx.getImageData(
                           0,
                           0,
@@ -1639,258 +1672,337 @@ export default function LessonPlayer() {
                         seeds: [...seedsRef.current],
                       };
 
-                      // apply redo state
-                      if (state.drawing instanceof ImageData) {
-                        dCtx.putImageData(state.drawing, 0, 0);
+                      // restore previous state
+                      if (previous.drawing instanceof ImageData) {
+                        dCtx.putImageData(previous.drawing, 0, 0);
                       }
 
-                      if (state.color instanceof ImageData) {
-                        cCtx.putImageData(state.color, 0, 0);
+                      if (previous.color instanceof ImageData) {
+                        cCtx.putImageData(previous.color, 0, 0);
                       }
 
-                      if (state.paw instanceof ImageData) {
-                        pCtx.putImageData(state.paw, 0, 0);
+                      if (previous.paw instanceof ImageData) {
+                        pCtx.putImageData(previous.paw, 0, 0);
                       }
 
-                      seedsRef.current = [...state.seeds];
-
-                      // push previous canvas state to undo stack, limit size
-                      setUndoStack((prevUndo) => {
-                        const next = [...prevUndo, currentState];
-                        return next.slice(-HISTORY_LIMIT);
-                      });
+                      seedsRef.current = [...previous.seeds];
                     }
 
-                    return prevRedo.slice(0, -1);
-                  });
-                }}
-              >
-                <>
-                  <img
-                    src="/dog/forward.png"
-                    alt=""
-                    className="lesson-tool-icon"
-                  />
-                  ПОВТОРИТЬ
-                </>
-              </button>
-              <button
-                className="lesson-button lesson-button-clear"
-                onClick={() => {
-                  if (
-                    confirm(
-                      "Уверены, что хотите очистить холст? Это действие нельзя отменить.",
-                    )
-                  ) {
-                    const drawingCanvas = drawingCanvasRef.current;
-                    const colorCanvas = colorCanvasRef.current;
-                    const pawCanvas = pawOverlayCanvasRef.current;
+                    // update stacks
+                    setUndoStack((prev) => prev.slice(0, -1));
+                    if (currentState) {
+                      setRedoStack((prev) => [...prev, currentState]);
+                    }
+                  }}
+                >
+                  <>
+                    <img
+                      src="/dog/backward.png"
+                      alt=""
+                      className="lesson-tool-icon"
+                    />
+                    ОТМЕНИТЬ
+                  </>
+                </button>
+                <button
+                  className="lesson-button lesson-button-redo"
+                  onClick={() => {
+                    setRedoStack((prevRedo) => {
+                      if (prevRedo.length === 0) return prevRedo;
 
-                    const dCtx = drawingCanvas?.getContext("2d");
-                    const cCtx = colorCanvas?.getContext("2d");
-                    const pCtx = pawCanvas?.getContext("2d");
+                      const state = prevRedo[prevRedo.length - 1];
 
-                    if (drawingCanvas && dCtx) {
-                      const fadeOut = () => {
-                        let alpha = 1;
+                      const drawingCanvas = drawingCanvasRef.current;
+                      const colorCanvas = colorCanvasRef.current;
+                      const pawCanvas = pawOverlayCanvasRef.current;
 
-                        const fadeStep = () => {
-                          dCtx.fillStyle = `rgba(255,255,255,0.1)`;
-                          dCtx.fillRect(
+                      const dCtx = drawingCanvas?.getContext("2d");
+                      const cCtx = colorCanvas?.getContext("2d");
+                      const pCtx = pawCanvas?.getContext("2d");
+
+                      if (
+                        drawingCanvas &&
+                        colorCanvas &&
+                        pawCanvas &&
+                        dCtx &&
+                        cCtx &&
+                        pCtx
+                      ) {
+                        // capture CURRENT state so Undo works after Redo
+                        const currentState: UndoState = {
+                          drawing: dCtx.getImageData(
                             0,
                             0,
                             drawingCanvas.width,
                             drawingCanvas.height,
-                          );
+                          ),
+                          color: cCtx.getImageData(
+                            0,
+                            0,
+                            colorCanvas.width,
+                            colorCanvas.height,
+                          ),
+                          paw: pCtx.getImageData(
+                            0,
+                            0,
+                            pawCanvas.width,
+                            pawCanvas.height,
+                          ),
+                          seeds: [...seedsRef.current],
+                        };
 
-                          alpha -= 0.1;
+                        // apply redo state
+                        if (state.drawing instanceof ImageData) {
+                          dCtx.putImageData(state.drawing, 0, 0);
+                        }
 
-                          if (alpha > 0) {
-                            requestAnimationFrame(fadeStep);
-                          } else {
-                            // clear drawing
-                            dCtx.clearRect(
+                        if (state.color instanceof ImageData) {
+                          cCtx.putImageData(state.color, 0, 0);
+                        }
+
+                        if (state.paw instanceof ImageData) {
+                          pCtx.putImageData(state.paw, 0, 0);
+                        }
+
+                        seedsRef.current = [...state.seeds];
+
+                        // push previous canvas state to undo stack, limit size
+                        setUndoStack((prevUndo) => {
+                          const next = [...prevUndo, currentState];
+                          return next.slice(-HISTORY_LIMIT);
+                        });
+                      }
+
+                      return prevRedo.slice(0, -1);
+                    });
+                  }}
+                >
+                  <>
+                    <img
+                      src="/dog/forward.png"
+                      alt=""
+                      className="lesson-tool-icon"
+                    />
+                    ПОВТОРИТЬ
+                  </>
+                </button>
+                <button
+                  className="lesson-button lesson-button-clear"
+                  onClick={() => {
+                    if (
+                      confirm(
+                        "Уверены, что хотите очистить холст? Это действие нельзя отменить.",
+                      )
+                    ) {
+                      const drawingCanvas = drawingCanvasRef.current;
+                      const colorCanvas = colorCanvasRef.current;
+                      const pawCanvas = pawOverlayCanvasRef.current;
+
+                      const dCtx = drawingCanvas?.getContext("2d");
+                      const cCtx = colorCanvas?.getContext("2d");
+                      const pCtx = pawCanvas?.getContext("2d");
+
+                      if (drawingCanvas && dCtx) {
+                        const fadeOut = () => {
+                          let alpha = 1;
+
+                          const fadeStep = () => {
+                            dCtx.fillStyle = `rgba(255,255,255,0.1)`;
+                            dCtx.fillRect(
                               0,
                               0,
                               drawingCanvas.width,
                               drawingCanvas.height,
                             );
 
-                            // clear color fill
-                            if (colorCanvas && cCtx) {
-                              cCtx.clearRect(
+                            alpha -= 0.1;
+
+                            if (alpha > 0) {
+                              requestAnimationFrame(fadeStep);
+                            } else {
+                              // clear drawing
+                              dCtx.clearRect(
                                 0,
                                 0,
-                                colorCanvas.width,
-                                colorCanvas.height,
+                                drawingCanvas.width,
+                                drawingCanvas.height,
                               );
+
+                              // clear color fill
+                              if (colorCanvas && cCtx) {
+                                cCtx.clearRect(
+                                  0,
+                                  0,
+                                  colorCanvas.width,
+                                  colorCanvas.height,
+                                );
+                              }
+
+                              // clear paw overlay
+                              if (pawCanvas && pCtx) {
+                                pCtx.clearRect(
+                                  0,
+                                  0,
+                                  pawCanvas.width,
+                                  pawCanvas.height,
+                                );
+                              }
+
+                              // reset color seeds
+                              seedsRef.current = [];
+
+                              // reset history
+                              setUndoStack([]);
+                              setRedoStack([]);
                             }
+                          };
 
-                            // clear paw overlay
-                            if (pawCanvas && pCtx) {
-                              pCtx.clearRect(
-                                0,
-                                0,
-                                pawCanvas.width,
-                                pawCanvas.height,
-                              );
-                            }
-
-                            // reset color seeds
-                            seedsRef.current = [];
-
-                            // reset history
-                            setUndoStack([]);
-                            setRedoStack([]);
-                          }
+                          fadeStep();
                         };
 
-                        fadeStep();
-                      };
-
-                      fadeOut();
+                        fadeOut();
+                      }
                     }
-                  }
-                }}
-              >
-                <>
-                  <img
-                    src="/dog/clear.png"
-                    alt=""
-                    className="lesson-tool-icon"
-                  />
-                  ОЧИСТИТЬ
-                </>
-              </button>
-              <button
-                className="lesson-button lesson-button-save"
-                onClick={() => {
-                  const drawingCanvas = drawingCanvasRef.current;
-                  const colorCanvas = colorCanvasRef.current;
-                  const pawCanvas = pawOverlayCanvasRef.current;
+                  }}
+                >
+                  <>
+                    <img
+                      src="/dog/clear.png"
+                      alt=""
+                      className="lesson-tool-icon"
+                    />
+                    ОЧИСТИТЬ
+                  </>
+                </button>
+                <button
+                  className="lesson-button lesson-button-save"
+                  onClick={() => {
+                    const drawingCanvas = drawingCanvasRef.current;
+                    const colorCanvas = colorCanvasRef.current;
+                    const pawCanvas = pawOverlayCanvasRef.current;
 
-                  if (!drawingCanvas) return;
+                    if (!drawingCanvas) return;
 
-                  const tempCanvas = document.createElement("canvas");
-                  tempCanvas.width = drawingCanvas.width;
-                  tempCanvas.height = drawingCanvas.height;
+                    const tempCanvas = document.createElement("canvas");
+                    tempCanvas.width = drawingCanvas.width;
+                    tempCanvas.height = drawingCanvas.height;
 
-                  const tempCtx = tempCanvas.getContext("2d");
-                  if (!tempCtx) return;
+                    const tempCtx = tempCanvas.getContext("2d");
+                    if (!tempCtx) return;
 
-                  // white background
-                  tempCtx.fillStyle = "#ffffff";
-                  tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    // white background
+                    tempCtx.fillStyle = "#ffffff";
+                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-                  // draw color layer
-                  if (colorCanvas) {
-                    tempCtx.drawImage(colorCanvas, 0, 0);
-                  }
+                    // draw color layer
+                    if (colorCanvas) {
+                      tempCtx.drawImage(colorCanvas, 0, 0);
+                    }
 
-                  // draw sketch lines
-                  tempCtx.drawImage(drawingCanvas, 0, 0);
+                    // draw sketch lines
+                    tempCtx.drawImage(drawingCanvas, 0, 0);
 
-                  // draw paw overlay if any
-                  if (pawCanvas) {
-                    tempCtx.drawImage(pawCanvas, 0, 0);
-                  }
+                    // draw paw overlay if any
+                    if (pawCanvas) {
+                      tempCtx.drawImage(pawCanvas, 0, 0);
+                    }
 
-                  // add LapLapLa logo
-                  const logo = new window.Image();
-                  logo.src = "/laplapla-logo.webp";
+                    // add LapLapLa logo
+                    const logo = new window.Image();
+                    logo.src = "/laplapla-logo.webp";
 
-                  logo.onload = () => {
-                    const LOGO_WIDTH = 60;
-                    const LOGO_HEIGHT = 60;
-                    const MARGIN = 12;
+                    logo.onload = () => {
+                      const LOGO_WIDTH = 60;
+                      const LOGO_HEIGHT = 60;
+                      const MARGIN = 12;
 
-                    const x = tempCanvas.width - LOGO_WIDTH - MARGIN;
-                    const y = tempCanvas.height - LOGO_HEIGHT - MARGIN - 18;
+                      const x = tempCanvas.width - LOGO_WIDTH - MARGIN;
+                      const y = tempCanvas.height - LOGO_HEIGHT - MARGIN - 18;
 
-                    // draw logo
-                    tempCtx.drawImage(logo, x, y, LOGO_WIDTH, LOGO_HEIGHT);
+                      // draw logo
+                      tempCtx.drawImage(logo, x, y, LOGO_WIDTH, LOGO_HEIGHT);
 
-                    // draw text under logo
-                    tempCtx.font = "20px 'Amatic SC', cursive";
-                    tempCtx.fillStyle = "#333";
-                    tempCtx.textAlign = "center";
-                    tempCtx.fillText(
-                      "LapLapLa",
-                      x + LOGO_WIDTH / 2,
-                      y + LOGO_HEIGHT + 16,
-                    );
+                      // draw text under logo
+                      tempCtx.font = "20px 'Amatic SC', cursive";
+                      tempCtx.fillStyle = "#333";
+                      tempCtx.textAlign = "center";
+                      tempCtx.fillText(
+                        "LapLapLa",
+                        x + LOGO_WIDTH / 2,
+                        y + LOGO_HEIGHT + 16,
+                      );
 
-                    const link = document.createElement("a");
-                    link.download = `${lesson?.title || "drawing"}.png`;
-                    link.href = tempCanvas.toDataURL("image/png");
-                    link.click();
-                  };
-                }}
-              >
-                <>
-                  <img
-                    src="/dog/save.png"
-                    alt=""
-                    className="lesson-tool-icon"
-                  />
-                  СОХРАНИТЬ
-                </>
-              </button>
-            </div>
+                      const link = document.createElement("a");
+                      link.download = `${lesson?.title || "drawing"}.png`;
+                      link.href = tempCanvas.toDataURL("image/png");
+                      link.click();
+                    };
+                  }}
+                >
+                  <>
+                    <img
+                      src="/dog/save.png"
+                      alt=""
+                      className="lesson-tool-icon"
+                    />
+                    СОХРАНИТЬ
+                  </>
+                </button>
+              </div>
 
-            <div className="lesson-tools-panel-1">
-              <label>ТОЛЩИНА КИСТИ: </label>
-              <input
-                type="range"
-                min={1}
-                max={20}
-                value={brushSize}
-                onChange={(e) => setBrushSize(Number(e.target.value))}
-              />
-
-              <div className="lesson-brush-settings">
-                <label>Цвет кисти: </label>
-                <input
-                  type="color"
-                  value={brushColor}
-                  onChange={(e) => setBrushColor(e.target.value)}
-                />
-                <label style={{ marginLeft: "10px" }}>Прозрачность: </label>
+              <div className="lesson-tools-panel-1">
+                <label>ТОЛЩИНА КИСТИ: </label>
                 <input
                   type="range"
-                  min={0.05}
-                  max={1}
-                  step={0.05}
-                  value={brushOpacity}
-                  onChange={(e) => setBrushOpacity(Number(e.target.value))}
+                  min={1}
+                  max={20}
+                  value={brushSize}
+                  onChange={(e) => setBrushSize(Number(e.target.value))}
                 />
-                <label style={{ marginLeft: "10px" }}>Стиль кисти: </label>
-                <select
-                  value={brushStyle}
-                  onChange={(e) =>
-                    setBrushStyle(
-                      e.target.value as
-                        | "normal"
-                        | "smooth"
-                        | "sparkle"
-                        | "rainbow"
-                        | "chameleon"
-                        | "gradient"
-                        | "neon"
-                        | "watercolor",
-                    )
-                  }
-                >
-                  <option value="smooth">Обычная</option>
-                  <option value="sparkle">Блёстки</option>
-                  <option value="rainbow">Радуга</option>
-                  <option value="chameleon">Хамелеон</option>
-                  <option value="gradient">Градиент</option>
-                  <option value="neon">Неон</option>
-                  <option value="watercolor">Акварель</option>
-                </select>
+
+                <div className="lesson-brush-settings">
+                  <label>Цвет кисти: </label>
+                  <input
+                    type="color"
+                    value={brushColor}
+                    onChange={(e) => setBrushColor(e.target.value)}
+                  />
+                  <label style={{ marginLeft: "10px" }}>Прозрачность: </label>
+                  <input
+                    type="range"
+                    min={0.05}
+                    max={1}
+                    step={0.05}
+                    value={brushOpacity}
+                    onChange={(e) => setBrushOpacity(Number(e.target.value))}
+                  />
+                  <label style={{ marginLeft: "10px" }}>Стиль кисти: </label>
+                  <select
+                    value={brushStyle}
+                    onChange={(e) =>
+                      setBrushStyle(
+                        e.target.value as
+                          | "normal"
+                          | "smooth"
+                          | "sparkle"
+                          | "rainbow"
+                          | "chameleon"
+                          | "gradient"
+                          | "neon"
+                          | "watercolor",
+                      )
+                    }
+                  >
+                    <option value="smooth">Обычная</option>
+                    <option value="sparkle">Блёстки</option>
+                    <option value="rainbow">Радуга</option>
+                    <option value="chameleon">Хамелеон</option>
+                    <option value="gradient">Градиент</option>
+                    <option value="neon">Неон</option>
+                    <option value="watercolor">Акварель</option>
+                  </select>
+                </div>
               </div>
-            </div>
             </div>
           )}
 

@@ -10,11 +10,13 @@ export type PuzzlePiece = {
   correctX: number
   correctY: number
   locked: boolean
+  groupId: number
 }
 
 export class PuzzleEngine {
 
   pieces: PuzzlePiece[] = []
+  nextGroupId = 1
 
   width: number
   height: number
@@ -55,13 +57,14 @@ export class PuzzleEngine {
         canvas,
         path,
 
-        // spawn pieces inside the board for now
-        x: Math.random() * Math.max(20, this.width - canvas.width - 20),
-        y: Math.random() * Math.max(20, this.height - canvas.height - 20),
+        // start pieces off‑screen so board is empty
+        x: -9999,
+        y: -9999,
 
         correctX,
         correctY,
-        locked: false
+        locked: false,
+        groupId: this.nextGroupId++
       }
 
       return piece
@@ -83,6 +86,22 @@ export class PuzzleEngine {
     })
   }
 
+  getGroupPieces(groupId: number) {
+    return this.pieces.filter(p => p.groupId === groupId)
+  }
+
+  mergeGroups(a: PuzzlePiece, b: PuzzlePiece) {
+    const target = a.groupId
+    const source = b.groupId
+    if (target === source) return
+
+    this.pieces.forEach(p => {
+      if (p.groupId === source) {
+        p.groupId = target
+      }
+    })
+  }
+
   trySnap(piece: PuzzlePiece) {
 
     const dx = piece.x - piece.correctX
@@ -93,9 +112,34 @@ export class PuzzleEngine {
     const SNAP_DISTANCE = 40
 
     if (dist < SNAP_DISTANCE) {
-      piece.x = piece.correctX
-      piece.y = piece.correctY
+
+      // compute how far the piece needs to move to reach the correct position
+      const dxSnap = piece.correctX - piece.x
+      const dySnap = piece.correctY - piece.y
+
+      // move the entire group by the same amount
+      const group = this.getGroupPieces(piece.groupId)
+
+      group.forEach(p => {
+        p.x += dxSnap
+        p.y += dySnap
+      })
+
       piece.locked = true
+
+      // merge with any already locked neighbour pieces
+      this.pieces.forEach(other => {
+        if (other === piece) return
+        if (!other.locked) return
+
+        const odx = other.x - other.correctX
+        const ody = other.y - other.correctY
+        const odist = Math.sqrt(odx * odx + ody * ody)
+
+        if (odist < SNAP_DISTANCE) {
+          this.mergeGroups(piece, other)
+        }
+      })
     }
 
   }
