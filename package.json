@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.50.0",
     "axios": "^1.13.5",
     "dotenv": "^17.2.3",
+    "gif.js": "^0.2.0",
     "idb": "^8.0.3",
     "next": "^16.1.6",
     "openai": "^5.5.1",

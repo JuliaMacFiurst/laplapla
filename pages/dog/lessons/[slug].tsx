@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { artFacts } from "@/content/dogs/artFacts";
 import ReactDOM from "react-dom";
 import { buildRegionMap } from "@/utils/buildRegionMap";
+import { autoColorRegions } from "@/utils/autoColorRegions";
 import { paintRegionFast } from "@/utils/paintRegionFast";
-import { waveFill } from "@/utils/waveFill";
+import { drawLapLapLaWatermark } from "@/utils/drawLapLapLaWatermark";
 // Color seed placed by a paw click
 type ColorSeed = {
   x: number;
@@ -15,6 +16,13 @@ import ArtGalleryModal from "@/components/ArtGalleryModal";
 import { useRouter } from "next/router";
 import BackButton from "@/components/BackButton";
 import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
+import ReplayCanvas from "@/components/Dogs/Replay/ReplayCanvas";
+import type {
+  ReplayAction,
+  ReplayActionGroup,
+  ReplayBrushSettings,
+  ReplayRegionData,
+} from "@/components/Dogs/Replay/types";
 
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -136,6 +144,7 @@ export default function LessonPlayer() {
   const [animationMode, setAnimationMode] = useState<
     "puzzle" | "flow" | "mix" | "replay" | null
   >(null);
+  const [replayRevision, setReplayRevision] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
@@ -149,6 +158,12 @@ export default function LessonPlayer() {
   const colorCanvasRef = useRef<HTMLCanvasElement>(null);
   const pawOverlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const puzzleSourceCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const replayCommittedGroupsRef = useRef<ReplayActionGroup[]>([]);
+  const replayRedoGroupsRef = useRef<ReplayActionGroup[]>([]);
+  const replayCurrentGroupRef = useRef<ReplayActionGroup | null>(null);
+  const replayGroupIdRef = useRef(1);
+  const regionMapsRef = useRef<Map<number, ReplayRegionData>>(new Map());
+  const regionMapIdRef = useRef(1);
 
   const debugRenderRegions = () => {
     const colorCanvas = colorCanvasRef.current;
@@ -161,6 +176,7 @@ export default function LessonPlayer() {
       seedsRef.current = [];
       setUndoStack([]);
       setRedoStack([]);
+      clearReplayHistory();
     }
 
     if (!colorCanvas) return;
@@ -211,8 +227,40 @@ export default function LessonPlayer() {
       }
     }
 
-    // fill regions using the same wave fill used by the colorizer
-    waveFill(ctx, regionData, debugSeeds);
+    // fill regions using the same pipeline as replay
+    autoColorRegions(ctx, regionData, debugSeeds);
+
+    // Log replay actions on next tick to preserve chronological order after stroke commits.
+    const seedsSnapshot = debugSeeds.map((seed) => ({
+      x: seed.x,
+      y: seed.y,
+      regionId: seed.regionId,
+      color: [seed.color[0], seed.color[1], seed.color[2]] as [
+        number,
+        number,
+        number,
+      ],
+    }));
+    const regionMapSnapshot = new Int32Array(regionData.regionMap);
+    const widthSnapshot = regionData.width;
+    const heightSnapshot = regionData.height;
+
+    window.setTimeout(() => {
+      const regionMapId = regionMapIdRef.current++;
+      regionMapsRef.current.set(regionMapId, {
+        width: widthSnapshot,
+        height: heightSnapshot,
+        regionMap: regionMapSnapshot,
+      });
+
+      beginReplayGroup();
+      appendReplayAction({
+        type: "autoColorStart",
+        seeds: seedsSnapshot,
+        regionMapId,
+      });
+      commitReplayGroup();
+    }, 0);
   };
 
   const isDrawing = useRef(false);
@@ -222,7 +270,70 @@ export default function LessonPlayer() {
   const gradientProgressRef = useRef(0);
   // previous point for light bezier smoothing
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const lastReplayStrokePointRef = useRef<{ x: number; y: number } | null>(null);
   const pawImgRef = useRef<HTMLImageElement | null>(null);
+
+  const getReplayBrushSettings = (): ReplayBrushSettings => ({
+    size: brushSizeRef.current,
+    color: brushColorRef.current,
+    opacity: brushOpacityRef.current,
+    style: brushStyleRef.current,
+    isEraser: isEraserRef.current,
+  });
+
+  const beginReplayGroup = () => {
+    replayCurrentGroupRef.current = {
+      id: replayGroupIdRef.current++,
+      actions: [],
+    };
+  };
+
+  const appendReplayAction = (action: ReplayAction) => {
+    if (!replayCurrentGroupRef.current) {
+      beginReplayGroup();
+    }
+
+    replayCurrentGroupRef.current?.actions.push(action);
+  };
+
+  const commitReplayGroup = () => {
+    const group = replayCurrentGroupRef.current;
+    replayCurrentGroupRef.current = null;
+
+    if (!group || group.actions.length === 0) return;
+
+    replayCommittedGroupsRef.current.push(group);
+    replayRedoGroupsRef.current = [];
+    setReplayRevision((prev) => prev + 1);
+  };
+
+  const discardReplayGroup = () => {
+    replayCurrentGroupRef.current = null;
+  };
+
+  const undoReplayGroup = () => {
+    const last = replayCommittedGroupsRef.current.pop();
+    if (!last) return;
+    replayRedoGroupsRef.current.push(last);
+    setReplayRevision((prev) => prev + 1);
+  };
+
+  const redoReplayGroup = () => {
+    const group = replayRedoGroupsRef.current.pop();
+    if (!group) return;
+    replayCommittedGroupsRef.current.push(group);
+    setReplayRevision((prev) => prev + 1);
+  };
+
+  const clearReplayHistory = () => {
+    replayCommittedGroupsRef.current = [];
+    replayRedoGroupsRef.current = [];
+    replayCurrentGroupRef.current = null;
+    replayGroupIdRef.current = 1;
+    regionMapsRef.current.clear();
+    regionMapIdRef.current = 1;
+    setReplayRevision((prev) => prev + 1);
+  };
 
   useEffect(() => {
     const img = new Image();
@@ -265,8 +376,8 @@ export default function LessonPlayer() {
     if (!ctx || !regionDataRef.current) return;
 
     if (seedsRef.current.length > 0) {
-      // fill all placed paw seeds so every paw becomes a colored region
-      waveFill(ctx, regionDataRef.current, seedsRef.current);
+      // fill all placed paw seeds using the same shared pipeline as replay
+      autoColorRegions(ctx, regionDataRef.current, seedsRef.current);
     }
     // убрать лапки после начала раскрашивания
     const pawCanvas = pawOverlayCanvasRef.current;
@@ -275,6 +386,40 @@ export default function LessonPlayer() {
     if (pawCtx && pawCanvas) {
       pawCtx.clearRect(0, 0, pawCanvas.width, pawCanvas.height);
     }
+
+    const seedsSnapshot = seedsRef.current.map((seed) => ({
+      x: seed.x,
+      y: seed.y,
+      regionId: seed.regionId,
+      color: [seed.color[0], seed.color[1], seed.color[2]] as [
+        number,
+        number,
+        number,
+      ],
+    }));
+    const regionData = regionDataRef.current;
+    const regionMapSnapshot = new Int32Array(regionData.regionMap);
+    const widthSnapshot = regionData.width;
+    const heightSnapshot = regionData.height;
+
+    // Log replay actions on next tick to avoid ordering races with stroke group commits.
+    window.setTimeout(() => {
+      const regionMapId = regionMapIdRef.current++;
+      regionMapsRef.current.set(regionMapId, {
+        width: widthSnapshot,
+        height: heightSnapshot,
+        regionMap: regionMapSnapshot,
+      });
+
+      beginReplayGroup();
+      appendReplayAction({
+        type: "autoColorStart",
+        seeds: seedsSnapshot,
+        regionMapId,
+      });
+      appendReplayAction({ type: "clearPaws" });
+      commitReplayGroup();
+    }, 0);
 
     // здесь позже запустим анимацию заливки
   };
@@ -390,6 +535,12 @@ export default function LessonPlayer() {
     if (!nearest) return;
 
     const { x: seedX, y: seedY, regionId } = nearest;
+    const hex = brushColorRef.current;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const color: [number, number, number] = [r, g, b];
+    beginReplayGroup();
 
     // --- проверяем, не является ли область очень маленькой ---
     let regionSize = regionSizeCacheRef.current.get(regionId);
@@ -413,21 +564,16 @@ export default function LessonPlayer() {
       const ctx = colorCanvas?.getContext("2d");
 
       if (ctx) {
-        const hex = brushColorRef.current;
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-
-        paintRegionFast(ctx, regionDataRef.current!, regionId, [r, g, b]);
+        paintRegionFast(ctx, regionDataRef.current!, regionId, color);
+        appendReplayAction({
+          type: "fillRegion",
+          regionId,
+          color,
+          seedX,
+          seedY,
+        });
       }
     }
-
-    // create seed color from current brush color
-    const hex = brushColorRef.current;
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const color: [number, number, number] = [r, g, b];
 
     // save undo state before placing a new color seed
     const drawingCanvas = drawingCanvasRef.current;
@@ -480,6 +626,14 @@ export default function LessonPlayer() {
     if (pawCtx) {
       // draw the paw once (permanent marker)
       drawSeedPaw(pawCtx, seedX, seedY, color);
+      appendReplayAction({
+        type: "pawPlace",
+        x: seedX,
+        y: seedY,
+        regionId,
+        color,
+      });
+      commitReplayGroup();
 
       const bounceFrames = 8;
       let frame = 0;
@@ -516,7 +670,10 @@ export default function LessonPlayer() {
       };
 
       animate();
+      return;
     }
+
+    discardReplayGroup();
   };
 
   const [randomArtFact, setRandomArtFact] = useState("");
@@ -666,6 +823,7 @@ export default function LessonPlayer() {
       }
       setLesson(data);
       setBrushSize(5);
+      clearReplayHistory();
       if (data.steps.length > 0) {
         setCurrentStepIndex(0);
         setTimeout(() => {
@@ -705,6 +863,28 @@ export default function LessonPlayer() {
         setIsDrawingState(true);
       }
       const { x, y } = getCoordinates(e);
+      const lastReplayPoint = lastReplayStrokePointRef.current;
+      if (!lastReplayPoint) {
+        appendReplayAction({
+          type: "strokePoint",
+          x,
+          y,
+        });
+        lastReplayStrokePointRef.current = { x, y };
+      } else {
+        const dxReplay = x - lastReplayPoint.x;
+        const dyReplay = y - lastReplayPoint.y;
+        const replayDistance = Math.hypot(dxReplay, dyReplay);
+
+        if (replayDistance > 2) {
+          appendReplayAction({
+            type: "strokePoint",
+            x,
+            y,
+          });
+          lastReplayStrokePointRef.current = { x, y };
+        }
+      }
       // if eraser is active, also erase from the color canvas
       const colorCanvas = colorCanvasRef.current;
       const colorCtx = colorCanvas?.getContext("2d");
@@ -991,6 +1171,14 @@ export default function LessonPlayer() {
       // do NOT switch cursor yet; wait until actual movement
       // while drawing we disable color click logic
       const { x, y } = getCoordinates(e);
+      beginReplayGroup();
+      appendReplayAction({
+        type: "strokeStart",
+        x,
+        y,
+        brush: getReplayBrushSettings(),
+      });
+      lastReplayStrokePointRef.current = { x, y };
       ctx.globalCompositeOperation = isEraserRef.current
         ? "destination-out"
         : "source-over";
@@ -1001,12 +1189,20 @@ export default function LessonPlayer() {
     };
 
     const endDrawing = () => {
+      const wasDrawing = isDrawing.current;
       isDrawing.current = false;
       setIsDrawingState(false);
       ctx.beginPath();
       lastPointRef.current = null;
+      lastReplayStrokePointRef.current = null;
       // drawing changed → region map is no longer valid
       regionDataRef.current = null;
+      if (wasDrawing) {
+        appendReplayAction({ type: "strokeEnd" });
+        commitReplayGroup();
+      } else {
+        discardReplayGroup();
+      }
     };
 
     canvas.addEventListener("mousedown", startDrawing);
@@ -1168,6 +1364,7 @@ export default function LessonPlayer() {
 
     setUndoStack([]);
     setRedoStack([]);
+    clearReplayHistory();
 
     seedsRef.current = [];
     regionDataRef.current = null;
@@ -1180,6 +1377,15 @@ export default function LessonPlayer() {
 
     setShowRestartConfirm(false);
   };
+
+  const replayActionGroups = useMemo(
+    () =>
+      replayCommittedGroupsRef.current.map((group) => ({
+        id: group.id,
+        actions: [...group.actions],
+      })),
+    [replayRevision],
+  );
 
   return (
     <div className="lesson-container">
@@ -1301,8 +1507,8 @@ export default function LessonPlayer() {
                 className="lesson-animation-button btn-blue"
                 onClick={() => {
                   setFrankPose(getRandomPose(frankPoses));
-                  setAnimationMode("flow");
                   setAnimationMenuOpen(false);
+                  alert("Эта функция находится в разработке");
                 }}
               >
                 🌊 Перетекание краски
@@ -1312,8 +1518,8 @@ export default function LessonPlayer() {
                 className="lesson-animation-button btn-pink"
                 onClick={() => {
                   setFrankPose(getRandomPose(frankPoses));
-                  setAnimationMode("mix");
                   setAnimationMenuOpen(false);
+                  alert("Эта функция находится в разработке");
                 }}
               >
                 🎨 Смешать краски
@@ -1437,7 +1643,8 @@ export default function LessonPlayer() {
                   </svg>
                 </button>
               )}
-              {animationMenuOpen || animationMode ? (
+              {animationMenuOpen ||
+              (animationMode && animationMode !== "replay") ? (
                 <button
                   className="lesson-puzzle-close"
                   onClick={() => {
@@ -1458,9 +1665,16 @@ export default function LessonPlayer() {
                 </div>
               )}
 
-              {animationMode === "puzzle" ? (
+              {animationMode === "replay" ? (
+                <ReplayCanvas
+                  actionGroups={replayActionGroups}
+                  regionMaps={regionMapsRef.current}
+                  width={512}
+                  height={512}
+                  onClose={() => setAnimationMode(null)}
+                />
+              ) : animationMode === "puzzle" ? (
                 <div className="lesson-puzzle-mode">
-                  
                   <div className="lesson-puzzle-board">
                     <PuzzleCanvas
                       sourceCanvas={puzzleSourceCanvasRef.current!}
@@ -1542,7 +1756,10 @@ export default function LessonPlayer() {
                   width={512}
                   height={512}
                   style={{
-                    display: animationMode === "puzzle" ? "none" : "block",
+                    display:
+                      animationMode === "puzzle" || animationMode === "replay"
+                        ? "none"
+                        : "block",
                   }}
                 ></canvas>
 
@@ -1553,7 +1770,10 @@ export default function LessonPlayer() {
                   width={512}
                   height={512}
                   style={{
-                    display: animationMode === "puzzle" ? "none" : "block",
+                    display:
+                      animationMode === "puzzle" || animationMode === "replay"
+                        ? "none"
+                        : "block",
                   }}
                 ></canvas>
 
@@ -1565,7 +1785,10 @@ export default function LessonPlayer() {
                   height={512}
                   onClick={handleCanvasColorClick}
                   style={{
-                    display: animationMode === "puzzle" ? "none" : "block",
+                    display:
+                      animationMode === "puzzle" || animationMode === "replay"
+                        ? "none"
+                        : "block",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     touchAction: "none",
@@ -1617,7 +1840,7 @@ export default function LessonPlayer() {
             </div>
           </div>
 
-          {animationMode !== "puzzle" && (
+          {animationMode !== "puzzle" && animationMode !== "replay" && (
             <div className="lesson-tools-panel">
               <div className="lesson-tools-panel-1">
                 <button
@@ -1702,6 +1925,7 @@ export default function LessonPlayer() {
                     if (currentState) {
                       setRedoStack((prev) => [...prev, currentState]);
                     }
+                    undoReplayGroup();
                   }}
                 >
                   <>
@@ -1780,6 +2004,7 @@ export default function LessonPlayer() {
                           const next = [...prevUndo, currentState];
                           return next.slice(-HISTORY_LIMIT);
                         });
+                        redoReplayGroup();
                       }
 
                       return prevRedo.slice(0, -1);
@@ -1863,6 +2088,7 @@ export default function LessonPlayer() {
                               // reset history
                               setUndoStack([]);
                               setRedoStack([]);
+                              clearReplayHistory();
                             }
                           };
 
@@ -1885,7 +2111,7 @@ export default function LessonPlayer() {
                 </button>
                 <button
                   className="lesson-button lesson-button-save"
-                  onClick={() => {
+                  onClick={async () => {
                     const drawingCanvas = drawingCanvasRef.current;
                     const colorCanvas = colorCanvasRef.current;
                     const pawCanvas = pawOverlayCanvasRef.current;
@@ -1916,36 +2142,12 @@ export default function LessonPlayer() {
                       tempCtx.drawImage(pawCanvas, 0, 0);
                     }
 
-                    // add LapLapLa logo
-                    const logo = new window.Image();
-                    logo.src = "/laplapla-logo.webp";
+                    await drawLapLapLaWatermark(tempCtx, tempCanvas);
 
-                    logo.onload = () => {
-                      const LOGO_WIDTH = 60;
-                      const LOGO_HEIGHT = 60;
-                      const MARGIN = 12;
-
-                      const x = tempCanvas.width - LOGO_WIDTH - MARGIN;
-                      const y = tempCanvas.height - LOGO_HEIGHT - MARGIN - 18;
-
-                      // draw logo
-                      tempCtx.drawImage(logo, x, y, LOGO_WIDTH, LOGO_HEIGHT);
-
-                      // draw text under logo
-                      tempCtx.font = "20px 'Amatic SC', cursive";
-                      tempCtx.fillStyle = "#333";
-                      tempCtx.textAlign = "center";
-                      tempCtx.fillText(
-                        "LapLapLa",
-                        x + LOGO_WIDTH / 2,
-                        y + LOGO_HEIGHT + 16,
-                      );
-
-                      const link = document.createElement("a");
-                      link.download = `${lesson?.title || "drawing"}.png`;
-                      link.href = tempCanvas.toDataURL("image/png");
-                      link.click();
-                    };
+                    const link = document.createElement("a");
+                    link.download = `${lesson?.title || "drawing"}.png`;
+                    link.href = tempCanvas.toDataURL("image/png");
+                    link.click();
                   }}
                 >
                   <>

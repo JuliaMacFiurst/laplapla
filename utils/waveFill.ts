@@ -14,6 +14,10 @@ export type RegionData = {
   regionMap: Int32Array
 }
 
+type WaveFillOptions = {
+  onFrame?: () => void | Promise<void>
+}
+
 // Helper to blend colors
 function mix(a: number, b: number, t: number) {
   return a * (1 - t) + b * t
@@ -28,9 +32,14 @@ function noise2D(x: number, y: number) {
 export function waveFill(
   ctx: CanvasRenderingContext2D,
   regionData: RegionData,
-  seeds: Seed[]
+  seeds: Seed[],
+  options?: WaveFillOptions
 ) {
   const { width, height, regionMap } = regionData
+
+  if (seeds.length === 0) {
+    return Promise.resolve()
+  }
 
   const image = ctx.getImageData(0, 0, width, height)
   const pixels = image.data
@@ -80,29 +89,30 @@ export function waveFill(
   // soft watercolor edge thickness
   const edgeSoftness = influenceRadius * 0.25
 
-  function drawFrame() {
-    let active = false
+  return new Promise<void>((resolve) => {
+    function drawFrame() {
+      let active = false
 
-    for (let wi = 0; wi < waves.length; wi++) {
-      const wave = waves[wi]
-      if (wave.radius > influenceRadius) continue
+      for (let wi = 0; wi < waves.length; wi++) {
+        const wave = waves[wi]
+        if (wave.radius > influenceRadius) continue
 
-      active = true
+        active = true
 
-      const { x, y, regionId, color } = wave.seed
-      const [r, g, b] = color
+        const { x, y, regionId, color } = wave.seed
+        const [r, g, b] = color
 
-      const minX = Math.max(0, Math.floor(x - wave.radius))
-      const maxX = Math.min(width - 1, Math.floor(x + wave.radius))
-      const minY = Math.max(0, Math.floor(y - wave.radius))
-      const maxY = Math.min(height - 1, Math.floor(y + wave.radius))
+        const minX = Math.max(0, Math.floor(x - wave.radius))
+        const maxX = Math.min(width - 1, Math.floor(x + wave.radius))
+        const minY = Math.max(0, Math.floor(y - wave.radius))
+        const maxY = Math.min(height - 1, Math.floor(y + wave.radius))
 
-      for (let py = minY; py <= maxY; py++) {
-        for (let px = minX; px <= maxX; px++) {
-          const dx = px - x
-          const dy = py - y
+        for (let py = minY; py <= maxY; py++) {
+          for (let px = minX; px <= maxX; px++) {
+            const dx = px - x
+            const dy = py - y
 
-          const dist = Math.sqrt(dx * dx + dy * dy)
+            const dist = Math.sqrt(dx * dx + dy * dy)
 
           // softer spatial noise for watercolor edges
           const n = noise2D(px * 0.06, py * 0.06) - 0.5
@@ -219,19 +229,26 @@ export function waveFill(
 
           pixels[i] = mix(cr, r, weight)
           pixels[i + 1] = mix(cg, g, weight)
-          pixels[i + 2] = mix(cb, b, weight)
-          pixels[i + 3] = Math.min(255, ca + weight * 255)
+            pixels[i + 2] = mix(cb, b, weight)
+            pixels[i + 3] = Math.min(255, ca + weight * 255)
+          }
         }
+
+        // smoother expansion to avoid visible circular steps
+        wave.radius += 1.6 + noise2D(x * 0.03 + wave.radius, y * 0.03) * 1.2
       }
 
-      // smoother expansion to avoid visible circular steps
-      wave.radius += 1.6 + noise2D(x * 0.03 + wave.radius, y * 0.03) * 1.2
+      ctx.putImageData(image, 0, 0)
+      options?.onFrame?.()
+
+      if (active) {
+        requestAnimationFrame(drawFrame)
+        return
+      }
+
+      resolve()
     }
 
-    ctx.putImageData(image, 0, 0)
-
-    if (active) requestAnimationFrame(drawFrame)
-  }
-
-  requestAnimationFrame(drawFrame)
+    requestAnimationFrame(drawFrame)
+  })
 }

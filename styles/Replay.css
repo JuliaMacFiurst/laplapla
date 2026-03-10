@@ -1,0 +1,96 @@
+.replay-root {
+  position: relative;
+  margin: 0 auto;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.replay-canvas {
+  display: block;
+  border: 3px solid #f7cce0;
+  border-radius: 18px;
+  background: #fffdf7;
+  box-shadow: 0 10px 24px rgba(193, 117, 157, 0.18);
+  max-width: min(100%, 512px);
+  height: auto;
+}
+
+.replay-close-btn {
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  color: #a14973;
+  background: linear-gradient(180deg, #fff8fb 0%, #ffe4f1 100%);
+  box-shadow: 0 4px 10px rgba(175, 93, 134, 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  z-index: 3;
+}
+
+.replay-close-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 7px 14px rgba(175, 93, 134, 0.32);
+}
+
+.replay-controls {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.replay-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 16px;
+  min-height: 40px;
+  cursor: pointer;
+  font-family: "Varela Round", "Comic Sans MS", cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: #7e3f60;
+  background: linear-gradient(180deg, #fff7fb 0%, #ffe6f1 100%);
+  box-shadow: 0 3px 8px rgba(174, 99, 137, 0.2);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.replay-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 14px rgba(174, 99, 137, 0.28);
+  filter: saturate(1.08);
+}
+
+.replay-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.replay-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(0.15);
+}
+
+.replay-btn-export {
+  color: #3d5a7a;
+  background: linear-gradient(180deg, #f8fcff 0%, #dff3ff 100%);
+  box-shadow: 0 3px 8px rgba(87, 137, 171, 0.22);
+}
+
+@media (max-width: 1024px) {
+  .replay-controls {
+    gap: 8px;
+  }
+
+  .replay-btn {
+    min-height: 42px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+}
