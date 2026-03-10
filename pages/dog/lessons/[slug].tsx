@@ -1254,7 +1254,8 @@ export default function LessonPlayer() {
                     setAnimationMenuOpen(true);
                   }}
                 >
-                  ✨ Оживить картинку
+                  <span className="sparkle">✨</span>
+                  Оживить картинку✨
                 </button>
               </div>
             )}

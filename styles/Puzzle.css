@@ -92,3 +92,90 @@
   transform: scale(1.1);
   box-shadow: 0 6px 14px rgba(0,0,0,0.25);
 }
+
+/* animated "оживить картинку" button */
+.lesson-button-animate {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: lesson-animate-pulse 2.2s ease-in-out infinite;
+}
+
+.lesson-button-animate:hover {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+}
+
+@keyframes lesson-animate-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(170,150,255,0.0);
+  }
+
+  35% {
+    transform: scale(1.05);
+    box-shadow: 0 0 16px rgba(170,150,255,0.45);
+  }
+
+  60% {
+    transform: scale(1.02);
+    box-shadow: 0 0 10px rgba(170,150,255,0.25);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(170,150,255,0.0);
+  }
+}
+
+/* moving shine across the animate button */
+.lesson-button-animate::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.55) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  animation: lesson-button-shine 4.5s linear infinite;
+}
+
+/* shine movement */
+@keyframes lesson-button-shine {
+  0% {
+    left: -120%;
+  }
+  100% {
+    left: 120%;
+  }
+}
+
+/* sparkle icon bounce */
+.lesson-button-animate .sparkle,
+.lesson-button-animate span {
+  display: inline-block;
+  animation: lesson-sparkle-bounce 1.8s ease-in-out infinite;
+}
+
+/* tiny floating bounce for the ✨ icon */
+@keyframes lesson-sparkle-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px) scale(1.05);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
