@@ -1436,25 +1436,30 @@ export default function LessonPlayer() {
                   </svg>
                 </button>
               )}
-              <div className="lesson-step-counter">
-                {lesson && currentStepIndex >= 0 && (
-                  <p>
-                    <strong>{currentStepIndex + 1}</strong> шаг из{" "}
-                    {lesson.steps.length}
-                  </p>
-                )}
-              </div>
+              {animationMenuOpen || animationMode ? (
+                <button
+                  className="lesson-puzzle-close"
+                  onClick={() => {
+                    setAnimationMode(null);
+                    setAnimationMenuOpen(false);
+                  }}
+                >
+                  ✕
+                </button>
+              ) : (
+                <div className="lesson-step-counter">
+                  {lesson && currentStepIndex >= 0 && (
+                    <p>
+                      <strong>{currentStepIndex + 1}</strong> шаг из{" "}
+                      {lesson.steps.length}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {animationMode === "puzzle" ? (
                 <div className="lesson-puzzle-mode">
-                  <button
-                    className="lesson-puzzle-close"
-                    onClick={() => {
-                      setAnimationMode(null);
-                    }}
-                  >
-                    ✕
-                  </button>
+                  
                   <div className="lesson-puzzle-board">
                     <PuzzleCanvas
                       sourceCanvas={puzzleSourceCanvasRef.current!}

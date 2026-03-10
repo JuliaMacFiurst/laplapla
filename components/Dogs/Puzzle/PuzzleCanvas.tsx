@@ -119,12 +119,12 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
           } catch {}
 
           // spawn stars
-          starsRef.current = Array.from({ length: 60 }).map(() => ({
+          starsRef.current = Array.from({ length: 120 }).map(() => ({
             x: Math.random() * canvas.width,
-            y: -20 - Math.random() * 100,
-            vx: (Math.random() - 0.5) * 1.5,
-            vy: 1 + Math.random() * 2,
-            size: 4 + Math.random() * 6,
+            y: -40 - Math.random() * 200,
+            vx: (Math.random() - 0.5) * 1.2,
+            vy: 0.6 + Math.random() * 1.2,
+            size: 4 + Math.random() * 8,
           }));
 
           // notify Frank bubble
@@ -243,7 +243,14 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
       if (trayRef.current) {
         trayRef.current.innerHTML = "";
 
-        engine.pieces.forEach((piece) => {
+        // shuffle pieces so tray order is random
+        const shuffledPieces = [...engine.pieces];
+        for (let i = shuffledPieces.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledPieces[i], shuffledPieces[j]] = [shuffledPieces[j], shuffledPieces[i]];
+        }
+
+        shuffledPieces.forEach((piece) => {
           const img = document.createElement("img");
           img.src = piece.canvas.toDataURL();
           img.dataset.pieceId = piece.id;
@@ -330,9 +337,9 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
         });
 
         // after short delay draw merged full image
-        if (elapsed > 600 && sourceCanvas) {
+        if (elapsed > 1800 && sourceCanvas) {
           ctx.save();
-          ctx.globalAlpha = Math.min(1, (elapsed - 600) / 400);
+          ctx.globalAlpha = Math.min(1, (elapsed - 1800) / 800);
           ctx.drawImage(sourceCanvas, 0, 0, canvas.width, canvas.height);
           ctx.restore();
         }
@@ -531,7 +538,7 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{
-          border: "2px solid #000",
+          border: "2px solid #d9d9d9",
           background: "#fff",
           display: "block",
           margin: "0 auto",
