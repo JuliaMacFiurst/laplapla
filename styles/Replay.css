@@ -12,6 +12,7 @@
   background: #fffdf7;
   box-shadow: 0 10px 24px rgba(193, 117, 157, 0.18);
   max-width: min(100%, 512px);
+  margin: 0 auto;
   height: auto;
 }
 
@@ -43,7 +44,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 30px;
 }
 
 .replay-btn {

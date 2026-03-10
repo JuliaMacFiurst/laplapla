@@ -270,7 +270,9 @@ export default function LessonPlayer() {
   const gradientProgressRef = useRef(0);
   // previous point for light bezier smoothing
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
-  const lastReplayStrokePointRef = useRef<{ x: number; y: number } | null>(null);
+  const lastReplayStrokePointRef = useRef<{ x: number; y: number } | null>(
+    null,
+  );
   const pawImgRef = useRef<HTMLImageElement | null>(null);
 
   const getReplayBrushSettings = (): ReplayBrushSettings => ({
@@ -956,6 +958,8 @@ export default function LessonPlayer() {
           }
         } else if (style === "rainbow") {
           ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 50%)`;
+          ctx.shadowBlur = 0;
+          ctx.shadowColor = "transparent";
         } else if (style === "chameleon") {
           ctx.strokeStyle = `hsl(${(hueRef.current + 180) % 360}, 70%, 50%)`;
         } else if (style === "gradient") {
@@ -1054,6 +1058,8 @@ export default function LessonPlayer() {
           }
         } else if (style === "rainbow") {
           ctx.strokeStyle = `hsl(${hueRef.current}, 100%, 50%)`;
+          ctx.shadowBlur = 0;
+          ctx.shadowColor = "transparent";
         } else if (style === "chameleon") {
           ctx.strokeStyle = `hsl(${(hueRef.current + 180) % 360}, 70%, 50%)`;
         } else if (style === "gradient") {

@@ -135,6 +135,9 @@ export default function ReplayCanvas({
     try {
       setBusy(true);
       const blob = await engine.exportGIF({
+        width: 384,
+        height: 384,
+        fps: 12,
         workerScript: "/gif.worker.js",
       });
       const url = URL.createObjectURL(blob);

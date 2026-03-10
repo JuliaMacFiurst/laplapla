@@ -35,11 +35,18 @@ type VideoOptions = {
 type GifOptions = {
   width?: number;
   height?: number;
+  fps?: number;
   workerScript?: string;
 };
 
+const TARGET_DURATION_SECONDS = 20;
+const TARGET_FPS = 30;
+const MAX_TARGET_FRAMES = TARGET_DURATION_SECONDS * TARGET_FPS;
+const STROKE_POINT_KEEP_EVERY = 3;
+
 export class ReplayEngine {
   private actionGroups: ReplayActionGroup[];
+  private processedActionGroups: ReplayActionGroup[];
   private readonly regionMaps: Map<number, ReplayRegionData>;
   private readonly displayCanvas: HTMLCanvasElement;
   private readonly displayCtx: CanvasRenderingContext2D;
@@ -54,6 +61,7 @@ export class ReplayEngine {
 
   private strokePointDelayMs: number;
   private actionDelayMs: number;
+  private adaptiveSpeedMultiplier = 1;
 
   private groupIndex = 0;
   private actionIndex = 0;
@@ -76,6 +84,8 @@ export class ReplayEngine {
     options: ReplayEngineOptions,
   ) {
     this.actionGroups = actionGroups;
+    this.processedActionGroups = this.buildProcessedActionGroups(actionGroups);
+    this.recomputeAdaptiveSpeed();
     this.regionMaps = regionMaps;
     this.displayCanvas = canvas;
 
@@ -117,6 +127,8 @@ export class ReplayEngine {
 
   setActionGroups(actionGroups: ReplayActionGroup[]) {
     this.actionGroups = actionGroups;
+    this.processedActionGroups = this.buildProcessedActionGroups(actionGroups);
+    this.recomputeAdaptiveSpeed();
     this.restart();
   }
 
@@ -154,7 +166,7 @@ export class ReplayEngine {
   stop() {
     this.isPlaying = false;
     this.isPaused = false;
-    this.groupIndex = this.actionGroups.length;
+    this.groupIndex = this.processedActionGroups.length;
     this.actionIndex = 0;
     this.nextActionAt = 0;
     this.activeStroke = null;
@@ -231,10 +243,10 @@ export class ReplayEngine {
     let previousFrame: ImageData | null = null;
     let pendingDelay = 0;
 
-    const pushFrame = (delayMs: number) => {
+    const pushFrame = (delayMs: number, force = false) => {
       drawLapLapLaWatermarkSync(exportCtx, exportCanvas);
       const currentFrame = exportCtx.getImageData(0, 0, this.width, this.height);
-      if (previousFrame && !this.framesDifferent(previousFrame.data, currentFrame.data)) {
+      if (!force && previousFrame && !this.framesDifferent(previousFrame.data, currentFrame.data)) {
         pendingDelay += delayMs;
         return false;
       }
@@ -253,23 +265,33 @@ export class ReplayEngine {
       exportEngine.restart();
       recorder.start();
 
-      for (const action of exportEngine.iterateActions()) {
-        if (action.type === "fillRegion" || action.type === "autoColorStart") {
-          await exportEngine.applyActionAndWait(action, () => {
-            pushFrame(16);
-          });
-          const delay = pushFrame(16);
+      await this.withFastAnimationFrames(async () => {
+        for (const action of exportEngine.iterateActions()) {
+          if (action.type === "fillRegion" || action.type === "autoColorStart") {
+            await exportEngine.applyActionAndWait(action, () => {
+              pushFrame(16);
+            });
+            const delay = pushFrame(16);
+            if (typeof delay === "number") {
+              await this.sleep(delay);
+            }
+            continue;
+          }
+
+          await exportEngine.applyActionAndWait(action);
+          const delay = pushFrame(exportEngine.getActionDelay(action));
           if (typeof delay === "number") {
             await this.sleep(delay);
           }
-          continue;
         }
+      });
 
-        await exportEngine.applyActionAndWait(action);
-        const delay = pushFrame(exportEngine.getActionDelay(action));
-        if (typeof delay === "number") {
-          await this.sleep(delay);
-        }
+      // Hold final frame so the export does not instantly loop/restart.
+      const finalHoldDelay = pushFrame(2000, true);
+      if (typeof finalHoldDelay === "number") {
+        await this.sleep(finalHoldDelay);
+      } else {
+        await this.sleep(2000);
       }
 
       if (recorder.state !== "inactive") {
@@ -286,11 +308,16 @@ export class ReplayEngine {
     const gifModule = await import("gif.js");
     const GIFCtor = (gifModule as any).default ?? (gifModule as any);
 
+    const outputWidth = options.width ?? 384;
+    const outputHeight = options.height ?? 384;
+    const gifFps = options.fps ?? 12;
+    const gifFrameDelayMs = Math.max(20, Math.round(1000 / gifFps));
+
     const gif = new GIFCtor({
       workers: 2,
       quality: 10,
-      width: options.width ?? this.width,
-      height: options.height ?? this.height,
+      width: outputWidth,
+      height: outputHeight,
       workerScript: options.workerScript,
     });
 
@@ -308,27 +335,35 @@ export class ReplayEngine {
     if (!exportCtx) {
       throw new Error("ReplayEngine: failed to create export GIF context");
     }
+    const gifFrameCanvas = document.createElement("canvas");
+    gifFrameCanvas.width = outputWidth;
+    gifFrameCanvas.height = outputHeight;
+    const gifFrameCtx = gifFrameCanvas.getContext("2d");
+    if (!gifFrameCtx) {
+      throw new Error("ReplayEngine: failed to create scaled GIF frame context");
+    }
 
     exportEngine.restart();
     await preloadLapLapLaWatermark();
-    const GIF_MIN_FRAME_DELAY_MS = 45;
     let previousFrame: ImageData | null = null;
     let pendingDelay = 0;
     let pendingActionDelay = 0;
     let frameCount = 0;
 
-    const pushGifFrame = (delayMs: number) => {
+    const pushGifFrame = (delayMs: number, force = false) => {
       drawLapLapLaWatermarkSync(exportCtx, exportCanvas);
-      const currentFrame = exportCtx.getImageData(0, 0, this.width, this.height);
-      if (previousFrame && !this.framesDifferent(previousFrame.data, currentFrame.data)) {
+      gifFrameCtx.clearRect(0, 0, outputWidth, outputHeight);
+      gifFrameCtx.drawImage(exportCanvas, 0, 0, outputWidth, outputHeight);
+      const currentFrame = gifFrameCtx.getImageData(0, 0, outputWidth, outputHeight);
+      if (!force && previousFrame && !this.framesDifferent(previousFrame.data, currentFrame.data)) {
         pendingDelay += delayMs;
         return;
       }
 
-      const totalDelay = Math.max(GIF_MIN_FRAME_DELAY_MS, delayMs + pendingDelay);
+      const totalDelay = Math.max(gifFrameDelayMs, delayMs + pendingDelay);
       pendingDelay = 0;
 
-      gif.addFrame(exportCanvas, {
+      gif.addFrame(gifFrameCanvas, {
         copy: true,
         delay: totalDelay,
       });
@@ -336,25 +371,29 @@ export class ReplayEngine {
       frameCount += 1;
     };
 
-    for (const action of exportEngine.iterateActions()) {
-      const actionStart = performance.now();
-      await exportEngine.applyActionAndWait(action);
-      const elapsedMs = performance.now() - actionStart;
-      pendingActionDelay += Math.max(exportEngine.getActionDelay(action), elapsedMs);
+    await this.withFastAnimationFrames(async () => {
+      for (const action of exportEngine.iterateActions()) {
+        await exportEngine.applyActionAndWait(action);
+        pendingActionDelay += exportEngine.getActionDelay(action);
 
-      if (this.shouldCaptureGifFrame(action)) {
-        pushGifFrame(pendingActionDelay);
-        pendingActionDelay = 0;
+        if (this.shouldCaptureGifFrame(action)) {
+          pushGifFrame(pendingActionDelay);
+          pendingActionDelay = 0;
+        }
       }
-    }
+    });
 
     if (pendingActionDelay > 0 || frameCount === 0) {
-      pushGifFrame(pendingActionDelay || GIF_MIN_FRAME_DELAY_MS);
+      pushGifFrame(pendingActionDelay || gifFrameDelayMs);
     }
+
+    pushGifFrame(2000, true);
 
     if (frameCount === 0) {
       drawLapLapLaWatermarkSync(exportCtx, exportCanvas);
-      gif.addFrame(exportCanvas, { copy: true, delay: GIF_MIN_FRAME_DELAY_MS });
+      gifFrameCtx.clearRect(0, 0, outputWidth, outputHeight);
+      gifFrameCtx.drawImage(exportCanvas, 0, 0, outputWidth, outputHeight);
+      gif.addFrame(gifFrameCanvas, { copy: true, delay: gifFrameDelayMs });
     }
 
     return new Promise<Blob>((resolve) => {
@@ -429,8 +468,32 @@ export class ReplayEngine {
   }
 
   private getActionDelay(action: ReplayAction): number {
-    if (action.type === "strokePoint") return this.strokePointDelayMs;
-    return this.actionDelayMs;
+    const baseDelay = action.type === "strokePoint" ? this.strokePointDelayMs : this.actionDelayMs;
+    if (this.adaptiveSpeedMultiplier <= 1) {
+      return baseDelay;
+    }
+
+    const speedByType = this.getActionSpeedBoost(action);
+    const accelerated = baseDelay / (this.adaptiveSpeedMultiplier * speedByType);
+    const minDelay = action.type === "strokePoint" ? 1 : 6;
+    return Math.max(minDelay, accelerated);
+  }
+
+  private getActionSpeedBoost(action: ReplayAction) {
+    switch (action.type) {
+      case "strokeStart":
+      case "strokePoint":
+      case "strokeEnd":
+        return 6;
+      case "pawPlace":
+      case "clearPaws":
+        return 3;
+      case "fillRegion":
+      case "autoColorStart":
+        return 1.5;
+      default:
+        return 2;
+    }
   }
 
   private applyAction(
@@ -785,20 +848,20 @@ export class ReplayEngine {
 
   private hasMoreActions() {
     this.normalizeActionPointer();
-    if (this.groupIndex >= this.actionGroups.length) return false;
-    const group = this.actionGroups[this.groupIndex];
+    if (this.groupIndex >= this.processedActionGroups.length) return false;
+    const group = this.processedActionGroups[this.groupIndex];
     return this.actionIndex < group.actions.length;
   }
 
   private getCurrentAction(): ReplayAction | null {
     this.normalizeActionPointer();
-    const group = this.actionGroups[this.groupIndex];
+    const group = this.processedActionGroups[this.groupIndex];
     if (!group) return null;
     return group.actions[this.actionIndex] ?? null;
   }
 
   private advanceActionPointer() {
-    const group = this.actionGroups[this.groupIndex];
+    const group = this.processedActionGroups[this.groupIndex];
     if (!group) return;
 
     this.actionIndex += 1;
@@ -810,11 +873,81 @@ export class ReplayEngine {
   }
 
   private *iterateActions() {
-    for (const group of this.actionGroups) {
+    for (const group of this.processedActionGroups) {
       for (const action of group.actions) {
         yield action;
       }
     }
+  }
+
+  private recomputeAdaptiveSpeed() {
+    const totalActions = this.countActions(this.processedActionGroups);
+    if (totalActions <= 0) {
+      this.adaptiveSpeedMultiplier = 1;
+      return;
+    }
+
+    this.adaptiveSpeedMultiplier = Math.max(1, totalActions / MAX_TARGET_FRAMES);
+  }
+
+  private countActions(groups: ReplayActionGroup[]) {
+    let total = 0;
+    for (const group of groups) {
+      total += group.actions.length;
+    }
+    return total;
+  }
+
+  private buildProcessedActionGroups(groups: ReplayActionGroup[]) {
+    return groups.map((group) => ({
+      id: group.id,
+      actions: this.decimateStrokePoints(group.actions),
+    }));
+  }
+
+  private decimateStrokePoints(actions: ReplayAction[]) {
+    const result: ReplayAction[] = [];
+    let strokePointBuffer: ReplayAction[] = [];
+    let inStroke = false;
+
+    const flushStrokeBuffer = () => {
+      if (strokePointBuffer.length === 0) return;
+      strokePointBuffer.forEach((action, index) => {
+        const isNth = index % STROKE_POINT_KEEP_EVERY === 0;
+        const isLast = index === strokePointBuffer.length - 1;
+        if (isNth || isLast) {
+          result.push(action);
+        }
+      });
+      strokePointBuffer = [];
+    };
+
+    for (const action of actions) {
+      if (action.type === "strokeStart") {
+        flushStrokeBuffer();
+        inStroke = true;
+        result.push(action);
+        continue;
+      }
+
+      if (action.type === "strokePoint" && inStroke) {
+        strokePointBuffer.push(action);
+        continue;
+      }
+
+      if (action.type === "strokeEnd" && inStroke) {
+        flushStrokeBuffer();
+        result.push(action);
+        inStroke = false;
+        continue;
+      }
+
+      flushStrokeBuffer();
+      result.push(action);
+    }
+
+    flushStrokeBuffer();
+    return result;
   }
 
   private shouldCaptureGifFrame(action: ReplayAction) {
@@ -828,6 +961,26 @@ export class ReplayEngine {
     );
   }
 
+  private async withFastAnimationFrames<T>(run: () => Promise<T>): Promise<T> {
+    const originalRaf = window.requestAnimationFrame.bind(window);
+    const originalCancelRaf = window.cancelAnimationFrame.bind(window);
+
+    window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+      return window.setTimeout(() => callback(performance.now()), 0);
+    }) as typeof window.requestAnimationFrame;
+
+    window.cancelAnimationFrame = ((id: number) => {
+      window.clearTimeout(id);
+    }) as typeof window.cancelAnimationFrame;
+
+    try {
+      return await run();
+    } finally {
+      window.requestAnimationFrame = originalRaf;
+      window.cancelAnimationFrame = originalCancelRaf;
+    }
+  }
+
   private framesDifferent(a: Uint8ClampedArray, b: Uint8ClampedArray) {
     if (a.length !== b.length) return true;
     for (let i = 0; i < a.length; i += 16) {
@@ -839,8 +992,8 @@ export class ReplayEngine {
   }
 
   private normalizeActionPointer() {
-    while (this.groupIndex < this.actionGroups.length) {
-      const group = this.actionGroups[this.groupIndex];
+    while (this.groupIndex < this.processedActionGroups.length) {
+      const group = this.processedActionGroups[this.groupIndex];
       if (this.actionIndex < group.actions.length) break;
       this.groupIndex += 1;
       this.actionIndex = 0;
