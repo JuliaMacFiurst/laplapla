@@ -46,84 +46,87 @@ export const en = {
       videoProvidedBy: "Video provided by",
     },
     studio: {
-  addMedia: "Add Media",
-  fill: "Fill",
-  fit: "Fit",
-  top: "Top",
-  center: "Center",
-  bottom: "Bottom",
-  textColor: "Text Color",
-  enableTextBg: "Enable Text Background",
-  disableTextBg: "Disable Text Background",
-  export: "Export",
-  undo: "Undo",
-  redo: "Redo",
-  preview: "Preview",
-  deleteAll: "Delete All",
-  confirmDeleteAll: "Are you sure you want to delete the entire slideshow?",
-  textPlaceholder: "Enter text for this slide",
-  confirmDeleteSlide: "Are you sure you want to delete this slide?",
-  bgColor: "Background Color",
-  media: "Media",
-  position: "Position",
-  text: "Text",
-  actionsAndExport: "Actions & Export",
-  alignLeft: "Align Left",
-  alignCenter: "Align Center",
-  alignRight: "Align Right",
-  fontSize: "Font Size",
-  closePreview: "Close Preview",
-  voiceTrack: "Voice track for current slide",
-  voiceDuration: "Duration",
-  sec: "sec",
-  saved: "Saved",
+      addMedia: "Add Media",
+      fill: "Fill",
+      fit: "Fit",
+      top: "Top",
+      center: "Center",
+      bottom: "Bottom",
+      textColor: "Text Color",
+      enableTextBg: "Enable Text Background",
+      disableTextBg: "Disable Text Background",
+      export: "Export",
+      undo: "Undo",
+      redo: "Redo",
+      preview: "Preview",
+      deleteAll: "Delete All",
+      confirmDeleteAll: "Are you sure you want to delete the entire slideshow?",
+      textPlaceholder: "Enter text for this slide",
+      confirmDeleteSlide: "Are you sure you want to delete this slide?",
+      bgColor: "Background Color",
+      media: "Media",
+      position: "Position",
+      text: "Text",
+      actionsAndExport: "Actions & Export",
+      alignLeft: "Align Left",
+      alignCenter: "Align Center",
+      alignRight: "Align Right",
+      fontSize: "Font Size",
+      closePreview: "Close Preview",
+      voiceTrack: "Voice track for current slide",
+      voiceDuration: "Duration",
+      sec: "sec",
+      saved: "Saved",
 
-  audio: "Audio",
-  addMusic: "Add Music",
-  recordVoice: "Record Voice",
-  improveVoice: "Improve Voice",
-  stopRecording: "Stop Recording",
-  currentTracks: "Current Tracks",
-  activeTracks: "Active Tracks",
-  noActiveTracks: "No Active Tracks",
+      audio: "Audio",
+      addMusic: "Add Music",
+      recordVoice: "Record Voice",
+      improveVoice: "Improve Voice",
+      stopRecording: "Stop Recording",
+      currentTracks: "Current Tracks",
+      activeTracks: "Active Tracks",
+      noActiveTracks: "No Active Tracks",
 
-  mediaPicker: {
-  tabGiphy: "GIPHY",
-  tabPexels: "Pexels",
-  tabUpload: "Upload",
-  
+      mediaPicker: {
+        tabGiphy: "GIPHY",
+        tabPexels: "Pexels",
+        tabUpload: "Upload",
 
-  searchPlaceholder: "Search media...",
-  searchButton: "Search",
-  loading: "Loading...",
-  loadMore: "Load more",
+        searchPlaceholder: "Search media...",
+        searchButton: "Search",
+        loading: "Loading...",
+        loadMore: "Load more",
 
-  giphyNoticeTitle: "GIFs by GIPHY ✨ Please use them kindly and respect creators.",
-  giphyRule1: "Do not remove watermarks or attribution.",
-  giphyRule2: "Do not use in harmful or illegal contexts.",
-  giphyTerms: "Terms of Service",
+        giphyNoticeTitle:
+          "GIFs by GIPHY ✨ Please use them kindly and respect creators.",
+        giphyRule1: "Do not remove watermarks or attribution.",
+        giphyRule2: "Do not use in harmful or illegal contexts.",
+        giphyTerms: "Terms of Service",
 
-  pexelsNoticeTitle: "Videos by Pexels 🎥 Please ensure your usage respects the license.",
-  pexelsRule1: "Free to use under the Pexels license.",
-  pexelsRule2: "No resale or redistribution as standalone files.",
-  pexelsRule3: "Respect privacy and avoid misleading usage.",
+        pexelsNoticeTitle:
+          "Videos by Pexels 🎥 Please ensure your usage respects the license.",
+        pexelsRule1: "Free to use under the Pexels license.",
+        pexelsRule2: "No resale or redistribution as standalone files.",
+        pexelsRule3: "Respect privacy and avoid misleading usage.",
 
-  uploadConfirm: "I confirm I own the rights to this file (or it is free/allowed to use) and it does not contain unsafe or inappropriate content.",
+        uploadConfirm:
+          "I confirm I own the rights to this file (or it is free/allowed to use) and it does not contain unsafe or inappropriate content.",
 
-  uploadFormatsInfo: "Allowed: JPG, PNG, WEBP (max 10MB) and MP4, WEBM (max 25MB). SVG is blocked.",
+        uploadFormatsInfo:
+          "Allowed: JPG, PNG, WEBP (max 10MB) and MP4, WEBM (max 25MB). SVG is blocked.",
 
-  errorConfirmRights: "Please confirm you own the rights to this file.",
-  errorSvgBlocked: "SVG files are not allowed.",
-  errorUnsupported: "Unsupported file type. Allowed: JPG, PNG, WEBP, MP4, WEBM.",
-  errorImageTooLarge: "Image is too large.",
-  errorVideoTooLarge: "Video is too large.",
-  errorVideoTooLong: "Video is too long.",
-  errorVideoMetadata: "Could not read video metadata."
-},
+        errorConfirmRights: "Please confirm you own the rights to this file.",
+        errorSvgBlocked: "SVG files are not allowed.",
+        errorUnsupported:
+          "Unsupported file type. Allowed: JPG, PNG, WEBP, MP4, WEBM.",
+        errorImageTooLarge: "Image is too large.",
+        errorVideoTooLarge: "Video is too large.",
+        errorVideoTooLong: "Video is too long.",
+        errorVideoMetadata: "Could not read video metadata.",
+      },
+    },
 
-}, 
-
-export: {
+    export: {
       videoReady: "Your video is ready!",
       download: "Download",
       copyDescription: "Copy description",
@@ -143,10 +146,131 @@ export: {
       tutorialTitle: "How to save your video",
       tutorialText:
         "Select the /export window when recording your screen and enable tab audio recording.",
-      shareDescription: "Video created in LapLapLa Studio — try creating your own! https://laplapla.com/cats. Some images and animations provided by GIPHY and Pexels.",
+      shareDescription:
+        "Video created in LapLapLa Studio — try creating your own! https://laplapla.com/cats. Some images and animations provided by GIPHY and Pexels.",
     },
-
   },
+
+  dogs: {
+    dogsPage: {
+      title: "Dogs Will Teach You to Draw",
+      subtitle: "What would you like to draw today?",
+
+      categories: {
+        "cartoon-characters": "Cartoon Characters",
+        kawaii: "Kawaii Cuties",
+        "nature-scenes": "Nature Scenes",
+        botanical: "Botanical Compositions",
+        desserts: "Desserts",
+        zodiac: "Zodiac Signs",
+        faces: "Faces",
+        outfits: "Outfits",
+        mandala: "Mandala",
+        motion: "Figures in Motion",
+        dinosaurs: "Dinosaurs",
+        animals: "Animals",
+        memes: "Memes and Brainrots",
+        "anime-faces": "Anime Faces",
+        hands: "Drawing Hands",
+        cityscapes: "Cityscapes",
+      },
+    },
+    lessonsPage: {
+      chooseLesson: "Choose a lesson",
+      startDrawing: "Start drawing",
+      noPreview: "No preview",
+    },
+    dogLesson: {
+      startLesson: "Start lesson",
+      repeatLesson: "Repeat lesson",
+      nextStep: "Next step",
+
+      start: "START!",
+
+      stepOf: "step of",
+
+      colorizeSketch: "Color the sketch",
+      autoColorize: "Automatic coloring",
+      animatePicture: "Animate the picture",
+
+      makePuzzle: "Make a puzzle",
+      paintFlow: "Paint flow",
+      mixPaints: "Mix paints",
+      replayProcess: "Replay process",
+
+      comingSoon: "This feature is under development",
+
+      frankName: "Frank",
+      fibiName: "Phoebe",
+
+      frankWelcome: "Hi! I'm Frank and I will help you learn how to draw!",
+      prepareTools:
+        "Prepare your mouse, stylus, touchpad, or simply a sheet of paper and a pencil, then press Start!",
+
+      frankChooseAction: "Choose what you want to do with your drawing!",
+
+      frankPuzzle:
+        "Oops! Your masterpiece fell apart. Let's put it back together!",
+
+      frankFlowTouch: "Try tilting your tablet and see what happens!",
+
+      frankFlowDesktop:
+        "Tilt the canvas with your painting left or right using the arrows and see what happens.",
+
+      frankMix:
+        "Move your mouse or stylus over your drawing and see what happens.",
+
+      frankReplay:
+        "Now you can watch how this masterpiece was created from start to finish.",
+
+      frankColor: "That looks beautiful! Now let's add some colors!",
+
+      introVariants: {
+        fibiIntroSecret: "Want a secret?",
+        fibiIntroListen: "Listen!",
+        fibiIntroTheySay: "They say...",
+        fibiIntroDidYouKnow: "Did you know?",
+        fibiIntroPsst: "Psst, secret...",
+        fibiIntroGuessWhat: "Guess what?",
+      },
+
+      fibiArtistHint: "I know an artist who painted something like this too!",
+      openGallery: "Open gallery",
+
+      brush: "BRUSH",
+      eraser: "ERASER",
+
+      undo: "UNDO",
+      redo: "REDO",
+      clear: "CLEAR",
+      save: "SAVE",
+
+      brushSize: "BRUSH SIZE",
+      brushColor: "Brush color",
+      opacity: "Opacity",
+      brushStyle: "Brush style",
+
+      brushNormal: "Normal",
+      brushSparkle: "Sparkle",
+      brushRainbow: "Rainbow",
+      brushChameleon: "Chameleon",
+      brushGradient: "Gradient",
+      brushNeon: "Neon",
+      brushWatercolor: "Watercolor",
+
+      confirmClear:
+        "Are you sure you want to clear the canvas? This action cannot be undone.",
+
+      restartConfirm:
+        "Are you sure you want to erase the drawing? I already got used to it.",
+
+      cancel: "Cancel",
+      erase: "Erase",
+
+      loadingLesson: "Loading lesson...",
+    },
+  },
+
   video: {
     title: "Cute explanations",
     subtitle: "Simple and playful videos about tricky things",

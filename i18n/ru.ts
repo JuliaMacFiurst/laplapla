@@ -151,7 +151,8 @@ export const ru = {
       tutorialTitle: "Как сохранить видео",
       tutorialText:
         "Выберите окно «/export» при записи экрана и включите запись звука вкладки.",
-      shareDescription: "Видео создано в LapLapLa Studio — попробуйте создать своё! https://laplapla.com/cats. Часть изображений и анимаций предоставлена GIPHY и Pexels.",
+      shareDescription:
+        "Видео создано в LapLapLa Studio — попробуйте создать своё! https://laplapla.com/cats. Часть изображений и анимаций предоставлена GIPHY и Pexels.",
     },
   },
   video: {
@@ -178,6 +179,126 @@ export const ru = {
       technology: "Технологии",
     },
   },
+
+  dogs: {
+    dogsPage: {
+      title: "Пёсики нарисуют",
+      subtitle: "Что ты хочешь нарисовать сегодня?",
+
+      categories: {
+        "cartoon-characters": "Мультяшные персонажи",
+        kawaii: "Кавайные милашки",
+        "nature-scenes": "Сцены природы",
+        botanical: "Ботанические композиции",
+        desserts: "Десерты",
+        zodiac: "Знаки зодиака",
+        faces: "Лица",
+        outfits: "Наряды",
+        mandala: "Мандала",
+        motion: "Фигуры в движении",
+        dinosaurs: "Динозавры",
+        animals: "Животные",
+        memes: "Мемы и брейнроты",
+        "anime-faces": "Аниме лица",
+        hands: "Рисование рук",
+        cityscapes: "Городские пейзажи",
+      },
+    },
+    lessonsPage: {
+      chooseLesson: "Выбери урок",
+      startDrawing: "Начать рисовать",
+      noPreview: "Нет превью",
+    },
+    dogLesson: {
+      startLesson: "Начать урок",
+      repeatLesson: "Повторить урок",
+      nextStep: "Следующий шаг",
+
+      start: "НАЧАТЬ!",
+
+      stepOf: "шаг из",
+
+      colorizeSketch: "Раскрасить скетч",
+      autoColorize: "Автоматическое раскрашивание",
+      animatePicture: "Оживить картинку",
+
+      makePuzzle: "Сделать пазл",
+      paintFlow: "Перетекание краски",
+      mixPaints: "Смешать краски",
+      replayProcess: "Проиграть процесс",
+
+      comingSoon: "Эта функция находится в разработке",
+
+      frankName: "Фрэнк",
+      fibiName: "Фиби",
+
+      frankWelcome: "Привет! Я Фрэнк и я помогу тебе научиться рисовать!",
+      prepareTools:
+        "Приготовь мышку, стилус, тачпад, или просто листик и карандаш, и жми на Старт!",
+
+      frankChooseAction: "Выбирай что хочешь сделать со своим рисунком!",
+
+      frankPuzzle:
+        "Упс! Твой шедевр рассыпался на части. Давай соберём его обратно!",
+
+      frankFlowTouch: "Попробуй наклонить планшет и посмотри, что будет!",
+
+      frankFlowDesktop:
+        "Наклони холст со своей картиной вправо или влево с помощью стрелочек и посмотри, что будет.",
+
+      frankMix:
+        "Проведи мышкой или стилусом по своей работе и посмотри, что произойдёт.",
+
+      frankReplay:
+        "Теперь ты можешь посмотреть, как создавался этот шедевр от начала и до конца.",
+
+      frankColor: "Очень красиво получилось! Теперь давай добавим цвета!",
+
+      introVariants: {
+        fibiIntroSecret: "Хочешь секрет:",
+        fibiIntroListen: "Слушай!",
+        fibiIntroTheySay: "Говорят...",
+        fibiIntroDidYouKnow: "А ты знаешь?",
+        fibiIntroPsst: "Псс, по секрету...",
+        fibiIntroGuessWhat: "Знаешь что?",
+      },
+
+      fibiArtistHint: "А я знаю какой художник тоже такое рисовал!",
+      openGallery: "Открыть галерею",
+
+      brush: "КИСТЬ",
+      eraser: "ЛАСТИК",
+
+      undo: "ОТМЕНИТЬ",
+      redo: "ПОВТОРИТЬ",
+      clear: "ОЧИСТИТЬ",
+      save: "СОХРАНИТЬ",
+
+      brushSize: "ТОЛЩИНА КИСТИ",
+      brushColor: "Цвет кисти",
+      opacity: "Прозрачность",
+      brushStyle: "Стиль кисти",
+
+      brushNormal: "Обычная",
+      brushSparkle: "Блёстки",
+      brushRainbow: "Радуга",
+      brushChameleon: "Хамелеон",
+      brushGradient: "Градиент",
+      brushNeon: "Неон",
+      brushWatercolor: "Акварель",
+
+      confirmClear:
+        "Уверены, что хотите очистить холст? Это действие нельзя отменить.",
+
+      restartConfirm: "Точно стереть рисунок? Я уже к нему привык",
+
+      cancel: "Отмена",
+      erase: "Стереть",
+
+      loadingLesson: "Загрузка урока...",
+    },
+  },
+
   about: {
     title: "О проекте",
     what: {

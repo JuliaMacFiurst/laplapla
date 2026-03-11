@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { artFacts } from "@/content/dogs/artFacts";
 import ReactDOM from "react-dom";
 import { buildRegionMap } from "@/utils/buildRegionMap";
 import { autoColorRegions } from "@/utils/autoColorRegions";
 import { paintRegionFast } from "@/utils/paintRegionFast";
 import { drawLapLapLaWatermark } from "@/utils/drawLapLapLaWatermark";
+import { getRandomArtFact } from "@/lib/artFacts/getRandomArtFact";
+import { dictionaries, Lang } from "../../../i18n";
 // Color seed placed by a paw click
 type ColorSeed = {
   x: number;
@@ -107,8 +108,14 @@ function DogImage({
 }
 
 export default function LessonPlayer() {
+  
   const router = useRouter();
+  const lang = ((router.query.lang as Lang) || router.locale || "ru") as Lang;
+  const dict = dictionaries[lang] || dictionaries["ru"];
+  const t = dict.dogs.dogLesson;
   const { slug } = router.query;
+
+  
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   // --- Состояния для галереи ---
@@ -679,31 +686,21 @@ export default function LessonPlayer() {
   };
 
   const [randomArtFact, setRandomArtFact] = useState("");
-  const shuffledFactsRef = useRef<string[]>([]);
 
   // --- Fibi intro phrase logic ---
   const introVariants = [
-    "Хочешь секрет:",
-    "Слушай!",
-    "Говорят...",
-    "А ты знаешь?",
-    "Псс, по секрету...",
-    "Знаешь что?",
+    t.introVariants.fibiIntroSecret,
+    t.introVariants.fibiIntroListen,
+    t.introVariants.fibiIntroTheySay,
+    t.introVariants.fibiIntroDidYouKnow,
+    t.introVariants.fibiIntroPsst,
+    t.introVariants.fibiIntroGuessWhat,
   ];
   const lastIntroRef = useRef<number | null>(null);
   const [fibiIntro, setFibiIntro] = useState(introVariants[0]);
 
   useEffect(() => {
-    // shuffle facts once when lesson starts
-    if (shuffledFactsRef.current.length === 0) {
-      const shuffled = [...artFacts].sort(() => Math.random() - 0.5);
-      shuffledFactsRef.current = shuffled;
-    }
-
-    const facts = shuffledFactsRef.current;
-    const index = currentStepIndex % facts.length;
-
-    setRandomArtFact(facts[index]);
+    setRandomArtFact(getRandomArtFact(lang));
 
     // choose intro phrase different from the previous one
     let nextIndex = Math.floor(Math.random() * introVariants.length);
@@ -714,7 +711,7 @@ export default function LessonPlayer() {
     }
     lastIntroRef.current = nextIndex;
     setFibiIntro(introVariants[nextIndex]);
-  }, [currentStepIndex]);
+  }, [currentStepIndex, lang]);
 
   // refs для brushSize, brushColor, brushStyle, isEraser
   const brushSizeRef = useRef(brushSize);
@@ -1429,11 +1426,13 @@ export default function LessonPlayer() {
                 }
               }}
             >
-              {!hasStarted
-                ? "Начать урок"
-                : currentStepIndex === lesson.steps.length - 1
-                  ? "Повторить урок"
-                  : "Следующий шаг 🐾"}
+              {!hasStarted ? (
+                t.startLesson
+              ) : currentStepIndex === lesson.steps.length - 1 ? (
+                t.repeatLesson
+              ) : (
+                <>{t.nextStep} 🐾</>
+              )}
             </button>
             {lesson && currentStepIndex === lesson.steps.length - 1 && (
               <div className="lesson-color-controls">
@@ -1446,7 +1445,7 @@ export default function LessonPlayer() {
                   onClick={handleColorize}
                   disabled={currentStepIndex !== lesson.steps.length - 1}
                 >
-                  🌈 Раскрасить скетч
+                  🌈 {t.colorizeSketch}
                 </button>
 
                 <button
@@ -1457,7 +1456,7 @@ export default function LessonPlayer() {
                   }`}
                   onClick={debugRenderRegions}
                 >
-                  🧪 Автоматическое раскрашивание
+                  🧪 {t.autoColorize}
                 </button>
 
                 <button
@@ -1467,7 +1466,7 @@ export default function LessonPlayer() {
                   }}
                 >
                   <span className="sparkle">✨</span>
-                  Оживить картинку✨
+                  {t.animatePicture} ✨
                 </button>
               </div>
             )}
@@ -1506,7 +1505,7 @@ export default function LessonPlayer() {
                   setAnimationMenuOpen(false);
                 }}
               >
-                🧩 Сделать пазл
+                🧩 {t.makePuzzle}
               </button>
 
               <button
@@ -1514,10 +1513,10 @@ export default function LessonPlayer() {
                 onClick={() => {
                   setFrankPose(getRandomPose(frankPoses));
                   setAnimationMenuOpen(false);
-                  alert("Эта функция находится в разработке");
+                  alert(t.comingSoon);
                 }}
               >
-                🌊 Перетекание краски
+                🌊 {t.paintFlow}
               </button>
 
               <button
@@ -1525,10 +1524,10 @@ export default function LessonPlayer() {
                 onClick={() => {
                   setFrankPose(getRandomPose(frankPoses));
                   setAnimationMenuOpen(false);
-                  alert("Эта функция находится в разработке");
+                  alert(t.comingSoon);
                 }}
               >
-                🎨 Смешать краски
+                🎨 {t.mixPaints}
               </button>
 
               <button
@@ -1539,7 +1538,7 @@ export default function LessonPlayer() {
                   setAnimationMenuOpen(false);
                 }}
               >
-                🎬 Проиграть процесс
+                🎬 {t.replayProcess}
               </button>
             </div>
           )}
@@ -1562,21 +1561,21 @@ export default function LessonPlayer() {
                       frankSpeechOverride
                         ? frankSpeechOverride
                         : animationMenuOpen
-                          ? "Выбирай что хочешь сделать со своим рисунком!"
+                          ? t.frankChooseAction
                           : animationMode === "puzzle"
-                            ? "Упс! Твой шедевр рассыпался на части. Давай соберём его обратно!"
+                            ? t.frankPuzzle
                             : animationMode === "flow"
                               ? typeof window !== "undefined" &&
                                 ("ontouchstart" in window ||
                                   navigator.maxTouchPoints > 0)
-                                ? "Попробуй наклонить планшет и посмотри, что будет!"
-                                : "Наклони холст со своей картиной вправо или влево с помощью стрелочек и посмотри, что будет."
+                                ? t.frankFlowTouch
+                                : t.frankFlowDesktop
                               : animationMode === "mix"
-                                ? "Проведи мышкой или стилусом по своей работе и посмотри, что произойдёт."
+                                ? t.frankMix
                                 : animationMode === "replay"
-                                  ? "Теперь ты можешь посмотреть, как создавался этот шедевр от начала и до конца."
+                                  ? t.frankReplay
                                   : currentStepIndex === lesson.steps.length - 1
-                                    ? "Очень красиво получилось! Теперь давай добавим цвета 🎨!"
+                                    ? <> {t.frankColor} 🎨 </>
                                     : lesson.steps[currentStepIndex].frank
                     }
                     size={220}
@@ -1584,18 +1583,17 @@ export default function LessonPlayer() {
                 ) : (
                   <>
                     <p>
-                      Приготовь мышку, стилус, тачпад, или просто листик и
-                      карандаш, и жми на Старт!
+                      { t.prepareTools }
                     </p>
                     <DogImage
                       name="frank"
                       pose={frankPose}
-                      speech="Привет! Я Фрэнк и я помогу тебе научиться рисовать!"
+                      speech=<> {t.frankWelcome} "🐶✏️" </>
                       size={220}
                     />
                   </>
                 )}
-                <div className="lesson-dog-name">Фрэнк</div>
+                <div className="lesson-dog-name"> {t.frankName} </div>
               </div>
             </div>
             <div className="lesson-canvas-wrapper">
@@ -1613,7 +1611,7 @@ export default function LessonPlayer() {
                     setHasStarted(true);
                   }}
                 >
-                  <div className="lesson-start-text">Старт!</div>
+                  <div className="lesson-start-text">{t.start}</div>
                   <svg
                     width="200"
                     height="200"
@@ -1664,7 +1662,7 @@ export default function LessonPlayer() {
                 <div className="lesson-step-counter">
                   {lesson && currentStepIndex >= 0 && (
                     <p>
-                      <strong>{currentStepIndex + 1}</strong> шаг из{" "}
+                      <strong>{currentStepIndex + 1}</strong> {t.stepOf}{" "}
                       {lesson.steps.length}
                     </p>
                   )}
@@ -1820,14 +1818,14 @@ export default function LessonPlayer() {
                     currentStepIndex === lesson.steps.length - 1 ? (
                       <>
                         <div>
-                          🎨 А я знаю какой художник тоже такое рисовал!
+                          🎨 {t.fibiArtistHint}
                         </div>
                         <button
                           className="art-gallery-open-button"
                           onClick={() => setShowGallery(true)}
                           style={{ marginTop: "8px" }}
                         >
-                          🖼 Открыть галерею
+                          🖼 {t.openGallery}
                         </button>
                       </>
                     ) : (
@@ -1841,7 +1839,7 @@ export default function LessonPlayer() {
                 />
                 {/* Кнопка открытия галереи вынесена отдельно */}
 
-                <div className="lesson-dog-name">Фиби</div>
+                <div className="lesson-dog-name">{t.fibiName}</div>
               </div>
             </div>
           </div>
@@ -1859,7 +1857,7 @@ export default function LessonPlayer() {
                       alt=""
                       className="lesson-tool-icon"
                     />
-                    {isEraser ? "КИСТЬ" : "ЛАСТИК"}
+                    {isEraser ? t.brush : t.eraser}
                   </>
                 </button>
                 <button
@@ -1940,7 +1938,7 @@ export default function LessonPlayer() {
                       alt=""
                       className="lesson-tool-icon"
                     />
-                    ОТМЕНИТЬ
+                    {t.undo}
                   </>
                 </button>
                 <button
@@ -2023,7 +2021,7 @@ export default function LessonPlayer() {
                       alt=""
                       className="lesson-tool-icon"
                     />
-                    ПОВТОРИТЬ
+                    {t.redo}
                   </>
                 </button>
                 <button
@@ -2031,8 +2029,7 @@ export default function LessonPlayer() {
                   onClick={() => {
                     if (
                       confirm(
-                        "Уверены, что хотите очистить холст? Это действие нельзя отменить.",
-                      )
+                        t.confirmClear,)
                     ) {
                       const drawingCanvas = drawingCanvasRef.current;
                       const colorCanvas = colorCanvasRef.current;
@@ -2112,7 +2109,7 @@ export default function LessonPlayer() {
                       alt=""
                       className="lesson-tool-icon"
                     />
-                    ОЧИСТИТЬ
+                    {t.clear}
                   </>
                 </button>
                 <button
@@ -2162,13 +2159,13 @@ export default function LessonPlayer() {
                       alt=""
                       className="lesson-tool-icon"
                     />
-                    СОХРАНИТЬ
+                    {t.save}
                   </>
                 </button>
               </div>
 
               <div className="lesson-tools-panel-1">
-                <label>ТОЛЩИНА КИСТИ: </label>
+                <label>{t.brushSize}: </label>
                 <input
                   type="range"
                   min={1}
@@ -2178,13 +2175,13 @@ export default function LessonPlayer() {
                 />
 
                 <div className="lesson-brush-settings">
-                  <label>Цвет кисти: </label>
+                  <label>{t.brushColor}: </label>
                   <input
                     type="color"
                     value={brushColor}
                     onChange={(e) => setBrushColor(e.target.value)}
                   />
-                  <label style={{ marginLeft: "10px" }}>Прозрачность: </label>
+                  <label style={{ marginLeft: "10px" }}>{t.opacity}: </label>
                   <input
                     type="range"
                     min={0.05}
@@ -2193,7 +2190,7 @@ export default function LessonPlayer() {
                     value={brushOpacity}
                     onChange={(e) => setBrushOpacity(Number(e.target.value))}
                   />
-                  <label style={{ marginLeft: "10px" }}>Стиль кисти: </label>
+                  <label style={{ marginLeft: "10px" }}>{t.brushStyle}: </label>
                   <select
                     value={brushStyle}
                     onChange={(e) =>
@@ -2210,13 +2207,13 @@ export default function LessonPlayer() {
                       )
                     }
                   >
-                    <option value="smooth">Обычная</option>
-                    <option value="sparkle">Блёстки</option>
-                    <option value="rainbow">Радуга</option>
-                    <option value="chameleon">Хамелеон</option>
-                    <option value="gradient">Градиент</option>
-                    <option value="neon">Неон</option>
-                    <option value="watercolor">Акварель</option>
+                    <option value="smooth">{t.brushNormal}</option>
+                    <option value="sparkle">{t.brushSparkle}</option>
+                    <option value="rainbow">{t.brushRainbow}</option>
+                    <option value="chameleon">{t.brushChameleon}</option>
+                    <option value="gradient">{t.brushGradient}</option>
+                    <option value="neon">{t.brushNeon}</option>
+                    <option value="watercolor">{t.brushWatercolor}</option>
                   </select>
                 </div>
               </div>
@@ -2229,8 +2226,7 @@ export default function LessonPlayer() {
               <div className="lesson-restart-modal-box">
                 <div className="lesson-restart-frank">
                   <div className="lesson-restart-frank-bubble">
-                    Точно стереть рисунок?
-                    <br />Я уже к нему привык 🐾
+                    <> {t.restartConfirm} 🐾</> 
                   </div>
 
                   <img src="/dog/frank.webp" alt="Frank" />
@@ -2241,14 +2237,14 @@ export default function LessonPlayer() {
                     className="lesson-button"
                     onClick={() => setShowRestartConfirm(false)}
                   >
-                    Отмена
+                    {t.cancel}
                   </button>
 
                   <button
                     className="lesson-button lesson-button-clear"
                     onClick={restartLesson}
                   >
-                    Стереть
+                    {t.erase}
                   </button>
                 </div>
               </div>
@@ -2282,7 +2278,7 @@ export default function LessonPlayer() {
             )}
         </div>
       ) : (
-        <p>Загрузка урока...</p>
+        <p>{t.loadingLesson}</p>
       )}
     </div>
   );

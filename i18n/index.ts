@@ -163,35 +163,35 @@ type DictionaryShape = {
       audio: string;
 
       mediaPicker: {
-  tabGiphy: string;
-  tabPexels: string;
-  tabUpload: string;
-  searchPlaceholder: string;
-  searchButton: string;
-  loading: string;
-  loadMore: string;
+        tabGiphy: string;
+        tabPexels: string;
+        tabUpload: string;
+        searchPlaceholder: string;
+        searchButton: string;
+        loading: string;
+        loadMore: string;
 
-  giphyNoticeTitle: string;
-  giphyRule1: string;
-  giphyRule2: string;
-  giphyTerms: string;
+        giphyNoticeTitle: string;
+        giphyRule1: string;
+        giphyRule2: string;
+        giphyTerms: string;
 
-  pexelsNoticeTitle: string;
-  pexelsRule1: string;
-  pexelsRule2: string;
-  pexelsRule3: string;
+        pexelsNoticeTitle: string;
+        pexelsRule1: string;
+        pexelsRule2: string;
+        pexelsRule3: string;
 
-  uploadConfirm: string;
-  uploadFormatsInfo: string;
+        uploadConfirm: string;
+        uploadFormatsInfo: string;
 
-  errorConfirmRights: string;
-  errorSvgBlocked: string;
-  errorUnsupported: string;
-  errorImageTooLarge: string;
-  errorVideoTooLarge: string;
-  errorVideoTooLong: string;
-  errorVideoMetadata: string;
-}
+        errorConfirmRights: string;
+        errorSvgBlocked: string;
+        errorUnsupported: string;
+        errorImageTooLarge: string;
+        errorVideoTooLarge: string;
+        errorVideoTooLong: string;
+        errorVideoMetadata: string;
+      };
     };
 
     export: {
@@ -213,9 +213,118 @@ type DictionaryShape = {
       tutorialText: string;
       shareDescription: string;
     };
-    
   };
-  
+
+  dogs: {
+    dogsPage: {
+      title: string;
+      subtitle: string;
+      categories: {
+        "cartoon-characters": string;
+        kawaii: string;
+        "nature-scenes": string;
+        botanical: string;
+        desserts: string;
+        zodiac: string;
+        faces: string;
+        outfits: string;
+        mandala: string;
+        motion: string;
+        dinosaurs: string;
+        animals: string;
+        memes: string;
+        "anime-faces": string;
+        hands: string;
+        cityscapes: string;
+      };
+    };
+    lessonsPage: {
+      chooseLesson: string;
+      startDrawing: string;
+      noPreview: string;
+    };
+    dogLesson: {
+      startLesson: string;
+      repeatLesson: string;
+      nextStep: string;
+
+      start: string;
+
+      stepOf: string;
+
+      colorizeSketch: string;
+      autoColorize: string;
+      animatePicture: string;
+
+      makePuzzle: string;
+      paintFlow: string;
+      mixPaints: string;
+      replayProcess: string;
+
+      comingSoon: string;
+
+      frankName: string;
+      fibiName: string;
+
+      frankWelcome: string;
+      prepareTools: string;
+
+      frankChooseAction: string;
+
+      frankPuzzle: string;
+
+      frankFlowTouch: string;
+
+      frankFlowDesktop: string;
+      frankMix: string;
+
+      frankReplay: string;
+
+      frankColor: string;
+
+      introVariants: {
+        fibiIntroSecret: string;
+        fibiIntroListen: string;
+        fibiIntroTheySay: string;
+        fibiIntroDidYouKnow: string;
+        fibiIntroPsst: string;
+        fibiIntroGuessWhat: string;
+      };
+
+      fibiArtistHint: string;
+      openGallery: string;
+
+      brush: string;
+      eraser: string;
+
+      undo: string;
+      redo: string;
+      clear: string;
+      save: string;
+
+      brushSize: string;
+      brushColor: string;
+      opacity: string;
+      brushStyle: string;
+
+      brushNormal: string;
+      brushSparkle: string;
+      brushRainbow: string;
+      brushChameleon: string;
+      brushGradient: string;
+      brushNeon: string;
+      brushWatercolor: string;
+
+      confirmClear: string;
+
+      restartConfirm: string;
+
+      cancel: string;
+      erase: string;
+
+      loadingLesson: string;
+    };
+  };
 
   footer: {
     terms: string;
@@ -233,7 +342,7 @@ export const ABOUT_SECTIONS = [
   "collaboration",
 ] as const;
 
-export type AboutSectionKey = typeof ABOUT_SECTIONS[number];
+export type AboutSectionKey = (typeof ABOUT_SECTIONS)[number];
 
 export const dictionaries: Record<Lang, DictionaryShape> = {
   ru: ru as DictionaryShape,

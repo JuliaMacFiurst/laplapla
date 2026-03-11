@@ -1,25 +1,28 @@
+import { useRouter } from "next/router";
+import { dictionaries, Lang } from "../i18n";
+
 // /pages/dog.tsx
 
 
 
-const categories = [
-  { name: 'Мультяшные персонажи', slug: 'cartoon-characters' },
-  { name: 'Каваийные милашки', slug: 'kawaii' },
-  { name: 'Сцены природы', slug: 'nature-scenes' },
-  { name: 'Ботанические композиции', slug: 'botanical' },
-  { name: 'Дессерты', slug: 'desserts' },
-  { name: 'Знаки Зодиака', slug: 'zodiac' },
-  { name: 'Лица', slug: 'faces' },
-  { name: 'Наряды', slug: 'outfits' },
-  { name: 'Мандала', slug: 'mandala' },
-  { name: 'Фигуры в движении', slug: 'motion' },
-  { name: 'Динозавры', slug: 'dinosaurs' },
-  { name: 'Животные', slug: 'animals' },
-  { name: 'Мемы и брейнроты', slug: 'memes' },
-  { name: 'Аниме лица', slug: 'anime-faces' },
-  { name: 'Рисование рук', slug: 'hands' },
-  { name: 'Городские пейзажи', slug: 'cityscapes' },
-];
+const categorySlugs = [
+  'cartoon-characters',
+  'kawaii',
+  'nature-scenes',
+  'botanical',
+  'desserts',
+  'zodiac',
+  'faces',
+  'outfits',
+  'mandala',
+  'motion',
+  'dinosaurs',
+  'animals',
+  'memes',
+  'anime-faces',
+  'hands',
+  'cityscapes',
+] as const;
 
 const categoryIcons = [
   'cartoon.webp',
@@ -41,26 +44,30 @@ const categoryIcons = [
 ];
 
 export default function DogPage() {
+  const router = useRouter();
+  const lang = ((router.query.lang as Lang) || router.locale || "ru") as Lang;
+    const dict = dictionaries[lang] || dictionaries["ru"];
+    const t = dict.dogs.dogsPage;
   return (
     <main>
       <div className="dog-header-container">
         <img src="/dog/frank.webp" alt="Фрэнк" className="dog-header-image" />
         <div className="dog-header-wrapper">
-          <h1 className="dog-page-title page-title">Пёсики нарисуют</h1>
-          <h2 className="dog-page-subtitle">Что ты хочешь нарисовать сегодня?</h2>
+          <h1 className="dog-page-title page-title">{t.title}</h1>
+          <h2 className="dog-page-subtitle">{t.subtitle}</h2>
         </div>
         <img src="/dog/fibi.webp" alt="Фиби" className="dog-header-image" />
       </div>
 
       <div className="dog-category-grid">
-        {categories.map((cat, index) => (
+        {categorySlugs.map((slug, index) => (
           <button
-            key={cat.slug}
-            onClick={() => window.location.href = `/dog/lessons?category=${cat.slug}`}
+            key={slug}
+            onClick={() => window.location.href = `/dog/lessons?category=${slug}`}
             className={`dog-category-button dog-category-color-${(index % 8) + 1}`}
           >
-            <img src={`/icons/drawing-lessons-icons/${categoryIcons[index]}`} alt={cat.name} className="dog-category-icon" />
-            <span>{cat.name}</span>
+            <img src={`/icons/drawing-lessons-icons/${categoryIcons[index]}`} alt={t.categories[slug]} className="dog-category-icon" />
+            <span>{t.categories[slug]}</span>
           </button>
         ))}
       </div>
