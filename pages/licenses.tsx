@@ -1,18 +1,10 @@
 import { useMemo } from "react";
 import { useRouter } from "next/router";
-import { Lang } from "@/i18n";
-
-function getLangFromRouter(locale?: string, queryLang?: string | string[]): Lang {
-  const value = Array.isArray(queryLang) ? queryLang[0] : queryLang;
-
-  if (value === "he" || locale === "he") return "he";
-  if (value === "en" || locale === "en") return "en";
-  return "ru";
-}
+import { getCurrentLang } from "@/lib/i18n/routing";
 
 export default function LicensesPage() {
   const router = useRouter();
-  const lang = getLangFromRouter(router.locale, router.query.lang);
+  const lang = getCurrentLang(router);
 
   const content = useMemo(() => {
     switch (lang) {

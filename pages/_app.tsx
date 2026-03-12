@@ -24,7 +24,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
-import { dictionaries } from "../i18n";
+import { dictionaries, Lang } from "../i18n";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -32,32 +33,22 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const isCatsPage = router.pathname.startsWith("/cats");
   const isExportPage = router.pathname === "/cats/export";
   const isCapybaraPage = router.pathname.startsWith("/capybara");
-  const [lang, setLang] = useState<"ru" | "en" | "he" | null>(null);
+  const [lang, setLang] = useState<Lang | null>(null);
 
   // Determine language once on client
   useEffect(() => {
-    const queryLang = Array.isArray(router.query.lang)
-      ? router.query.lang[0]
-      : router.query.lang;
-
-    const cookieMatch = document.cookie.match(/(?:^|; )laplapla_lang=([^;]+)/);
-    const cookieLang = cookieMatch ? cookieMatch[1] : null;
-
-    const detected =
-      queryLang === "ru" || queryLang === "en" || queryLang === "he"
-        ? queryLang
-        : cookieLang === "ru" || cookieLang === "en" || cookieLang === "he"
-        ? cookieLang
-        : "ru";
-
-    setLang(detected as "ru" | "en" | "he");
+    const detected = getCurrentLang(router);
+    setLang(detected);
 
     // Persist to cookie
     document.cookie = `laplapla_lang=${detected}; path=/; max-age=31536000`;
+    window.localStorage.setItem("laplapla_lang", detected);
+    // Backward compatibility with older pages that still read `lang`
+    window.localStorage.setItem("lang", detected);
 
     // Set dir globally
     document.documentElement.dir = detected === "he" ? "rtl" : "ltr";
-  }, [router.query.lang]);
+  }, [router.query.lang, router.locale]);
 
   // Prevent hydration mismatch
   if (!lang) return null;
@@ -95,9 +86,39 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             <footer className="unified-footer">
               <div className="footer-left">
                 <div className="footer-links">
-                  <a onClick={() => router.push("/terms")}>{t.footer.terms}</a>
-                  <a onClick={() => router.push("/privacy")}>{t.footer.privacy}</a>
-                  <a onClick={() => router.push("/licenses")}>{t.footer.licenses}</a>
+                  <a
+                    onClick={() =>
+                      router.push(
+                        { pathname: "/terms", query: buildLocalizedQuery(lang) },
+                        undefined,
+                        { locale: lang },
+                      )
+                    }
+                  >
+                    {t.footer.terms}
+                  </a>
+                  <a
+                    onClick={() =>
+                      router.push(
+                        { pathname: "/privacy", query: buildLocalizedQuery(lang) },
+                        undefined,
+                        { locale: lang },
+                      )
+                    }
+                  >
+                    {t.footer.privacy}
+                  </a>
+                  <a
+                    onClick={() =>
+                      router.push(
+                        { pathname: "/licenses", query: buildLocalizedQuery(lang) },
+                        undefined,
+                        { locale: lang },
+                      )
+                    }
+                  >
+                    {t.footer.licenses}
+                  </a>
                 </div>
                 <div className="footer-copy">
                   © {new Date().getFullYear()} LapLapLa

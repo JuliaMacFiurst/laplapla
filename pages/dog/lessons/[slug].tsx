@@ -5,6 +5,7 @@ import { autoColorRegions } from "@/utils/autoColorRegions";
 import { paintRegionFast } from "@/utils/paintRegionFast";
 import { drawLapLapLaWatermark } from "@/utils/drawLapLapLaWatermark";
 import { getRandomArtFact } from "@/lib/artFacts/getRandomArtFact";
+import { getCurrentLang } from "@/lib/i18n/routing";
 import { dictionaries, Lang } from "../../../i18n";
 // Color seed placed by a paw click
 type ColorSeed = {
@@ -110,7 +111,7 @@ function DogImage({
 export default function LessonPlayer() {
   
   const router = useRouter();
-  const lang = ((router.query.lang as Lang) || router.locale || "ru") as Lang;
+  const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogLesson;
   const { slug } = router.query;

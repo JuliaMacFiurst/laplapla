@@ -1,6 +1,12 @@
 "use client";
 
+import { useRouter } from "next/router";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+
 export default function Day7TreasureOfTimes() {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+
   return (
     <div className="quest-page-bg">
       <div className="polar-scenery" aria-hidden />
@@ -58,7 +64,11 @@ export default function Day7TreasureOfTimes() {
           <div
             className="ice-button"
             onClick={() => {
-              window.location.href = "/raccoons";
+              router.push(
+                { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
+                undefined,
+                { locale: lang },
+              );
             }}
           >
             {/* льдина */}

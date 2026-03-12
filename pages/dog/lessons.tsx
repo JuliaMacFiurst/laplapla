@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 import BackButton from '../../components/BackButton';
 import { dictionaries, Lang } from "../../i18n";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 
 const supabase = createClient(
@@ -20,7 +21,7 @@ interface Lesson {
 
 export default function LessonsPage() {
   const router = useRouter();
-  const lang = ((router.query.lang as Lang) || router.locale || "ru") as Lang;
+  const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.lessonsPage;
   const category = router.query.category as string;
@@ -78,7 +79,7 @@ export default function LessonsPage() {
 
   return (
     <main className="lessons-page">
-       <BackButton href={"/dog"}/>
+       <BackButton href={`/dog?lang=${lang}`}/>
       <h1 className="lessons-title page-title">{t.chooseLesson}</h1>
       <div className="lessons-grid">
         {lessons.map((lesson) => (
@@ -92,7 +93,16 @@ export default function LessonsPage() {
               <h2 className="lesson-title">{lesson.title}</h2>
               <button
                 className="lessons-button"
-                onClick={() => router.push(`/dog/lessons/${lesson.slug}`)}
+                onClick={() =>
+                  router.push(
+                    {
+                      pathname: `/dog/lessons/${lesson.slug}`,
+                      query: buildLocalizedQuery(lang),
+                    },
+                    undefined,
+                    { locale: lang },
+                  )
+                }
               >
                 {t.startDrawing}
               </button>

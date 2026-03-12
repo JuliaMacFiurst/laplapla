@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { dictionaries, Lang } from "@/i18n";
 import React from "react";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 interface CatsLayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface CatsLayoutProps {
 
 export default function CatsLayout({ children, active, lang }: CatsLayoutProps) {
   const router = useRouter();
+  const currentLang = getCurrentLang(router);
   const t = dictionaries[lang].cats;
 
   const pageTitle = active === "studio" ? t.studioTab : t.title;
@@ -25,14 +27,26 @@ export default function CatsLayout({ children, active, lang }: CatsLayoutProps) 
       <div className="mode-tabs">
         <button
           className={`mode-tab-button ${active === "view" ? "active" : ""}`}
-          onClick={() => router.push("/cats")}
+          onClick={() =>
+            router.push(
+              { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
+              undefined,
+              { locale: currentLang },
+            )
+          }
         >
           🐱 {t.title}
         </button>
 
         <button
           className={`mode-tab-button ${active === "studio" ? "active" : ""}`}
-          onClick={() => router.push("/cats/studio")}
+          onClick={() =>
+            router.push(
+              { pathname: "/cats/studio", query: buildLocalizedQuery(currentLang) },
+              undefined,
+              { locale: currentLang },
+            )
+          }
         >
           🎬 {t.studioTab}
         </button>

@@ -3,6 +3,7 @@ import { dictionaries, Lang } from "../../i18n";
 import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import { useRouter } from "next/router";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 export default function CatPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
@@ -80,6 +81,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   const router = useRouter();
+  const currentLang = getCurrentLang(router);
 
   return (
     <CatsLayout active="view" lang={lang}>
@@ -243,7 +245,11 @@ export default function CatPage({ lang }: { lang: Lang }) {
             className="edit-slides-button"
             onClick={() => {
   sessionStorage.setItem("catsSlides", JSON.stringify(slides));
-  router.push("/cats/studio");
+  router.push(
+    { pathname: "/cats/studio", query: buildLocalizedQuery(currentLang) },
+    undefined,
+    { locale: currentLang },
+  );
 }}
           >
             {t.editInStudio}

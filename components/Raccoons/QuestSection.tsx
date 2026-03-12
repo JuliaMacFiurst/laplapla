@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import { QuestCarousel } from './QuestCarousel';
+import { buildLocalizedQuery, getCurrentLang } from '@/lib/i18n/routing';
 
 /**
  * Типы состояний квестов
@@ -54,11 +55,19 @@ interface QuestCardProps {
 
 export const FeaturedQuestCard: React.FC<QuestCardProps> = ({ quest }) => {
   const router = useRouter();
+  const lang = getCurrentLang(router);
 
   const handlePlayClick = () => {
   if (quest.status !== 'active') return;
 
-  router.push(`/quests/${quest.id}`);
+  router.push(
+    {
+      pathname: `/quests/${quest.id}`,
+      query: buildLocalizedQuery(lang),
+    },
+    undefined,
+    { locale: lang },
+  );
 };
 
   return (

@@ -10,6 +10,7 @@ import { useRouter } from "next/router";
 import { recordPreviewDom } from "@/lib/recordPreviewDom";
 import { cropAndConvert, preloadFFmpeg } from "@/lib/cropAndConvert";
 import { dictionaries, type Lang } from "@/i18n";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 export default function StudioExportPage() {
   const [slides, setSlides] = useState<StudioSlide[]>([]);
@@ -19,7 +20,7 @@ export default function StudioExportPage() {
   const audioEngineRef = useRef<AudioEngineHandle | null>(null);
   const router = useRouter();
 
-  const lang: Lang = (router.query.lang as Lang) || "ru";
+  const lang: Lang = getCurrentLang(router);
   const t = dictionaries[lang].cats.export;
 
   const [projectData, setProjectData] = useState<any>(null);
@@ -114,7 +115,11 @@ export default function StudioExportPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        router.push("/cats/studio");
+        router.push(
+          { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+          undefined,
+          { locale: lang },
+        );
       }
     };
 
@@ -247,7 +252,13 @@ export default function StudioExportPage() {
 
           <button
             className="studio-button btn-mint"
-            onClick={() => router.push("/cats/studio")}
+            onClick={() =>
+              router.push(
+                { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+                undefined,
+                { locale: lang },
+              )
+            }
           >
             {t.createAnother}
           </button>
@@ -283,7 +294,13 @@ export default function StudioExportPage() {
       </button>
       <button
         className="export-back-button"
-        onClick={() => router.push("/cats/studio")}
+        onClick={() =>
+          router.push(
+            { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+            undefined,
+            { locale: lang },
+          )
+        }
         aria-label="Back to editor"
       >
         ←

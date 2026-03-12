@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Lang } from "../i18n";
+import { getCurrentLang } from "@/lib/i18n/routing";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "ru", label: "RU" },
@@ -13,24 +14,24 @@ export default function LanguageSwitcher() {
   const [current, setCurrent] = useState<Lang>("ru");
 
   useEffect(() => {
-    const queryLang = router.query.lang as Lang | undefined;
-    const storedLang =
-      typeof window !== "undefined"
-        ? (window.localStorage.getItem("laplapla_lang") as Lang | null)
-        : null;
-
-    setCurrent(queryLang || storedLang || "ru");
-  }, [router.query.lang]);
+    setCurrent(getCurrentLang(router));
+  }, [router.query.lang, router.locale]);
 
   const switchLang = (lang: Lang) => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("laplapla_lang", lang);
+      window.localStorage.setItem("lang", lang);
+      document.cookie = `laplapla_lang=${lang}; path=/; max-age=31536000`;
     }
 
-    router.push({
-      pathname: router.pathname,
-      query: { ...router.query, lang },
-    });
+    router.push(
+      {
+        pathname: router.pathname,
+        query: { ...router.query, lang },
+      },
+      undefined,
+      { locale: lang },
+    );
   };
 
   return (

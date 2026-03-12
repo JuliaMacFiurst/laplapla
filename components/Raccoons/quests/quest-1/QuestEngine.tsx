@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 import Day1 from "./pages/Day1";
 import Day2 from "./pages/Day2";
@@ -51,6 +52,7 @@ export type PageId = keyof typeof PAGES;
 
 export default function QuestEngine() {
   const router = useRouter();
+  const lang = getCurrentLang(router);
   const [pageId, setPageId] = useState<PageId>("day1");
   const [devMode, setDevMode] = useState(false);
 
@@ -83,7 +85,11 @@ export default function QuestEngine() {
             "Твой прогресс в квесте сейчас не сохранён.\nЕсли ты выйдешь, придётся начинать сначала. Выйти из квеста?"
           );
           if (confirmed) {
-            router.push("/raccoons");
+            router.push(
+              { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
+              undefined,
+              { locale: lang },
+            );
           }
         }}
       >

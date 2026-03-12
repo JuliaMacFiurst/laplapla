@@ -1,19 +1,12 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
 import { Lang, AboutSectionKey, ABOUT_SECTIONS, dictionaries } from "../../i18n";
 import AboutContent from "../../components/AboutContent";
 import BackButton from "../../components/BackButton";
+import { getCurrentLang } from "@/lib/i18n/routing";
 
 export default function AboutSectionPage() {
   const router = useRouter();
-  const [lang, setLang] = useState<Lang>("ru");
-
-  useEffect(() => {
-    const storedLang = localStorage.getItem("lang") as Lang | null;
-    const queryLang = router.query.lang as Lang | undefined;
-
-    setLang(queryLang || storedLang || "ru");
-  }, [router.query.lang]);
+  const lang = getCurrentLang(router) as Lang;
 
   const section = router.query.section as AboutSectionKey | undefined;
 

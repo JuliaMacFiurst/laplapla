@@ -4,6 +4,7 @@ import { ABOUT_SECTIONS, dictionaries } from "../i18n";
 import { Lang } from "../i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import HomeButton from "./HomeButton";
+import { buildLocalizedQuery } from "@/lib/i18n/routing";
 
 type TopBarProps = {
   lang: Lang;
@@ -42,10 +43,14 @@ export default function TopBar({ lang }: TopBarProps) {
           <div
             className="menu-button"
             onClick={() =>
-              router.push({
-                pathname: "/about",
-                query: { lang },
-              })
+              router.push(
+                {
+                  pathname: "/about",
+                  query: buildLocalizedQuery(lang),
+                },
+                undefined,
+                { locale: lang },
+              )
             }
           >
             ☰
@@ -62,10 +67,14 @@ export default function TopBar({ lang }: TopBarProps) {
                   key={key}
                   className="menu-item"
                   onClick={() =>
-                    router.push({
-                      pathname: `/about/${key}`,
-                      query: { lang },
-                    })
+                    router.push(
+                      {
+                        pathname: `/about/${key}`,
+                        query: buildLocalizedQuery(lang),
+                      },
+                      undefined,
+                      { locale: lang },
+                    )
                   }
                 >
                   {dictionaries[lang].about[key].title}

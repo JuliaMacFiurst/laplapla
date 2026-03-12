@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
 import { Lang, ABOUT_SECTIONS } from "../../i18n";
 import AboutContent from "../../components/AboutContent";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 const ABOUT_ICONS: Record<string, string> = {
   what: "/icons/about-icons/chicken.webp",
@@ -14,14 +14,7 @@ const ABOUT_ICONS: Record<string, string> = {
 
 export default function AboutPage() {
   const router = useRouter();
-  const [lang, setLang] = useState<Lang>("ru");
-
-  useEffect(() => {
-    const storedLang = localStorage.getItem("lang") as Lang | null;
-    const queryLang = router.query.lang as Lang | undefined;
-
-    setLang(queryLang || storedLang || "ru");
-  }, [router.query.lang]);
+  const lang = getCurrentLang(router) as Lang;
 
   return (
     <main className="about-page" dir={lang === "he" ? "rtl" : "ltr"}>
@@ -32,7 +25,16 @@ export default function AboutPage() {
             <article
               key={section}
               className={`about-card about-${section}`}
-              onClick={() => router.push(`/about/${section}`)}
+              onClick={() =>
+                router.push(
+                  {
+                    pathname: `/about/${section}`,
+                    query: buildLocalizedQuery(lang),
+                  },
+                  undefined,
+                  { locale: lang },
+                )
+              }
             >
               <AboutContent
                 mode="preview"

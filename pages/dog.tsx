@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { dictionaries, Lang } from "../i18n";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 // /pages/dog.tsx
 
@@ -45,9 +46,9 @@ const categoryIcons = [
 
 export default function DogPage() {
   const router = useRouter();
-  const lang = ((router.query.lang as Lang) || router.locale || "ru") as Lang;
-    const dict = dictionaries[lang] || dictionaries["ru"];
-    const t = dict.dogs.dogsPage;
+  const lang = getCurrentLang(router) as Lang;
+  const dict = dictionaries[lang] || dictionaries["ru"];
+  const t = dict.dogs.dogsPage;
   return (
     <main>
       <div className="dog-header-container">
@@ -63,7 +64,16 @@ export default function DogPage() {
         {categorySlugs.map((slug, index) => (
           <button
             key={slug}
-            onClick={() => window.location.href = `/dog/lessons?category=${slug}`}
+            onClick={() =>
+              router.push(
+                {
+                  pathname: "/dog/lessons",
+                  query: buildLocalizedQuery(lang, { category: slug }),
+                },
+                undefined,
+                { locale: lang },
+              )
+            }
             className={`dog-category-button dog-category-color-${(index % 8) + 1}`}
           >
             <img src={`/icons/drawing-lessons-icons/${categoryIcons[index]}`} alt={t.categories[slug]} className="dog-category-icon" />

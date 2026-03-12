@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import { Lang, dictionaries } from "@/i18n";
 import { useEffect, useState } from "react";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 // Dynamically load StudioRoot (important later when ffmpeg is added)
 const StudioRoot = dynamic(
@@ -13,6 +14,7 @@ const StudioRoot = dynamic(
 export default function CatsStudioPage({ lang }: { lang: Lang }) {
     const t = dictionaries[lang].cats;
   const router = useRouter();
+  const currentLang = getCurrentLang(router);
 
   const [initialSlides, setInitialSlides] = useState<
     { text: string; image?: string }[] | undefined
@@ -61,7 +63,13 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
 
       <button
           className="back-to-cats-button"
-          onClick={() => router.push("/cats")}
+          onClick={() =>
+            router.push(
+              { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
+              undefined,
+              { locale: currentLang },
+            )
+          }
         >
           ← {t.backButton}
         </button>

@@ -13,6 +13,7 @@ import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
 import { recordPreviewDom } from "@/lib/recordPreviewDom";
 import { useRouter } from "next/router";
+import { buildLocalizedQuery } from "@/lib/i18n/routing";
 
 const PROJECT_ID = "current-studio-project";
 
@@ -598,7 +599,16 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
               }
               onAddMedia={() => setIsMediaOpen(true)}
               onPreview={() => setIsPreviewOpen(true)}
-              onExport={() => router.push(`/cats/export?lang=${lang}`)}
+              onExport={() =>
+                router.push(
+                  {
+                    pathname: "/cats/export",
+                    query: buildLocalizedQuery(lang),
+                  },
+                  undefined,
+                  { locale: lang },
+                )
+              }
               onSetFitCover={() =>
                 updateSlide({ ...activeSlide, mediaFit: "cover" })
               }

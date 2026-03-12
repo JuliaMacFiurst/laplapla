@@ -3,22 +3,16 @@ import { useRouter } from "next/router";
 
 import { dictionaries, type Lang } from "../i18n";
 import { VideoSection } from "../components/video/VideoSection";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
-export default function Home() {
+export default function Home({ lang }: { lang?: Lang }) {
   const router = useRouter();
+  const resolvedLang = lang ?? getCurrentLang(router);
 
-  // Priority:
-  // 1) ?lang=he|en|ru
-  // 2) localStorage "laplapla_lang"
-  // 3) browser language
-  const lang = (Array.isArray(router.query.lang)
-    ? router.query.lang[0]
-    : router.query.lang) as Lang || "ru";
-
-  const t = useMemo(() => dictionaries[lang].home, [lang]);
+  const t = useMemo(() => dictionaries[resolvedLang].home, [resolvedLang]);
 
   // Optional: set RTL for Hebrew without touching global layout yet
-  const dir = lang === "he" ? "rtl" : "ltr";
+  const dir = resolvedLang === "he" ? "rtl" : "ltr";
 
   return (
     <div className="home-wrapper" dir={dir}>
@@ -37,27 +31,72 @@ export default function Home() {
       </header>
 
       <div className="grid">
-        <div className="card" onClick={() => router.push("/cats")}> 
+        <div
+          className="card"
+          onClick={() =>
+            router.push(
+              { pathname: "/cats", query: buildLocalizedQuery(resolvedLang) },
+              undefined,
+              { locale: resolvedLang },
+            )
+          }
+        >
           <img src="/images/cat.webp" alt={t.sections.cats} />
           <div className="label">{t.sections.cats}</div>
         </div>
 
-        <div className="card" onClick={() => router.push("/dog")}> 
+        <div
+          className="card"
+          onClick={() =>
+            router.push(
+              { pathname: "/dog", query: buildLocalizedQuery(resolvedLang) },
+              undefined,
+              { locale: resolvedLang },
+            )
+          }
+        >
           <img src="/images/dog.webp" alt={t.sections.dogs} />
           <div className="label">{t.sections.dogs}</div>
         </div>
 
-        <div className="card" onClick={() => router.push("/capybara")}> 
+        <div
+          className="card"
+          onClick={() =>
+            router.push(
+              { pathname: "/capybara", query: buildLocalizedQuery(resolvedLang) },
+              undefined,
+              { locale: resolvedLang },
+            )
+          }
+        >
           <img src="/images/capybara.webp" alt={t.sections.capybaras} />
           <div className="label">{t.sections.capybaras}</div>
         </div>
 
-        <div className="card" onClick={() => router.push("/parrots")}> 
+        <div
+          className="card"
+          onClick={() =>
+            router.push(
+              { pathname: "/parrots", query: buildLocalizedQuery(resolvedLang) },
+              undefined,
+              { locale: resolvedLang },
+            )
+          }
+        >
           <img src="/images/parrot.webp" alt={t.sections.parrots} />
           <div className="label">{t.sections.parrots}</div>
         </div>
 
-        <div className="card" onClick={() => router.push("/raccoons")}> 
+        <div
+          className="card"
+          onClick={() =>
+            router.push(
+              { pathname: "/raccoons", query: buildLocalizedQuery(resolvedLang) },
+              undefined,
+              { locale: resolvedLang },
+            )
+          }
+        >
           <img src="/images/raccoon.webp" alt={t.sections.raccoons} />
           <div className="label">{t.sections.raccoons}</div>
         </div>
@@ -71,7 +110,7 @@ export default function Home() {
         </div>
       </div>
 
-      <VideoSection lang={lang} />
+      <VideoSection lang={resolvedLang} />
     </div>
   );
 }

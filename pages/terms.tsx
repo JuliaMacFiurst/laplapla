@@ -2,17 +2,11 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/router";
-import { Lang } from "@/i18n";
-
-function getLangFromRouter(locale?: string): Lang {
-  if (locale === "he") return "he";
-  if (locale === "en") return "en";
-  return "ru";
-}
+import { getCurrentLang } from "@/lib/i18n/routing";
 
 export default function TermsPage() {
   const router = useRouter();
-  const lang = getLangFromRouter(router.locale);
+  const lang = getCurrentLang(router);
 
   const content = useMemo(() => {
     switch (lang) {
