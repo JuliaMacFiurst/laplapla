@@ -1,11 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GEMINI_MODEL_NAME } from '../../constants';
 import { fallbackImages } from '../../constants';
 import type { GeminiBookStory, LoadStoryOptions } from '../../types/types';
 import { PREDEFINED_CHILDRENS_BOOKS } from '../../data/predefinedBooks';
 import { prompts } from '@/utils/prompts'
+import { generateText } from "@/lib/gemini";
 
 const normalizeMediaSlide = (slide: any): any => {
   const fallback = fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
@@ -39,12 +39,6 @@ const normalizeMediaSlide = (slide: any): any => {
 
 const API_KEY = process.env.GEMINI_API_KEY;
 
-if (!API_KEY) {
-  console.error("API_KEY for Gemini is not set in environment variables.");
-}
-
-const ai: GoogleGenAI = new GoogleGenAI({ apiKey: API_KEY || "DUMMY_KEY_FOR_COMPILATION" });
-
 const getRandomElement = <T,>(arr: T[]): T | undefined => {
   if (!arr || arr.length === 0) {
     return undefined;
@@ -57,9 +51,6 @@ const fetchSingleBookStory = async (options?: LoadStoryOptions): Promise<GeminiB
     console.error("Cannot fetch story: API_KEY is not configured.");
     throw new Error("Ключ API для Gemini не настроен. Капибары не могут получить доступ к библиотеке сказок!");
   }
-  // Ваша переменная `ai` уже объявлена глобально в этом файле
-  // const ai: GoogleGenAI = new GoogleGenAI({ apiKey: API_KEY || "DUMMY_KEY_FOR_COMPILATION" });
-
   try {
     let prompt: string;
     let temperature = 0.75;
@@ -84,17 +75,14 @@ const fetchSingleBookStory = async (options?: LoadStoryOptions): Promise<GeminiB
       prompt = prompts.capybara.random;
     }
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: GEMINI_MODEL_NAME,
-      contents: prompt,
-      config: {
+    const rawResponseText =
+      (await generateText(prompt, GEMINI_MODEL_NAME, {
         responseMimeType: "application/json",
-        temperature: temperature,
-      },
-    });
-    console.log("Gemini raw response:", response.text);
+        temperature,
+      })) ?? "";
+    console.log("Gemini raw response:", rawResponseText);
 
-    let jsonStr = (response.text ?? "").trim();
+    let jsonStr = rawResponseText.trim();
     const fenceRegex = /^```(?:json)?\s*\n?(.*?)\n?\s*```$/s;
     const match = jsonStr.match(fenceRegex);
     if (match && match[1]) {

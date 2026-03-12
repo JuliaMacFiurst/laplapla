@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_MODEL_NAME } from "../../constants";
+import { generateText } from "@/lib/gemini";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -18,12 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const modelToUse = model || GEMINI_MODEL_NAME;
-    const generationModel = genAI.getGenerativeModel({ model: modelToUse });
-
-    const result = await generationModel.generateContent(prompt);
-    const rawText = result.response.text();
+    const rawText = (await generateText(prompt, modelToUse)) ?? "";
     const text = rawText.replace(/\*/g, ""); // удаляем все звёздочки из текста
 
     res.status(200).json({ output: text });

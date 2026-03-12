@@ -1,9 +1,8 @@
-import { GoogleGenAI, Modality } from '@google/genai';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { GEMINI_MODEL_NAME } from '../../constants';
 import { prompts } from '@/utils/prompts';
+import { generateText } from "@/lib/gemini";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 async function fetchGifFromGiphy(query: string, used: Set<string>): Promise<string | null> {
   const offset = Math.floor(Math.random() * 50);
@@ -89,58 +88,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const prompt = prompts.parrot.musicStyle(style, lang);
 
   try {
-    const chat = ai.chats.create({
-      model: GEMINI_MODEL_NAME,
-      config: {
-        responseModalities: [Modality.TEXT],
-      },
-      history: [],
-    });
-
-    const result = await chat.sendMessage({
-      message: prompt,
-    });
+    const generatedText = (await generateText(prompt, GEMINI_MODEL_NAME)) ?? "";
 
     const slides = [];
     const usedGifs: Set<string> = new Set();
     const usedMedia: Set<string> = new Set();
 
-    const parts = result.candidates?.[0]?.content?.parts ?? [];
+    const sentences = generatedText
+      .replace(/\*\*.*?\*\*/g, '')
+      .replace(/Слайд\s*\d+:?/gi, '')
+      .match(/[^.!?]+[.!?]+/g) || [];
 
-    for (const part of parts) {
-      if ('text' in part && typeof part.text === 'string') {
-        const sentences = part.text
-          .replace(/\*\*.*?\*\*/g, '')
-          .replace(/Слайд\s*\d+:?/gi, '')
-          .match(/[^.!?]+[.!?]+/g) || [];
+    const trimmedSentences = sentences
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0 && s.length <= 140);
 
-        const trimmedSentences = sentences
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length > 0 && s.length <= 140);
+    for (const sentence of trimmedSentences) {
+      if (sentence.startsWith('[Image:') || sentence.startsWith('![')) continue;
 
-        for (const sentence of trimmedSentences) {
-          if (sentence.startsWith('[Image:') || sentence.startsWith('![')) continue;
+      const isEven = slides.length % 2 === 0;
+      let imageToUse = '';
 
-          const isEven = slides.length % 2 === 0;
-          let imageToUse = '';
-
-          const keywords = extractKeywords(sentence);
-          if (isEven) {
-            const video = await fetchVideoFromPexels(keywords);
-            imageToUse = video || await fetchGifFromGiphy(keywords, usedGifs) || '';
-          } else {
-            imageToUse = await fetchGifFromGiphy(keywords, usedGifs) || await fetchVideoFromPexels(keywords) || '';
-          }
-
-          if (!imageToUse || usedMedia.has(imageToUse)) continue;
-          usedMedia.add(imageToUse);
-
-          slides.push({
-            text: sentence,
-            image: imageToUse,
-          });
-        }
+      const keywords = extractKeywords(sentence);
+      if (isEven) {
+        const video = await fetchVideoFromPexels(keywords);
+        imageToUse = video || await fetchGifFromGiphy(keywords, usedGifs) || '';
+      } else {
+        imageToUse = await fetchGifFromGiphy(keywords, usedGifs) || await fetchVideoFromPexels(keywords) || '';
       }
+
+      if (!imageToUse || usedMedia.has(imageToUse)) continue;
+      usedMedia.add(imageToUse);
+
+      slides.push({
+        text: sentence,
+        image: imageToUse,
+      });
     }
 
     if (slides.length === 0) {
