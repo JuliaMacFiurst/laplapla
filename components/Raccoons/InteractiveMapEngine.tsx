@@ -1,5 +1,10 @@
 import { GEMINI_MODEL_NAME } from "../../constants";
 import { useRef, useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import TranslationWarning from "@/components/TranslationWarning";
+import { getTranslatedContent } from "@/lib/contentTranslations";
+import { getCurrentLang } from "@/lib/i18n/routing";
+import { supabase } from "@/lib/supabase/client";
 import { prompts } from "@/utils/prompts";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
@@ -23,10 +28,13 @@ function formatText(input: string): string {
 }
 
 export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [isStoryTranslated, setIsStoryTranslated] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const clickCountRef = useRef(0);
@@ -229,8 +237,13 @@ useEffect(() => {
     }
 
     try {
-      const res = await fetch(`/api/get-story?type=${type}&target_id=${selectedElement}&language=ru`);
-      const existing = await res.json();
+      const { data: baseStory, error: storyError } = await supabase
+        .from("map_stories")
+        .select("*")
+        .eq("type", type)
+        .eq("target_id", selectedElement)
+        .eq("language", "ru")
+        .maybeSingle();
 
       // Проверка устаревшего запроса
       if (currentFetchId !== fetchIdRef.current) {
@@ -238,11 +251,21 @@ useEffect(() => {
         return;
       }
 
+      if (storyError) {
+        throw storyError;
+      }
+
       let content: string | null = null;
 
-      if (existing && existing.content) {
-        content = existing.content;
+      if (baseStory && baseStory.content) {
+        const translatedStory =
+          lang === "ru"
+            ? { content: baseStory, translated: true }
+            : await getTranslatedContent("map_story", baseStory.id, lang);
+
+        content = (translatedStory.content as { content?: string | null }).content ?? null;
         setAiResponse(content);
+        setIsStoryTranslated(translatedStory.translated);
         // Проверка устаревшего запроса
         if (currentFetchId !== fetchIdRef.current) {
           console.warn("⏩ Старый запрос, пропускаем результат");
@@ -265,6 +288,7 @@ useEffect(() => {
         }
         content = data.output || data.text;
         setAiResponse(content);
+        setIsStoryTranslated(lang === "ru");
         // Проверка устаревшего запроса
         if (currentFetchId !== fetchIdRef.current) {
           console.warn("⏩ Старый запрос, пропускаем результат");
@@ -601,7 +625,7 @@ useEffect(() => {
   }
 
   fetchAndHandleStory();
-}, [selectedElement]);
+}, [lang, selectedElement, type]);
 
   // --- Добавляем refs и состояние для перетаскивания попапа ---
  const popupRef = useRef<HTMLDivElement | null>(null);
@@ -1006,6 +1030,7 @@ useEffect(() => {
                 selectedElementRef.current = "__none__";
                 setPosition({ x: 0, y: 0 });
                 setAiResponse(null);
+                setIsStoryTranslated(true);
                 if (lastSelectedPath.current) {
                   lastSelectedPath.current.style.fill = "#fdc09f";
                   lastSelectedPath.current = null;
@@ -1036,6 +1061,7 @@ useEffect(() => {
                 </div>
               )}
 
+              {!isStoryTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
               <div
                 className="map-text"
                 dangerouslySetInnerHTML={{

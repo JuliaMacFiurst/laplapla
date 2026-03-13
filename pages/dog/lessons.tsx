@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { createClient } from '@supabase/supabase-js';
 import BackButton from '../../components/BackButton';
 import { dictionaries, Lang } from "../../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
-
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from "@/lib/supabase/client";
+import { getTranslatedContents } from "@/lib/contentTranslations";
 
 interface Lesson {
   id: string;
@@ -36,12 +31,17 @@ export default function LessonsPage() {
       .from('lessons')
       .select('id, title, preview, slug, category_slug')
       .eq('category_slug', category)
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (error) {
           console.error('❌ Ошибка загрузки уроков:', error);
         } else {
           console.log('✅ Уроки получены из Supabase:', data);
-          const lessonsWithPublicUrls = data || [];
+          const translatedLessons = data?.length
+            ? await getTranslatedContents('lesson', data.map((lesson) => lesson.id), lang)
+            : [];
+          const lessonsWithPublicUrls = translatedLessons.length
+            ? translatedLessons.map(({ content }) => content as Lesson)
+            : (data || []);
           console.log('🖼 Публичные ссылки на превьюшки сгенерированы:', lessonsWithPublicUrls);
 
           const fetchSignedUrls = async () => {
@@ -75,7 +75,7 @@ export default function LessonsPage() {
           fetchSignedUrls();
         }
       });
-  }, [category]);
+  }, [category, lang]);
 
   return (
     <main className="lessons-page">

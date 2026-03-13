@@ -269,7 +269,10 @@ export const en = {
 
       loadingLesson: "Loading lesson...",
     },
+    artGalleryModal: {
+    artGalleryTitle: "Gallery of Great Artists",
   },
+},
 
   video: {
     title: "Cute explanations",

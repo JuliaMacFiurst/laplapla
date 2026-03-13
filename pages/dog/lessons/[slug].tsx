@@ -5,7 +5,10 @@ import { autoColorRegions } from "@/utils/autoColorRegions";
 import { paintRegionFast } from "@/utils/paintRegionFast";
 import { drawLapLapLaWatermark } from "@/utils/drawLapLapLaWatermark";
 import { getRandomArtFact } from "@/lib/artFacts/getRandomArtFact";
+import TranslationWarning from "@/components/TranslationWarning";
+import { getTranslatedContent } from "@/lib/contentTranslations";
 import { getCurrentLang } from "@/lib/i18n/routing";
+import { supabase } from "@/lib/supabase/client";
 import { dictionaries, Lang } from "../../../i18n";
 // Color seed placed by a paw click
 type ColorSeed = {
@@ -29,6 +32,7 @@ import type {
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 type Lesson = {
+  id?: string;
   title: string;
   category_slug: string;
   steps: {
@@ -119,6 +123,7 @@ export default function LessonPlayer() {
   
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [isLessonTranslated, setIsLessonTranslated] = useState(true);
   // --- Состояния для галереи ---
   const [showGallery, setShowGallery] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1);
@@ -814,17 +819,59 @@ export default function LessonPlayer() {
     if (!slug || typeof slug !== "string") return;
 
     const fetchLesson = async () => {
-      const res = await fetch(`/api/dog-lesson?slug=${slug}`);
-      const data = await res.json();
-      console.log("Данные урока:", data);
-      if (!data || !data.category_slug) {
+      const { data: lessonRow, error: lessonLookupError } = await supabase
+        .from("lessons")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (lessonLookupError || !lessonRow?.id) {
+        console.error("Ошибка загрузки id урока:", lessonLookupError);
+        return;
+      }
+
+      const { content, translated } = await getTranslatedContent("lesson", lessonRow.id, lang);
+      const translatedLesson = content as Lesson;
+
+      if (Array.isArray(translatedLesson.steps)) {
+        translatedLesson.steps = await Promise.all(
+          translatedLesson.steps.map(async (step) => {
+            let imagePath = step.image;
+
+            if (!imagePath) return step;
+            if (imagePath.startsWith("public/")) {
+              imagePath = imagePath.replace(/^public\//, "");
+            }
+
+            imagePath = imagePath.replace(
+              /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/lessons\//,
+              "",
+            );
+
+            const { data: signedUrlData } = await supabase.storage
+              .from("lessons")
+              .createSignedUrl(imagePath, 60 * 60);
+
+            return {
+              ...step,
+              image: signedUrlData?.signedUrl?.startsWith("http")
+                ? signedUrlData.signedUrl
+                : `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/sign/${signedUrlData?.signedUrl}`,
+            };
+          }),
+        );
+      }
+
+      console.log("Данные урока:", translatedLesson);
+      if (!translatedLesson || !translatedLesson.category_slug) {
         console.error("Ошибка: отсутствует category_slug в данных урока");
         return;
       }
-      setLesson(data);
+      setLesson(translatedLesson);
+      setIsLessonTranslated(translated);
       setBrushSize(5);
       clearReplayHistory();
-      if (data.steps.length > 0) {
+      if (translatedLesson.steps.length > 0) {
         setCurrentStepIndex(0);
         setTimeout(() => {
           drawStepOnCanvas(0);
@@ -832,8 +879,10 @@ export default function LessonPlayer() {
       }
     };
 
-    fetchLesson();
-  }, [slug]);
+    fetchLesson().catch((error) => {
+      console.error("Ошибка загрузки урока:", error);
+    });
+  }, [lang, slug]);
 
   useEffect(() => {
     const canvas = drawingCanvasRef.current;
@@ -1399,6 +1448,7 @@ export default function LessonPlayer() {
       {lesson ? (
         <div>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
+          {!isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
           <div className="lesson-controls">
             <button
               className="lesson-button lesson-button-next"

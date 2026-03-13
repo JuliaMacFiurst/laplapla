@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+import { useRouter } from 'next/router';
+import TranslationWarning from '@/components/TranslationWarning';
+import { getTranslatedContent } from '@/lib/contentTranslations';
+import { getCurrentLang } from '@/lib/i18n/routing';
+import { dictionaries, Lang } from '../i18n/index';
+import { supabase } from '@/lib/supabase/client';
 
 interface Artwork {
+  id: string;
   title: string;
   description: string;
   image_url: string[];
@@ -18,40 +19,49 @@ interface ArtGalleryModalProps {
 }
 
 const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+  const langTyped = lang as Lang;
+  const dict = dictionaries[langTyped] || dictionaries['ru'];
+  const t = dict.dogs.artGalleryModal;
   const modalRef = useRef<HTMLDivElement>(null);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [isArtworkTranslated, setIsArtworkTranslated] = useState(true);
 
   useEffect(() => {
     const fetchArtworks = async () => {
       const { data, error } = await supabase
         .from('artworks')
-        .select('title, description, image_url')
+        .select('id, title, description, image_url')
         .eq('category_slug', categorySlug);
-
-      const randomArtwork = data && data.length > 0
-        ? [data[Math.floor(Math.random() * data.length)]]
-        : [];
 
       if (error) {
         console.error('Ошибка загрузки галереи:', error);
       }
 
-      if (data) {
-        setArtworks(
-          randomArtwork.map((item) => ({
-            ...item,
-            image_url: Array.isArray(item.image_url)
-              ? item.image_url
-              : typeof item.image_url === 'string'
-              ? JSON.parse(item.image_url)
+      if (data && data.length > 0) {
+        const selectedArtwork = data[Math.floor(Math.random() * data.length)];
+        const { content, translated } = await getTranslatedContent('artwork', selectedArtwork.id, lang);
+        const artwork = content as Artwork & { image_url: string[] | string };
+
+        setIsArtworkTranslated(translated);
+        setArtworks([
+          {
+            ...artwork,
+            image_url: Array.isArray(artwork.image_url)
+              ? artwork.image_url
+              : typeof artwork.image_url === 'string'
+              ? JSON.parse(artwork.image_url)
               : [],
-          }))
-        );
+          },
+        ]);
       }
     };
 
-    fetchArtworks();
-  }, [categorySlug]);
+    fetchArtworks().catch((fetchError) => {
+      console.error('Ошибка загрузки галереи:', fetchError);
+    });
+  }, [categorySlug, lang]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -69,7 +79,8 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
         <button className="art-gallery-close" onClick={onClose}>
           &times;
         </button>
-        <h2 className="art-gallery-title">Картины великих художников</h2>
+        <h2 className="art-gallery-title">{t.artGalleryTitle}</h2>
+        {!isArtworkTranslated && lang !== 'ru' && <TranslationWarning lang={lang} />}
         {artworks.length > 0 ? (
           artworks.map((artwork, index) => (
             <div key={index} className="art-gallery-card">

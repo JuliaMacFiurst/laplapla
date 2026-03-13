@@ -324,6 +324,9 @@ type DictionaryShape = {
 
       loadingLesson: string;
     };
+    artGalleryModal: {
+      artGalleryTitle: string;
+    };
   };
 
   footer: {

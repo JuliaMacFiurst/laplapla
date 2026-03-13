@@ -297,6 +297,9 @@ export const ru = {
 
       loadingLesson: "Загрузка урока...",
     },
+    artGalleryModal: {
+    artGalleryTitle: "Картины великих художников"
+  },
   },
 
   about: {
