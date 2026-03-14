@@ -1,3 +1,4 @@
+import type { NextApiRequest } from "next";
 import type { NextRouter } from "next/router";
 import type { Lang } from "@/i18n";
 
@@ -13,6 +14,22 @@ const normalizeLang = (value: unknown): Lang | null => {
     return isLang(first) ? first : null;
   }
   return isLang(value) ? value : null;
+};
+
+const normalizeAcceptLanguage = (value: unknown): Lang | null => {
+  if (typeof value !== "string") return null;
+
+  const candidates = value
+    .split(",")
+    .map((part) => part.trim().split(";")[0]?.split("-")[0])
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    const lang = normalizeLang(candidate);
+    if (lang) return lang;
+  }
+
+  return null;
 };
 
 const getLangFromCookie = (): Lang | null => {
@@ -37,6 +54,18 @@ export const getCurrentLang = (router: Pick<NextRouter, "query" | "locale">): La
     normalizeLang(router.locale) ??
     getLangFromCookie() ??
     getLangFromStorage() ??
+    "ru"
+  );
+};
+
+export const getRequestLang = (
+  req: Pick<NextApiRequest, "query" | "cookies" | "headers">,
+): Lang => {
+  return (
+    normalizeLang(req.query.lang) ??
+    normalizeLang(req.cookies?.laplapla_lang) ??
+    normalizeLang(req.headers["x-laplapla-lang"]) ??
+    normalizeAcceptLanguage(req.headers["accept-language"]) ??
     "ru"
   );
 };

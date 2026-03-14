@@ -270,9 +270,9 @@ export const en = {
       loadingLesson: "Loading lesson...",
     },
     artGalleryModal: {
-    artGalleryTitle: "Gallery of Great Artists",
+      artGalleryTitle: "Gallery of Great Artists",
+    },
   },
-},
 
   video: {
     title: "Cute explanations",
@@ -574,6 +574,47 @@ if you have an idea, a thought, or simply want to start a conversation —
 I’d be very happy to connect.
 
 LapLapLa grows through dialogue, not through a fixed master plan.`,
+    },
+  },
+  capybaras: {
+    capybaraPage: {
+      title: "Capybaras Tell Stories",
+      subtitle:
+        "Books: switch explanation modes, swipe through slides, and scroll to the next story.",
+      feedKicker: "Book Feed",
+      scrollHint: "Swipe up or scroll down to open the next book.",
+      loadingErrorTitle: "Loading Error",
+      storyError: "Failed to load story slides.",
+      testTitle: "Book Quiz",
+      noTests: "There is no quiz for this book yet.",
+      untitledQuestion: "Question without text",
+      actions: {
+        randomBook: "Random Book",
+        explainMeaning: "Explain Meaning",
+        takeTest: "Take Test",
+        createVideo: "Create Video",
+      },
+      errors: {
+        invalidParams: "Missing book_id or mode_id.",
+        explanationLoad: "Failed to load the book explanation.",
+        explanationGeneric: "Failed to load the explanation.",
+        testsLoad: "Failed to load tests.",
+        randomBookLoad: "Failed to load a random book.",
+        noModes: "No explanation modes were found.",
+        noExplanations: "There are no explanations for this book yet.",
+        bookLoad: "Failed to load the book.",
+        errorTitle: "Oops, something went wrong!",
+        errorHint:
+          "Try refreshing the page or come back later — the capybaras are working hard to fix everything!",
+      },
+      fallbackSlides: {
+        unknownBookTitle: "this book",
+        line1: 'The capybara has not read "{title}" yet, but really wants to.',
+        line2: "She heard that amazing adventures happen there.",
+        line3:
+          "Heroes face challenges, find friends and sometimes get into very strange situations.",
+        line4: "Looks like it's worth opening this book to find out.",
+      },
     },
   },
   footer: {

@@ -1,35 +1,69 @@
-export interface BookStory {
-  title: string;
-  summary: string; // The full summary from Gemini
-}
-
-// Represents a single sentence "slide" within a story
-export interface SentenceSlide {
+export interface Slide {
+  id?: string | number;
   text: string;
-  capybaraImage: string; // This will now be a path to a local image
-  capybaraImageAlt: string; // Alt text for the local image
-  backgroundImage?: string; // Optional background image
-  videoUrl?: string; // Optional video URL from Pexels
-  gifUrl?: string; // Optional gif URL
+  keywords?: string[];
+  mood?: string;
+  gifUrl?: string;
+  capybaraImage?: string;
+  capybaraImageAlt?: string;
+  videoUrl?: string;
   imageUrl?: string;
-  type?: 'image' | 'video' | 'gif'; // Type of the slide
+  type?: "image" | "video" | "gif";
 }
 
-// Represents the entire story, processed for carousel display
-export interface ProcessedStory {
+export interface CarouselStory {
   id: string;
   title: string;
-  sentences: SentenceSlide[];
-  backgroundColor: string; // Tailwind CSS class string
+  slides: Slide[];
 }
 
-// Type for parsed Gemini response
-export type GeminiBookStory = {
+export interface GeminiBookStory {
+  title: string
+  summary: string
+}
+
+export interface LoadStoryOptions {
+  inventStory?: boolean
+  generateForRandomChildrensBook?: boolean
+  bookTitle?: string
+}
+
+export interface Book {
+  id: string | number;
   title: string;
-  summary: string;
-  notFound?: boolean; // Optional flag if Gemini indicates book not found
-  videoUrls?: string[]; // Optional list of video URLs (e.g. from Pexels)
-};
+  author?: string | null;
+  description?: string | null;
+  cover_url?: string | null;
+  category_id?: string | number | null;
+  [key: string]: unknown;
+}
+
+export interface BookExplanation {
+  id: string | number;
+  book_id: string | number;
+  mode_id: string | number;
+  slides: Slide[];
+  [key: string]: unknown;
+}
+
+export interface BookTest {
+  id: string | number;
+  book_id: string | number;
+  question?: string | null;
+  options?: string[] | null;
+  answer?: string | null;
+  explanation?: string | null;
+  [key: string]: unknown;
+}
+
+export interface ExplanationMode {
+  id: string | number;
+  name?: string | null;
+  title?: string | null;
+  slug?: string | null;
+  description?: string | null;
+  [key: string]: unknown;
+}
 
 // Represents a single pre-defined capybara illustration
 export interface CapybaraIllustration {
@@ -42,12 +76,6 @@ export interface CapybaraIllustration {
 export interface ErrorMessageProps {
   message: string;
   customTitle?: string; // Optional custom title for the error message
-}
-
-export interface LoadStoryOptions {
-  bookTitle?: string;
-  inventStory?: boolean;
-  generateForRandomChildrensBook?: boolean;
 }
 
 // =============================
@@ -85,4 +113,3 @@ export type SledAnimation =
   | "dogs"
   | "skids"
   | null;
-

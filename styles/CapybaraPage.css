@@ -151,6 +151,10 @@
   height: auto;
 }
 
+.capybara-feed-main {
+  max-width: 48rem;
+}
+
 @media (max-width: 768px) {
   .capybara-page-main {
     max-width: 100%;
@@ -364,7 +368,7 @@
   justify-content: center;
   width: 100%;
   max-width: 100vw;
-  padding: 2rem 1rem;
+  padding: 2rem 0;
   overflow: visible;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   position: relative;
@@ -372,6 +376,138 @@
   gap: 1.5rem;
   min-height: auto;
   max-height: none;
+}
+
+.book-feed {
+  width: 100%;
+  min-height: calc(100vh - 14rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.feed-scroll-hint {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #475569;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.book-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.book-card-head {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.book-card-kicker {
+  margin: 0;
+  color: #0f766e;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.book-card-title {
+  margin: 0.2rem 0;
+  font-size: 2.4rem;
+  color: #172554;
+}
+
+.book-card-author {
+  margin: 0;
+  color: #475569;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.mode-buttons,
+.book-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.mode-button,
+.feed-action-button {
+  border: none;
+  border-radius: 9999px;
+  padding: 0.8rem 1.2rem;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.mode-button {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.mode-button-active {
+  color: white;
+  background: linear-gradient(135deg, #0f766e, #0284c7);
+}
+
+.feed-action-button {
+  color: white;
+  background: linear-gradient(135deg, #f97316, #ec4899);
+}
+
+.mode-button:hover,
+.feed-action-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.mode-button:disabled,
+.feed-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.book-tests-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.book-tests-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.6rem;
+  color: #1e293b;
+}
+
+.book-tests-empty,
+.book-tests-list {
+  margin: 0;
+  color: #334155;
+}
+
+.book-tests-list {
+  padding-left: 1.2rem;
+}
+
+.book-test-item {
+  margin-bottom: 0.75rem;
 }
 
 .story-image-wrapper,
@@ -478,8 +614,14 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   margin-left: auto;
   margin-right: auto;
+  position: relative;
+  overflow: hidden;
 }
 
 .story-video {
   z-index: 4;
+}
+
+.story-background-blur {
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0));
 }

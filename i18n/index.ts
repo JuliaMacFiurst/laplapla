@@ -329,6 +329,45 @@ type DictionaryShape = {
     };
   };
 
+  capybaras: {
+    capybaraPage: {
+      title: string;
+      subtitle: string;
+      feedKicker: string;
+      scrollHint: string;
+      loadingErrorTitle: string;
+      storyError: string;
+      testTitle: string;
+      noTests: string;
+      untitledQuestion: string;
+      actions: {
+        randomBook: string;
+        explainMeaning: string;
+        takeTest: string;
+        createVideo: string;
+      };
+      errors: {
+        invalidParams: string;
+        explanationLoad: string;
+        explanationGeneric: string;
+        testsLoad: string;
+        randomBookLoad: string;
+        noModes: string;
+        noExplanations: string;
+        bookLoad: string;
+        errorTitle: string;
+        errorHint: string;
+      };
+      fallbackSlides: {
+        unknownBookTitle: string;
+        line1: string;
+        line2: string;
+        line3: string;
+        line4: string;
+      };
+    };
+  };
+
   footer: {
     terms: string;
     privacy: string;
