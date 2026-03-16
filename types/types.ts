@@ -51,11 +51,16 @@ export interface BookExplanation {
 export interface BookTest {
   id: string | number;
   book_id: string | number;
-  question?: string | null;
-  options?: string[] | null;
-  answer?: string | null;
-  explanation?: string | null;
+  title?: string | null;
+  description?: string | null;
+  questions?: BookTestQuestion[];
   [key: string]: unknown;
+}
+
+export interface BookTestQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
 }
 
 export interface ExplanationMode {

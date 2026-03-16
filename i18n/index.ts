@@ -353,6 +353,21 @@ type DictionaryShape = {
       testTitle: string;
       noTests: string;
       untitledQuestion: string;
+      quiz: {
+        unavailable: string;
+        questionCounter: string;
+        correct: string;
+        incorrect: string;
+        nextQuestion: string;
+        showResults: string;
+        tryAgain: string;
+        resultSummary: string;
+        results: {
+          perfect: string;
+          twoWrong: string;
+          needsRetry: string;
+        };
+      };
       actions: {
         randomBook: string;
         explainMeaning: string;

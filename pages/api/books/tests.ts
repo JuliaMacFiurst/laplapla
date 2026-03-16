@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/lib/supabase";
+import { normalizeBookTests } from "@/pages/api/books/_tests";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const bookId = req.query.book_id;
@@ -18,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw error;
     }
 
-    res.status(200).json(data || []);
+    res.status(200).json(normalizeBookTests(data || []));
   } catch (error) {
     console.error("Failed to load tests:", error);
     res.status(500).json({ error: "Failed to load tests" });

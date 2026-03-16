@@ -50,36 +50,69 @@ const capybaraQueries = [
   "capybara animal",
 ];
 
-const stopWords = new Set([
+const STOP_WORDS = new Set([
   "и", "в", "во", "на", "с", "со", "к", "ко", "у", "о", "об", "от", "до", "по", "за", "из", "под",
   "над", "для", "что", "как", "а", "но", "или", "же", "ли", "не", "ни", "это", "тот", "та", "те",
   "они", "она", "он", "мы", "вы", "ты", "я", "его", "ее", "их", "свои", "свой", "свою", "своим",
+  "там", "тут", "вдруг", "ой", "ах", "эх", "ну", "бы",
   "the", "a", "an", "and", "or", "of", "to", "in", "on", "at", "for", "with", "from", "by",
   "he", "she", "they", "we", "you", "it", "this", "that", "these", "those", "into", "over",
 ]);
 
+const WEAK_WORDS = new Set([
+  "пошли",
+  "увидели",
+  "оказались",
+  "решили",
+  "встретили",
+  "сказал",
+  "сказала",
+  "сказали",
+  "достигают",
+  "идут",
+  "идет",
+  "идём",
+  "пришли",
+  "подошли",
+]);
+
+const RUSSIAN_ENDINGS = /(?:ого|его|ому|ему|ыми|ими|ами|ями|иях|иях|ах|ях|ов|ев|ий|ый|ой|ая|яя|ое|ее|ые|ие|а|я|ы|и|у|ю|е|о)$/u;
+
 const normalizeText = (value: string) =>
   value
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/[^\p{L}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
-
-const tokenizeMeaningfulWords = (value: string) =>
-  normalizeText(value)
-    .split(" ")
-    .filter((token) => token.length > 2 && !stopWords.has(token));
 
 const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean)));
 
 const hashString = (value: string) =>
   Array.from(value).reduce((acc, char) => ((acc * 31) + char.charCodeAt(0)) >>> 0, 0);
 
-const extractKeywords = (text: string, bookTitle?: string | null) => {
-  const slideTokens = tokenizeMeaningfulWords(text);
-  const titleTokens = tokenizeMeaningfulWords(bookTitle || "");
-  const phrase = slideTokens.length >= 2 ? `${slideTokens[0]} ${slideTokens[1]}` : slideTokens[0];
-  return unique([phrase, ...titleTokens.slice(0, 1), ...slideTokens]).slice(0, 3);
+const stemRussianWord = (word: string) => {
+  const stemmed = word.replace(RUSSIAN_ENDINGS, "");
+  return stemmed.length >= 4 ? stemmed : word;
+};
+
+export const extractSlideKeywords = (text: string): string[] => {
+  const originalTokens = text.match(/\p{L}+/gu) || [];
+
+  return unique(
+    originalTokens
+      .map((token, index) => ({ token, index }))
+      .filter(({ token, index }) => !(index > 0 && /^\p{Lu}/u.test(token)))
+      .map(({ token }) => normalizeText(token))
+      .filter((word) => word.length >= 4)
+      .filter((word) => !STOP_WORDS.has(word))
+      .filter((word) => !WEAK_WORDS.has(word))
+      .map(stemRussianWord)
+      .filter((word) => word.length >= 4)
+      .filter((word) => !STOP_WORDS.has(word))
+      .filter((word) => !WEAK_WORDS.has(word))
+      .sort((a, b) => b.length - a.length)
+      .slice(0, 3),
+  );
 };
 
 const buildSlideCacheKey = (slide: Slide) =>
@@ -255,7 +288,7 @@ const resolveSlideMedia = async (
     return cached;
   }
 
-  const contextualKeywords = slide.keywords?.length ? slide.keywords : extractKeywords(slide.text);
+  const contextualKeywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
   const contextualQuery = contextualKeywords.join(" ") || normalizeText(slide.text) || "cute animals";
   const capybaraQuery = pickCapybaraQuery(slide);
   const capybaraKeywords = capybaraQuery.split(" ");
@@ -297,12 +330,12 @@ const resolveSlideMedia = async (
   return fallbackMedia;
 };
 
-const prepareSlides = (slides: Slide[], bookTitle?: string | null) =>
+const prepareSlides = (slides: Slide[]) =>
   slides.map((slide, index) => ({
     ...slide,
     id: slide.id ?? `slide-${index}`,
     keywords: shouldUseContextMedia(index, slides.length)
-      ? (slide.keywords?.length ? slide.keywords : extractKeywords(slide.text, bookTitle))
+      ? (slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text))
       : undefined,
   }));
 
@@ -369,7 +402,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       setError(null);
       try {
         const explanation = await fetchExplanation(bookId, modeId);
-        const nextSlides = prepareSlides(explanation.slides || [], currentBook?.title);
+        const nextSlides = prepareSlides(explanation.slides || []);
         if (requestId !== requestRef.current) {
           return;
         }
@@ -390,16 +423,21 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     [currentBook?.title, fetchExplanation, prefetchSlidesWithMedia, t.errors.explanationGeneric],
   );
 
-  const loadTests = useCallback(async (bookId: string | number) => {
-    const response = await fetch(`/api/books/tests?book_id=${bookId}`);
+  const fetchTests = useCallback(async (bookId: string | number, signal?: AbortSignal) => {
+    const response = await fetch(`/api/books/tests?book_id=${bookId}`, { signal });
     if (!response.ok) {
       throw new Error(t.errors.testsLoad);
     }
 
-    const nextTests = (await response.json()) as BookTest[];
+    return (await response.json()) as BookTest[];
+  }, [t.errors.testsLoad]);
+
+  const loadTests = useCallback(async (bookId: string | number) => {
+    const nextTests = await fetchTests(bookId);
+    console.log("Normalized quiz:", nextTests);
     setTests(nextTests);
     return nextTests;
-  }, [t.errors.testsLoad]);
+  }, [fetchTests]);
 
   const hydrateBook = useCallback(
     async (
@@ -447,26 +485,20 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         throw new Error(t.errors.noExplanations);
       }
 
-      const [nextTests] = await Promise.all([
-        fetch(`/api/books/tests?book_id=${book.id}`, { signal }).then((response) => {
-          if (!response.ok) {
-            return [];
-          }
-          return response.json();
-        }),
-      ]);
+      const nextTests = await fetchTests(book.id, signal).catch(() => []);
 
       if (requestId !== requestRef.current) {
         return null;
       }
 
+      console.log("Normalized quiz:", nextTests);
       return {
-        nextSlides: prepareSlides(explanation.slides || [], book.title),
+        nextSlides: prepareSlides(explanation.slides || []),
         nextTests: (nextTests || []) as BookTest[],
         resolvedModeId,
       };
     },
-    [explanationModes, fetchExplanation, loadModes, t.errors.noExplanations, t.errors.noModes],
+    [explanationModes, fetchExplanation, fetchTests, loadModes, t.errors.noExplanations, t.errors.noModes],
   );
 
   const loadBook = useCallback(
@@ -578,6 +610,8 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     didInitialLoadRef.current = true;
     void loadRandomBook();
   }, [loadRandomBook]);
+
+  console.log("tests", tests)
 
   return {
     currentBook,
