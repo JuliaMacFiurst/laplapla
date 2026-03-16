@@ -579,8 +579,7 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
   capybaras: {
     capybaraPage: {
       title: "Capybaras Tell Stories",
-      subtitle:
-        "Books: switch explanation modes, swipe through slides, and scroll to the next story.",
+      subtitle: "Pick a book and jump into a story.",
       feedKicker: "Book Feed",
       scrollHint: "Swipe up or scroll down to open the next book.",
       loadingErrorTitle: "Loading Error",
