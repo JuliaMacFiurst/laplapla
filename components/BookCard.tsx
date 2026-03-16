@@ -13,6 +13,7 @@ interface BookCardProps {
   selectedModeId: string | number | null;
   loading?: boolean;
   showTests?: boolean;
+  showRandomBookAction?: boolean;
   onRandomBook: () => void;
   onExplainMeaning: () => void;
   onTakeTest: () => void;
@@ -29,6 +30,7 @@ export default function BookCard({
   selectedModeId,
   loading,
   showTests,
+  showRandomBookAction = true,
   onRandomBook,
   onExplainMeaning,
   onTakeTest,
@@ -74,9 +76,11 @@ export default function BookCard({
       />
 
       <div className="book-card-actions">
-        <button type="button" className="feed-action-button" disabled={loading} onClick={onRandomBook}>
-          {t.actions.randomBook}
-        </button>
+        {showRandomBookAction ? (
+          <button type="button" className="feed-action-button" disabled={loading} onClick={onRandomBook}>
+            {t.actions.randomBook}
+          </button>
+        ) : null}
         <button type="button" className="feed-action-button" disabled={loading} onClick={onExplainMeaning}>
           {t.actions.explainMeaning}
         </button>

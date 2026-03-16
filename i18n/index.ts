@@ -339,6 +339,15 @@ type DictionaryShape = {
         previousBook: string;
         nextBook: string;
       };
+      search: {
+        title: string;
+        placeholder: string;
+        button: string;
+        clear: string;
+        backToFeed: string;
+        noResults: string;
+        searchError: string;
+      };
       loadingErrorTitle: string;
       storyError: string;
       testTitle: string;

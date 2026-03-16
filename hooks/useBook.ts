@@ -13,6 +13,20 @@ interface BookHistoryEntry {
   selectedModeId: string | number | null;
 }
 
+interface LoadBookOptions {
+  pushHistory?: boolean;
+  signal?: AbortSignal;
+}
+
+const isAbortError = (error: unknown) =>
+  error instanceof Error && error.name === "AbortError";
+
+const createAbortError = () => {
+  const error = new Error("The operation was aborted.");
+  error.name = "AbortError";
+  return error;
+};
+
 const getFallbackImage = () =>
   `/images/capybaras/${fallbackImages[Math.floor(Math.random() * fallbackImages.length)]}`;
 
@@ -45,14 +59,23 @@ const buildMediaUrl = (endpoint: string, slide: Slide) => {
   return query ? `${endpoint}?${query}` : endpoint;
 };
 
-const enrichSlidesWithMedia = async (slides: Slide[]): Promise<Slide[]> => {
+const enrichSlidesWithMedia = async (slides: Slide[], signal?: AbortSignal): Promise<Slide[]> => {
   return Promise.all(
     slides.map(async (slide, index) => {
       const [imagesResult, gifsResult, videosResult] = await Promise.allSettled([
-        fetch(buildMediaUrl("/api/capybara-images", slide)).then((response) => response.json()),
-        fetch(buildMediaUrl("/api/capybara-gifs", slide)).then((response) => response.json()),
-        fetch(buildMediaUrl("/api/capybara-videos", slide)).then((response) => response.json()),
+        fetch(buildMediaUrl("/api/capybara-images", slide), { signal }).then((response) => response.json()),
+        fetch(buildMediaUrl("/api/capybara-gifs", slide), { signal }).then((response) => response.json()),
+        fetch(buildMediaUrl("/api/capybara-videos", slide), { signal }).then((response) => response.json()),
       ]);
+
+      if (
+        signal?.aborted ||
+        [imagesResult, gifsResult, videosResult].some(
+          (result) => result.status === "rejected" && isAbortError(result.reason),
+        )
+      ) {
+        throw createAbortError();
+      }
 
       const images = imagesResult.status === "fulfilled" && Array.isArray(imagesResult.value) ? imagesResult.value : [];
       const gifs = gifsResult.status === "fulfilled" && Array.isArray(gifsResult.value) ? gifsResult.value : [];
@@ -123,8 +146,12 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     return modes;
   }, []);
 
-  const fetchExplanation = useCallback(async (bookId: string | number, modeId: string | number) => {
-    const response = await fetch(`/api/books/explanation?book_id=${bookId}&mode_id=${modeId}&lang=${lang}`);
+  const fetchExplanation = useCallback(async (
+    bookId: string | number,
+    modeId: string | number,
+    signal?: AbortSignal,
+  ) => {
+    const response = await fetch(`/api/books/explanation?book_id=${bookId}&mode_id=${modeId}&lang=${lang}`, { signal });
     if (!response.ok) {
       throw new Error(t.errors.explanationLoad);
     }
@@ -142,6 +169,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setSlides(nextSlides);
         setSelectedModeId(modeId);
       } catch (loadError) {
+        if (isAbortError(loadError)) {
+          return;
+        }
         const message = loadError instanceof Error ? loadError.message : t.errors.explanationGeneric;
         setSlides([]);
         setError(message);
@@ -163,10 +193,83 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     return nextTests;
   }, [t.errors.testsLoad]);
 
-  const loadRandomBook = useCallback(
-    async (preferredModeId?: string | number | null) => {
+  const hydrateBook = useCallback(
+    async (
+      book: Book,
+      preferredModeId: string | number | null | undefined,
+      requestId: number,
+      signal?: AbortSignal,
+    ) => {
+      if (signal?.aborted) {
+        throw createAbortError();
+      }
+
+      const modes = explanationModes.length > 0 ? explanationModes : await loadModes();
+      const fallbackModeId = preferredModeId || getMeaningModeId(modes) || modes[0]?.id;
+
+      if (!fallbackModeId) {
+        throw new Error(t.errors.noModes);
+      }
+
+      let explanation: BookExplanation | null = null;
+      let resolvedModeId: string | number = fallbackModeId;
+
+      try {
+        explanation = await fetchExplanation(book.id, fallbackModeId, signal);
+      } catch (error) {
+        if (isAbortError(error)) {
+          throw error;
+        }
+
+        for (const mode of modes) {
+          try {
+            explanation = await fetchExplanation(book.id, mode.id, signal);
+            resolvedModeId = mode.id;
+            break;
+          } catch (modeError) {
+            if (isAbortError(modeError)) {
+              throw modeError;
+            }
+            continue;
+          }
+        }
+      }
+
+      if (!explanation) {
+        throw new Error(t.errors.noExplanations);
+      }
+
+      const [nextSlides, nextTests] = await Promise.all([
+        enrichSlidesWithMedia(explanation.slides || [], signal),
+        fetch(`/api/books/tests?book_id=${book.id}`, { signal }).then((response) => {
+          if (!response.ok) {
+            return [];
+          }
+          return response.json();
+        }),
+      ]);
+
+      if (requestId !== requestRef.current) {
+        return null;
+      }
+
+      return {
+        nextSlides,
+        nextTests: (nextTests || []) as BookTest[],
+        resolvedModeId,
+      };
+    },
+    [explanationModes, fetchExplanation, loadModes, t.errors.noExplanations, t.errors.noModes],
+  );
+
+  const loadBook = useCallback(
+    async (
+      book: Book,
+      preferredModeId?: string | number | null,
+      options?: LoadBookOptions,
+    ) => {
       const requestId = ++requestRef.current;
-      const previousEntry = currentBook
+      const previousEntry = options?.pushHistory !== false && currentBook
         ? {
             book: currentBook,
             slides,
@@ -174,68 +277,31 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
             selectedModeId,
           }
         : null;
+
       setLoading(true);
       setError(null);
+      setCurrentBook(book);
+      setSlides([]);
+      setTests([]);
 
       try {
-        const modes = explanationModes.length > 0 ? explanationModes : await loadModes();
-        const bookResponse = await fetch("/api/books/random");
-
-        if (!bookResponse.ok) {
-          throw new Error(t.errors.randomBookLoad);
-        }
-
-        const book = (await bookResponse.json()) as Book;
-        const fallbackModeId = preferredModeId || getMeaningModeId(modes) || modes[0]?.id;
-
-        if (!fallbackModeId) {
-          throw new Error(t.errors.noModes);
-        }
-
-        let explanation: BookExplanation | null = null;
-        let resolvedModeId: string | number = fallbackModeId;
-
-        try {
-          explanation = await fetchExplanation(book.id, fallbackModeId);
-        } catch {
-          for (const mode of modes) {
-            try {
-              explanation = await fetchExplanation(book.id, mode.id);
-              resolvedModeId = mode.id;
-              break;
-            } catch {
-              continue;
-            }
-          }
-        }
-
-        if (!explanation) {
-          throw new Error(t.errors.noExplanations);
-        }
-
-        const [nextSlides, nextTests] = await Promise.all([
-          enrichSlidesWithMedia(explanation.slides || []),
-          fetch(`/api/books/tests?book_id=${book.id}`).then((response) => {
-            if (!response.ok) {
-              return [];
-            }
-            return response.json();
-          }),
-        ]);
-
-        if (requestId !== requestRef.current) {
+        const hydrated = await hydrateBook(book, preferredModeId, requestId, options?.signal);
+        if (!hydrated || requestId !== requestRef.current) {
           return;
         }
 
-        setCurrentBook(book);
-        setSlides(nextSlides);
-        setTests((nextTests || []) as BookTest[]);
-        setSelectedModeId(resolvedModeId);
+        setSlides(hydrated.nextSlides);
+        setTests(hydrated.nextTests);
+        setSelectedModeId(hydrated.resolvedModeId);
         if (previousEntry) {
           setBookHistory((prev) => [...prev, previousEntry]);
         }
       } catch (loadError) {
         if (requestId !== requestRef.current) {
+          return;
+        }
+
+        if (isAbortError(loadError)) {
           return;
         }
 
@@ -250,19 +316,31 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         }
       }
     },
-    [
-      currentBook,
-      explanationModes,
-      fetchExplanation,
-      loadModes,
-      selectedModeId,
-      slides,
-      t.errors.bookLoad,
-      t.errors.noExplanations,
-      t.errors.noModes,
-      t.errors.randomBookLoad,
-      tests,
-    ],
+    [currentBook, hydrateBook, selectedModeId, slides, t.errors.bookLoad, tests],
+  );
+
+  const loadRandomBook = useCallback(
+    async (preferredModeId?: string | number | null) => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const bookResponse = await fetch("/api/books/random");
+
+        if (!bookResponse.ok) {
+          throw new Error(t.errors.randomBookLoad);
+        }
+
+        const book = (await bookResponse.json()) as Book;
+        await loadBook(book, preferredModeId);
+      } catch (loadError) {
+        if (loadError instanceof Error && loadError.message === t.errors.randomBookLoad) {
+          setError(loadError.message);
+          setLoading(false);
+        }
+      }
+    },
+    [loadBook, t.errors.randomBookLoad],
   );
 
   const loadPreviousBook = useCallback(() => {
@@ -302,6 +380,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     loading,
     error,
     loadRandomBook,
+    loadBook,
     loadPreviousBook,
     loadExplanation,
     loadTests,

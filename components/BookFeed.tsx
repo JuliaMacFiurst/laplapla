@@ -15,8 +15,11 @@ interface BookFeedProps {
   selectedModeId: string | number | null;
   loading: boolean;
   error: string | null;
+  errorTitle?: string;
   showTests: boolean;
   hasPreviousBook: boolean;
+  hasNextBook?: boolean;
+  showRandomBookAction?: boolean;
   onPreviousBook: () => void;
   onNextBook: () => void;
   onExplainMeaning: () => void;
@@ -34,8 +37,11 @@ export default function BookFeed({
   selectedModeId,
   loading,
   error,
+  errorTitle,
   showTests,
   hasPreviousBook,
+  hasNextBook = true,
+  showRandomBookAction = true,
   onPreviousBook,
   onNextBook,
   onExplainMeaning,
@@ -60,7 +66,7 @@ export default function BookFeed({
   }, [hasPreviousBook, loading, onPreviousBook]);
 
   const maybeLoadNextBook = useCallback(() => {
-    if (loading || wheelLocked.current) {
+    if (loading || wheelLocked.current || !hasNextBook) {
       return;
     }
 
@@ -69,7 +75,7 @@ export default function BookFeed({
     window.setTimeout(() => {
       wheelLocked.current = false;
     }, 900);
-  }, [loading, onNextBook]);
+  }, [hasNextBook, loading, onNextBook]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -125,7 +131,7 @@ export default function BookFeed({
 
       {error && !book ? (
         <div className="error-message-container">
-          <ErrorMessage message={error} customTitle={t.loadingErrorTitle} dict={t} />
+          <ErrorMessage message={error} customTitle={errorTitle || t.loadingErrorTitle} dict={t} />
         </div>
       ) : null}
 
@@ -149,6 +155,7 @@ export default function BookFeed({
             selectedModeId={selectedModeId}
             loading={loading}
             showTests={showTests}
+            showRandomBookAction={showRandomBookAction}
             onRandomBook={onNextBook}
             onExplainMeaning={onExplainMeaning}
             onTakeTest={onTakeTest}
@@ -161,7 +168,7 @@ export default function BookFeed({
             type="button"
             className="book-feed-nav book-feed-nav-next"
             onClick={maybeLoadNextBook}
-            disabled={loading}
+            disabled={loading || !hasNextBook}
             aria-label={t.navigation.nextBook}
           >
             <span aria-hidden="true">→</span>

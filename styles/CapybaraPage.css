@@ -65,10 +65,7 @@
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
   max-width: 48rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: center;
+  width: 100%;
   font-family: 'Amatic SC', 'Caveat', cursive;
   margin-left: auto;
   margin-right: auto;
@@ -77,6 +74,7 @@
 .search-input-wrapper {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   background-color: rgba(255,255,255,0.5);
   padding: 0.25rem;
   border-radius: 9999px;
@@ -104,6 +102,29 @@
   color: #94a3b8;
 }
 
+.search-clear-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #64748b;
+  font-size: 1.5rem;
+  font-weight: 800;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.search-clear-button:hover,
+.search-clear-button:focus-visible {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.04);
+}
+
 .search-button {
   padding: 0.75rem 2rem;
   background: linear-gradient(to right, #f472b6, #fb923c);
@@ -116,6 +137,66 @@
   font-family: 'Amatic SC', 'Caveat', cursive;
   letter-spacing: 0.08em;
   border: none;
+  flex: 0 0 auto;
+}
+
+.search-button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.search-results-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.search-exit-button {
+  align-self: center;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #14b8a6, #0891b2);
+  color: white;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.search-results-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.search-result-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+}
+
+.search-result-card:hover,
+.search-result-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.16);
+}
+
+.search-results-status {
+  color: #334155;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .invent-story-button-wrapper {
@@ -159,6 +240,15 @@
   .capybara-page-main {
     max-width: 100%;
     padding: 1rem 0.5rem;
+  }
+
+  .search-input-wrapper {
+    flex-wrap: wrap;
+    border-radius: 1.5rem;
+  }
+
+  .search-button {
+    width: 100%;
   }
 }
 
