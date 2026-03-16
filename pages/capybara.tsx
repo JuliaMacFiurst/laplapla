@@ -19,7 +19,9 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     loading,
     error,
     loadRandomBook,
+    loadPreviousBook,
     loadExplanation,
+    hasPreviousBook,
     meaningModeId,
   } = useBook(t, currentLang);
   const [showTests, setShowTests] = useState(false);
@@ -41,6 +43,11 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const handleRandomBook = async () => {
     setShowTests(false);
     await loadRandomBook(currentModeId);
+  };
+
+  const handlePreviousBook = () => {
+    setShowTests(false);
+    loadPreviousBook();
   };
 
   const handleExplainMeaning = async () => {
@@ -83,6 +90,8 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
           loading={loading}
           error={error}
           showTests={showTests}
+          hasPreviousBook={hasPreviousBook}
+          onPreviousBook={handlePreviousBook}
           onNextBook={handleRandomBook}
           onExplainMeaning={handleExplainMeaning}
           onTakeTest={() => setShowTests((prev) => !prev)}

@@ -32,6 +32,8 @@ export interface Book {
   id: string | number;
   title: string;
   author?: string | null;
+  year?: string | number | null;
+  age_group?: string | number | null;
   description?: string | null;
   cover_url?: string | null;
   category_id?: string | number | null;

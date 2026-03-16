@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import BookCard from "@/components/BookCard";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -16,6 +16,8 @@ interface BookFeedProps {
   loading: boolean;
   error: string | null;
   showTests: boolean;
+  hasPreviousBook: boolean;
+  onPreviousBook: () => void;
   onNextBook: () => void;
   onExplainMeaning: () => void;
   onTakeTest: () => void;
@@ -33,6 +35,8 @@ export default function BookFeed({
   loading,
   error,
   showTests,
+  hasPreviousBook,
+  onPreviousBook,
   onNextBook,
   onExplainMeaning,
   onTakeTest,
@@ -43,7 +47,19 @@ export default function BookFeed({
   const touchStartY = useRef<number | null>(null);
   const wheelLocked = useRef(false);
 
-  const maybeLoadNextBook = () => {
+  const maybeLoadPreviousBook = useCallback(() => {
+    if (loading || wheelLocked.current || !hasPreviousBook) {
+      return;
+    }
+
+    wheelLocked.current = true;
+    onPreviousBook();
+    window.setTimeout(() => {
+      wheelLocked.current = false;
+    }, 900);
+  }, [hasPreviousBook, loading, onPreviousBook]);
+
+  const maybeLoadNextBook = useCallback(() => {
     if (loading || wheelLocked.current) {
       return;
     }
@@ -53,7 +69,34 @@ export default function BookFeed({
     window.setTimeout(() => {
       wheelLocked.current = false;
     }, 900);
-  };
+  }, [loading, onNextBook]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        maybeLoadPreviousBook();
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        maybeLoadNextBook();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [maybeLoadNextBook, maybeLoadPreviousBook]);
 
   return (
     <section
@@ -74,8 +117,6 @@ export default function BookFeed({
         touchStartY.current = null;
       }}
     >
-      <div className="feed-scroll-hint">{t.scrollHint}</div>
-
       {loading && !book ? (
         <div className="loading-spinner-container">
           <LoadingSpinner />
@@ -89,21 +130,43 @@ export default function BookFeed({
       ) : null}
 
       {book ? (
-        <BookCard
-          book={book}
-          slides={slides}
-          tests={tests}
-          modes={modes}
-          selectedModeId={selectedModeId}
-          loading={loading}
-          showTests={showTests}
-          onRandomBook={onNextBook}
-          onExplainMeaning={onExplainMeaning}
-          onTakeTest={onTakeTest}
-          onCreateVideo={onCreateVideo}
-          onModeSelect={onModeSelect}
-          t={t}
-        />
+        <div className="book-feed-layout">
+          <button
+            type="button"
+            className="book-feed-nav book-feed-nav-prev"
+            onClick={maybeLoadPreviousBook}
+            disabled={loading || !hasPreviousBook}
+            aria-label={t.navigation.previousBook}
+          >
+            <span aria-hidden="true">←</span>
+          </button>
+
+          <BookCard
+            book={book}
+            slides={slides}
+            tests={tests}
+            modes={modes}
+            selectedModeId={selectedModeId}
+            loading={loading}
+            showTests={showTests}
+            onRandomBook={onNextBook}
+            onExplainMeaning={onExplainMeaning}
+            onTakeTest={onTakeTest}
+            onCreateVideo={onCreateVideo}
+            onModeSelect={onModeSelect}
+            t={t}
+          />
+
+          <button
+            type="button"
+            className="book-feed-nav book-feed-nav-next"
+            onClick={maybeLoadNextBook}
+            disabled={loading}
+            aria-label={t.navigation.nextBook}
+          >
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
       ) : null}
     </section>
   );

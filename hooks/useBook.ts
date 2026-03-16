@@ -6,6 +6,13 @@ import type { Book, BookExplanation, BookTest, ExplanationMode, Slide } from "@/
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
+interface BookHistoryEntry {
+  book: Book;
+  slides: Slide[];
+  tests: BookTest[];
+  selectedModeId: string | number | null;
+}
+
 const getFallbackImage = () =>
   `/images/capybaras/${fallbackImages[Math.floor(Math.random() * fallbackImages.length)]}`;
 
@@ -92,11 +99,13 @@ const enrichSlidesWithMedia = async (slides: Slide[]): Promise<Slide[]> => {
 
 export function useBook(t: CapybaraPageDict, lang: Lang) {
   const requestRef = useRef(0);
+  const didInitialLoadRef = useRef(false);
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [tests, setTests] = useState<BookTest[]>([]);
   const [explanationModes, setExplanationModes] = useState<ExplanationMode[]>([]);
   const [selectedModeId, setSelectedModeId] = useState<string | number | null>(null);
+  const [bookHistory, setBookHistory] = useState<BookHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -157,6 +166,14 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
   const loadRandomBook = useCallback(
     async (preferredModeId?: string | number | null) => {
       const requestId = ++requestRef.current;
+      const previousEntry = currentBook
+        ? {
+            book: currentBook,
+            slides,
+            tests,
+            selectedModeId,
+          }
+        : null;
       setLoading(true);
       setError(null);
 
@@ -214,6 +231,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setSlides(nextSlides);
         setTests((nextTests || []) as BookTest[]);
         setSelectedModeId(resolvedModeId);
+        if (previousEntry) {
+          setBookHistory((prev) => [...prev, previousEntry]);
+        }
       } catch (loadError) {
         if (requestId !== requestRef.current) {
           return;
@@ -230,10 +250,46 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         }
       }
     },
-    [explanationModes, fetchExplanation, loadModes, t.errors.bookLoad, t.errors.noExplanations, t.errors.noModes, t.errors.randomBookLoad],
+    [
+      currentBook,
+      explanationModes,
+      fetchExplanation,
+      loadModes,
+      selectedModeId,
+      slides,
+      t.errors.bookLoad,
+      t.errors.noExplanations,
+      t.errors.noModes,
+      t.errors.randomBookLoad,
+      tests,
+    ],
   );
 
+  const loadPreviousBook = useCallback(() => {
+    setBookHistory((prev) => {
+      const previousEntry = prev[prev.length - 1];
+      if (!previousEntry) {
+        return prev;
+      }
+
+      requestRef.current += 1;
+      setLoading(false);
+      setError(null);
+      setCurrentBook(previousEntry.book);
+      setSlides(previousEntry.slides);
+      setTests(previousEntry.tests);
+      setSelectedModeId(previousEntry.selectedModeId);
+
+      return prev.slice(0, -1);
+    });
+  }, []);
+
   useEffect(() => {
+    if (didInitialLoadRef.current) {
+      return;
+    }
+
+    didInitialLoadRef.current = true;
     void loadRandomBook();
   }, [loadRandomBook]);
 
@@ -246,8 +302,10 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     loading,
     error,
     loadRandomBook,
+    loadPreviousBook,
     loadExplanation,
     loadTests,
+    hasPreviousBook: bookHistory.length > 0,
     meaningModeId: getMeaningModeId(explanationModes),
   };
 }

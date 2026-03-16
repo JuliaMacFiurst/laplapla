@@ -36,12 +36,24 @@ export default function BookCard({
   onModeSelect,
   t,
 }: BookCardProps) {
+  const year = typeof book.year === "string" || typeof book.year === "number"
+    ? String(book.year).trim()
+    : "";
+  const ageGroup = typeof book.age_group === "string" || typeof book.age_group === "number"
+    ? String(book.age_group).trim()
+    : "";
+  const hasSecondaryMeta = Boolean(year || ageGroup);
+
   return (
     <article className="book-card">
       <div className="book-card-head">
-        <p className="book-card-kicker">{t.feedKicker}</p>
         <h2 className="book-card-title">{book.title}</h2>
         {book.author ? <p className="book-card-author">{String(book.author)}</p> : null}
+        {hasSecondaryMeta ? (
+          <p className="book-card-meta">
+            {[year, ageGroup].filter(Boolean).join(" • ")}
+          </p>
+        ) : null}
       </div>
 
       <StoryCarousel

@@ -335,6 +335,10 @@ type DictionaryShape = {
       subtitle: string;
       feedKicker: string;
       scrollHint: string;
+      navigation: {
+        previousBook: string;
+        nextBook: string;
+      };
       loadingErrorTitle: string;
       storyError: string;
       testTitle: string;
