@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { keywords, type } = req.body;
+  const { keywords, type, orientation, size } = req.body;
   if (!keywords || !Array.isArray(keywords)) {
     return res.status(400).json({ error: "Missing keywords" });
   }
@@ -23,7 +23,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     for (const word of keywords) {
       const query = buildQuery(word, type);
-      const resp = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10`, {
+      const params = new URLSearchParams({
+        query,
+        per_page: "10",
+      });
+      if (typeof orientation === "string" && orientation) {
+        params.set("orientation", orientation);
+      }
+      if (typeof size === "string" && size) {
+        params.set("size", size);
+      }
+
+      const resp = await fetch(`https://api.pexels.com/v1/search?${params.toString()}`, {
         headers: { Authorization: apiKey },
       });
       const data = await resp.json();

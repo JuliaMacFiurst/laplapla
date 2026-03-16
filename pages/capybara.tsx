@@ -29,7 +29,6 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const [mode, setMode] = useState<"slideshow" | "search">("slideshow");
   const [showTests, setShowTests] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<Book[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
@@ -49,7 +48,6 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const resetSearchState = useCallback(() => {
     searchRequestRef.current += 1;
     abortSearchPipeline();
-    setSearchQuery(null);
     setSearchResults(null);
     setSearchLoading(false);
     setSearchMessage(null);
@@ -67,7 +65,6 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     setShowTests(false);
     setSearchMessage(null);
     setSearchResults(null);
-    setSearchQuery(nextQuery);
     const requestId = ++searchRequestRef.current;
     abortSearchPipeline();
     const searchController = new AbortController();

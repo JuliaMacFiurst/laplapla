@@ -18,6 +18,15 @@ interface LoadBookOptions {
   signal?: AbortSignal;
 }
 
+interface ResolvedSlideMedia {
+  type: "image" | "video" | "gif";
+  capybaraImage?: string;
+  capybaraImageAlt?: string;
+  gifUrl?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+}
+
 const isAbortError = (error: unknown) =>
   error instanceof Error && error.name === "AbortError";
 
@@ -29,6 +38,81 @@ const createAbortError = () => {
 
 const getFallbackImage = () =>
   `/images/capybaras/${fallbackImages[Math.floor(Math.random() * fallbackImages.length)]}`;
+
+const MEDIA_TIMEOUT_MS = 1500;
+
+const mediaCache = new Map<string, ResolvedSlideMedia>();
+const capybaraQueries = [
+  "capybara",
+  "cute capybara",
+  "capybara funny",
+  "capybara gif",
+  "capybara animal",
+];
+
+const stopWords = new Set([
+  "и", "в", "во", "на", "с", "со", "к", "ко", "у", "о", "об", "от", "до", "по", "за", "из", "под",
+  "над", "для", "что", "как", "а", "но", "или", "же", "ли", "не", "ни", "это", "тот", "та", "те",
+  "они", "она", "он", "мы", "вы", "ты", "я", "его", "ее", "их", "свои", "свой", "свою", "своим",
+  "the", "a", "an", "and", "or", "of", "to", "in", "on", "at", "for", "with", "from", "by",
+  "he", "she", "they", "we", "you", "it", "this", "that", "these", "those", "into", "over",
+]);
+
+const normalizeText = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const tokenizeMeaningfulWords = (value: string) =>
+  normalizeText(value)
+    .split(" ")
+    .filter((token) => token.length > 2 && !stopWords.has(token));
+
+const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean)));
+
+const hashString = (value: string) =>
+  Array.from(value).reduce((acc, char) => ((acc * 31) + char.charCodeAt(0)) >>> 0, 0);
+
+const extractKeywords = (text: string, bookTitle?: string | null) => {
+  const slideTokens = tokenizeMeaningfulWords(text);
+  const titleTokens = tokenizeMeaningfulWords(bookTitle || "");
+  const phrase = slideTokens.length >= 2 ? `${slideTokens[0]} ${slideTokens[1]}` : slideTokens[0];
+  return unique([phrase, ...titleTokens.slice(0, 1), ...slideTokens]).slice(0, 3);
+};
+
+const buildSlideCacheKey = (slide: Slide) =>
+  JSON.stringify({
+    text: normalizeText(slide.text),
+    keywords: slide.keywords || [],
+  });
+
+const shouldUseContextMedia = (slideIndex: number, totalSlides: number) =>
+  slideIndex === 0 ||
+  slideIndex === Math.floor(totalSlides / 2) ||
+  slideIndex === totalSlides - 1;
+
+const pickCapybaraQuery = (slide: Slide) => {
+  const seed = hashString(buildSlideCacheKey(slide));
+  return capybaraQueries[seed % capybaraQueries.length];
+};
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number) => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  try {
+    return (await Promise.race([promise, timeoutPromise])) as T | null;
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+};
 
 const getModeLabel = (mode: ExplanationMode) =>
   String(mode.title || mode.name || mode.slug || `Mode ${mode.id}`);
@@ -59,66 +143,168 @@ const buildMediaUrl = (endpoint: string, slide: Slide) => {
   return query ? `${endpoint}?${query}` : endpoint;
 };
 
-const enrichSlidesWithMedia = async (slides: Slide[], signal?: AbortSignal): Promise<Slide[]> => {
-  return Promise.all(
-    slides.map(async (slide, index) => {
-      const [imagesResult, gifsResult, videosResult] = await Promise.allSettled([
-        fetch(buildMediaUrl("/api/capybara-images", slide), { signal }).then((response) => response.json()),
-        fetch(buildMediaUrl("/api/capybara-gifs", slide), { signal }).then((response) => response.json()),
-        fetch(buildMediaUrl("/api/capybara-videos", slide), { signal }).then((response) => response.json()),
-      ]);
+const searchGiphyMeaning = async (query: string, signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+  const response = await fetch("/api/search-giphy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+    signal,
+  });
 
-      if (
-        signal?.aborted ||
-        [imagesResult, gifsResult, videosResult].some(
-          (result) => result.status === "rejected" && isAbortError(result.reason),
-        )
-      ) {
-        throw createAbortError();
-      }
+  if (!response.ok) {
+    return null;
+  }
 
-      const images = imagesResult.status === "fulfilled" && Array.isArray(imagesResult.value) ? imagesResult.value : [];
-      const gifs = gifsResult.status === "fulfilled" && Array.isArray(gifsResult.value) ? gifsResult.value : [];
-      const videos = videosResult.status === "fulfilled" && Array.isArray(videosResult.value) ? videosResult.value : [];
-
-      const fallbackImage = getFallbackImage();
-
-      if (videos.length > 0 && index > 0 && index % 3 === 0) {
-        return {
-          ...slide,
-          type: "video" as const,
-          videoUrl: videos[0]?.videoUrl,
-          capybaraImage: videos[0]?.preview || fallbackImage,
-        };
-      }
-
-      if (gifs.length > 0 && index % 2 === 1) {
-        return {
-          ...slide,
-          type: "gif" as const,
-          gifUrl: gifs[0]?.gifUrl,
-          capybaraImage: slide.capybaraImage || fallbackImage,
-        };
-      }
-
-      if (images.length > 0) {
-        return {
-          ...slide,
-          type: "image" as const,
-          capybaraImage: images[0]?.imageUrl,
-          capybaraImageAlt: images[0]?.imageAlt || "Capybara",
-        };
-      }
-
-      return {
-        ...slide,
-        type: slide.type || "image",
-        capybaraImage: slide.capybaraImage || fallbackImage,
-        capybaraImageAlt: slide.capybaraImageAlt || "Capybara",
-      };
-    }),
-  );
+  const data = (await response.json()) as { gifs?: string[] };
+  const gifUrl = data.gifs?.[0];
+  return gifUrl ? { type: "gif", gifUrl } : null;
 };
+
+const searchPexelsMeaning = async (query: string, keywords: string[], signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+  const videoResponse = await fetch("/api/search-pexels-video", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+    signal,
+  });
+
+  if (videoResponse.ok) {
+    const videoData = (await videoResponse.json()) as {
+      videos?: Array<{ videoUrl?: string; preview?: string; image?: string }>;
+    };
+    const video = videoData.videos?.[0];
+    if (video?.videoUrl) {
+      return {
+        type: "video",
+        videoUrl: video.videoUrl,
+        capybaraImage: video.preview || video.image,
+      };
+    }
+  }
+
+  const imageResponse = await fetch("/api/fetch-pexels", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ keywords, type: "story", orientation: "landscape", size: "medium" }),
+    signal,
+  });
+
+  if (!imageResponse.ok) {
+    return null;
+  }
+
+  const imageData = (await imageResponse.json()) as { images?: string[] };
+  const imageUrl = imageData.images?.[0];
+  return imageUrl ? { type: "image", imageUrl, capybaraImage: imageUrl } : null;
+};
+
+const searchCapybaraFallback = async (slide: Slide, signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+  const gifResponse = await fetch(buildMediaUrl("/api/capybara-gifs", slide), { signal });
+  if (gifResponse.ok) {
+    const gifs = (await gifResponse.json()) as Array<{ gifUrl?: string }>;
+    const gifUrl = gifs[0]?.gifUrl;
+    if (gifUrl) {
+      return { type: "gif", gifUrl };
+    }
+  }
+
+  const imageResponse = await fetch(buildMediaUrl("/api/capybara-images", slide), { signal });
+  if (!imageResponse.ok) {
+    return null;
+  }
+
+  const images = (await imageResponse.json()) as Array<{ imageUrl?: string; imageAlt?: string }>;
+  const image = images[0];
+  return image?.imageUrl
+    ? {
+        type: "image",
+        imageUrl: image.imageUrl,
+        capybaraImage: image.imageUrl,
+        capybaraImageAlt: image.imageAlt || "Capybara",
+      }
+    : null;
+};
+
+const searchCuteAnimalFallback = async (signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+  const response = await fetch("/api/fetch-pexels", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ keywords: ["cute animals"], type: "animal", orientation: "landscape", size: "medium" }),
+    signal,
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = (await response.json()) as { images?: string[] };
+  const imageUrl = data.images?.[0];
+  return imageUrl ? { type: "image", imageUrl, capybaraImage: imageUrl, capybaraImageAlt: "Cute animal" } : null;
+};
+
+const resolveSlideMedia = async (
+  slide: Slide,
+  slideIndex: number,
+  totalSlides: number,
+  signal?: AbortSignal,
+): Promise<ResolvedSlideMedia> => {
+  const useContextMedia = shouldUseContextMedia(slideIndex, totalSlides);
+  const cacheKey = `${useContextMedia ? "context" : "capybara"}:${buildSlideCacheKey(slide)}`;
+  const cached = mediaCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const contextualKeywords = slide.keywords?.length ? slide.keywords : extractKeywords(slide.text);
+  const contextualQuery = contextualKeywords.join(" ") || normalizeText(slide.text) || "cute animals";
+  const capybaraQuery = pickCapybaraQuery(slide);
+  const capybaraKeywords = capybaraQuery.split(" ");
+
+  const sources = useContextMedia
+    ? [
+        () => withTimeout(searchGiphyMeaning(contextualQuery, signal), MEDIA_TIMEOUT_MS),
+        () => withTimeout(searchPexelsMeaning(contextualQuery, contextualKeywords, signal), MEDIA_TIMEOUT_MS),
+        () => withTimeout(searchCapybaraFallback({ ...slide, keywords: contextualKeywords }, signal), MEDIA_TIMEOUT_MS),
+        () => withTimeout(searchCuteAnimalFallback(signal), MEDIA_TIMEOUT_MS),
+      ]
+    : [
+        () => withTimeout(searchGiphyMeaning(capybaraQuery, signal), MEDIA_TIMEOUT_MS),
+        () => withTimeout(searchPexelsMeaning(capybaraQuery, capybaraKeywords, signal), MEDIA_TIMEOUT_MS),
+        () => withTimeout(searchCapybaraFallback({ ...slide, keywords: capybaraKeywords }, signal), MEDIA_TIMEOUT_MS),
+        () => withTimeout(searchCuteAnimalFallback(signal), MEDIA_TIMEOUT_MS),
+      ];
+
+  for (const source of sources) {
+    if (signal?.aborted) {
+      throw createAbortError();
+    }
+
+    const result = await source();
+    if (result) {
+      mediaCache.set(cacheKey, result);
+      return result;
+    }
+  }
+
+  const fallbackImage = getFallbackImage();
+  const fallbackMedia = {
+    type: "image" as const,
+    imageUrl: fallbackImage,
+    capybaraImage: fallbackImage,
+    capybaraImageAlt: "Capybara",
+  };
+  mediaCache.set(cacheKey, fallbackMedia);
+  return fallbackMedia;
+};
+
+const prepareSlides = (slides: Slide[], bookTitle?: string | null) =>
+  slides.map((slide, index) => ({
+    ...slide,
+    id: slide.id ?? `slide-${index}`,
+    keywords: shouldUseContextMedia(index, slides.length)
+      ? (slide.keywords?.length ? slide.keywords : extractKeywords(slide.text, bookTitle))
+      : undefined,
+  }));
 
 export function useBook(t: CapybaraPageDict, lang: Lang) {
   const requestRef = useRef(0);
@@ -131,6 +317,23 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
   const [bookHistory, setBookHistory] = useState<BookHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const prefetchSlidesWithMedia = useCallback((rawSlides: Slide[], requestId: number, signal?: AbortSignal) => {
+    void Promise.allSettled(
+      rawSlides.map(async (slide, index) => {
+        const media = await resolveSlideMedia(slide, index, rawSlides.length, signal);
+        if (signal?.aborted || requestId !== requestRef.current) {
+          return;
+        }
+
+        setSlides((prev) =>
+          prev.map((existingSlide, slideIndex) =>
+            slideIndex === index ? { ...existingSlide, ...media } : existingSlide,
+          ),
+        );
+      }),
+    );
+  }, []);
 
   const loadModes = useCallback(async () => {
     const { data, error: modesError } = await supabase
@@ -161,12 +364,17 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
 
   const loadExplanation = useCallback(
     async (bookId: string | number, modeId: string | number) => {
+      const requestId = ++requestRef.current;
       setLoading(true);
       setError(null);
       try {
         const explanation = await fetchExplanation(bookId, modeId);
-        const nextSlides = await enrichSlidesWithMedia(explanation.slides || []);
+        const nextSlides = prepareSlides(explanation.slides || [], currentBook?.title);
+        if (requestId !== requestRef.current) {
+          return;
+        }
         setSlides(nextSlides);
+        prefetchSlidesWithMedia(nextSlides, requestId);
         setSelectedModeId(modeId);
       } catch (loadError) {
         if (isAbortError(loadError)) {
@@ -179,7 +387,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setLoading(false);
       }
     },
-    [fetchExplanation, t.errors.explanationGeneric],
+    [currentBook?.title, fetchExplanation, prefetchSlidesWithMedia, t.errors.explanationGeneric],
   );
 
   const loadTests = useCallback(async (bookId: string | number) => {
@@ -239,8 +447,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         throw new Error(t.errors.noExplanations);
       }
 
-      const [nextSlides, nextTests] = await Promise.all([
-        enrichSlidesWithMedia(explanation.slides || [], signal),
+      const [nextTests] = await Promise.all([
         fetch(`/api/books/tests?book_id=${book.id}`, { signal }).then((response) => {
           if (!response.ok) {
             return [];
@@ -254,7 +461,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       }
 
       return {
-        nextSlides,
+        nextSlides: prepareSlides(explanation.slides || [], book.title),
         nextTests: (nextTests || []) as BookTest[],
         resolvedModeId,
       };
@@ -293,6 +500,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setSlides(hydrated.nextSlides);
         setTests(hydrated.nextTests);
         setSelectedModeId(hydrated.resolvedModeId);
+        prefetchSlidesWithMedia(hydrated.nextSlides, requestId, options?.signal);
         if (previousEntry) {
           setBookHistory((prev) => [...prev, previousEntry]);
         }
@@ -316,7 +524,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         }
       }
     },
-    [currentBook, hydrateBook, selectedModeId, slides, t.errors.bookLoad, tests],
+    [currentBook, hydrateBook, prefetchSlidesWithMedia, selectedModeId, slides, t.errors.bookLoad, tests],
   );
 
   const loadRandomBook = useCallback(

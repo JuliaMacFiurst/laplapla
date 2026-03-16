@@ -10,10 +10,45 @@ interface StoryCarouselProps {
 
 const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emptyMessage }) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     setCurrentSlideIndex(0);
   }, [story.id]);
+
+  useEffect(() => {
+    if (story && story.slides && story.slides.length > 0) {
+      setShowError(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setShowError(true);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [story]);
+
+  if (!story || !story.slides || story.slides.length === 0) {
+    if (!showError) {
+      return (
+        <div className="story-wrapper" style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <img 
+            className="capybara-spinner"
+            src="/spinners/capybara-spinner.webp"
+            alt="Загрузка"
+            style={{ width: "120px", height: "120px", objectFit: "contain" }}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="story-wrapper">
+        <p className="story-error">{emptyMessage || "Не удалось загрузить кадры истории."}</p>
+      </div>
+    );
+  }
 
   const handleNextSlide = () => {
     setCurrentSlideIndex((prevIndex) =>
@@ -27,17 +62,13 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
     );
   };
 
-  if (!story || !story.slides || story.slides.length === 0) {
-    return (
-      <div className="story-container">
-        <p className="story-error">{emptyMessage || "Не удалось загрузить кадры истории."}</p>
-      </div>
-    );
-  }
-
   const currentSlide = story.slides[currentSlideIndex];
-
   const fallback = `/images/capybaras/${fallbackImages[Math.floor(Math.random() * fallbackImages.length)]}`;
+  const hasMedia =
+    Boolean(currentSlide?.capybaraImage) ||
+    Boolean(currentSlide?.gifUrl) ||
+    Boolean(currentSlide?.videoUrl) ||
+    Boolean(currentSlide?.imageUrl);
   
   return (
     <div className="story-wrapper">
@@ -53,13 +84,9 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
             zIndex: 0,
           }}
         />
-        <h2 className="story-title" style={{ zIndex: 2 }}>
-          {story.title}
-        </h2>
-        
         <div className="story-content">
           <div className="story-image-wrapper">
-            {currentSlide && (
+            {currentSlide && hasMedia ? (
               <>
                 {currentSlide.type === "image" && currentSlide.capybaraImage ? (
                   <img
@@ -81,7 +108,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
                     muted
                     loop
                     playsInline
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
                   />
                 ) : currentSlide.imageUrl ? (
                   <img
@@ -99,6 +126,14 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
                   />
                 )}
               </>
+            ) : (
+              <div className="story-media-placeholder">
+                <img
+                  className="capybara-spinner"
+                  src="/spinners/capybara-spinner.webp"
+                  alt="Загрузка медиа"
+                />
+              </div>
             )}
           </div>
           <p className={textClassName || "slide-text"}>{currentSlide.text}</p>
