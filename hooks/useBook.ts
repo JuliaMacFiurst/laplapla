@@ -451,7 +451,21 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       }
 
       const modes = explanationModes.length > 0 ? explanationModes : await loadModes();
-      const fallbackModeId = preferredModeId || getMeaningModeId(modes) || modes[0]?.id;
+      const getPlotModeId = (modes: ExplanationMode[]) => {
+        const match = modes.find((mode) => {
+          const label = getModeLabel(mode).toLowerCase();
+          return (
+            label.includes("plot") ||
+            label.includes("сюжет") ||
+            label.includes("story")
+          );
+        });
+        return match?.id;
+      };
+      const fallbackModeId =
+        preferredModeId ||
+        getPlotModeId(modes) ||
+        modes[0]?.id;
 
       if (!fallbackModeId) {
         throw new Error(t.errors.noModes);
