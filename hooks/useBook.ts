@@ -37,6 +37,11 @@ interface BookUiState {
   showQuiz: boolean;
 }
 
+interface UseBookOptions {
+  initialBook?: Book | null;
+  disableInitialRandom?: boolean;
+}
+
 const isAbortError = (error: unknown) =>
   error instanceof Error && error.name === "AbortError";
 
@@ -412,7 +417,7 @@ const clampSlideIndex = (slideIndex: number, slides: Slide[]) => {
   return Math.max(0, Math.min(slideIndex, slides.length - 1));
 };
 
-export function useBook(t: CapybaraPageDict, lang: Lang) {
+export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOptions) {
   const requestRef = useRef(0);
   const didInitialLoadRef = useRef(false);
   const slidesRef = useRef<Slide[]>([]);
@@ -423,7 +428,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
   const [explanationModes, setExplanationModes] = useState<ExplanationMode[]>([]);
   const [bookHistory, setBookHistory] = useState<BookHistoryEntry[]>([]);
   const [bookUiStateById, setBookUiStateById] = useState<Record<string, BookUiState>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !options?.disableInitialRandom || Boolean(options?.initialBook));
   const [error, setError] = useState<string | null>(null);
   const [mediaCache, setMediaCache] = useState<Map<number, ResolvedSlideMedia>>(() => new Map());
 
@@ -800,8 +805,18 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     }
 
     didInitialLoadRef.current = true;
-    void loadRandomBook();
-  }, [loadRandomBook]);
+    if (options?.initialBook) {
+      void loadBook(options.initialBook, undefined, { pushHistory: false });
+      return;
+    }
+
+    if (!options?.disableInitialRandom) {
+      void loadRandomBook();
+      return;
+    }
+
+    setLoading(false);
+  }, [loadBook, loadRandomBook, options?.disableInitialRandom, options?.initialBook]);
   return {
     currentBook,
     slides,
