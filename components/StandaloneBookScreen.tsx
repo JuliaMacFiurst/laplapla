@@ -6,8 +6,9 @@ import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useBook } from "@/hooks/useBook";
+import { buildBookHref, buildBookModeHref } from "@/lib/books";
 import type { dictionaries, Lang } from "@/i18n";
-import type { Book } from "@/types/types";
+import type { Book, ExplanationMode } from "@/types/types";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -15,12 +16,14 @@ interface StandaloneBookScreenProps {
   book: Book;
   lang: Lang;
   t: CapybaraPageDict;
+  initialModeId?: string | number | null;
 }
 
 export default function StandaloneBookScreen({
   book,
   lang,
   t,
+  initialModeId = null,
 }: StandaloneBookScreenProps) {
   const router = useRouter();
   const {
@@ -33,7 +36,6 @@ export default function StandaloneBookScreen({
     showQuiz,
     loading,
     error,
-    loadExplanation,
     meaningModeId,
     preloadNextSlideMedia,
     setCurrentBookSlideIndex,
@@ -43,6 +45,7 @@ export default function StandaloneBookScreen({
   } = useBook(t, lang, {
     initialBook: book,
     disableInitialRandom: true,
+    initialModeId,
   });
 
   const currentModeId = useMemo(
@@ -50,22 +53,26 @@ export default function StandaloneBookScreen({
     [explanationModes, meaningModeId, selectedModeId],
   );
 
-  const handleModeSelect = async (modeId: string | number) => {
-    if (!currentBook) {
-      return;
-    }
+  const getModeById = (modeId: string | number | null) =>
+    explanationModes.find((mode) => String(mode.id) === String(modeId)) || null;
 
-    closeCurrentBookQuiz();
-    await loadExplanation(currentBook.id, modeId);
+  const navigateToMode = (mode: ExplanationMode | null) => {
+    const nextHref = mode ? buildBookModeHref(book, mode) : buildBookHref(book);
+    router.push(`${nextHref}?lang=${lang}`);
   };
 
-  const handleExplainMeaning = async () => {
-    if (!currentBook || !currentModeId) {
+  const handleModeSelect = (modeId: string | number) => {
+    closeCurrentBookQuiz();
+    navigateToMode(getModeById(modeId));
+  };
+
+  const handleExplainMeaning = () => {
+    if (!currentModeId) {
       return;
     }
 
     closeCurrentBookQuiz();
-    await loadExplanation(currentBook.id, meaningModeId || currentModeId);
+    navigateToMode(getModeById(meaningModeId || currentModeId));
   };
 
   const handleCreateVideo = () => {

@@ -40,6 +40,7 @@ interface BookUiState {
 interface UseBookOptions {
   initialBook?: Book | null;
   disableInitialRandom?: boolean;
+  initialModeId?: string | number | null;
 }
 
 const isAbortError = (error: unknown) =>
@@ -420,6 +421,7 @@ const clampSlideIndex = (slideIndex: number, slides: Slide[]) => {
 export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOptions) {
   const requestRef = useRef(0);
   const didInitialLoadRef = useRef(false);
+  const appliedInitialBookKeyRef = useRef<string | null>(null);
   const slidesRef = useRef<Slide[]>([]);
   const mediaCacheRef = useRef<Map<number, ResolvedSlideMedia>>(new Map());
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
@@ -800,23 +802,34 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
   }, [currentBook, updateBookUiState]);
 
   useEffect(() => {
-    if (didInitialLoadRef.current) {
+    if (!options?.initialBook) {
       return;
     }
 
+    const nextInitialBookKey = `${String(options.initialBook.id)}:${String(options.initialModeId ?? "")}`;
+    if (appliedInitialBookKeyRef.current === nextInitialBookKey) {
+      return;
+    }
+
+    appliedInitialBookKeyRef.current = nextInitialBookKey;
     didInitialLoadRef.current = true;
-    if (options?.initialBook) {
-      void loadBook(options.initialBook, undefined, { pushHistory: false });
+    void loadBook(options.initialBook, options.initialModeId, { pushHistory: false });
+  }, [loadBook, options?.initialBook, options?.initialModeId]);
+
+  useEffect(() => {
+    if (didInitialLoadRef.current || options?.initialBook) {
       return;
     }
 
     if (!options?.disableInitialRandom) {
+      didInitialLoadRef.current = true;
       void loadRandomBook();
       return;
     }
 
+    didInitialLoadRef.current = true;
     setLoading(false);
-  }, [loadBook, loadRandomBook, options?.disableInitialRandom, options?.initialBook]);
+  }, [loadRandomBook, options?.disableInitialRandom, options?.initialBook]);
   return {
     currentBook,
     slides,
