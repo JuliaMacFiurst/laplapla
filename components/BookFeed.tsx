@@ -21,6 +21,7 @@ interface BookFeedProps {
   tests: BookTest[];
   modes: ExplanationMode[];
   selectedModeId: string | number | null;
+  currentSlideIndex: number;
   loading: boolean;
   error: string | null;
   errorTitle?: string;
@@ -34,6 +35,7 @@ interface BookFeedProps {
   onTakeTest: () => void;
   onCreateVideo: () => void;
   onModeSelect: (modeId: string | number) => void;
+  onSlideIndexChange: (slideIndex: number) => void;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
   t: CapybaraPageDict;
@@ -45,6 +47,7 @@ export default function BookFeed({
   tests,
   modes,
   selectedModeId,
+  currentSlideIndex,
   loading,
   error,
   errorTitle,
@@ -58,6 +61,7 @@ export default function BookFeed({
   onTakeTest,
   onCreateVideo,
   onModeSelect,
+  onSlideIndexChange,
   mediaCache,
   onPreloadNextSlide,
   t,
@@ -148,7 +152,8 @@ export default function BookFeed({
       ) : null}
 
       {book ? (
-        <div className="book-feed-layout">
+        <>
+        <div className="book-feed-content">
           <button
             type="button"
             className="book-feed-nav book-feed-nav-prev"
@@ -156,27 +161,31 @@ export default function BookFeed({
             disabled={loading || !hasPreviousBook}
             aria-label={t.navigation.previousBook}
           >
-            <span aria-hidden="true">←</span>
+            <span aria-hidden="true">{t.navigation.previousBook}←</span>
           </button>
 
-          <BookCard
-            book={book}
-            slides={slides}
-            tests={tests}
-            modes={modes}
-            selectedModeId={selectedModeId}
-            loading={loading}
-            showTests={showTests}
-            showRandomBookAction={showRandomBookAction}
-            onRandomBook={onNextBook}
-            onExplainMeaning={onExplainMeaning}
-            onTakeTest={onTakeTest}
-            onCreateVideo={onCreateVideo}
-            onModeSelect={onModeSelect}
-            mediaCache={mediaCache}
-            onPreloadNextSlide={onPreloadNextSlide}
-            t={t}
-          />
+          <div className="book-feed-layout">
+            <BookCard
+              book={book}
+              slides={slides}
+              tests={tests}
+              modes={modes}
+              selectedModeId={selectedModeId}
+              currentSlideIndex={currentSlideIndex}
+              loading={loading}
+              showTests={showTests}
+              showRandomBookAction={showRandomBookAction}
+              onRandomBook={onNextBook}
+              onExplainMeaning={onExplainMeaning}
+              onTakeTest={onTakeTest}
+              onCreateVideo={onCreateVideo}
+              onModeSelect={onModeSelect}
+              onSlideIndexChange={onSlideIndexChange}
+              mediaCache={mediaCache}
+              onPreloadNextSlide={onPreloadNextSlide}
+              t={t}
+            />
+          </div>
 
           <button
             type="button"
@@ -185,9 +194,10 @@ export default function BookFeed({
             disabled={loading || !hasNextBook}
             aria-label={t.navigation.nextBook}
           >
-            <span aria-hidden="true">→</span>
+            <span aria-hidden="true">{t.navigation.nextBook}→</span>
           </button>
-        </div>
+          </div>
+        </>
       ) : null}
     </section>
   );

@@ -10,7 +10,6 @@ interface BookHistoryEntry {
   book: Book;
   slides: Slide[];
   tests: BookTest[];
-  selectedModeId: string | number | null;
 }
 
 interface LoadBookOptions {
@@ -30,6 +29,12 @@ interface ResolvedSlideMedia {
 interface SlideMediaPlan {
   type: "giphy" | "pexels" | "fallback";
   query: string;
+}
+
+interface BookUiState {
+  modeId: string | number | null;
+  slideIndex: number;
+  showQuiz: boolean;
 }
 
 const isAbortError = (error: unknown) =>
@@ -393,6 +398,20 @@ const prepareSlides = (slides: Slide[]) =>
       : undefined,
   }));
 
+const createDefaultBookUiState = (): BookUiState => ({
+  modeId: null,
+  slideIndex: 0,
+  showQuiz: false,
+});
+
+const clampSlideIndex = (slideIndex: number, slides: Slide[]) => {
+  if (slides.length === 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(slideIndex, slides.length - 1));
+};
+
 export function useBook(t: CapybaraPageDict, lang: Lang) {
   const requestRef = useRef(0);
   const didInitialLoadRef = useRef(false);
@@ -402,8 +421,8 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [tests, setTests] = useState<BookTest[]>([]);
   const [explanationModes, setExplanationModes] = useState<ExplanationMode[]>([]);
-  const [selectedModeId, setSelectedModeId] = useState<string | number | null>(null);
   const [bookHistory, setBookHistory] = useState<BookHistoryEntry[]>([]);
+  const [bookUiStateById, setBookUiStateById] = useState<Record<string, BookUiState>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mediaCache, setMediaCache] = useState<Map<number, ResolvedSlideMedia>>(() => new Map());
@@ -421,13 +440,34 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     resetBookMediaState();
   }, []);
 
-  const preloadInitialSlideMedia = useCallback(async (nextSlides: Slide[], signal?: AbortSignal) => {
-    if (!nextSlides[0]) {
+  const updateBookUiState = useCallback((
+    bookId: string | number,
+    updater: (prev: BookUiState) => BookUiState,
+  ) => {
+    const bookKey = String(bookId);
+    setBookUiStateById((prev) => ({
+      ...prev,
+      [bookKey]: updater(prev[bookKey] || createDefaultBookUiState()),
+    }));
+  }, []);
+
+  const currentBookKey = currentBook ? String(currentBook.id) : null;
+  const currentBookUiState = currentBookKey
+    ? (bookUiStateById[currentBookKey] || createDefaultBookUiState())
+    : createDefaultBookUiState();
+  const selectedModeId = currentBookUiState.modeId;
+
+  const preloadInitialSlideMedia = useCallback(async (
+    nextSlides: Slide[],
+    slideIndex: number,
+    signal?: AbortSignal,
+  ) => {
+    if (!nextSlides[slideIndex]) {
       return new Map<number, ResolvedSlideMedia>();
     }
 
-    const initialMedia = await preloadSlideMedia(nextSlides[0], 0, nextSlides.length, signal);
-    return new Map<number, ResolvedSlideMedia>([[0, initialMedia]]);
+    const initialMedia = await preloadSlideMedia(nextSlides[slideIndex], slideIndex, nextSlides.length, signal);
+    return new Map<number, ResolvedSlideMedia>([[slideIndex, initialMedia]]);
   }, []);
 
   const preloadNextSlideMedia = useCallback(async (activeIndex: number) => {
@@ -491,13 +531,17 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       try {
         const explanation = await fetchExplanation(bookId, modeId);
         const nextSlides = prepareSlides(explanation.slides || []);
-        const nextMediaCache = await preloadInitialSlideMedia(nextSlides);
+        const nextMediaCache = await preloadInitialSlideMedia(nextSlides, 0);
         if (requestId !== requestRef.current) {
           return;
         }
         setSlides(nextSlides);
         setMediaCache(nextMediaCache);
-        setSelectedModeId(modeId);
+        updateBookUiState(bookId, (prev) => ({
+          ...prev,
+          modeId,
+          slideIndex: 0,
+        }));
       } catch (loadError) {
         if (isAbortError(loadError)) {
           return;
@@ -509,7 +553,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setLoading(false);
       }
     },
-    [clearMediaCache, fetchExplanation, preloadInitialSlideMedia, t.errors.explanationGeneric],
+    [clearMediaCache, fetchExplanation, preloadInitialSlideMedia, t.errors.explanationGeneric, updateBookUiState],
   );
 
   const fetchTests = useCallback(async (bookId: string | number, signal?: AbortSignal) => {
@@ -609,12 +653,13 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       options?: LoadBookOptions,
     ) => {
       const requestId = ++requestRef.current;
+      const bookKey = String(book.id);
+      const effectivePreferredModeId = preferredModeId ?? bookUiStateById[bookKey]?.modeId ?? null;
       const previousEntry = options?.pushHistory !== false && currentBook
         ? {
             book: currentBook,
             slides,
             tests,
-            selectedModeId,
           }
         : null;
 
@@ -626,12 +671,14 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       setTests([]);
 
       try {
-        const hydrated = await hydrateBook(book, preferredModeId, requestId, options?.signal);
+        const hydrated = await hydrateBook(book, effectivePreferredModeId, requestId, options?.signal);
         if (!hydrated || requestId !== requestRef.current) {
           return;
         }
 
-        const nextMediaCache = await preloadInitialSlideMedia(hydrated.nextSlides, options?.signal);
+        const previousUiState = bookUiStateById[bookKey] || createDefaultBookUiState();
+        const nextSlideIndex = clampSlideIndex(previousUiState.slideIndex, hydrated.nextSlides);
+        const nextMediaCache = await preloadInitialSlideMedia(hydrated.nextSlides, nextSlideIndex, options?.signal);
         if (requestId !== requestRef.current) {
           return;
         }
@@ -639,7 +686,11 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setSlides(hydrated.nextSlides);
         setMediaCache(nextMediaCache);
         setTests(hydrated.nextTests);
-        setSelectedModeId(hydrated.resolvedModeId);
+        updateBookUiState(book.id, (prev) => ({
+          ...prev,
+          modeId: prev.modeId ?? hydrated.resolvedModeId,
+          slideIndex: clampSlideIndex(prev.slideIndex, hydrated.nextSlides),
+        }));
         if (previousEntry) {
           setBookHistory((prev) => [...prev, previousEntry]);
         }
@@ -655,7 +706,6 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setCurrentBook(null);
         setSlides([]);
         setTests([]);
-        setSelectedModeId(null);
         setError(loadError instanceof Error ? loadError.message : t.errors.bookLoad);
       } finally {
         if (requestId === requestRef.current) {
@@ -663,7 +713,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         }
       }
     },
-    [clearMediaCache, currentBook, hydrateBook, preloadInitialSlideMedia, selectedModeId, slides, t.errors.bookLoad, tests],
+    [bookUiStateById, clearMediaCache, currentBook, hydrateBook, preloadInitialSlideMedia, slides, t.errors.bookLoad, tests, updateBookUiState],
   );
 
   const loadRandomBook = useCallback(
@@ -690,28 +740,59 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     [loadBook, t.errors.randomBookLoad],
   );
 
-  const loadPreviousBook = useCallback(() => {
-    setBookHistory((prev) => {
-      const previousEntry = prev[prev.length - 1];
-      if (!previousEntry) {
-        return prev;
-      }
+  const loadPreviousBook = useCallback(async () => {
+    const previousEntry = bookHistory[bookHistory.length - 1];
+    if (!previousEntry) {
+      return;
+    }
 
-      requestRef.current += 1;
-      setLoading(false);
-      setError(null);
-      clearMediaCache();
-      setCurrentBook(previousEntry.book);
-      setSlides(previousEntry.slides);
-      setTests(previousEntry.tests);
-      setSelectedModeId(previousEntry.selectedModeId);
-      void preloadInitialSlideMedia(previousEntry.slides).then((nextMediaCache) => {
-        setMediaCache(nextMediaCache);
-      });
+    requestRef.current += 1;
+    clearMediaCache();
+    const previousUiState = bookUiStateById[String(previousEntry.book.id)] || createDefaultBookUiState();
+    const nextSlideIndex = clampSlideIndex(previousUiState.slideIndex, previousEntry.slides);
+    const nextMediaCache = await preloadInitialSlideMedia(previousEntry.slides, nextSlideIndex);
 
-      return prev.slice(0, -1);
-    });
-  }, [clearMediaCache, preloadInitialSlideMedia]);
+    setLoading(false);
+    setError(null);
+    setCurrentBook(previousEntry.book);
+    setSlides(previousEntry.slides);
+    setTests(previousEntry.tests);
+    setMediaCache(nextMediaCache);
+    setBookHistory((prev) => prev.slice(0, -1));
+  }, [bookHistory, bookUiStateById, clearMediaCache, preloadInitialSlideMedia]);
+
+  const setCurrentBookSlideIndex = useCallback((slideIndex: number) => {
+    if (!currentBook) {
+      return;
+    }
+
+    updateBookUiState(currentBook.id, (prev) => ({
+      ...prev,
+      slideIndex,
+    }));
+  }, [currentBook, updateBookUiState]);
+
+  const toggleCurrentBookQuiz = useCallback(() => {
+    if (!currentBook) {
+      return;
+    }
+
+    updateBookUiState(currentBook.id, (prev) => ({
+      ...prev,
+      showQuiz: !prev.showQuiz,
+    }));
+  }, [currentBook, updateBookUiState]);
+
+  const closeCurrentBookQuiz = useCallback(() => {
+    if (!currentBook) {
+      return;
+    }
+
+    updateBookUiState(currentBook.id, (prev) => ({
+      ...prev,
+      showQuiz: false,
+    }));
+  }, [currentBook, updateBookUiState]);
 
   useEffect(() => {
     if (didInitialLoadRef.current) {
@@ -727,6 +808,8 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     tests,
     explanationModes,
     selectedModeId,
+    currentSlideIndex: currentBookUiState.slideIndex,
+    showQuiz: currentBookUiState.showQuiz,
     loading,
     error,
     loadRandomBook,
@@ -735,6 +818,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     loadExplanation,
     loadTests,
     preloadNextSlideMedia,
+    setCurrentBookSlideIndex,
+    toggleCurrentBookQuiz,
+    closeCurrentBookQuiz,
     mediaCache,
     hasPreviousBook: bookHistory.length > 0,
     meaningModeId: getMeaningModeId(explanationModes),

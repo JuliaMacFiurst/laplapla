@@ -1,7 +1,4 @@
-import { useMemo } from "react";
-import StoryCarousel from "@/components/StoryCarousel";
-import BookQuiz from "@/components/BookQuiz";
-import ModeButtons from "@/components/ModeButtons";
+import BookScreen from "@/components/BookScreen";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries } from "@/i18n";
 
@@ -21,6 +18,7 @@ interface BookCardProps {
   tests: BookTest[];
   modes: ExplanationMode[];
   selectedModeId: string | number | null;
+  currentSlideIndex: number;
   loading?: boolean;
   showTests?: boolean;
   showRandomBookAction?: boolean;
@@ -29,6 +27,7 @@ interface BookCardProps {
   onTakeTest: () => void;
   onCreateVideo: () => void;
   onModeSelect: (modeId: string | number) => void;
+  onSlideIndexChange: (slideIndex: number) => void;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
   t: CapybaraPageDict;
@@ -40,6 +39,7 @@ export default function BookCard({
   tests,
   modes,
   selectedModeId,
+  currentSlideIndex,
   loading,
   showTests,
   showRandomBookAction = true,
@@ -48,81 +48,33 @@ export default function BookCard({
   onTakeTest,
   onCreateVideo,
   onModeSelect,
+  onSlideIndexChange,
   mediaCache,
   onPreloadNextSlide,
   t,
 }: BookCardProps) {
-  const year = typeof book.year === "string" || typeof book.year === "number"
-    ? String(book.year).trim()
-    : "";
-  const ageGroup = typeof book.age_group === "string" || typeof book.age_group === "number"
-    ? String(book.age_group).trim()
-    : "";
-  const hasSecondaryMeta = Boolean(year || ageGroup);
-  const activeTest = useMemo(
-    () => tests.find((test) => Array.isArray(test.questions) && test.questions.length > 0) || null,
-    [tests],
-  );
-
   return (
     <article className="book-card">
-      <div className="book-card-head">
-        <h2 className="book-card-title">{book.title}</h2>
-        {book.author ? <p className="book-card-author">{String(book.author)}</p> : null}
-        {hasSecondaryMeta ? (
-          <p className="book-card-meta">
-            {[year, ageGroup].filter(Boolean).join(" • ")}
-          </p>
-        ) : null}
-      </div>
-
-      <StoryCarousel
-        story={{
-          id: `${String(book.id)}-${String(selectedModeId ?? "default")}`,
-          title: book.title,
-          slides,
-        }}
-        textClassName="story-carousel-text"
-        emptyMessage={t.storyError}
-        mediaCache={mediaCache}
-        onPreloadNextSlide={onPreloadNextSlide}
-      />
-
-      <ModeButtons
+      <BookScreen
+        book={book}
+        slides={slides}
+        tests={tests}
         modes={modes}
         selectedModeId={selectedModeId}
-        disabled={loading}
-        onSelect={onModeSelect}
+        currentSlideIndex={currentSlideIndex}
+        loading={loading}
+        showTests={showTests}
+        showRandomBookAction={showRandomBookAction}
+        onRandomBook={onRandomBook}
+        onExplainMeaning={onExplainMeaning}
+        onTakeTest={onTakeTest}
+        onCreateVideo={onCreateVideo}
+        onModeSelect={onModeSelect}
+        onSlideIndexChange={onSlideIndexChange}
+        mediaCache={mediaCache}
+        onPreloadNextSlide={onPreloadNextSlide}
+        t={t}
       />
-
-      <div className="book-card-actions">
-        {showRandomBookAction ? (
-          <button type="button" className="feed-action-button" disabled={loading} onClick={onRandomBook}>
-            {t.actions.randomBook}
-          </button>
-        ) : null}
-        <button type="button" className="feed-action-button" disabled={loading} onClick={onExplainMeaning}>
-          {t.actions.explainMeaning}
-        </button>
-        <button
-          type="button"
-          className="feed-action-button"
-          disabled={loading || !activeTest}
-          onClick={onTakeTest}
-        >
-          {t.actions.takeTest}
-        </button>
-        <button type="button" className="feed-action-button" disabled={loading || slides.length === 0} onClick={onCreateVideo}>
-          {t.actions.createVideo}
-        </button>
-      </div>
-
-      {showTests ? (
-        <div className="book-tests-panel">
-          <h3 className="book-tests-title">{activeTest?.title || t.testTitle}</h3>
-          <BookQuiz bookId={book.id} test={activeTest} t={t} />
-        </div>
-      ) : null}
     </article>
   );
 }

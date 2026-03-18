@@ -17,6 +17,8 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     tests,
     explanationModes,
     selectedModeId,
+    currentSlideIndex,
+    showQuiz,
     loading,
     error,
     loadRandomBook,
@@ -26,10 +28,12 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     hasPreviousBook,
     meaningModeId,
     preloadNextSlideMedia,
+    setCurrentBookSlideIndex,
+    toggleCurrentBookQuiz,
+    closeCurrentBookQuiz,
     mediaCache,
   } = useBook(t, currentLang);
   const [mode, setMode] = useState<"slideshow" | "search">("slideshow");
-  const [showTests, setShowTests] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchResults, setSearchResults] = useState<Book[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -64,7 +68,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     }
 
     setMode("search");
-    setShowTests(false);
+    closeCurrentBookQuiz();
     setSearchMessage(null);
     setSearchResults(null);
     const requestId = ++searchRequestRef.current;
@@ -117,13 +121,13 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
       return;
     }
 
-    setShowTests(false);
+    closeCurrentBookQuiz();
     await loadExplanation(currentBook.id, modeId);
   };
 
   const handleRandomBook = async () => {
-    setShowTests(false);
-    await loadRandomBook(currentModeId);
+    closeCurrentBookQuiz();
+    await loadRandomBook();
   };
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -143,15 +147,15 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   };
 
   const handleOpenSearchBook = async (book: Book) => {
-    setShowTests(false);
+    closeCurrentBookQuiz();
     setMode("slideshow");
     setSearchResults(null);
     setSearchMessage(null);
-    await loadBook(book, currentModeId, { pushHistory: false });
+    await loadBook(book, undefined, { pushHistory: false });
   };
 
   const handlePreviousBook = () => {
-    setShowTests(false);
+    closeCurrentBookQuiz();
     loadPreviousBook();
   };
 
@@ -160,7 +164,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
       return;
     }
 
-    setShowTests(false);
+    closeCurrentBookQuiz();
     await loadExplanation(currentBook.id, meaningModeId || currentModeId);
   };
 
@@ -264,16 +268,18 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             loading={loading}
             error={error}
             errorTitle={t.loadingErrorTitle}
-            showTests={showTests}
+            currentSlideIndex={currentSlideIndex}
+            showTests={showQuiz}
             hasPreviousBook={hasPreviousBook}
             hasNextBook
             showRandomBookAction
             onPreviousBook={handlePreviousBook}
             onNextBook={handleRandomBook}
             onExplainMeaning={handleExplainMeaning}
-            onTakeTest={() => setShowTests((prev) => !prev)}
+            onTakeTest={toggleCurrentBookQuiz}
             onCreateVideo={handleCreateVideo}
             onModeSelect={handleModeSelect}
+            onSlideIndexChange={setCurrentBookSlideIndex}
             mediaCache={mediaCache}
             onPreloadNextSlide={handlePreloadNextSlide}
             t={t}

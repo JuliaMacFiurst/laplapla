@@ -13,25 +13,36 @@ type SlideMedia = {
 
 interface StoryCarouselProps {
   story: CarouselStory;
+  currentSlideIndex: number;
+  onSlideIndexChange: (slideIndex: number) => void;
   textClassName?: string;
   emptyMessage?: string;
   mediaCache?: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide?: (slideIndex: number) => void;
 }
 
-const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emptyMessage, mediaCache, onPreloadNextSlide }) => {
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+const StoryCarousel: React.FC<StoryCarouselProps> = ({
+  story,
+  currentSlideIndex,
+  onSlideIndexChange,
+  textClassName,
+  emptyMessage,
+  mediaCache,
+  onPreloadNextSlide,
+}) => {
   const [showError, setShowError] = useState(false);
   const [lockedMedia, setLockedMedia] = useState<SlideMedia | null>(null);
 
   useEffect(() => {
-    setCurrentSlideIndex(0);
-  }, [story.id]);
+    if (currentSlideIndex >= story.slides.length && story.slides.length > 0) {
+      onSlideIndexChange(0);
+    }
+  }, [currentSlideIndex, onSlideIndexChange, story.slides.length]);
 
   useEffect(() => {
     setLockedMedia(mediaCache?.get(currentSlideIndex) || null);
     onPreloadNextSlide?.(currentSlideIndex);
-  }, [currentSlideIndex, mediaCache, onPreloadNextSlide]);
+  }, [currentSlideIndex, onPreloadNextSlide, story.id]);
 
   useEffect(() => {
     if (story && story.slides && story.slides.length > 0) {
@@ -68,15 +79,15 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
   }
 
   const handleNextSlide = () => {
-    setCurrentSlideIndex((prevIndex) =>
-      prevIndex < story.slides.length - 1 ? prevIndex + 1 : prevIndex
-    );
+    if (currentSlideIndex < story.slides.length - 1) {
+      onSlideIndexChange(currentSlideIndex + 1);
+    }
   };
 
   const handlePrevSlide = () => {
-    setCurrentSlideIndex((prevIndex) =>
-      prevIndex > 0 ? prevIndex - 1 : prevIndex
-    );
+    if (currentSlideIndex > 0) {
+      onSlideIndexChange(currentSlideIndex - 1);
+    }
   };
 
   const currentSlide = story.slides[currentSlideIndex];

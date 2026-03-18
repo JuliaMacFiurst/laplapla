@@ -233,7 +233,7 @@
 }
 
 .capybara-feed-main {
-  max-width: 48rem;
+  max-width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -479,7 +479,7 @@
 }
 
 .book-feed-layout {
-  width: 100%;
+  width: 45rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -490,19 +490,28 @@
   flex: 1 1 auto;
 }
 
+
+.book-feed-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
 .book-feed-nav {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 4.5rem;
   height: 4.5rem;
   flex: 0 0 4.5rem;
   border: none;
   border-radius: 9999px;
   background: linear-gradient(135deg, #0f766e, #0284c7);
   color: #ffffff;
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
+  font-family: 'Amatic SC', 'Caveat', cursive;
   box-shadow: 0 18px 36px rgba(14, 116, 144, 0.28);
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
@@ -522,6 +531,7 @@
 
 .book-feed-nav span {
   line-height: 1;
+  padding: 10px;
 }
 
 @media (min-width: 900px) {
@@ -784,8 +794,9 @@
 
 .story-image-wrapper {
   min-height: min(28vh, 280px);
+  width: 100%;
   max-height: 45vh;
-  height: min(45vh, 360px);
+  height: auto;
   border-radius: 1rem;
   margin: 0;
 }
@@ -809,10 +820,9 @@
 
 .story-image {
   position: relative;
-  max-width: 100%;
-  max-height: 45vh;
-  width: auto;
+  width: 100%;
   height: auto;
+  max-height: 45vh;
   object-fit: contain;
   z-index: 2;
   margin: 0;
