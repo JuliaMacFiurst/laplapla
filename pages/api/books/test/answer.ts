@@ -26,6 +26,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { bookId, testId, questionIndex, selectedIndex } = req.body ?? {};
   const normalizedQuestionIndex = parseIndex(questionIndex);
   const normalizedSelectedIndex = parseIndex(selectedIndex);
+  if (normalizedQuestionIndex === null || normalizedSelectedIndex === null) {
+    return res.status(400).json({ error: "Invalid indices" });
+  }
 
   if (!bookId || !isValidIndex(normalizedQuestionIndex) || !isValidIndex(normalizedSelectedIndex)) {
     return res.status(400).json({ error: "bookId, questionIndex and selectedIndex are required" });
@@ -69,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: "Quiz not found" });
     }
 
-    const question = quiz.questions?.[normalizedQuestionIndex];
+    const question = quiz.questions?.[normalizedQuestionIndex!];
     if (!question || !Array.isArray(question.options)) {
       return res.status(404).json({ error: "Question not found" });
     }

@@ -34,12 +34,14 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     mediaCache,
   } = useBook(t, currentLang);
   const [mode, setMode] = useState<"slideshow" | "search">("slideshow");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchResults, setSearchResults] = useState<Book[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const searchRequestRef = useRef(0);
   const searchControllerRef = useRef<AbortController | null>(null);
+  const searchOverlayRef = useRef<HTMLDivElement | null>(null);
 
   const currentModeId = useMemo(
     () => selectedModeId || meaningModeId || explanationModes[0]?.id || null,
@@ -116,6 +118,34 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
 
   useEffect(() => () => abortSearchPipeline(), [abortSearchPipeline]);
 
+  useEffect(() => {
+    if (!isSearchOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!searchOverlayRef.current?.contains(target)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isSearchOpen]);
+
   const handleModeSelect = async (modeId: string | number) => {
     if (!currentBook) {
       return;
@@ -132,6 +162,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSearchOpen(false);
     void handleSearch();
   };
 
@@ -191,6 +222,14 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
       <header className="capybara-page-header">
         <h1 className="page-title">{t.title}</h1>
         <p className="page-subtitle">{t.subtitle}</p>
+        <button
+          type="button"
+          className="search-toggle-button"
+          onClick={() => setIsSearchOpen(true)}
+          aria-label={t.search.placeholder}
+        >
+          <span aria-hidden="true">🔍</span>
+        </button>
         <form className="search-form" onSubmit={handleSearchSubmit}>
           <div className="search-input-wrapper">
             <input
@@ -217,6 +256,37 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
           </div>
         </form>
       </header>
+
+      {isSearchOpen ? (
+        <div className="search-overlay">
+          <div ref={searchOverlayRef} className="search-overlay-panel">
+            <form className="search-form-expanded" onSubmit={handleSearchSubmit}>
+              <input
+                type="text"
+                className="search-input search-input-expanded"
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                placeholder={t.search.placeholder}
+                aria-label={t.search.placeholder}
+                autoFocus
+              />
+              {inputValue ? (
+                <button
+                  type="button"
+                  className="search-clear-button"
+                  onClick={handleClearSearch}
+                  aria-label={t.search.clear}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              ) : null}
+              <button type="submit" className="search-button" disabled={searchLoading}>
+                {t.search.button}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       <main className="capybara-page-main capybara-feed-main">
         {mode === "search" ? (

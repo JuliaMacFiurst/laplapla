@@ -72,35 +72,39 @@ export default function BookScreen({
   return (
     <>
       <div className="book-card-head">
-        <h2 className="book-card-title">{book.title}</h2>
-        {book.author ? <p className="book-card-author">{String(book.author)}</p> : null}
-        {hasSecondaryMeta ? (
-          <p className="book-card-meta">
-            {[year, ageGroup].filter(Boolean).join(" • ")}
-          </p>
-        ) : null}
+        <div className="book-card-heading">
+          <h2 className="book-card-title">{book.title}</h2>
+          {book.author ? <p className="book-card-author">{String(book.author)}</p> : null}
+          {hasSecondaryMeta ? (
+            <p className="book-card-meta">
+              {[year, ageGroup].filter(Boolean).join(" • ")}
+            </p>
+          ) : null}
+        </div>
+
+        <ModeButtons
+          modes={modes}
+          selectedModeId={selectedModeId}
+          disabled={loading}
+          onSelect={onModeSelect}
+        />
       </div>
 
-      <StoryCarousel
-        story={{
-          id: `${String(book.id)}-${String(selectedModeId ?? "default")}`,
-          title: book.title,
-          slides,
-        }}
-        currentSlideIndex={currentSlideIndex}
-        onSlideIndexChange={onSlideIndexChange}
-        textClassName="story-carousel-text"
-        emptyMessage={t.storyError}
-        mediaCache={mediaCache}
-        onPreloadNextSlide={onPreloadNextSlide}
-      />
-
-      <ModeButtons
-        modes={modes}
-        selectedModeId={selectedModeId}
-        disabled={loading}
-        onSelect={onModeSelect}
-      />
+      <div className="book-card-body">
+        <StoryCarousel
+          story={{
+            id: `${String(book.id)}-${String(selectedModeId ?? "default")}`,
+            title: book.title,
+            slides,
+          }}
+          currentSlideIndex={currentSlideIndex}
+          onSlideIndexChange={onSlideIndexChange}
+          textClassName="story-carousel-text"
+          emptyMessage={t.storyError}
+          mediaCache={mediaCache}
+          onPreloadNextSlide={onPreloadNextSlide}
+        />
+      </div>
 
       <div className="book-card-actions">
         {showRandomBookAction ? (
