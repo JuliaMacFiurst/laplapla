@@ -60,7 +60,6 @@ export interface BookTest {
 export interface BookTestQuestion {
   question: string;
   options: string[];
-  correctIndex: number;
 }
 
 export interface ExplanationMode {

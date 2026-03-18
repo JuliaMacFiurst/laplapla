@@ -25,6 +25,8 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     loadExplanation,
     hasPreviousBook,
     meaningModeId,
+    preloadNextSlideMedia,
+    mediaCache,
   } = useBook(t, currentLang);
   const [mode, setMode] = useState<"slideshow" | "search">("slideshow");
   const [showTests, setShowTests] = useState(false);
@@ -176,6 +178,10 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     );
   };
 
+  const handlePreloadNextSlide = useCallback((slideIndex: number) => {
+    void preloadNextSlideMedia(slideIndex);
+  }, [preloadNextSlideMedia]);
+
   return (
     <div className="capybara-page-container">
       <header className="capybara-page-header">
@@ -268,6 +274,8 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             onTakeTest={() => setShowTests((prev) => !prev)}
             onCreateVideo={handleCreateVideo}
             onModeSelect={handleModeSelect}
+            mediaCache={mediaCache}
+            onPreloadNextSlide={handlePreloadNextSlide}
             t={t}
           />
         )}

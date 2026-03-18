@@ -6,6 +6,14 @@ import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries } from "@/i18n";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
+type SlideMedia = {
+  type: "image" | "video" | "gif";
+  capybaraImage?: string;
+  capybaraImageAlt?: string;
+  gifUrl?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+};
 
 interface BookFeedProps {
   book: Book | null;
@@ -26,6 +34,8 @@ interface BookFeedProps {
   onTakeTest: () => void;
   onCreateVideo: () => void;
   onModeSelect: (modeId: string | number) => void;
+  mediaCache: ReadonlyMap<number, SlideMedia>;
+  onPreloadNextSlide: (slideIndex: number) => void;
   t: CapybaraPageDict;
 }
 
@@ -48,6 +58,8 @@ export default function BookFeed({
   onTakeTest,
   onCreateVideo,
   onModeSelect,
+  mediaCache,
+  onPreloadNextSlide,
   t,
 }: BookFeedProps) {
   const touchStartY = useRef<number | null>(null);
@@ -161,6 +173,8 @@ export default function BookFeed({
             onTakeTest={onTakeTest}
             onCreateVideo={onCreateVideo}
             onModeSelect={onModeSelect}
+            mediaCache={mediaCache}
+            onPreloadNextSlide={onPreloadNextSlide}
             t={t}
           />
 

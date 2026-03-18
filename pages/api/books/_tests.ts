@@ -1,5 +1,13 @@
 import type { BookTest, BookTestQuestion } from "@/types/types";
 
+interface PrivateBookTestQuestion extends BookTestQuestion {
+  correctIndex: number;
+}
+
+interface PrivateBookTest extends Omit<BookTest, "questions"> {
+  questions: PrivateBookTestQuestion[];
+}
+
 type RawRecord = Record<string, unknown>;
 
 const parseJson = (value: unknown): unknown => {
@@ -20,7 +28,7 @@ const asRecord = (value: unknown): RawRecord | null =>
 const asStringArray = (value: unknown) =>
   Array.isArray(value) ? value.map(String).filter(Boolean) : [];
 
-const normalizeQuestion = (rawQuestion: unknown): BookTestQuestion | null => {
+const normalizeQuestion = (rawQuestion: unknown): PrivateBookTestQuestion | null => {
   const questionRecord = asRecord(parseJson(rawQuestion));
   if (!questionRecord) {
     return null;
@@ -65,7 +73,7 @@ const normalizeQuestion = (rawQuestion: unknown): BookTestQuestion | null => {
   };
 };
 
-const extractQuestions = (row: RawRecord): BookTestQuestion[] => {
+const extractQuestions = (row: RawRecord): PrivateBookTestQuestion[] => {
   const parsedQuiz = parseJson(row.quiz);
   const parsedQuestions = parseJson(row.questions);
 
@@ -80,7 +88,7 @@ const extractQuestions = (row: RawRecord): BookTestQuestion[] => {
   if (Array.isArray(nestedQuestions)) {
     return nestedQuestions
       .map(normalizeQuestion)
-      .filter((question): question is BookTestQuestion => Boolean(question));
+      .filter((question): question is PrivateBookTestQuestion => Boolean(question));
   }
 
   const legacyQuestion = normalizeQuestion({
@@ -94,7 +102,7 @@ const extractQuestions = (row: RawRecord): BookTestQuestion[] => {
   return legacyQuestion ? [legacyQuestion] : [];
 };
 
-export const normalizeBookTests = (rows: unknown[]): BookTest[] =>
+export const normalizeBookTestsWithAnswers = (rows: unknown[]): PrivateBookTest[] =>
   rows
     .map((rawRow) => asRecord(parseJson(rawRow)))
     .filter((row): row is RawRecord => Boolean(row))
@@ -106,6 +114,18 @@ export const normalizeBookTests = (rows: unknown[]): BookTest[] =>
         title: typeof row.title === "string" ? row.title : "",
         description: typeof row.description === "string" ? row.description : "",
         questions,
-      } satisfies BookTest;
+      } satisfies PrivateBookTest;
     })
     .filter((test) => Array.isArray(test.questions) && test.questions.length > 0);
+
+export const normalizeBookTests = (rows: unknown[]): BookTest[] =>
+  normalizeBookTestsWithAnswers(rows).map((test) => ({
+    id: test.id,
+    book_id: test.book_id,
+    title: test.title,
+    description: test.description,
+    questions: test.questions.map(({ question, options }) => ({
+      question,
+      options,
+    })),
+  }));

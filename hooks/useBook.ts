@@ -27,6 +27,11 @@ interface ResolvedSlideMedia {
   videoUrl?: string;
 }
 
+interface SlideMediaPlan {
+  type: "giphy" | "pexels" | "fallback";
+  query: string;
+}
+
 const isAbortError = (error: unknown) =>
   error instanceof Error && error.name === "AbortError";
 
@@ -41,7 +46,9 @@ const getFallbackImage = () =>
 
 const MEDIA_TIMEOUT_MS = 1500;
 
-const mediaCache = new Map<string, ResolvedSlideMedia>();
+const mediaResultCache = new Map<string, ResolvedSlideMedia>();
+let giphyUsed = 0;
+const MAX_GIPHY = 3;
 const capybaraQueries = [
   "capybara",
   "cute capybara",
@@ -177,6 +184,18 @@ const buildMediaUrl = (endpoint: string, slide: Slide) => {
 };
 
 const searchGiphyMeaning = async (query: string, signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+  const cacheKey = `giphy:${query}`;
+  const cached = mediaResultCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  if (process.env.NODE_ENV !== "development") {
+    return null;
+  }
+
+  console.log("GIPHY REQUEST:", query);
+
   const response = await fetch("/api/search-giphy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -190,10 +209,15 @@ const searchGiphyMeaning = async (query: string, signal?: AbortSignal): Promise<
 
   const data = (await response.json()) as { gifs?: string[] };
   const gifUrl = data.gifs?.[0];
-  return gifUrl ? { type: "gif", gifUrl } : null;
+  const result = gifUrl ? { type: "gif" as const, gifUrl } : null;
+  if (result) {
+    mediaResultCache.set(cacheKey, result);
+  }
+  return result;
 };
 
-const searchPexelsMeaning = async (query: string, keywords: string[], signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+const searchPexelsMeaning = async (query: string, keywords?: string[], signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+  const normalizedKeywords = keywords?.length ? keywords : query.split(" ").filter(Boolean);
   const videoResponse = await fetch("/api/search-pexels-video", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -218,7 +242,7 @@ const searchPexelsMeaning = async (query: string, keywords: string[], signal?: A
   const imageResponse = await fetch("/api/fetch-pexels", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ keywords, type: "story", orientation: "landscape", size: "medium" }),
+    body: JSON.stringify({ keywords: normalizedKeywords, type: "story", orientation: "landscape", size: "medium" }),
     signal,
   });
 
@@ -275,59 +299,89 @@ const searchCuteAnimalFallback = async (signal?: AbortSignal): Promise<ResolvedS
   return imageUrl ? { type: "image", imageUrl, capybaraImage: imageUrl, capybaraImageAlt: "Cute animal" } : null;
 };
 
-const resolveSlideMedia = async (
-  slide: Slide,
-  slideIndex: number,
-  totalSlides: number,
-  signal?: AbortSignal,
-): Promise<ResolvedSlideMedia> => {
-  const useContextMedia = shouldUseContextMedia(slideIndex, totalSlides);
-  const cacheKey = `${useContextMedia ? "context" : "capybara"}:${buildSlideCacheKey(slide)}`;
-  const cached = mediaCache.get(cacheKey);
-  if (cached) {
-    return cached;
-  }
-
-  const contextualKeywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
-  const contextualQuery = contextualKeywords.join(" ") || normalizeText(slide.text) || "cute animals";
-  const capybaraQuery = pickCapybaraQuery(slide);
-  const capybaraKeywords = capybaraQuery.split(" ");
-
-  const sources = useContextMedia
-    ? [
-        () => withTimeout(searchGiphyMeaning(contextualQuery, signal), MEDIA_TIMEOUT_MS),
-        () => withTimeout(searchPexelsMeaning(contextualQuery, contextualKeywords, signal), MEDIA_TIMEOUT_MS),
-        () => withTimeout(searchCapybaraFallback({ ...slide, keywords: contextualKeywords }, signal), MEDIA_TIMEOUT_MS),
-        () => withTimeout(searchCuteAnimalFallback(signal), MEDIA_TIMEOUT_MS),
-      ]
-    : [
-        () => withTimeout(searchGiphyMeaning(capybaraQuery, signal), MEDIA_TIMEOUT_MS),
-        () => withTimeout(searchPexelsMeaning(capybaraQuery, capybaraKeywords, signal), MEDIA_TIMEOUT_MS),
-        () => withTimeout(searchCapybaraFallback({ ...slide, keywords: capybaraKeywords }, signal), MEDIA_TIMEOUT_MS),
-        () => withTimeout(searchCuteAnimalFallback(signal), MEDIA_TIMEOUT_MS),
-      ];
-
-  for (const source of sources) {
-    if (signal?.aborted) {
-      throw createAbortError();
-    }
-
-    const result = await source();
-    if (result) {
-      mediaCache.set(cacheKey, result);
-      return result;
-    }
-  }
-
+const getFallbackMedia = () => {
   const fallbackImage = getFallbackImage();
-  const fallbackMedia = {
+  return {
     type: "image" as const,
     imageUrl: fallbackImage,
     capybaraImage: fallbackImage,
     capybaraImageAlt: "Capybara",
   };
-  mediaCache.set(cacheKey, fallbackMedia);
-  return fallbackMedia;
+};
+
+const resetBookMediaState = () => {
+  mediaResultCache.clear();
+  giphyUsed = 0;
+};
+
+const buildMediaPlan = (
+  slide: Slide,
+  slideIndex: number,
+  totalSlides: number,
+): SlideMediaPlan => {
+  const isContextSlide = shouldUseContextMedia(slideIndex, totalSlides);
+  const contextualKeywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
+  const contextualQuery = contextualKeywords.join(" ") || normalizeText(slide.text) || "cute animals";
+  const capybaraQuery = pickCapybaraQuery(slide);
+  const plan: SlideMediaPlan = isContextSlide
+    ? {
+        type: "giphy",
+        query: contextualQuery,
+      }
+    : {
+        type: "pexels",
+        query: capybaraQuery,
+      };
+
+  if (plan.type === "giphy" && giphyUsed >= MAX_GIPHY) {
+    return {
+      type: "pexels",
+      query: capybaraQuery,
+    };
+  }
+
+  return plan;
+};
+
+const preloadSlideMedia = async (
+  slide: Slide,
+  slideIndex: number,
+  totalSlides: number,
+  signal?: AbortSignal,
+): Promise<ResolvedSlideMedia> => {
+  if (signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const plan = buildMediaPlan(slide, slideIndex, totalSlides);
+  const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
+
+  if (plan.type === "giphy") {
+    giphyUsed += 1;
+    const giphyResult = await withTimeout(searchGiphyMeaning(plan.query, signal), MEDIA_TIMEOUT_MS);
+    if (giphyResult) {
+      return giphyResult;
+    }
+  }
+
+  if (plan.type === "pexels" || plan.type === "giphy") {
+    const pexelsResult = await withTimeout(searchPexelsMeaning(plan.query, keywords, signal), MEDIA_TIMEOUT_MS);
+    if (pexelsResult) {
+      return pexelsResult;
+    }
+  }
+
+  const capybaraResult = await withTimeout(searchCapybaraFallback({ ...slide, keywords }, signal), MEDIA_TIMEOUT_MS);
+  if (capybaraResult) {
+    return capybaraResult;
+  }
+
+  const animalResult = await withTimeout(searchCuteAnimalFallback(signal), MEDIA_TIMEOUT_MS);
+  if (animalResult) {
+    return animalResult;
+  }
+
+  return getFallbackMedia();
 };
 
 const prepareSlides = (slides: Slide[]) =>
@@ -342,6 +396,8 @@ const prepareSlides = (slides: Slide[]) =>
 export function useBook(t: CapybaraPageDict, lang: Lang) {
   const requestRef = useRef(0);
   const didInitialLoadRef = useRef(false);
+  const slidesRef = useRef<Slide[]>([]);
+  const mediaCacheRef = useRef<Map<number, ResolvedSlideMedia>>(new Map());
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [tests, setTests] = useState<BookTest[]>([]);
@@ -350,22 +406,53 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
   const [bookHistory, setBookHistory] = useState<BookHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mediaCache, setMediaCache] = useState<Map<number, ResolvedSlideMedia>>(() => new Map());
 
-  const prefetchSlidesWithMedia = useCallback((rawSlides: Slide[], requestId: number, signal?: AbortSignal) => {
-    void Promise.allSettled(
-      rawSlides.map(async (slide, index) => {
-        const media = await resolveSlideMedia(slide, index, rawSlides.length, signal);
-        if (signal?.aborted || requestId !== requestRef.current) {
-          return;
+  useEffect(() => {
+    slidesRef.current = slides;
+  }, [slides]);
+
+  useEffect(() => {
+    mediaCacheRef.current = mediaCache;
+  }, [mediaCache]);
+
+  const clearMediaCache = useCallback(() => {
+    setMediaCache(new Map());
+    resetBookMediaState();
+  }, []);
+
+  const preloadInitialSlideMedia = useCallback(async (nextSlides: Slide[], signal?: AbortSignal) => {
+    if (!nextSlides[0]) {
+      return new Map<number, ResolvedSlideMedia>();
+    }
+
+    const initialMedia = await preloadSlideMedia(nextSlides[0], 0, nextSlides.length, signal);
+    return new Map<number, ResolvedSlideMedia>([[0, initialMedia]]);
+  }, []);
+
+  const preloadNextSlideMedia = useCallback(async (activeIndex: number) => {
+    const nextIndex = activeIndex + 1;
+    const nextSlide = slidesRef.current[nextIndex];
+    if (!nextSlide || mediaCacheRef.current.has(nextIndex)) {
+      return;
+    }
+
+    try {
+      const media = await preloadSlideMedia(nextSlide, nextIndex, slidesRef.current.length);
+      setMediaCache((prev) => {
+        if (prev.has(nextIndex)) {
+          return prev;
         }
 
-        setSlides((prev) =>
-          prev.map((existingSlide, slideIndex) =>
-            slideIndex === index ? { ...existingSlide, ...media } : existingSlide,
-          ),
-        );
-      }),
-    );
+        const nextCache = new Map(prev);
+        nextCache.set(nextIndex, media);
+        return nextCache;
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
+    }
   }, []);
 
   const loadModes = useCallback(async () => {
@@ -400,14 +487,16 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       const requestId = ++requestRef.current;
       setLoading(true);
       setError(null);
+      clearMediaCache();
       try {
         const explanation = await fetchExplanation(bookId, modeId);
         const nextSlides = prepareSlides(explanation.slides || []);
+        const nextMediaCache = await preloadInitialSlideMedia(nextSlides);
         if (requestId !== requestRef.current) {
           return;
         }
         setSlides(nextSlides);
-        prefetchSlidesWithMedia(nextSlides, requestId);
+        setMediaCache(nextMediaCache);
         setSelectedModeId(modeId);
       } catch (loadError) {
         if (isAbortError(loadError)) {
@@ -420,7 +509,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         setLoading(false);
       }
     },
-    [currentBook?.title, fetchExplanation, prefetchSlidesWithMedia, t.errors.explanationGeneric],
+    [clearMediaCache, fetchExplanation, preloadInitialSlideMedia, t.errors.explanationGeneric],
   );
 
   const fetchTests = useCallback(async (bookId: string | number, signal?: AbortSignal) => {
@@ -434,7 +523,6 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
 
   const loadTests = useCallback(async (bookId: string | number) => {
     const nextTests = await fetchTests(bookId);
-    console.log("Normalized quiz:", nextTests);
     setTests(nextTests);
     return nextTests;
   }, [fetchTests]);
@@ -505,7 +593,6 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         return null;
       }
 
-      console.log("Normalized quiz:", nextTests);
       return {
         nextSlides: prepareSlides(explanation.slides || []),
         nextTests: (nextTests || []) as BookTest[],
@@ -533,6 +620,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
 
       setLoading(true);
       setError(null);
+      clearMediaCache();
       setCurrentBook(book);
       setSlides([]);
       setTests([]);
@@ -543,10 +631,15 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
           return;
         }
 
+        const nextMediaCache = await preloadInitialSlideMedia(hydrated.nextSlides, options?.signal);
+        if (requestId !== requestRef.current) {
+          return;
+        }
+
         setSlides(hydrated.nextSlides);
+        setMediaCache(nextMediaCache);
         setTests(hydrated.nextTests);
         setSelectedModeId(hydrated.resolvedModeId);
-        prefetchSlidesWithMedia(hydrated.nextSlides, requestId, options?.signal);
         if (previousEntry) {
           setBookHistory((prev) => [...prev, previousEntry]);
         }
@@ -570,7 +663,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
         }
       }
     },
-    [currentBook, hydrateBook, prefetchSlidesWithMedia, selectedModeId, slides, t.errors.bookLoad, tests],
+    [clearMediaCache, currentBook, hydrateBook, preloadInitialSlideMedia, selectedModeId, slides, t.errors.bookLoad, tests],
   );
 
   const loadRandomBook = useCallback(
@@ -607,14 +700,18 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
       requestRef.current += 1;
       setLoading(false);
       setError(null);
+      clearMediaCache();
       setCurrentBook(previousEntry.book);
       setSlides(previousEntry.slides);
       setTests(previousEntry.tests);
       setSelectedModeId(previousEntry.selectedModeId);
+      void preloadInitialSlideMedia(previousEntry.slides).then((nextMediaCache) => {
+        setMediaCache(nextMediaCache);
+      });
 
       return prev.slice(0, -1);
     });
-  }, []);
+  }, [clearMediaCache, preloadInitialSlideMedia]);
 
   useEffect(() => {
     if (didInitialLoadRef.current) {
@@ -624,9 +721,6 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     didInitialLoadRef.current = true;
     void loadRandomBook();
   }, [loadRandomBook]);
-
-  console.log("tests", tests)
-
   return {
     currentBook,
     slides,
@@ -640,6 +734,8 @@ export function useBook(t: CapybaraPageDict, lang: Lang) {
     loadPreviousBook,
     loadExplanation,
     loadTests,
+    preloadNextSlideMedia,
+    mediaCache,
     hasPreviousBook: bookHistory.length > 0,
     meaningModeId: getMeaningModeId(explanationModes),
   };

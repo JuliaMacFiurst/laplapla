@@ -2,19 +2,36 @@ import { useState, useEffect } from "react";
 import type { CarouselStory } from "../types/types";
 import { fallbackImages } from "../constants";
 
+type SlideMedia = {
+  type: "image" | "video" | "gif";
+  capybaraImage?: string;
+  capybaraImageAlt?: string;
+  gifUrl?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+};
+
 interface StoryCarouselProps {
   story: CarouselStory;
   textClassName?: string;
   emptyMessage?: string;
+  mediaCache?: ReadonlyMap<number, SlideMedia>;
+  onPreloadNextSlide?: (slideIndex: number) => void;
 }
 
-const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emptyMessage }) => {
+const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emptyMessage, mediaCache, onPreloadNextSlide }) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showError, setShowError] = useState(false);
+  const [lockedMedia, setLockedMedia] = useState<SlideMedia | null>(null);
 
   useEffect(() => {
     setCurrentSlideIndex(0);
   }, [story.id]);
+
+  useEffect(() => {
+    setLockedMedia(mediaCache?.get(currentSlideIndex) || null);
+    onPreloadNextSlide?.(currentSlideIndex);
+  }, [currentSlideIndex, mediaCache, onPreloadNextSlide]);
 
   useEffect(() => {
     if (story && story.slides && story.slides.length > 0) {
@@ -63,12 +80,13 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
   };
 
   const currentSlide = story.slides[currentSlideIndex];
+  const currentMedia = lockedMedia;
   const fallback = `/images/capybaras/${fallbackImages[Math.floor(Math.random() * fallbackImages.length)]}`;
   const hasMedia =
-    Boolean(currentSlide?.capybaraImage) ||
-    Boolean(currentSlide?.gifUrl) ||
-    Boolean(currentSlide?.videoUrl) ||
-    Boolean(currentSlide?.imageUrl);
+    Boolean(currentMedia?.capybaraImage) ||
+    Boolean(currentMedia?.gifUrl) ||
+    Boolean(currentMedia?.videoUrl) ||
+    Boolean(currentMedia?.imageUrl);
   
   return (
     <div className="story-wrapper">
@@ -88,21 +106,21 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
           <div className="story-image-wrapper">
             {currentSlide && hasMedia ? (
               <>
-                {currentSlide.type === "image" && currentSlide.capybaraImage ? (
+                {currentMedia?.type === "image" && currentMedia.capybaraImage ? (
                   <img
                     className="story-image"
-                    src={currentSlide.capybaraImage}
-                    alt={currentSlide.capybaraImageAlt || "Капибара"}
+                    src={currentMedia.capybaraImage}
+                    alt={currentMedia.capybaraImageAlt || "Капибара"}
                   />
-                ) : currentSlide.type === "gif" && currentSlide.gifUrl ? (
+                ) : currentMedia?.type === "gif" && currentMedia.gifUrl ? (
                   <img
                     className="story-image"
-                    src={currentSlide.gifUrl}
+                    src={currentMedia.gifUrl}
                     alt="GIF"
                   />
-                ) : currentSlide.type === "video" && currentSlide.videoUrl ? (
+                ) : currentMedia?.type === "video" && currentMedia.videoUrl ? (
                   <video
-                    src={currentSlide.videoUrl}
+                    src={currentMedia.videoUrl}
                     className="story-video"
                     autoPlay
                     muted
@@ -110,9 +128,9 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ story, textClassName, emp
                     playsInline
                     style={{ width: "100%", height: "100%", objectFit: "contain" }}
                   />
-                ) : currentSlide.imageUrl ? (
+                ) : currentMedia?.imageUrl ? (
                   <img
-                    src={currentSlide.imageUrl}
+                    src={currentMedia.imageUrl}
                     alt="Фото капибары с Pexels"
                     className="story-image"
                     style={{ objectFit: "contain", maxHeight: "100%", maxWidth: "100%" }}

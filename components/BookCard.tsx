@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import StoryCarousel from "@/components/StoryCarousel";
+import BookQuiz from "@/components/BookQuiz";
 import ModeButtons from "@/components/ModeButtons";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries } from "@/i18n";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
+type SlideMedia = {
+  type: "image" | "video" | "gif";
+  capybaraImage?: string;
+  capybaraImageAlt?: string;
+  gifUrl?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+};
 
 interface BookCardProps {
   book: Book;
@@ -20,6 +29,8 @@ interface BookCardProps {
   onTakeTest: () => void;
   onCreateVideo: () => void;
   onModeSelect: (modeId: string | number) => void;
+  mediaCache: ReadonlyMap<number, SlideMedia>;
+  onPreloadNextSlide: (slideIndex: number) => void;
   t: CapybaraPageDict;
 }
 
@@ -37,6 +48,8 @@ export default function BookCard({
   onTakeTest,
   onCreateVideo,
   onModeSelect,
+  mediaCache,
+  onPreloadNextSlide,
   t,
 }: BookCardProps) {
   const year = typeof book.year === "string" || typeof book.year === "number"
@@ -50,63 +63,6 @@ export default function BookCard({
     () => tests.find((test) => Array.isArray(test.questions) && test.questions.length > 0) || null,
     [tests],
   );
-  const questions = activeTest?.questions || [];
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
-  const [showQuizResult, setShowQuizResult] = useState(false);
-  const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
-  const currentQuestion = questions[currentQuestionIndex];
-  const currentCorrectIndex = currentQuestion?.correctIndex ?? -1;
-  const hasAnswered = selectedOptionIndex !== null;
-
-  useEffect(() => {
-    setCurrentQuestionIndex(0);
-    setSelectedOptionIndex(null);
-    setShowQuizResult(false);
-    setCorrectAnswersCount(0);
-  }, [book.id, selectedModeId, showTests, activeTest?.id]);
-
-  const handleSelectOption = (optionIndex: number) => {
-    if (!currentQuestion || hasAnswered) {
-      return;
-    }
-
-    setSelectedOptionIndex(optionIndex);
-    if (optionIndex === currentCorrectIndex) {
-      setCorrectAnswersCount((prev) => prev + 1);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex >= questions.length - 1) {
-      setShowQuizResult(true);
-      return;
-    }
-
-    setCurrentQuestionIndex((prev) => prev + 1);
-    setSelectedOptionIndex(null);
-  };
-
-  const handleRestartQuiz = () => {
-    setCurrentQuestionIndex(0);
-    setSelectedOptionIndex(null);
-    setShowQuizResult(false);
-    setCorrectAnswersCount(0);
-  };
-
-  const capybaraResultMessage = useMemo(() => {
-    const wrongAnswersCount = questions.length - correctAnswersCount;
-
-    if (questions.length > 0 && correctAnswersCount === questions.length) {
-      return t.quiz.results.perfect;
-    }
-
-    if (wrongAnswersCount === 2) {
-      return t.quiz.results.twoWrong;
-    }
-
-    return t.quiz.results.needsRetry;
-  }, [correctAnswersCount, questions.length, t.quiz.results.needsRetry, t.quiz.results.perfect, t.quiz.results.twoWrong]);
 
   return (
     <article className="book-card">
@@ -128,6 +84,8 @@ export default function BookCard({
         }}
         textClassName="story-carousel-text"
         emptyMessage={t.storyError}
+        mediaCache={mediaCache}
+        onPreloadNextSlide={onPreloadNextSlide}
       />
 
       <ModeButtons
@@ -146,7 +104,12 @@ export default function BookCard({
         <button type="button" className="feed-action-button" disabled={loading} onClick={onExplainMeaning}>
           {t.actions.explainMeaning}
         </button>
-        <button type="button" className="feed-action-button" disabled={loading || tests.length === 0} onClick={onTakeTest}>
+        <button
+          type="button"
+          className="feed-action-button"
+          disabled={loading || !activeTest}
+          onClick={onTakeTest}
+        >
           {t.actions.takeTest}
         </button>
         <button type="button" className="feed-action-button" disabled={loading || slides.length === 0} onClick={onCreateVideo}>
@@ -157,72 +120,7 @@ export default function BookCard({
       {showTests ? (
         <div className="book-tests-panel">
           <h3 className="book-tests-title">{activeTest?.title || t.testTitle}</h3>
-          {!activeTest || questions.length === 0 ? (
-            <p className="book-tests-empty">{t.quiz.unavailable}</p>
-          ) : (
-            <div className="quiz-container">
-              {activeTest.description ? <p className="quiz-description">{activeTest.description}</p> : null}
-              {!showQuizResult && currentQuestion ? (
-                <>
-                  <p className="quiz-progress">
-                    {t.quiz.questionCounter
-                      .replace("{current}", String(currentQuestionIndex + 1))
-                      .replace("{total}", String(questions.length))}
-                  </p>
-                  <h4 className="quiz-question">
-                    {currentQuestion.question || t.untitledQuestion}
-                  </h4>
-                  <div className="quiz-options">
-                    {currentQuestion.options.map((option, optionIndex) => {
-                      const isCorrect = hasAnswered && optionIndex === currentCorrectIndex;
-                      const isWrong = hasAnswered && optionIndex === selectedOptionIndex && optionIndex !== currentCorrectIndex;
-                      const optionClassName = [
-                        "quiz-option",
-                        isCorrect ? "quiz-option-correct" : "",
-                        isWrong ? "quiz-option-wrong" : "",
-                      ].filter(Boolean).join(" ");
-
-                      return (
-                        <button
-                          key={`${currentQuestionIndex}-${optionIndex}`}
-                          type="button"
-                          className={optionClassName}
-                          disabled={hasAnswered}
-                          onClick={() => handleSelectOption(optionIndex)}
-                        >
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {hasAnswered ? (
-                    <p className="quiz-feedback">
-                      {selectedOptionIndex === currentCorrectIndex ? t.quiz.correct : t.quiz.incorrect}
-                    </p>
-                  ) : null}
-                  {hasAnswered ? (
-                    <button type="button" className="quiz-next-button" onClick={handleNextQuestion}>
-                      {currentQuestionIndex === questions.length - 1 ? t.quiz.showResults : t.quiz.nextQuestion}
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-
-              {showQuizResult ? (
-                <div className="quiz-result-modal" role="dialog" aria-modal="false">
-                  <p className="quiz-result-score">
-                    {t.quiz.resultSummary
-                      .replace("{correct}", String(correctAnswersCount))
-                      .replace("{total}", String(questions.length))}
-                  </p>
-                  <p className="quiz-result-message">{capybaraResultMessage}</p>
-                  <button type="button" className="quiz-next-button" onClick={handleRestartQuiz}>
-                    {t.quiz.tryAgain}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          )}
+          <BookQuiz bookId={book.id} test={activeTest} t={t} />
         </div>
       ) : null}
     </article>
