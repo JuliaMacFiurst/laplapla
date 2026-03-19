@@ -13,22 +13,12 @@ const normalizeBookSlug = (value: unknown) =>
 const getModeLabel = (mode: ExplanationMode) =>
   String(mode.slug || mode.title || mode.name || mode.id);
 
-const matchesBookSlug = (book: Book, rawSlug: string) => {
-  const normalizedSlug = normalizeBookSlug(rawSlug);
-  const directSlug = normalizeBookSlug(book.slug);
-  const titleSlug = normalizeBookSlug(book.title);
-  const bookId = String(book.id).trim().toLowerCase();
-
-  return (
-    bookId === rawSlug.trim().toLowerCase() ||
-    directSlug === normalizedSlug ||
-    titleSlug === normalizedSlug
-  );
-};
-
 export async function findBookBySlug(rawSlug: string): Promise<Book | null> {
   const slug = decodeURIComponent(rawSlug).trim();
+  console.log("SLUG lookup:", slug);
+
   if (!slug) {
+    console.log("BOOK FOUND:", undefined);
     return null;
   }
 
@@ -39,20 +29,22 @@ export async function findBookBySlug(rawSlug: string): Promise<Book | null> {
     .maybeSingle();
 
   if (!exactSlugError && exactSlugMatch) {
+    console.log("BOOK FOUND:", exactSlugMatch.id);
     return exactSlugMatch as Book;
   }
 
-  const { data, error } = await supabase
+  const { data: exactIdMatch, error: exactIdError } = await supabase
     .from("books")
     .select("*")
-    .limit(500);
+    .eq("id", slug)
+    .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (exactIdError) {
+    throw exactIdError;
   }
 
-  const books = (data || []) as Book[];
-  return books.find((book) => matchesBookSlug(book, slug)) || null;
+  console.log("BOOK FOUND:", exactIdMatch?.id);
+  return (exactIdMatch as Book | null) || null;
 }
 
 export function getBookPathSlug(book: Book) {

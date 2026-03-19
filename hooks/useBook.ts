@@ -432,6 +432,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
   const [bookUiStateById, setBookUiStateById] = useState<Record<string, BookUiState>>({});
   const [loading, setLoading] = useState(() => !options?.disableInitialRandom || Boolean(options?.initialBook));
   const [error, setError] = useState<string | null>(null);
+  const [quizError, setQuizError] = useState(false);
   const [mediaCache, setMediaCache] = useState<Map<number, ResolvedSlideMedia>>(() => new Map());
 
   useEffect(() => {
@@ -569,7 +570,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       throw new Error(t.errors.testsLoad);
     }
 
-    return (await response.json()) as BookTest[];
+    const data = (await response.json()) as BookTest[];
+    console.log("QUIZ FETCH RESULT:", data);
+    return data;
   }, [t.errors.testsLoad]);
 
   const loadTests = useCallback(async (bookId: string | number) => {
@@ -638,7 +641,11 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         throw new Error(t.errors.noExplanations);
       }
 
-      const nextTests = await fetchTests(book.id, signal).catch(() => []);
+      const nextTests = await fetchTests(book.id, signal).catch((err) => {
+        console.error("QUIZ LOAD FAILED:", err);
+        setQuizError(true);
+        return [];
+      });
 
       if (requestId !== requestRef.current) {
         return null;
@@ -672,6 +679,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
 
       setLoading(true);
       setError(null);
+      setQuizError(false);
       clearMediaCache();
       setCurrentBook(book);
       setSlides([]);
@@ -840,6 +848,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     showQuiz: currentBookUiState.showQuiz,
     loading,
     error,
+    quizError,
     loadRandomBook,
     loadBook,
     loadPreviousBook,

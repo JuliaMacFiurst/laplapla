@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAutoFontSize } from "@/hooks/useAutoFontSize";
 import type { CarouselStory } from "../types/types";
 import { fallbackImages } from "../constants";
 
@@ -32,6 +33,11 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
 }) => {
   const [showError, setShowError] = useState(false);
   const [lockedMedia, setLockedMedia] = useState<SlideMedia | null>(null);
+  const textRef = useAutoFontSize<HTMLParagraphElement>([
+    story.id,
+    currentSlideIndex,
+    story.slides[currentSlideIndex]?.text,
+  ]);
 
   useEffect(() => {
     if (currentSlideIndex >= story.slides.length && story.slides.length > 0) {
@@ -169,7 +175,9 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
           </div>
 
           <div className="story-text">
-            <p className={textClassName || "slide-text"}>{currentSlide.text}</p>
+            <p ref={textRef} className={textClassName || "slide-text"}>
+              {currentSlide.text}
+            </p>
           </div>
 
           <div className="story-navigation">
