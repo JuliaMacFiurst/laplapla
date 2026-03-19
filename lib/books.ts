@@ -15,10 +15,14 @@ const getModeLabel = (mode: ExplanationMode) =>
 
 export async function findBookBySlug(rawSlug: string): Promise<Book | null> {
   const slug = decodeURIComponent(rawSlug).trim();
-  console.log("SLUG lookup:", slug);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[BOOK] slug lookup:", slug);
+  }
 
   if (!slug) {
-    console.log("BOOK FOUND:", undefined);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[BOOK] slug result:", undefined);
+    }
     return null;
   }
 
@@ -29,7 +33,9 @@ export async function findBookBySlug(rawSlug: string): Promise<Book | null> {
     .maybeSingle();
 
   if (!exactSlugError && exactSlugMatch) {
-    console.log("BOOK FOUND:", exactSlugMatch.id);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[BOOK] slug result:", exactSlugMatch.id);
+    }
     return exactSlugMatch as Book;
   }
 
@@ -43,7 +49,9 @@ export async function findBookBySlug(rawSlug: string): Promise<Book | null> {
     throw exactIdError;
   }
 
-  console.log("BOOK FOUND:", exactIdMatch?.id);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[BOOK] slug result:", exactIdMatch?.id);
+  }
   return (exactIdMatch as Book | null) || null;
 }
 

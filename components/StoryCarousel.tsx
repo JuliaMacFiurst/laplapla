@@ -31,10 +31,6 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
   mediaCache,
   onPreloadNextSlide,
 }) => {
-  if (process.env.NODE_ENV === "development") {
-    console.log("RENDER:", "StoryCarousel");
-  }
-
   const [showError, setShowError] = useState(false);
   const [lockedMedia, setLockedMedia] = useState<SlideMedia | null>(null);
   const textRef = useAutoFontSize<HTMLParagraphElement>([

@@ -77,10 +77,6 @@ export default function BookFeed({
   onPreloadNextSlide,
   t,
 }: BookFeedProps) {
-  if (process.env.NODE_ENV === "development") {
-    console.log("RENDER:", "BookFeed");
-  }
-
   const feedRef = useRef<HTMLElement | null>(null);
   const lastPanelRef = useRef<HTMLDivElement | null>(null);
   const wheelLocked = useRef(false);

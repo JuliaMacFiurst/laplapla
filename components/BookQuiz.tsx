@@ -46,7 +46,6 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
       q.options.length > 0,
     );
 
-    console.log("VALID QUESTIONS:", nextValidQuestions);
     return nextValidQuestions;
   }, [normalizedQuiz]);
 

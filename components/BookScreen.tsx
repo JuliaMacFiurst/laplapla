@@ -57,10 +57,6 @@ export default function BookScreen({
   onPreloadNextSlide,
   t,
 }: BookScreenProps) {
-  if (process.env.NODE_ENV === "development") {
-    console.log("RENDER:", "BookScreen");
-  }
-
   const normalizeQuizTest = (test: BookTest) => {
     if (Array.isArray(test.questions)) {
       return test;
@@ -91,7 +87,6 @@ export default function BookScreen({
       q.options.length > 0,
     );
 
-    console.log("VALID QUESTIONS:", validQuestions);
     return validQuestions;
   };
 
