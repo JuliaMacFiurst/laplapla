@@ -16,10 +16,31 @@ interface AnswerResponse {
 }
 
 export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
-  const questions = test?.questions || [];
+  const normalizedQuiz = useMemo(() => {
+    if (test && Array.isArray(test.questions)) {
+      return test;
+    }
+
+    const nestedQuiz = test?.quiz;
+    if (
+      nestedQuiz &&
+      typeof nestedQuiz === "object" &&
+      !Array.isArray(nestedQuiz) &&
+      Array.isArray((nestedQuiz as { questions?: unknown[] }).questions)
+    ) {
+      return {
+        ...test,
+        questions: (nestedQuiz as { questions: BookTest["questions"] }).questions,
+      } as BookTest;
+    }
+
+    return null;
+  }, [test]);
+
+  const questions = normalizedQuiz?.questions || [];
   const quizIdentity = useMemo(
-    () => `${String(bookId)}:${String(test?.id ?? "none")}:${questions.length}`,
-    [bookId, questions.length, test?.id],
+    () => `${String(bookId)}:${String(normalizedQuiz?.id ?? "none")}:${questions.length}`,
+    [bookId, normalizedQuiz?.id, questions.length],
   );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
@@ -43,7 +64,7 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
   const hasAnswered = selectedOptionIndex !== null;
 
   const handleSelectOption = async (optionIndex: number) => {
-    if (!currentQuestion || hasAnswered || isCheckingAnswer || !test) {
+    if (!currentQuestion || hasAnswered || isCheckingAnswer || !normalizedQuiz) {
       return;
     }
 
@@ -56,7 +77,7 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bookId,
-          testId: test.id,
+          testId: normalizedQuiz.id,
           questionIndex: currentQuestionIndex,
           selectedIndex: optionIndex,
         }),
@@ -107,23 +128,27 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
     const wrongAnswersCount = questions.length - correctAnswersCount;
 
     if (questions.length > 0 && correctAnswersCount === questions.length) {
-      return t.quiz.results.perfect;
+      return "Капибара думает, что ты можешь создать свой книжный клуб!";
     }
 
     if (wrongAnswersCount === 2) {
-      return t.quiz.results.twoWrong;
+      return "Капибара думает, что ты читал книгу давно и немного подзабыл";
     }
 
-    return t.quiz.results.needsRetry;
-  }, [correctAnswersCount, questions.length, t.quiz.results.needsRetry, t.quiz.results.perfect, t.quiz.results.twoWrong]);
+    if (correctAnswersCount < 3) {
+      return "Капибара думает, что стоит перечитать книгу";
+    }
 
-  if (!test || questions.length === 0) {
+    return "Капибара думает, что стоит перечитать книгу";
+  }, [correctAnswersCount, questions.length]);
+
+  if (!normalizedQuiz || questions.length === 0) {
     return <p className="book-tests-empty">{t.quiz.unavailable}</p>;
   }
 
   return (
     <div className="quiz-container">
-      {test.description ? <p className="quiz-description">{test.description}</p> : null}
+      {normalizedQuiz.description ? <p className="quiz-description">{normalizedQuiz.description}</p> : null}
       {!showQuizResult && currentQuestion ? (
         <>
           <p className="quiz-progress">

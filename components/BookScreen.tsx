@@ -57,6 +57,27 @@ export default function BookScreen({
   onPreloadNextSlide,
   t,
 }: BookScreenProps) {
+  const normalizeQuizTest = (test: BookTest) => {
+    if (Array.isArray(test.questions)) {
+      return test;
+    }
+
+    const nestedQuiz = test.quiz;
+    if (
+      nestedQuiz &&
+      typeof nestedQuiz === "object" &&
+      !Array.isArray(nestedQuiz) &&
+      Array.isArray((nestedQuiz as { questions?: unknown[] }).questions)
+    ) {
+      return {
+        ...test,
+        questions: (nestedQuiz as { questions: BookTest["questions"] }).questions,
+      };
+    }
+
+    return test;
+  };
+
   const year = typeof book.year === "string" || typeof book.year === "number"
     ? String(book.year).trim()
     : "";
@@ -65,7 +86,14 @@ export default function BookScreen({
     : "";
   const hasSecondaryMeta = Boolean(year || ageGroup);
   const activeTest = useMemo(
-    () => tests.find((test) => Array.isArray(test.questions) && test.questions.length > 0) || null,
+    () => {
+      const matchingTest = tests.find((test) => {
+        const normalizedTest = normalizeQuizTest(test);
+        return Array.isArray(normalizedTest.questions) && normalizedTest.questions.length > 0;
+      });
+
+      return matchingTest ? normalizeQuizTest(matchingTest) : null;
+    },
     [tests],
   );
 

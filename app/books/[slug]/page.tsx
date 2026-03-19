@@ -18,8 +18,6 @@ type PageProps = {
   }>;
 };
 
-const SITE_URL = "https://your-domain.com";
-
 const isLang = (value: string): value is Lang =>
   value === "ru" || value === "en" || value === "he";
 
@@ -71,7 +69,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${book.title} — читать кратко | LapLapLa`,
     description: getBookSummary(book),
     alternates: {
-      canonical: `${SITE_URL}/books/${slug}`,
+      canonical: `/books/${slug}`,
     },
   };
 }

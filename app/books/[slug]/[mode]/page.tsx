@@ -20,7 +20,6 @@ type PageProps = {
   }>;
 };
 
-const SITE_URL = "https://your-domain.com";
 const MODE_LABELS: Record<string, string> = {
   plot: "Сюжет",
   idea: "Главная идея",
@@ -67,7 +66,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${book.title} — ${resolvedMode ? modeLabel : getModeLabel(mode)} | LapLapLa`,
     description: `Объяснение книги "${book.title}" — ${modeLabel}`,
     alternates: {
-      canonical: `${SITE_URL}/books/${slug}/${mode}`,
+      canonical: `/books/${slug}/${mode}`,
     },
   };
 }

@@ -362,6 +362,7 @@
 }
 
 .story-carousel-text {
+  z-index: 20;
   color: #1e293b;
   font-size: 2.5rem;
   font-weight: 800;
