@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useRouter } from "next/router";
 import BookFeed from "@/components/BookFeed";
 import { useBook } from "@/hooks/useBook";
+import { buildBookHref, buildBookModeHref } from "@/lib/books";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 export default function CapybaraPage({ lang }: { lang: Lang }) {
   const router = useRouter();
@@ -41,6 +42,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const searchRequestRef = useRef(0);
   const searchControllerRef = useRef<AbortController | null>(null);
+  const lastSyncedPathRef = useRef<string | null>(null);
   const searchOverlayRef = useRef<HTMLDivElement | null>(null);
 
   const currentModeId = useMemo(
@@ -117,6 +119,51 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   }, [abortSearchPipeline, inputValue, resetSearchState, t.search.noResults, t.search.searchError]);
 
   useEffect(() => () => abortSearchPipeline(), [abortSearchPipeline]);
+
+  const syncBookRoute = useCallback((book: Book | null, modeId: string | number | null) => {
+    if (!book) {
+      return;
+    }
+
+    const bookPath = buildBookHref(book);
+    if (!bookPath) {
+      return;
+    }
+
+    const nextMode = explanationModes.find((candidate) => String(candidate.id) === String(modeId));
+    const nextMaskedPath = nextMode ? buildBookModeHref(book, nextMode) : bookPath;
+    const localizedMaskedPath = buildLocalizedHref(nextMaskedPath, currentLang);
+
+    if (
+      typeof window !== "undefined" &&
+      (window.location.pathname + window.location.search === localizedMaskedPath ||
+        lastSyncedPathRef.current === localizedMaskedPath)
+    ) {
+      return;
+    }
+
+    lastSyncedPathRef.current = localizedMaskedPath;
+    void router.push(
+      {
+        pathname: router.pathname,
+        query: buildLocalizedQuery(currentLang),
+      },
+      localizedMaskedPath,
+      {
+        shallow: true,
+        scroll: false,
+        locale: currentLang,
+      },
+    );
+  }, [currentLang, explanationModes, router]);
+
+  useEffect(() => {
+    if (mode === "search") {
+      return;
+    }
+
+    syncBookRoute(currentBook, selectedModeId);
+  }, [currentBook, mode, selectedModeId, syncBookRoute]);
 
   useEffect(() => {
     if (!isSearchOpen) {
