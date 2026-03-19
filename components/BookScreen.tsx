@@ -57,6 +57,10 @@ export default function BookScreen({
   onPreloadNextSlide,
   t,
 }: BookScreenProps) {
+  if (process.env.NODE_ENV === "development") {
+    console.log("RENDER:", "BookScreen");
+  }
+
   const normalizeQuizTest = (test: BookTest) => {
     if (Array.isArray(test.questions)) {
       return test;
@@ -78,6 +82,19 @@ export default function BookScreen({
     return test;
   };
 
+  const getValidQuestions = (quiz: BookTest | null) => {
+    const validQuestions = (quiz?.questions || []).filter((q) =>
+      q &&
+      typeof q.question === "string" &&
+      q.question.trim().length > 0 &&
+      Array.isArray(q.options) &&
+      q.options.length > 0,
+    );
+
+    console.log("VALID QUESTIONS:", validQuestions);
+    return validQuestions;
+  };
+
   const year = typeof book.year === "string" || typeof book.year === "number"
     ? String(book.year).trim()
     : "";
@@ -89,12 +106,34 @@ export default function BookScreen({
     () => {
       const matchingTest = tests.find((test) => {
         const normalizedTest = normalizeQuizTest(test);
-        return Array.isArray(normalizedTest.questions) && normalizedTest.questions.length > 0;
+        return getValidQuestions(normalizedTest).length > 0;
       });
 
-      return matchingTest ? normalizeQuizTest(matchingTest) : null;
+      if (!matchingTest) {
+        return null;
+      }
+
+      const normalizedTest = normalizeQuizTest(matchingTest);
+      const validQuestions = getValidQuestions(normalizedTest);
+
+      if (validQuestions.length === 0) {
+        return null;
+      }
+
+      return {
+        ...normalizedTest,
+        questions: validQuestions,
+      };
     },
     [tests],
+  );
+  const story = useMemo(
+    () => ({
+      id: `${String(book.id)}-${String(selectedModeId ?? "default")}`,
+      title: book.title,
+      slides,
+    }),
+    [book.id, book.title, selectedModeId, slides],
   );
 
   return (
@@ -120,11 +159,7 @@ export default function BookScreen({
 
       <div className="book-card-body">
         <StoryCarousel
-          story={{
-            id: `${String(book.id)}-${String(selectedModeId ?? "default")}`,
-            title: book.title,
-            slides,
-          }}
+          story={story}
           currentSlideIndex={currentSlideIndex}
           onSlideIndexChange={onSlideIndexChange}
           textClassName="story-carousel-text"
@@ -159,7 +194,11 @@ export default function BookScreen({
       {showTests ? (
         <div className="book-tests-panel">
           <h3 className="book-tests-title">{activeTest?.title || t.testTitle}</h3>
-          <BookQuiz bookId={book.id} test={activeTest} t={t} />
+          {activeTest ? (
+            <BookQuiz bookId={book.id} test={activeTest} t={t} />
+          ) : (
+            <p className="book-tests-empty">Тест пока недоступен</p>
+          )}
         </div>
       ) : null}
     </>

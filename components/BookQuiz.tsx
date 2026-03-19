@@ -37,7 +37,20 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
     return null;
   }, [test]);
 
-  const questions = normalizedQuiz?.questions || [];
+  const validQuestions = useMemo(() => {
+    const nextValidQuestions = (normalizedQuiz?.questions || []).filter((q) =>
+      q &&
+      typeof q.question === "string" &&
+      q.question.trim().length > 0 &&
+      Array.isArray(q.options) &&
+      q.options.length > 0,
+    );
+
+    console.log("VALID QUESTIONS:", nextValidQuestions);
+    return nextValidQuestions;
+  }, [normalizedQuiz]);
+
+  const questions = validQuestions;
   const quizIdentity = useMemo(
     () => `${String(bookId)}:${String(normalizedQuiz?.id ?? "none")}:${questions.length}`,
     [bookId, normalizedQuiz?.id, questions.length],
@@ -143,7 +156,7 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
   }, [correctAnswersCount, questions.length]);
 
   if (!normalizedQuiz || questions.length === 0) {
-    return <p className="book-tests-empty">{t.quiz.unavailable}</p>;
+    return <p className="book-tests-empty">Тест пока недоступен</p>;
   }
 
   return (
