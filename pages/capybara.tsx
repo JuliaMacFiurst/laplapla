@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
 import BookFeed from "@/components/BookFeed";
 import { useBook } from "@/hooks/useBook";
@@ -27,7 +27,6 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     loadPreviousBook,
     loadExplanation,
     hasPreviousBook,
-    meaningModeId,
     preloadNextSlideMedia,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
@@ -44,11 +43,6 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const searchControllerRef = useRef<AbortController | null>(null);
   const lastSyncedPathRef = useRef<string | null>(null);
   const searchOverlayRef = useRef<HTMLDivElement | null>(null);
-
-  const currentModeId = useMemo(
-    () => selectedModeId || meaningModeId || explanationModes[0]?.id || null,
-    [explanationModes, meaningModeId, selectedModeId],
-  );
 
   const abortSearchPipeline = useCallback(() => {
     searchControllerRef.current?.abort();
@@ -238,12 +232,12 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   };
 
   const handleExplainMeaning = async () => {
-    if (!currentBook || !currentModeId) {
-      return;
-    }
-
     closeCurrentBookQuiz();
-    await loadExplanation(currentBook.id, meaningModeId || currentModeId);
+    await router.push(
+      { pathname: "/caps/stories/create", query: buildLocalizedQuery(currentLang) },
+      undefined,
+      { locale: currentLang },
+    );
   };
 
   const handleCreateVideo = () => {

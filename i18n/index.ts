@@ -373,6 +373,7 @@ type DictionaryShape = {
         explainMeaning: string;
         takeTest: string;
         createVideo: string;
+        createStory: string;
       };
       errors: {
         invalidParams: string;

@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
@@ -8,7 +7,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { useBook } from "@/hooks/useBook";
 import { buildBookHref, buildBookModeHref } from "@/lib/books";
 import type { dictionaries, Lang } from "@/i18n";
-import type { Book, ExplanationMode } from "@/types/types";
+import type { Book } from "@/types/types";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -36,7 +35,6 @@ export default function StandaloneBookScreen({
     showQuiz,
     loading,
     error,
-    meaningModeId,
     preloadNextSlideMedia,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
@@ -48,31 +46,16 @@ export default function StandaloneBookScreen({
     initialModeId,
   });
 
-  const currentModeId = useMemo(
-    () => selectedModeId || meaningModeId || explanationModes[0]?.id || null,
-    [explanationModes, meaningModeId, selectedModeId],
-  );
-
-  const getModeById = (modeId: string | number | null) =>
-    explanationModes.find((mode) => String(mode.id) === String(modeId)) || null;
-
-  const navigateToMode = (mode: ExplanationMode | null) => {
+  const handleModeSelect = (modeId: string | number) => {
+    closeCurrentBookQuiz();
+    const mode = explanationModes.find((item) => String(item.id) === String(modeId));
     const nextHref = mode ? buildBookModeHref(book, mode) : buildBookHref(book);
     router.push(`${nextHref}?lang=${lang}`);
   };
 
-  const handleModeSelect = (modeId: string | number) => {
-    closeCurrentBookQuiz();
-    navigateToMode(getModeById(modeId));
-  };
-
   const handleExplainMeaning = () => {
-    if (!currentModeId) {
-      return;
-    }
-
     closeCurrentBookQuiz();
-    navigateToMode(getModeById(meaningModeId || currentModeId));
+    router.push(`/caps/stories/create?lang=${lang}`);
   };
 
   const handleCreateVideo = () => {

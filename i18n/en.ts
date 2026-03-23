@@ -620,6 +620,7 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
         explainMeaning: "Explain Meaning",
         takeTest: "Take Test",
         createVideo: "Create Video",
+        createStory: "Create Story",
       },
       errors: {
         invalidParams: "Missing book_id or mode_id.",

@@ -171,7 +171,7 @@ export default function BookScreen({
           </button>
         ) : null}
         <button type="button" className="feed-action-button" disabled={loading} onClick={onExplainMeaning}>
-          {t.actions.explainMeaning}
+          {t.actions.createStory}
         </button>
         <button
           type="button"

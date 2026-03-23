@@ -259,6 +259,233 @@
   flex: 0 0 auto;
 }
 
+.story-generator-page {
+  background:
+    radial-gradient(circle at top, rgba(255, 248, 220, 0.9), transparent 38%),
+    linear-gradient(180deg, #fff4d8 0%, #ffd8c2 42%, #c8f0ef 100%);
+}
+
+.story-generator-header {
+  max-width: 960px;
+}
+
+.story-generator-back {
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 1.1rem;
+  font: inherit;
+  font-size: 1.3rem;
+  color: #7c2d12;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 24px rgba(148, 163, 184, 0.16);
+  cursor: pointer;
+}
+
+.story-generator-main {
+  width: 100%;
+  max-width: 1100px;
+}
+
+.story-generator-stage {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 960px;
+  margin: 1.75rem auto 3rem;
+}
+
+.story-capybara-card,
+.story-entry-card,
+.story-question-card,
+.story-result-card {
+  background: rgba(255, 250, 240, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 30px;
+  padding: 1.25rem;
+  box-shadow: 0 22px 48px rgba(148, 163, 184, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.story-capybara-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 230px) 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.story-capybara-portrait {
+  position: relative;
+  min-height: 220px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fde68a 0%, #fca5a5 100%);
+}
+
+.story-capybara-portrait img,
+.story-capybara-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-capybara-video {
+  mix-blend-mode: screen;
+}
+
+.story-capybara-bubble {
+  font-size: 2rem;
+  line-height: 1.25;
+  color: #7c2d12;
+}
+
+.story-field-label,
+.story-preview-title,
+.story-question-title,
+.story-progress-chip,
+.story-inline-hint,
+.story-generator-error,
+.story-generator-success {
+  font-family: 'Amatic SC', 'Caveat', cursive;
+}
+
+.story-field-label {
+  display: block;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #7c2d12;
+  margin-bottom: 0.4rem;
+}
+
+.story-field {
+  width: 100%;
+  border: 2px solid rgba(251, 146, 60, 0.2);
+  border-radius: 22px;
+  padding: 0.95rem 1rem;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-size: 1.55rem;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.92);
+  box-sizing: border-box;
+}
+
+.story-select,
+.story-textarea {
+  margin-bottom: 1rem;
+}
+
+.story-textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
+.story-inline-hint {
+  margin: 0 0 1rem;
+  color: #64748b;
+  font-size: 1.3rem;
+}
+
+.story-primary-button {
+  min-width: 220px;
+}
+
+.story-progress-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: #fff1bf;
+  color: #92400e;
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.story-question-title {
+  margin: 0 0 1rem;
+  color: #7c2d12;
+  font-size: 2.1rem;
+}
+
+.story-choice-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.story-choice-button {
+  border: none;
+  border-radius: 24px;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-size: 1.7rem;
+  color: #7c2d12;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 12px 24px rgba(251, 146, 60, 0.12);
+}
+
+.story-choice-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 28px rgba(251, 146, 60, 0.18);
+}
+
+.story-preview-card {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.story-preview-title {
+  color: #0f766e;
+  font-size: 1.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.story-preview-text {
+  white-space: pre-wrap;
+  color: #334155;
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.55;
+  font-family: 'Varela Round', sans-serif;
+}
+
+.story-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.story-generator-error,
+.story-generator-success {
+  margin: 0;
+  text-align: center;
+  font-size: 1.4rem;
+}
+
+.story-generator-error {
+  color: #b91c1c;
+}
+
+.story-generator-success {
+  color: #166534;
+}
+
+@media (max-width: 760px) {
+  .story-capybara-card {
+    grid-template-columns: 1fr;
+  }
+
+  .story-capybara-portrait {
+    min-height: 180px;
+  }
+}
+
 .search-button:disabled {
   opacity: 0.65;
   cursor: default;
