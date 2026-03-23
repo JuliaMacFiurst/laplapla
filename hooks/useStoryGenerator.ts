@@ -180,7 +180,7 @@ const buildBookPayload = (
     source: "caps-story-generator",
     mode,
     heroName,
-    steps: STORY_STEP_KEYS,
+    steps: blocks.map((block) => block.step),
   },
 });
 

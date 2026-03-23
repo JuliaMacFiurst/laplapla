@@ -22,8 +22,24 @@ export type StoryPath = {
   ending: StoryChoiceIndex;
 };
 
+export const STORY_BLOCK_ORDER = [
+  "narration",
+  "intro",
+  "intro_fragment",
+  "journey",
+  "journey_fragment",
+  "problem",
+  "problem_fragment",
+  "solution",
+  "solution_fragment",
+  "ending",
+  "ending_fragment",
+] as const;
+
+export type StoryBlockStepKey = (typeof STORY_BLOCK_ORDER)[number];
+
 export type StoryBlock = {
-  step: StoryStepKey;
+  step: StoryBlockStepKey;
   text: string;
   keywords: string[];
   mediaUrl?: string;
@@ -359,6 +375,11 @@ const clampChoiceIndex = (value: number | undefined): StoryChoiceIndex => {
 
 const makeKeywords = (text: string) => extractSlideKeywords(text);
 
+const STEP_FRAGMENT_SUFFIX = "_fragment";
+
+const toFragmentStepKey = (stepKey: Exclude<StoryStepKey, "narration">): StoryBlockStepKey =>
+  `${stepKey}${STEP_FRAGMENT_SUFFIX}` as StoryBlockStepKey;
+
 type StoryPathResolutionContext = {
   template: NormalizedStoryTemplate;
   introChoiceIndex: StoryChoiceIndex;
@@ -505,39 +526,94 @@ const getSafeStoryText = (
   return STORY_FALLBACK_TEXT;
 };
 
+const getSafeStepChoiceText = (
+  template: NormalizedStoryTemplate,
+  stepKey: Exclude<StoryStepKey, "narration">,
+  choiceIndex: StoryChoiceIndex,
+  warnings: string[],
+) => {
+  const step = template.steps[stepKey] || emptyStep(stepKey);
+  const selectedChoice = step.choices[choiceIndex] || step.choices[0];
+
+  if (!selectedChoice) {
+    warnings.push(`Missing choice for ${stepKey} at index ${choiceIndex}`);
+    return STORY_FALLBACK_TEXT;
+  }
+
+  const selectedText = firstText(selectedChoice.text, selectedChoice.fragments[0]);
+  if (selectedText) {
+    return selectedText;
+  }
+
+  warnings.push(`Missing choice text for ${stepKey} at index ${choiceIndex}`);
+  return STORY_FALLBACK_TEXT;
+};
+
+const hasExactStoryOrder = (blocks: StoryBlock[]) =>
+  blocks.length === STORY_BLOCK_ORDER.length
+  && STORY_BLOCK_ORDER.every((stepKey, index) => blocks[index]?.step === stepKey);
+
 export function buildStory(template: NormalizedStoryTemplate, path: Partial<StoryPath>): StoryBlock[] {
   const fullPath = ensureFullStoryPath(template, path);
   const validation = validateStoryPath(template, fullPath);
   const warnings = [...validation.warnings];
+  const blocks: StoryBlock[] = [
+    {
+      step: "narration",
+      text: getSafeStoryText(template, "narration", fullPath.narration, warnings),
+      keywords: [],
+    },
+  ];
 
-  const blocks = STORY_STEP_KEYS.map((stepKey) => {
-    const text = getSafeStoryText(template, stepKey, fullPath[stepKey], warnings);
+  for (const stepKey of STORY_STEP_KEYS) {
+    if (stepKey === "narration") {
+      continue;
+    }
 
-    return {
-      step: stepKey,
-      text,
-      keywords: makeKeywords(text),
-    };
-  });
+    const choiceIndex = fullPath[stepKey];
+    const stepText = getSafeStepChoiceText(template, stepKey, choiceIndex, warnings);
+    const fragmentText = getSafeStoryText(template, stepKey, choiceIndex, warnings);
+
+    blocks.push(
+      {
+        step: stepKey,
+        text: stepText,
+        keywords: [],
+      },
+      {
+        step: toFragmentStepKey(stepKey),
+        text: fragmentText,
+        keywords: [],
+      },
+    );
+  }
+
+  const normalizedBlocks = blocks.map((block) => ({
+    ...block,
+    keywords: block.keywords.length ? block.keywords : makeKeywords(block.text),
+  }));
+
+  if (isDev() && !hasExactStoryOrder(normalizedBlocks)) {
+    console.warn("[STORY ORDER INVALID]", normalizedBlocks.map((block) => block.step));
+  }
 
   logDev("[STORY BUILD]", {
-    stepsCount: blocks.length,
+    stepsCount: normalizedBlocks.length,
     missingFragments: warnings,
     validationErrors: validation.errors,
   });
 
-  return blocks.slice(0, STORY_STEP_KEYS.length);
+  return normalizedBlocks;
 }
 
 export function blocksToSlides(blocks: StoryBlock[]): StorySlide[] {
-  return STORY_STEP_KEYS.map((stepKey, index) => {
-    const block = blocks.find((item) => item.step === stepKey) || blocks[index];
-    const text = block?.text?.trim() || "";
+  return blocks.map((block) => {
+    const text = block.text.trim();
     return {
-      step: stepKey,
+      step: block.step,
       text,
-      keywords: block?.keywords?.length ? block.keywords : makeKeywords(text),
-      mediaUrl: block?.mediaUrl,
+      keywords: block.keywords.length ? block.keywords : makeKeywords(text),
+      mediaUrl: block.mediaUrl,
     };
   });
 }

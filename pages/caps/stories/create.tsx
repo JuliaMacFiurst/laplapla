@@ -205,7 +205,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
 
   const activeStep = draft.currentStep;
   const activeStepIndex = activeStep ? STORY_STEP_KEYS.indexOf(activeStep) + 1 : STORY_STEP_KEYS.length;
-  const isCompleted = draft.slideshow.length === STORY_STEP_KEYS.length;
+  const isCompleted = draft.currentStep === null && draft.slideshow.length > 0;
 
   return (
     <div className="capybara-page-container story-generator-page">
@@ -260,7 +260,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
                 <option value="">{t.selectPlaceholder}</option>
                 {templates.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.title}
+                    {item.heroName}
                   </option>
                 ))}
               </select>
