@@ -330,10 +330,6 @@
   object-fit: cover;
 }
 
-.story-capybara-video {
-  mix-blend-mode: screen;
-}
-
 .story-capybara-bubble {
   font-size: 2rem;
   line-height: 1.25;

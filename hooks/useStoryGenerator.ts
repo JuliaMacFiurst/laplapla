@@ -164,25 +164,82 @@ async function resolveSlideMedia(slide: StorySlide, index: number): Promise<Slid
   };
 }
 
-const buildBookPayload = (
-  blocks: StoryBlock[],
-  slides: StorySlide[],
+const buildStorySubmissionPayload = (
+  draft: StoryDraftState,
+  template: NormalizedStoryTemplate | null,
   heroName: string,
-  mode: StoryDraftState["mode"],
-) => ({
-  title: `История про ${heroName}`,
-  author: "Capybara Story Generator",
-  description: blocks.map((block) => block.text).join("\n\n"),
-  slides,
-  story_blocks: blocks,
-  is_published: false,
-  metadata: {
-    source: "caps-story-generator",
-    mode,
+) => {
+  const templateId = draft.mode === "template" ? template?.id ?? draft.selectedTemplateId ?? null : null;
+  const canonicalAnswers = STORY_STEP_KEYS.map((stepKey) => {
+    const block = draft.accumulatedStory.find((item) => item.step === stepKey);
+    return block
+      ? {
+          step: block.step,
+          text: block.text,
+        }
+      : null;
+  }).filter(Boolean);
+
+  const userInput = draft.mode === "template"
+    ? {
+        heroInput: draft.heroInput,
+        selectedTemplateId: draft.selectedTemplateId,
+        path: draft.path,
+      }
+    : {
+        heroInput: draft.heroInput,
+        answers: canonicalAnswers,
+      };
+
+  return {
+    mode: draft.mode,
+    templateId,
     heroName,
-    steps: blocks.map((block) => block.step),
-  },
-});
+    userInput,
+    assembledStory: {
+      heroName,
+      mode: draft.mode,
+      templateId,
+      steps: draft.accumulatedStory.map((block) => ({
+        step: block.step,
+        text: block.text,
+        slides: block.slides,
+        keywords: block.keywords,
+      })),
+    },
+    slides: draft.slideshow.map((slide) => ({
+      step: slide.step,
+      text: slide.text,
+      keywords: slide.keywords,
+      mediaUrl: slide.mediaUrl ?? null,
+    })),
+  };
+};
+
+const REQUIRED_SUBMISSION_STEPS = STORY_STEP_KEYS;
+const MIN_STEP_TEXT_LENGTH = 4;
+const MIN_TOTAL_STORY_LENGTH = 24;
+
+const validateStorySubmissionDraft = (draft: StoryDraftState) => {
+  const requiredBlocks = REQUIRED_SUBMISSION_STEPS.map((stepKey) =>
+    draft.accumulatedStory.find((block) => block.step === stepKey),
+  );
+
+  if (requiredBlocks.some((block) => !block)) {
+    return "История ещё не собрана полностью.";
+  }
+
+  if (requiredBlocks.some((block) => (block?.text.trim().length ?? 0) < MIN_STEP_TEXT_LENGTH)) {
+    return "Каждый шаг истории должен быть длиннее 3 символов.";
+  }
+
+  const totalLength = requiredBlocks.reduce((sum, block) => sum + (block?.text.trim().length ?? 0), 0);
+  if (totalLength < MIN_TOTAL_STORY_LENGTH) {
+    return "История получилась слишком короткой для отправки.";
+  }
+
+  return null;
+};
 
 export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const [draft, setDraft] = useState<StoryDraftState>(buildInitialState);
@@ -439,6 +496,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     const nextBlock: StoryBlock = {
       step: stepKey,
       text: stepText,
+      slides: [stepText],
       keywords: [],
     };
 
@@ -475,7 +533,16 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   }, [draft.accumulatedStory, draft.currentStep, draft.loading.assembling, draft.mode]);
 
   const saveStory = useCallback(async () => {
-    if (draft.slideshow.length !== STORY_STEP_KEYS.length) {
+    if (draft.accumulatedStory.length === 0 || draft.slideshow.length === 0) {
+      return;
+    }
+
+    const validationError = validateStorySubmissionDraft(draft);
+    if (validationError) {
+      setDraft((prev) => ({
+        ...prev,
+        error: validationError,
+      }));
       return;
     }
 
@@ -487,29 +554,40 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     }));
 
     try {
-      const response = await fetch("/api/admin/books", {
+      const submissionPayload = buildStorySubmissionPayload(draft, template, heroName);
+      console.log("[SAVE STORY PAYLOAD]", submissionPayload);
+
+      const response = await fetch("/api/story/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildBookPayload(draft.accumulatedStory, draft.slideshow, heroName, draft.mode)),
+        body: JSON.stringify(submissionPayload),
       });
 
       if (!response.ok) {
-        throw new Error(texts.savePendingLabel);
+        const errorText = await response.text();
+        console.error("[SAVE STORY ERROR]", errorText);
+        throw new Error("Failed to submit story");
       }
 
+      const payload = await response.json().catch(() => null) as { error?: string; message?: string; ok?: boolean; id?: string } | null;
+      console.log("[SAVE STORY SUCCESS]", payload);
+
       setSaveMessage(texts.savePendingLabel);
+      return payload;
     } catch (error) {
+      console.error("[SAVE STORY FAILED]", error);
       setDraft((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : texts.savePendingLabel,
+        error: error instanceof Error ? error.message : "Failed to submit story",
       }));
+      throw error;
     } finally {
       setDraft((prev) => ({
         ...prev,
         loading: { ...prev.loading, saving: false },
       }));
     }
-  }, [draft.accumulatedStory, draft.mode, draft.slideshow, heroName, texts.savePendingLabel]);
+  }, [draft, heroName, template, texts.savePendingLabel]);
 
   const openInEditor = useCallback(() => {
     const studioSlides = draft.slideshow.map((slide, index) => {

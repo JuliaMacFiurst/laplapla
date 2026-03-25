@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
 import StoryCarousel from "@/components/StoryCarousel";
 import type { Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
@@ -150,11 +151,9 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   const t = useMemo(() => buildTexts(currentLang), [currentLang]);
   const [customAnswer, setCustomAnswer] = useState("");
   const {
-    capybaraAnimationUrl,
     currentSlideIndex,
     draft,
     heroName,
-    isCapybaraAnimating,
     mediaCache,
     previewText,
     saveMessage,
@@ -225,17 +224,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
         <section className="story-generator-stage">
           <div className="story-capybara-card">
             <div className="story-capybara-portrait">
-              <img src="/images/capybaras/capybara_thinking.webp" alt="Capybara" />
-              {isCapybaraAnimating ? (
-                <video
-                  key={`${activeStep}-${draft.loading.assembling}-${draft.loading.template}`}
-                  className="story-capybara-video"
-                  src={capybaraAnimationUrl}
-                  autoPlay
-                  muted
-                  playsInline
-                />
-              ) : null}
+              <CapybaraTypingAnimation />
             </div>
             <div className="story-capybara-bubble">
               {isCompleted ? t.storyReadyTitle : (
@@ -353,7 +342,14 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
                   type="button"
                   className="feed-action-button story-primary-button"
                   disabled={draft.loading.saving}
-                  onClick={() => void saveStory()}
+                  onClick={async () => {
+                    console.log("[CLICK SAVE]");
+                    try {
+                      await saveStory();
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}
                 >
                   {draft.loading.saving ? t.saving : t.saveButton}
                 </button>

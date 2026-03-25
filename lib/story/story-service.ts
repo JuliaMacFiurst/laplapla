@@ -41,6 +41,7 @@ export type StoryBlockStepKey = (typeof STORY_BLOCK_ORDER)[number];
 export type StoryBlock = {
   step: StoryBlockStepKey;
   text: string;
+  slides: string[];
   keywords: string[];
   mediaUrl?: string;
 };
@@ -180,8 +181,6 @@ const emptyStep = (key: StoryStepKey): NormalizedStep => ({
   title: key,
   choices: [],
 });
-
-const STORY_FALLBACK_TEXT = "История продолжается...";
 
 const isDev = () => process.env.NODE_ENV === "development";
 
@@ -380,6 +379,13 @@ const STEP_FRAGMENT_SUFFIX = "_fragment";
 const toFragmentStepKey = (stepKey: Exclude<StoryStepKey, "narration">): StoryBlockStepKey =>
   `${stepKey}${STEP_FRAGMENT_SUFFIX}` as StoryBlockStepKey;
 
+export function splitTextToSlides(text: string): string[] {
+  return text
+    .split(/(?<=[.!?…])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}
+
 type StoryPathResolutionContext = {
   template: NormalizedStoryTemplate;
   introChoiceIndex: StoryChoiceIndex;
@@ -453,7 +459,6 @@ export function validateStoryPath(
   path: StoryPath,
 ): StoryPathValidationResult {
   const errors: string[] = [];
-  const warnings: string[] = [];
 
   for (const stepKey of STORY_STEP_KEYS) {
     const step = template.steps[stepKey];
@@ -470,7 +475,7 @@ export function validateStoryPath(
 
     if (stepKey === "narration") {
       if (!firstText(step.narration, step.choices[0]?.fragments[0])) {
-        warnings.push(`Missing narration text for ${stepKey}`);
+        errors.push(`Missing narration text for ${stepKey}`);
       }
       continue;
     }
@@ -481,23 +486,22 @@ export function validateStoryPath(
       continue;
     }
 
-    if (!choice.fragments.length) {
-      warnings.push(`Missing fragments for ${stepKey} at index ${index}`);
+    if (!firstText(choice.text, choice.fragments[0])) {
+      errors.push(`Missing text for ${stepKey} at index ${index}`);
     }
   }
 
   return {
     valid: errors.length === 0,
     errors,
-    warnings,
+    warnings: [],
   };
 }
 
-const getSafeStoryText = (
+const getRequiredStoryText = (
   template: NormalizedStoryTemplate,
   stepKey: StoryStepKey,
   choiceIndex: StoryChoiceIndex,
-  warnings: string[],
 ) => {
   const step = template.steps[stepKey] || emptyStep(stepKey);
 
@@ -507,37 +511,12 @@ const getSafeStoryText = (
       return narrationText;
     }
 
-    warnings.push(`Missing narration fragment for ${stepKey}`);
-    return STORY_FALLBACK_TEXT;
+    throw new Error(`Missing narration text for ${stepKey}`);
   }
 
   const selectedChoice = step.choices[choiceIndex] || step.choices[0];
   if (!selectedChoice) {
-    warnings.push(`Missing choice for ${stepKey} at index ${choiceIndex}`);
-    return STORY_FALLBACK_TEXT;
-  }
-
-  const selectedText = firstText(selectedChoice.fragments[0], selectedChoice.text);
-  if (selectedText) {
-    return selectedText;
-  }
-
-  warnings.push(`Missing fragment for ${stepKey} at index ${choiceIndex}`);
-  return STORY_FALLBACK_TEXT;
-};
-
-const getSafeStepChoiceText = (
-  template: NormalizedStoryTemplate,
-  stepKey: Exclude<StoryStepKey, "narration">,
-  choiceIndex: StoryChoiceIndex,
-  warnings: string[],
-) => {
-  const step = template.steps[stepKey] || emptyStep(stepKey);
-  const selectedChoice = step.choices[choiceIndex] || step.choices[0];
-
-  if (!selectedChoice) {
-    warnings.push(`Missing choice for ${stepKey} at index ${choiceIndex}`);
-    return STORY_FALLBACK_TEXT;
+    throw new Error(`Missing choice for ${stepKey} at index ${choiceIndex}`);
   }
 
   const selectedText = firstText(selectedChoice.text, selectedChoice.fragments[0]);
@@ -545,22 +524,46 @@ const getSafeStepChoiceText = (
     return selectedText;
   }
 
-  warnings.push(`Missing choice text for ${stepKey} at index ${choiceIndex}`);
-  return STORY_FALLBACK_TEXT;
+  throw new Error(`Missing text for ${stepKey} at index ${choiceIndex}`);
+};
+
+const getOptionalFragmentText = (
+  template: NormalizedStoryTemplate,
+  stepKey: Exclude<StoryStepKey, "narration">,
+  choiceIndex: StoryChoiceIndex,
+) => {
+  const step = template.steps[stepKey] || emptyStep(stepKey);
+  const selectedChoice = step.choices[choiceIndex] || step.choices[0];
+
+  if (!selectedChoice) {
+    return null;
+  }
+
+  return firstText(selectedChoice.fragments[0]);
 };
 
 const hasExactStoryOrder = (blocks: StoryBlock[]) =>
-  blocks.length === STORY_BLOCK_ORDER.length
-  && STORY_BLOCK_ORDER.every((stepKey, index) => blocks[index]?.step === stepKey);
+  blocks.every((block, index, items) => {
+    if (block.step.endsWith(STEP_FRAGMENT_SUFFIX)) {
+      const previousStep = items[index - 1]?.step;
+      return previousStep === block.step.slice(0, -STEP_FRAGMENT_SUFFIX.length);
+    }
+
+    return STORY_BLOCK_ORDER.includes(block.step);
+  });
 
 export function buildStory(template: NormalizedStoryTemplate, path: Partial<StoryPath>): StoryBlock[] {
   const fullPath = ensureFullStoryPath(template, path);
   const validation = validateStoryPath(template, fullPath);
-  const warnings = [...validation.warnings];
+  if (!validation.valid) {
+    throw new Error(validation.errors.join("\n"));
+  }
+
   const blocks: StoryBlock[] = [
     {
       step: "narration",
-      text: getSafeStoryText(template, "narration", fullPath.narration, warnings),
+      text: getRequiredStoryText(template, "narration", fullPath.narration),
+      slides: [],
       keywords: [],
     },
   ];
@@ -571,25 +574,31 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
     }
 
     const choiceIndex = fullPath[stepKey];
-    const stepText = getSafeStepChoiceText(template, stepKey, choiceIndex, warnings);
-    const fragmentText = getSafeStoryText(template, stepKey, choiceIndex, warnings);
+    const stepText = getRequiredStoryText(template, stepKey, choiceIndex);
+    const fragmentText = getOptionalFragmentText(template, stepKey, choiceIndex);
 
     blocks.push(
       {
         step: stepKey,
         text: stepText,
-        keywords: [],
-      },
-      {
-        step: toFragmentStepKey(stepKey),
-        text: fragmentText,
+        slides: [],
         keywords: [],
       },
     );
+
+    if (fragmentText) {
+      blocks.push({
+        step: toFragmentStepKey(stepKey),
+        text: fragmentText,
+        slides: [],
+        keywords: [],
+      });
+    }
   }
 
   const normalizedBlocks = blocks.map((block) => ({
     ...block,
+    slides: splitTextToSlides(block.text),
     keywords: block.keywords.length ? block.keywords : makeKeywords(block.text),
   }));
 
@@ -599,7 +608,6 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
 
   logDev("[STORY BUILD]", {
     stepsCount: normalizedBlocks.length,
-    missingFragments: warnings,
     validationErrors: validation.errors,
   });
 
@@ -607,13 +615,15 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
 }
 
 export function blocksToSlides(blocks: StoryBlock[]): StorySlide[] {
-  return blocks.map((block) => {
-    const text = block.text.trim();
-    return {
+  return blocks.flatMap((block) => {
+    const slides = block.slides.length ? block.slides : splitTextToSlides(block.text);
+
+    return slides.map((text) => ({
       step: block.step,
       text,
-      keywords: block.keywords.length ? block.keywords : makeKeywords(text),
+      slides: [text],
+      keywords: makeKeywords(text),
       mediaUrl: block.mediaUrl,
-    };
+    }));
   });
 }
