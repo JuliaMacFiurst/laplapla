@@ -371,6 +371,32 @@
   margin-bottom: 1rem;
 }
 
+.story-hero-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.story-hero-picker-trigger-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.story-hero-picker-trigger-action {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  color: #9a3412;
+  background: linear-gradient(135deg, #ffedd5, #fde68a);
+  font-size: 1.2rem;
+}
+
 .story-textarea {
   resize: vertical;
   min-height: 140px;
@@ -415,7 +441,7 @@
   text-align: left;
   font-family: 'Amatic SC', 'Caveat', cursive;
   font-size: 1.7rem;
-  color: #7c2d12;
+  color: #5b5e75;
   background: linear-gradient(135deg, #fff7ed, #ffedd5);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -425,6 +451,7 @@
 .story-choice-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 18px 28px rgba(251, 146, 60, 0.18);
+  color: #427827;
 }
 
 .story-preview-card {
@@ -472,6 +499,149 @@
   color: #166534;
 }
 
+.story-hero-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(10px);
+}
+
+.story-hero-picker-modal {
+  width: min(980px, 100%);
+  max-height: min(82vh, 820px);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at top right, rgba(254, 240, 138, 0.5), transparent 25%),
+    linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 237, 213, 0.95));
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+}
+
+.story-hero-picker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.story-hero-picker-title {
+  color: #7c2d12;
+  font-size: 2.2rem;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+}
+
+.story-hero-picker-hint {
+  margin: 0.2rem 0 0;
+  color: #7c2d12;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  font-family: 'Varela Round', sans-serif;
+}
+
+.story-hero-picker-close {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-size: 1.2rem;
+  color: #7c2d12;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(148, 163, 184, 0.18);
+}
+
+.story-hero-picker-search {
+  margin-bottom: 0;
+}
+
+.story-hero-picker-grid {
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.9rem;
+  padding-right: 0.2rem;
+}
+
+.story-hero-card {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 0.9rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid rgba(251, 146, 60, 0.18);
+  border-radius: 24px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 14px 26px rgba(251, 146, 60, 0.12);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.story-hero-card:hover,
+.story-hero-card.is-selected {
+  transform: translateY(-2px);
+  border-color: rgba(249, 115, 22, 0.42);
+  box-shadow: 0 20px 34px rgba(249, 115, 22, 0.18);
+}
+
+.story-hero-card-media {
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fde68a, #fdba74);
+}
+
+.story-hero-card-media img,
+.story-hero-card-fallback {
+  width: 100%;
+  height: 100%;
+}
+
+.story-hero-card-media img {
+  display: block;
+  object-fit: cover;
+}
+
+.story-hero-card-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7c2d12;
+  font-size: 2.4rem;
+  font-weight: 700;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+}
+
+.story-hero-card-copy {
+  min-width: 0;
+}
+
+.story-hero-card-name {
+  color: #7c2d12;
+  font-size: 1.8rem;
+  line-height: 1.05;
+  font-family: 'Amatic SC', 'Caveat', cursive;
+}
+
+.story-hero-card-meta {
+  margin-top: 0.3rem;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  font-family: 'Varela Round', sans-serif;
+}
+
 @media (max-width: 760px) {
   .story-capybara-card {
     grid-template-columns: 1fr;
@@ -479,6 +649,36 @@
 
   .story-capybara-portrait {
     min-height: 180px;
+  }
+
+  .story-hero-picker-overlay {
+    padding: 0.8rem;
+  }
+
+  .story-hero-picker-modal {
+    max-height: 88vh;
+    padding: 1rem;
+  }
+
+  .story-hero-picker-header {
+    flex-direction: column;
+  }
+
+  .story-hero-picker-close {
+    align-self: flex-start;
+  }
+
+  .story-hero-picker-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .story-hero-card {
+    grid-template-columns: 76px 1fr;
+  }
+
+  .story-hero-card-media {
+    width: 76px;
+    height: 76px;
   }
 }
 

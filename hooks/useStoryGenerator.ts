@@ -5,19 +5,22 @@ import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import {
   STORY_STEP_KEYS,
   blocksToSlides,
+  loadApprovedUserStories,
+  loadApprovedUserStory,
   loadStoryTemplate,
   loadStoryTemplateSummaries,
   type NormalizedStoryTemplate,
   type StoryBlock,
+  type StoryHeroOption,
   type StoryPath,
   type StorySlide,
   type StoryStepKey,
-  type StoryTemplateSummary,
 } from "@/lib/story/story-service";
 
 export type StoryDraftState = {
-  mode: "template" | "custom" | null;
+  mode: "template" | "custom" | "user_story" | null;
   selectedTemplateId: string | null;
+  selectedUserStoryId: string | null;
   heroInput: string;
   currentStep: StoryStepKey | null;
   path: Partial<StoryPath>;
@@ -71,6 +74,7 @@ const hashString = (value: string) =>
 const buildInitialState = (): StoryDraftState => ({
   mode: null,
   selectedTemplateId: null,
+  selectedUserStoryId: null,
   heroInput: "",
   currentStep: null,
   path: {},
@@ -243,7 +247,7 @@ const validateStorySubmissionDraft = (draft: StoryDraftState) => {
 
 export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const [draft, setDraft] = useState<StoryDraftState>(buildInitialState);
-  const [templates, setTemplates] = useState<StoryTemplateSummary[]>([]);
+  const [heroOptions, setHeroOptions] = useState<StoryHeroOption[]>([]);
   const [template, setTemplate] = useState<NormalizedStoryTemplate | null>(null);
   const [mediaCache, setMediaCache] = useState<Map<number, SlideMedia>>(new Map());
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -256,13 +260,24 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
 
     void (async () => {
       try {
-        const nextTemplates = await loadStoryTemplateSummaries();
+        const [nextTemplates, nextUserStories] = await Promise.all([
+          loadStoryTemplateSummaries(),
+          loadApprovedUserStories(),
+        ]);
         if (!cancelled) {
-          setTemplates(nextTemplates);
+          setHeroOptions([
+            ...nextTemplates.map((item) => ({
+              type: "template" as const,
+              id: item.id,
+              title: item.title,
+              heroName: item.heroName,
+            })),
+            ...nextUserStories,
+          ]);
         }
       } catch (error) {
         if (!cancelled) {
-          setDraft((prev) => ({ ...prev, error: error instanceof Error ? error.message : "Failed to load templates" }));
+          setDraft((prev) => ({ ...prev, error: error instanceof Error ? error.message : "Failed to load story heroes" }));
         }
       }
     })();
@@ -275,7 +290,13 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   useEffect(() => {
     setDraft((prev) => {
       const heroInput = prev.heroInput.trim();
-      const nextMode = heroInput ? "custom" : prev.selectedTemplateId ? "template" : null;
+      const nextMode = heroInput
+        ? "custom"
+        : prev.selectedUserStoryId
+          ? "user_story"
+          : prev.selectedTemplateId
+            ? "template"
+            : null;
       if (nextMode === prev.mode) {
         return prev;
       }
@@ -286,7 +307,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
         error: null,
       };
     });
-  }, [draft.heroInput, draft.selectedTemplateId]);
+  }, [draft.heroInput, draft.selectedTemplateId, draft.selectedUserStoryId]);
 
   useEffect(() => {
     if (!draft.currentStep && !draft.loading.generating && !draft.loading.assembling) {
@@ -332,23 +353,105 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       return draft.heroInput.trim();
     }
 
-    const selectedTemplate = templates.find((item) => item.id === draft.selectedTemplateId);
-    return selectedTemplate?.heroName || template?.heroName || "Капибара";
-  }, [draft.heroInput, draft.selectedTemplateId, template?.heroName, templates]);
+    const selectedOption = heroOptions.find((item) =>
+      item.type === "user_story"
+        ? item.id === draft.selectedUserStoryId
+        : item.id === draft.selectedTemplateId,
+    );
 
-  const setSelectedTemplateId = useCallback((selectedTemplateId: string | null) => {
+    return selectedOption?.heroName || template?.heroName || "Капибара";
+  }, [draft.heroInput, draft.selectedTemplateId, draft.selectedUserStoryId, heroOptions, template?.heroName]);
+
+  const loadUserStory = useCallback(async (submissionId: string) => {
     setSaveMessage(null);
     setTemplate(null);
     setDraft((prev) => ({
       ...prev,
-      selectedTemplateId,
+      error: null,
+      loading: { ...prev.loading, template: true },
+      currentStep: null,
+      path: {},
+      accumulatedStory: [],
+      slideshow: [],
+    }));
+
+    try {
+      const userStory = await loadApprovedUserStory(submissionId);
+      setDraft((prev) => ({
+        ...prev,
+        mode: "user_story",
+        selectedTemplateId: null,
+        selectedUserStoryId: submissionId,
+        error: null,
+        currentStep: null,
+        path: {},
+        accumulatedStory: [],
+        slideshow: userStory.slides,
+        loading: { ...prev.loading, template: false },
+      }));
+    } catch (error) {
+      setDraft((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Failed to load user story",
+        loading: { ...prev.loading, template: false },
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (
+      draft.mode === "user_story"
+      && draft.selectedUserStoryId
+      && draft.slideshow.length === 0
+      && !draft.loading.template
+    ) {
+      void loadUserStory(draft.selectedUserStoryId);
+    }
+  }, [draft.loading.template, draft.mode, draft.selectedUserStoryId, draft.slideshow.length, loadUserStory]);
+
+  const setSelectedHeroOption = useCallback((option: StoryHeroOption | null) => {
+    setSaveMessage(null);
+    setTemplate(null);
+    if (!option) {
+      setDraft((prev) => ({
+        ...prev,
+        selectedTemplateId: null,
+        selectedUserStoryId: null,
+        error: null,
+        slideshow: [],
+        accumulatedStory: [],
+        currentStep: null,
+        path: {},
+      }));
+      return;
+    }
+
+    if (option.type === "template") {
+      setDraft((prev) => ({
+        ...prev,
+        selectedTemplateId: option.id,
+        selectedUserStoryId: null,
+        error: null,
+        slideshow: [],
+        accumulatedStory: [],
+        currentStep: null,
+        path: {},
+      }));
+      return;
+    }
+
+    setDraft((prev) => ({
+      ...prev,
+      selectedTemplateId: null,
+      selectedUserStoryId: option.id,
       error: null,
       slideshow: [],
       accumulatedStory: [],
       currentStep: null,
       path: {},
     }));
-  }, []);
+    void loadUserStory(option.id);
+  }, [loadUserStory]);
 
   const setHeroInput = useCallback((heroInput: string) => {
     setSaveMessage(null);
@@ -533,6 +636,10 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   }, [draft.accumulatedStory, draft.currentStep, draft.loading.assembling, draft.mode]);
 
   const saveStory = useCallback(async () => {
+    if (draft.mode === "user_story") {
+      return;
+    }
+
     if (draft.accumulatedStory.length === 0 || draft.slideshow.length === 0) {
       return;
     }
@@ -592,9 +699,23 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const openInEditor = useCallback(() => {
     const studioSlides = draft.slideshow.map((slide, index) => {
       const media = mediaCache.get(index);
+      const mediaUrl = media?.capybaraImage || media?.imageUrl || media?.gifUrl || media?.videoUrl || slide.mediaUrl;
+      const mediaType = media?.videoUrl
+        || mediaUrl?.includes(".mp4")
+        || mediaUrl?.includes(".webm")
+        ? "video"
+        : "image";
+
       return {
         text: slide.text,
-        image: media?.capybaraImage || media?.imageUrl || media?.gifUrl || media?.videoUrl || slide.mediaUrl,
+        image: mediaUrl,
+        mediaFit: (slide as typeof slide & { mediaFit?: "cover" | "contain" }).mediaFit ?? "contain",
+        mediaPosition: "center",
+        textPosition: (slide as typeof slide & { textPosition?: "top" | "center" | "bottom" }).textPosition ?? "bottom",
+        textAlign: (slide as typeof slide & { textAlign?: "left" | "center" | "right" }).textAlign ?? "center",
+        textBgEnabled: (slide as typeof slide & { textBgEnabled?: boolean }).textBgEnabled ?? true,
+        textBgOpacity: (slide as typeof slide & { textBgOpacity?: number }).textBgOpacity ?? 0.2,
+        mediaType,
       };
     });
 
@@ -610,8 +731,15 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     setDraft((prev) => ({
       ...buildInitialState(),
       selectedTemplateId: prev.selectedTemplateId,
+      selectedUserStoryId: prev.selectedUserStoryId,
       heroInput: prev.heroInput,
-      mode: prev.heroInput.trim() ? "custom" : prev.selectedTemplateId ? "template" : null,
+      mode: prev.heroInput.trim()
+        ? "custom"
+        : prev.selectedUserStoryId
+          ? "user_story"
+          : prev.selectedTemplateId
+            ? "template"
+            : null,
     }));
   }, []);
 
@@ -629,17 +757,18 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     saveMessage,
     template,
     templateIntroChoices,
-    templates,
+    heroOptions,
     texts,
     beginCustomFlow,
     beginTemplateFlow,
     chooseTemplateIntro,
+    loadUserStory,
     openInEditor,
     reset,
     saveStory,
     setCurrentSlideIndex,
     setHeroInput,
-    setSelectedTemplateId,
+    setSelectedHeroOption,
     submitCustomStep,
   };
 }

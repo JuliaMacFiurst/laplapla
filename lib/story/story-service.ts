@@ -54,6 +54,19 @@ export type StoryTemplateSummary = {
   heroName: string;
 };
 
+export type StoryHeroOption =
+  | {
+      type: "template";
+      id: string;
+      title: string;
+      heroName: string;
+    }
+  | {
+      type: "user_story";
+      id: string;
+      heroName: string;
+    };
+
 type LooseRecord = Record<string, unknown>;
 
 type NormalizedChoice = {
@@ -249,6 +262,53 @@ export async function loadStoryTemplateSummaries(): Promise<StoryTemplateSummary
   });
 }
 
+export async function loadApprovedUserStories(): Promise<Extract<StoryHeroOption, { type: "user_story" }>[]> {
+  const { data, error } = await supabase
+    .from("user_story_submissions")
+    .select("id, hero_name")
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data || []).map((row) => {
+    const record = row as LooseRecord;
+    return {
+      type: "user_story" as const,
+      id: String(record.id),
+      heroName: firstText(record.hero_name, record.hero, record.character_name, record.title, record.name) || "Capybara",
+    };
+  });
+}
+
+type ApprovedUserStoryRecord = {
+  heroName: string;
+  slides: StorySlide[];
+};
+
+export async function loadApprovedUserStory(submissionId: string): Promise<ApprovedUserStoryRecord> {
+  const { data, error } = await supabase
+    .from("user_story_submissions")
+    .select("hero_name, assembled_story")
+    .eq("id", submissionId)
+    .eq("status", "approved")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const record = (data || {}) as LooseRecord;
+  const assembledStory = isRecord(record.assembled_story) ? record.assembled_story : null;
+
+  return {
+    heroName: firstText(record.hero_name, assembledStory?.heroName, assembledStory?.hero_name) || "Capybara",
+    slides: parseUserStoryToSlides(assembledStory),
+  };
+}
+
 export async function loadStoryTemplate(templateId: string): Promise<NormalizedStoryTemplate> {
   const { data: template, error } = await supabase
     .from("story_templates")
@@ -384,6 +444,33 @@ export function splitTextToSlides(text: string): string[] {
     .split(/(?<=[.!?…])\s+/)
     .map((sentence) => sentence.trim())
     .filter(Boolean);
+}
+
+export function parseUserStoryToSlides(assembledStory: unknown): StorySlide[] {
+  if (!isRecord(assembledStory) || !Array.isArray(assembledStory.steps)) {
+    return [];
+  }
+
+  return assembledStory.steps
+    .filter(isRecord)
+    .flatMap((stepRecord, index) => {
+      const step = resolveStepKey(stepRecord, index);
+      const stepText = firstText(stepRecord.text, stepRecord.content, stepRecord.body);
+      if (!stepText) {
+        return [];
+      }
+
+      const stepKeywords = asArray(stepRecord.keywords).map(toText).filter(Boolean);
+      const sentences = splitTextToSlides(stepText);
+
+      return sentences.map((text) => ({
+        step,
+        text,
+        slides: [text],
+        keywords: stepKeywords.length ? stepKeywords : makeKeywords(text),
+        mediaUrl: undefined,
+      }));
+    });
 }
 
 type StoryPathResolutionContext = {

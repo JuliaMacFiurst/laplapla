@@ -62,6 +62,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    console.log("[USER STORY SAVE]", {
+      target: "user_story_submissions",
+      payload: assembledStory,
+    });
+
+    if (Array.isArray(slides) && slides.length > 0) {
+      console.warn("[DEPRECATED] user_story_slides usage detected");
+    }
+
     const { data: submission, error: submissionError } = await supabase
       .from("user_story_submissions")
       .insert({
@@ -80,31 +89,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: submissionError?.message || "Failed to create submission" });
     }
 
-    if (Array.isArray(slides) && slides.length > 0) {
-      const slideRows = slides
-        .filter((slide) => typeof slide?.step === "string" && typeof slide?.text === "string")
-        .map((slide, index) => ({
-          submission_id: submission.id,
-          step_key: slide.step as string,
-          slide_index: index,
-          text: (slide.text as string).trim(),
-          keywords: Array.isArray(slide.keywords) ? slide.keywords : [],
-          media_url: slide.mediaUrl ?? null,
-        }));
-
-      if (slideRows.length > 0) {
-        const { error: slidesError } = await supabase
-          .from("user_story_slides")
-          .insert(slideRows);
-
-        if (slidesError) {
-          console.error("[SUBMIT STORY SLIDES ERROR]", slidesError);
-          return res.status(500).json({ error: slidesError.message });
-        }
-      }
+    if (!assembledStory || typeof assembledStory !== "object") {
+      return res.status(500).json({ error: "Submission created without assembled_story" });
     }
 
-    return res.status(200).json({ ok: true, id: submission.id });
+    return res.status(200).json({
+      ok: true,
+      id: submission.id,
+      assembledStoryPresent: true,
+    });
   } catch (error) {
     console.error("[SUBMIT STORY INTERNAL ERROR]", error);
     return res.status(500).json({ error: "Internal error" });

@@ -4,6 +4,35 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+type SubmissionStep = {
+  step?: string;
+  text?: string;
+  keywords?: string[];
+};
+
+type SubmissionRecord = {
+  assembled_story?: {
+    steps?: SubmissionStep[];
+  } | null;
+};
+
+const deriveSlidesFromSubmission = (submission: SubmissionRecord) => {
+  const steps = Array.isArray(submission.assembled_story?.steps)
+    ? submission.assembled_story.steps
+    : [];
+
+  return steps
+    .filter((step) => typeof step?.step === "string" && typeof step?.text === "string")
+    .map((step, index) => ({
+      submission_id: null,
+      step_key: step.step as string,
+      slide_index: index,
+      text: (step.text as string).trim(),
+      keywords: Array.isArray(step.keywords) ? step.keywords : [],
+      media_url: null,
+    }));
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -32,16 +61,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: submissionError?.message || "Submission not found" });
     }
 
-    const { data: slides, error: slidesError } = await supabase
-      .from("user_story_slides")
-      .select("*")
-      .eq("submission_id", submissionId)
-      .order("sort_order", { ascending: true, nullsFirst: false })
-      .order("slide_index", { ascending: true });
-
-    if (slidesError) {
-      return res.status(500).json({ error: slidesError.message });
-    }
+    console.warn("[DEPRECATED] user_story_slides usage detected");
+    const slides = deriveSlidesFromSubmission(submission as SubmissionRecord);
 
     if (process.env.NODE_ENV === "development") {
       console.log("[ADMIN LOAD SLIDES]", slides ?? []);

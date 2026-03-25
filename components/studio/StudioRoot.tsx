@@ -41,7 +41,17 @@ function createInitialProject(): StudioProject {
 
 interface StudioRootProps {
   lang: Lang;
-  initialSlides?: { text: string; image?: string }[];
+  initialSlides?: Array<{
+    text: string;
+    image?: string;
+    mediaType?: "image" | "video";
+    mediaFit?: "cover" | "contain";
+    mediaPosition?: "top" | "center" | "bottom";
+    textPosition?: "top" | "center" | "bottom";
+    textAlign?: "left" | "center" | "right";
+    textBgEnabled?: boolean;
+    textBgOpacity?: number;
+  }>;
 }
 
 export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
@@ -363,10 +373,17 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
     if (!initialSlides || initialSlides.length === 0) return;
 
     const mappedSlides: StudioSlide[] = initialSlides.map(
-      (s: { text: string; image?: string }) => ({
+      (s) => ({
         id: crypto.randomUUID(),
         text: s.text,
         mediaUrl: s.image,
+        mediaType: s.mediaType ?? (s.image?.includes(".mp4") || s.image?.includes(".webm") ? "video" : "image"),
+        mediaFit: s.mediaFit ?? "contain",
+        mediaPosition: s.mediaPosition ?? "top",
+        textPosition: s.textPosition ?? "bottom",
+        textAlign: s.textAlign ?? "center",
+        textBgEnabled: s.textBgEnabled ?? true,
+        textBgOpacity: s.textBgOpacity ?? 0.4,
         bgColor: "#ffffff",
         textColor: "#000000",
       }),

@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
 import StoryCarousel from "@/components/StoryCarousel";
 import type { Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
-import { STORY_STEP_KEYS, type StoryStepKey } from "@/lib/story/story-service";
+import { STORY_STEP_KEYS, type StoryHeroOption, type StoryStepKey } from "@/lib/story/story-service";
 import { useStoryGenerator } from "@/hooks/useStoryGenerator";
 
 const buildTexts = (lang: Lang) => {
@@ -18,6 +18,7 @@ const buildTexts = (lang: Lang) => {
       customPlaceholder: "Write your hero's name",
       customWinsHint: "If you type your own hero, the custom story mode wins.",
       templateIntroPrompt: "Choose how the story begins.",
+      templateIntroQuestion: "How did the story begin?",
       choosePathButton: "Start with this hero",
       coWriteButton: "Start co-writing",
       nextButton: "Next",
@@ -51,6 +52,13 @@ const buildTexts = (lang: Lang) => {
       templatePreviewError: "The capybara could not prepare the story preview right now.",
       progressLabel: "Step",
       backButton: "Back to capybaras",
+      chooseHeroButton: "Open hero library",
+      heroPickerTitle: "Choose a hero",
+      heroPickerHint: "Choose a hero: with some heroes, you can choose how the story unfolds, while with others you can open a ready-made story created by site users.",
+      heroSearchPlaceholder: "Search hero by name",
+      heroPreviewFallback: "Preview is loading",
+      heroReadyFromLibrary: "Ready story from the library",
+      closePickerButton: "Close",
     };
   }
 
@@ -64,6 +72,7 @@ const buildTexts = (lang: Lang) => {
       customPlaceholder: "כתבו את שם הגיבור",
       customWinsHint: "אם כתבתם גיבור משלכם, מצב הסיפור האישי מקבל עדיפות.",
       templateIntroPrompt: "בחרו איך הסיפור מתחיל.",
+      templateIntroQuestion: "איך הסיפור התחיל?",
       choosePathButton: "להתחיל עם הגיבור הזה",
       coWriteButton: "להתחיל לכתוב יחד",
       nextButton: "הבא",
@@ -97,6 +106,13 @@ const buildTexts = (lang: Lang) => {
       templatePreviewError: "הקפיברה לא הצליחה להכין עכשיו תצוגה מקדימה של הסיפור.",
       progressLabel: "שלב",
       backButton: "חזרה לקפיברות",
+      chooseHeroButton: "לפתוח את ספריית הגיבורים",
+      heroPickerTitle: "בחרו גיבור",
+      heroPickerHint: "בחרו גיבור: עם חלק מהגיבורים תוכלו לבחור איך הסיפור יתפתח, ועם אחרים תוכלו לפתוח מיד סיפור מוכן שנוצר על ידי משתמשי האתר.",
+      heroSearchPlaceholder: "חפשו גיבור לפי שם",
+      heroPreviewFallback: "התצוגה נטענת",
+      heroReadyFromLibrary: "סיפור מוכן מהספרייה",
+      closePickerButton: "סגור",
     };
   }
 
@@ -109,6 +125,7 @@ const buildTexts = (lang: Lang) => {
     customPlaceholder: "Напиши имя героя",
     customWinsHint: "Если ты пишешь своего героя, включается режим собственной истории.",
     templateIntroPrompt: "Выбери, с чего начнётся история.",
+    templateIntroQuestion: "С чего началась история?",
     choosePathButton: "Начать с этим героем",
     coWriteButton: "Начать сочинять вместе",
     nextButton: "Дальше",
@@ -142,14 +159,30 @@ const buildTexts = (lang: Lang) => {
     templatePreviewError: "Капибара не смогла подготовить предпросмотр истории прямо сейчас.",
     progressLabel: "Шаг",
     backButton: "Назад к капибарам",
+    chooseHeroButton: "Открыть библиотеку героев",
+    heroPickerTitle: "Выбери героя",
+    heroPickerHint: "Выбери героя: с одними героями ты можешь выбрать варианты развития истории, а с другими — сразу открыть готовую историю, придуманную пользователями сайта.",
+    heroSearchPlaceholder: "Поиск по имени героя",
+    heroPreviewFallback: "Превью загружается",
+    heroReadyFromLibrary: "Готовая история из библиотеки",
+    closePickerButton: "Закрыть",
   };
 };
+
+const makeHeroPreviewKey = (heroName: string) => heroName.trim().toLowerCase();
+
+const HERO_GIPHY_PREVIEWS_ENABLED = false;
+const heroPreviewCache: Record<string, string> = {};
+const heroPreviewStatusCache: Record<string, "pending" | "done" | "failed"> = {};
 
 export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router) || lang;
   const t = useMemo(() => buildTexts(currentLang), [currentLang]);
   const [customAnswer, setCustomAnswer] = useState("");
+  const [isHeroPickerOpen, setIsHeroPickerOpen] = useState(false);
+  const [heroSearchQuery, setHeroSearchQuery] = useState("");
+  const [heroPreviewMap, setHeroPreviewMap] = useState<Record<string, string>>(() => ({ ...heroPreviewCache }));
   const {
     currentSlideIndex,
     draft,
@@ -159,7 +192,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     saveMessage,
     template,
     templateIntroChoices,
-    templates,
+    heroOptions,
     beginCustomFlow,
     beginTemplateFlow,
     chooseTemplateIntro,
@@ -168,7 +201,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     saveStory,
     setCurrentSlideIndex,
     setHeroInput,
-    setSelectedTemplateId,
+    setSelectedHeroOption,
     submitCustomStep,
   } = useStoryGenerator(currentLang, {
     narrationAuto: t.narrationAuto,
@@ -194,6 +227,10 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
       return;
     }
 
+    if (draft.mode === "user_story") {
+      return;
+    }
+
     await beginTemplateFlow();
   };
 
@@ -205,6 +242,119 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   const activeStep = draft.currentStep;
   const activeStepIndex = activeStep ? STORY_STEP_KEYS.indexOf(activeStep) + 1 : STORY_STEP_KEYS.length;
   const isCompleted = draft.currentStep === null && draft.slideshow.length > 0;
+  const deferredHeroSearchQuery = useDeferredValue(heroSearchQuery);
+  const heroNameCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    heroOptions.forEach((item) => {
+      const key = item.heroName.trim().toLowerCase();
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return counts;
+  }, [heroOptions]);
+  const filteredHeroOptions = useMemo(() => {
+    const query = deferredHeroSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return heroOptions;
+    }
+
+    return heroOptions.filter((item) => {
+      const label = item.heroName.toLowerCase();
+      const detail = item.type === "template" ? item.title.toLowerCase() : "";
+      return label.includes(query) || detail.includes(query);
+    });
+  }, [deferredHeroSearchQuery, heroOptions]);
+  const selectedHeroOption = useMemo(() => heroOptions.find((item) =>
+    item.type === "user_story"
+      ? item.id === draft.selectedUserStoryId
+      : item.id === draft.selectedTemplateId,
+  ) || null, [draft.selectedTemplateId, draft.selectedUserStoryId, heroOptions]);
+
+  useEffect(() => {
+    if (!HERO_GIPHY_PREVIEWS_ENABLED || !isHeroPickerOpen) {
+      return;
+    }
+
+    const previewCandidates = filteredHeroOptions
+      .slice(0, 18)
+      .map((item) => item.heroName)
+      .filter((heroName, index, list) => list.indexOf(heroName) === index)
+      .filter((heroName) => {
+        const previewKey = makeHeroPreviewKey(heroName);
+        return heroPreviewStatusCache[previewKey] == null;
+      });
+
+    if (previewCandidates.length === 0) {
+      return;
+    }
+
+    previewCandidates.forEach((heroName) => {
+      heroPreviewStatusCache[makeHeroPreviewKey(heroName)] = "pending";
+    });
+
+    let cancelled = false;
+
+    void Promise.all(previewCandidates.map(async (heroName) => {
+      const previewKey = makeHeroPreviewKey(heroName);
+
+      try {
+        const response = await fetch("/api/search-giphy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: heroName }),
+        });
+
+        if (!response.ok) {
+          heroPreviewStatusCache[previewKey] = "failed";
+          return [heroName, ""] as const;
+        }
+
+        const payload = await response.json() as { gifs?: string[] };
+        heroPreviewStatusCache[previewKey] = payload.gifs?.[0] ? "done" : "failed";
+        return [heroName, payload.gifs?.[0] || ""] as const;
+      } catch {
+        heroPreviewStatusCache[previewKey] = "failed";
+        return [heroName, ""] as const;
+      }
+    })).then((results) => {
+      if (cancelled) {
+        return;
+      }
+
+      setHeroPreviewMap((prev) => {
+        const next = { ...prev };
+        results.forEach(([heroName, previewUrl]) => {
+          if (previewUrl) {
+            const previewKey = makeHeroPreviewKey(heroName);
+            heroPreviewCache[previewKey] = previewUrl;
+            next[previewKey] = previewUrl;
+          }
+        });
+        return next;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredHeroOptions, isHeroPickerOpen]);
+
+  const getHeroCardMeta = (option: StoryHeroOption) => {
+    const duplicateCount = heroNameCounts.get(option.heroName.trim().toLowerCase()) || 0;
+
+    if (option.type === "template") {
+      if (duplicateCount > 1) {
+        return option.title;
+      }
+
+      return option.title !== option.heroName ? option.title : "";
+    }
+
+    if (duplicateCount > 1) {
+      return t.heroReadyFromLibrary;
+    }
+
+    return "";
+  };
 
   return (
     <div className="capybara-page-container story-generator-page">
@@ -239,20 +389,17 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
 
           {!draft.currentStep && !isCompleted ? (
             <section className="story-entry-card">
-              <label className="story-field-label" htmlFor="story-template-select">{t.selectLabel}</label>
-              <select
-                id="story-template-select"
-                className="story-field story-select"
-                value={draft.selectedTemplateId || ""}
-                onChange={(event) => setSelectedTemplateId(event.target.value || null)}
+              <label className="story-field-label">{t.selectLabel}</label>
+              <button
+                type="button"
+                className="story-field story-hero-picker-trigger"
+                onClick={() => setIsHeroPickerOpen(true)}
               >
-                <option value="">{t.selectPlaceholder}</option>
-                {templates.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.heroName}
-                  </option>
-                ))}
-              </select>
+                <span className="story-hero-picker-trigger-label">
+                  {selectedHeroOption?.heroName || t.selectPlaceholder}
+                </span>
+                <span className="story-hero-picker-trigger-action">{t.chooseHeroButton}</span>
+              </button>
 
               <label className="story-field-label" htmlFor="story-hero-input">{t.customLabel}</label>
               <input
@@ -266,21 +413,90 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
 
               <p className="story-inline-hint">{t.customWinsHint}</p>
 
-              <button
-                type="button"
-                className="feed-action-button story-primary-button"
-                disabled={draft.loading.template}
-                onClick={() => void handleStart()}
-              >
-                {draft.mode === "custom" ? t.coWriteButton : t.choosePathButton}
-              </button>
+              {draft.mode !== "user_story" ? (
+                <button
+                  type="button"
+                  className="feed-action-button story-primary-button"
+                  disabled={draft.loading.template}
+                  onClick={() => void handleStart()}
+                >
+                  {draft.mode === "custom" ? t.coWriteButton : t.choosePathButton}
+                </button>
+              ) : null}
             </section>
+          ) : null}
+
+          {isHeroPickerOpen ? (
+            <div
+              className="story-hero-picker-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t.heroPickerTitle}
+              onClick={() => setIsHeroPickerOpen(false)}
+            >
+              <div className="story-hero-picker-modal" onClick={(event) => event.stopPropagation()}>
+                <div className="story-hero-picker-header">
+                  <div>
+                    <div className="story-hero-picker-title">{t.heroPickerTitle}</div>
+                    <p className="story-hero-picker-hint">{t.heroPickerHint}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="story-hero-picker-close"
+                    onClick={() => setIsHeroPickerOpen(false)}
+                  >
+                    {t.closePickerButton}
+                  </button>
+                </div>
+
+                <input
+                  className="story-field story-hero-picker-search"
+                  type="text"
+                  value={heroSearchQuery}
+                  onChange={(event) => setHeroSearchQuery(event.target.value)}
+                  placeholder={t.heroSearchPlaceholder}
+                />
+
+                <div className="story-hero-picker-grid">
+                  {filteredHeroOptions.map((option) => {
+                    const previewUrl = heroPreviewMap[makeHeroPreviewKey(option.heroName)] || "";
+                    const meta = getHeroCardMeta(option);
+                    const isSelected = selectedHeroOption?.id === option.id && selectedHeroOption?.type === option.type;
+
+                    return (
+                      <button
+                        key={`${option.type}:${option.id}`}
+                        type="button"
+                        className={`story-hero-card${isSelected ? " is-selected" : ""}`}
+                        onClick={() => {
+                          setSelectedHeroOption(option);
+                          setIsHeroPickerOpen(false);
+                        }}
+                      >
+                        <div className="story-hero-card-media">
+                          {previewUrl ? (
+                            // Giphy previews are only decorative here; selection still relies on the canonical hero name.
+                            <img src={previewUrl} alt={option.heroName} />
+                          ) : (
+                            <div className="story-hero-card-fallback">{option.heroName.slice(0, 1).toUpperCase()}</div>
+                          )}
+                        </div>
+                        <div className="story-hero-card-copy">
+                          <div className="story-hero-card-name">{option.heroName}</div>
+                          <div className="story-hero-card-meta">{meta || t.heroPreviewFallback}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           ) : null}
 
           {draft.mode === "template" && draft.currentStep === "intro" ? (
             <section className="story-question-card">
               <div className="story-progress-chip">{t.progressLabel} 2 / 6</div>
-              <h2 className="story-question-title">{template?.steps.intro.title || t.templateIntroPrompt}</h2>
+              <h2 className="story-question-title">{t.templateIntroQuestion}</h2>
               <div className="story-choice-list">
                 {templateIntroChoices.map((choice) => (
                   <button
@@ -338,21 +554,23 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
               />
 
               <div className="story-result-actions">
-                <button
-                  type="button"
-                  className="feed-action-button story-primary-button"
-                  disabled={draft.loading.saving}
-                  onClick={async () => {
-                    console.log("[CLICK SAVE]");
-                    try {
-                      await saveStory();
-                    } catch (error) {
-                      console.error(error);
-                    }
-                  }}
-                >
-                  {draft.loading.saving ? t.saving : t.saveButton}
-                </button>
+                {draft.mode !== "user_story" ? (
+                  <button
+                    type="button"
+                    className="feed-action-button story-primary-button"
+                    disabled={draft.loading.saving}
+                    onClick={async () => {
+                      console.log("[CLICK SAVE]");
+                      try {
+                        await saveStory();
+                      } catch (error) {
+                        console.error(error);
+                      }
+                    }}
+                  >
+                    {draft.loading.saving ? t.saving : t.saveButton}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="feed-action-button"

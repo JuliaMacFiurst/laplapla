@@ -17,7 +17,17 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
   const currentLang = getCurrentLang(router);
 
   const [initialSlides, setInitialSlides] = useState<
-    { text: string; image?: string }[] | undefined
+    Array<{
+      text: string;
+      image?: string;
+      mediaType?: "image" | "video";
+      mediaFit?: "cover" | "contain";
+      mediaPosition?: "top" | "center" | "bottom";
+      textPosition?: "top" | "center" | "bottom";
+      textAlign?: "left" | "center" | "right";
+      textBgEnabled?: boolean;
+      textBgOpacity?: number;
+    }> | undefined
   >(undefined);
 
   // Prefer slides passed from /cats via sessionStorage (avoids huge query strings)
@@ -26,7 +36,17 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
       const stored = sessionStorage.getItem("catsSlides");
       if (!stored) return;
 
-      const parsed = JSON.parse(stored) as { text: string; image?: string }[];
+      const parsed = JSON.parse(stored) as Array<{
+        text: string;
+        image?: string;
+        mediaType?: "image" | "video";
+        mediaFit?: "cover" | "contain";
+        mediaPosition?: "top" | "center" | "bottom";
+        textPosition?: "top" | "center" | "bottom";
+        textAlign?: "left" | "center" | "right";
+        textBgEnabled?: boolean;
+        textBgOpacity?: number;
+      }>;
       if (Array.isArray(parsed) && parsed.length > 0) {
         setInitialSlides(parsed);
       }
