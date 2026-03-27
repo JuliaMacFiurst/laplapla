@@ -1,7 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getTranslationPayload } from "@/lib/contentTranslations";
 import { supabase } from "@/lib/supabase";
 import { dictionaries } from "@/i18n";
 import { getRequestLang } from "@/lib/i18n/routing";
+import { getTranslatedSlidesForMode } from "@/lib/books";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -42,13 +44,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { data: book } = await supabase
-      .from("books")
-      .select("title")
-      .eq("id", bookId)
-      .maybeSingle();
+    if (process.env.NODE_ENV === "development") {
+      console.log("[BOOK API] explanation request:", {
+        lang,
+        query: req.query,
+        url: req.url,
+      });
+    }
+
+    const [{ data: book }, { data: mode }] = await Promise.all([
+      supabase
+        .from("books")
+        .select("title")
+        .eq("id", bookId)
+        .maybeSingle(),
+      supabase
+        .from("explanation_modes")
+        .select("*")
+        .eq("id", modeId)
+        .maybeSingle(),
+    ]);
 
     const bookTitle = book?.title ?? t.fallbackSlides.unknownBookTitle;
+
+    if (lang !== "ru" && mode) {
+      const translation = await getTranslationPayload("book", String(bookId), lang);
+      const translatedSlides = getTranslatedSlidesForMode(translation, mode);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[BOOK API] explanation translation result:", {
+          lang,
+          bookId: String(bookId),
+          modeId: String(modeId),
+          hasTranslation: Boolean(translation),
+          translatedSlidesCount: translatedSlides?.length ?? 0,
+        });
+      }
+      if (translatedSlides?.length) {
+        return res.status(200).json({
+          id: null,
+          book_id: bookId,
+          mode_id: modeId,
+          slides: translatedSlides,
+        });
+      }
+    }
 
     const { data, error } = await supabase
       .from("book_explanations")
@@ -62,6 +101,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!data) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("[BOOK API] explanation fallback slides:", {
+          lang,
+          bookId: String(bookId),
+          modeId: String(modeId),
+          reason: "no_book_explanations_row",
+        });
+      }
       return res.status(200).json({
         id: null,
         book_id: bookId,
@@ -71,6 +118,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const slides = parseSlides(data.slides);
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[BOOK API] explanation db result:", {
+        lang,
+        bookId: String(bookId),
+        modeId: String(modeId),
+        slidesCount: slides.length,
+      });
+    }
 
     res.status(200).json({
       ...data,

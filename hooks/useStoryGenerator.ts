@@ -249,6 +249,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const [draft, setDraft] = useState<StoryDraftState>(buildInitialState);
   const [heroOptions, setHeroOptions] = useState<StoryHeroOption[]>([]);
   const [template, setTemplate] = useState<NormalizedStoryTemplate | null>(null);
+  const [activeUserStoryTranslated, setActiveUserStoryTranslated] = useState(true);
   const [mediaCache, setMediaCache] = useState<Map<number, SlideMedia>>(new Map());
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -261,8 +262,8 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     void (async () => {
       try {
         const [nextTemplates, nextUserStories] = await Promise.all([
-          loadStoryTemplateSummaries(),
-          loadApprovedUserStories(),
+          loadStoryTemplateSummaries(lang),
+          loadApprovedUserStories(lang),
         ]);
         if (!cancelled) {
           setHeroOptions([
@@ -285,7 +286,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     setDraft((prev) => {
@@ -365,6 +366,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const loadUserStory = useCallback(async (submissionId: string) => {
     setSaveMessage(null);
     setTemplate(null);
+    setActiveUserStoryTranslated(lang === "ru");
     setDraft((prev) => ({
       ...prev,
       error: null,
@@ -376,7 +378,8 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     }));
 
     try {
-      const userStory = await loadApprovedUserStory(submissionId);
+      const userStory = await loadApprovedUserStory(submissionId, lang);
+      setActiveUserStoryTranslated(userStory.translated);
       setDraft((prev) => ({
         ...prev,
         mode: "user_story",
@@ -396,7 +399,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
         loading: { ...prev.loading, template: false },
       }));
     }
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     if (
@@ -413,6 +416,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     setSaveMessage(null);
     setTemplate(null);
     if (!option) {
+      setActiveUserStoryTranslated(lang === "ru");
       setDraft((prev) => ({
         ...prev,
         selectedTemplateId: null,
@@ -425,6 +429,8 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       }));
       return;
     }
+
+    setActiveUserStoryTranslated(option.type === "user_story" ? Boolean(option.translated ?? lang === "ru") : true);
 
     if (option.type === "template") {
       setDraft((prev) => ({
@@ -451,7 +457,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       path: {},
     }));
     void loadUserStory(option.id);
-  }, [loadUserStory]);
+  }, [lang, loadUserStory]);
 
   const setHeroInput = useCallback((heroInput: string) => {
     setSaveMessage(null);
@@ -480,7 +486,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     }));
 
     try {
-      const nextTemplate = await loadStoryTemplate(draft.selectedTemplateId);
+      const nextTemplate = await loadStoryTemplate(draft.selectedTemplateId, lang);
       setTemplate(nextTemplate);
       setDraft((prev) => ({
         ...prev,
@@ -495,7 +501,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
         loading: { ...prev.loading, template: false },
       }));
     }
-  }, [draft.selectedTemplateId, texts.validationChooseHero]);
+  }, [draft.selectedTemplateId, lang, texts.validationChooseHero]);
 
   const chooseTemplateIntro = useCallback(async (choiceIndex: 0 | 1 | 2) => {
     if (!template) {
@@ -514,7 +520,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     }));
 
     try {
-      const response = await fetch("/api/story/preview", {
+      const response = await fetch(`/api/story/preview?lang=${lang}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -557,7 +563,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
         loading: { ...prev.loading, assembling: false },
       }));
     }
-  }, [template, texts.templatePreviewError]);
+  }, [lang, template, texts.templatePreviewError]);
 
   const beginCustomFlow = useCallback(() => {
     if (!draft.heroInput.trim()) {
@@ -757,6 +763,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     saveMessage,
     template,
     templateIntroChoices,
+    activeUserStoryTranslated,
     heroOptions,
     texts,
     beginCustomFlow,

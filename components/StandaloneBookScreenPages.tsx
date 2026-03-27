@@ -1,29 +1,28 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useBook } from "@/hooks/useBook";
 import { buildBookHref, buildBookModeHref } from "@/lib/books";
+import { buildLocalizedHref } from "@/lib/i18n/routing";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book } from "@/types/types";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
-interface StandaloneBookScreenProps {
+interface StandaloneBookScreenPagesProps {
   book: Book;
   lang: Lang;
   t: CapybaraPageDict;
   initialModeId?: string | number | null;
 }
 
-export default function StandaloneBookScreen({
+export default function StandaloneBookScreenPages({
   book,
   lang,
   t,
   initialModeId = null,
-}: StandaloneBookScreenProps) {
+}: StandaloneBookScreenPagesProps) {
   const router = useRouter();
   const {
     currentBook,
@@ -50,12 +49,12 @@ export default function StandaloneBookScreen({
     closeCurrentBookQuiz();
     const mode = explanationModes.find((item) => String(item.id) === String(modeId));
     const nextHref = mode ? buildBookModeHref(book, mode) : buildBookHref(book);
-    router.push(`${nextHref}?lang=${lang}`);
+    void router.push(buildLocalizedHref(nextHref, lang), undefined, { locale: lang });
   };
 
   const handleExplainMeaning = () => {
     closeCurrentBookQuiz();
-    router.push(`/caps/stories/create?lang=${lang}`);
+    void router.push(buildLocalizedHref("/caps/stories/create", lang), undefined, { locale: lang });
   };
 
   const handleCreateVideo = () => {
@@ -65,7 +64,7 @@ export default function StandaloneBookScreen({
     }));
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    router.push(`/cats/studio?lang=${lang}`);
+    void router.push(buildLocalizedHref("/cats/studio", lang), undefined, { locale: lang });
   };
 
   if (loading && !currentBook) {

@@ -15,6 +15,8 @@ interface BookHistoryEntry {
 interface LoadBookOptions {
   pushHistory?: boolean;
   signal?: AbortSignal;
+  forceReload?: boolean;
+  preserveMediaCache?: boolean;
 }
 
 interface ResolvedSlideMedia {
@@ -645,7 +647,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     }
 
     const request = (async () => {
-      const response = await fetch(`/api/books/tests?book_id=${bookId}`, { signal });
+      const response = await fetch(`/api/books/tests?book_id=${bookId}&lang=${lang}`, { signal });
       if (!response.ok) {
         throw new Error(t.errors.testsLoad);
       }
@@ -760,6 +762,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       const isBookChange = currentBookKey !== bookKey;
 
       if (
+        !options?.forceReload &&
         lastLoadedBookRef.current === bookKey &&
         currentBookKey === bookKey &&
         slidesRef.current.length > 0
@@ -787,7 +790,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       setLoading(true);
       setError(null);
       setQuizError(false);
-      clearMediaCache();
+      if (!options?.preserveMediaCache) {
+        clearMediaCache();
+      }
       setCurrentBook(book);
       if (isBookChange) {
         setSlides([]);
@@ -855,7 +860,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       setError(null);
 
       try {
-        const bookResponse = await fetch("/api/books/random");
+        const bookResponse = await fetch(`/api/books/random?lang=${lang}`);
 
         if (!bookResponse.ok) {
           throw new Error(t.errors.randomBookLoad);
@@ -870,7 +875,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         }
       }
     },
-    [loadBook, t.errors.randomBookLoad],
+    [lang, loadBook, t.errors.randomBookLoad],
   );
 
   const loadPreviousBook = useCallback(async () => {

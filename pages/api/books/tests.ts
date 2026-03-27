@@ -1,8 +1,37 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getTranslationPayload } from "@/lib/contentTranslations";
+import { getRequestLang } from "@/lib/i18n/routing";
+import { getTranslatedBookTests } from "@/lib/books";
 import { supabase } from "@/lib/supabase";
-import { normalizeBookTests } from "@/pages/api/books/_tests";
+import { normalizeBookTests, normalizeBookTestsWithAnswers } from "@/pages/api/books/_tests";
+
+const mergeTranslatedTests = (
+  translatedTests: ReturnType<typeof getTranslatedBookTests>,
+  baseTests: ReturnType<typeof normalizeBookTestsWithAnswers>,
+) =>
+  baseTests.map((baseTest, testIndex) => {
+    const translatedTest = translatedTests[testIndex];
+
+    return {
+      id: baseTest.id,
+      book_id: baseTest.book_id,
+      title: translatedTest?.title || baseTest.title,
+      description: translatedTest?.description || baseTest.description,
+      questions: baseTest.questions.map((baseQuestion, questionIndex) => {
+        const translatedQuestion = translatedTest?.questions?.[questionIndex];
+
+        return {
+          question: translatedQuestion?.question || baseQuestion.question,
+          options: baseQuestion.options.map(
+            (baseOption, optionIndex) => translatedQuestion?.options?.[optionIndex] || baseOption,
+          ),
+        };
+      }),
+    };
+  });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const lang = getRequestLang(req);
   const bookId = req.query.book_id;
 
   if (!bookId) {
@@ -10,6 +39,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[BOOK API] tests request:", {
+        lang,
+        query: req.query,
+        url: req.url,
+      });
+    }
+
     const { data, error } = await supabase
       .from("book_tests")
       .select("*")
@@ -17,6 +54,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (error) {
       throw error;
+    }
+
+    const normalizedBaseTests = normalizeBookTestsWithAnswers(data || []);
+
+    if (lang !== "ru") {
+      const translation = await getTranslationPayload("book", String(bookId), lang);
+      const translatedTests = getTranslatedBookTests(translation, String(bookId));
+      if (process.env.NODE_ENV === "development") {
+        console.log("[BOOK API] tests translation result:", {
+          lang,
+          bookId: String(bookId),
+          baseTestsCount: normalizedBaseTests.length,
+          translatedTestsCount: translatedTests.length,
+        });
+      }
+      if (translatedTests.length && normalizedBaseTests.length) {
+        return res.status(200).json(mergeTranslatedTests(translatedTests, normalizedBaseTests));
+      }
     }
 
     res.status(200).json(normalizeBookTests(data || []));

@@ -1,16 +1,17 @@
+import type { Lang } from "@/i18n";
+import { getLocalizedExplanationModeLabel } from "@/lib/books";
 import type { ExplanationMode } from "@/types/types";
 
 interface ModeButtonsProps {
+  lang: Lang;
   modes: ExplanationMode[];
   selectedModeId: string | number | null;
   disabled?: boolean;
   onSelect: (modeId: string | number) => void;
 }
 
-const getModeLabel = (mode: ExplanationMode) =>
-  String(mode.title || mode.name || mode.slug || `Mode ${mode.id}`);
-
 export default function ModeButtons({
+  lang,
   modes,
   selectedModeId,
   disabled,
@@ -30,7 +31,7 @@ export default function ModeButtons({
           onClick={() => onSelect(mode.id)}
           className={`mode-button ${selectedModeId === mode.id ? "mode-button-active" : ""}`}
         >
-          {getModeLabel(mode)}
+          {getLocalizedExplanationModeLabel(mode, lang)}
         </button>
       ))}
     </div>

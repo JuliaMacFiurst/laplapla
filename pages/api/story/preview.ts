@@ -6,11 +6,13 @@ import {
   validateStoryPath,
   type StoryChoiceIndex,
 } from "@/lib/story/story-service";
+import { getRequestLang } from "@/lib/i18n/routing";
 
 const isChoiceIndex = (value: unknown): value is StoryChoiceIndex =>
   value === 0 || value === 1 || value === 2;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const lang = getRequestLang(req);
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -23,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const template = await loadStoryTemplate(templateId);
+    const template = await loadStoryTemplate(templateId, lang);
     const path = ensureFullStoryPath(template, { intro: rawIntroChoiceIndex });
     const validation = validateStoryPath(template, path);
     const story = buildStory(template, path);

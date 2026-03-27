@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import StoryCarousel from "@/components/StoryCarousel";
 import BookQuiz from "@/components/BookQuiz";
 import ModeButtons from "@/components/ModeButtons";
+import TranslationWarning from "@/components/TranslationWarning";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
-import type { dictionaries } from "@/i18n";
+import type { dictionaries, Lang } from "@/i18n";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -18,6 +19,7 @@ type SlideMedia = {
 
 interface BookScreenProps {
   book: Book;
+  lang: Lang;
   slides: Slide[];
   tests: BookTest[];
   modes: ExplanationMode[];
@@ -39,6 +41,7 @@ interface BookScreenProps {
 
 export default function BookScreen({
   book,
+  lang,
   slides,
   tests,
   modes,
@@ -135,6 +138,7 @@ export default function BookScreen({
     <>
       <div className="book-card-head">
         <div className="book-card-heading">
+          {lang !== "ru" && book.translated === false ? <TranslationWarning lang={lang} subject="book" /> : null}
           <h2 className="book-card-title">{book.title}</h2>
           {book.author ? <p className="book-card-author">{String(book.author)}</p> : null}
           {hasSecondaryMeta ? (
@@ -145,6 +149,7 @@ export default function BookScreen({
         </div>
 
         <ModeButtons
+          lang={lang}
           modes={modes}
           selectedModeId={selectedModeId}
           disabled={loading}
@@ -155,6 +160,8 @@ export default function BookScreen({
       <div className="book-card-body">
         <StoryCarousel
           story={story}
+          lang={lang}
+          t={t}
           currentSlideIndex={currentSlideIndex}
           onSlideIndexChange={onSlideIndexChange}
           textClassName="story-carousel-text"

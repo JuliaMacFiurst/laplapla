@@ -1,6 +1,6 @@
 import BookScreen from "@/components/BookScreen";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
-import type { dictionaries } from "@/i18n";
+import type { dictionaries, Lang } from "@/i18n";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 type SlideMedia = {
@@ -14,6 +14,7 @@ type SlideMedia = {
 
 interface BookCardProps {
   book: Book;
+  lang: Lang;
   slides: Slide[];
   tests: BookTest[];
   modes: ExplanationMode[];
@@ -35,6 +36,7 @@ interface BookCardProps {
 
 export default function BookCard({
   book,
+  lang,
   slides,
   tests,
   modes,
@@ -57,6 +59,7 @@ export default function BookCard({
     <article className="book-card">
       <BookScreen
         book={book}
+        lang={lang}
         slides={slides}
         tests={tests}
         modes={modes}

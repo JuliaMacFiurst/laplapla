@@ -338,6 +338,8 @@ type DictionaryShape = {
       navigation: {
         previousBook: string;
         nextBook: string;
+        previousSlide: string;
+        nextSlide: string;
       };
       search: {
         title: string;
@@ -350,6 +352,7 @@ type DictionaryShape = {
       };
       loadingErrorTitle: string;
       storyError: string;
+      slideCounter: string;
       testTitle: string;
       noTests: string;
       untitledQuestion: string;

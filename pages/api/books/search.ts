@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getRequestLang } from "@/lib/i18n/routing";
+import { translateBooksForLang } from "@/lib/books";
 import { supabase } from "@/lib/supabase";
+import type { Book } from "@/types/types";
 
 const normalize = (value: unknown) =>
   String(value ?? "")
@@ -21,6 +24,7 @@ const matchesQuery = (book: Record<string, unknown>, query: string) => {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const lang = getRequestLang(req);
   const rawQuery = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q;
   const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
 
@@ -39,7 +43,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const normalizedQuery = normalize(query);
-    const results = ((data || []) as Record<string, unknown>[])
+    const translatedBooks = await translateBooksForLang((data || []) as Book[], lang);
+    const results = (translatedBooks as Record<string, unknown>[])
       .filter((book) => matchesQuery(book, normalizedQuery))
       .slice(0, 20);
 

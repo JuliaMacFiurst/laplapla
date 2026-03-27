@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAutoFontSize } from "@/hooks/useAutoFontSize";
+import type { dictionaries, Lang } from "@/i18n";
 import type { CarouselStory } from "../types/types";
 import { fallbackImages } from "../constants";
+
+type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
 type SlideMedia = {
   type: "image" | "video" | "gif";
@@ -14,6 +17,8 @@ type SlideMedia = {
 
 interface StoryCarouselProps {
   story: CarouselStory;
+  lang: Lang;
+  t: CapybaraPageDict;
   currentSlideIndex: number;
   onSlideIndexChange: (slideIndex: number) => void;
   textClassName?: string;
@@ -24,6 +29,8 @@ interface StoryCarouselProps {
 
 const StoryCarousel: React.FC<StoryCarouselProps> = ({
   story,
+  lang,
+  t,
   currentSlideIndex,
   onSlideIndexChange,
   textClassName,
@@ -186,21 +193,25 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
                 <button
                   onClick={handlePrevSlide}
                   disabled={currentSlideIndex === 0}
-                  aria-label="Предыдущий кадр"
+                  aria-label={t.navigation.previousSlide}
                   className="arrow-button"
+                  dir="ltr"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="arrow-icon">
                     <path fillRule="evenodd" d="M12.53 3.47a.75.75 0 010 1.06L7.06 10l5.47 5.47a.75.75 0 11-1.06 1.06l-6-6a.75.75 0 010-1.06l6-6a.75.75 0 011.06 0z" clipRule="evenodd" />
                   </svg>
                 </button>
-                <p className="slide-counter">
-                  Кадр {currentSlideIndex + 1} из {story.slides.length}
+                <p className="slide-counter" dir={lang === "he" ? "rtl" : "ltr"}>
+                  {t.slideCounter
+                    .replace("{current}", String(currentSlideIndex + 1))
+                    .replace("{total}", String(story.slides.length))}
                 </p>
                 <button
                   onClick={handleNextSlide}
                   disabled={currentSlideIndex === story.slides.length - 1}
-                  aria-label="Следующий кадр"
+                  aria-label={t.navigation.nextSlide}
                   className="arrow-button"
+                  dir="ltr"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="arrow-icon">
                     <path fillRule="evenodd" d="M7.47 16.53a.75.75 0 010-1.06L12.94 10 7.47 4.53a.75.75 0 111.06-1.06l6 6a.75.75 0 010 1.06l-6 6a.75.75 0 01-1.06 0z" clipRule="evenodd" />

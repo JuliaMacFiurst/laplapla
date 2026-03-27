@@ -43,6 +43,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const searchControllerRef = useRef<AbortController | null>(null);
   const lastSyncedPathRef = useRef<string | null>(null);
   const searchOverlayRef = useRef<HTMLDivElement | null>(null);
+  const previousLangRef = useRef(currentLang);
 
   const abortSearchPipeline = useCallback(() => {
     searchControllerRef.current?.abort();
@@ -76,7 +77,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     setSearchLoading(true);
 
     try {
-      const response = await fetch(`/api/books/search?q=${encodeURIComponent(nextQuery)}`, {
+      const response = await fetch(`/api/books/search?q=${encodeURIComponent(nextQuery)}&lang=${currentLang}`, {
         signal: searchController.signal,
       });
       if (!response.ok) {
@@ -113,6 +114,49 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   }, [abortSearchPipeline, inputValue, resetSearchState, t.search.noResults, t.search.searchError]);
 
   useEffect(() => () => abortSearchPipeline(), [abortSearchPipeline]);
+
+  useEffect(() => {
+    if (previousLangRef.current === currentLang) {
+      return;
+    }
+
+    previousLangRef.current = currentLang;
+
+    if (!currentBook) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    void (async () => {
+      try {
+        closeCurrentBookQuiz();
+        const response = await fetch(`/api/books/item?book_id=${encodeURIComponent(String(currentBook.id))}&lang=${currentLang}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(t.errors.bookLoad);
+        }
+
+        const translatedBook = (await response.json()) as Book;
+        await loadBook(translatedBook, selectedModeId, {
+          pushHistory: false,
+          signal: controller.signal,
+          forceReload: true,
+          preserveMediaCache: true,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        console.error("[BOOK] failed to reload current book on lang change:", error);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [closeCurrentBookQuiz, currentBook, currentLang, loadBook, selectedModeId, t.errors.bookLoad]);
 
   const syncBookRoute = useCallback((book: Book | null, modeId: string | number | null) => {
     if (!book) {
@@ -371,6 +415,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
           </section>
         ) : (
           <BookFeed
+            lang={currentLang}
             book={currentBook}
             slides={slides}
             tests={tests}

@@ -1,5 +1,7 @@
 import { extractSlideKeywords } from "@/hooks/useBook";
+import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
 import { supabase } from "@/lib/supabase";
+import type { Lang } from "@/i18n";
 
 export const STORY_STEP_KEYS = [
   "narration",
@@ -52,6 +54,7 @@ export type StoryTemplateSummary = {
   id: string;
   title: string;
   heroName: string;
+  translated?: boolean;
 };
 
 export type StoryHeroOption =
@@ -60,11 +63,13 @@ export type StoryHeroOption =
       id: string;
       title: string;
       heroName: string;
+      translated?: boolean;
     }
   | {
       type: "user_story";
       id: string;
       heroName: string;
+      translated?: boolean;
     };
 
 type LooseRecord = Record<string, unknown>;
@@ -89,6 +94,7 @@ export type NormalizedStoryTemplate = {
   title: string;
   heroName: string;
   steps: Record<StoryStepKey, NormalizedStep>;
+  translated?: boolean;
 };
 
 export type StoryPathValidationResult = {
@@ -242,7 +248,80 @@ const collectNestedRows = (template: LooseRecord, keys: string[]) => {
   return [] as LooseRecord[];
 };
 
-export async function loadStoryTemplateSummaries(): Promise<StoryTemplateSummary[]> {
+const normalizeTranslationStepKey = (value: unknown): StoryStepKey | null => {
+  const rawKey = firstText(value).toLowerCase();
+  if (!rawKey) {
+    return null;
+  }
+
+  const matchedEntry = Object.entries(STEP_KEY_ALIASES).find(([, aliases]) =>
+    aliases.some((alias) => rawKey.includes(alias)),
+  );
+  return matchedEntry ? matchedEntry[0] as StoryStepKey : null;
+};
+
+const getStoryTemplateStepTranslation = (translation: LooseRecord | null, stepKey: StoryStepKey) =>
+  asArray(translation?.steps)
+    .map((item) => (isRecord(item) ? item : null))
+    .find((step) => normalizeTranslationStepKey(step?.key ?? step?.step ?? step?.slug ?? step?.name) === stepKey) || null;
+
+const applyStoryTemplateTranslation = (
+  template: NormalizedStoryTemplate,
+  translation: unknown,
+): NormalizedStoryTemplate => {
+  const record = isRecord(translation) ? translation : null;
+  if (!record) {
+    return {
+      ...template,
+      translated: false,
+    };
+  }
+
+  const steps = STORY_STEP_KEYS.reduce<Record<StoryStepKey, NormalizedStep>>((acc, stepKey) => {
+    const baseStep = template.steps[stepKey];
+    const translatedStep = getStoryTemplateStepTranslation(record, stepKey);
+    const translatedChoices = baseStep.choices.map((choice, index) => {
+      const translatedChoicesPool = asArray(translatedStep?.choices)
+        .map((item) => (isRecord(item) ? item : null))
+        .filter((item): item is LooseRecord => Boolean(item));
+      const translatedChoice = translatedChoicesPool.find((item) =>
+        normalizeChoiceIndex(item.choice_index ?? item.index ?? item.position) === choice.index,
+      ) || translatedChoicesPool[index] || null;
+      const translatedFragments = asArray(translatedChoice?.fragments)
+        .map((item) => {
+          if (isRecord(item)) {
+            return firstText(item.text, item.content, item.fragment_text, item.body, item.value);
+          }
+          return firstText(item);
+        })
+        .filter(Boolean);
+
+      return {
+        ...choice,
+        text: firstText(translatedChoice?.text, translatedChoice?.title, translatedChoice?.label) || choice.text,
+        fragments: translatedFragments.length ? translatedFragments : choice.fragments,
+      };
+    });
+
+    acc[stepKey] = {
+      ...baseStep,
+      title: firstText(translatedStep?.title, translatedStep?.name, translatedStep?.prompt) || baseStep.title,
+      narration: firstText(translatedStep?.narration, translatedStep?.text, translatedStep?.content) || baseStep.narration,
+      choices: translatedChoices,
+    };
+    return acc;
+  }, {} as Record<StoryStepKey, NormalizedStep>);
+
+  return {
+    ...template,
+    title: firstText(record.title, record.name) || template.title,
+    heroName: firstText(record.hero_name, record.hero, record.character_name, record.title) || template.heroName,
+    steps,
+    translated: true,
+  };
+};
+
+export async function loadStoryTemplateSummaries(lang: Lang = "ru"): Promise<StoryTemplateSummary[]> {
   const { data, error } = await supabase
     .from("story_templates")
     .select("*")
@@ -252,7 +331,7 @@ export async function loadStoryTemplateSummaries(): Promise<StoryTemplateSummary
     throw error;
   }
 
-  return (data || []).map((row) => {
+  const baseTemplates = (data || []).map((row) => {
     const record = row as LooseRecord;
     return {
       id: String(record.id),
@@ -260,9 +339,26 @@ export async function loadStoryTemplateSummaries(): Promise<StoryTemplateSummary
       heroName: firstText(record.hero_name, record.hero, record.character_name, record.title, record.name) || "Capybara",
     };
   });
+
+  if (lang === "ru" || baseTemplates.length === 0) {
+    return baseTemplates.map((item) => ({ ...item, translated: true }));
+  }
+
+  const translationMap = await getTranslationPayloadMap("story_template", baseTemplates.map((item) => item.id), lang);
+  return baseTemplates.map((item) => {
+    const translation = translationMap.get(item.id);
+    const record = isRecord(translation) ? translation : null;
+
+    return {
+      ...item,
+      title: firstText(record?.title, record?.name, record?.hero_name) || item.title,
+      heroName: firstText(record?.hero_name, record?.hero, record?.character_name, record?.title) || item.heroName,
+      translated: Boolean(record),
+    };
+  });
 }
 
-export async function loadApprovedUserStories(): Promise<Extract<StoryHeroOption, { type: "user_story" }>[]> {
+export async function loadApprovedUserStories(lang: Lang = "ru"): Promise<Extract<StoryHeroOption, { type: "user_story" }>[]> {
   const { data, error } = await supabase
     .from("user_story_submissions")
     .select("id, hero_name")
@@ -273,7 +369,7 @@ export async function loadApprovedUserStories(): Promise<Extract<StoryHeroOption
     throw error;
   }
 
-  return (data || []).map((row) => {
+  const baseStories = (data || []).map((row) => {
     const record = row as LooseRecord;
     return {
       type: "user_story" as const,
@@ -281,14 +377,31 @@ export async function loadApprovedUserStories(): Promise<Extract<StoryHeroOption
       heroName: firstText(record.hero_name, record.hero, record.character_name, record.title, record.name) || "Capybara",
     };
   });
+
+  if (lang === "ru" || baseStories.length === 0) {
+    return baseStories.map((item) => ({ ...item, translated: true }));
+  }
+
+  const translationMap = await getTranslationPayloadMap("story_submission", baseStories.map((item) => item.id), lang);
+  return baseStories.map((item) => {
+    const translation = translationMap.get(item.id);
+    const record = isRecord(translation) ? translation : null;
+
+    return {
+      ...item,
+      heroName: firstText(record?.hero_name, record?.title) || item.heroName,
+      translated: Boolean(record),
+    };
+  });
 }
 
 type ApprovedUserStoryRecord = {
   heroName: string;
   slides: StorySlide[];
+  translated: boolean;
 };
 
-export async function loadApprovedUserStory(submissionId: string): Promise<ApprovedUserStoryRecord> {
+export async function loadApprovedUserStory(submissionId: string, lang: Lang = "ru"): Promise<ApprovedUserStoryRecord> {
   const { data, error } = await supabase
     .from("user_story_submissions")
     .select("hero_name, assembled_story")
@@ -301,15 +414,27 @@ export async function loadApprovedUserStory(submissionId: string): Promise<Appro
   }
 
   const record = (data || {}) as LooseRecord;
-  const assembledStory = isRecord(record.assembled_story) ? record.assembled_story : null;
+  const translation = lang !== "ru" ? await getTranslationPayload("story_submission", submissionId, lang) : null;
+  const translationRecord = isRecord(translation) ? translation : null;
+  const assembledStory = isRecord(translationRecord?.assembled_story)
+    ? translationRecord.assembled_story
+    : isRecord(record.assembled_story)
+      ? record.assembled_story
+      : null;
 
   return {
-    heroName: firstText(record.hero_name, assembledStory?.heroName, assembledStory?.hero_name) || "Capybara",
+    heroName: firstText(
+      translationRecord?.hero_name,
+      record.hero_name,
+      assembledStory?.heroName,
+      assembledStory?.hero_name,
+    ) || "Capybara",
     slides: parseUserStoryToSlides(assembledStory),
+    translated: lang === "ru" ? true : Boolean(translationRecord),
   };
 }
 
-export async function loadStoryTemplate(templateId: string): Promise<NormalizedStoryTemplate> {
+export async function loadStoryTemplate(templateId: string, lang: Lang = "ru"): Promise<NormalizedStoryTemplate> {
   const { data: template, error } = await supabase
     .from("story_templates")
     .select("*")
@@ -416,12 +541,22 @@ export async function loadStoryTemplate(templateId: string): Promise<NormalizedS
     };
   });
 
-  return {
+  const normalizedTemplate = {
     id: String(templateRecord.id ?? templateId),
     title: firstText(templateRecord.title, templateRecord.name, templateRecord.hero_name, templateRecord.hero) || "Story",
     heroName: firstText(templateRecord.hero_name, templateRecord.hero, templateRecord.character_name, templateRecord.title) || "Capybara",
     steps: normalizedSteps,
   };
+
+  if (lang === "ru") {
+    return {
+      ...normalizedTemplate,
+      translated: true,
+    };
+  }
+
+  const translation = await getTranslationPayload("story_template", templateId, lang);
+  return applyStoryTemplateTranslation(normalizedTemplate, translation);
 }
 
 const clampChoiceIndex = (value: number | undefined): StoryChoiceIndex => {

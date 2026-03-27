@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import BookCard from "@/components/BookCard";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import type { Lang } from "@/i18n";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries } from "@/i18n";
 
@@ -27,6 +28,7 @@ interface MobileBookPanel {
 }
 
 interface BookFeedProps {
+  lang: Lang;
   book: Book | null;
   slides: Slide[];
   tests: BookTest[];
@@ -53,6 +55,7 @@ interface BookFeedProps {
 }
 
 export default function BookFeed({
+  lang,
   book,
   slides,
   tests,
@@ -285,6 +288,7 @@ export default function BookFeed({
             >
               <BookCard
                 book={panel.book}
+                lang={lang}
                 slides={panel.slides}
                 tests={panel.tests}
                 modes={modes}
@@ -318,12 +322,20 @@ export default function BookFeed({
             disabled={loading || !hasPreviousBook}
             aria-label={t.navigation.previousBook}
           >
-            <span aria-hidden="true">{t.navigation.previousBook}←</span>
+            <span className="book-feed-nav-content" aria-hidden="true">
+              <span className="book-feed-nav-arrow">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.47 16.53a.75.75 0 010-1.06L12.94 10 7.47 4.53a.75.75 0 111.06-1.06l6 6a.75.75 0 010 1.06l-6 6a.75.75 0 01-1.06 0z" clipRule="evenodd" />
+                </svg>
+              </span>
+              <span className="book-feed-nav-label" dir="auto">{t.navigation.previousBook}</span>
+            </span>
           </button>
 
           <div className="book-feed-layout">
             <BookCard
               book={book}
+              lang={lang}
               slides={slides}
               tests={tests}
               modes={modes}
@@ -351,7 +363,14 @@ export default function BookFeed({
             disabled={loading || !hasNextBook}
             aria-label={t.navigation.nextBook}
           >
-            <span aria-hidden="true">{t.navigation.nextBook}→</span>
+            <span className="book-feed-nav-content" aria-hidden="true">
+              <span className="book-feed-nav-label" dir="auto">{t.navigation.nextBook}</span>
+              <span className="book-feed-nav-arrow">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M12.53 3.47a.75.75 0 010 1.06L7.06 10l5.47 5.47a.75.75 0 11-1.06 1.06l-6-6a.75.75 0 010-1.06l6-6a.75.75 0 011.06 0z" clipRule="evenodd" />
+                </svg>
+              </span>
+            </span>
           </button>
           </div>
         </>

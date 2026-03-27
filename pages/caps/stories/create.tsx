@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
 import StoryCarousel from "@/components/StoryCarousel";
+import TranslationWarning from "@/components/TranslationWarning";
 import type { Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { STORY_STEP_KEYS, type StoryHeroOption, type StoryStepKey } from "@/lib/story/story-service";
@@ -192,6 +193,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     saveMessage,
     template,
     templateIntroChoices,
+    activeUserStoryTranslated,
     heroOptions,
     beginCustomFlow,
     beginTemplateFlow,
@@ -545,6 +547,9 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
 
           {isCompleted ? (
             <section className="story-result-card">
+              {draft.mode === "user_story" && currentLang !== "ru" && !activeUserStoryTranslated ? (
+                <TranslationWarning lang={currentLang} subject="story" />
+              ) : null}
               <StoryCarousel
                 story={carouselStory}
                 currentSlideIndex={currentSlideIndex}
