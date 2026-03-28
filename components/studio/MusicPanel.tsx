@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, type RefObject } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { ParrotPreset, PARROT_PRESETS } from "@/utils/parrot-presets";
 import type { AudioEngineHandle } from "./AudioEngine";
 import { dictionaries, Lang } from "@/i18n";
@@ -27,6 +27,101 @@ export type Track = {
   src: string;
   volume: number;
 };
+
+type TrackRowProps = {
+  track: Track;
+  onVolumeChange: (trackId: string, volume: number) => void;
+  onRemove: (trackId: string) => void;
+};
+
+const areTracksEqual = (a: Track[], b: Track[]) => {
+  if (a.length !== b.length) return false;
+
+  return a.every((track, index) => {
+    const other = b[index];
+    return (
+      other &&
+      track.id === other.id &&
+      track.src === other.src &&
+      track.label === other.label &&
+      track.volume === other.volume
+    );
+  });
+};
+
+const TrackRow = memo(function TrackRow({
+  track,
+  onVolumeChange,
+  onRemove,
+}: TrackRowProps) {
+  const [localValue, setLocalValue] = useState(track.volume);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalValue(track.volume);
+    }
+  }, [isDragging, track.volume]);
+
+  const startDragging = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const stopDragging = useCallback(() => {
+    setIsDragging(false);
+    onVolumeChange(track.id, localValue);
+  }, [localValue, onVolumeChange, track.id]);
+
+  const handleChange = useCallback((value: number) => {
+    setLocalValue(value);
+  }, []);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 10,
+      }}
+    >
+      <span style={{ width: 150 }}>{track.label}</span>
+
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={isDragging ? localValue : track.volume}
+        onMouseDown={startDragging}
+        onTouchStart={startDragging}
+        onPointerDown={startDragging}
+        onMouseUp={stopDragging}
+        onTouchEnd={stopDragging}
+        onPointerUp={stopDragging}
+        onBlur={stopDragging}
+        onChange={(e) => {
+          handleChange(Number(e.target.value));
+        }}
+        style={{ flex: 1 }}
+      />
+
+      <button
+        onClick={() => onRemove(track.id)}
+        style={{
+          border: "none",
+          background: "#ff6b6b",
+          color: "#fff",
+          borderRadius: 8,
+          padding: "4px 8px",
+          cursor: "pointer",
+        }}
+      >
+        ✕
+      </button>
+    </div>
+  );
+});
 
 type MusicPanelProps = {
   engineRef: RefObject<AudioEngineHandle | null>;
@@ -70,7 +165,23 @@ export default function MusicPanel({
 
   // --- Restore tracks from initialTracks on mount or when changed ---
   useEffect(() => {
-    if (!initialTracks || initialTracks.length === 0) return;
+    if (!initialTracks) return;
+
+    if (skipNextInitialTracksSyncRef.current) {
+      skipNextInitialTracksSyncRef.current = false;
+      return;
+    }
+
+    if (areTracksEqual(activeTracks, initialTracks)) {
+      return;
+    }
+
+    const nextIds = new Set(initialTracks.map((track) => track.id));
+    activeTracks.forEach((track) => {
+      if (!nextIds.has(track.id)) {
+        engineRef?.current?.removeTrack?.(track.id);
+      }
+    });
 
     setActiveTracks(initialTracks);
 
@@ -78,7 +189,7 @@ export default function MusicPanel({
       engineRef?.current?.addTrack?.(track);
       engineRef?.current?.setVolume?.(track.id, track.volume);
     });
-  }, [initialTracks]);
+  }, [activeTracks, engineRef, initialTracks]);
 
   // --- Persist tracks whenever they change ---
   useEffect(() => {
@@ -118,9 +229,24 @@ export default function MusicPanel({
   const [isOpen, setIsOpen] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const skipNextInitialTracksSyncRef = useRef(false);
 
 
   const selectedPreset = presets.find((p) => p.id === selectedPresetId);
+
+  const handleTrackVolumeChange = useCallback((trackId: string, volume: number) => {
+    skipNextInitialTracksSyncRef.current = true;
+    setActiveTracks((prev) =>
+      prev.map((track) => (track.id === trackId ? { ...track, volume } : track))
+    );
+    engineRef?.current?.setVolume?.(trackId, volume);
+  }, [engineRef]);
+
+  const handleTrackRemove = useCallback((trackId: string) => {
+    skipNextInitialTracksSyncRef.current = true;
+    setActiveTracks((prev) => prev.filter((track) => track.id !== trackId));
+    engineRef?.current?.removeTrack?.(trackId);
+  }, [engineRef]);
 
   return (
     <div className="studio-panel" style={{ marginTop: 24 }}>
@@ -241,54 +367,12 @@ export default function MusicPanel({
         )}
 
         {activeTracks.map((track) => (
-          <div
+          <TrackRow
             key={track.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 10,
-            }}
-          >
-            <span style={{ width: 150 }}>{track.label}</span>
-
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={track.volume}
-              onChange={(e) => {
-                const volume = Number(e.target.value);
-                setActiveTracks((prev) =>
-                  prev.map((t) =>
-                    t.id === track.id ? { ...t, volume } : t
-                  )
-                );
-                engineRef?.current?.setVolume?.(track.id, volume);
-              }}
-              style={{ flex: 1 }}
-            />
-
-            <button
-              onClick={() => {
-                setActiveTracks((prev) =>
-                  prev.filter((t) => t.id !== track.id)
-                );
-                engineRef?.current?.removeTrack?.(track.id);
-              }}
-              style={{
-                border: "none",
-                background: "#ff6b6b",
-                color: "#fff",
-                borderRadius: 8,
-                padding: "4px 8px",
-                cursor: "pointer",
-              }}
-            >
-              ✕
-            </button>
-          </div>
+            track={track}
+            onVolumeChange={handleTrackVolumeChange}
+            onRemove={handleTrackRemove}
+          />
         ))}
 
         {activeTracks.length > 0 && (
@@ -382,54 +466,12 @@ export default function MusicPanel({
               )}
 
               {activeTracks.map((track) => (
-                <div
+                <TrackRow
                   key={`modal-${track.id}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    marginBottom: 10,
-                  }}
-                >
-                  <span style={{ width: 150 }}>{track.label}</span>
-
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={track.volume}
-                    onChange={(e) => {
-                      const volume = Number(e.target.value);
-                      setActiveTracks((prev) =>
-                        prev.map((t) =>
-                          t.id === track.id ? { ...t, volume } : t
-                        )
-                      );
-                      engineRef?.current?.setVolume?.(track.id, volume);
-                    }}
-                    style={{ flex: 1 }}
-                  />
-
-                  <button
-                    onClick={() => {
-                      setActiveTracks((prev) =>
-                        prev.filter((t) => t.id !== track.id)
-                      );
-                      engineRef?.current?.removeTrack?.(track.id);
-                    }}
-                    style={{
-                      border: "none",
-                      background: "#ff6b6b",
-                      color: "#fff",
-                      borderRadius: 8,
-                      padding: "4px 8px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
+                  track={track}
+                  onVolumeChange={handleTrackVolumeChange}
+                  onRemove={handleTrackRemove}
+                />
               ))}
 
               {activeTracks.length > 0 && (
@@ -507,6 +549,7 @@ export default function MusicPanel({
                                 volume: 1,
                               };
 
+                              skipNextInitialTracksSyncRef.current = true;
                               setActiveTracks((prev) => [...prev, newTrack]);
                               engineRef?.current?.addTrack?.(newTrack);
                             }}
