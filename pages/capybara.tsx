@@ -28,6 +28,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     loadExplanation,
     hasPreviousBook,
     preloadNextSlideMedia,
+    buildStudioSlides,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
@@ -284,14 +285,11 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     );
   };
 
-  const handleCreateVideo = () => {
-    const studioSlides = slides.map((slide) => ({
-      text: slide.text,
-      image: slide.capybaraImage || slide.imageUrl || slide.gifUrl || slide.videoUrl,
-    }));
+  const handleCreateVideo = async () => {
+    const studioSlides = await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    router.push(
+    await router.push(
       { pathname: "/cats/studio", query: buildLocalizedQuery(currentLang) },
       undefined,
       { locale: currentLang },

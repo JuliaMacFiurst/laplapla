@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAutoFontSize } from "@/hooks/useAutoFontSize";
-import type { dictionaries, Lang } from "@/i18n";
+import { dictionaries, type Lang } from "@/i18n";
 import type { CarouselStory } from "../types/types";
 import { fallbackImages } from "../constants";
 
@@ -18,7 +18,7 @@ type SlideMedia = {
 interface StoryCarouselProps {
   story: CarouselStory;
   lang: Lang;
-  t: CapybaraPageDict;
+  t?: CapybaraPageDict;
   currentSlideIndex: number;
   onSlideIndexChange: (slideIndex: number) => void;
   textClassName?: string;
@@ -38,6 +38,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
   mediaCache,
   onPreloadNextSlide,
 }) => {
+  const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
   const [showError, setShowError] = useState(false);
   const [lockedMedia, setLockedMedia] = useState<SlideMedia | null>(null);
   const textRef = useAutoFontSize<HTMLParagraphElement>([
@@ -102,6 +103,10 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
       onSlideIndexChange(currentSlideIndex - 1);
     }
   };
+
+  const previousSlideLabel = dict.navigation?.previousSlide || "Previous slide";
+  const nextSlideLabel = dict.navigation?.nextSlide || "Next slide";
+  const slideCounterTemplate = dict.slideCounter || "Slide {current} of {total}";
 
   const currentSlide = story.slides[currentSlideIndex];
   const currentMedia = lockedMedia;
@@ -193,7 +198,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
                 <button
                   onClick={handlePrevSlide}
                   disabled={currentSlideIndex === 0}
-                  aria-label={t.navigation.previousSlide}
+                  aria-label={previousSlideLabel}
                   className="arrow-button"
                   dir="ltr"
                 >
@@ -202,14 +207,14 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
                   </svg>
                 </button>
                 <p className="slide-counter" dir={lang === "he" ? "rtl" : "ltr"}>
-                  {t.slideCounter
+                  {slideCounterTemplate
                     .replace("{current}", String(currentSlideIndex + 1))
                     .replace("{total}", String(story.slides.length))}
                 </p>
                 <button
                   onClick={handleNextSlide}
                   disabled={currentSlideIndex === story.slides.length - 1}
-                  aria-label={t.navigation.nextSlide}
+                  aria-label={nextSlideLabel}
                   className="arrow-button"
                   dir="ltr"
                 >

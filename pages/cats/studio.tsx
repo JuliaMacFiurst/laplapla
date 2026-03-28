@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import type { Track } from "@/components/studio/MusicPanel";
 import { PARROT_PRESETS } from "@/utils/parrot-presets";
+import { loadProject } from "@/lib/studioStorage";
+import type { StudioProject } from "@/types/studio";
 
 type ImportedSlide = {
   text: string;
@@ -76,8 +78,36 @@ const StudioRoot = dynamic(
   { ssr: false }
 );
 
+const PROJECT_ID = "current-studio-project";
+
+function hasMeaningfulStudioProject(project: StudioProject | null | undefined) {
+  if (!project) return false;
+  if (project.musicTracks.length > 0) return true;
+
+  return project.slides.some((slide) => {
+    return Boolean(
+      slide.text?.trim() ||
+      slide.mediaUrl ||
+      slide.voiceUrl ||
+      slide.audioUrl,
+    );
+  });
+}
+
+function getOverwriteMessage(lang: Lang) {
+  if (lang === "he") {
+    return "יש כבר מצגת שנשמרה בסטודיו. להחליף אותה במצגת החדשה?";
+  }
+
+  if (lang === "en") {
+    return "There is already an editable slideshow saved in Studio. Do you want to replace it with the new one?";
+  }
+
+  return "В студии уже есть сохранённое редактируемое слайдшоу. Заменить его новым?";
+}
+
 export default function CatsStudioPage({ lang }: { lang: Lang }) {
-    const t = dictionaries[lang].cats;
+  const t = dictionaries[lang].cats;
   const router = useRouter();
   const currentLang = getCurrentLang(router);
 
@@ -85,47 +115,84 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
     ImportedSlide[] | undefined
   >(undefined);
   const [initialTracks, setInitialTracks] = useState<Track[] | undefined>(undefined);
+  const [isImportReady, setIsImportReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const parrotStored = sessionStorage.getItem("parrot_import");
-      if (parrotStored) {
-        const parsed = JSON.parse(parrotStored) as ParrotImportPayload;
+    let cancelled = false;
 
-        if (parsed?.type === "parrot_import") {
-          const mappedSlides: ImportedSlide[] = Array.isArray(parsed.slides)
-            ? parsed.slides.map((slide) => ({
-                text: slide.text,
-                image: slide.mediaUrl,
-                mediaType: slide.mediaType === "gif" ? "image" : slide.mediaType,
-                mediaFit: "contain",
-                mediaPosition: "center",
-                textPosition: "bottom",
-                textAlign: "center",
-              }))
-            : [];
+    const bootstrapImport = async () => {
+      try {
+        const parrotStored = sessionStorage.getItem("parrot_import");
+        const catsStored = sessionStorage.getItem("catsSlides");
 
-          setInitialSlides(mappedSlides);
-          setInitialTracks(buildTracksFromParrotImport(parsed));
+        let nextSlides: ImportedSlide[] | undefined;
+        let nextTracks: Track[] | undefined;
+        let shouldConsumeParrot = false;
+        let shouldConsumeCats = false;
+
+        if (parrotStored) {
+          const parsed = JSON.parse(parrotStored) as ParrotImportPayload;
+
+          if (parsed?.type === "parrot_import") {
+            nextSlides = Array.isArray(parsed.slides)
+              ? parsed.slides.map((slide) => ({
+                  text: slide.text,
+                  image: slide.mediaUrl,
+                  mediaType: slide.mediaType === "gif" ? "image" : slide.mediaType,
+                  mediaFit: "contain",
+                  mediaPosition: "center",
+                  textPosition: "bottom",
+                  textAlign: "center",
+                }))
+              : [];
+            nextTracks = buildTracksFromParrotImport(parsed);
+            shouldConsumeParrot = true;
+          }
+        }
+
+        if (!nextSlides && catsStored) {
+          const parsed = JSON.parse(catsStored) as ImportedSlide[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            nextSlides = parsed;
+            nextTracks = undefined;
+            shouldConsumeCats = true;
+          }
+        }
+
+        if (nextSlides && nextSlides.length > 0) {
+          const savedProject = await loadProject(PROJECT_ID);
+          const shouldOverwrite =
+            !hasMeaningfulStudioProject(savedProject) ||
+            window.confirm(getOverwriteMessage(lang));
+
+          if (shouldOverwrite && !cancelled) {
+            setInitialSlides(nextSlides);
+            setInitialTracks(nextTracks);
+          }
+        }
+
+        if (shouldConsumeParrot) {
           sessionStorage.removeItem("parrot_import");
-          return;
+        }
+
+        if (shouldConsumeCats) {
+          sessionStorage.removeItem("catsSlides");
+        }
+      } catch {
+        console.error("Failed to parse slides from sessionStorage");
+      } finally {
+        if (!cancelled) {
+          setIsImportReady(true);
         }
       }
+    };
 
-      const stored = sessionStorage.getItem("catsSlides");
-      if (!stored) return;
+    void bootstrapImport();
 
-      const parsed = JSON.parse(stored) as ImportedSlide[];
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        setInitialSlides(parsed);
-      }
-
-      // Optional: clear after consumption to avoid stale data
-      sessionStorage.removeItem("catsSlides");
-    } catch {
-      console.error("Failed to parse slides from sessionStorage");
-    }
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -146,10 +213,13 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
       <div style={{ marginBottom: 24 }}>
         
       </div>
-      <StudioRoot 
-      lang={lang}
-      initialSlides={initialSlides}
-      initialTracks={initialTracks} />
+      {isImportReady ? (
+        <StudioRoot
+          lang={lang}
+          initialSlides={initialSlides}
+          initialTracks={initialTracks}
+        />
+      ) : null}
 
       <button
           className="back-to-cats-button"

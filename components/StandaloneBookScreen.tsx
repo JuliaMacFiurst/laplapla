@@ -36,6 +36,7 @@ export default function StandaloneBookScreen({
     loading,
     error,
     preloadNextSlideMedia,
+    buildStudioSlides,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
@@ -58,11 +59,8 @@ export default function StandaloneBookScreen({
     router.push(`/caps/stories/create?lang=${lang}`);
   };
 
-  const handleCreateVideo = () => {
-    const studioSlides = slides.map((slide) => ({
-      text: slide.text,
-      image: slide.capybaraImage || slide.imageUrl || slide.gifUrl || slide.videoUrl,
-    }));
+  const handleCreateVideo = async () => {
+    const studioSlides = await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
     router.push(`/cats/studio?lang=${lang}`);

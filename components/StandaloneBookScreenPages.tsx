@@ -35,6 +35,7 @@ export default function StandaloneBookScreenPages({
     loading,
     error,
     preloadNextSlideMedia,
+    buildStudioSlides,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
@@ -57,11 +58,8 @@ export default function StandaloneBookScreenPages({
     void router.push(buildLocalizedHref("/caps/stories/create", lang), undefined, { locale: lang });
   };
 
-  const handleCreateVideo = () => {
-    const studioSlides = slides.map((slide) => ({
-      text: slide.text,
-      image: slide.capybaraImage || slide.imageUrl || slide.gifUrl || slide.videoUrl,
-    }));
+  const handleCreateVideo = async () => {
+    const studioSlides = await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
     void router.push(buildLocalizedHref("/cats/studio", lang), undefined, { locale: lang });

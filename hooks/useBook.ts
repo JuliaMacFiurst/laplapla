@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fallbackImages } from "@/constants";
+import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import type { dictionaries, Lang } from "@/i18n";
 import { supabase } from "@/lib/supabase";
 import type { Book, BookExplanation, BookTest, ExplanationMode, Slide } from "@/types/types";
@@ -529,6 +530,30 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     }
   }, []);
 
+  const buildStudioSlides = useCallback(async () => {
+    const nextSlides = slidesRef.current;
+    const nextCache = new Map(mediaCacheRef.current);
+
+    for (let index = 0; index < nextSlides.length; index += 1) {
+      if (nextCache.has(index)) {
+        continue;
+      }
+
+      try {
+        const media = await preloadSlideMedia(nextSlides[index], index, nextSlides.length);
+        nextCache.set(index, media);
+      } catch (error) {
+        if (isAbortError(error)) {
+          break;
+        }
+        console.error("[MEDIA EXPORT ERROR]:", error);
+      }
+    }
+
+    mediaCacheRef.current = nextCache;
+    return buildStudioSlidesFromCapybaraSlides(nextSlides, nextCache);
+  }, []);
+
   const loadModes = useCallback(async () => {
     if (explanationModes.length > 0) {
       return explanationModes;
@@ -980,6 +1005,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     loadExplanation,
     loadTests,
     preloadNextSlideMedia,
+    buildStudioSlides,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
