@@ -5,6 +5,7 @@ const TTL_MS = 60 * 60 * 1000;
 
 type PexelsItem = {
   url: string;
+  mediaType: "image" | "video";
   photographer?: string;
 };
 
@@ -44,33 +45,68 @@ export default async function handler(
   }
 
   try {
-    const searchParams = new URLSearchParams({
+    const photoSearchParams = new URLSearchParams({
       query,
       per_page: String(limit),
       orientation: "portrait",
     });
 
-    const response = await fetch(
-      `https://api.pexels.com/v1/search?${searchParams.toString()}`,
-      {
+    const videoSearchParams = new URLSearchParams({
+      query,
+      per_page: String(limit),
+    });
+
+    const [photoResponse, videoResponse] = await Promise.all([
+      fetch(`https://api.pexels.com/v1/search?${photoSearchParams.toString()}`, {
         headers: {
           Authorization: apiKey,
         },
-      },
-    );
+      }),
+      fetch(`https://api.pexels.com/videos/search?${videoSearchParams.toString()}`, {
+        headers: {
+          Authorization: apiKey,
+        },
+      }),
+    ]);
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: "Failed to fetch from Pexels" });
+    if (!photoResponse.ok && !videoResponse.ok) {
+      return res
+        .status(Math.max(photoResponse.status, videoResponse.status, 500))
+        .json({ error: "Failed to fetch from Pexels" });
     }
 
-    const json = await response.json();
-    const items: PexelsItem[] =
-      json?.photos
+    const photoJson = photoResponse.ok ? await photoResponse.json() : null;
+    const videoJson = videoResponse.ok ? await videoResponse.json() : null;
+
+    const photos: PexelsItem[] =
+      photoJson?.photos
         ?.map((photo: any) => ({
           url: photo?.src?.large || photo?.src?.medium || photo?.src?.original,
+          mediaType: "image" as const,
           photographer: photo?.photographer || undefined,
         }))
         ?.filter((item: PexelsItem) => Boolean(item.url)) ?? [];
+
+    const videos: PexelsItem[] =
+      videoJson?.videos
+        ?.map((video: any) => ({
+          url:
+            video?.video_files?.find((file: any) => file?.file_type === "video/mp4" && file?.width >= 720)
+              ?.link ||
+            video?.video_files?.find((file: any) => file?.file_type === "video/mp4")
+              ?.link,
+          mediaType: "video" as const,
+          photographer: video?.user?.name || undefined,
+        }))
+        ?.filter((item: PexelsItem) => Boolean(item.url)) ?? [];
+
+    const items: PexelsItem[] = [];
+    const maxLength = Math.max(photos.length, videos.length);
+
+    for (let index = 0; index < maxLength; index += 1) {
+      if (photos[index]) items.push(photos[index]);
+      if (videos[index]) items.push(videos[index]);
+    }
 
     return res
       .status(200)

@@ -20,6 +20,7 @@ export type LegacyLoop = {
 type Props = {
   loops: (LoopMulti | LegacyLoop)[];
   loopLength?: number; // seconds, for rough start/stop sync
+  lang?: "ru" | "en" | "he";
   ui: {
     titlePlay: string;
     titleStop: string;
@@ -79,7 +80,7 @@ type Props = {
 
 const pickRandom = (items: string[]) => items[Math.floor(Math.random() * items.length)] ?? "";
 
-export default function ParrotMixer({ loops, loopLength = 4, ui }: Props) {
+export default function ParrotMixer({ loops, loopLength = 4, lang = "ru", ui }: Props) {
   /** Нормализация входных данных (поддержка старого формата) */
   const normLoops: LoopMulti[] = useMemo(() => {
     return (loops as any[]).map((l: any) => {
@@ -819,7 +820,9 @@ export default function ParrotMixer({ loops, loopLength = 4, ui }: Props) {
 
   /** --- UI --- */
   return (
-    <div className="story-container">
+    <div
+      className={`story-container parrot-mixer force-ltr-layout ${lang === "he" ? "text-rtl-scope" : ""}`}
+    >
       <div className="story-content">
         {/* Parrot head + line */}
         {/*

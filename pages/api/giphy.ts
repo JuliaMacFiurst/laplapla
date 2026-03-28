@@ -5,6 +5,7 @@ const TTL_MS = 60 * 60 * 1000;
 
 type GiphyItem = {
   url: string;
+  mediaType: "gif";
   width?: number;
   height?: number;
 };
@@ -65,6 +66,7 @@ export default async function handler(
       json?.data
         ?.map((item: any) => ({
           url: item?.images?.original?.url || item?.images?.downsized_large?.url,
+          mediaType: "gif" as const,
           width: Number(item?.images?.original?.width) || undefined,
           height: Number(item?.images?.original?.height) || undefined,
         }))

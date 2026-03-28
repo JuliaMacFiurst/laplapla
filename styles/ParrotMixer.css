@@ -8,6 +8,35 @@
   --bg-color: #fff7ed;
 }
 
+.force-ltr-layout,
+.force-ltr-layout .mixer-story-nav-inner,
+.force-ltr-layout .mixer-loops-nav-inner,
+.force-ltr-layout .mixer-loop-header,
+.force-ltr-layout .rolodex-controls,
+.force-ltr-layout .rolodex,
+.force-ltr-layout .parrot-container {
+  direction: ltr;
+}
+
+.text-rtl-scope .subtitle,
+.text-rtl-scope .vol-title,
+.text-rtl-scope .rec-chip,
+.text-rtl-scope .mixer-layer-btn,
+.text-rtl-scope .mixer-loop-button span {
+  direction: rtl;
+  text-align: right;
+}
+
+.text-rtl-scope .subtitle {
+  align-self: stretch;
+}
+
+.text-rtl-scope .vol-title,
+.text-rtl-scope .rec-chip,
+.text-rtl-scope .mixer-layer-btn {
+  text-align: center;
+}
+
 /* Top transport row (was inline gap/margin) */
 .mixer-story-nav-inner {
   position: relative;
@@ -1437,7 +1466,8 @@
   --y: 17%;
 }
 .btn-isinrecord-anchor {
-  --x: 52%;
+  /* Keep the stop-recording state locked to the same anchor as the idle record button. */
+  --x: -52%;
   --y: 17%;
 }
 .btn-preview-anchor {

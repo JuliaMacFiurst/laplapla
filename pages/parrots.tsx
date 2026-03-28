@@ -64,7 +64,7 @@ export default function ParrotsPage() {
   return (
     <>
       <Head><title>{t.page.headTitle}</title></Head>
-      <main className="home-wrapper">
+      <main className={`home-wrapper parrots-page force-ltr-layout ${lang === "he" ? "parrots-page-he" : ""}`}>
         <h1 className="title page-title">{t.page.title}</h1>
         <p className="subtitle">{t.page.subtitle}</p>
 
@@ -95,7 +95,7 @@ export default function ParrotsPage() {
           }}
         >
           <div style={{ width: "100%" }}>
-            <ParrotMixer loops={preset.loops} ui={t.mixer} />
+            <ParrotMixer loops={preset.loops} lang={lang} ui={t.mixer} />
           </div>
           <div style={{ width: "100%" }}>
             <ParrotStoryCard
@@ -151,6 +151,28 @@ export default function ParrotsPage() {
             border-radius: 12px;
             padding: 4px 10px;
             backdrop-filter: blur(4px);
+          }
+
+          .parrots-page.force-ltr-layout,
+          .parrots-page.force-ltr-layout .grid,
+          .parrots-page.force-ltr-layout .style-presets-row,
+          .parrots-page.force-ltr-layout .style-preset-btn {
+            direction: ltr;
+          }
+
+          .parrots-page-he .page-title,
+          .parrots-page-he .subtitle,
+          .parrots-page-he .style-preset-label {
+            direction: rtl;
+          }
+
+          .parrots-page-he .page-title,
+          .parrots-page-he .subtitle {
+            text-align: right;
+          }
+
+          .parrots-page-he .style-preset-label {
+            text-align: center;
           }
         `}</style>
       </main>

@@ -18,58 +18,267 @@ type Props = {
 export type Slide = {
   text: string;
   mediaUrl?: string;
+  mediaType?: "gif" | "image" | "video";
 };
 
 const openGoogle = (q: string) =>
   window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank");
 
-const clientMediaCache = new Map<string, { mediaUrl: string | null; timestamp: number }>();
+type MediaType = "gif" | "image" | "video";
+
+type MediaItem = {
+  url: string;
+  mediaType: MediaType;
+};
+
+type MediaResponse = {
+  items: MediaItem[];
+  query: string;
+  cached: boolean;
+};
+
+type ClientCacheEntry = {
+  media: MediaItem | null;
+  timestamp: number;
+};
+
+const clientMediaCache = new Map<string, ClientCacheEntry>();
 const CLIENT_TTL_MS = 60 * 60 * 1000;
+const SESSION_STORAGE_KEY = "parrot-story-media-cache-v1";
+const PLACEHOLDER_MEDIA: MediaItem = {
+  url: "/images/parrot.webp",
+  mediaType: "image",
+};
 
 const STOPWORDS = new Set([
   "the", "and", "for", "with", "that", "this", "from", "into",
   "это", "как", "что", "для", "или", "его", "она", "они", "про",
   "עם", "של", "זה", "את", "על", "גם", "אבל", "כמו",
+  "music", "style", "sound", "song", "genre",
+  "музыка", "стиль", "звук", "песня", "жанр",
+  "מוזיקה", "סגנון", "צליל", "שיר",
 ]);
 
-const extractKeywords = (text: string) => {
-  return text
+const STYLE_HINTS: Record<string, string[]> = {
+  lofi: ["lofi", "chill", "vinyl", "music", "study"],
+  bossa: ["bossa", "nova", "brazil", "guitar", "jazz"],
+  synthwave: ["synthwave", "retro", "neon", "night", "synth"],
+  funk: ["funk", "groove", "bass", "dance", "rhythm"],
+  house: ["house", "dance", "club", "beat", "dj"],
+  reggae: ["reggae", "dub", "groove", "island", "sunny"],
+  ambient: ["ambient", "calm", "space", "dreamy", "soft"],
+  jazzhop: ["jazzhop", "jazz", "beats", "lofi", "study"],
+  chiptune: ["chiptune", "8bit", "arcade", "pixel", "game"],
+  kpop: ["kpop", "dance", "stage", "pop", "show"],
+  afroperc: ["afro", "percussion", "drums", "rhythm", "festival"],
+  celtic: ["celtic", "folk", "flute", "violin", "legend"],
+  latin: ["latin", "fiesta", "dance", "percussion", "summer"],
+  cartoon: ["cartoon", "funny", "playful", "comic", "animation"],
+  rock: ["rock", "guitar", "drums", "stage", "energy"],
+  classic: ["classical", "orchestra", "concert", "piano", "symphony"],
+  dance: ["dance", "party", "club", "beat", "energy"],
+  spiritual: ["spiritual", "calm", "peace", "meditation", "light"],
+};
+
+const extractKeywords = (text: string, styleSlug: string) => {
+  const tokens = text
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .split(/\s+/)
-    .filter((word) => word.length > 2 && !STOPWORDS.has(word))
-    .slice(0, 4)
-    .join(" ");
+    .filter((word) => word.length > 2 && !STOPWORDS.has(word));
+
+  const styleHints = STYLE_HINTS[styleSlug.trim().toLowerCase()] ?? [styleSlug.trim().toLowerCase()];
+  const merged = [...styleHints, ...tokens];
+
+  return merged.filter((word, index) => word && merged.indexOf(word) === index).slice(0, 5);
 };
 
-async function fetchMedia(styleSlug: string, slide: Slide, index: number): Promise<string | null> {
-  if (slide.mediaUrl) {
-    return slide.mediaUrl;
-  }
+const getSpecialParrotQuery = (index: number, slideCount: number) => {
+  const firstIndex = 0;
+  const middleIndex = Math.floor(slideCount / 2);
+  const lastIndex = slideCount - 1;
 
-  const query = `${styleSlug} ${extractKeywords(slide.text)}`.trim();
-  const cacheKey = `${styleSlug}:${query}:${index % 2 === 0 ? "giphy" : "pexels"}`;
+  if (index === firstIndex) return "parrot dancing";
+  if (index === middleIndex) return "funny parrot";
+  if (index === lastIndex) return "parrot dancing";
+  return null;
+};
+
+const buildMediaQueries = (styleSlug: string, slideText: string) => {
+  const keywords = extractKeywords(slideText, styleSlug);
+  const style = styleSlug.trim().toLowerCase();
+  const base = [style, ...keywords].filter(Boolean).join(" ").trim();
+
+  return [
+    base,
+    [style, ...keywords.slice(0, 3)].filter(Boolean).join(" ").trim(),
+    [...keywords, style, "music"].filter(Boolean).join(" ").trim(),
+  ].filter((query, index, queries) => query && queries.indexOf(query) === index);
+};
+
+const isVideoUrl = (url: string) => /\.mp4(\?|$)|\.webm(\?|$)/i.test(url);
+
+const getMediaTypeFromUrl = (url: string): MediaType =>
+  isVideoUrl(url) ? "video" : /\.gif(\?|$)/i.test(url) ? "gif" : "image";
+
+const loadSessionCache = () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<string, ClientCacheEntry>;
+
+    for (const [key, entry] of Object.entries(parsed)) {
+      if (entry && Date.now() - entry.timestamp < CLIENT_TTL_MS) {
+        clientMediaCache.set(key, entry);
+      }
+    }
+  } catch {
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  }
+};
+
+const persistSessionCache = () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const next: Record<string, ClientCacheEntry> = {};
+    for (const [key, entry] of clientMediaCache.entries()) {
+      if (Date.now() - entry.timestamp < CLIENT_TTL_MS) {
+        next[key] = entry;
+      }
+    }
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore quota/storage issues; memory cache remains active.
+  }
+};
+
+const getCachedMedia = (cacheKey: string) => {
   const cached = clientMediaCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CLIENT_TTL_MS) {
-    return cached.mediaUrl;
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp >= CLIENT_TTL_MS) {
+    clientMediaCache.delete(cacheKey);
+    return null;
+  }
+  return cached.media;
+};
+
+const logMediaDebug = (payload: {
+  index: number;
+  query: string;
+  source: "giphy" | "pexels" | "placeholder";
+  cacheHit: boolean;
+  mediaUrl?: string;
+}) => {
+  if (process.env.NODE_ENV !== "development") return;
+  console.debug("[ParrotStoryCard]", payload);
+};
+
+async function loadMediaItems(
+  source: "giphy" | "pexels",
+  query: string,
+): Promise<{ items: MediaItem[]; cacheHit: boolean }> {
+  const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
+  const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=8`);
+  if (!response.ok) {
+    return { items: [], cacheHit: false };
   }
 
-  const preferredEndpoint = index % 2 === 0 ? "/api/giphy" : "/api/pexels";
-  const fallbackEndpoint = index % 2 === 0 ? "/api/pexels" : "/api/giphy";
+  const json = (await response.json()) as Partial<MediaResponse>;
+  const items = Array.isArray(json.items)
+    ? json.items
+        .map((item) =>
+          item?.url
+            ? {
+                url: item.url,
+                mediaType: item.mediaType ?? getMediaTypeFromUrl(item.url),
+              }
+            : null,
+        )
+        .filter(Boolean) as MediaItem[]
+    : [];
 
-  const loadFrom = async (endpoint: string) => {
-    const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=5`);
-    if (!response.ok) return null;
-    const json = await response.json();
-    return json?.items?.[0]?.url ?? null;
-  };
-
-  const mediaUrl = (await loadFrom(preferredEndpoint)) ?? (await loadFrom(fallbackEndpoint));
-  clientMediaCache.set(cacheKey, { mediaUrl, timestamp: Date.now() });
-  return mediaUrl;
+  return { items, cacheHit: Boolean(json.cached) };
 }
 
-const ParrotSlider = ({ slides = [] }: { slides?: Slide[] }) => {
+async function fetchMedia(
+  styleSlug: string,
+  slide: Slide,
+  index: number,
+  slideCount: number,
+  usedMedia: Set<string>,
+): Promise<MediaItem | null> {
+  if (slide.mediaUrl) {
+    return {
+      url: slide.mediaUrl,
+      mediaType: slide.mediaType ?? getMediaTypeFromUrl(slide.mediaUrl),
+    };
+  }
+
+  const specialParrotQuery = getSpecialParrotQuery(index, slideCount);
+  const source: "giphy" | "pexels" = specialParrotQuery ? "giphy" : index % 2 === 0 ? "giphy" : "pexels";
+  const queries = specialParrotQuery ? [specialParrotQuery] : buildMediaQueries(styleSlug, slide.text);
+  const cacheKey = `${styleSlug}:${index}:${source}:${queries.join("|")}`;
+  const cachedMedia = getCachedMedia(cacheKey);
+
+  if (cachedMedia && !usedMedia.has(cachedMedia.url)) {
+    usedMedia.add(cachedMedia.url);
+    logMediaDebug({ index, query: queries[0] ?? "", source, cacheHit: true, mediaUrl: cachedMedia.url });
+    return cachedMedia;
+  }
+
+  let reusableMedia = cachedMedia;
+
+  for (const query of queries) {
+    const { items, cacheHit } = await loadMediaItems(source, query);
+    const selected = items.find((item) => !usedMedia.has(item.url)) ?? items[0] ?? null;
+
+    if (selected) {
+      clientMediaCache.set(cacheKey, { media: selected, timestamp: Date.now() });
+      persistSessionCache();
+      usedMedia.add(selected.url);
+      logMediaDebug({ index, query, source, cacheHit, mediaUrl: selected.url });
+      return selected;
+    }
+
+    if (!reusableMedia && items[0]) {
+      reusableMedia = items[0];
+    }
+  }
+
+  if (reusableMedia) {
+    clientMediaCache.set(cacheKey, { media: reusableMedia, timestamp: Date.now() });
+    persistSessionCache();
+    usedMedia.add(reusableMedia.url);
+    logMediaDebug({
+      index,
+      query: queries[0] ?? "",
+      source,
+      cacheHit: true,
+      mediaUrl: reusableMedia.url,
+    });
+    return reusableMedia;
+  }
+
+  logMediaDebug({
+    index,
+    query: queries[0] ?? "",
+    source: "placeholder",
+    cacheHit: false,
+    mediaUrl: PLACEHOLDER_MEDIA.url,
+  });
+  return PLACEHOLDER_MEDIA;
+}
+
+const ParrotSlider = ({
+  slides = [],
+  isRtlText = false,
+}: {
+  slides?: Slide[];
+  isRtlText?: boolean;
+}) => {
   const [currentIndex, setCurrentIndex] = React.useState<number>(0);
   const sliderRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -145,7 +354,7 @@ const ParrotSlider = ({ slides = [] }: { slides?: Slide[] }) => {
               }}
             >
               {slide.mediaUrl ? (
-                slide.mediaUrl.endsWith(".mp4") || slide.mediaUrl.endsWith(".webm") ? (
+                slide.mediaType === "video" || isVideoUrl(slide.mediaUrl) ? (
                 <video
                   src={slide.mediaUrl}
                   autoPlay
@@ -200,7 +409,9 @@ const ParrotSlider = ({ slides = [] }: { slides?: Slide[] }) => {
                 minHeight: "60px",
                 padding: "0 1rem",
                 boxSizing: "border-box",
-                width: "400px"
+                width: "400px",
+                direction: isRtlText ? "rtl" : "ltr",
+                textAlign: isRtlText ? "right" : "center",
               }}
             >
               {slide.text}
@@ -289,15 +500,27 @@ export default function ParrotStoryCard({
 
   React.useEffect(() => {
     let cancelled = false;
+    loadSessionCache();
     setResolvedSlides(slides);
 
     void (async () => {
-      const nextSlides = await Promise.all(
-        slides.map(async (slide, index) => ({
-          ...slide,
-          mediaUrl: slide.mediaUrl ?? (await fetchMedia(styleSlug, slide, index)) ?? undefined,
-        })),
+      const usedMedia = new Set<string>(
+        slides.map((slide) => slide.mediaUrl).filter(Boolean) as string[],
       );
+      const nextSlides: Slide[] = [];
+
+      for (let index = 0; index < slides.length; index += 1) {
+        const slide = slides[index];
+        const media = await fetchMedia(styleSlug, slide, index, slides.length, usedMedia);
+
+        nextSlides.push({
+          ...slide,
+          mediaUrl: slide.mediaUrl ?? media?.url ?? undefined,
+          mediaType:
+            slide.mediaType ??
+            (slide.mediaUrl ? getMediaTypeFromUrl(slide.mediaUrl) : media?.mediaType),
+        });
+      }
 
       if (!cancelled) {
         setResolvedSlides(nextSlides);
@@ -310,32 +533,41 @@ export default function ParrotStoryCard({
   }, [lang, slides, styleSlug]);
 
   return (
-    <div className="story-container">
+    <div className={`story-container story-card-root force-ltr-layout ${lang === "he" ? "text-rtl-scope" : ""}`}>
       <div className="story-content" style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <h3 className="title" style={{ fontSize: "32px", marginBottom: "1rem" }}>
+        <h3
+          className="title story-card-text"
+          style={{ fontSize: "32px", marginBottom: "1rem" }}
+        >
           {title}
         </h3>
-        <p className="subtitle" style={{ fontSize: "20px", marginBottom: "1.5rem" }}>
+        <p
+          className="subtitle story-card-text"
+          style={{ fontSize: "20px", marginBottom: "1.5rem" }}
+        >
           {description}
         </p>
         <div className="slider-container" style={{ position: "relative" }}>
           {(resolvedSlides?.length ?? 0) > 0 && (
-            <ParrotSlider slides={resolvedSlides} />
+            <ParrotSlider slides={resolvedSlides} isRtlText={lang === "he"} />
           )}
         </div>
         <div className="parrot-button-container">
-          <h4 style={{ fontFamily: "'Amatic SC', cursive", fontSize: "22px", marginBottom: "0.5rem", textAlign: "center" }}>
+          <h4
+            className="story-card-text story-card-text-center"
+            style={{ fontFamily: "'Amatic SC', cursive", fontSize: "22px", marginBottom: "0.5rem", textAlign: "center" }}
+          >
             {ui.externalPrompt}
           </h4>
           <button
             onClick={() => openGoogle(searchArtist + " site:youtube.com")}
-            className="external-link-button artist"
+            className="external-link-button artist story-card-text"
           >
             {ui.aboutArtist}
           </button>
           <button
             onClick={() => openGoogle(searchGenre)}
-            className="external-link-button genre"
+            className="external-link-button genre story-card-text"
           >
             {ui.aboutStyle}
           </button>
@@ -404,6 +636,22 @@ export default function ParrotStoryCard({
           align-items: center;
           gap: 0.75rem;
           box-shadow: 0 0 10px rgba(255, 204, 229, 0.3);
+        }
+
+        .story-card-root.force-ltr-layout,
+        .story-card-root.force-ltr-layout .story-content,
+        .story-card-root.force-ltr-layout .slider-container,
+        .story-card-root.force-ltr-layout .parrot-button-container {
+          direction: ltr;
+        }
+
+        .text-rtl-scope :global(.story-card-text) {
+          direction: rtl;
+          text-align: right;
+        }
+
+        .text-rtl-scope :global(.story-card-text-center) {
+          text-align: center;
         }
 
         @keyframes wiggle {

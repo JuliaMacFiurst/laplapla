@@ -1,6 +1,7 @@
 export type MusicSlide = {
   text: string;
   mediaUrl?: string;
+  mediaType?: "gif" | "image" | "video";
 };
 
 export type MusicStyle = {
