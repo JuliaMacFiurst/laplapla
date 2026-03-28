@@ -18,6 +18,9 @@ export type ParrotPreset = {
   searchGenre: string;
 };
 
+// Loops are sourced from Looperman (royalty-free)
+// Used for non-commercial educational purposes
+
 /** Instrument icon resolver (centralized) */
 export const iconForInstrument = (labelOrId: string): string => {
   const s = (labelOrId || "").toLowerCase();

@@ -1,36 +1,85 @@
-import { useState, useEffect, useRef } from "react";
-
+import * as React from "react";
 
 type Props = {
-  id: string;
+  lang: "ru" | "en" | "he";
+  styleSlug: string;
   title: string;
   description: string;
   searchArtist: string;
   searchGenre: string;
+  slides: Slide[];
+  ui: {
+    externalPrompt: string;
+    aboutArtist: string;
+    aboutStyle: string;
+  };
 };
 
 export type Slide = {
   text: string;
-  image: string;
+  mediaUrl?: string;
 };
-
-
 
 const openGoogle = (q: string) =>
   window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank");
 
-const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string }[] }) => {
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+const clientMediaCache = new Map<string, { mediaUrl: string | null; timestamp: number }>();
+const CLIENT_TTL_MS = 60 * 60 * 1000;
 
-  const sliderRef = useRef<HTMLDivElement | null>(null);
+const STOPWORDS = new Set([
+  "the", "and", "for", "with", "that", "this", "from", "into",
+  "это", "как", "что", "для", "или", "его", "она", "они", "про",
+  "עם", "של", "זה", "את", "על", "גם", "אבל", "כמו",
+]);
 
-  useEffect(() => {
+const extractKeywords = (text: string) => {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !STOPWORDS.has(word))
+    .slice(0, 4)
+    .join(" ");
+};
+
+async function fetchMedia(styleSlug: string, slide: Slide, index: number): Promise<string | null> {
+  if (slide.mediaUrl) {
+    return slide.mediaUrl;
+  }
+
+  const query = `${styleSlug} ${extractKeywords(slide.text)}`.trim();
+  const cacheKey = `${styleSlug}:${query}:${index % 2 === 0 ? "giphy" : "pexels"}`;
+  const cached = clientMediaCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CLIENT_TTL_MS) {
+    return cached.mediaUrl;
+  }
+
+  const preferredEndpoint = index % 2 === 0 ? "/api/giphy" : "/api/pexels";
+  const fallbackEndpoint = index % 2 === 0 ? "/api/pexels" : "/api/giphy";
+
+  const loadFrom = async (endpoint: string) => {
+    const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=5`);
+    if (!response.ok) return null;
+    const json = await response.json();
+    return json?.items?.[0]?.url ?? null;
+  };
+
+  const mediaUrl = (await loadFrom(preferredEndpoint)) ?? (await loadFrom(fallbackEndpoint));
+  clientMediaCache.set(cacheKey, { mediaUrl, timestamp: Date.now() });
+  return mediaUrl;
+}
+
+const ParrotSlider = ({ slides = [] }: { slides?: Slide[] }) => {
+  const [currentIndex, setCurrentIndex] = React.useState<number>(0);
+  const sliderRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
 
     const handleScroll = () => {
       const scrollLeft = slider.scrollLeft;
-      const slideWidth = slider.offsetWidth * 0.9 + 16; // 90% ширины + gap
+      const slideWidth = slider.offsetWidth * 0.9 + 16;
       const index = Math.round(scrollLeft / slideWidth);
       setCurrentIndex(index);
     };
@@ -39,8 +88,17 @@ const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string 
     return () => slider.removeEventListener("scroll", handleScroll);
   }, []);
 
+  React.useEffect(() => {
+    setCurrentIndex(0);
+    sliderRef.current?.scrollTo({ left: 0, behavior: "auto" });
+  }, [slides]);
+
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
+    const slider = sliderRef.current;
+    if (!slider) return;
+    const slideWidth = slider.offsetWidth * 0.9 + 16;
+    slider.scrollTo({ left: slideWidth * index, behavior: "smooth" });
   };
 
   return (
@@ -86,9 +144,10 @@ const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string 
                 justifyContent: "center"
               }}
             >
-              {slide.image.endsWith(".mp4") || slide.image.endsWith(".webm") ? (
+              {slide.mediaUrl ? (
+                slide.mediaUrl.endsWith(".mp4") || slide.mediaUrl.endsWith(".webm") ? (
                 <video
-                  src={slide.image}
+                  src={slide.mediaUrl}
                   autoPlay
                   loop
                   muted
@@ -101,7 +160,7 @@ const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string 
                 />
               ) : (
                 <img
-                  src={slide.image}
+                  src={slide.mediaUrl}
                   alt={slide.text}
                   style={{
                     width: "100%",
@@ -109,6 +168,27 @@ const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string 
                     objectFit: "contain"
                   }}
                 />
+                )
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    minHeight: "220px",
+                    maxHeight: "300px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "28px",
+                    background: "linear-gradient(135deg, #fff3b0, #ffd6e7 55%, #d9f7ff)",
+                    padding: "1.5rem",
+                    boxSizing: "border-box",
+                    fontFamily: "'Amatic SC', cursive",
+                    fontSize: "42px",
+                    color: "#3a2a2a"
+                  }}
+                >
+                  🦜
+                </div>
               )}
             </div>
             <div
@@ -137,7 +217,7 @@ const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string 
       </div>
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "2rem", maxWidth: "1000px", margin: "0 auto", marginTop: "-1rem" }}>
         <button
-          onClick={() => document.querySelector(".slider")?.scrollBy({ left: -500, behavior: "smooth" })}
+          onClick={() => sliderRef.current?.scrollBy({ left: -500, behavior: "smooth" })}
           disabled={currentIndex === 0}
           style={{
             fontFamily: "'Amatic SC', cursive",
@@ -159,7 +239,7 @@ const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string 
           ‹
         </button>
         <button
-          onClick={() => document.querySelector(".slider")?.scrollBy({ left: 500, behavior: "smooth" })}
+          onClick={() => sliderRef.current?.scrollBy({ left: 500, behavior: "smooth" })}
           disabled={currentIndex === slides.length - 1}
           style={{
             fontFamily: "'Amatic SC', cursive",
@@ -195,45 +275,39 @@ const ParrotSlider = ({ slides = [] }: { slides?: { text: string; image: string 
   );
 };
 
-export default function ParrotStoryCard({ id, title, description, searchArtist, searchGenre }: Props) {
-  const [slides, setSlides] = useState<Slide[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const cacheRef = useRef<Map<string, Slide[]>>(new Map());
+export default function ParrotStoryCard({
+  lang,
+  styleSlug,
+  title,
+  description,
+  searchArtist,
+  searchGenre,
+  slides,
+  ui,
+}: Props) {
+  const [resolvedSlides, setResolvedSlides] = React.useState<Slide[]>(slides);
 
-  async function loadSlides() {
-    const cached = cacheRef.current.get(id);
-    if (cached && cached.length >= 6) {
-      setSlides(cached);
-      setLoading(false);
-      return;
-    }
+  React.useEffect(() => {
+    let cancelled = false;
+    setResolvedSlides(slides);
 
-    try {
-      setLoading(true);
-      const userLang = navigator.language.startsWith('ru') ? 'ru' : 'en';
-      const res = await fetch(`/api/parrot-slides?style=${encodeURIComponent(id)}&lang=${userLang}`);
-      const json = await res.json();
-      const newSlides = json.slides || [];
-      if (newSlides.length >= 6) {
-        cacheRef.current.set(id, newSlides);
+    void (async () => {
+      const nextSlides = await Promise.all(
+        slides.map(async (slide, index) => ({
+          ...slide,
+          mediaUrl: slide.mediaUrl ?? (await fetchMedia(styleSlug, slide, index)) ?? undefined,
+        })),
+      );
+
+      if (!cancelled) {
+        setResolvedSlides(nextSlides);
       }
-      setSlides(newSlides);
-    } catch (err: any) {
-      setError(err.message || "Ошибка загрузки слайдов");
-    } finally {
-      setLoading(false);
-    }
-  }
+    })();
 
-  const handleReload = () => {
-    cacheRef.current.delete(id);
-    loadSlides();
-  };
-
-  useEffect(() => {
-    loadSlides();
-  }, [id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [lang, slides, styleSlug]);
 
   return (
     <div className="story-container">
@@ -245,83 +319,29 @@ export default function ParrotStoryCard({ id, title, description, searchArtist, 
           {description}
         </p>
         <div className="slider-container" style={{ position: "relative" }}>
-          {loading && (
-            <div
-              className="loader"
-              style={{
-                textAlign: "center",
-                fontSize: "20px",
-                padding: "2rem",
-                color: "#666"
-              }}
-            >
-              <div style={{ marginBottom: "1rem" }}>
-                <img
-                  src="/spinners/ParrotSpinner.webp"
-                  alt="Загрузка"
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    animation: "spin 1s linear infinite"
-                  }}
-                />
-              </div>
-              Загружается рассказ попугайчиков о стиле «{title}»…
-            </div>
-          )}
-          {error && <div className="error">Error: {error}</div>}
-          {!loading && !error && (slides?.length ?? 0) > 0 && (
-            <ParrotSlider slides={slides} />
+          {(resolvedSlides?.length ?? 0) > 0 && (
+            <ParrotSlider slides={resolvedSlides} />
           )}
         </div>
         <div className="parrot-button-container">
           <h4 style={{ fontFamily: "'Amatic SC', cursive", fontSize: "22px", marginBottom: "0.5rem", textAlign: "center" }}>
-            Для самостоятельного серфинга по интернету нажми на эти кнопки:
+            {ui.externalPrompt}
           </h4>
           <button
             onClick={() => openGoogle(searchArtist + " site:youtube.com")}
             className="external-link-button artist"
           >
-            🎵 Узнать про исполнителя (YouTube)
+            {ui.aboutArtist}
           </button>
           <button
             onClick={() => openGoogle(searchGenre)}
             className="external-link-button genre"
           >
-            🔍 Узнать про стиль (Google)
+            {ui.aboutStyle}
           </button>
         </div>
-        {!loading && !error && slides.length > 0 && (
-          <div style={{ textAlign: "center", marginTop: "2rem" }}>
-            <button
-              onClick={handleReload}
-              className="reload-button"
-            >
-              Загрузить рассказ заново
-            </button>
-          </div>
-        )}
       </div>
       <style jsx>{`
-        .reload-button {
-          font-family: 'Amatic SC', cursive;
-          font-size: 26px;
-          padding: 0.5rem 1.2rem;
-          border: 2px solid #ffd6e0;
-          background: #fff0f5;
-          border-radius: 12px;
-          color: #333;
-          cursor: pointer;
-          transition: background 0.3s ease, transform 0.2s ease;
-        }
-        .reload-button:hover {
-          background: #ffeaf2;
-          transform: scale(1.03);
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
         .external-link-button {
           font-family: 'Amatic SC', cursive;
           font-size: 24px;

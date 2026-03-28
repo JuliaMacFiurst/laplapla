@@ -329,6 +329,75 @@ type DictionaryShape = {
     };
   };
 
+  parrots: {
+    page: {
+      headTitle: string;
+      title: string;
+      subtitle: string;
+    };
+    story: {
+      fallbackSilent: string;
+      externalPrompt: string;
+      aboutArtist: string;
+      aboutStyle: string;
+    };
+    mixer: {
+      titlePlay: string;
+      titleStop: string;
+      loading: string;
+      volume: string;
+      recordVoice: string;
+      stopRecording: string;
+      micVolume: string;
+      voiceVolume: string;
+      micLabel: string;
+      voiceLabel: string;
+      monitorLabel: string;
+      monitorTitle: string;
+      myRecording: string;
+      recordingReady: string;
+      listenRecording: string;
+      deleteRecording: string;
+      deleteConfirm: string;
+      saveMix: string;
+      previousVariant: string;
+      nextVariant: string;
+      randomVariant: string;
+      startOfList: string;
+      endOfList: string;
+      layerLabel: string;
+      layerOn: string;
+      layerOff: string;
+      variantCounter: string;
+      variantListLabel: string;
+      chooseVariant: string;
+      defaultHint: string;
+      imageAlt: string;
+      layerNames: Record<string, string>;
+      reactions: {
+        on: string[];
+        off: string[];
+        next: string[];
+        random: string[];
+        tryVariant: string;
+        readySing: string;
+        micFailed: string;
+        countdown3: string;
+        countdown2: string;
+        countdown1: string;
+        recordingStopped: string;
+        flightMix: string;
+        selectLayerFirst: string;
+        stopRest: string;
+        enableLayerFirst: string;
+        savingMix: string;
+        savedTrack: string;
+        saveError: string;
+        recordingDeleted: string;
+      };
+    };
+  };
+
   capybaras: {
     capybaraPage: {
       title: string;
@@ -419,7 +488,7 @@ export const ABOUT_SECTIONS = [
 export type AboutSectionKey = (typeof ABOUT_SECTIONS)[number];
 
 export const dictionaries: Record<Lang, DictionaryShape> = {
-  ru: ru as DictionaryShape,
-  he: he as DictionaryShape,
-  en: en as DictionaryShape,
+  ru: ru as unknown as DictionaryShape,
+  he: he as unknown as DictionaryShape,
+  en: en as unknown as DictionaryShape,
 };

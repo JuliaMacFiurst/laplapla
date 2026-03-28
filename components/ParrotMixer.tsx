@@ -18,36 +18,68 @@ export type LegacyLoop = {
 };
 
 type Props = {
-  // допускаем как новый формат, так и старый — приведём ниже
   loops: (LoopMulti | LegacyLoop)[];
   loopLength?: number; // seconds, for rough start/stop sync
+  ui: {
+    titlePlay: string;
+    titleStop: string;
+    loading: string;
+    volume: string;
+    recordVoice: string;
+    stopRecording: string;
+    micVolume: string;
+    voiceVolume: string;
+    micLabel: string;
+    voiceLabel: string;
+    monitorLabel: string;
+    monitorTitle: string;
+    myRecording: string;
+    recordingReady: string;
+    listenRecording: string;
+    deleteRecording: string;
+    deleteConfirm: string;
+    saveMix: string;
+    previousVariant: string;
+    nextVariant: string;
+    randomVariant: string;
+    startOfList: string;
+    endOfList: string;
+    layerLabel: string;
+    layerOn: string;
+    layerOff: string;
+    variantCounter: string;
+    variantListLabel: string;
+    chooseVariant: string;
+    defaultHint: string;
+    imageAlt: string;
+    layerNames: Partial<Record<string, string>>;
+    reactions: {
+      on: string[];
+      off: string[];
+      next: string[];
+      random: string[];
+      tryVariant: string;
+      readySing: string;
+      micFailed: string;
+      countdown3: string;
+      countdown2: string;
+      countdown1: string;
+      recordingStopped: string;
+      flightMix: string;
+      selectLayerFirst: string;
+      stopRest: string;
+      enableLayerFirst: string;
+      savingMix: string;
+      savedTrack: string;
+      saveError: string;
+      recordingDeleted: string;
+    };
+  };
 };
 
-/** --- Реплики попугайчика --- */
-const SAY_ON = [
-  "У-у-у, этот слой огонь!",
-  "Чирик! Добавим ритма!",
-  "Крыльями-хлоп — и звучит!",
-  "Вот это да! Ещё громче?",
-];
-const SAY_OFF = [
-  "Тсс… сделаем паузу.",
-  "Сняли слой. Дышим.",
-  "И без этого мило чирикает!",
-  "Уберём — станет прозрачнее.",
-];
-const SAY_NEXT = [
-  (n: number) => `А теперь попробуй вариант №${n}!`,
-  (n: number) => `Переключаю на №${n} — слушаем!`,
-  (n: number) => `Чик-чик — вариант ${n}!`,
-];
-const SAY_RANDOM = [
-  (n: number) => `🎲 Сюрприз! Вариант №${n}`,
-  (n: number) => `Попугай выбрал №${n}!`,
-  (n: number) => `Случайно, но в точку — №${n}!`,
-];
+const pickRandom = (items: string[]) => items[Math.floor(Math.random() * items.length)] ?? "";
 
-export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
+export default function ParrotMixer({ loops, loopLength = 4, ui }: Props) {
   /** Нормализация входных данных (поддержка старого формата) */
   const normLoops: LoopMulti[] = useMemo(() => {
     return (loops as any[]).map((l: any) => {
@@ -311,10 +343,10 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       vocalBufferRef.current = null;
       mediaRecRef.current?.start();
       setIsRec(true);
-      say("Готово! Поём вместе с попугайчиком!");
+      say(ui.reactions.readySing);
     } catch (e) {
       console.error(e);
-      say("Не получилось включить микрофон");
+      say(ui.reactions.micFailed);
     }
   }
 
@@ -323,18 +355,18 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       if (!micEnabled) await initMicChain();
     } catch (e) {
       console.error(e);
-      say("Не получилось включить микрофон");
+      say(ui.reactions.micFailed);
       return;
     }
     setIsCounting(true);
     setCountLeft(3);
-    say("Готовься! 3…");
+    say(ui.reactions.countdown3);
     let step = 3;
     const id = window.setInterval(() => {
       step -= 1;
       if (step > 0) {
         setCountLeft(step);
-        say(step === 2 ? "2…" : "1…");
+        say(step === 2 ? ui.reactions.countdown2 : ui.reactions.countdown1);
       } else {
         window.clearInterval(id);
         setIsCounting(false);
@@ -376,7 +408,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       } catch {}
     } finally {
       setIsRec(false);
-      say("Запись остановлена");
+      say(ui.reactions.recordingStopped);
     }
   }
 
@@ -425,7 +457,11 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
     });
     setPreview({ loopId, idx });
     const human = idx + 1;
-    say(`Пробуем «${loopId}» — вариант №${human}`);
+    say(
+      ui.reactions.tryVariant
+        .replace("{layer}", ui.layerNames[loopId] ?? loopId)
+        .replace("{variant}", String(human))
+    );
   };
 
   // Prepare audio elements for each loop/variant
@@ -515,8 +551,8 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       setLoading(false);
       say(
         activeCount > 0
-          ? "Полетели! Чирик-микс!"
-          : "Выбери варианты слоёв — и жми ▶"
+          ? ui.reactions.flightMix
+          : ui.reactions.selectLayerFirst
       );
     }, delay);
   };
@@ -532,7 +568,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       Object.values(map).forEach((a) => a.pause())
     );
     setIsPlaying(false);
-    say("Стоп. Отдышимся крылышками.");
+    say(ui.reactions.stopRest);
   };
 
   // Включить/выключить слой
@@ -560,8 +596,8 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       }
       say(
         nextIdx === null
-          ? SAY_OFF[Math.floor(Math.random() * SAY_OFF.length)]
-          : SAY_ON[Math.floor(Math.random() * SAY_ON.length)]
+          ? pickRandom(ui.reactions.off)
+          : pickRandom(ui.reactions.on)
       );
       return { ...prev, [loopId]: nextIdx };
     });
@@ -608,7 +644,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
         map[bounded]?.play().catch(() => {});
       }
       const human = bounded + 1;
-      say(SAY_NEXT[Math.floor(Math.random() * SAY_NEXT.length)](human));
+      say(pickRandom(ui.reactions.next).replace("{variant}", String(human)));
       try {
         scrollToVariant(loopId, bounded);
       } catch {}
@@ -641,7 +677,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
         }
         map[rnd]?.play().catch(() => {});
       }
-      say(SAY_RANDOM[Math.floor(Math.random() * SAY_RANDOM.length)](rnd + 1));
+      say(pickRandom(ui.reactions.random).replace("{variant}", String(rnd + 1)));
       return { ...prev, [loopId]: rnd };
     });
     try {
@@ -660,11 +696,11 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       }[];
 
       if (active.length === 0) {
-        say("Сначала включи хотя бы один слой!");
+        say(ui.reactions.enableLayerFirst);
         return;
       }
 
-      say("Сохраняю микс… чирик-чирик!");
+      say(ui.reactions.savingMix);
 
       const durationSec = 30;
       const sampleRate = 44100;
@@ -726,10 +762,10 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
       a.remove();
       URL.revokeObjectURL(url);
 
-      say("Поздравляю! Ты создал свой трек!");
+      say(ui.reactions.savedTrack);
     } catch (e) {
       console.error(e);
-      say("Ой! Не вышло сохранить. Попробуй ещё раз.");
+      say(ui.reactions.saveError);
     }
   };
 
@@ -791,7 +827,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
           Use currentParrotIndex; update every 2–3 seconds.
         */}
 
-        <ParrotImage wiggle={wiggle} parrotLine={parrotLine} />
+        <ParrotImage wiggle={wiggle} parrotLine={parrotLine} ui={ui} />
 
         {/* Transport */}
         <div className="mixer-story-nav-inner">
@@ -799,7 +835,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
             <button
               onClick={stopAll}
               className="mixer-card mixer-stop play-neo anchor btn-play-anchor "
-              title="остановить трэк"
+              title={ui.titleStop}
             >
               <span className="pulse" aria-hidden="true"></span>
               <span className="pause-bars" aria-hidden="true">
@@ -811,13 +847,13 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
             <button
               onClick={startAll}
               className="mixer-card mixer-play play-neo anchor btn-play-anchor"
-              title="проиграть готовый трэк"
+              title={ui.titlePlay}
               disabled={loading}
               aria-busy={loading}
             >
               <span className="pulse" aria-hidden="true"></span>
               {loading ? (
-                <span className="spinner fancy" aria-label="Загрузка"></span>
+                <span className="spinner fancy" aria-label={ui.loading}></span>
               ) : (
                 <span className="play-tri" aria-hidden="true"></span>
               )}
@@ -827,8 +863,8 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
           <div
             className="v-fader anchor btn-volume-anchor"
             role="group"
-            aria-label="Громкость"
-            title="Громкость"
+            aria-label={ui.volume}
+            title={ui.volume}
           >
             <div className="fader-body">
               <span className="ticks left" />
@@ -846,7 +882,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                   Math.max(0, Math.min(1, 1 - Number(e.target.value) / 100))
                 )
               }
-              aria-label="Громкость"
+              aria-label={ui.volume}
             />
           </div>
 
@@ -856,7 +892,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
               onClick={startRecording}
               className="mixer-card mixer-record play-neo anchor btn-record-anchor"
               data-rec="off"
-              title="Записать голос через микрофон"
+              title={ui.recordVoice}
               disabled={isCounting}
             >
               {!isCounting ? (
@@ -878,7 +914,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
               onClick={stopRecording}
               className="mixer-card mixer-record play-neo anchor btn-isinrecord-anchor"
               data-rec="on"
-              title="Остановить запись"
+              title={ui.stopRecording}
             >
               <span className="rec-live-dot" aria-hidden="true"></span>
             </button>
@@ -886,9 +922,9 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
 
           <label
             className="mixer-card mixer-volume anchor btn-micvol-anchor"
-            title="Громкость микрофона в наушниках"
+            title={ui.micVolume}
           >
-            <span className="vol-title">Микрофон</span>
+            <span className="vol-title">{ui.micLabel}</span>
             <input
               type="range"
               min={0}
@@ -896,15 +932,15 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
               step={0.01}
               value={micVolume}
               onChange={(e) => setMicVolume(parseFloat(e.target.value))}
-              aria-label="Громкость микрофона"
+              aria-label={ui.micVolume}
               className="vol-range"
             />
           </label>
           <label
             className="mixer-card mixer-volume anchor btn-vocalvol-anchor"
-            title="Громкость записанного голоса (в миксе)"
+            title={ui.voiceVolume}
           >
-            <span className="vol-title">Голос</span>
+            <span className="vol-title">{ui.voiceLabel}</span>
             <input
               type="range"
               min={0}
@@ -912,15 +948,15 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
               step={0.01}
               value={vocalVolume}
               onChange={(e) => setVocalVolume(parseFloat(e.target.value))}
-              aria-label="Громкость голоса"
+              aria-label={ui.voiceVolume}
               className="vol-range"
             />
           </label>
           <div
             className="mixer-card mixer-volume anchor btn-monitor-anchor"
-            title="Слушать себя в наушниках (может вызывать эхо)"
+            title={ui.monitorTitle}
           >
-            <div className="vol-title">Слушать себя</div>
+            <div className="vol-title">{ui.monitorLabel}</div>
             <button
               type="button"
               className={`monitor-switch ${micMonitorOn ? "on" : ""}`}
@@ -934,9 +970,9 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
           {recUrl && (
             <div
               className="rec-chip anchor rec-chip-anchor"
-              title="Ваша запись готова"
+              title={ui.recordingReady}
             >
-              <span>Моя запись</span>
+              <span>{ui.myRecording}</span>
 
               {/* ▶ Маленький громкоговоритель — проиграть/остановить запись */}
               <button
@@ -965,8 +1001,8 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                     }
                   } catch {}
                 }}
-                aria-label="Прослушать запись"
-                title="Прослушать запись"
+                aria-label={ui.listenRecording}
+                title={ui.listenRecording}
                 disabled={!recUrl}
               >
                 🔈
@@ -977,7 +1013,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                 className="rec-chip-del"
                 onClick={() => {
                   const ok = window.confirm(
-                    "точно хочешь удалить свою запись?"
+                    ui.deleteConfirm
                   );
                   if (!ok) return;
                   try {
@@ -989,10 +1025,10 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                   } catch {}
                   setRecUrl(null);
                   vocalBufferRef.current = null;
-                  say("Запись удалена");
+                  say(ui.reactions.recordingDeleted);
                 }}
-                aria-label="Удалить запись"
-                title="Удалить запись"
+                aria-label={ui.deleteRecording}
+                title={ui.deleteRecording}
               >
                 ×
               </button>
@@ -1002,10 +1038,12 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
           <button
             onClick={saveMix30s}
             className="mixer-card mixer-save play-neo btn-save-anchor anchor"
-            title="Сохранить 30 секунд микса"
+            title={ui.saveMix}
           >
             <span className="pulse" aria-hidden="true"></span>
-            <span className="save-cassette" aria-hidden="true"></span>
+            <span className="save-download" aria-hidden="true">
+              <span className="save-download-stem"></span>
+            </span>
           </button>
         </div>
 
@@ -1015,6 +1053,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
             const idx = current[l.id];
             const on = idx !== null && idx !== undefined;
             const total = l.variants.length;
+            const localizedLayerName = ui.layerNames[l.id] ?? l.label;
 
             return (
               <div key={l.id} className="mixer-loop-card">
@@ -1024,18 +1063,18 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                     onClick={() => toggleLayer(l.id)}
                     className={`mixer-layer-btn ${on ? "is-on" : ""}`}
                     aria-pressed={on}
-                    aria-label={`Слой: ${l.label} ${
-                      on ? "включён" : "выключен"
+                    aria-label={`${ui.layerLabel}: ${localizedLayerName} ${
+                      on ? ui.layerOn : ui.layerOff
                     }`}
-                    title={l.label}
+                    title={localizedLayerName}
                   >
                     <img
                       src={iconForLayer(l.label, l.id)}
-                      alt={l.label}
+                      alt={localizedLayerName}
                       className="mixer-layer-icon"
                     />
                     {on ? "🔊 " : "🔇 "}
-                    {l.label}
+                    {localizedLayerName}
                   </button>
 
                   {/* Rolodex controls */}
@@ -1044,31 +1083,29 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                       className="mixer-rolodex-btn"
                       onClick={() => nudgeVariant(l.id, -1)}
                       disabled={!total || (idx ?? 0) <= 0}
-                      aria-label="Предыдущий вариант"
+                      aria-label={ui.previousVariant}
                       aria-disabled={!total || (idx ?? 0) <= 0}
                       title={
-                        (idx ?? 0) <= 0 ? "Начало списка" : "Предыдущий вариант"
+                        (idx ?? 0) <= 0 ? ui.startOfList : ui.previousVariant
                       }
                     >
                       ◀
                     </button>
                     <div className="subtitle">
                       {total > 0
-                        ? `Вариант ${
-                            idx !== null && idx !== undefined ? idx + 1 : 1
-                          }/${total}`
+                        ? ui.variantCounter
+                            .replace("{current}", String(idx !== null && idx !== undefined ? idx + 1 : 1))
+                            .replace("{total}", String(total))
                         : "—"}
                     </div>
                     <button
                       className="mixer-rolodex-btn"
                       onClick={() => nudgeVariant(l.id, 1)}
                       disabled={!total || (idx ?? 0) >= total - 1}
-                      aria-label="Следующий вариант"
+                      aria-label={ui.nextVariant}
                       aria-disabled={!total || (idx ?? 0) >= total - 1}
                       title={
-                        (idx ?? 0) >= total - 1
-                          ? "Конец списка"
-                          : "Следующий вариант"
+                        (idx ?? 0) >= total - 1 ? ui.endOfList : ui.nextVariant
                       }
                     >
                       ▶
@@ -1077,8 +1114,8 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                       className="mixer-random-btn"
                       onClick={() => randomizeVariant(l.id)}
                       disabled={!total}
-                      aria-label="Случайный вариант"
-                      title="Случайный вариант"
+                      aria-label={ui.randomVariant}
+                      title={ui.randomVariant}
                     >
                       🎲
                     </button>
@@ -1092,7 +1129,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                     className="rolodex"
                     onKeyDown={(e) => handleKey(l.id, e)}
                     tabIndex={0}
-                    aria-label={`Список вариантов для слоя ${l.label}`}
+                    aria-label={ui.variantListLabel.replace("{layer}", localizedLayerName)}
                   >
                     {/* left spacer to allow centering of the first item */}
                     <div aria-hidden="true" className="rolodex-spacer" />
@@ -1103,7 +1140,7 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                         <div
                           key={v.id || i}
                           className={`mixer-loop-item color-${(i % 6) + 1}`}
-                          title={v.label || `${l.label} ${i + 1}`}
+                          title={v.label || `${localizedLayerName} ${i + 1}`}
                         >
                           <button
                             onClick={() => {
@@ -1115,9 +1152,9 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
                               scrollToVariant(l.id, i);
                             }}
                             className="mixer-loop-button"
-                            aria-label={`Выбрать/прослушать вариант ${i + 1}`}
+                            aria-label={ui.chooseVariant.replace("{variant}", String(i + 1))}
                           >
-                            <span>{v.label || `${l.label} ${i + 1}`}</span>
+                            <span>{v.label || `${localizedLayerName} ${i + 1}`}</span>
                             <span className="loop-eq" aria-hidden="true">
                               <i></i>
                               <i></i>
@@ -1145,9 +1182,11 @@ export default function ParrotMixer({ loops, loopLength = 4 }: Props) {
 function ParrotImage({
   wiggle,
   parrotLine,
+  ui,
 }: {
   wiggle: boolean;
   parrotLine: string;
+  ui: Props["ui"];
 }) {
   const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const baseParrot = `${SUPA}/storage/v1/object/public/characters/parrots/blue_parrot`;
@@ -1194,12 +1233,11 @@ function ParrotImage({
     <div className="parrot-container">
       <img
         src={src}
-        alt="Попугайчик"
+        alt={ui.imageAlt}
         className={`parrot-image ${wiggle ? "is-wiggle" : ""}`}
       />
       <div className="subtitle">
-        {parrotLine ||
-          "Собери свой чирик-микс: включай слои, выбирай варианты и жми ▶"}
+        {parrotLine || ui.defaultHint}
       </div>
     </div>
   );

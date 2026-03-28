@@ -1,8 +1,12 @@
 import {useMemo, useState } from "react";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import ParrotMixer from "../components/ParrotMixer";
 import ParrotStoryCard from "../components/ParrotStoryCard";
 import { PARROT_PRESETS } from "../utils/parrot-presets";
+import { dictionaries } from "../i18n";
+import { getMusicStyle } from "../content/parrots/musicStyles";
+import { getCurrentLang } from "@/lib/i18n/routing";
 
 const imageForPreset = (id: string) => {
   const k = (id || "").toLowerCase();
@@ -37,29 +41,44 @@ const imageForPreset = (id: string) => {
 };
 
 export default function ParrotsPage() {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+  const dict = dictionaries[lang] || dictionaries.ru;
+  const t = dict.parrots;
   const [activeId, setActiveId] = useState(PARROT_PRESETS[0].id);
   const preset = useMemo(() => PARROT_PRESETS.find(p => p.id === activeId)!, [activeId]);
+  const activeStyle = useMemo(
+    () => getMusicStyle(lang, activeId),
+    [activeId, lang],
+  );
+  const localizedPresets = useMemo(
+    () =>
+      PARROT_PRESETS.map((presetItem) => ({
+        ...presetItem,
+        localizedTitle: getMusicStyle(lang, presetItem.id)?.title || presetItem.title,
+      })),
+    [lang],
+  );
+  const storySlides = activeStyle?.slides ?? [{ text: t.story.fallbackSilent }];
 
   return (
     <>
-      <Head><title>Попугайчики поют — capybara_tales</title></Head>
+      <Head><title>{t.page.headTitle}</title></Head>
       <main className="home-wrapper">
-        <h1 className="title page-title">Попугайчики споют</h1>
-        <p className="subtitle">
-          Играй с лупами, слушай комментарии попугайчиков и узнавай истории про музыку.
-        </p>
+        <h1 className="title page-title">{t.page.title}</h1>
+        <p className="subtitle">{t.page.subtitle}</p>
 
         <div className="style-presets-row" style={{ marginBottom: "1rem", justifyContent: "center", gap: 12, maxWidth: "100%" }}>
-          {PARROT_PRESETS.map(p => (
+          {localizedPresets.map(p => (
             <button
               key={p.id}
               onClick={() => setActiveId(p.id)}
               className={`style-preset-btn ${p.id === activeId ? 'is-active' : ''}`}
               style={{ backgroundImage: `url(${imageForPreset(p.id)})` }}
               aria-pressed={p.id === activeId}
-              title={p.title || p.id}
+              title={p.localizedTitle}
             >
-              <span className="style-preset-label">{p.title || p.id}</span>
+              <span className="style-preset-label">{p.localizedTitle}</span>
             </button>
           ))}
         </div>
@@ -76,15 +95,18 @@ export default function ParrotsPage() {
           }}
         >
           <div style={{ width: "100%" }}>
-            <ParrotMixer loops={preset.loops} />
+            <ParrotMixer loops={preset.loops} ui={t.mixer} />
           </div>
           <div style={{ width: "100%" }}>
             <ParrotStoryCard
-              id={preset.id}
-              title={preset.title}
-              description={preset.description}
+              lang={lang}
+              styleSlug={activeId}
+              title={activeStyle?.title ?? preset.title}
+              description={activeStyle?.description ?? preset.description}
               searchArtist={preset.searchArtist}
               searchGenre={preset.searchGenre}
+              slides={storySlides}
+              ui={t.story}
             />
           </div>
         </div>
