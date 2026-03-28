@@ -73,11 +73,20 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
   const [isRecording, setIsRecording] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const projectRef = useRef(project);
+  const lastSavedSnapshotRef = useRef<string>(JSON.stringify(project));
+  const isSavingRef = useRef(false);
 
   const t = dictionaries[lang].cats.studio
   const router = useRouter();
 
   const previewRef = useRef<HTMLDivElement>(null);
+
+  function markProjectSaved(savedProject: StudioProject) {
+    projectRef.current = savedProject;
+    lastSavedSnapshotRef.current = JSON.stringify(savedProject);
+    setLastSavedAt(Date.now());
+  }
 
   async function startVoiceRecording() {
     if (isRecording) return;
@@ -161,7 +170,9 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
           };
 
           // Persist immediately using fresh state
-          saveProject(updatedProject);
+          void saveProject(updatedProject).then(() => {
+            markProjectSaved(updatedProject);
+          });
 
           return updatedProject;
         });
@@ -303,7 +314,9 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
           updatedAt: Date.now(),
         };
 
-        saveProject(updatedProject);
+        void saveProject(updatedProject).then(() => {
+          markProjectSaved(updatedProject);
+        });
         return updatedProject;
       });
 
@@ -327,6 +340,10 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
 
   const activeSlide = project.slides[activeSlideIndex];
 
+  useEffect(() => {
+    projectRef.current = project;
+  }, [project]);
+
   // Restore saved project on mount (only if no external slides arrive)
   useEffect(() => {
     let cancelled = false;
@@ -339,6 +356,8 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
 
       const saved = await loadProject(PROJECT_ID);
       if (saved) {
+        projectRef.current = saved;
+        lastSavedSnapshotRef.current = JSON.stringify(saved);
         setProject(saved);
       }
     }, 200);
@@ -351,15 +370,36 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
 
   // Autosave every 4 seconds
   useEffect(() => {
+    let cancelled = false;
+
     const interval = setInterval(async () => {
+      if (cancelled || isSavingRef.current) return;
+
+      const nextSnapshot = JSON.stringify(projectRef.current);
+      if (nextSnapshot === lastSavedSnapshotRef.current) return;
+
+      isSavingRef.current = true;
       setIsSaving(true);
-      await saveProject(project);
-      setLastSavedAt(Date.now());
-      setIsSaving(false);
+
+      try {
+        await saveProject(projectRef.current);
+        if (!cancelled) {
+          lastSavedSnapshotRef.current = nextSnapshot;
+          setLastSavedAt(Date.now());
+        }
+      } finally {
+        isSavingRef.current = false;
+        if (!cancelled) {
+          setIsSaving(false);
+        }
+      }
     }, 4000);
 
-    return () => clearInterval(interval);
-  }, [project]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -404,7 +444,9 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     setActiveSlideIndex(0);
 
     // Immediately overwrite saved project with external slides
-    saveProject(newProject);
+    void saveProject(newProject).then(() => {
+      markProjectSaved(newProject);
+    });
   }, [initialSlides, initialTracks]);
 
   function pushHistory(current: StudioProject) {
