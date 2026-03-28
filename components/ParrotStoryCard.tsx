@@ -12,7 +12,10 @@ type Props = {
     externalPrompt: string;
     aboutArtist: string;
     aboutStyle: string;
+    openSlideshowWithMusic: string;
   };
+  onResolvedSlidesChange?: (slides: Slide[]) => void;
+  onOpenStudio?: () => void;
 };
 
 export type Slide = {
@@ -495,6 +498,8 @@ export default function ParrotStoryCard({
   searchGenre,
   slides,
   ui,
+  onResolvedSlidesChange,
+  onOpenStudio,
 }: Props) {
   const [resolvedSlides, setResolvedSlides] = React.useState<Slide[]>(slides);
 
@@ -531,6 +536,10 @@ export default function ParrotStoryCard({
       cancelled = true;
     };
   }, [lang, slides, styleSlug]);
+
+  React.useEffect(() => {
+    onResolvedSlidesChange?.(resolvedSlides);
+  }, [onResolvedSlidesChange, resolvedSlides]);
 
   return (
     <div className={`story-container story-card-root force-ltr-layout ${lang === "he" ? "text-rtl-scope" : ""}`}>
@@ -570,6 +579,13 @@ export default function ParrotStoryCard({
             className="external-link-button genre story-card-text"
           >
             {ui.aboutStyle}
+          </button>
+          <button
+            onClick={onOpenStudio}
+            className="external-link-button studio story-card-text"
+            type="button"
+          >
+            {ui.openSlideshowWithMusic}
           </button>
         </div>
       </div>
@@ -612,6 +628,17 @@ export default function ParrotStoryCard({
         .external-link-button.genre:hover {
           background-color: #dbffd2;
           box-shadow: 0 0 12px rgba(255, 182, 193, 0.6), 0 0 20px rgba(255, 240, 245, 0.8);
+          transform: scale(1.06) rotate(-1deg);
+        }
+
+        .external-link-button.studio {
+          background-color: #fff3d9;
+          border-color: #ffd089;
+        }
+
+        .external-link-button.studio:hover {
+          background-color: #ffe9bf;
+          box-shadow: 0 0 12px rgba(255, 205, 120, 0.35), 0 0 20px rgba(255, 240, 210, 0.9);
           transform: scale(1.06) rotate(-1deg);
         }
 

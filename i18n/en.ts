@@ -587,6 +587,7 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
       externalPrompt: "For your own internet exploring, tap these buttons:",
       aboutArtist: "🎵 Learn about the artist (YouTube)",
       aboutStyle: "🔍 Learn about the style (Google)",
+      openSlideshowWithMusic: "Open slideshow with selected music",
     },
     mixer: {
       titlePlay: "Play the prepared track",

@@ -1,12 +1,25 @@
-import {useMemo, useState } from "react";
+import {useCallback, useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import ParrotMixer from "../components/ParrotMixer";
-import ParrotStoryCard from "../components/ParrotStoryCard";
+import ParrotMixer, { type MusicConfig } from "../components/ParrotMixer";
+import ParrotStoryCard, { type Slide as ParrotSlide } from "../components/ParrotStoryCard";
 import { PARROT_PRESETS } from "../utils/parrot-presets";
 import { dictionaries } from "../i18n";
 import { getMusicStyle } from "../content/parrots/musicStyles";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+
+type ExportSlide = {
+  text: string;
+  mediaUrl: string;
+  mediaType: "gif" | "image" | "video";
+};
+
+type ParrotImportPayload = {
+  type: "parrot_import";
+  musicConfig: MusicConfig;
+  slides: ExportSlide[];
+  styleSlug: string;
+};
 
 const imageForPreset = (id: string) => {
   const k = (id || "").toLowerCase();
@@ -60,6 +73,69 @@ export default function ParrotsPage() {
     [lang],
   );
   const storySlides = activeStyle?.slides ?? [{ text: t.story.fallbackSilent }];
+  const [musicConfig, setMusicConfig] = useState<MusicConfig>({
+    styleSlug: activeId,
+    layers: {},
+    volumes: {},
+    masterVolume: 0.9,
+  });
+  const [resolvedSlides, setResolvedSlides] = useState<ParrotSlide[]>(storySlides);
+
+  useEffect(() => {
+    setMusicConfig({
+      styleSlug: activeId,
+      layers: {},
+      volumes: {},
+      masterVolume: 0.9,
+    });
+  }, [activeId]);
+
+  useEffect(() => {
+    setResolvedSlides(storySlides);
+  }, [storySlides]);
+
+  const getCurrentMusicConfig = useCallback((): MusicConfig => {
+    return {
+      ...musicConfig,
+      styleSlug: activeId,
+    };
+  }, [activeId, musicConfig]);
+
+  const getCurrentSlides = useCallback((): ExportSlide[] => {
+    return resolvedSlides
+      .filter((slide): slide is Required<Pick<ParrotSlide, "text" | "mediaUrl" | "mediaType">> & ParrotSlide =>
+        Boolean(slide.mediaUrl && slide.mediaType),
+      )
+      .map((slide) => ({
+        text: slide.text,
+        mediaUrl: slide.mediaUrl,
+        mediaType: slide.mediaType,
+      }));
+  }, [resolvedSlides]);
+
+  const buildParrotExport = useCallback((): ParrotImportPayload => {
+    return {
+      type: "parrot_import",
+      musicConfig: getCurrentMusicConfig(),
+      slides: getCurrentSlides(),
+      styleSlug: activeId,
+    };
+  }, [activeId, getCurrentMusicConfig, getCurrentSlides]);
+
+  useEffect(() => {
+    const exportPayload = buildParrotExport();
+    sessionStorage.setItem("parrot_import", JSON.stringify(exportPayload));
+  }, [buildParrotExport]);
+
+  const handleOpenStudio = useCallback(() => {
+    const exportPayload = buildParrotExport();
+    sessionStorage.setItem("parrot_import", JSON.stringify(exportPayload));
+    router.push(
+      { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+      undefined,
+      { locale: lang },
+    );
+  }, [buildParrotExport, lang, router]);
 
   return (
     <>
@@ -95,7 +171,13 @@ export default function ParrotsPage() {
           }}
         >
           <div style={{ width: "100%" }}>
-            <ParrotMixer loops={preset.loops} lang={lang} ui={t.mixer} />
+            <ParrotMixer
+              styleSlug={activeId}
+              loops={preset.loops}
+              lang={lang}
+              onConfigChange={setMusicConfig}
+              ui={t.mixer}
+            />
           </div>
           <div style={{ width: "100%" }}>
             <ParrotStoryCard
@@ -106,6 +188,8 @@ export default function ParrotsPage() {
               searchArtist={preset.searchArtist}
               searchGenre={preset.searchGenre}
               slides={storySlides}
+              onResolvedSlidesChange={setResolvedSlides}
+              onOpenStudio={handleOpenStudio}
               ui={t.story}
             />
           </div>

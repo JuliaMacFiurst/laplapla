@@ -17,10 +17,26 @@ export type LegacyLoop = {
   defaultOn?: boolean;
 };
 
+export type MusicConfig = {
+  styleSlug: string;
+  layers: Record<
+    string,
+    {
+      loopId: string;
+      variantId: number;
+      variantKey: string;
+    }
+  >;
+  volumes: Record<string, number>;
+  masterVolume: number;
+};
+
 type Props = {
+  styleSlug?: string;
   loops: (LoopMulti | LegacyLoop)[];
   loopLength?: number; // seconds, for rough start/stop sync
   lang?: "ru" | "en" | "he";
+  onConfigChange?: (config: MusicConfig) => void;
   ui: {
     titlePlay: string;
     titleStop: string;
@@ -80,7 +96,14 @@ type Props = {
 
 const pickRandom = (items: string[]) => items[Math.floor(Math.random() * items.length)] ?? "";
 
-export default function ParrotMixer({ loops, loopLength = 4, lang = "ru", ui }: Props) {
+export default function ParrotMixer({
+  styleSlug = "",
+  loops,
+  loopLength = 4,
+  lang = "ru",
+  onConfigChange,
+  ui,
+}: Props) {
   /** Нормализация входных данных (поддержка старого формата) */
   const normLoops: LoopMulti[] = useMemo(() => {
     return (loops as any[]).map((l: any) => {
@@ -502,6 +525,33 @@ export default function ParrotMixer({ loops, loopLength = 4, lang = "ru", ui }: 
     () => Object.values(current).filter((v) => v !== null).length,
     [current]
   );
+
+  useEffect(() => {
+    const layers: MusicConfig["layers"] = {};
+    const volumes: MusicConfig["volumes"] = {};
+
+    normLoops.forEach((loop) => {
+      const selectedVariantIndex = current[loop.id];
+      if (selectedVariantIndex === null || selectedVariantIndex === undefined) return;
+
+      const selectedVariant = loop.variants[selectedVariantIndex];
+      if (!selectedVariant) return;
+
+      layers[loop.id] = {
+        loopId: loop.id,
+        variantId: selectedVariantIndex,
+        variantKey: selectedVariant.id,
+      };
+      volumes[loop.id] = volume;
+    });
+
+    onConfigChange?.({
+      styleSlug,
+      layers,
+      volumes,
+      masterVolume: volume,
+    });
+  }, [current, normLoops, onConfigChange, styleSlug, volume]);
 
   // Parrot reaction helper
   const say = (text: string) => {

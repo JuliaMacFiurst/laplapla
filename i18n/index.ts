@@ -340,6 +340,7 @@ type DictionaryShape = {
       externalPrompt: string;
       aboutArtist: string;
       aboutStyle: string;
+      openSlideshowWithMusic: string;
     };
     mixer: {
       titlePlay: string;

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import AudioEngine, { type AudioEngineHandle } from "./AudioEngine";
 import MusicPanel from "./MusicPanel";
 import type { StudioProject, StudioSlide } from "@/types/studio";
+import type { Track } from "./MusicPanel";
 import SlideList from "./SlideList";
 import SlideCanvas9x16 from "./SlideCanvas9x16";
 import StudioSettingsPanel from "./StudioSettingsPanel";
@@ -52,9 +53,10 @@ interface StudioRootProps {
     textBgEnabled?: boolean;
     textBgOpacity?: number;
   }>;
+  initialTracks?: Track[];
 }
 
-export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
+export default function StudioRoot({ lang, initialSlides, initialTracks }: StudioRootProps) {
   const [project, setProject] = useState<StudioProject>(createInitialProject);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [history, setHistory] = useState<StudioProject[]>([]);
@@ -332,8 +334,8 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
     const timer = setTimeout(async () => {
       if (cancelled) return;
 
-      // If slides from Cats were provided, do not restore old project
-      if (initialSlides && initialSlides.length > 0) return;
+      // If external import was provided, do not restore old project
+      if ((initialSlides && initialSlides.length > 0) || (initialTracks && initialTracks.length > 0)) return;
 
       const saved = await loadProject(PROJECT_ID);
       if (saved) {
@@ -345,7 +347,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, []);
+  }, [initialSlides, initialTracks]);
 
   // Autosave every 4 seconds
   useEffect(() => {
@@ -370,16 +372,18 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
   }, []);
 
   useEffect(() => {
-    if (!initialSlides || initialSlides.length === 0) return;
+    if ((!initialSlides || initialSlides.length === 0) && (!initialTracks || initialTracks.length === 0)) {
+      return;
+    }
 
-    const mappedSlides: StudioSlide[] = initialSlides.map(
+    const mappedSlides: StudioSlide[] = (initialSlides ?? []).map(
       (s) => ({
         id: crypto.randomUUID(),
         text: s.text,
         mediaUrl: s.image,
         mediaType: s.mediaType ?? (s.image?.includes(".mp4") || s.image?.includes(".webm") ? "video" : "image"),
         mediaFit: s.mediaFit ?? "contain",
-        mediaPosition: s.mediaPosition ?? "top",
+        mediaPosition: s.mediaPosition ?? "center",
         textPosition: s.textPosition ?? "bottom",
         textAlign: s.textAlign ?? "center",
         textBgEnabled: s.textBgEnabled ?? true,
@@ -391,8 +395,8 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
 
     const newProject: StudioProject = {
       id: PROJECT_ID,
-      slides: mappedSlides,
-      musicTracks: [],
+      slides: mappedSlides.length > 0 ? mappedSlides : [createEmptySlide()],
+      musicTracks: initialTracks ?? [],
       updatedAt: Date.now(),
     };
 
@@ -401,7 +405,7 @@ export default function StudioRoot({ lang, initialSlides }: StudioRootProps) {
 
     // Immediately overwrite saved project with external slides
     saveProject(newProject);
-  }, [initialSlides]);
+  }, [initialSlides, initialTracks]);
 
   function pushHistory(current: StudioProject) {
     setHistory((prev) => [...prev, current]);
