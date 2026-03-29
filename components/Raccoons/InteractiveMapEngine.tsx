@@ -1,11 +1,8 @@
-import { GEMINI_MODEL_NAME } from "../../constants";
 import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import TranslationWarning from "@/components/TranslationWarning";
-import { getTranslatedContent } from "@/lib/contentTranslations";
-import { getCurrentLang } from "@/lib/i18n/routing";
-import { supabase } from "@/lib/supabase/client";
-import { prompts } from "@/utils/prompts";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import type { MapPopupContent } from "@/types/mapPopup";
+import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
 
@@ -16,15 +13,23 @@ interface InteractiveMapProps {
   styleClass: string;
 }
 
-function formatText(input: string): string {
+function splitTextToParagraphs(input: string | null | undefined): string[] {
+  if (!input) {
+    return [];
+  }
+
   return input
-    .replace(/#+\s*/g, "") // remove markdown headings like ###
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/\n{2,}/g, "</p><p>")
-    .replace(/\n/g, "<br>")
-    .replace(/^/, "<p>")
-    .replace(/$/, "</p>");
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+function isVideoMediaUrl(url: string | null | undefined): boolean {
+  if (!url) {
+    return false;
+  }
+
+  return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url);
 }
 
 export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
@@ -33,26 +38,15 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
-  const [isStoryTranslated, setIsStoryTranslated] = useState(true);
+  const [popupContent, setPopupContent] = useState<MapPopupContent | null>(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<"slides" | "video">("slides");
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
   const fetchIdRef = useRef(0);
-  
-function getPrompt(mapType: InteractiveMapProps['type'], id: string): string {
-  // ✅ Гарантируем использование правильного промпта, включая флаги
-  const template = prompts.map[mapType]?.prompt;
-
-  if (!template) {
-    console.warn("⚠️ Нет промпта для типа карты:", mapType);
-    return `Расскажи про ${id}`;
-  }
-
-  return template.replace("{{name}}", id);
-}
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
   const selectedElementRef = useRef<string | null>(null);
@@ -66,6 +60,11 @@ function getPrompt(mapType: InteractiveMapProps['type'], id: string): string {
   const currentYRef = useRef(0);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const popupSlides = popupContent?.slides ?? [];
+  const safeCurrentSlideIndex = popupSlides.length === 0
+    ? 0
+    : Math.min(currentSlideIndex, Math.max(0, popupSlides.length - 1));
+  const currentPopupSlide = popupSlides[safeCurrentSlideIndex] ?? null;
 
   const getFlagUrl = (id: string): string | null => {
     if (!id) return null;
@@ -104,6 +103,61 @@ function getPrompt(mapType: InteractiveMapProps['type'], id: string): string {
       setTimeout(() => setIsVisible(true), 0);
     });
   }, [svgPath, type]);
+
+useEffect(() => {
+  setCurrentSlideIndex(0);
+  setViewMode("slides");
+}, [selectedElement]);
+
+  const handleOpenCatsEditor = () => {
+    if (!popupContent || popupSlides.length === 0) {
+      setToast("Для этого места пока нет слайдов для редактора.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    const importedSlides = buildStudioSlidesFromCapybaraSlides(
+      popupSlides.map((slide) => ({
+        text: slide.text || "",
+        imageUrl: slide.imageUrl || undefined,
+      })),
+    );
+
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("catsSlides", JSON.stringify(importedSlides));
+    }
+
+    void router.push(
+      { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+      undefined,
+      { locale: lang },
+    );
+  };
+
+  const handleOpenVideo = () => {
+    const youtubeUrl = popupContent?.video?.youtubeUrl;
+    const youtubeId = popupContent?.video?.youtubeId;
+    if (!youtubeUrl && !youtubeId) {
+      setToast("Видео для этого места пока не добавлено.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    setViewMode("video");
+  };
+
+  const handleOpenGoogleMaps = () => {
+    const googleMapsUrl = popupContent?.googleMapsUrl;
+    if (!googleMapsUrl) {
+      setToast("Ссылка на Google Maps для этого места пока не добавлена.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.open(googleMapsUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
 useEffect(() => {
   const mapContent = mapContentRef.current;
@@ -210,9 +264,9 @@ useEffect(() => {
 }, [position, zoom, svgContent, svgPath, type]);
 
 
-// Новый useEffect для загрузки/генерации истории по выбранному элементу
+// Read-only загрузка готового popup-контента по выбранному элементу
 useEffect(() => {
-  setAiResponse(null);
+  setPopupContent(null);
   const fetchAndHandleStory = async () => {
     if (!selectedElement || selectedElement === "__none__") return;
     if (isLoading) return;
@@ -237,13 +291,9 @@ useEffect(() => {
     }
 
     try {
-      const { data: baseStory, error: storyError } = await supabase
-        .from("map_stories")
-        .select("*")
-        .eq("type", type)
-        .eq("target_id", selectedElement)
-        .eq("language", "ru")
-        .maybeSingle();
+      const response = await fetch(
+        `/api/map-popup-content?type=${encodeURIComponent(type)}&target_id=${encodeURIComponent(selectedElement)}&lang=${encodeURIComponent(lang)}`,
+      );
 
       // Проверка устаревшего запроса
       if (currentFetchId !== fetchIdRef.current) {
@@ -251,211 +301,26 @@ useEffect(() => {
         return;
       }
 
-      if (storyError) {
-        throw storyError;
+      if (response.status === 404) {
+        setPopupContent(null);
+        return;
       }
 
-      let content: string | null = null;
-
-      if (baseStory && baseStory.content) {
-        const translatedStory =
-          lang === "ru"
-            ? { content: baseStory, translated: true }
-            : await getTranslatedContent("map_story", baseStory.id, lang);
-
-        content = (translatedStory.content as { content?: string | null }).content ?? null;
-        setAiResponse(content);
-        setIsStoryTranslated(translatedStory.translated);
-        // Проверка устаревшего запроса
-        if (currentFetchId !== fetchIdRef.current) {
-          console.warn("⏩ Старый запрос, пропускаем результат");
-          return;
-        }
-      } else {
-        const prompt = getPrompt(type, selectedElement);
-        console.log("📤 Prompt для Gemini:", prompt);
-        const geminiRes = await fetch("/api/raccoon-popups", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: GEMINI_MODEL_NAME, prompt }),
-        });
-
-        const data = await geminiRes.json();
-        // Проверка устаревшего запроса
-        if (currentFetchId !== fetchIdRef.current) {
-          console.warn("⏩ Старый запрос, пропускаем результат");
-          return;
-        }
-        content = data.output || data.text;
-        setAiResponse(content);
-        setIsStoryTranslated(lang === "ru");
-        // Проверка устаревшего запроса
-        if (currentFetchId !== fetchIdRef.current) {
-          console.warn("⏩ Старый запрос, пропускаем результат");
-          return;
-        }
-        console.log("🤖 История сгенерирована через Gemini");
-
-        await fetch("/api/save-story", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type,
-            target_id: selectedElement,
-            language: "ru",
-            content,
-          }),
-        });
-        // Проверка устаревшего запроса
-        if (currentFetchId !== fetchIdRef.current) {
-          console.warn("⏩ Старый запрос, пропускаем результат");
-          return;
-        }
-        console.log("💾 История сохранена после генерации");
+      if (!response.ok) {
+        throw new Error(`Failed to load popup content: ${response.status}`);
       }
 
-      // 🔎 Проверяем, есть ли уже сохранённые изображения в Supabase
-      const existingImagesRes = await fetch(`/api/get-image-from-supabase?type=${type}&target_id=${selectedElement}`);
-      
+      const nextPopupContent = (await response.json()) as MapPopupContent;
 
-      let existingImagesData: any = null;
-      try {
-        existingImagesData = await existingImagesRes.json();
-      } catch (err) {
-        console.error("⚠️ Ошибка парсинга ответа Supabase:", err);
+      if (currentFetchId !== fetchIdRef.current) {
+        console.warn("⏩ Старый запрос, пропускаем результат");
+        return;
       }
 
-      const existingImages = existingImagesData?.images || [];
-
-      if (existingImages.length > 0) {
-        const formatted = formatText(content || "");
-        function insertImagesIntoText(html: string, imageUrls: string[]): string {
-          const paragraphs = html.split(/<\/p>/);
-          return paragraphs
-            .map((p, i) => {
-              if (i < imageUrls.length && p.trim()) {
-                const float = i % 2 === 0 ? "left" : "right";
-                const imgTag = `<img src="${imageUrls[i]}" style="float:${float}; width:200px; margin:8px;">`;
-                return `${imgTag}${p}</p>`;
-              }
-              return p + "</p>";
-            })
-            .join("");
-        }
-        const illustratedContent = insertImagesIntoText(formatted, existingImages);
-        setAiResponse(illustratedContent);
-        setIsLoading(false);
-        return; // ✅ Завершаем выполнение, Pexels не вызывается
-      }
-
-
-      // 🖼 Извлекаем ключевые слова через Gemini (для любого текста — из базы или нового)
-      if (content) {
-        const keywordPrompt = prompts.images.extractKeywords + "\n\n" + content;
-        const keywordRes = await fetch("/api/raccoon-popups", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: GEMINI_MODEL_NAME, prompt: keywordPrompt }),
-        });
-        const keywordData = await keywordRes.json();
-        // Проверка устаревшего запроса
-        if (currentFetchId !== fetchIdRef.current) {
-          console.warn("⏩ Старый запрос, пропускаем результат");
-          return;
-        }
-        let rawKeywords = keywordData.output || keywordData.text || "[]";
-
-        // Убираем Markdown-обёртки типа ```json ... ```
-        rawKeywords = rawKeywords
-          .replace(/```json/i, "")
-          .replace(/```/g, "")
-          .trim();
-
-        // Если Gemini вернул строку с кавычками, но не JSON — оборачиваем
-        if (!rawKeywords.startsWith("[") && !rawKeywords.endsWith("]")) {
-          rawKeywords = `[${rawKeywords}]`;
-        }
-
-        let keywords: string[] = [];
-        try {
-          keywords = JSON.parse(rawKeywords);
-        } catch (err) {
-          console.warn("⚠️ Не удалось распарсить keywords:", rawKeywords);
-        }
-
-        // 🪄 Запрашиваем картинки из Pexels
-        const pexelsRes = await fetch("/api/fetch-pexels", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keywords, type }),
-        });
-        const pexelsData = await pexelsRes.json();
-        // Проверка устаревшего запроса
-        if (currentFetchId !== fetchIdRef.current) {
-          console.warn("⏩ Старый запрос, пропускаем результат");
-          return;
-        }
-        const imageUrls: string[] = pexelsData.images || [];
-
-        // 💾 Сохраняем изображения в Supabase
-        await fetch("/api/save-images", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: selectedElement,
-            type,
-            images: imageUrls
-          }),
-        });
-        // Проверка устаревшего запроса
-        if (currentFetchId !== fetchIdRef.current) {
-          console.warn("⏩ Старый запрос, пропускаем результат");
-          return;
-        }
-
-        // 🧩 Встраиваем изображения в текст
-        function insertImagesIntoText(html: string, imageUrls: string[]): string {
-          
-          const paragraphs = html.split(/<\/p>/);
-          return paragraphs
-            .map((p, i) => {
-              if (i < imageUrls.length && p.trim()) {
-                const float = i % 2 === 0 ? "left" : "right";
-                const imgTag = `<img src="${imageUrls[i]}" style="float:${float}; width:200px; margin:8px;">`;
-                return `${imgTag}${p}</p>`;
-              }
-              return p + "</p>";
-            })
-            .join("");
-        }
-
-        // Удаляем дубликаты изображений
-        const uniqueUrls = Array.from(new Set(imageUrls));
-
-        // Если все картинки одинаковые или нет подходящих — пропускаем вставку
-        if (uniqueUrls.length === 0 || (uniqueUrls.length === 1 && imageUrls.length > 1)) {
-          console.log("🚫 Нет уникальных изображений — вставка пропущена");
-          const formatted = formatText(content);
-          setAiResponse(formatted);
-          // Проверка устаревшего запроса
-          if (currentFetchId !== fetchIdRef.current) {
-            console.warn("⏩ Старый запрос, пропускаем результат");
-            return;
-          }
-        } else {
-          // Сначала форматируем текст, затем вставляем уникальные картинки
-          const formatted = formatText(content);
-          const illustratedContent = insertImagesIntoText(formatted, uniqueUrls);
-          setAiResponse(illustratedContent);
-          // Проверка устаревшего запроса
-          if (currentFetchId !== fetchIdRef.current) {
-            console.warn("⏩ Старый запрос, пропускаем результат");
-            return;
-          }
-        }
-      }
+      setPopupContent(nextPopupContent);
     } catch (err) {
-      console.error("❌ Ошибка при загрузке или генерации истории:", err);
+      console.error("❌ Ошибка при загрузке popup-контента:", err);
+      setPopupContent(null);
     } finally {
       setIsLoading(false);
       // Проверка устаревшего запроса
@@ -886,9 +751,9 @@ useEffect(() => {
 
   }, [zoom]);
 
-  // 🔁 Повторное применение выделения и обработчиков после получения aiResponse
+  // 🔁 Повторное применение выделения и обработчиков после получения popupContent
   useEffect(() => {
-    if (!aiResponse || !selectedElementRef.current) return;
+    if (!popupContent || !selectedElementRef.current) return;
 
     const svg = mapContentRef.current?.querySelector("svg");
     if (!svg) return;
@@ -930,7 +795,7 @@ useEffect(() => {
       }
     });
 
-  }, [aiResponse]);
+  }, [popupContent]);
 
   // --- Сторожевой механизм от зависания интерфейса ---
   useEffect(() => {
@@ -1029,8 +894,7 @@ useEffect(() => {
                 }
                 selectedElementRef.current = "__none__";
                 setPosition({ x: 0, y: 0 });
-                setAiResponse(null);
-                setIsStoryTranslated(true);
+                setPopupContent(null);
                 if (lastSelectedPath.current) {
                   lastSelectedPath.current.style.fill = "#fdc09f";
                   lastSelectedPath.current = null;
@@ -1061,82 +925,195 @@ useEffect(() => {
                 </div>
               )}
 
-              {!isStoryTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
-              <div
-                className="map-text"
-                dangerouslySetInnerHTML={{
-                  __html: aiResponse
-                    ? formatText(aiResponse)
-                    : selectedElement && selectedElement !== "__none__"
-                      ? "<p>Генерирую рассказ, подожди минутку...</p>"
-                      : "<p>Нажми на любое место на карте, и я расскажу тебе о нём!</p>"
-                }}
-              />
+              <div className="map-text">
+                {popupContent ? (
+                  <>
+                    {viewMode === "video" ? (
+                      (() => {
+                        const youtubeId = popupContent.video?.youtubeId?.trim() || "";
+                        return youtubeId ? (
+                          <>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "8px",
+                                marginBottom: "12px",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", fontWeight: 600 }}>
+                                Видео
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setViewMode("slides")}
+                                style={{ padding: "6px 10px", fontSize: "14px", borderRadius: "8px" }}
+                              >
+                                ×
+                              </button>
+                            </div>
 
-              {aiResponse && (
-                <>
-                  <button
-                    onClick={async () => {
-                      if (window.__browserCapture?.capture) {
-                        window.__browserCapture.capture("map-story:save", {
-                          id: selectedElement,
-                          mapType: type,
-                          ts: Date.now(),
-                        });
-                      }
-                      try {
-                        await fetch("/api/save-story", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            type,
-                            target_id: selectedElement,
-                            language: "ru",
-                            content: aiResponse,
-                          }),
-                        });
-                        setToast(`История про "${selectedElement}" сохранена в базу!`);
-                        setTimeout(() => setToast(null), 4000);
-                      } catch (err) {
-                        console.error("Ошибка сохранения:", err);
-                        setToast("Не удалось сохранить историю.");
-                        setTimeout(() => setToast(null), 4000);
-                      }
-                    }}
-                    style={{ marginTop: "12px", fontSize: "16px", padding: "6px 12px", marginRight: "10px" }}
-                  >
-                    💾 Сохранить рассказ
-                  </button>
+                            <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", marginBottom: "12px" }}>
+                              <iframe
+                                src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0`}
+                                title={popupContent.video?.title || popupContent.title || selectedElement || "Map video"}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                style={{
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  width: "100%",
+                                  height: "100%",
+                                  border: 0,
+                                  borderRadius: "8px",
+                                }}
+                              />
+                            </div>
 
-                  <button
-                    onClick={async () => {
-                      if (window.__browserCapture?.capture) {
-                        window.__browserCapture.capture("map-story:regen", {
-                          id: selectedElement,
-                          mapType: type,
-                          ts: Date.now(),
-                        });
-                      }
-                      const prompt = getPrompt(type, selectedElement || "");
-                      try {
-                        const response = await fetch("/api/raccoon-popups", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ model: GEMINI_MODEL_NAME, prompt }),
-                        });
-                        const data = await response.json();
-                        const content = data.output || data.text;
-                        setAiResponse(content);
-                      } catch (err) {
-                        console.error("Ошибка повторной генерации:", err);
-                      }
-                    }}
-                    style={{ marginTop: "12px", fontSize: "16px", padding: "6px 12px" }}
-                  >
-                    🔁 Сгенерировать по новой
-                  </button>
-                </>
-              )}
+                            {popupContent.video?.title ? (
+                              <p style={{ marginTop: 0 }}>{popupContent.video.title}</p>
+                            ) : null}
+                          </>
+                        ) : (
+                          <p>Видео для этого места пока не добавлено.</p>
+                        );
+                      })()
+                    ) : (
+                      (() => {
+                        const imageUrl =
+                          typeof currentPopupSlide?.imageUrl === "string" ? currentPopupSlide.imageUrl.trim() : "";
+                        const isVideoSlide = isVideoMediaUrl(imageUrl);
+                        const paragraphs = splitTextToParagraphs(currentPopupSlide?.text || "");
+                        const creditLine = currentPopupSlide?.imageCreditLine?.trim() || "";
+
+                        return (
+                          <>
+                            {popupSlides.length > 0 ? (
+                              <>
+                                {imageUrl ? (
+                                  <div style={{ marginBottom: "12px", textAlign: "center" }}>
+                                    {isVideoSlide ? (
+                                      <video
+                                        src={imageUrl}
+                                        autoPlay
+                                        muted
+                                        loop
+                                        controls
+                                        playsInline
+                                        style={{ width: "100%", maxWidth: "320px", borderRadius: "8px" }}
+                                      />
+                                    ) : (
+                                      <img
+                                        src={imageUrl}
+                                        style={{ width: "100%", maxWidth: "320px", borderRadius: "8px" }}
+                                        alt={popupContent.title || selectedElement || "Map slide"}
+                                      />
+                                    )}
+                                    {creditLine ? (
+                                      <div
+                                        style={{
+                                          marginTop: "6px",
+                                          fontSize: "12px",
+                                          lineHeight: 1.35,
+                                          color: "#666",
+                                          textAlign: "left",
+                                        }}
+                                      >
+                                        {creditLine}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: "8px",
+                                    marginBottom: "12px",
+                                  }}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => setCurrentSlideIndex((prev) => Math.max(0, prev - 1))}
+                                    disabled={safeCurrentSlideIndex === 0}
+                                    style={{ padding: "6px 10px", fontSize: "16px" }}
+                                  >
+                                    ←
+                                  </button>
+                                  <div style={{ fontSize: "14px", fontWeight: 600 }}>
+                                    {safeCurrentSlideIndex + 1} / {popupSlides.length}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setCurrentSlideIndex((prev) => Math.min(popupSlides.length - 1, prev + 1))}
+                                    disabled={safeCurrentSlideIndex === popupSlides.length - 1}
+                                    style={{ padding: "6px 10px", fontSize: "16px" }}
+                                  >
+                                    →
+                                  </button>
+                                </div>
+
+                                {paragraphs.length > 0 ? (
+                                  paragraphs.map((paragraph, index) => (
+                                    <p key={`${selectedElement}-slide-${safeCurrentSlideIndex}-paragraph-${index}`}>{paragraph}</p>
+                                  ))
+                                ) : (
+                                  <p>У этого слайда пока нет текста.</p>
+                                )}
+
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr",
+                                    gap: "8px",
+                                    marginTop: "16px",
+                                  }}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={handleOpenVideo}
+                                    style={{ padding: "10px 12px", fontSize: "14px", borderRadius: "8px" }}
+                                  >
+                                    Посмотреть видео
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleOpenCatsEditor}
+                                    style={{ padding: "10px 12px", fontSize: "14px", borderRadius: "8px" }}
+                                  >
+                                    Открыть в редакторе котиков
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleOpenGoogleMaps}
+                                    style={{ padding: "10px 12px", fontSize: "14px", borderRadius: "8px" }}
+                                  >
+                                    Открыть на большой Google карте
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <p>Для этого места контент пока не готов.</p>
+                            )}
+                          </>
+                        );
+                      })()
+                    )}
+                  </>
+                ) : selectedElement && selectedElement !== "__none__" ? (
+                  isLoading ? (
+                    <p>Загружаю готовый контент, подожди минутку...</p>
+                  ) : (
+                    <p>Для этого места контент пока не готов.</p>
+                  )
+                ) : (
+                  <p>Нажми на любое место на карте, и я покажу тебе готовый материал о нём.</p>
+                )}
+              </div>
             </>
           </div>
         )}
