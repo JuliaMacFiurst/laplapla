@@ -10,8 +10,6 @@ export const KAWAII_BACKGROUND_COLORS: string[] = [
   'bg-lime-100',
 ];
 
-export const GEMINI_MODEL_NAME = "gemini-2.5-flash";
-
 // Path to the local capybara images. Assumes images are in public/images/
 export const LOCAL_CAPYBARA_IMAGE_PATH = '/images/capybaras';
 
