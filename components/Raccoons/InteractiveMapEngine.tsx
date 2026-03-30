@@ -1,5 +1,6 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { flushSync } from "react-dom";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
@@ -43,28 +44,258 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const [viewMode, setViewMode] = useState<"slides" | "video">("slides");
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
   const fetchIdRef = useRef(0);
+  const isLoadingRef = useRef(false);
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
+  const hoveredPathRef = useRef<SVGPathElement | null>(null);
   const selectedElementRef = useRef<string | null>(null);
 
   const [zoom, setZoom] = useState(1);
   const mapContentRef = useRef<HTMLDivElement | null>(null);
+  const svgHostRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const currentXRef = useRef(0);
   const currentYRef = useRef(0);
+  const movedDuringDragRef = useRef(false);
+  const didDragRef = useRef(false);
+  const pointerStartClientXRef = useRef(0);
+  const pointerStartClientYRef = useRef(0);
+  const ignoreNextOutsideClickRef = useRef(false);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const popupSlides = popupContent?.slides ?? [];
+  const isPopupOpen = selectedElement !== null;
   const safeCurrentSlideIndex = popupSlides.length === 0
     ? 0
     : Math.min(currentSlideIndex, Math.max(0, popupSlides.length - 1));
   const currentPopupSlide = popupSlides[safeCurrentSlideIndex] ?? null;
+
+  const getHoverFill = () => {
+    if (type === "sea") return "#99dbf5";
+    if (type === "river") return "#4cb3ff";
+    if (type === "animal") return "#86c232";
+    if (type === "weather") return "#f6c453";
+    return "#f97316";
+  };
+
+  const getSelectedFill = () => {
+    if (type === "river") return "#ff7a00";
+    return "#e0d4f7";
+  };
+
+  const buildOverlayPathClone = (
+    path: SVGPathElement,
+    color: string,
+    overlayType: "hover" | "selected",
+  ) => {
+    const clone = path.cloneNode(true) as SVGPathElement;
+    clone.removeAttribute("id");
+    clone.removeAttribute("data-selected");
+    clone.removeAttribute("style");
+    clone.setAttribute("pointer-events", "none");
+
+    if (type === "river") {
+      const baseStrokeWidth = Number.parseFloat(path.getAttribute("stroke-width") || "1");
+      clone.style.setProperty("fill", "none", "important");
+      clone.style.setProperty("stroke", color, "important");
+      clone.style.setProperty(
+        "stroke-width",
+        String(Number.isFinite(baseStrokeWidth) ? Math.max(baseStrokeWidth + 1.5, 2.5) : 2.5),
+        "important",
+      );
+      clone.style.setProperty(
+        "stroke-linecap",
+        path.getAttribute("stroke-linecap") || "round",
+        "important",
+      );
+      clone.style.setProperty(
+        "stroke-linejoin",
+        path.getAttribute("stroke-linejoin") || "round",
+        "important",
+      );
+      clone.style.setProperty("opacity", overlayType === "hover" ? "1" : "1", "important");
+      return clone;
+    }
+
+    clone.style.setProperty("fill", color, "important");
+    clone.style.setProperty(
+      "stroke",
+      overlayType === "hover" ? "#ea580c" : "#a855f7",
+      "important",
+    );
+    clone.style.setProperty(
+      "stroke-width",
+      overlayType === "hover" ? "1.5" : "2",
+      "important",
+    );
+    clone.style.setProperty("opacity", overlayType === "hover" ? "0.95" : "1", "important");
+    return clone;
+  };
+
+  const buildOverlayBranchClone = (
+    sourceSvg: SVGSVGElement,
+    path: SVGPathElement,
+    color: string,
+    overlayType: "hover" | "selected",
+  ) => {
+    const styledPathClone = buildOverlayPathClone(path, color, overlayType);
+    let currentNode: SVGElement = styledPathClone;
+    let parent: Element | null = path.parentElement;
+
+    while (parent && parent instanceof SVGElement && parent !== (sourceSvg as Element)) {
+      const parentClone = parent.cloneNode(false) as SVGElement;
+      parentClone.removeAttribute("id");
+      parentClone.removeAttribute("style");
+      parentClone.setAttribute("pointer-events", "none");
+      parentClone.appendChild(currentNode);
+      currentNode = parentClone;
+      parent = parent.parentElement;
+    }
+
+    return currentNode;
+  };
+
+  const syncInteractionOverlay = (
+    hoveredPath: SVGPathElement | null = hoveredPathRef.current,
+    selectedPath: SVGPathElement | null = lastSelectedPath.current,
+  ) => {
+    const sourceSvg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
+    if (!sourceSvg) {
+      return;
+    }
+
+    if (selectedElementRef.current) {
+      const liveSelectedPath = sourceSvg.querySelector(
+        `path[id='${selectedElementRef.current}']`,
+      ) as SVGPathElement | null;
+      if (liveSelectedPath) {
+        selectedPath = liveSelectedPath;
+        lastSelectedPath.current = liveSelectedPath;
+      }
+    }
+
+    if (hoveredPath && !sourceSvg.contains(hoveredPath)) {
+      hoveredPath = null;
+      hoveredPathRef.current = null;
+    }
+
+    const existingOverlay = sourceSvg.querySelector('[data-interaction-overlay="true"]');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+
+    if (!hoveredPath && !selectedPath) {
+      return;
+    }
+
+    const overlayGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    overlayGroup.setAttribute("data-interaction-overlay", "true");
+    overlayGroup.setAttribute("pointer-events", "none");
+
+    if (hoveredPath && hoveredPath !== selectedPath) {
+      overlayGroup.appendChild(
+        buildOverlayBranchClone(sourceSvg, hoveredPath, getHoverFill(), "hover"),
+      );
+    }
+
+    if (selectedPath) {
+      overlayGroup.appendChild(
+        buildOverlayBranchClone(sourceSvg, selectedPath, getSelectedFill(), "selected"),
+      );
+    }
+
+    sourceSvg.appendChild(overlayGroup);
+  };
+
+  const applySelectedStyle = (path: SVGPathElement) => {
+    path.setAttribute("data-selected", "true");
+    lastSelectedPath.current = path;
+    syncInteractionOverlay();
+  };
+
+  const clearSelectedStyle = () => {
+    if (!lastSelectedPath.current) {
+      return;
+    }
+
+    const previousPath = lastSelectedPath.current;
+    previousPath.removeAttribute("data-selected");
+    lastSelectedPath.current = null;
+    syncInteractionOverlay();
+  };
+
+  const applyHoverStyle = (path: SVGPathElement) => {
+    if (path === hoveredPathRef.current) {
+      return;
+    }
+
+    hoveredPathRef.current = path;
+    syncInteractionOverlay();
+  };
+
+  const clearHoverStyle = (path: SVGPathElement) => {
+    if (hoveredPathRef.current !== path) {
+      return;
+    }
+
+    hoveredPathRef.current = null;
+    syncInteractionOverlay();
+  };
+
+  const closeSelection = (_reason: "outside" | "button" | "toggle" | "map-switch") => {
+    if (!selectedElementRef.current && !lastSelectedPath.current && !selectedElement) {
+      return;
+    }
+
+    clearSelectedStyle();
+    selectedElementRef.current = null;
+    hoveredPathRef.current = null;
+    setSelectedElement(null);
+    setPopupContent(null);
+    setCurrentSlideIndex(0);
+    setViewMode("slides");
+  };
+
+  const openSelection = (path: SVGPathElement, id: string) => {
+    if (!id) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 300) {
+      return;
+    }
+    lastClickTimeRef.current = now;
+
+    if (isLoadingRef.current) {
+      setToast("Еноты ещё рассказывают предыдущую историю...");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    if (type === "river") {
+      const bbox = path.getBBox();
+      if (bbox.width > 150 && bbox.height > 80) {
+        return;
+      }
+    }
+
+    if (selectedElementRef.current === id && lastSelectedPath.current === path) {
+      return;
+    }
+
+    clearSelectedStyle();
+    applySelectedStyle(path);
+    selectedElementRef.current = id;
+    ignoreNextOutsideClickRef.current = true;
+    flushSync(() => {
+      setSelectedElement(id);
+    });
+  };
 
   const getFlagUrl = (id: string): string | null => {
     if (!id) return null;
@@ -103,6 +334,10 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
       setTimeout(() => setIsVisible(true), 0);
     });
   }, [svgPath, type]);
+
+useEffect(() => {
+  isLoadingRef.current = isLoading;
+}, [isLoading]);
 
 useEffect(() => {
   setCurrentSlideIndex(0);
@@ -160,7 +395,7 @@ useEffect(() => {
   };
 
 useEffect(() => {
-  const mapContent = mapContentRef.current;
+  const mapContent = svgHostRef.current;
   const container = document.querySelector(".map-container") as HTMLElement | null;
   if (!mapContent || !container) return;
 
@@ -186,14 +421,14 @@ useEffect(() => {
   let offsetY: number = 0;
 
   if (type === 'country' || type === 'flag' || type === 'culture' || type === 'food') {
-    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 200;
-    offsetY = (containerRect.height - svgRect.height * optimalZoom) / 2 - 300;
+    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 110;
+    offsetY = -120;
   } else if (type === 'river') {
     offsetX = 0;
     offsetY = 0;
   } else if (type === 'animal') {
-    offsetX = 150;
-    offsetY = 0;
+    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 60;
+    offsetY = -40;
   } 
 
   currentXRef.current = offsetX;
@@ -204,8 +439,11 @@ useEffect(() => {
 
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log("MOUSEDOWN triggered");
     isDraggingRef.current = true;
+    movedDuringDragRef.current = false;
+    didDragRef.current = false;
+    pointerStartClientXRef.current = e.clientX;
+    pointerStartClientYRef.current = e.clientY;
     startXRef.current = e.clientX - currentXRef.current;
     startYRef.current = e.clientY - currentYRef.current;
     if (mapContentRef.current) {
@@ -216,7 +454,10 @@ useEffect(() => {
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
     e.preventDefault();
-    console.log("MOUSEMOVE triggered");
+    if (Math.abs(e.clientX - pointerStartClientXRef.current) > 3 || Math.abs(e.clientY - pointerStartClientYRef.current) > 3) {
+      movedDuringDragRef.current = true;
+      didDragRef.current = true;
+    }
     currentXRef.current = e.clientX - startXRef.current;
     currentYRef.current = e.clientY - startYRef.current;
     if (mapContentRef.current) {
@@ -225,7 +466,6 @@ useEffect(() => {
   };
 
   const handleMouseUp = () => {
-    console.log("MOUSEUP triggered");
     isDraggingRef.current = false;
     if (mapContentRef.current) {
       mapContentRef.current.style.cursor = 'grab';
@@ -234,12 +474,20 @@ useEffect(() => {
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     isDraggingRef.current = true;
+    movedDuringDragRef.current = false;
+    didDragRef.current = false;
+    pointerStartClientXRef.current = e.touches[0].clientX;
+    pointerStartClientYRef.current = e.touches[0].clientY;
     startXRef.current = e.touches[0].clientX - currentXRef.current;
     startYRef.current = e.touches[0].clientY - currentYRef.current;
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
+    if (Math.abs(e.touches[0].clientX - pointerStartClientXRef.current) > 3 || Math.abs(e.touches[0].clientY - pointerStartClientYRef.current) > 3) {
+      movedDuringDragRef.current = true;
+      didDragRef.current = true;
+    }
     currentXRef.current = e.touches[0].clientX - startXRef.current;
     currentYRef.current = e.touches[0].clientY - startYRef.current;
     if (mapContentRef.current) {
@@ -266,38 +514,24 @@ useEffect(() => {
 
 // Read-only загрузка готового popup-контента по выбранному элементу
 useEffect(() => {
+  if (!selectedElement) {
+    setPopupContent(null);
+    setIsLoading(false);
+    return;
+  }
+
+  let isCancelled = false;
+  const currentFetchId = ++fetchIdRef.current;
   setPopupContent(null);
+  setIsLoading(true);
+
   const fetchAndHandleStory = async () => {
-    if (!selectedElement || selectedElement === "__none__") return;
-    if (isLoading) return;
-    const currentFetchId = ++fetchIdRef.current;
-    setIsLoading(true);
-
-    // 🟣 Установить сиреневое выделение выбранной страны, даже если рассказ уже загружен
-    const svg = mapContentRef.current?.querySelector("svg");
-    const pathToColor = svg?.querySelector(`path[id='${selectedElement}']`) as SVGPathElement | null;
-
-    if (pathToColor) {
-      // Снять предыдущее выделение, если есть
-      if (lastSelectedPath.current && lastSelectedPath.current !== pathToColor) {
-        lastSelectedPath.current.style.fill = "#fdc09f";
-      }
-
-      // Новый способ отслеживания выбранного path
-      pathToColor.setAttribute("data-selected", "true");
-      pathToColor.style.fill = "#e0d4f7";
-      lastSelectedPath.current = pathToColor;
-      selectedElementRef.current = selectedElement;
-    }
-
     try {
       const response = await fetch(
         `/api/map-popup-content?type=${encodeURIComponent(type)}&target_id=${encodeURIComponent(selectedElement)}&lang=${encodeURIComponent(lang)}`,
       );
 
-      // Проверка устаревшего запроса
-      if (currentFetchId !== fetchIdRef.current) {
-        console.warn("⏩ Старый запрос, пропускаем результат");
+      if (isCancelled || currentFetchId !== fetchIdRef.current) {
         return;
       }
 
@@ -312,185 +546,117 @@ useEffect(() => {
 
       const nextPopupContent = (await response.json()) as MapPopupContent;
 
-      if (currentFetchId !== fetchIdRef.current) {
-        console.warn("⏩ Старый запрос, пропускаем результат");
+      if (isCancelled || currentFetchId !== fetchIdRef.current) {
         return;
       }
 
       setPopupContent(nextPopupContent);
     } catch (err) {
-      console.error("❌ Ошибка при загрузке popup-контента:", err);
-      setPopupContent(null);
+      if (!isCancelled) {
+        console.error("❌ Ошибка при загрузке popup-контента:", err);
+        setPopupContent(null);
+      }
     } finally {
-      setIsLoading(false);
-      // Проверка устаревшего запроса
-      if (currentFetchId !== fetchIdRef.current) {
-        console.warn("⏩ Старый запрос, пропускаем результат");
-        return;
+      if (!isCancelled && currentFetchId === fetchIdRef.current) {
+        setIsLoading(false);
       }
     }
   };
 
-  // --- SVG path listeners for popup/selection (for story popup) ---
-  const svg = mapContentRef.current?.querySelector("svg");
-  if (svg) {
-    const paths = svg.querySelectorAll("path");
-    if (['country', 'flag', 'physic', 'animal', 'culture', 'weather', 'food', 'sea', 'river'].includes(type)) {
-      setTimeout(() => {
-        paths.forEach((path) => {
-          // Remove previous listeners if any
-          path.onmouseenter = null;
-          path.onmouseleave = null;
-          path.onclick = null;
+  void fetchAndHandleStory();
 
-          // Mouse enter: подсветка если не lastSelectedPath.current или не тот path
-          path.addEventListener("mouseenter", () => {
-            if (!lastSelectedPath.current || lastSelectedPath.current !== path) {
-              if (type === 'sea') {
-                path.style.fill = "#99dbf5"; // голубой для моря
-              } else if (type === 'river') {
-                path.style.fill = "#4cb3ff"; // мягкий голубой для рек
-              } else {
-                path.style.fill = "#f97316"; // оранжевый для остальных
-              }
-            }
-          });
+  return () => {
+    isCancelled = true;
+  };
+}, [lang, selectedElement, type]);
 
-          // Mouse leave: сбрасывать только если не выбранный path
-          path.addEventListener("mouseleave", () => {
-            // Если path не выбран, сбрасываем цвет
-            if (!path.hasAttribute("data-selected")) {
-              path.style.fill = "";
-            }
-            // иначе оставить сиреневым (ничего не делать)
-          });
+useLayoutEffect(() => {
+  const mapContent = mapContentRef.current;
+  const svgHost = svgHostRef.current;
+  if (!mapContent || !svgHost) return;
 
-          // Click: только один path сиреневый (выбранный)
-          path.onclick = (e: Event) => {
-            const now = Date.now();
-            if (now - lastClickTimeRef.current < 300) {
-              console.log("🚫 Клик слишком частый — проигнорирован");
-              return;
-            }
-            lastClickTimeRef.current = now;
+  const svg = svgHost.querySelector("svg");
+  if (!svg) return;
 
-            // 1. Блокировка во время загрузки
-            if (isLoading) {
-              console.log("🦝 История всё ещё загружается, клики временно заблокированы");
-              setToast("Еноты ещё рассказывают предыдущую историю...");
-              setTimeout(() => setToast(null), 3000);
-              return;
-            }
+  if (!['country', 'flag', 'physic', 'animal', 'culture', 'weather', 'food', 'sea', 'river'].includes(type)) {
+    return;
+  }
 
-            // 2. Подсчёт кликов (антишквал)
-            clickCountRef.current++;
-            if (clickCountRef.current >= 7) {
-              console.warn("⚠️ Слишком много кликов подряд — требуется перезагрузка страницы");
-              const overlay = document.createElement("div");
-              overlay.innerHTML = `
-                <div style="
-                  position: fixed;
-                  top: 0;
-                  left: 0;
-                  width: 100vw;
-                  height: 100vh;
-                  background: rgba(0,0,0,0.7);
-                  color: white;
-                  font-size: 22px;
-                  display: flex;
-                  flex-direction: column;
-                  justify-content: center;
-                  align-items: center;
-                  z-index: 99999;
-                ">
-                  <img src="\${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif" 
-                    alt="Еноты отдыхают" 
-                    style="width:260px; margin-bottom:20px;" />
-                  <p>Еноты устали от кликов и ушли спать 🦝💤</p>
-                  <p>Чтобы карта снова заработала, перезагрузи страницу.</p>
-                  <button onclick="location.reload()" style="
-                    margin-top: 20px;
-                    font-size: 18px;
-                    padding: 10px 20px;
-                    background: #f97316;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                  ">🔄 Перезагрузить</button>
-                </div>
-              `;
-              document.body.appendChild(overlay);
-              clickCountRef.current = 0;
-              return;
-            }
+  const paths = Array.from(svg.querySelectorAll("path[id]")) as SVGPathElement[];
+  paths.forEach((path) => {
+    path.style.cursor = "pointer";
+    path.setAttribute("data-map-bound", "1");
+  });
 
-            if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-            clickTimerRef.current = setTimeout(() => (clickCountRef.current = 0), 8000);
+  const getPathFromNode = (node: EventTarget | null) => {
+    if (!(node instanceof Element)) {
+      return null;
+    }
 
-            // 3. Обработка нормального клика
-            const id = (e.currentTarget as SVGPathElement).id;
-            // ✅ Diagnostic: path clicked but missing ID
-            if (!id) {
-              window.__browserCapture?.capture?.("map-click:no-id", {
-                elementClass: (e.currentTarget as HTMLElement)?.className,
-                tag: (e.currentTarget as HTMLElement)?.tagName,
-                ts: Date.now(),
-              });
-              console.warn("⚠️ map-click:no-id — missing ID on clicked path");
-              return;
-            }
-            console.log("✅ CLICK handler — id:", id);
-            // 🗺 AI Capture — попытка открытия попапа
-            window.__browserCapture?.capture?.("map-popup:open-attempt", {
-              id,
-              mapType: type,
-              ts: Date.now(),
-            });
-            // 🦝 Log popup open failed if loading
-            if (isLoading) {
-              window.__browserCapture?.capture?.("map-popup:open-failed", {
-                id,
-                mapType: type,
-                reason: "loading-blocked",
-                ts: Date.now(),
-              });
-            }
+    return node.closest("path[id]") as SVGPathElement | null;
+  };
 
-            // 🐾 AI Capture — клик по стране
-            window.__browserCapture?.capture?.("country-click", {
-              id,
-              mapType: type,
-              ts: Date.now(),
-            });
+  const handleContainerMouseOver = (event: MouseEvent) => {
+    const path = getPathFromNode(event.target);
+    if (!path || !mapContent.contains(path)) {
+      return;
+    }
 
-            if (type === "river") {
-              const bbox = (e.currentTarget as SVGPathElement).getBBox();
-              if (bbox.width > 150 && bbox.height > 80) {
-                console.log("🚫 Клик по фону материка проигнорирован");
-                return;
-              }
-            }
+    const relatedPath = getPathFromNode(event.relatedTarget);
+    if (relatedPath === path) {
+      return;
+    }
 
-            if (lastSelectedPath.current && lastSelectedPath.current !== e.currentTarget) {
-              lastSelectedPath.current.style.fill = "#fdc09f";
-            }
+    applyHoverStyle(path);
+  };
 
-            const pathElement = e.currentTarget as SVGPathElement;
-            pathElement.style.fill = "#e0d4f7";
-            lastSelectedPath.current = pathElement;
-            selectedElementRef.current = id;
+  const handleContainerMouseOut = (event: MouseEvent) => {
+    const path = getPathFromNode(event.target);
+    if (!path || !mapContent.contains(path)) {
+      return;
+    }
 
-            setSelectedElement(id);
-            setPosition({ x: 0, y: 0 });
-          };
-        });
-      }, 0);
+    const relatedPath = getPathFromNode(event.relatedTarget);
+    if (relatedPath === path) {
+      return;
+    }
+
+    clearHoverStyle(path);
+  };
+
+  const handleContainerClick = (event: MouseEvent) => {
+    const path = getPathFromNode(event.target);
+    if (!path || !mapContent.contains(path)) {
+      return;
+    }
+
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
+
+    openSelection(path, path.id);
+  };
+
+  mapContent.addEventListener("mouseover", handleContainerMouseOver);
+  mapContent.addEventListener("mouseout", handleContainerMouseOut);
+  mapContent.addEventListener("click", handleContainerClick);
+
+  syncInteractionOverlay();
+
+  if (selectedElementRef.current) {
+    const selectedPath = svg.querySelector(`path[id='${selectedElementRef.current}']`) as SVGPathElement | null;
+    if (selectedPath) {
+      applySelectedStyle(selectedPath);
     }
   }
 
-  fetchAndHandleStory();
-}, [lang, selectedElement, type]);
+  return () => {
+    mapContent.removeEventListener("mouseover", handleContainerMouseOver);
+    mapContent.removeEventListener("mouseout", handleContainerMouseOut);
+    mapContent.removeEventListener("click", handleContainerClick);
+  };
+}, [svgContent, type]);
 
   // --- Добавляем refs и состояние для перетаскивания попапа ---
  const popupRef = useRef<HTMLDivElement | null>(null);
@@ -526,322 +692,38 @@ useEffect(() => {
   // --- Обработчик клика по фону для закрытия попапа ---
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      // Новое условие — если сейчас идёт перетаскивание попапа, игнорируем клик
-      if (isPopupDraggingRef.current) {
-        console.log("🛑 Клик игнорируется — в процессе перетаскивания попапа");
+      if (!isPopupOpen) {
         return;
       }
-      const path = e.composedPath();
-      let clickedInsidePopup = false;
-      if (popupRef.current && path && path.length) {
-        // Если любой элемент в composedPath находится внутри popupRef.current — считаем клик внутри
-        clickedInsidePopup = path.some((el) => {
-          try {
-            return el instanceof Node && popupRef.current && popupRef.current.contains(el as Node);
-          } catch (err) {
-            return false;
-          }
-        });
-      }
-      // также, на всякий случай, учитывать классы (fallback)
-      if (!clickedInsidePopup) {
-        clickedInsidePopup = path.some(
-          (el) =>
-            el instanceof HTMLElement &&
-            (
-              el.classList.contains("country-popup") ||
-              el.classList.contains("map-text")
-            )
-        );
+
+      if (ignoreNextOutsideClickRef.current) {
+        ignoreNextOutsideClickRef.current = false;
+        return;
       }
 
-      if (!clickedInsidePopup) {
-        // 🦝 AI Capture: map-popup:close (reason = map-click)
-              if (window.__browserCapture?.capture) {
-        window.__browserCapture.capture("map-popup:close-attempt", {
-          mapType: type,
-          reason: "map-click",
-          ts: Date.now(),
-        });
+      if (isPopupDraggingRef.current) {
+        return;
       }
-        setSelectedElement("__none__");
-        // ✅ Close success
-        if (window.__browserCapture?.capture) {
-          window.__browserCapture.capture("map-popup:close-success", {
-            mapType: type,
-            ts: Date.now(),
-          });
-        }
-        selectedElementRef.current = "__none__";
-        setAiResponse(null);
-        if (lastSelectedPath.current) {
-          lastSelectedPath.current.style.fill = "#fdc09f";
-          lastSelectedPath.current.removeAttribute("data-selected");
-          lastSelectedPath.current = null;
-        }
+
+      const target = e.target;
+      if (!(target instanceof Node)) {
+        return;
       }
+
+      if (popupRef.current?.contains(target)) {
+        return;
+      }
+
+      if (mapContentRef.current?.contains(target)) {
+        return;
+      }
+
+      closeSelection("outside");
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
-  // 🔁 Повторная установка path onclick при zoom, если попап закрыт
-  useEffect(() => {
-    // Только если DOM готов
-    const mapContent = mapContentRef.current;
-    if (!mapContent) return;
-
-    const svg = mapContent.querySelector("svg");
-    if (!svg) return;
-
-    const paths = svg.querySelectorAll("path");
-    // ✅ Diagnostic: handlers rebound due to zoom change
-    window.__browserCapture?.capture?.("map-rebind:paths", {
-      count: paths.length,
-      reason: "zoom-change",
-      ts: Date.now(),
-    });
-
-    paths.forEach((path) => {
-      // Remove previous listeners if any
-      path.onmouseenter = null;
-      path.onmouseleave = null;
-      path.onclick = null;
-
-      // Mouse enter: подсветка если не lastSelectedPath.current или не тот path
-      path.addEventListener("mouseenter", () => {
-        if (!lastSelectedPath.current || lastSelectedPath.current !== path) {
-          if (type === 'sea') {
-            path.style.fill = "#99dbf5"; // голубой для моря
-          } else if (type === 'river') {
-            path.style.fill = "#4cb3ff"; // мягкий голубой для рек
-          } else {
-            path.style.fill = "#f97316"; // оранжевый для остальных
-          }
-        }
-      });
-
-      // Mouse leave: сбрасывать только если не выбранный
-      path.addEventListener("mouseleave", () => {
-        if (!lastSelectedPath.current || lastSelectedPath.current !== path) {
-          path.style.fill = "";
-        }
-      });
-
-      // Click: только один path сиреневый (выбранный)
-      path.onclick = (e: Event) => {
-        // --- Антишторм-механизм кликов ---
-        const now = Date.now();
-        if (now - lastClickTimeRef.current < 300) {
-          console.log("🚫 Клик слишком частый — проигнорирован");
-          return;
-        }
-        lastClickTimeRef.current = now;
-        // Если идёт генерация — блокируем новые клики
-        if (isLoading) {
-          console.log("🦝 История ещё загружается, новый клик заблокирован");
-            setToast("Енот ещё рассказывает предыдущую историю...");
-            setAiResponse(`
-              <div style='text-align:center;'>
-              <img src=\`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif\` alt="Еноты заняты уборкой" style="width:220px; margin-bottom:10px;" />
-              <p>Подожди немного — еноты моют карту после предыдущей истории!</p>
-            </div>
-          `);
-          return;
-        }
-        // Счётчик кликов подряд
-        clickCountRef.current++;
-        if (clickCountRef.current >= 7) {
-          console.warn("⚠️ Слишком много кликов подряд — требуется перезагрузка страницы");
-
-          // Прямое уведомление поверх всего интерфейса, вне React
-          const overlay = document.createElement("div");
-          overlay.innerHTML = `
-            <div style="
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100vw;
-              height: 100vh;
-              background: rgba(0,0,0,0.7);
-              color: white;
-              font-size: 22px;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center;
-              z-index: 99999;
-            ">
-              <img src="\${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
-              <p>Еноты устали от кликов и ушли спать 🦝💤</p>
-              <p>Чтобы карта снова заработала, перезагрузи страницу.</p>
-              <button onclick="location.reload()" style="
-                margin-top: 20px;
-                font-size: 18px;
-                padding: 10px 20px;
-                background: #f97316;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-              ">🔄 Перезагрузить</button>
-            </div>
-          `;
-          document.body.appendChild(overlay);
-          clickCountRef.current = 0;
-          return;
-        }
-        if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-        clickTimerRef.current = setTimeout(() => {
-          clickCountRef.current = 0;
-        }, 8000);
-        //Это переназначение обработчиков после изменения zoom
-        const id = (e.currentTarget as SVGPathElement).id;
-        console.log("✅ CLICK handler — id:", id);
-        // 🦝 Log popup open attempt
-        if (window.__browserCapture?.capture) {
-          window.__browserCapture.capture("map-popup:open-attempt", {
-            id,
-            mapType: type,
-            ts: Date.now(),
-          });
-        }
-        // 🦝 Log popup open failed if loading
-        if (isLoading) {
-          window.__browserCapture?.capture?.("map-popup:open-failed", {
-            id,
-            mapType: type,
-            reason: "loading-blocked",
-            ts: Date.now(),
-          });
-        }
-        // 🏞 Игнорируем клики по фоновым материкам на карте рек
-        if (type === "river") {
-          const bbox = (e.currentTarget as SVGPathElement).getBBox();
-          // Если path слишком большой (фон), пропускаем
-          if (bbox.width > 150 && bbox.height > 80) {
-            console.log("🚫 Клик по фону материка проигнорирован");
-            return;
-          }
-        }
-
-        const prevSelected = lastSelectedPath.current;
-        if (prevSelected && prevSelected !== path) {
-          prevSelected.style.fill = "#fdc09f";
-        }
-
-        // persist current
-        selectedElementRef.current = id;
-        lastSelectedPath.current = path;
-
-        setSelectedElement(id);
-          // ✅ Log popup open success
-          if (window.__browserCapture?.capture) {
-            window.__browserCapture.capture("map-popup:open-success", {
-              id,
-              mapType: type,
-              ts: Date.now(),
-            });
-          }
-        setPosition({ x: 0, y: 0 });
-
-        path.style.fill = "#e0d4f7";
-      };
-    });
-
-  }, [zoom]);
-
-  // 🔁 Повторное применение выделения и обработчиков после получения popupContent
-  useEffect(() => {
-    if (!popupContent || !selectedElementRef.current) return;
-
-    const svg = mapContentRef.current?.querySelector("svg");
-    if (!svg) return;
-
-    const path = svg.querySelector(`path#${selectedElementRef.current}`) as SVGPathElement | null;
-    if (!path) return;
-
-    // ✅ Diagnostic: check if selectedElementRef and highlighted path match
-    if (lastSelectedPath.current?.id !== selectedElementRef.current) {
-      window.__browserCapture?.capture?.("map-id-mismatch", {
-        lastSelected: lastSelectedPath.current?.id,
-        refId: selectedElementRef.current,
-        ts: Date.now(),
-      });
-      console.warn("⚠️ map-id-mismatch — persisted selected path differs from ref");
-    }
-
-    // Восстановить выделение
-    path.style.fill = "#e0d4f7";
-    path.setAttribute("data-selected", "true");
-    lastSelectedPath.current = path;
-
-    // Повторно навесить mouseenter/mouseleave
-    path.addEventListener("mouseenter", () => {
-      if (!lastSelectedPath.current || lastSelectedPath.current !== path) {
-        if (type === 'sea') {
-          path.style.fill = "#99dbf5"; // голубой для моря
-        } else if (type === 'river') {
-          path.style.fill = "#4cb3ff"; // мягкий голубой для рек
-        } else {
-          path.style.fill = "#f97316"; // оранжевый для остальных
-        }
-      }
-    });
-
-    path.addEventListener("mouseleave", () => {
-      if (!path.hasAttribute("data-selected")) {
-        path.style.fill = "";
-      }
-    });
-
-  }, [popupContent]);
-
-  // --- Сторожевой механизм от зависания интерфейса ---
-  useEffect(() => {
-    const watchdog = setInterval(() => {
-      if (isLoading && selectedElement === "__none__") {
-        console.warn("🦝 Карта зависла: isLoading=true, но элемент не выбран. Показываем оверлей.");
-
-        const overlay = document.createElement("div");
-        overlay.innerHTML = `
-          <div style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            font-size: 22px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 99999;
-          ">
-            <img src="\${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/characters/raccoons/raccoons-with-mops.gif" alt="Еноты отдыхают" style="width:260px; margin-bottom:20px;" />
-            <p>Кажется, еноты застряли с предыдущей историей 🦝💤</p>
-            <p>Перезагрузи страницу, чтобы вернуть карту к жизни.</p>
-            <button onclick="location.reload()" style="
-              margin-top: 20px;
-              font-size: 18px;
-              padding: 10px 20px;
-              background: #f97316;
-              color: white;
-              border: none;
-              border-radius: 8px;
-              cursor: pointer;
-            ">🔄 Перезагрузить</button>
-          </div>
-        `;
-        document.body.appendChild(overlay);
-        clearInterval(watchdog);
-      }
-    }, 5000);
-
-    return () => clearInterval(watchdog);
-  }, [isLoading, selectedElement]);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [isPopupOpen, type]);
 
   return (
     <div className="world-map-wrapper">
@@ -858,8 +740,13 @@ useEffect(() => {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          dangerouslySetInnerHTML={{ __html: svgContent || "" }}
-        />
+        >
+          <div
+            ref={svgHostRef}
+            className="map-svg-host"
+            dangerouslySetInnerHTML={{ __html: svgContent || "" }}
+          />
+        </div>
 
         {/* --- SVG Path Bind Effect --- */}
         {/*
@@ -871,7 +758,7 @@ useEffect(() => {
         {/* The effect is below */}
         {/* (see end of file for useEffect) */}
 
-        {selectedElement !== "__none__" && (
+        {isPopupOpen && (
           <div
             ref={popupRef}
             onMouseDown={handlePopupMouseDown}
@@ -884,21 +771,7 @@ useEffect(() => {
           >
             <button
               onClick={() => {
-                setSelectedElement("__none__");
-                // 🦝 AI Capture: map-popup:close event (NEW)
-                if (window.__browserCapture?.capture) {
-                  window.__browserCapture.capture("map-popup:close", {
-                    mapType: type,
-                    ts: Date.now(),
-                  });
-                }
-                selectedElementRef.current = "__none__";
-                setPosition({ x: 0, y: 0 });
-                setPopupContent(null);
-                if (lastSelectedPath.current) {
-                  lastSelectedPath.current.style.fill = "#fdc09f";
-                  lastSelectedPath.current = null;
-                }
+                closeSelection("button");
               }}
               className="country-close-button"
               aria-label="Закрыть"
@@ -1104,7 +977,7 @@ useEffect(() => {
                       })()
                     )}
                   </>
-                ) : selectedElement && selectedElement !== "__none__" ? (
+                ) : isPopupOpen ? (
                   isLoading ? (
                     <p>Загружаю готовый контент, подожди минутку...</p>
                   ) : (

@@ -23,21 +23,31 @@
   cursor: pointer;
 }
 
+#countries-svg path[data-selected="true"] {
+  fill: #e0d4f7 !important;
+}
+
 .map-container {
   position: relative;
   width: 100%;
-  overflow: visible;
+  max-width: 100%;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .map-content {
   position: relative;
   overflow: visible;
   width: 100%;
+  max-width: 100%;
   height: auto;
   transform-origin: center center;
   cursor: grab;
   transition: transform 0.1s ease;
-  will-change: transform;
+}
+
+.map-svg-host {
+  position: relative;
 }
 
 
@@ -68,13 +78,26 @@
   stroke-width: 2;
 }
 
+#rivers-svg path[data-selected="true"] {
+  fill: #e0d4f7 !important;
+}
+
+.sea[data-selected="true"],
+path[data-selected="true"].sea,
+svg path[data-selected="true"] {
+  fill: #e0d4f7 !important;
+}
+
 .world-map-wrapper {
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
   padding-right: 1rem;
+  width: 100%;
   max-width: 1280px;
-  overflow: visible;
+  box-sizing: border-box;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 
@@ -84,7 +107,8 @@
   width: 100%;
   height: 100%;
   pointer-events: auto;
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 
@@ -111,6 +135,8 @@
 .raccoons-home-wrapper {
   margin: 0 auto;
   padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 #countries-svg path {
