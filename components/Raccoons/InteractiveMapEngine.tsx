@@ -570,7 +570,7 @@ useEffect(() => {
   };
 }, [lang, selectedElement, type]);
 
-useLayoutEffect(() => {
+  useLayoutEffect(() => {
   const mapContent = mapContentRef.current;
   const svgHost = svgHostRef.current;
   if (!mapContent || !svgHost) return;
@@ -596,8 +596,52 @@ useLayoutEffect(() => {
     return node.closest("path[id]") as SVGPathElement | null;
   };
 
+  const getPathFromPointerEvent = (event: MouseEvent) => {
+    if (typeof document.elementsFromPoint !== "function") {
+      return getPathFromNode(event.target);
+    }
+
+    const elements = document.elementsFromPoint(event.clientX, event.clientY);
+    const candidates: SVGPathElement[] = [];
+    const seen = new Set<SVGPathElement>();
+
+    for (const element of elements) {
+      const path = element.closest("path[id]") as SVGPathElement | null;
+      if (!path || seen.has(path)) {
+        continue;
+      }
+
+      if (!mapContent.contains(path)) {
+        continue;
+      }
+
+      if (path.closest('[data-interaction-overlay="true"]')) {
+        continue;
+      }
+
+      seen.add(path);
+      candidates.push(path);
+    }
+
+    if (candidates.length === 0) {
+      return getPathFromNode(event.target);
+    }
+
+    if (type === "animal" || type === "weather") {
+      return candidates
+        .slice()
+        .sort((a, b) => {
+          const aBox = a.getBBox();
+          const bBox = b.getBBox();
+          return aBox.width * aBox.height - bBox.width * bBox.height;
+        })[0] ?? null;
+    }
+
+    return candidates[0] ?? null;
+  };
+
   const handleContainerMouseOver = (event: MouseEvent) => {
-    const path = getPathFromNode(event.target);
+    const path = getPathFromPointerEvent(event);
     if (!path || !mapContent.contains(path)) {
       return;
     }
@@ -611,7 +655,7 @@ useLayoutEffect(() => {
   };
 
   const handleContainerMouseOut = (event: MouseEvent) => {
-    const path = getPathFromNode(event.target);
+    const path = getPathFromPointerEvent(event);
     if (!path || !mapContent.contains(path)) {
       return;
     }
@@ -625,7 +669,7 @@ useLayoutEffect(() => {
   };
 
   const handleContainerClick = (event: MouseEvent) => {
-    const path = getPathFromNode(event.target);
+    const path = getPathFromPointerEvent(event);
     if (!path || !mapContent.contains(path)) {
       return;
     }
