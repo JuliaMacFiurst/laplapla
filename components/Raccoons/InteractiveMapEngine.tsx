@@ -1,6 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
+import { dictionaries } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
@@ -36,6 +37,7 @@ function isVideoMediaUrl(url: string | null | undefined): boolean {
 export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
+  const t = dictionaries[lang].raccoons.popup;
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -85,6 +87,23 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const getSelectedFill = () => {
     if (type === "river") return "#ff7a00";
     return "#e0d4f7";
+  };
+
+  const isInteractivePath = (path: SVGPathElement) => {
+    const id = path.id?.trim();
+    if (!id) {
+      return false;
+    }
+
+    if (path.closest("defs, clipPath")) {
+      return false;
+    }
+
+    if ((type === "animal" || type === "weather") && /^path\d+$/i.test(id)) {
+      return false;
+    }
+
+    return true;
   };
 
   const buildOverlayPathClone = (
@@ -272,7 +291,7 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
     lastClickTimeRef.current = now;
 
     if (isLoadingRef.current) {
-      setToast("Еноты ещё рассказывают предыдущую историю...");
+      setToast(t.previousStoryInProgress);
       setTimeout(() => setToast(null), 3000);
       return;
     }
@@ -346,7 +365,7 @@ useEffect(() => {
 
   const handleOpenCatsEditor = () => {
     if (!popupContent || popupSlides.length === 0) {
-      setToast("Для этого места пока нет слайдов для редактора.");
+      setToast(t.noSlidesForEditor);
       setTimeout(() => setToast(null), 3000);
       return;
     }
@@ -373,7 +392,7 @@ useEffect(() => {
     const youtubeUrl = popupContent?.video?.youtubeUrl;
     const youtubeId = popupContent?.video?.youtubeId;
     if (!youtubeUrl && !youtubeId) {
-      setToast("Видео для этого места пока не добавлено.");
+      setToast(t.noVideo);
       setTimeout(() => setToast(null), 3000);
       return;
     }
@@ -384,7 +403,7 @@ useEffect(() => {
   const handleOpenGoogleMaps = () => {
     const googleMapsUrl = popupContent?.googleMapsUrl;
     if (!googleMapsUrl) {
-      setToast("Ссылка на Google Maps для этого места пока не добавлена.");
+      setToast(t.noGoogleMaps);
       setTimeout(() => setToast(null), 3000);
       return;
     }
@@ -582,7 +601,9 @@ useEffect(() => {
     return;
   }
 
-  const paths = Array.from(svg.querySelectorAll("path[id]")) as SVGPathElement[];
+  const paths = Array.from(svg.querySelectorAll("path[id]")).filter((path) =>
+    isInteractivePath(path as SVGPathElement),
+  ) as SVGPathElement[];
   paths.forEach((path) => {
     path.style.cursor = "pointer";
     path.setAttribute("data-map-bound", "1");
@@ -593,10 +614,59 @@ useEffect(() => {
       return null;
     }
 
-    return node.closest("path[id]") as SVGPathElement | null;
+    const path = node.closest("path[id]") as SVGPathElement | null;
+    if (!path || !isInteractivePath(path)) {
+      return null;
+    }
+
+    return path;
+  };
+
+  const getSvgPointFromEvent = (event: MouseEvent) => {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) {
+      return null;
+    }
+
+    const point = new DOMPoint(event.clientX, event.clientY);
+    return point.matrixTransform(ctm.inverse());
+  };
+
+  const getBiomePathFromPointerEvent = (event: MouseEvent) => {
+    const svgPoint = getSvgPointFromEvent(event);
+    if (!svgPoint) {
+      return getPathFromNode(event.target);
+    }
+
+    const paths = Array.from(svg.querySelectorAll("path[id]")).filter((path) =>
+      isInteractivePath(path as SVGPathElement),
+    ) as SVGPathElement[];
+    const hits = paths.filter((path) => {
+      try {
+        return path.isPointInFill(svgPoint) || path.isPointInStroke(svgPoint);
+      } catch {
+        return false;
+      }
+    });
+
+    if (hits.length === 0) {
+      return getPathFromNode(event.target);
+    }
+
+    return hits
+      .slice()
+      .sort((a, b) => {
+        const aBox = a.getBBox();
+        const bBox = b.getBBox();
+        return aBox.width * aBox.height - bBox.width * bBox.height;
+      })[0] ?? null;
   };
 
   const getPathFromPointerEvent = (event: MouseEvent) => {
+    if (type === "animal" || type === "weather") {
+      return getBiomePathFromPointerEvent(event);
+    }
+
     if (typeof document.elementsFromPoint !== "function") {
       return getPathFromNode(event.target);
     }
@@ -608,6 +678,10 @@ useEffect(() => {
     for (const element of elements) {
       const path = element.closest("path[id]") as SVGPathElement | null;
       if (!path || seen.has(path)) {
+        continue;
+      }
+
+      if (!isInteractivePath(path)) {
         continue;
       }
 
@@ -627,21 +701,11 @@ useEffect(() => {
       return getPathFromNode(event.target);
     }
 
-    if (type === "animal" || type === "weather") {
-      return candidates
-        .slice()
-        .sort((a, b) => {
-          const aBox = a.getBBox();
-          const bBox = b.getBBox();
-          return aBox.width * aBox.height - bBox.width * bBox.height;
-        })[0] ?? null;
-    }
-
     return candidates[0] ?? null;
   };
 
   const handleContainerMouseOver = (event: MouseEvent) => {
-    const path = getPathFromPointerEvent(event);
+    const path = getPathFromNode(event.target);
     if (!path || !mapContent.contains(path)) {
       return;
     }
@@ -655,7 +719,7 @@ useEffect(() => {
   };
 
   const handleContainerMouseOut = (event: MouseEvent) => {
-    const path = getPathFromPointerEvent(event);
+    const path = getPathFromNode(event.target);
     if (!path || !mapContent.contains(path)) {
       return;
     }
@@ -666,6 +730,33 @@ useEffect(() => {
     }
 
     clearHoverStyle(path);
+  };
+
+  const handleContainerMouseMove = (event: MouseEvent) => {
+    if (type !== "animal" && type !== "weather") {
+      return;
+    }
+
+    const path = getPathFromPointerEvent(event);
+
+    if (!path || !mapContent.contains(path)) {
+      if (hoveredPathRef.current) {
+        clearHoverStyle(hoveredPathRef.current);
+      }
+      return;
+    }
+
+    if (hoveredPathRef.current && hoveredPathRef.current !== path) {
+      clearHoverStyle(hoveredPathRef.current);
+    }
+
+    applyHoverStyle(path);
+  };
+
+  const handleContainerMouseLeave = () => {
+    if (hoveredPathRef.current) {
+      clearHoverStyle(hoveredPathRef.current);
+    }
   };
 
   const handleContainerClick = (event: MouseEvent) => {
@@ -684,6 +775,8 @@ useEffect(() => {
 
   mapContent.addEventListener("mouseover", handleContainerMouseOver);
   mapContent.addEventListener("mouseout", handleContainerMouseOut);
+  mapContent.addEventListener("mousemove", handleContainerMouseMove);
+  mapContent.addEventListener("mouseleave", handleContainerMouseLeave);
   mapContent.addEventListener("click", handleContainerClick);
 
   syncInteractionOverlay();
@@ -698,6 +791,8 @@ useEffect(() => {
   return () => {
     mapContent.removeEventListener("mouseover", handleContainerMouseOver);
     mapContent.removeEventListener("mouseout", handleContainerMouseOut);
+    mapContent.removeEventListener("mousemove", handleContainerMouseMove);
+    mapContent.removeEventListener("mouseleave", handleContainerMouseLeave);
     mapContent.removeEventListener("click", handleContainerClick);
   };
 }, [svgContent, type]);
@@ -754,6 +849,16 @@ useEffect(() => {
         return;
       }
 
+      const eventPath = typeof e.composedPath === "function" ? e.composedPath() : [];
+
+      if (popupRef.current && eventPath.includes(popupRef.current)) {
+        return;
+      }
+
+      if (mapContentRef.current && eventPath.includes(mapContentRef.current)) {
+        return;
+      }
+
       if (popupRef.current?.contains(target)) {
         return;
       }
@@ -806,28 +911,31 @@ useEffect(() => {
           <div
             ref={popupRef}
             onMouseDown={handlePopupMouseDown}
-            className="country-popup"
+            className={`country-popup ${viewMode === "video" ? "country-popup-video-mode" : ""}`}
             style={{
               left: popupPos.x,
               top: popupPos.y,
               position: "absolute",
             }}
           >
-            <button
-              onClick={() => {
-                closeSelection("button");
-              }}
-              className="country-close-button"
-              aria-label="Закрыть"
-            >
-              ×
-            </button>
-            <>
+            <div className="country-popup-header">
+              <button
+                type="button"
+                onClick={() => {
+                  closeSelection("button");
+                }}
+                className="country-close-button studio-button btn-pink"
+                aria-label={t.close}
+              >
+                ×
+              </button>
+            </div>
+            <div className="country-popup-body">
               {type === "flag" && getFlagUrl(selectedElement || "") && (
                 <div style={{ textAlign: "center", marginBottom: "12px" }}>
                   <img
                     src={getFlagUrl(selectedElement!)!}
-                    alt={`Флаг ${selectedElement}`}
+                    alt={`${t.flagAlt} ${selectedElement}`}
                     style={{
                       width: "280px",
                       height: "auto",
@@ -847,34 +955,24 @@ useEffect(() => {
                   <>
                     {viewMode === "video" ? (
                       (() => {
-                        const youtubeId = popupContent.video?.youtubeId?.trim() || "";
+                        const youtubeId =
+                          popupContent.video?.youtubeId?.trim() || "";
                         return youtubeId ? (
                           <>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                gap: "8px",
-                                marginBottom: "12px",
-                              }}
-                            >
-                              <div style={{ fontSize: "14px", fontWeight: 600 }}>
-                                Видео
-                              </div>
+                            <div className="map-popup-video-toolbar">
                               <button
                                 type="button"
                                 onClick={() => setViewMode("slides")}
-                                style={{ padding: "6px 10px", fontSize: "14px", borderRadius: "8px" }}
+                                className="studio-button btn-lavender map-popup-video-close-button"
                               >
-                                ×
+                                {t.closeVideo}
                               </button>
                             </div>
 
-                            <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", marginBottom: "12px" }}>
+                            <div className="map-popup-video-frame">
                               <iframe
                                 src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0`}
-                                title={popupContent.video?.title || popupContent.title || selectedElement || "Map video"}
+                                title={popupContent.video?.title || popupContent.title || selectedElement || t.videoFrameTitle}
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                 allowFullScreen
                                 style={{
@@ -884,7 +982,7 @@ useEffect(() => {
                                   width: "100%",
                                   height: "100%",
                                   border: 0,
-                                  borderRadius: "8px",
+                                  borderRadius: "16px",
                                 }}
                               />
                             </div>
@@ -894,7 +992,7 @@ useEffect(() => {
                             ) : null}
                           </>
                         ) : (
-                          <p>Видео для этого места пока не добавлено.</p>
+                          <p>{t.noVideo}</p>
                         );
                       })()
                     ) : (
@@ -925,7 +1023,7 @@ useEffect(() => {
                                       <img
                                         src={imageUrl}
                                         style={{ width: "100%", maxWidth: "320px", borderRadius: "8px" }}
-                                        alt={popupContent.title || selectedElement || "Map slide"}
+                                        alt={popupContent.title || selectedElement || t.slideMediaAlt}
                                       />
                                     )}
                                     {creditLine ? (
@@ -944,31 +1042,23 @@ useEffect(() => {
                                   </div>
                                 ) : null}
 
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    gap: "8px",
-                                    marginBottom: "12px",
-                                  }}
-                                >
+                                <div className="map-popup-toolbar">
                                   <button
                                     type="button"
                                     onClick={() => setCurrentSlideIndex((prev) => Math.max(0, prev - 1))}
                                     disabled={safeCurrentSlideIndex === 0}
-                                    style={{ padding: "6px 10px", fontSize: "16px" }}
+                                    className="studio-button btn-blue map-popup-nav-button"
                                   >
                                     ←
                                   </button>
-                                  <div style={{ fontSize: "14px", fontWeight: 600 }}>
+                                  <div className="map-popup-toolbar-label">
                                     {safeCurrentSlideIndex + 1} / {popupSlides.length}
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() => setCurrentSlideIndex((prev) => Math.min(popupSlides.length - 1, prev + 1))}
                                     disabled={safeCurrentSlideIndex === popupSlides.length - 1}
-                                    style={{ padding: "6px 10px", fontSize: "16px" }}
+                                    className="studio-button btn-yellow map-popup-nav-button"
                                   >
                                     →
                                   </button>
@@ -979,42 +1069,35 @@ useEffect(() => {
                                     <p key={`${selectedElement}-slide-${safeCurrentSlideIndex}-paragraph-${index}`}>{paragraph}</p>
                                   ))
                                 ) : (
-                                  <p>У этого слайда пока нет текста.</p>
+                                  <p>{t.slideEmpty}</p>
                                 )}
 
-                                <div
-                                  style={{
-                                    display: "grid",
-                                    gridTemplateColumns: "1fr",
-                                    gap: "8px",
-                                    marginTop: "16px",
-                                  }}
-                                >
+                                <div className="map-popup-action-list">
                                   <button
                                     type="button"
                                     onClick={handleOpenVideo}
-                                    style={{ padding: "10px 12px", fontSize: "14px", borderRadius: "8px" }}
+                                    className="studio-button btn-lavender map-popup-action-button"
                                   >
-                                    Посмотреть видео
+                                    {t.watchVideo}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={handleOpenCatsEditor}
-                                    style={{ padding: "10px 12px", fontSize: "14px", borderRadius: "8px" }}
+                                    className="studio-button btn-mint map-popup-action-button"
                                   >
-                                    Открыть в редакторе котиков
+                                    {t.openCatsEditor}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={handleOpenGoogleMaps}
-                                    style={{ padding: "10px 12px", fontSize: "14px", borderRadius: "8px" }}
+                                    className="studio-button btn-blue map-popup-action-button"
                                   >
-                                    Открыть на большой Google карте
+                                    {t.openGoogleMaps}
                                   </button>
                                 </div>
                               </>
                             ) : (
-                              <p>Для этого места контент пока не готов.</p>
+                              <p>{t.contentNotReady}</p>
                             )}
                           </>
                         );
@@ -1023,15 +1106,15 @@ useEffect(() => {
                   </>
                 ) : isPopupOpen ? (
                   isLoading ? (
-                    <p>Загружаю готовый контент, подожди минутку...</p>
+                    <p>{t.loading}</p>
                   ) : (
-                    <p>Для этого места контент пока не готов.</p>
+                    <p>{t.contentNotReady}</p>
                   )
                 ) : (
-                  <p>Нажми на любое место на карте, и я покажу тебе готовый материал о нём.</p>
+                  <p>{t.initialPrompt}</p>
                 )}
               </div>
-            </>
+            </div>
           </div>
         )}
       </div>

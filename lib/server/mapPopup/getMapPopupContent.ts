@@ -47,23 +47,50 @@ function extractYouTubeId(url: string | null | undefined): string | null {
     return null;
   }
 
-  const match = value.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/i,
-  );
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.replace(/^www\./, "");
+
+    if (hostname === "youtu.be") {
+      const id = parsed.pathname.split("/").filter(Boolean)[0];
+      return id || null;
+    }
+
+    if (hostname === "youtube.com" || hostname === "m.youtube.com" || hostname === "youtube-nocookie.com") {
+      if (parsed.pathname === "/watch") {
+        return parsed.searchParams.get("v");
+      }
+
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      if (parts[0] === "embed" || parts[0] === "shorts" || parts[0] === "live") {
+        return parts[1] || null;
+      }
+    }
+  } catch {
+    // Fall through to regex parsing for legacy / malformed URLs.
+  }
+
+  const match = value.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&?/]+)/i);
 
   return match?.[1] || null;
 }
 
 function pickYoutubeUrl(story: MapStoryRow, lang: string): string | null {
-  const localized =
+  const orderedKeys =
     lang === "he"
-      ? story.youtube_url_he
+      ? ["youtube_url_he", "youtube_url_en", "youtube_url_ru"]
       : lang === "en"
-        ? story.youtube_url_en
-        : story.youtube_url_ru;
+        ? ["youtube_url_en", "youtube_url_ru", "youtube_url_he"]
+        : ["youtube_url_ru", "youtube_url_en", "youtube_url_he"];
 
-  const fallback = localized || story.youtube_url_ru || story.youtube_url_en || story.youtube_url_he;
-  return typeof fallback === "string" && fallback.trim() ? fallback.trim() : null;
+  for (const key of orderedKeys) {
+    const candidate = story[key as keyof MapStoryRow];
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
 }
 
 async function loadStory(type: MapPopupType, targetId: string, lang: string): Promise<MapStoryRow | null> {

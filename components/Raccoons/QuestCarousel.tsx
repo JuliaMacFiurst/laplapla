@@ -1,6 +1,9 @@
 import React, { useRef } from "react";
+import { useRouter } from "next/router";
 import { Quest } from "@/components/Raccoons/QuestSection";
 import { FeaturedQuestCard } from "@/components/Raccoons/QuestSection";
+import { dictionaries } from "@/i18n";
+import { getCurrentLang } from "@/lib/i18n/routing";
 
 interface QuestCarouselProps {
   quests: Quest[];
@@ -13,6 +16,9 @@ interface QuestCarouselProps {
  * Без автопрокрутки. Управляется пользователем.
  */
 export const QuestCarousel: React.FC<QuestCarouselProps> = ({ quests }) => {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+  const t = dictionaries[lang].raccoons.quests;
   const trackRef = useRef<HTMLDivElement | null>(null);
 
   const scrollBySlide = (direction: "left" | "right") => {
@@ -36,7 +42,7 @@ export const QuestCarousel: React.FC<QuestCarouselProps> = ({ quests }) => {
       <button
         className="quest-carousel-nav left"
         onClick={() => scrollBySlide("left")}
-        aria-label="Предыдущий квест"
+        aria-label={t.previousQuest}
       >
         ‹
       </button>
@@ -57,7 +63,7 @@ export const QuestCarousel: React.FC<QuestCarouselProps> = ({ quests }) => {
       <button
         className="quest-carousel-nav right"
         onClick={() => scrollBySlide("right")}
-        aria-label="Следующий квест"
+        aria-label={t.nextQuest}
       >
         ›
       </button>

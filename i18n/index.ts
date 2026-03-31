@@ -470,6 +470,57 @@ type DictionaryShape = {
     };
   };
 
+  raccoons: {
+    page: {
+      headTitle: string;
+      metaDescription: string;
+      title: string;
+      subtitle: string;
+      guideAlt: string;
+    };
+    tabs: {
+      country: string;
+      river: string;
+      sea: string;
+      physic: string;
+      flag: string;
+      animal: string;
+      culture: string;
+      weather: string;
+      food: string;
+    };
+    quests: {
+      title: string;
+      subtitle: string;
+      playQuest: string;
+      previousQuest: string;
+      nextQuest: string;
+      featuredTitle: string;
+      featuredSubtitle: string;
+      upcomingTitle: string;
+      upcomingSubtitle: string;
+    };
+    popup: {
+      previousStoryInProgress: string;
+      noSlidesForEditor: string;
+      noVideo: string;
+      noGoogleMaps: string;
+      close: string;
+      flagAlt: string;
+      videoLabel: string;
+      closeVideo: string;
+      videoFrameTitle: string;
+      slideMediaAlt: string;
+      slideEmpty: string;
+      watchVideo: string;
+      openCatsEditor: string;
+      openGoogleMaps: string;
+      contentNotReady: string;
+      loading: string;
+      initialPrompt: string;
+    };
+  };
+
   footer: {
     terms: string;
     privacy: string;

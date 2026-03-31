@@ -5,9 +5,11 @@ const base = `${SUPA}/storage/v1/object/public/characters/raccoons/raccoon_with_
 
 export function RaccoonGuide({
   wiggle,
+  alt,
 }: {
   wiggle: boolean;
   raccoonLine: string;
+  alt?: string;
 }) {
   // GIF-анимации (живые еноты)
   const gifs = [
@@ -64,7 +66,7 @@ export function RaccoonGuide({
     <div className="raccoon-container">
       <img
         src={src}
-        alt="Енот-гид"
+        alt={alt || "Raccoon guide"}
         className={`raccoon-image ${wiggle ? "is-wiggle" : ""}`}
       />
     </div>

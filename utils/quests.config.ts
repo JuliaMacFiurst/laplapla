@@ -10,12 +10,12 @@ export const quests = {
     subtitle: 'Первый большой квест',
     image:
       'https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/first-quest-afisha.webp',
-    status: 'active',
+    status: 'active' as const,
   },
 
   upcoming: [
-    { id: 'south', status: 'coming_soon' },
-    { id: 'ocean', status: 'coming_soon' },
+    { id: 'south', status: 'coming_soon' as const },
+    { id: 'ocean', status: 'coming_soon' as const },
   ].map((quest, index) => ({
     ...quest,
     image: COMING_SOON_IMAGES[index % COMING_SOON_IMAGES.length],

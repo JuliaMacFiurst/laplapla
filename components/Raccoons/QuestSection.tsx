@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import { QuestCarousel } from './QuestCarousel';
 import { buildLocalizedQuery, getCurrentLang } from '@/lib/i18n/routing';
+import { dictionaries } from '@/i18n';
 
 /**
  * Типы состояний квестов
@@ -39,10 +40,14 @@ export const QuestSection: React.FC<QuestSectionProps> = ({ quests = [] }) => {
 /* ----------------- Header ----------------- */
 
 const QuestSectionHeader: React.FC = () => {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+  const t = dictionaries[lang].raccoons.quests;
+
   return (
     <header className="raccoons-header-container">
-      <h2 className="page-title">Приключения енотов</h2>
-      <p className="page-subtitle">Большие квесты для тех, кто любит исследовать мир</p>
+      <h2 className="page-title">{t.title}</h2>
+      <p className="page-subtitle">{t.subtitle}</p>
     </header>
   );
 };
@@ -56,6 +61,7 @@ interface QuestCardProps {
 export const FeaturedQuestCard: React.FC<QuestCardProps> = ({ quest }) => {
   const router = useRouter();
   const lang = getCurrentLang(router);
+  const t = dictionaries[lang].raccoons.quests;
 
   const handlePlayClick = () => {
   if (quest.status !== 'active') return;
@@ -83,7 +89,7 @@ export const FeaturedQuestCard: React.FC<QuestCardProps> = ({ quest }) => {
         <p>{quest.subtitle}</p>
         <button
           className="quest-play-button"
-          aria-label="Начать играть"
+          aria-label={t.playQuest}
           onClick={handlePlayClick}
           disabled={quest.status !== 'active'}
         >
