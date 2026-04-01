@@ -34,6 +34,26 @@ function isVideoMediaUrl(url: string | null | undefined): boolean {
   return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url);
 }
 
+type MapPopupSearchResponse = {
+  item: {
+    url: string;
+    mediaType: "image" | "video" | "gif";
+    source: "pexels" | "giphy";
+    creditLine: string;
+    searchQuery: string;
+    relevanceScore: number;
+  } | null;
+};
+
+type MapPopupPersistResponse = {
+  slide: {
+    id: string;
+    imageUrl: string | null;
+    imageCreditLine: string | null;
+  };
+  skipped?: boolean;
+};
+
 export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
@@ -49,6 +69,7 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const lastClickTimeRef = useRef(0);
   const fetchIdRef = useRef(0);
   const isLoadingRef = useRef(false);
+  const mediaHydrationRef = useRef(new Set<string>());
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
   const hoveredPathRef = useRef<SVGPathElement | null>(null);
@@ -588,6 +609,121 @@ useEffect(() => {
     isCancelled = true;
   };
 }, [lang, selectedElement, type]);
+
+useEffect(() => {
+  const storyId = popupContent?.storyId;
+  const targetId = popupContent?.targetId;
+  const slides = popupContent?.slides ?? [];
+
+  if (!storyId || !targetId || slides.length === 0) {
+    return;
+  }
+
+  let cancelled = false;
+  const usedMediaUrls = new Set(
+    slides
+      .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
+      .filter(Boolean),
+  );
+
+  const hydrateMissingMedia = async () => {
+    for (const slide of slides) {
+      const hasImage = typeof slide.imageUrl === "string" && slide.imageUrl.trim();
+      if (hasImage || !slide.text.trim()) {
+        continue;
+      }
+
+      const requestKey = `${storyId}:${slide.id}`;
+      if (mediaHydrationRef.current.has(requestKey)) {
+        continue;
+      }
+
+      mediaHydrationRef.current.add(requestKey);
+
+      try {
+        const searchParams = new URLSearchParams({
+          type,
+          target_id: targetId,
+          slide_text: slide.text,
+        });
+        for (const usedUrl of usedMediaUrls) {
+          searchParams.append("exclude_url", usedUrl);
+        }
+
+        const mediaResponse = await fetch(`/api/map-popup-media/search?${searchParams.toString()}`);
+        if (!mediaResponse.ok) {
+          mediaHydrationRef.current.delete(requestKey);
+          continue;
+        }
+
+        const mediaPayload = (await mediaResponse.json()) as MapPopupSearchResponse;
+        if (cancelled || !mediaPayload.item?.url) {
+          mediaHydrationRef.current.delete(requestKey);
+          continue;
+        }
+
+        usedMediaUrls.add(mediaPayload.item.url);
+
+        const persistResponse = await fetch("/api/map-popup-media/persist", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            slideId: slide.id,
+            imageUrl: mediaPayload.item.url,
+            imageCreditLine: mediaPayload.item.creditLine,
+          }),
+        });
+
+        if (!persistResponse.ok) {
+          mediaHydrationRef.current.delete(requestKey);
+          continue;
+        }
+
+        const persistPayload = (await persistResponse.json()) as MapPopupPersistResponse;
+        if (cancelled) {
+          continue;
+        }
+
+        if (!persistPayload.slide.imageUrl) {
+          mediaHydrationRef.current.delete(requestKey);
+          continue;
+        }
+
+        usedMediaUrls.add(persistPayload.slide.imageUrl);
+
+        setPopupContent((current) => {
+          if (!current || current.storyId !== storyId) {
+            return current;
+          }
+
+          return {
+            ...current,
+            slides: current.slides.map((currentSlide) =>
+              currentSlide.id === persistPayload.slide.id
+                ? {
+                    ...currentSlide,
+                    imageUrl: persistPayload.slide.imageUrl,
+                    imageCreditLine: persistPayload.slide.imageCreditLine,
+                  }
+                : currentSlide,
+            ),
+          };
+        });
+      } catch (error) {
+        mediaHydrationRef.current.delete(requestKey);
+        console.error("Failed to hydrate popup slide media", error);
+      }
+    }
+  };
+
+  void hydrateMissingMedia();
+
+  return () => {
+    cancelled = true;
+  };
+}, [popupContent, type]);
 
   useLayoutEffect(() => {
   const mapContent = mapContentRef.current;

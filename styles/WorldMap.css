@@ -116,7 +116,7 @@ svg path[data-selected="true"] {
   width: 25vw;             /* Четверть экрана */
   min-width: 360px;
   max-height: 80vh;        /* Высота до 80% экрана */
-  overflow-y: auto;        /* Скролл если не влезает */
+  overflow: hidden;
   background: linear-gradient(180deg, #fffdf9 0%, #fff5e8 100%);
   padding: 20px;
   padding-top: 18px;
@@ -130,6 +130,8 @@ svg path[data-selected="true"] {
   left: 60px;
   z-index: 1000;
   cursor: move;
+  display: flex;
+  flex-direction: column;
 }
 
 .country-popup-video-mode {
@@ -141,10 +143,15 @@ svg path[data-selected="true"] {
   justify-content: flex-end;
   align-items: flex-start;
   margin-bottom: 12px;
+  flex: 0 0 auto;
 }
 
 .country-popup-body {
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .country-popup p {
