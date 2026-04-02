@@ -95,22 +95,83 @@ function pickYoutubeUrl(story: MapStoryRow, lang: string): string | null {
 
 async function loadStory(type: MapPopupType, targetId: string, lang: string): Promise<MapStoryRow | null> {
   const supabase = getServerSupabaseClient();
-  const loadByLanguage = async (language: string) => {
-    const { data, error } = await supabase
-      .from("map_stories")
-      .select(
-        "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en",
-      )
-      .eq("type", type)
-      .eq("target_id", targetId)
-      .eq("language", language)
-      .maybeSingle();
+  const commaSeparatedSegments = targetId
+    .split(",")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  const targetIdCandidates = Array.from(
+    new Set(
+      [
+        targetId,
+        ...commaSeparatedSegments,
+      ].filter(Boolean),
+    ),
+  );
 
-    if (error) {
-      throw error;
+  const loadByLanguage = async (language: string) => {
+    for (const candidateTargetId of targetIdCandidates) {
+      const { data, error } = await supabase
+        .from("map_stories")
+        .select(
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en",
+        )
+        .eq("type", type)
+        .eq("target_id", candidateTargetId)
+        .eq("language", language)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        return data as MapStoryRow;
+      }
     }
 
-    return (data as MapStoryRow | null) ?? null;
+    for (const candidateTargetId of targetIdCandidates) {
+      const { data, error } = await supabase
+        .from("map_stories")
+        .select(
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en",
+        )
+        .eq("type", type)
+        .eq("language", language)
+        .ilike("target_id", `${candidateTargetId}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        return data as MapStoryRow;
+      }
+    }
+
+    for (const candidateTargetId of targetIdCandidates.filter((candidate) => candidate.length >= 4)) {
+      const { data, error } = await supabase
+        .from("map_stories")
+        .select(
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en",
+        )
+        .eq("type", type)
+        .eq("language", language)
+        .ilike("target_id", `%${candidateTargetId}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        return data as MapStoryRow;
+      }
+    }
+
+    return null;
   };
 
   const directMatch = await loadByLanguage(lang);
@@ -178,6 +239,7 @@ export async function getMapPopupContent({
     type,
     targetId,
     lang: baseStory.language || lang,
+    rawContent: typeof baseStory.content === "string" && baseStory.content.trim() ? baseStory.content.trim() : null,
     title: null,
     googleMapsUrl:
       typeof baseStory.google_maps_url === "string" && baseStory.google_maps_url.trim()

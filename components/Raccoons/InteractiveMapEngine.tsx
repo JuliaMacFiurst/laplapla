@@ -5,6 +5,7 @@ import { dictionaries } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
+import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
 
@@ -54,6 +55,17 @@ type MapPopupPersistResponse = {
   skipped?: boolean;
 };
 
+type MapPopupSlidesPersistResponse = {
+  slides: Array<{
+    id: string;
+    index: number;
+    text: string;
+    imageUrl?: string | null;
+    imageCreditLine?: string | null;
+  }>;
+  skipped?: boolean;
+};
+
 export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
@@ -66,10 +78,12 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const [viewMode, setViewMode] = useState<"slides" | "video">("slides");
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mediaStatusBySlideId, setMediaStatusBySlideId] = useState<Record<string, "loading" | "missing" | "ready">>({});
   const lastClickTimeRef = useRef(0);
   const fetchIdRef = useRef(0);
   const isLoadingRef = useRef(false);
   const mediaHydrationRef = useRef(new Set<string>());
+  const slideParseHydrationRef = useRef(new Set<string>());
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
   const hoveredPathRef = useRef<SVGPathElement | null>(null);
@@ -382,6 +396,7 @@ useEffect(() => {
 useEffect(() => {
   setCurrentSlideIndex(0);
   setViewMode("slides");
+  setMediaStatusBySlideId({});
 }, [selectedElement]);
 
   const handleOpenCatsEditor = () => {
@@ -612,6 +627,76 @@ useEffect(() => {
 
 useEffect(() => {
   const storyId = popupContent?.storyId;
+  const rawContent = popupContent?.rawContent?.trim() || "";
+  const slides = popupContent?.slides ?? [];
+
+  if (!storyId || slides.length > 0 || !rawContent) {
+    return;
+  }
+
+  const requestKey = String(storyId);
+  if (slideParseHydrationRef.current.has(requestKey)) {
+    return;
+  }
+
+  slideParseHydrationRef.current.add(requestKey);
+  let cancelled = false;
+
+  const persistParsedSlides = async () => {
+    try {
+      const parsedSlides = parseMapStoryContentToSlides(rawContent);
+      if (parsedSlides.length === 0) {
+        slideParseHydrationRef.current.delete(requestKey);
+        return;
+      }
+
+      const response = await fetch("/api/map-popup-slides/persist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          storyId,
+          slides: parsedSlides,
+        }),
+      });
+
+      if (!response.ok) {
+        slideParseHydrationRef.current.delete(requestKey);
+        return;
+      }
+
+      const payload = (await response.json()) as MapPopupSlidesPersistResponse;
+      if (cancelled || !Array.isArray(payload.slides) || payload.slides.length === 0) {
+        slideParseHydrationRef.current.delete(requestKey);
+        return;
+      }
+
+      setPopupContent((current) => {
+        if (!current || current.storyId !== storyId) {
+          return current;
+        }
+
+        return {
+          ...current,
+          slides: payload.slides,
+        };
+      });
+    } catch (error) {
+      slideParseHydrationRef.current.delete(requestKey);
+      console.error("Failed to parse and persist popup slides", error);
+    }
+  };
+
+  void persistParsedSlides();
+
+  return () => {
+    cancelled = true;
+  };
+}, [popupContent]);
+
+useEffect(() => {
+  const storyId = popupContent?.storyId;
   const targetId = popupContent?.targetId;
   const slides = popupContent?.slides ?? [];
 
@@ -630,6 +715,9 @@ useEffect(() => {
     for (const slide of slides) {
       const hasImage = typeof slide.imageUrl === "string" && slide.imageUrl.trim();
       if (hasImage || !slide.text.trim()) {
+        if (hasImage) {
+          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "ready" }));
+        }
         continue;
       }
 
@@ -639,6 +727,7 @@ useEffect(() => {
       }
 
       mediaHydrationRef.current.add(requestKey);
+      setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "loading" }));
 
       try {
         const searchParams = new URLSearchParams({
@@ -659,6 +748,7 @@ useEffect(() => {
         const mediaPayload = (await mediaResponse.json()) as MapPopupSearchResponse;
         if (cancelled || !mediaPayload.item?.url) {
           mediaHydrationRef.current.delete(requestKey);
+          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
           continue;
         }
 
@@ -678,6 +768,7 @@ useEffect(() => {
 
         if (!persistResponse.ok) {
           mediaHydrationRef.current.delete(requestKey);
+          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
           continue;
         }
 
@@ -688,10 +779,12 @@ useEffect(() => {
 
         if (!persistPayload.slide.imageUrl) {
           mediaHydrationRef.current.delete(requestKey);
+          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
           continue;
         }
 
         usedMediaUrls.add(persistPayload.slide.imageUrl);
+        setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "ready" }));
 
         setPopupContent((current) => {
           if (!current || current.storyId !== storyId) {
@@ -713,6 +806,7 @@ useEffect(() => {
         });
       } catch (error) {
         mediaHydrationRef.current.delete(requestKey);
+        setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
         console.error("Failed to hydrate popup slide media", error);
       }
     }
@@ -1138,6 +1232,21 @@ useEffect(() => {
                         const isVideoSlide = isVideoMediaUrl(imageUrl);
                         const paragraphs = splitTextToParagraphs(currentPopupSlide?.text || "");
                         const creditLine = currentPopupSlide?.imageCreditLine?.trim() || "";
+                        const mediaStatus = currentPopupSlide ? mediaStatusBySlideId[currentPopupSlide.id] : undefined;
+                        const mediaStatusLabel =
+                          mediaStatus === "loading"
+                            ? lang === "ru"
+                              ? "Подбираем картинку..."
+                              : lang === "he"
+                                ? "טוענים תמונה..."
+                                : "Loading image..."
+                            : mediaStatus === "missing"
+                              ? lang === "ru"
+                                ? "Картинка для этого слайда не найдена."
+                                : lang === "he"
+                                  ? "לא נמצאה תמונה לשקופית הזאת."
+                                  : "No image found for this slide."
+                              : "";
 
                         return (
                           <>
@@ -1175,6 +1284,21 @@ useEffect(() => {
                                         {creditLine}
                                       </div>
                                     ) : null}
+                                  </div>
+                                ) : mediaStatusLabel ? (
+                                  <div
+                                    style={{
+                                      marginBottom: "12px",
+                                      padding: "10px 12px",
+                                      borderRadius: "10px",
+                                      background: "#f8fafc",
+                                      color: "#475467",
+                                      fontSize: "13px",
+                                      lineHeight: 1.4,
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    {mediaStatusLabel}
                                   </div>
                                 ) : null}
 

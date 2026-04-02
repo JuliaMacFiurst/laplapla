@@ -159,10 +159,40 @@ function buildSearchQuery(type: MapPopupType, targetId: string, slideText: strin
   };
 }
 
+function buildFallbackQueries(type: MapPopupType, targetId: string, slideText: string) {
+  const { targetTerms, pexelsQuery, giphyQuery, relevanceTerms } = buildSearchQuery(type, targetId, slideText);
+  const typeHintTerms = PEXELS_QUERY_SUFFIX[type].split(" ");
+  const firstTargetTerm = targetTerms[0] ?? "";
+
+  const pexelsQueries = unique([
+    pexelsQuery,
+    unique([...targetTerms, ...typeHintTerms]).join(" ").trim(),
+    targetTerms.join(" ").trim(),
+    unique([firstTargetTerm, ...typeHintTerms]).join(" ").trim(),
+    firstTargetTerm,
+  ]).filter(Boolean);
+
+  const giphyQueries = unique([
+    giphyQuery,
+    targetTerms.join(" ").trim(),
+    firstTargetTerm,
+  ]).filter(Boolean);
+
+  return {
+    pexelsQueries,
+    giphyQueries,
+    relevanceTerms,
+  };
+}
+
 function scoreCandidateText(candidateText: string, relevanceTerms: string[]) {
   const normalized = normalizeText(candidateText);
-  if (!normalized || containsBlockedTerm(normalized)) {
+  if (normalized && containsBlockedTerm(normalized)) {
     return -100;
+  }
+
+  if (!normalized) {
+    return 0;
   }
 
   let score = 0;
@@ -328,42 +358,21 @@ function buildGiphyCredit(candidate: GiphyCandidate) {
   return author ? `GIF by ${author} on GIPHY` : "GIF from GIPHY";
 }
 
-export async function searchMapPopupMedia({
-  type,
-  targetId,
-  slideText,
-  excludeUrls = [],
-}: SearchMediaParams): Promise<MapPopupMediaCandidate | null> {
-  const finalCacheKey = `map-popup:resolved:${type}:${normalizeText(targetId)}:${normalizeText(slideText)}`;
-  const cached = getMemoryCache<MapPopupMediaCandidate>(finalCacheKey);
-  const normalizedExcludedUrls = new Set(
-    excludeUrls
-      .map((url) => (typeof url === "string" ? url.trim() : ""))
-      .filter(Boolean),
-  );
-
-  if (cached && !normalizedExcludedUrls.has(cached.url)) {
-    return cached;
-  }
-
-  const { pexelsQuery, giphyQuery, relevanceTerms } = buildSearchQuery(type, targetId, slideText);
-  if (!pexelsQuery && !giphyQuery) {
-    return null;
-  }
-
-  const motionPreferred = prefersMotion(slideText, type);
-  const pexelsCandidates = pexelsQuery ? await searchPexelsCandidates(pexelsQuery) : [];
-  const giphyCandidates =
-    motionPreferred && giphyQuery
-      ? await searchGiphyCandidates(giphyQuery)
-      : [];
-
-  const ranked: MapPopupMediaCandidate[] = [
+function rankCandidates(
+  pexelsCandidates: PexelsCandidate[],
+  giphyCandidates: GiphyCandidate[],
+  relevanceTerms: string[],
+  normalizedExcludedUrls: Set<string>,
+  motionPreferred: boolean,
+  pexelsQuery: string,
+  giphyQuery: string,
+) {
+  return [
     ...pexelsCandidates.map((candidate) => {
       const description = [candidate.alt, candidate.photographer].filter(Boolean).join(" ");
       const score =
         scoreCandidateText(description, relevanceTerms) +
-        (candidate.mediaType === "image" ? (motionPreferred ? 1 : 5) : (motionPreferred ? 5 : 2));
+        (candidate.mediaType === "image" ? (motionPreferred ? 2 : 7) : (motionPreferred ? 6 : 3));
 
       return {
         url: candidate.url,
@@ -391,8 +400,72 @@ export async function searchMapPopupMedia({
     .filter((candidate) => !normalizedExcludedUrls.has(candidate.url))
     .filter((candidate) => candidate.relevanceScore > 0)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
+}
 
-  const resolved = ranked[0] ?? null;
+export async function searchMapPopupMedia({
+  type,
+  targetId,
+  slideText,
+  excludeUrls = [],
+}: SearchMediaParams): Promise<MapPopupMediaCandidate | null> {
+  const finalCacheKey = `map-popup:resolved:${type}:${normalizeText(targetId)}:${normalizeText(slideText)}`;
+  const cached = getMemoryCache<MapPopupMediaCandidate>(finalCacheKey);
+  const normalizedExcludedUrls = new Set(
+    excludeUrls
+      .map((url) => (typeof url === "string" ? url.trim() : ""))
+      .filter(Boolean),
+  );
+
+  if (cached && !normalizedExcludedUrls.has(cached.url)) {
+    return cached;
+  }
+
+  const { pexelsQueries, giphyQueries, relevanceTerms } = buildFallbackQueries(type, targetId, slideText);
+  if (pexelsQueries.length === 0 && giphyQueries.length === 0) {
+    return null;
+  }
+
+  const motionPreferred = prefersMotion(slideText, type);
+  let resolved: MapPopupMediaCandidate | null = null;
+
+  for (const pexelsQuery of pexelsQueries) {
+    const pexelsCandidates = await searchPexelsCandidates(pexelsQuery);
+    const ranked = rankCandidates(
+      pexelsCandidates,
+      [],
+      relevanceTerms,
+      normalizedExcludedUrls,
+      motionPreferred,
+      pexelsQuery,
+      "",
+    );
+
+    if (ranked[0]) {
+      resolved = ranked[0];
+      break;
+    }
+  }
+
+  if (!resolved && motionPreferred) {
+    for (const giphyQuery of giphyQueries) {
+      const giphyCandidates = await searchGiphyCandidates(giphyQuery);
+      const ranked = rankCandidates(
+        [],
+        giphyCandidates,
+        relevanceTerms,
+        normalizedExcludedUrls,
+        motionPreferred,
+        "",
+        giphyQuery,
+      );
+
+      if (ranked[0]) {
+        resolved = ranked[0];
+        break;
+      }
+    }
+  }
+
   if (resolved) {
     setMemoryCache(finalCacheKey, resolved, FINAL_RESULT_CACHE_TTL_MS);
   }

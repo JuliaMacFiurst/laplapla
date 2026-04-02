@@ -30,6 +30,7 @@ export type MapPopupContent = {
   type: MapPopupType;
   targetId: string;
   lang: string;
+  rawContent?: string | null;
   title?: string | null;
   googleMapsUrl?: string | null;
   slides: MapPopupSlide[];
