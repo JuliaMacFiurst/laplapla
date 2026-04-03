@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
@@ -39,7 +39,7 @@ type MapPopupSearchResponse = {
   item: {
     url: string;
     mediaType: "image" | "video" | "gif";
-    source: "pexels" | "giphy";
+    source: "pexels" | "giphy" | "fallback";
     creditLine: string;
     searchQuery: string;
     relevanceScore: number;
@@ -66,6 +66,186 @@ type MapPopupSlidesPersistResponse = {
   skipped?: boolean;
 };
 
+function buildMediaSearchParams(
+  type: InteractiveMapProps["type"],
+  slideText: string,
+  targetId: string,
+  excludedUrls: Iterable<string>,
+) {
+  const searchParams = new URLSearchParams({
+    type,
+    target_id: targetId,
+    slide_text: slideText,
+  });
+
+  for (const candidateUrl of excludedUrls) {
+    const normalizedUrl = typeof candidateUrl === "string" ? candidateUrl.trim() : "";
+    if (normalizedUrl) {
+      searchParams.append("exclude_url", normalizedUrl);
+    }
+  }
+
+  return searchParams;
+}
+
+const MEDIA_SEARCH_TIMEOUT_MS = 15000;
+
+async function requestMapPopupMedia(searchParams: URLSearchParams) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), MEDIA_SEARCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("/api/map-popup-media/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: searchParams.get("type"),
+        target_id: searchParams.get("target_id"),
+        slide_text: searchParams.get("slide_text"),
+        exclude_url: searchParams.getAll("exclude_url"),
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Media search failed: ${response.status}`);
+    }
+
+    return (await response.json()) as MapPopupSearchResponse;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+const RACCOON_WITH_MAP_FILES = {
+  gifs: [
+    "raccoon-with-map.gif",
+    "raccoon-shakes-map.gif",
+    "raccoon-rollup-map.gif",
+    "raccoon-puts-map-in-bottle.gif",
+  ],
+  pngs: [
+    "raccoon-with-map.png",
+    "raccoon-shakes-map.png",
+    "raccoon-rollup-map.png",
+    "raccoon-puts-map-in-bottle.png",
+  ],
+} as const;
+
+function getSeedValue(seedSource: string) {
+  return seedSource
+    .split("")
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+}
+
+function prefersMotionFallback(type: InteractiveMapProps["type"], slideText: string) {
+  const normalized = slideText.toLowerCase();
+  const actionHints = [
+    "dance", "dancing", "jump", "jumping", "run", "running", "fly", "flying", "swim", "swimming",
+    "storm", "wind", "rain", "snow", "wave", "flow", "moving", "motion",
+    "танц", "беж", "лет", "прыг", "плав", "ветер", "дожд", "снег", "бур", "волна", "теч",
+  ];
+
+  return type === "weather" || actionHints.some((term) => normalized.includes(term));
+}
+
+function buildClientRaccoonFallback(
+  type: InteractiveMapProps["type"],
+  targetId: string,
+  slideText: string,
+): NonNullable<MapPopupSearchResponse["item"]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const seedSource = `${type}:${targetId}:${slideText}`;
+  const seed = getSeedValue(seedSource);
+  const preferGif = prefersMotionFallback(type, slideText);
+  const primaryPool = preferGif ? RACCOON_WITH_MAP_FILES.gifs : RACCOON_WITH_MAP_FILES.pngs;
+  const selectedFile = primaryPool[seed % primaryPool.length] ?? RACCOON_WITH_MAP_FILES.pngs[0];
+  const url = supabaseUrl
+    ? `${supabaseUrl}/storage/v1/object/public/characters/raccoons/raccoon_with_map/${selectedFile}`
+    : "/images/mystery.webp";
+
+  return {
+    url,
+    mediaType: selectedFile.endsWith(".gif") ? "gif" : "image",
+    source: "fallback",
+    creditLine: "Raccoon with map from Capybara Tales",
+    searchQuery: `client-fallback:${seedSource}`,
+    relevanceScore: 1,
+  };
+}
+
+function applyResolvedSlideMedia(
+  storyId: string | number,
+  slideId: string,
+  imageUrl: string,
+  imageCreditLine: string | null | undefined,
+  setPopupContent: Dispatch<SetStateAction<MapPopupContent | null>>,
+  setMediaStatusBySlideId: Dispatch<SetStateAction<Record<string, "loading" | "missing" | "ready">>>,
+) {
+  setMediaStatusBySlideId((current) => ({ ...current, [slideId]: "ready" }));
+  setPopupContent((current) => {
+    if (!current || current.storyId !== storyId) {
+      return current;
+    }
+
+    return {
+      ...current,
+      slides: current.slides.map((slide) =>
+        slide.id === slideId
+          ? {
+              ...slide,
+              imageUrl,
+              imageCreditLine: imageCreditLine?.trim() || null,
+            }
+          : slide,
+      ),
+    };
+  });
+}
+
+async function resolveSlideMedia(
+  type: InteractiveMapProps["type"],
+  targetId: string,
+  slideText: string,
+  excludedUrls: Iterable<string>,
+) {
+  try {
+    const searchParams = buildMediaSearchParams(type, slideText, targetId, excludedUrls);
+    const mediaPayload = await requestMapPopupMedia(searchParams);
+    return mediaPayload.item ?? buildClientRaccoonFallback(type, targetId, slideText);
+  } catch {
+    return buildClientRaccoonFallback(type, targetId, slideText);
+  }
+}
+
+async function persistSlideMedia(
+  slideId: string,
+  imageUrl: string,
+  imageCreditLine: string | null | undefined,
+  overwrite = false,
+) {
+  const persistResponse = await fetch("/api/map-popup-media/persist", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      slideId,
+      imageUrl,
+      imageCreditLine,
+      overwrite,
+    }),
+  });
+
+  if (!persistResponse.ok) {
+    throw new Error(`Media persist failed: ${persistResponse.status}`);
+  }
+
+  return (await persistResponse.json()) as MapPopupPersistResponse;
+}
+
 export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
@@ -79,10 +259,12 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mediaStatusBySlideId, setMediaStatusBySlideId] = useState<Record<string, "loading" | "missing" | "ready">>({});
+  const [manualRefreshSlideId, setManualRefreshSlideId] = useState<string | null>(null);
   const lastClickTimeRef = useRef(0);
   const fetchIdRef = useRef(0);
   const isLoadingRef = useRef(false);
   const mediaHydrationRef = useRef(new Set<string>());
+  const mediaAttemptedRef = useRef(new Set<string>());
   const slideParseHydrationRef = useRef(new Set<string>());
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
@@ -449,6 +631,67 @@ useEffect(() => {
     }
   };
 
+  const handleRefreshSlideMedia = async () => {
+    if (!popupContent || !currentPopupSlide) {
+      return;
+    }
+
+    const storyId = popupContent.storyId;
+    const targetId = popupContent.targetId;
+    if (!storyId || !targetId || !currentPopupSlide.text.trim()) {
+      return;
+    }
+
+    setManualRefreshSlideId(currentPopupSlide.id);
+    setMediaStatusBySlideId((current) => ({ ...current, [currentPopupSlide.id]: "loading" }));
+
+    try {
+      const usedMediaUrls = popupContent.slides
+        .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
+        .filter(Boolean);
+      const resolvedItem = await resolveSlideMedia(type, targetId, currentPopupSlide.text, usedMediaUrls);
+
+      applyResolvedSlideMedia(
+        storyId,
+        currentPopupSlide.id,
+        resolvedItem.url,
+        resolvedItem.creditLine,
+        setPopupContent,
+        setMediaStatusBySlideId,
+      );
+
+      try {
+        const persistPayload = await persistSlideMedia(
+          currentPopupSlide.id,
+          resolvedItem.url,
+          resolvedItem.creditLine,
+          true,
+        );
+        if (!persistPayload.slide.imageUrl) {
+          return;
+        }
+
+        applyResolvedSlideMedia(
+          storyId,
+          persistPayload.slide.id,
+          persistPayload.slide.imageUrl,
+          persistPayload.slide.imageCreditLine,
+          setPopupContent,
+          setMediaStatusBySlideId,
+        );
+      } catch (error) {
+        console.error("Failed to persist refreshed slide media", error);
+      }
+      setToast(lang === "ru" ? "Загружена новая картинка." : lang === "he" ? "נטענה תמונה חדשה." : "Loaded a new image.");
+      setTimeout(() => setToast(null), 2500);
+    } catch (error) {
+      console.error("Failed to refresh slide media", error);
+      setMediaStatusBySlideId((current) => ({ ...current, [currentPopupSlide.id]: "missing" }));
+    } finally {
+      setManualRefreshSlideId(null);
+    }
+  };
+
 useEffect(() => {
   const mapContent = svgHostRef.current;
   const container = document.querySelector(".map-container") as HTMLElement | null;
@@ -572,11 +815,19 @@ useEffect(() => {
   if (!selectedElement) {
     setPopupContent(null);
     setIsLoading(false);
+    setMediaStatusBySlideId({});
+    setManualRefreshSlideId(null);
+    mediaHydrationRef.current.clear();
+    mediaAttemptedRef.current.clear();
     return;
   }
 
   let isCancelled = false;
   const currentFetchId = ++fetchIdRef.current;
+  mediaHydrationRef.current.clear();
+  mediaAttemptedRef.current.clear();
+  setMediaStatusBySlideId({});
+  setManualRefreshSlideId(null);
   setPopupContent(null);
   setIsLoading(true);
 
@@ -710,106 +961,119 @@ useEffect(() => {
       .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
       .filter(Boolean),
   );
+  const readySlideIds = slides
+    .filter((slide) => typeof slide.imageUrl === "string" && slide.imageUrl.trim())
+    .map((slide) => slide.id);
+
+  if (readySlideIds.length > 0) {
+    setMediaStatusBySlideId((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      for (const slideId of readySlideIds) {
+        if (next[slideId] !== "ready") {
+          next[slideId] = "ready";
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }
+
+  const markSlideMissing = (slideId: string) => {
+    setMediaStatusBySlideId((current) => ({ ...current, [slideId]: "missing" }));
+  };
+
+  const slidesToHydrate = slides.filter((slide) => {
+    const hasImage = typeof slide.imageUrl === "string" && slide.imageUrl.trim();
+    if (hasImage) {
+      return false;
+    }
+
+    if (!slide.text.trim()) {
+      return false;
+    }
+
+    const requestKey = `${storyId}:${slide.id}`;
+    return !mediaHydrationRef.current.has(requestKey) && !mediaAttemptedRef.current.has(requestKey);
+  });
+
+  if (slidesToHydrate.length === 0) {
+    return;
+  }
 
   const hydrateMissingMedia = async () => {
-    for (const slide of slides) {
-      const hasImage = typeof slide.imageUrl === "string" && slide.imageUrl.trim();
-      if (hasImage || !slide.text.trim()) {
-        if (hasImage) {
-          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "ready" }));
-        }
-        continue;
-      }
+    let nextSlideIndex = 0;
+    const workerCount = Math.min(3, slidesToHydrate.length);
 
+    const processSlide = async (slide: typeof slides[number]) => {
       const requestKey = `${storyId}:${slide.id}`;
-      if (mediaHydrationRef.current.has(requestKey)) {
-        continue;
-      }
-
       mediaHydrationRef.current.add(requestKey);
+      mediaAttemptedRef.current.add(requestKey);
       setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "loading" }));
 
       try {
-        const searchParams = new URLSearchParams({
-          type,
-          target_id: targetId,
-          slide_text: slide.text,
-        });
-        for (const usedUrl of usedMediaUrls) {
-          searchParams.append("exclude_url", usedUrl);
+        const resolvedItem = await resolveSlideMedia(type, targetId, slide.text, usedMediaUrls);
+        if (cancelled || !resolvedItem.url) {
+          markSlideMissing(slide.id);
+          return;
         }
 
-        const mediaResponse = await fetch(`/api/map-popup-media/search?${searchParams.toString()}`);
-        if (!mediaResponse.ok) {
-          mediaHydrationRef.current.delete(requestKey);
-          continue;
-        }
+        usedMediaUrls.add(resolvedItem.url);
 
-        const mediaPayload = (await mediaResponse.json()) as MapPopupSearchResponse;
-        if (cancelled || !mediaPayload.item?.url) {
-          mediaHydrationRef.current.delete(requestKey);
-          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
-          continue;
-        }
+        applyResolvedSlideMedia(
+          storyId,
+          slide.id,
+          resolvedItem.url,
+          resolvedItem.creditLine,
+          setPopupContent,
+          setMediaStatusBySlideId,
+        );
 
-        usedMediaUrls.add(mediaPayload.item.url);
-
-        const persistResponse = await fetch("/api/map-popup-media/persist", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            slideId: slide.id,
-            imageUrl: mediaPayload.item.url,
-            imageCreditLine: mediaPayload.item.creditLine,
-          }),
-        });
-
-        if (!persistResponse.ok) {
-          mediaHydrationRef.current.delete(requestKey);
-          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
-          continue;
-        }
-
-        const persistPayload = (await persistResponse.json()) as MapPopupPersistResponse;
-        if (cancelled) {
-          continue;
-        }
-
-        if (!persistPayload.slide.imageUrl) {
-          mediaHydrationRef.current.delete(requestKey);
-          setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
-          continue;
-        }
-
-        usedMediaUrls.add(persistPayload.slide.imageUrl);
-        setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "ready" }));
-
-        setPopupContent((current) => {
-          if (!current || current.storyId !== storyId) {
-            return current;
+        try {
+          const persistPayload = await persistSlideMedia(
+            slide.id,
+            resolvedItem.url,
+            resolvedItem.creditLine,
+          );
+          if (cancelled || !persistPayload.slide.imageUrl) {
+            return;
           }
 
-          return {
-            ...current,
-            slides: current.slides.map((currentSlide) =>
-              currentSlide.id === persistPayload.slide.id
-                ? {
-                    ...currentSlide,
-                    imageUrl: persistPayload.slide.imageUrl,
-                    imageCreditLine: persistPayload.slide.imageCreditLine,
-                  }
-                : currentSlide,
-            ),
-          };
-        });
+          usedMediaUrls.add(persistPayload.slide.imageUrl);
+          applyResolvedSlideMedia(
+            storyId,
+            persistPayload.slide.id,
+            persistPayload.slide.imageUrl,
+            persistPayload.slide.imageCreditLine,
+            setPopupContent,
+            setMediaStatusBySlideId,
+          );
+        } catch (error) {
+          console.error("Failed to persist hydrated slide media", error);
+        }
       } catch (error) {
-        mediaHydrationRef.current.delete(requestKey);
-        setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
         console.error("Failed to hydrate popup slide media", error);
+        markSlideMissing(slide.id);
+      } finally {
+        mediaHydrationRef.current.delete(requestKey);
       }
-    }
+    };
+
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (!cancelled) {
+          const slide = slidesToHydrate[nextSlideIndex];
+          nextSlideIndex += 1;
+          if (!slide) {
+            return;
+          }
+
+          await processSlide(slide);
+        }
+      }),
+    );
   };
 
   void hydrateMissingMedia();
@@ -817,7 +1081,7 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-}, [popupContent, type]);
+}, [popupContent?.slides, popupContent?.storyId, popupContent?.targetId, type]);
 
   useLayoutEffect(() => {
   const mapContent = mapContentRef.current;
@@ -1284,6 +1548,19 @@ useEffect(() => {
                                         {creditLine}
                                       </div>
                                     ) : null}
+                                    <div style={{ marginTop: "8px" }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleRefreshSlideMedia()}
+                                        disabled={manualRefreshSlideId === currentPopupSlide?.id}
+                                        className="studio-button btn-mint map-popup-action-button"
+                                        style={{ fontSize: "12px", padding: "6px 10px" }}
+                                      >
+                                        {manualRefreshSlideId === currentPopupSlide?.id
+                                          ? (lang === "ru" ? "Ищем..." : lang === "he" ? "מחפשים..." : "Searching...")
+                                          : (lang === "ru" ? "Найти новую картинку" : lang === "he" ? "למצוא תמונה חדשה" : "Find a new image")}
+                                      </button>
+                                    </div>
                                   </div>
                                 ) : mediaStatusLabel ? (
                                   <div
@@ -1299,6 +1576,19 @@ useEffect(() => {
                                     }}
                                   >
                                     {mediaStatusLabel}
+                                    <div style={{ marginTop: "8px" }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleRefreshSlideMedia()}
+                                        disabled={manualRefreshSlideId === currentPopupSlide?.id}
+                                        className="studio-button btn-mint map-popup-action-button"
+                                        style={{ fontSize: "12px", padding: "6px 10px" }}
+                                      >
+                                        {manualRefreshSlideId === currentPopupSlide?.id
+                                          ? (lang === "ru" ? "Ищем..." : lang === "he" ? "מחפשים..." : "Searching...")
+                                          : (lang === "ru" ? "Найти новую картинку" : lang === "he" ? "למצוא תמונה חדשה" : "Find a new image")}
+                                      </button>
+                                    </div>
                                   </div>
                                 ) : null}
 

@@ -7,7 +7,7 @@ type SearchResponse =
       item: {
         url: string;
         mediaType: "image" | "video" | "gif";
-        source: "pexels" | "giphy";
+        source: "pexels" | "giphy" | "fallback";
         creditLine: string;
         searchQuery: string;
         relevanceScore: number;
@@ -33,17 +33,23 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SearchResponse>,
 ) {
-  if (req.method !== "GET") {
+  if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const type = Array.isArray(req.query.type) ? req.query.type[0] : req.query.type;
-  const targetId = Array.isArray(req.query.target_id) ? req.query.target_id[0] : req.query.target_id;
-  const slideText = Array.isArray(req.query.slide_text) ? req.query.slide_text[0] : req.query.slide_text;
-  const excludeUrls = Array.isArray(req.query.exclude_url)
-    ? req.query.exclude_url.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-    : typeof req.query.exclude_url === "string" && req.query.exclude_url.trim()
-      ? [req.query.exclude_url.trim()]
+  const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
+  const rawType = payload.type;
+  const rawTargetId = payload.target_id;
+  const rawSlideText = payload.slide_text;
+  const rawExcludeUrls = payload.exclude_url;
+
+  const type = Array.isArray(rawType) ? rawType[0] : rawType;
+  const targetId = Array.isArray(rawTargetId) ? rawTargetId[0] : rawTargetId;
+  const slideText = Array.isArray(rawSlideText) ? rawSlideText[0] : rawSlideText;
+  const excludeUrls = Array.isArray(rawExcludeUrls)
+    ? rawExcludeUrls.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    : typeof rawExcludeUrls === "string" && rawExcludeUrls.trim()
+      ? [rawExcludeUrls.trim()]
       : [];
 
   if (!type || !isMapPopupType(type)) {

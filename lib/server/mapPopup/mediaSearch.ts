@@ -20,7 +20,7 @@ type GiphyCandidate = {
 export type MapPopupMediaCandidate = {
   url: string;
   mediaType: "image" | "video" | "gif";
-  source: "pexels" | "giphy";
+  source: "pexels" | "giphy" | "fallback";
   creditLine: string;
   searchQuery: string;
   relevanceScore: number;
@@ -30,7 +30,6 @@ type SearchMediaParams = {
   type: MapPopupType;
   targetId: string;
   slideText: string;
-  lang?: string;
   excludeUrls?: string[];
 };
 
@@ -39,6 +38,8 @@ const GIPHY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FINAL_RESULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const GIPHY_COOLDOWN_TTL_MS = 15 * 60 * 1000;
 const GIPHY_MIN_REQUEST_INTERVAL_MS = 1200;
+const PROVIDER_REQUEST_TIMEOUT_MS = 3500;
+const SEARCH_DEADLINE_MS = 5000;
 const inflightGiphyRequests = new Map<string, Promise<GiphyCandidate[]>>();
 let lastGiphyRequestAt = 0;
 
@@ -67,12 +68,6 @@ const BLOCKED_TERMS = [
   "гол", "обнаж", "сексу", "эрот", "поцел", "алког", "сигар",
 ];
 
-const ACTION_HINTS = [
-  "dance", "dancing", "jump", "jumping", "run", "running", "fly", "flying", "swim", "swimming",
-  "storm", "wind", "rain", "snow", "wave", "flow", "moving", "motion",
-  "танц", "беж", "лет", "прыг", "плав", "ветер", "дожд", "снег", "бур", "волна", "теч",
-];
-
 const PEXELS_QUERY_SUFFIX: Record<MapPopupType, string> = {
   country: "landmark travel nature",
   river: "river landscape nature",
@@ -84,6 +79,21 @@ const PEXELS_QUERY_SUFFIX: Record<MapPopupType, string> = {
   weather: "sky clouds atmosphere nature",
   food: "dish cuisine food",
 };
+
+const RACCOON_WITH_MAP_FILES = {
+  animated: [
+    "raccoon-with-map.gif",
+    "raccoon-shakes-map.gif",
+    "raccoon-rollup-map.gif",
+    "raccoon-puts-map-in-bottle.gif",
+  ],
+  static: [
+    "raccoon-with-map.png",
+    "raccoon-shakes-map.png",
+    "raccoon-rollup-map.png",
+    "raccoon-puts-map-in-bottle.png",
+  ],
+} as const;
 
 function normalizeText(value: string) {
   return value
@@ -160,12 +170,13 @@ function buildSearchQuery(type: MapPopupType, targetId: string, slideText: strin
 }
 
 function buildFallbackQueries(type: MapPopupType, targetId: string, slideText: string) {
-  const { targetTerms, pexelsQuery, giphyQuery, relevanceTerms } = buildSearchQuery(type, targetId, slideText);
+  const { targetTerms, slideTerms, pexelsQuery, giphyQuery, relevanceTerms } = buildSearchQuery(type, targetId, slideText);
   const typeHintTerms = PEXELS_QUERY_SUFFIX[type].split(" ");
   const firstTargetTerm = targetTerms[0] ?? "";
 
   const pexelsQueries = unique([
     pexelsQuery,
+    unique([...slideTerms, ...typeHintTerms]).join(" ").trim(),
     unique([...targetTerms, ...typeHintTerms]).join(" ").trim(),
     targetTerms.join(" ").trim(),
     unique([firstTargetTerm, ...typeHintTerms]).join(" ").trim(),
@@ -210,9 +221,18 @@ function scoreCandidateText(candidateText: string, relevanceTerms: string[]) {
   return score;
 }
 
-function prefersMotion(slideText: string, type: MapPopupType) {
-  const normalized = normalizeText(slideText);
-  return type === "weather" || ACTION_HINTS.some((term) => normalized.includes(term));
+async function fetchWithTimeout(input: string, init?: RequestInit, timeoutMs = PROVIDER_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function searchPexelsCandidates(query: string): Promise<PexelsCandidate[]> {
@@ -229,48 +249,53 @@ async function searchPexelsCandidates(query: string): Promise<PexelsCandidate[]>
 
   const photoSearchParams = new URLSearchParams({
     query,
-    per_page: "12",
+    per_page: "24",
     orientation: "landscape",
   });
 
   const videoSearchParams = new URLSearchParams({
     query,
-    per_page: "8",
+    per_page: "12",
   });
 
-  const [photoResponse, videoResponse] = await Promise.all([
-    fetch(`https://api.pexels.com/v1/search?${photoSearchParams.toString()}`, {
-      headers: { Authorization: apiKey },
-    }),
-    fetch(`https://api.pexels.com/videos/search?${videoSearchParams.toString()}`, {
-      headers: { Authorization: apiKey },
-    }),
-  ]);
+  try {
+    const [photoResponse, videoResponse] = await Promise.all([
+      fetchWithTimeout(`https://api.pexels.com/v1/search?${photoSearchParams.toString()}`, {
+        headers: { Authorization: apiKey },
+      }),
+      fetchWithTimeout(`https://api.pexels.com/videos/search?${videoSearchParams.toString()}`, {
+        headers: { Authorization: apiKey },
+      }),
+    ]);
 
-  const photoJson = photoResponse.ok ? await photoResponse.json() : null;
-  const videoJson = videoResponse.ok ? await videoResponse.json() : null;
+    const photoJson = photoResponse.ok ? await photoResponse.json() : null;
+    const videoJson = videoResponse.ok ? await videoResponse.json() : null;
 
-  const photos: PexelsCandidate[] =
-    photoJson?.photos?.map((photo: any) => ({
-      url: photo?.src?.large || photo?.src?.medium || photo?.src?.original,
-      mediaType: "image" as const,
-      photographer: typeof photo?.photographer === "string" ? photo.photographer : undefined,
-      alt: typeof photo?.alt === "string" ? photo.alt : undefined,
-      sourceUrl: typeof photo?.url === "string" ? photo.url : undefined,
-    }))?.filter((item: PexelsCandidate) => Boolean(item.url)) ?? [];
+    const photos: PexelsCandidate[] =
+      photoJson?.photos?.map((photo: any) => ({
+        url: photo?.src?.large || photo?.src?.medium || photo?.src?.original,
+        mediaType: "image" as const,
+        photographer: typeof photo?.photographer === "string" ? photo.photographer : undefined,
+        alt: typeof photo?.alt === "string" ? photo.alt : undefined,
+        sourceUrl: typeof photo?.url === "string" ? photo.url : undefined,
+      }))?.filter((item: PexelsCandidate) => Boolean(item.url)) ?? [];
 
-  const videos: PexelsCandidate[] =
-    videoJson?.videos?.map((video: any) => ({
-      url:
-        video?.video_files?.find((file: any) => file?.file_type === "video/mp4" && file?.width >= 720)?.link ||
-        video?.video_files?.find((file: any) => file?.file_type === "video/mp4")?.link,
-      mediaType: "video" as const,
-      photographer: typeof video?.user?.name === "string" ? video.user.name : undefined,
-      alt: typeof video?.url === "string" ? video.url : undefined,
-      sourceUrl: typeof video?.url === "string" ? video.url : undefined,
-    }))?.filter((item: PexelsCandidate) => Boolean(item.url)) ?? [];
+    const videos: PexelsCandidate[] =
+      videoJson?.videos?.map((video: any) => ({
+        url:
+          video?.video_files?.find((file: any) => file?.file_type === "video/mp4" && file?.width >= 720)?.link ||
+          video?.video_files?.find((file: any) => file?.file_type === "video/mp4")?.link,
+        mediaType: "video" as const,
+        photographer: typeof video?.user?.name === "string" ? video.user.name : undefined,
+        alt: typeof video?.url === "string" ? video.url : undefined,
+        sourceUrl: typeof video?.url === "string" ? video.url : undefined,
+      }))?.filter((item: PexelsCandidate) => Boolean(item.url)) ?? [];
 
-  return setMemoryCache(cacheKey, [...photos, ...videos], PEXELS_CACHE_TTL_MS);
+    return setMemoryCache(cacheKey, [...photos, ...videos], PEXELS_CACHE_TTL_MS);
+  } catch (error) {
+    console.error("[map-popup-media] Pexels request failed", error);
+    return [];
+  }
 }
 
 async function searchGiphyCandidates(query: string): Promise<GiphyCandidate[]> {
@@ -314,7 +339,7 @@ async function searchGiphyCandidates(query: string): Promise<GiphyCandidate[]> {
       bundle: "messaging_non_clips",
     });
 
-    const response = await fetch(`https://api.giphy.com/v1/gifs/search?${searchParams.toString()}`);
+    const response = await fetchWithTimeout(`https://api.giphy.com/v1/gifs/search?${searchParams.toString()}`);
     if (!response.ok) {
       if (response.status === 429) {
         setMemoryCache(cooldownKey, true, GIPHY_COOLDOWN_TTL_MS);
@@ -363,7 +388,6 @@ function rankCandidates(
   giphyCandidates: GiphyCandidate[],
   relevanceTerms: string[],
   normalizedExcludedUrls: Set<string>,
-  motionPreferred: boolean,
   pexelsQuery: string,
   giphyQuery: string,
 ) {
@@ -372,7 +396,7 @@ function rankCandidates(
       const description = [candidate.alt, candidate.photographer].filter(Boolean).join(" ");
       const score =
         scoreCandidateText(description, relevanceTerms) +
-        (candidate.mediaType === "image" ? (motionPreferred ? 2 : 7) : (motionPreferred ? 6 : 3));
+        (candidate.mediaType === "image" ? 7 : 4);
 
       return {
         url: candidate.url,
@@ -385,7 +409,7 @@ function rankCandidates(
     }),
     ...giphyCandidates.map((candidate) => {
       const description = [candidate.title, candidate.username].filter(Boolean).join(" ");
-      const score = scoreCandidateText(description, relevanceTerms) + (motionPreferred ? 6 : 1);
+      const score = scoreCandidateText(description, relevanceTerms) + 3;
 
       return {
         url: candidate.url,
@@ -400,6 +424,119 @@ function rankCandidates(
     .filter((candidate) => !normalizedExcludedUrls.has(candidate.url))
     .filter((candidate) => candidate.relevanceScore > 0)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
+}
+
+function chooseRankedCandidate(
+  ranked: MapPopupMediaCandidate[],
+  seedSource: string,
+) {
+  if (ranked.length === 0) {
+    return null;
+  }
+
+  const shortlist = ranked.slice(0, Math.min(4, ranked.length));
+  const seed = getSeedValue(seedSource);
+
+  return shortlist[seed % shortlist.length] ?? shortlist[0];
+}
+
+function getSeedValue(seedSource: string) {
+  return seedSource
+    .split("")
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+}
+
+function buildRaccoonWithMapUrl(fileName: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  if (!supabaseUrl) {
+    return `/images/mystery.webp`;
+  }
+
+  return `${supabaseUrl}/storage/v1/object/public/characters/raccoons/raccoon_with_map/${fileName}`;
+}
+
+function buildLocalFallbackCandidate(type: MapPopupType, targetId: string, slideText: string): MapPopupMediaCandidate {
+  const seedSource = `${type}:${normalizeText(targetId)}:${normalizeText(slideText)}`;
+  const seed = getSeedValue(seedSource);
+  const allFiles = [...RACCOON_WITH_MAP_FILES.static, ...RACCOON_WITH_MAP_FILES.animated];
+  const selectedFile = allFiles[seed % allFiles.length] ?? RACCOON_WITH_MAP_FILES.static[0];
+
+  return {
+    url: buildRaccoonWithMapUrl(selectedFile),
+    mediaType: selectedFile.endsWith(".gif") ? "gif" : "image",
+    source: "fallback",
+    creditLine: "Raccoon with map from Capybara Tales",
+    searchQuery: `local-fallback:${seedSource}`,
+    relevanceScore: 1,
+  };
+}
+
+function isSearchDeadlineReached(searchStartedAt: number) {
+  return Date.now() - searchStartedAt >= SEARCH_DEADLINE_MS;
+}
+
+async function searchPexelsFirst(
+  pexelsQueries: string[],
+  relevanceTerms: string[],
+  normalizedExcludedUrls: Set<string>,
+  targetId: string,
+  slideText: string,
+  searchStartedAt: number,
+) {
+  for (const pexelsQuery of pexelsQueries) {
+    if (isSearchDeadlineReached(searchStartedAt)) {
+      break;
+    }
+
+    const pexelsCandidates = await searchPexelsCandidates(pexelsQuery);
+    const ranked = rankCandidates(
+      pexelsCandidates,
+      [],
+      relevanceTerms,
+      normalizedExcludedUrls,
+      pexelsQuery,
+      "",
+    );
+
+    const selected = chooseRankedCandidate(ranked, `${targetId}:${slideText}:${pexelsQuery}`);
+    if (selected) {
+      return selected;
+    }
+  }
+
+  return null;
+}
+
+async function searchGiphyFallback(
+  giphyQueries: string[],
+  relevanceTerms: string[],
+  normalizedExcludedUrls: Set<string>,
+  targetId: string,
+  slideText: string,
+  searchStartedAt: number,
+) {
+  for (const giphyQuery of giphyQueries) {
+    if (isSearchDeadlineReached(searchStartedAt)) {
+      break;
+    }
+
+    const giphyCandidates = await searchGiphyCandidates(giphyQuery);
+    const ranked = rankCandidates(
+      [],
+      giphyCandidates,
+      relevanceTerms,
+      normalizedExcludedUrls,
+      "",
+      giphyQuery,
+    );
+
+    const selected = chooseRankedCandidate(ranked, `${targetId}:${slideText}:${giphyQuery}`);
+    if (selected) {
+      return selected;
+    }
+  }
+
+  return null;
 }
 
 export async function searchMapPopupMedia({
@@ -425,50 +562,35 @@ export async function searchMapPopupMedia({
     return null;
   }
 
-  const motionPreferred = prefersMotion(slideText, type);
-  let resolved: MapPopupMediaCandidate | null = null;
-
-  for (const pexelsQuery of pexelsQueries) {
-    const pexelsCandidates = await searchPexelsCandidates(pexelsQuery);
-    const ranked = rankCandidates(
-      pexelsCandidates,
-      [],
-      relevanceTerms,
-      normalizedExcludedUrls,
-      motionPreferred,
-      pexelsQuery,
-      "",
-    );
-
-    if (ranked[0]) {
-      resolved = ranked[0];
-      break;
-    }
+  const searchStartedAt = Date.now();
+  const resolvedFromPexels = await searchPexelsFirst(
+    pexelsQueries,
+    relevanceTerms,
+    normalizedExcludedUrls,
+    targetId,
+    slideText,
+    searchStartedAt,
+  );
+  if (resolvedFromPexels) {
+    setMemoryCache(finalCacheKey, resolvedFromPexels, FINAL_RESULT_CACHE_TTL_MS);
+    return resolvedFromPexels;
   }
 
-  if (!resolved && motionPreferred) {
-    for (const giphyQuery of giphyQueries) {
-      const giphyCandidates = await searchGiphyCandidates(giphyQuery);
-      const ranked = rankCandidates(
-        [],
-        giphyCandidates,
-        relevanceTerms,
-        normalizedExcludedUrls,
-        motionPreferred,
-        "",
-        giphyQuery,
-      );
-
-      if (ranked[0]) {
-        resolved = ranked[0];
-        break;
-      }
-    }
+  // Age safety for GIPHY comes from rating=g and blocked-term filtering.
+  const resolvedFromGiphy = await searchGiphyFallback(
+    giphyQueries,
+    relevanceTerms,
+    normalizedExcludedUrls,
+    targetId,
+    slideText,
+    searchStartedAt,
+  );
+  if (resolvedFromGiphy) {
+    setMemoryCache(finalCacheKey, resolvedFromGiphy, FINAL_RESULT_CACHE_TTL_MS);
+    return resolvedFromGiphy;
   }
 
-  if (resolved) {
-    setMemoryCache(finalCacheKey, resolved, FINAL_RESULT_CACHE_TTL_MS);
-  }
-
-  return resolved;
+  const finalResult = buildLocalFallbackCandidate(type, targetId, slideText);
+  setMemoryCache(finalCacheKey, finalResult, FINAL_RESULT_CACHE_TTL_MS);
+  return finalResult;
 }

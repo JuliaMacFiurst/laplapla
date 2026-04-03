@@ -4,6 +4,11 @@ const nextConfig = {
     locales: ["ru", "en", "he"],
     defaultLocale: "ru",
   },
+  logging: {
+    fetches: {
+      fullUrl: false,
+    },
+  },
 };
 
 module.exports = nextConfig;

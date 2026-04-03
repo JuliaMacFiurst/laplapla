@@ -31,7 +31,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { slideId, imageUrl, imageCreditLine } = req.body ?? {};
+  const { slideId, imageUrl, imageCreditLine, overwrite } = req.body ?? {};
   const normalizedSlideId =
     typeof slideId === "number"
       ? slideId
@@ -64,7 +64,7 @@ export default async function handler(
     }
 
     const existingImageUrl = typeof existing.image_url === "string" ? existing.image_url.trim() : "";
-    if (existingImageUrl) {
+    if (existingImageUrl && overwrite !== true) {
       return res.status(200).json({
         slide: {
           id: String(existing.id),
