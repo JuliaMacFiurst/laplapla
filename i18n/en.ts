@@ -735,6 +735,8 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
       title: "Raccoons Explore!",
       subtitle: "Tap the map and uncover the world's secrets with raccoons 🦝",
       guideAlt: "Raccoon guide",
+      slidesTranslationNotice:
+        "Slide translations are not available yet. You can use your browser's built-in translator for now. Translated slides will appear later.",
     },
     tabs: {
       country: "Countries",

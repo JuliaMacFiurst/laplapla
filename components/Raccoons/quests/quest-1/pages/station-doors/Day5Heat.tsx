@@ -5,8 +5,10 @@ import type { PageId } from "../../QuestEngine";
 import CharacterStage from "../../logic/dress-up-game/CharacterStage";
 import type { CharacterResult } from "@/types/types";
 import FinalSummary from "../../logic/dress-up-game/FinalSummary";
+import { useQuest1I18n } from "../../i18n";
 
 export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
+  const { t } = useQuest1I18n();
   const [results, setResults] = useState<CharacterResult[]>([]);
   const [showFinal, setShowFinal] = useState(false);
 
@@ -19,7 +21,7 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">Тепловой модуль</h1>
+        <h1 className="quest-title-text">{t.day5Heat.title}</h1>
       </div>
 
       <div className="dressup-container">
@@ -95,7 +97,7 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
               />
 
               {/* текст */}
-              <div className="ice-text">Назад на научную станцию</div>
+              <div className="ice-text">{t.day5Heat.backButton}</div>
 
               {/* пингвин */}
               <img

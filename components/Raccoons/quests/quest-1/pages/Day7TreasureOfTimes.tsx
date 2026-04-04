@@ -2,10 +2,13 @@
 
 import { useRouter } from "next/router";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { useQuest1I18n } from "../i18n";
+import QuestTextBlocks from "../QuestTextBlocks";
 
 export default function Day7TreasureOfTimes() {
   const router = useRouter();
   const lang = getCurrentLang(router);
+  const { t } = useQuest1I18n();
 
   return (
     <div className="quest-page-bg">
@@ -18,7 +21,7 @@ export default function Day7TreasureOfTimes() {
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">Клад Времён</h1>
+        <h1 className="quest-title-text">{t.day7.title}</h1>
       </div>
 
       {/* ВИДЕО */}
@@ -27,34 +30,18 @@ export default function Day7TreasureOfTimes() {
           <iframe
             className="quest-video"
             src="https://www.youtube.com/embed/sE2jxOVG8kU"
-            title="Spitsbergen Flight"
+            title={t.day7.videoTitle}
             allow="autoplay; encrypted-media; fullscreen"
             allowFullScreen
           />
         </div>
       </div>
+      {lang !== "ru" && t.day7.videoTranslationNotice && (
+        <p className="quest-map-translation-note">{t.day7.videoTranslationNotice}</p>
+      )}
 
       {/* Текстовые плитки */}
-      <div className="quest-story-text" style={{ marginTop: "24px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Каждая экспедиция когда-нибудь заканчивается.
-            </p>
-
-            <p className="quest-p">
-              Но если что-то интересное подошло к концу —
-              значит, совсем скоро начнётся что-то новое.
-            </p>
-
-            <p className="quest-p">
-              Пора возвращаться домой, открывать карту
-              и искать новые удивительные места,
-              куда обязательно захочется отправиться снова.
-            </p>
-          </div>
-        </div>
-        </div>
+      <QuestTextBlocks blocks={t.day7.blocks} style={{ marginTop: "24px" }} />
 
         <footer className="quest-footer">
         <div
@@ -79,7 +66,7 @@ export default function Day7TreasureOfTimes() {
             />
 
             {/* текст */}
-            <div className="ice-text">↩️ Вернуться на карту </div>
+            <div className="ice-text">{t.day7.backButton}</div>
 
             {/* пингвин */}
             <img

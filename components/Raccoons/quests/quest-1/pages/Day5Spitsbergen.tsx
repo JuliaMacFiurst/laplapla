@@ -2,10 +2,13 @@
 
 import type { PageId } from "../QuestEngine";
 import { useState } from "react";
+import { useQuest1I18n } from "../i18n";
+import QuestTextBlocks from "../QuestTextBlocks";
 
 type DoorId = "heat" | "lab" | "garage";
 
 export default function Day5Spitsbergen({ go }: { go: (id: PageId) => void }) {
+  const { t } = useQuest1I18n();
   const [openingDoor, setOpeningDoor] = useState<DoorId | null>(null);
 
   const handleDoorClick = (door: DoorId) => {
@@ -34,58 +37,17 @@ return (
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">Полярная станция Шпицбергена</h1>
+        <h1 className="quest-title-text">{t.day5Spitsbergen.title}</h1>
       </div>
 
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Ты на научной полярной станции — месте, где учёные изучают вечные льды, следят за климатом, наблюдают за белыми медведями, исследуют северные сияния и даже хранят коллекции редких растений в специальных холодных хранилищах. 
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Эта станция помогает понять, как меняется наша планета и что нужно сделать, чтобы защитить природу Арктики. Здесь каждый день проводят эксперименты, делают измерения, отправляют данные в международные центры и внимательно следят за тем, как живёт север.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Тебе тоже пора готовиться к своей полярной экспедиции! На базе есть три отдела, и каждый поможет тебе освоить важную часть подготовки:
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              — <strong className="quest-hint-blue">Тепловой модуль</strong> — где ты научишься правильному полярному снаряжению.<br/>
-              — <strong className="quest-hint-red">Лаборатория оборудования</strong> — где проверяют инструменты и приборы.<br/>
-              — <strong className="quest-hint-green">Гараж</strong> — место, где готовят снегоходы и технику к выезду.
-            </p>
-            <p className="quest-p">
-              Ты можешь заходить в комнаты в любом порядке — всё зависит от тебя. Когда пройдёшь все три этапа, экспедиция начнётся!
-            </p>
-          </div>
-        </div>
-      </div>
+      <QuestTextBlocks blocks={t.day5Spitsbergen.blocks} style={{ marginTop: "20px" }} />
 
       <div className="spitsbergen-station">
         {/* фон станции */}
         <img
           className="station-bg"
           src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/Spitzbergen-station.webp"
-          alt="Полярная станция Шпицбергена"
+          alt={t.day5Spitsbergen.stationImageAlt}
         />
 
         {/* центральное видео со снегом / туристами */}
@@ -100,7 +62,7 @@ return (
           />
         </div>
 
-        <div className="station-label station-label--heat">Тепловой модуль</div>
+        <div className="station-label station-label--heat">{t.day5Spitsbergen.labels.heat}</div>
         {/* дверь 1 — Тепловой модуль */}
         <button
           className={
@@ -108,12 +70,12 @@ return (
             (openingDoor === "heat" ? " station-door--opening" : "")
           }
           onClick={() => handleDoorClick("heat")}
-          aria-label="Тепловой модуль"
+          aria-label={t.day5Spitsbergen.labels.heat}
         >
           <div className="station-door-inner"></div>
         </button>
 
-        <div className="station-label station-label--lab">Лаборатория</div>
+        <div className="station-label station-label--lab">{t.day5Spitsbergen.labels.lab}</div>
         {/* дверь 2 — Лаборатория оборудования */}
         <button
           className={
@@ -121,12 +83,12 @@ return (
             (openingDoor === "lab" ? " station-door--opening" : "")
           }
           onClick={() => handleDoorClick("lab")}
-          aria-label="Лаборатория оборудования"
+          aria-label={t.day5Spitsbergen.labels.labAria}
         >
           <div className="station-door-inner"></div>
         </button>
 
-        <div className="station-label station-label--garage">Гараж</div>
+        <div className="station-label station-label--garage">{t.day5Spitsbergen.labels.garage}</div>
         {/* дверь 3 — Гараж */}
         <button
           className={
@@ -134,7 +96,7 @@ return (
             (openingDoor === "garage" ? " station-door--opening" : "")
           }
           onClick={() => handleDoorClick("garage")}
-          aria-label="Гараж"
+          aria-label={t.day5Spitsbergen.labels.garage}
         >
           <div className="station-door-inner"></div>
         </button>
@@ -153,7 +115,7 @@ return (
             />
 
             {/* текст */}
-            <div className="ice-text">Вперед, в полярную экспедицию</div>
+            <div className="ice-text">{t.day5Spitsbergen.nextButton}</div>
 
             {/* пингвин */}
             <img

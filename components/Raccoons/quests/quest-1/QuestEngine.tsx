@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedQuery } from "@/lib/i18n/routing";
+import { useQuest1I18n } from "./i18n";
 
 import Day1 from "./pages/Day1";
 import Day2 from "./pages/Day2";
@@ -52,7 +53,7 @@ export type PageId = keyof typeof PAGES;
 
 export default function QuestEngine() {
   const router = useRouter();
-  const lang = getCurrentLang(router);
+  const { lang, t } = useQuest1I18n();
   const [pageId, setPageId] = useState<PageId>("day1");
   const [devMode, setDevMode] = useState(false);
 
@@ -65,24 +66,13 @@ export default function QuestEngine() {
   const Page = PAGES[pageId];
 
   return (
-    <div>
+    <div dir={lang === "he" ? "rtl" : "ltr"}>
       <Page go={setPageId} />
       <div
-        style={{
-          position: "fixed",
-          top: "16px",
-          right: "16px",
-          fontSize: "24px",
-          cursor: "pointer",
-          zIndex: 10000,
-          background: "rgba(255,255,255,0.9)",
-          padding: "6px 10px",
-          borderRadius: "8px",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-        }}
+        className="quest-back-to-maps-button"
         onClick={() => {
           const confirmed = window.confirm(
-            "Твой прогресс в квесте сейчас не сохранён.\nЕсли ты выйдешь, придётся начинать сначала. Выйти из квеста?"
+            t.engine.confirmExit
           );
           if (confirmed) {
             router.push(
@@ -93,7 +83,7 @@ export default function QuestEngine() {
           }
         }}
       >
-        🏠 Домой
+        {t.engine.homeButton}
       </div>
       {devMode && (
         <div
@@ -120,7 +110,7 @@ export default function QuestEngine() {
               cursor: "pointer",
             }}
           >
-            ← Назад
+            {t.engine.prevButton}
           </button>
 
           <button
@@ -137,7 +127,7 @@ export default function QuestEngine() {
               cursor: "pointer",
             }}
           >
-            Вперёд →
+            {t.engine.nextButton}
           </button>
         </div>
       )}

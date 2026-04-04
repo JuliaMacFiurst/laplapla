@@ -1491,26 +1491,35 @@ useEffect(() => {
                       })()
                     ) : (
                       (() => {
-                        const imageUrl =
+                        const resolvedFallbackMedia =
+                          popupContent?.targetId && currentPopupSlide?.text
+                            ? buildClientRaccoonFallback(type, popupContent.targetId, currentPopupSlide.text)
+                            : null;
+                        const persistedImageUrl =
                           typeof currentPopupSlide?.imageUrl === "string" ? currentPopupSlide.imageUrl.trim() : "";
+                        const imageUrl = persistedImageUrl || resolvedFallbackMedia?.url || "";
+                        const isUsingFallbackMedia = !persistedImageUrl && Boolean(resolvedFallbackMedia?.url);
                         const isVideoSlide = isVideoMediaUrl(imageUrl);
                         const paragraphs = splitTextToParagraphs(currentPopupSlide?.text || "");
-                        const creditLine = currentPopupSlide?.imageCreditLine?.trim() || "";
+                        const creditLine =
+                          currentPopupSlide?.imageCreditLine?.trim() ||
+                          resolvedFallbackMedia?.creditLine ||
+                          "";
                         const mediaStatus = currentPopupSlide ? mediaStatusBySlideId[currentPopupSlide.id] : undefined;
                         const mediaStatusLabel =
                           mediaStatus === "loading"
-                            ? lang === "ru"
-                              ? "Подбираем картинку..."
-                              : lang === "he"
-                                ? "טוענים תמונה..."
-                                : "Loading image..."
-                            : mediaStatus === "missing"
+                            ? isUsingFallbackMedia
                               ? lang === "ru"
-                                ? "Картинка для этого слайда не найдена."
+                                ? "Енотики ищут подходящую картинку..."
                                 : lang === "he"
-                                  ? "לא נמצאה תמונה לשקופית הזאת."
-                                  : "No image found for this slide."
-                              : "";
+                                  ? "הראקונים מחפשים תמונה מתאימה..."
+                                  : "Raccoons are looking for a matching image..."
+                              : lang === "ru"
+                                ? "Подбираем картинку..."
+                                : lang === "he"
+                                  ? "טוענים תמונה..."
+                                  : "Loading image..."
+                            : "";
 
                         return (
                           <>

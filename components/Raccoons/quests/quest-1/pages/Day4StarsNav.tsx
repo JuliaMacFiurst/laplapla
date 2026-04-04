@@ -5,11 +5,15 @@ import StarsMap from "../sail/StarsMap";
 import DialogBoxStars from "../logic/DialogBoxStars";
 import DialogBoxStarsInteractive from "../logic/DialogBoxStarsInteractive";
 import { useRef, useState, useEffect } from "react";
-import { starRouteDialogs, StarDialogueStep } from "@/utils/starRouteDialogs";
+import { useQuest1I18n } from "../i18n";
+import QuestTextBlocks from "../QuestTextBlocks";
+import { getStarRouteDialogs, type StarDialogueStep } from "../i18n/dialogs";
 
 export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
+  const { lang, t } = useQuest1I18n();
   const racTextRef = useRef<HTMLDivElement | null>(null);
   const starsMapRef = useRef<any>(null);
+  const starRouteDialogs = getStarRouteDialogs(lang);
 
   const introDialogs = starRouteDialogs.filter((d) => d.condition === "intro");
   const [dialogueQueue, setDialogueQueue] =
@@ -56,43 +60,11 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">На встречу Полярной Звезде!</h1>
+        <h1 className="quest-title-text">{t.day4StarsNav.title}</h1>
       </div>
 
       <div className="quest-row-story">
-        <div className="quest-story-text" style={{ marginTop: "20px" }}>
-          <div className="quest-text-paper">
-            <div className="quest-text-inner">
-              <p className="quest-p">
-                <em className="quest-em">
-                  Йорк Свенсен стоит на палубе, маленький и пушистый...
-                </em>
-              </p>
-              <p className="quest-p">
-                <em className="quest-em">
-                  <strong className="quest-strong">Свенсен:</strong>
-                </em>{" "}
-                — Компас ведёт себя странно!
-              </p>
-              <p className="quest-p">
-                <em className="quest-em">
-                  <strong className="quest-strong">Логан:</strong>
-                </em>{" "}
-                — Настоящие путешественники читают не стрелки…
-              </p>
-            </div>
-          </div>
-
-          <div className="quest-text-paper">
-            <div className="quest-text-inner"></div>
-            <p className="quest-p">
-              <em className="quest-em">
-                <strong className="quest-strong">Логан продолжает:</strong>
-              </em>{" "}
-              — Хочешь узнать, где север — ищи Полярную.
-            </p>
-          </div>
-        </div>
+        <QuestTextBlocks blocks={t.day4StarsNav.introBlocks} style={{ marginTop: "20px" }} />
 
         <div className="quest-vertical-video-wrapper ice-window">
           <div className="ice-window">
@@ -190,8 +162,14 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
         </div>
 
         <div ref={racTextRef} id="raccoonText" className="quest-speech">
-          Енот: «Нажми на звезду, чтобы узнать о ней!»
+          {t.day4StarsNav.defaultSpeech}
         </div>
+
+        {lang !== "ru" && t.day4StarsNav.mapTranslationNotice && (
+          <div className="quest-map-translation-note" dir={lang === "he" ? "rtl" : "ltr"}>
+            {t.day4StarsNav.mapTranslationNotice}
+          </div>
+        )}
 
         <div className="flight-dialog-box-wrapper">
           {!introDone && dialogueQueue.length > 0 && (
@@ -250,7 +228,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
               <iframe
                 className="quest-video"
                 src="https://www.youtube.com/embed/CWf0_sdJOJI?enablejsapi=1"
-                title="Полярная звезда"
+                title={t.day4StarsNav.videoTitle}
                 allow="autoplay; encrypted-media; fullscreen"
                 allowFullScreen
               />
@@ -258,15 +236,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
           </div>
        
 
-         <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Приплыли! Добро пожаловать в страну льдов и полярных лисиц.
-            </p>
-          </div>
-        </div>
-      </div>
+         <QuestTextBlocks blocks={[t.day4StarsNav.arrivalBlock]} style={{ marginTop: "20px" }} />
 
     <div
             className="quest-center ice-button-wrapper"
@@ -279,7 +249,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
           src="/quests/assets/buttons/ice-button-bg.svg"
           alt="ice-btn"
         />
-        <div className="ice-text">Навстречу приключениям!</div>
+        <div className="ice-text">{t.day4StarsNav.nextButton}</div>
         <img
           className="penguin"
           src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"

@@ -2,31 +2,37 @@ import { useEffect, useRef, useState } from "react";
 import type { PageId } from "../QuestEngine";
 import countryNames from "@/utils/country_names.json";
 import DialogBox from "../logic/DialogBox";
-import type { DialogueStep } from "@/utils/flightDialogs";
-import { flightRouteDialogs } from "@/utils/flightDialogs";
 import FlightMap from "../logic/FlightMap";
 import FlightMiniTest from "../flight/FlightMiniTest";
+import { useQuest1I18n } from "../i18n";
+import QuestTextBlocks from "../QuestTextBlocks";
+import { getFlightRouteDialogs, type FlightDialogueStep } from "../i18n/dialogs";
 
 export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
+  const { lang, t } = useQuest1I18n();
   const racTextRef = useRef<HTMLDivElement>(null);
   const [userChoice, setUserChoice] = useState<
     "straight" | "arc" | "zigzag" | null
   >(null);
-  const [dialogueQueue, setDialogueQueue] = useState<DialogueStep[]>([]);
+  const [dialogueQueue, setDialogueQueue] = useState<FlightDialogueStep[]>([]);
+  const flightRouteDialogs = getFlightRouteDialogs(lang);
 
   // --- перевод ID страны в русское название ---
-  function getCountryRu(id: string): string {
+  function getCountryLabel(id: string): string {
     const entry = (countryNames as Record<string, any>)[id];
-    return entry?.ru || id;
+    return entry?.[lang] || entry?.ru || id;
   }
 
   // --- слушатель для текстов от initRouteLogic ---
   useEffect(() => {
     function handleCountryEvent(ev: CustomEvent) {
       const id = ev.detail;
-      const ruName = getCountryRu(id);
+      const countryName = getCountryLabel(id);
       if (racTextRef.current) {
-        racTextRef.current.textContent = `Енот: «Вы летите над: ${ruName}»`;
+        racTextRef.current.textContent = t.day3Flight.speech.flyingOver.replace(
+          "{name}",
+          countryName
+        );
       }
     }
 
@@ -56,31 +62,21 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
           className="quest-title-banner"
         />
 
-        <h1 className="quest-title-text">Прокладываем маршрут</h1>
+        <h1 className="quest-title-text">{t.day3Flight.title}</h1>
       </div>
 
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p quest-em">
-              Енот надевает лётный шлем и говорит:
-            </p>
-            <p className="quest-p">«Роланд, ставь синюю кнопку на свой дом!»</p>
-          </div>
-        </div>
-      </div>
+      <QuestTextBlocks blocks={t.day3Flight.introBlocks} style={{ marginTop: "20px" }} />
 
       <div className="quest-row-story">
         <div className="quest-story-text" style={{ marginTop: "20px" }}>
           <div className="quest-text-paper">
             <div className="quest-tips">
-              <p className="quest-hint-blue">Синяя точка — твой дом.</p>
-              <p className="quest-hint-red">Красная точка — Шпицберген.</p>
+              <p className="quest-hint-blue">{t.day3Flight.tips[0]}</p>
+              <p className="quest-hint-red">{t.day3Flight.tips[1]}</p>
               <p className="quest-hint-green">
-                Когда выберешь маршрут — прямой, дугой или зигзагом — енот
-                покажет, над какими странами вы пролетите. И поможет найти
-                лучший маршрут.</p>
-              <p className="quest-hint-red">Внимательно изучи обсуждения Логана и Роланда под картой и ответь на вопросы внизу страницы.</p>
+                {t.day3Flight.tips[2]}
+              </p>
+              <p className="quest-hint-red">{t.day3Flight.tips[3]}</p>
             </div>
           </div>
         </div>
@@ -112,7 +108,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
             );
           }}
         >
-          Прямая
+          {t.day3Flight.routeButtons.straight}
         </button>
 
         <button
@@ -125,7 +121,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
             );
           }}
         >
-          Дуга
+          {t.day3Flight.routeButtons.arc}
         </button>
 
         <button
@@ -138,7 +134,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
             );
           }}
         >
-          Зигзаг
+          {t.day3Flight.routeButtons.zigzag}
         </button>
       </div>
 
@@ -154,7 +150,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
 
           {/* FIRST DIALOG WINDOW — монолог Логана про id */}
       <div ref={racTextRef} id="raccoonText" className="quest-speech">
-        Енот: «Выбери тип маршрута.»
+        {t.day3Flight.speech.selectType}
       </div>
 
       {/* ORTHODROME MINI-TEST */}

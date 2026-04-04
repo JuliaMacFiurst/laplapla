@@ -13,6 +13,7 @@ type TopBarProps = {
 export default function TopBar({ lang }: TopBarProps) {
   const router = useRouter();
   const isHome = router.pathname === "/";
+  const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
 
   const [menuHover, setMenuHover] = useState(false);
   const closeTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -83,8 +84,10 @@ export default function TopBar({ lang }: TopBarProps) {
             </div>
           )}
         </div>
-      ) : (
+      ) : !isQuestPage ? (
         <HomeButton />
+      ) : (
+        <div aria-hidden />
       )}
 
       {/* Правая зона — язык */}

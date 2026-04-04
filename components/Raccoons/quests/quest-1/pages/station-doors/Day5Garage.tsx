@@ -7,6 +7,7 @@ import PreparationPopup from "../../logic/dog-sled-game/PreparationPopup";
 import StatBar from "../../logic/dog-sled-game/StatBar";
 import SledAnimationOverlay from "../../logic/dog-sled-game/SledAnimationOverlay";
 import DogSledRunStage from "../../logic/dog-sled-game/DogSledRunStage";
+import { useQuest1I18n } from "../../i18n";
 
 export type SledPart =
   | "reins"
@@ -36,6 +37,7 @@ type SledAnimation =
   | "skids";
 
 export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
+  const { t } = useQuest1I18n();
 
   const [phase, setPhase] = useState<GamePhase>("inspect");
   const [activePart, setActivePart] = useState<SledPart | null>(null);
@@ -107,12 +109,11 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">Гараж</h1>
+        <h1 className="quest-title-text">{t.day5Garage.title}</h1>
       </div>
 
       <p className="page-subtitle" style={{ marginTop: "20px" }}>
-        Внимательно изучи упряжь.
-В снегах очень важно доверять своему транспорту и знать, в каком он состоянии.
+        {t.day5Garage.subtitle}
       </p>
      <div className="quest-centered-container">
 
@@ -187,24 +188,23 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
           }
         }}
       >
-        🚀 Пробный заезд
+        {t.day5Garage.startRide}
       </button>
 
       {showRideWarning && (
         <div className="garage-warning-overlay">
           <div className="garage-warning-popup">
-            <h2>⚠️ Упряжь в опасном состоянии</h2>
+            <h2>{t.day5Garage.warningTitle}</h2>
 
             <p>
-              Некоторые показатели критичны.
-              В снегах это может закончиться аварией.
+              {t.day5Garage.warningText}
             </p>
 
             <div className="garage-warning-actions">
               <button
                 onClick={() => setShowRideWarning(false)}
               >
-                🔧 Вернуться к подготовке
+                {t.day5Garage.warningBack}
               </button>
 
               <button
@@ -214,7 +214,7 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
                   setPhase("ride");
                 }}
               >
-                ⚠️ Рискнуть и поехать
+                {t.day5Garage.warningRisk}
               </button>
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
               />
 
               {/* текст */}
-              <div className="ice-text">Назад на научную станцию</div>
+              <div className="ice-text">{t.day5Garage.backButton}</div>
 
               {/* пингвин */}
               <img

@@ -477,6 +477,7 @@ type DictionaryShape = {
       title: string;
       subtitle: string;
       guideAlt: string;
+      slidesTranslationNotice?: string;
     };
     tabs: {
       country: string;

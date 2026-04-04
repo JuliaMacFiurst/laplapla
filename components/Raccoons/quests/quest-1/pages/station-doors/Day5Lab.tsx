@@ -2,8 +2,10 @@
 
 import LabGameStage from "../../logic/lab-game/LabGameStage";
 import type { PageId } from "../../QuestEngine";
+import { useQuest1I18n } from "../../i18n";
 
 export default function Day5Lab({ go }: { go: (id: PageId) => void }) {
+  const { t } = useQuest1I18n();
   return (
     <div className="quest-page-bg">
       {/* Заголовок страницы */}
@@ -13,11 +15,11 @@ export default function Day5Lab({ go }: { go: (id: PageId) => void }) {
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">Тепловой модуль</h1>
+        <h1 className="quest-title-text">{t.day5Lab.title}</h1>
       </div>
 
       <p className="page-subtitle" style={{ marginTop: "20px" }}>
-        Здесь мы будем тестировать инструменты и готовить набор исследователя.
+        {t.day5Lab.subtitle}
       </p>
 
       <div className="lab-game-stage-wrapper">
@@ -38,7 +40,7 @@ export default function Day5Lab({ go }: { go: (id: PageId) => void }) {
             />
 
             {/* текст */}
-            <div className="ice-text">Назад на научную станцию</div>
+            <div className="ice-text">{t.day5Lab.backButton}</div>
 
             {/* пингвин */}
             <img

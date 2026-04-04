@@ -52,6 +52,11 @@ export default function RaccoonsPage() {
               </div>
             </div>
             <MapTabs selectedTab={activeTab} setSelectedTab={setActiveTab} />
+            {lang !== "ru" && t.page.slidesTranslationNotice && (
+              <p className="raccoons-map-translation-note" dir={lang === "he" ? "rtl" : "ltr"}>
+                {t.page.slidesTranslationNotice}
+              </p>
+            )}
           </div>
           <MapWrapper type={activeTab} />
           <QuestSection quests={localizedQuests} />

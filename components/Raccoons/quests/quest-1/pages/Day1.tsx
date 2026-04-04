@@ -1,114 +1,10 @@
 import { useState } from "react";
 import type { PageId } from "../QuestEngine";
-
-//
-// ✅ Абзацы истории (готовая JSX-разметка)
-//
-const paragraphs = [
-  <div className="quest-text-paper" key="p1">
-    <div className="quest-text-inner">
-      <p className="quest-p">
-        <em className="quest-em">
-          Хрустят дрова в камине. За окном медленно падает снег. На пушистом
-          коврике у огня сидят друзья: толстый Бульдог Роланд в очках,
-          Йоркширский терьер Свенсен, запутавшийся в клетчатом пледе, маленький
-          щенок Тобиас, играющий с апельсином, и задумчивая кошка, свернувшаяся
-          клубком на кровати в углу.
-        </em>
-      </p>
-    </div>
-  </div>,
-
-  <div className="quest-text-paper" key="p2">
-    <div className="quest-text-inner">
-      <p className="quest-p">
-        <em className="quest-em">
-          Бульдог открывает старую, чуть потёртую книгу. Его голос звучит низко
-          и спокойно:
-        </em>
-      </p>
-    </div>
-  </div>,
-
-  <div className="quest-text-paper" key="p3">
-    <div className="quest-text-inner">
-      <p className="quest-p">
-        «Когда-то давно, мой юный слушатель, жил великий путешественник —
-        <strong className="quest-strong">сэр Бартоломью Вагглстоун</strong>. Он
-        прошёл сквозь снега Севера и пески Юга, пересёк океаны, пережил ураганы
-        и песчаные бури. И в один из своих походов он нашёл древнюю карту —
-        карту, ведущую к <strong className="quest-strong">Кладу Времён</strong>.
-        Но судьба капризна: буря разорвала карту на пять частей и разбросала их
-        по всему свету.»
-      </p>
-    </div>
-  </div>,
-
-  <div className="quest-text-paper" key="p4">
-    <div className="quest-text-inner">
-      <p className="quest-p">
-        <em className="quest-em">Йоркширский терьер отпивает чай и шепчет:</em>
-      </p>
-
-      <p className="quest-p" key="p5">
-        — Пять частей... это же почти как пять историй!
-      </p>
-    </div>
-  </div>,
-
-  <div className="quest-text-paper" key="p6">
-    <div className="quest-text-inner">
-      <p className="quest-p">
-        <em className="quest-em">Бульдог кивает:</em>
-      </p>
-
-      <p className="quest-p" key="p7">
-        <strong className="quest-strong">
-          «Именно так, мои пушистые слушатели. Чтобы найти клад, нужно собрать
-          карту снова. Каждая часть спрятана в новой стране, за рекой, за
-          горами, под морем и в сердце джунглей. И лишь самые отважные смогут
-          пройти этот путь.»
-        </strong>
-      </p>
-    </div>
-  </div>,
-
-  <div className="quest-text-paper" key="p8">
-    <div className="quest-text-inner">
-      <p className="quest-p">
-        <em className="quest-em">Маленький щенок подпрыгивает:</em>
-      </p>
-
-      <p className="quest-p" key="p9">
-        — Давайте мы попробуем!
-      </p>
-
-      <p className="quest-p" key="p10">
-        <em className="quest-em">Бульдог с улыбкой закрывает книгу:</em>
-      </p>
-    </div>
-  </div>,
-
-  <div className="quest-text-paper" key="p11">
-    <div className="quest-text-inner">
-      <p className="quest-p">
-        <strong className="quest-strong">
-          «Каждое путешествие начинается с первого шага. Завтра на рассвете —
-          отправляемся.»
-        </strong>
-      </p>
-
-      <p className="quest-p" key="p12">
-        <em className="quest-em">
-          Пламя камина тихо трещит, и кажется, что искры на секунду складываются
-          в очертания старой карты…
-        </em>
-      </p>
-    </div>
-  </div>
-];
+import { useQuest1I18n } from "../i18n";
+import QuestTextBlocks from "../QuestTextBlocks";
 
 export default function Day1({ go }: { go: (id: PageId) => void }) {
+  const { t } = useQuest1I18n();
   const [started, setStarted] = useState(false);
 
   //
@@ -162,7 +58,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
           className="quest-title-banner"
         />
 
-        <h1 className="quest-title-text">К Заполярным Берегам</h1>
+        <h1 className="quest-title-text">{t.day1.title}</h1>
       </div>
       {/* ВИДЕО */}
       <div className="quest-video-wrapper ice-window">
@@ -185,7 +81,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
                 src="/quests/assets/buttons/boat-btn.svg"
                 alt="boat"
               />
-              <div className="boat-text">Начать историю</div>
+              <div className="boat-text">{t.day1.startButton}</div>
             </div>
           </div>
         )}
@@ -204,14 +100,11 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
 
       {/* ТЕКСТ — ПОЯВЛЕНИЕ АБЗАЦОВ */}
       {started && (
-        <div className="story-wrapper">
-          <div className="quest-story-text" style={{ marginTop: "20px" }}>
-            {paragraphs.map((p, idx) => (
-              <div key={idx} className="quest-paragraph">
-                {p}
-              </div>
-            ))}
-          </div>
+        <div className="quest-day1-story-wrapper">
+          <QuestTextBlocks
+            className="quest-story-text quest-day1-story-text"
+            blocks={t.day1.blocks}
+          />
         </div>
       )}
 
@@ -231,7 +124,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
               />
 
               {/* текст */}
-              <div className="ice-text">🚢 Отправиться в путешествие</div>
+              <div className="ice-text">{t.day1.nextButton}</div>
 
               {/* пингвин */}
               <img

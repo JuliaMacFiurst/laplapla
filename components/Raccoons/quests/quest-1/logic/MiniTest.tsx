@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useQuest1I18n } from "../i18n";
 
 type Question = {
   text: string;
@@ -17,6 +18,7 @@ export default function MiniTest({
   finishButtonText: string;
   onFinish: () => void;
 }) {
+  const { lang, t } = useQuest1I18n();
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
@@ -70,7 +72,9 @@ export default function MiniTest({
       </div>
       <div className={`flight-mini-test-slide comic-transition`}>
         <h2 className="quest-h2" style={{ textAlign: "center", marginBottom: "15px" }}>
-          Вопрос {current + 1} из {questions.length}
+          {t.miniTest.question
+            .replace("{current}", String(current + 1))
+            .replace("{total}", String(questions.length))}
         </h2>
 
         <p className="quest-p" style={{ marginBottom: "10px" }}>{question.text}</p>
@@ -101,11 +105,11 @@ export default function MiniTest({
 
         {!checked ? (
           <button className="dialog-next-btn" onClick={handleCheck}>
-            Проверить
+            {t.miniTest.check}
           </button>
         ) : (
           <button className="dialog-next-btn" onClick={nextQuestion}>
-            Дальше ⏭️
+            {t.miniTest.next}
           </button>
         )}
 
@@ -115,7 +119,7 @@ export default function MiniTest({
             onClick={prevQuestion}
             disabled={current === 0}
           >
-            ⬅
+            {lang === "he" ? "➡" : "⬅"}
           </button>
 
           <button
@@ -123,7 +127,7 @@ export default function MiniTest({
             onClick={nextQuestion}
             disabled={current === questions.length - 1}
           >
-            ➡
+            {lang === "he" ? "⬅" : "➡"}
           </button>
         </div>
       </div>

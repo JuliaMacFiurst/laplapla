@@ -2,6 +2,7 @@
 
 
 import SpeechCloud from "./SpeechCloud";
+import { useQuest1I18n } from "../i18n";
 
 export interface DialogueStep {
   id: string;
@@ -16,6 +17,7 @@ export default function DialogBox({
   queue: DialogueStep[];
   onNext: () => void;
 }) {
+  const { t } = useQuest1I18n();
   if (queue.length === 0) return null;
 
   const current = queue[0];
@@ -33,7 +35,7 @@ export default function DialogBox({
         onClick={onNext}
         className="dialog-next-btn"
       >
-        ⏭️ Далее
+        {t.miniTest.next}
       </button>
     </div>
   );

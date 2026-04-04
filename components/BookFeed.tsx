@@ -325,11 +325,6 @@ export default function BookFeed({
             aria-label={previousBookLabel}
           >
             <span className="book-feed-nav-content" aria-hidden="true">
-              <span className="book-feed-nav-arrow">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M7.47 16.53a.75.75 0 010-1.06L12.94 10 7.47 4.53a.75.75 0 111.06-1.06l6 6a.75.75 0 010 1.06l-6 6a.75.75 0 01-1.06 0z" clipRule="evenodd" />
-                </svg>
-              </span>
               <span className="book-feed-nav-label" dir="auto">{previousBookLabel}</span>
             </span>
           </button>
@@ -367,11 +362,6 @@ export default function BookFeed({
           >
             <span className="book-feed-nav-content" aria-hidden="true">
               <span className="book-feed-nav-label" dir="auto">{nextBookLabel}</span>
-              <span className="book-feed-nav-arrow">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M12.53 3.47a.75.75 0 010 1.06L7.06 10l5.47 5.47a.75.75 0 11-1.06 1.06l-6-6a.75.75 0 010-1.06l6-6a.75.75 0 011.06 0z" clipRule="evenodd" />
-                </svg>
-              </span>
             </span>
           </button>
           </div>

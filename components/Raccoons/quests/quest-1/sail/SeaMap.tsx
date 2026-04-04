@@ -1,11 +1,12 @@
 import {useEffect, useRef, useState } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
 import seaNames from "@/utils/sea_names.json";
+import { useQuest1I18n } from "../i18n";
 
-function translateSea(id: string) {
+function translateSea(id: string, lang: "ru" | "en" | "he") {
   const entry = (seaNames as any)[id];
   if (!entry) return id;
-  return entry.ru ?? id;
+  return entry[lang] ?? entry.ru ?? id;
 }
 
 export default function SeaMap({
@@ -13,6 +14,7 @@ export default function SeaMap({
 }: {
   racTextRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const { lang, t } = useQuest1I18n();
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
@@ -25,8 +27,7 @@ export default function SeaMap({
     const timer = setInterval(() => {
       const rac = racTextRef.current;
       if (rac) {
-        rac.innerHTML =
-          "Енот: «Отметь на карте своё местоположение и построй морской маршрут до Шпицбергена (красный пин).»";
+        rac.innerHTML = t.day3Sail.mapSpeech.startPrompt;
         clearInterval(timer);
         return;
       }
@@ -40,7 +41,7 @@ export default function SeaMap({
     return () => {
       clearInterval(timer);
     };
-  }, [racTextRef]);
+  }, [racTextRef, t.day3Sail.mapSpeech.startPrompt]);
 
     const [svgLoaded, setSvgLoaded] = useState(false);
 
@@ -141,8 +142,7 @@ export default function SeaMap({
 
     // Проверка суши
     if (!hit || !hit.id || hit.tagName.toLowerCase() !== "path" || hit.classList.contains("land")) {
-      rac.innerHTML =
-        'Енот хмурится: «Маршрут идёт по суше! <button id="reset-route-btn" class="dialog-next-btn">Перестроить маршрут</button>';
+      rac.innerHTML = t.day3Sail.mapSpeech.landError;
       return false;
     }
 
@@ -150,7 +150,7 @@ export default function SeaMap({
     if (isNearTarget(nx, ny)) {
       setDrawing(false);
       setRouteFinished(true);
-      rac.innerHTML = "Енот: «Маршрут завершён!»";
+      rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
       evaluateRoute();
       return true;
     }
@@ -174,7 +174,7 @@ export default function SeaMap({
       setDrawing(false);
       setRouteFinished(true);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = "Енот: «Маршрут завершён!»";
+      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
       evaluateRoute();
       return;
     }
@@ -184,7 +184,7 @@ export default function SeaMap({
       setDrawing(true);
       setRoute((prev) => [...prev, { x, y }]);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = "Енот: «Продолжаем маршрут!»";
+      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.continueRoute;
       return;
     }
 
@@ -197,7 +197,7 @@ export default function SeaMap({
     setDrawing(true);
 
     const rac = racTextRef.current;
-    if (rac) rac.innerHTML = "Енот: «Теперь веди линию к Шпицбергену!»";
+    if (rac) rac.innerHTML = t.day3Sail.mapSpeech.guideToSpitsbergen;
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -211,7 +211,7 @@ export default function SeaMap({
       setDrawing(false);
       setRouteFinished(true);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = "Енот: «Маршрут завершён!»";
+      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
       evaluateRoute();
       return;
     }
@@ -230,7 +230,7 @@ export default function SeaMap({
       setDrawing(false);
       setRouteFinished(true);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = "Енот: «Маршрут завершён!»";
+      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
       evaluateRoute();
       return;
     }
@@ -248,7 +248,7 @@ export default function SeaMap({
     if (!wrap || !rac) return;
 
     if (route.length < 2) {
-      rac.innerHTML = "Енот: «Маршрут слишком короткий.»";
+      rac.innerHTML = t.day3Sail.mapSpeech.routeTooShort;
       return;
     }
 
@@ -280,10 +280,8 @@ export default function SeaMap({
     }
 
     // Если дошли сюда — маршрут успешный
-    rac.innerHTML =
-      "Енот улыбается: «Мы проплыли через: <strong>" +
-      [...touchedSeas].map(id => translateSea(id)).join(", ") +
-      "</strong>»";
+    const seas = [...touchedSeas].map(id => translateSea(id, lang)).join(", ");
+    rac.innerHTML = t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas);
   }
 
   // ===========================
@@ -296,7 +294,7 @@ export default function SeaMap({
 
     const rac = racTextRef.current;
     if (rac) {
-      rac.innerHTML = "Енот: «Нарисуй маршрут между портом и Шпицбергеном.»";
+      rac.innerHTML = t.day3Sail.mapSpeech.resetPrompt;
     }
   }
 

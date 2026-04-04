@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useQuest1I18n } from "../../i18n";
 
 import Backpack from "./Backpack";
 import FallingThingLane from "./FallingThingLane";
@@ -8,6 +9,7 @@ import LoganComment from "./LoganComment";
 import { useLabGameState } from "./useLabGameState";
 
 export default function LabGameStage() {
+  const { t } = useQuest1I18n();
   const {
   lanes,
   score,
@@ -46,13 +48,13 @@ export default function LabGameStage() {
         {!gameStarted && (
    <div className="lab-game-overlay lab-game-start-overlay">
             <div className="lab-game-overlay-card">
-                  <h2>Лабораторная мини-игра</h2>
-              <p className="lab-game-start-capture">Соберите только предметы, полезные в полярной экспедиции!</p>
+                  <h2>{t.day5Lab.gameStart.title}</h2>
+              <p className="lab-game-start-capture">{t.day5Lab.gameStart.caption}</p>
     <button
       className="lab-game-start-button"
       onClick={startGame}
     >
-      Начать игру
+      {t.day5Lab.gameStart.button}
     </button>
   </div>
         </div>
@@ -60,7 +62,7 @@ export default function LabGameStage() {
         {gameStarted && (
           <>
             <div className="lab-game-scoreboard">
-              <span>Счёт: {score}</span>
+              <span>{t.day5Lab.scoreLabel}: {score}</span>
               <div className="lab-game-score-log">
                 {scoreLog.map((entry) => (
                   <span
@@ -97,9 +99,9 @@ export default function LabGameStage() {
         {isFinished && (
           <div className="lab-game-final-overlay">
             <div className="final-content">
-              <h2 className="final-score">Итоговый счёт: {score}</h2>
+              <h2 className="final-score">{t.day5Lab.gameFinal.scoreTitle}: {score}</h2>
               <p className="lab-final-caption">
-                Ты берёшь с собой в полярную экспедицию:
+                {t.day5Lab.gameFinal.backpackCaption}
               </p>
 
               <div className="final-backpack-area">
@@ -120,7 +122,7 @@ export default function LabGameStage() {
                 className="lab-game-restart-button"
                 onClick={resetGame}
               >
-                Играть заново
+                {t.day5Lab.gameFinal.restartButton}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import ClothesConveyor, { ClothesItem } from "./ClothesConveyor";
 import { loadClothesForCharacter } from "./loadClothesForCharacter";
 import type { CharacterResult, DressUpSeason, DressedItem } from "@/types/types";
+import { useQuest1I18n } from "../../i18n";
 
 export default function CharacterStage({
   characters,
@@ -16,6 +17,8 @@ export default function CharacterStage({
   onStartGame: () => void;
   onCharacterFinished: (result: CharacterResult) => void;
 }) {
+  const { t } = useQuest1I18n();
+
   if (!characters || characters.length === 0) {
     return (
       <div
@@ -28,7 +31,7 @@ export default function CharacterStage({
           fontSize: "32px",
         }}
       >
-        Загрузка персонажей…
+        {t.day5Heat.loadingCharacters}
       </div>
     );
   }
@@ -211,7 +214,9 @@ export default function CharacterStage({
           <div className="bad-score">-{Math.abs(badScore)}</div>
         </div>
         <div className="dressup-character-counter">
-          {index + 1} персонаж из {totalCharacters}
+          {t.day5Heat.characterCounter
+            .replace("{current}", String(index + 1))
+            .replace("{total}", String(totalCharacters))}
         </div>
         <div className="dressup-stopwatch">
           <img

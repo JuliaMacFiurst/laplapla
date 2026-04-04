@@ -29,7 +29,7 @@ import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const isQuestPage = router.pathname.startsWith("/quest");
+  const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
   const isCatsPage = router.pathname.startsWith("/cats");
   const isExportPage = router.pathname === "/cats/export";
   const isCapybaraPage = router.pathname.startsWith("/capybara");

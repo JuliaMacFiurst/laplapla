@@ -4,6 +4,7 @@ import {useEffect, useRef, useState } from "react";
 import { initRouteLogic } from "./initRouteLogic";
 import { getMapSvg } from "@/utils/storageMaps";
 import countryNames from "@/utils/country_names.json";
+import { useQuest1I18n } from "../i18n";
 
 const BAD_IDS = new Set([
   "btn-start",
@@ -17,9 +18,9 @@ const BAD_IDS = new Set([
   "__next",
 ]);
 
-function getCountryRu(id: string): string {
+function getCountryLabel(id: string, lang: "ru" | "en" | "he"): string {
   const entry = (countryNames as Record<string, any>)[id];
-  return entry?.ru || id;
+  return entry?.[lang] || entry?.ru || id;
 }
 
 export default function FlightMap({
@@ -29,6 +30,7 @@ export default function FlightMap({
   racTextRef: React.RefObject<HTMLDivElement | null>;
   routeType: "straight" | "arc" | "zigzag" | null;
 }) {
+  const { lang, t } = useQuest1I18n();
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const routeSvgRef = useRef<SVGSVGElement>(null);
@@ -139,20 +141,18 @@ export default function FlightMap({
     if (!racText) return;
 
     if (!type) {
-      racText.innerHTML = "Енот: «Выбери тип маршрута — прямая, дуга или зигзаг.»";
+      racText.innerHTML = t.day3Flight.speech.selectType;
       return;
     }
 
     const ids = getCountriesOnRoute();
     if (!ids.length) {
-      racText.innerHTML = "Енот щурится: «Похоже, летим над океаном!»";
+      racText.innerHTML = t.day3Flight.speech.overOcean;
       return;
     }
 
-    const names = ids.map((id) => getCountryRu(id));
-    racText.innerHTML = `Енот ведёт пальцем: «Мы пролетаем над: <strong>${names.join(
-      ", "
-    )}</strong>»`;
+    const names = ids.map((id) => getCountryLabel(id, lang)).join(", ");
+    racText.innerHTML = t.day3Flight.speech.overCountries.replace("{names}", names);
   }
 
   useEffect(() => {
@@ -163,11 +163,11 @@ export default function FlightMap({
       }
       setSvgLoaded(true);
       if (racTextRef.current) {
-  racTextRef.current.innerHTML = "Енот: «Нарисуй маршрут между портом и Шпицбергеном.»";
-}
+        racTextRef.current.innerHTML = t.day3Flight.speech.drawRoute;
+      }
     }
     loadSvg();
-  }, []);
+  }, [t.day3Flight.speech.drawRoute]);
 
   useEffect(() => {
     if (!svgLoaded) return;

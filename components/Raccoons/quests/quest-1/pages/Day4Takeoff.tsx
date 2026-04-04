@@ -6,14 +6,18 @@ import PlaneWindshield, { PlaneWindshieldRef } from "../flight/PlaneWindshield";
 import SteeringYoke from "../flight/SteeringYoke";
 import { useState } from "react";
 import InstrumentPanel from "../flight/InstrumentPanel";
-import takeoffHints from "@/utils/takeoffHints";
 import CockpitHint from "../flight/CockpitHint";
+import { useQuest1I18n } from "../i18n";
+import QuestTextBlocks from "../QuestTextBlocks";
+import { getTakeoffHints } from "../i18n/takeoffHints";
 
 export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
+  const { lang, t } = useQuest1I18n();
   const windshieldRef = useRef<PlaneWindshieldRef>(null);
   const [angle, setAngle] = useState(0);
   const [pushPull, setPushPull] = useState(0);
   const [hint, setHint] = useState<string | null>(null);
+  const takeoffHints = getTakeoffHints(lang);
 
   function handleSwitch(id: string) {
     // Показываем советы только для switcher-on
@@ -62,21 +66,10 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
           alt=""
           className="quest-title-banner"
         />
-        <h1 className="quest-title-text">Взлёт!</h1>
+        <h1 className="quest-title-text">{t.day4Takeoff.title}</h1>
       </div>
 
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Енот подмигивает: «Готовы? Это будет наш самый красивый взлёт!»
-            </p>
-            <p className="quest-p">
-              Крути штурвал и нажимай на кнопки, выполняя команды опытных пилотов на экране.
-            </p>
-          </div>
-        </div>
-      </div>
+      <QuestTextBlocks blocks={[t.day4Takeoff.introBlocks[0]]} style={{ marginTop: "20px" }} />
 <div className="flight-cockpit-wrapper">
 
   <div className="flight-windshield">
@@ -113,15 +106,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
 </div>
 <div style={{ height: "290px" }} />
 
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Отличная работа, капитан! Смотри‑ка, что там виднеется внизу? Кажется, пора заходить на посадку!
-            </p>
-          </div>
-        </div>
-      </div>
+      <QuestTextBlocks blocks={[t.day4Takeoff.introBlocks[1]]} style={{ marginTop: "20px" }} />
 
      <div className="ice-window">
   <div className="youtube-wrapper">
@@ -153,7 +138,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
         (event.target as HTMLButtonElement).style.display = "none";
       }}
     >
-      🔊 Включить звук
+      {t.day4Takeoff.unmuteButton}
     </button>
 
     <iframe
@@ -166,15 +151,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
   </div>
 </div>
 
-      <div className="quest-story-text" style={{ marginTop: "20px" }}>
-        <div className="quest-text-paper">
-          <div className="quest-text-inner">
-            <p className="quest-p">
-              Приземлились! Добро пожаловать в страну льдов и полярных лисиц.
-            </p>
-          </div>
-        </div>
-      </div>
+      <QuestTextBlocks blocks={[t.day4Takeoff.introBlocks[2]]} style={{ marginTop: "20px" }} />
 
     <div
             className="quest-center ice-button-wrapper"
@@ -187,7 +164,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
           src="/quests/assets/buttons/ice-button-bg.svg"
           alt="ice-btn"
         />
-        <div className="ice-text">Навстречу приключениям!</div>
+        <div className="ice-text">{t.day4Takeoff.nextButton}</div>
         <img
           className="penguin"
           src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
