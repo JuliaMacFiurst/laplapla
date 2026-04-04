@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { normalizeBookTests } from "@/lib/books/bookTests";
 import { supabase } from "@/lib/supabase";
-import { normalizeBookTests } from "@/pages/api/books/_tests";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {

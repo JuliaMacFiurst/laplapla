@@ -10,11 +10,14 @@ import type { Quest } from "@/components/Raccoons/QuestSection";
 import { quests } from "@/utils/quests.config";
 import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
+import MobileDesktopNotice from "@/components/MobileDesktopNotice";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export default function RaccoonsPage() {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const t = dictionaries[lang].raccoons;
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<
     "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food"
   >("country");
@@ -30,6 +33,10 @@ export default function RaccoonsPage() {
       subtitle: t.quests.upcomingSubtitle,
     })),
   ];
+
+  if (isMobile) {
+    return <MobileDesktopNotice lang={lang} />;
+  }
 
   return (
     <>

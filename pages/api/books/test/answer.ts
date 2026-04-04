@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { normalizeBookTestsWithAnswers } from "@/lib/books/bookTests";
 import { supabase } from "@/lib/supabase";
-import { normalizeBookTestsWithAnswers } from "@/pages/api/books/_tests";
 
 const isValidIndex = (value: unknown) =>
   typeof value === "number" && Number.isInteger(value) && value >= 0;

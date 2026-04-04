@@ -453,3 +453,69 @@ html[dir="rtl"] .cat-slide {
   color: #000000;
   
 }
+
+@media (max-width: 899px) {
+  .cat-page-container,
+  .studio-layout-wrapper {
+    padding: 0.75rem;
+  }
+
+  .example-title {
+    text-align: center;
+    font-size: 1.9rem;
+  }
+
+  .input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .question-input,
+  .ask-button,
+  .random-question-button,
+  .edit-slides-button,
+  .back-to-cats-button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .question-input {
+    font-size: 1.3rem;
+  }
+
+  .slide-scroll-wrapper {
+    gap: 0.75rem;
+    padding: 0.5rem 0 1rem;
+  }
+
+  .cat-slide {
+    width: min(100%, 320px);
+    max-width: calc(100vw - 48px);
+    font-size: 1.5rem;
+  }
+
+  .cat-slide img,
+  .cat-slide video {
+    max-height: 300px;
+    width: 100%;
+  }
+
+  .hanging-mouse,
+  .cat-paw-video {
+    display: none;
+  }
+
+  .mode-tabs {
+    width: 100%;
+    padding: 8px;
+    margin: 18px auto 24px;
+    box-sizing: border-box;
+  }
+
+  .mode-tab-button {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 10px 14px;
+    font-size: 1.35rem;
+  }
+}

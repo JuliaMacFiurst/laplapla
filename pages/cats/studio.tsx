@@ -8,12 +8,14 @@ import type { Track } from "@/components/studio/MusicPanel";
 import { PARROT_PRESETS } from "@/utils/parrot-presets";
 import { loadProject } from "@/lib/studioStorage";
 import type { StudioProject } from "@/types/studio";
+import MobileDesktopNotice from "@/components/MobileDesktopNotice";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ImportedSlide = {
   text: string;
   image?: string;
   mediaUrl?: string;
-  mediaType?: "image" | "video" | "gif";
+  mediaType?: "image" | "video";
   mediaFit?: "cover" | "contain";
   mediaPosition?: "top" | "center" | "bottom";
   textPosition?: "top" | "center" | "bottom";
@@ -110,6 +112,7 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
   const router = useRouter();
   const currentLang = getCurrentLang(router);
+  const isMobile = useIsMobile();
 
   const [initialSlides, setInitialSlides] = useState<
     ImportedSlide[] | undefined
@@ -207,6 +210,10 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
       console.error("Failed to parse slides from query");
     }
   }, [router.isReady, router.query]);
+
+  if (isMobile) {
+    return <MobileDesktopNotice lang={lang} />;
+  }
 
   return (
     <CatsLayout active="studio" lang={lang}>

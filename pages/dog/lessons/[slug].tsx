@@ -22,6 +22,8 @@ import { useRouter } from "next/router";
 import BackButton from "@/components/BackButton";
 import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
 import ReplayCanvas from "@/components/Dogs/Replay/ReplayCanvas";
+import MobileDesktopNotice from "@/components/MobileDesktopNotice";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type {
   ReplayAction,
   ReplayActionGroup,
@@ -112,15 +114,12 @@ function DogImage({
   );
 }
 
-export default function LessonPlayer() {
-  
+function LessonPlayerDesktop() {
   const router = useRouter();
   const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogLesson;
   const { slug } = router.query;
-
-  
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLessonTranslated, setIsLessonTranslated] = useState(true);
@@ -2333,4 +2332,16 @@ export default function LessonPlayer() {
       )}
     </div>
   );
+}
+
+export default function LessonPlayer() {
+  const router = useRouter();
+  const lang = getCurrentLang(router) as Lang;
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobileDesktopNotice lang={lang || "ru"} />;
+  }
+
+  return <LessonPlayerDesktop />;
 }

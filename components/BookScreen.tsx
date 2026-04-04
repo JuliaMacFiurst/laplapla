@@ -5,6 +5,7 @@ import ModeButtons from "@/components/ModeButtons";
 import TranslationWarning from "@/components/TranslationWarning";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries, Lang } from "@/i18n";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -60,6 +61,7 @@ export default function BookScreen({
   onPreloadNextSlide,
   t,
 }: BookScreenProps) {
+  const isMobile = useIsMobile();
   const normalizeQuizTest = (test: BookTest) => {
     if (Array.isArray(test.questions)) {
       return test;
@@ -188,9 +190,11 @@ export default function BookScreen({
         >
           {t.actions.takeTest}
         </button>
-        <button type="button" className="feed-action-button" disabled={loading || slides.length === 0} onClick={onCreateVideo}>
-          {t.actions.createVideo}
-        </button>
+        {!isMobile ? (
+          <button type="button" className="feed-action-button" disabled={loading || slides.length === 0} onClick={onCreateVideo}>
+            {t.actions.createVideo}
+          </button>
+        ) : null}
       </div>
 
       {showTests ? (

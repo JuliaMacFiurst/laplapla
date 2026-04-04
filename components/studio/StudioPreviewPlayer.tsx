@@ -20,7 +20,6 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       musicEngineRef,
       lang,
       onClose,
-      isExternalRecording,
       resetSignal,
     },
     containerRef,

@@ -7,6 +7,7 @@ import { PARROT_PRESETS } from "../utils/parrot-presets";
 import { dictionaries } from "../i18n";
 import { getMusicStyle } from "../content/parrots/musicStyles";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ExportSlide = {
   text: string;
@@ -58,6 +59,7 @@ export default function ParrotsPage() {
   const lang = getCurrentLang(router);
   const dict = dictionaries[lang] || dictionaries.ru;
   const t = dict.parrots;
+  const isMobile = useIsMobile();
   const [activeId, setActiveId] = useState(PARROT_PRESETS[0].id);
   const preset = useMemo(() => PARROT_PRESETS.find(p => p.id === activeId)!, [activeId]);
   const activeStyle = useMemo(
@@ -162,8 +164,8 @@ export default function ParrotsPage() {
         <div
           className="grid"
           style={{
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 50,
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
+            gap: isMobile ? 24 : 50,
             justifyItems: "stretch",
             alignItems: "start",
             maxWidth: "1024px",
@@ -257,6 +259,19 @@ export default function ParrotsPage() {
 
           .parrots-page-he .style-preset-label {
             text-align: center;
+          }
+
+          @media (max-width: 640px) {
+            .style-preset-btn {
+              width: 108px;
+              height: 108px;
+              border-radius: 16px;
+            }
+
+            .style-preset-label {
+              font-size: 16px;
+              padding: 4px 8px;
+            }
           }
         `}</style>
       </main>

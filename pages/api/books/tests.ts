@@ -2,8 +2,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getTranslationPayload } from "@/lib/contentTranslations";
 import { getRequestLang } from "@/lib/i18n/routing";
 import { getTranslatedBookTests } from "@/lib/books";
+import { normalizeBookTests, normalizeBookTestsWithAnswers } from "@/lib/books/bookTests";
 import { supabase } from "@/lib/supabase";
-import { normalizeBookTests, normalizeBookTestsWithAnswers } from "@/pages/api/books/_tests";
 
 const mergeTranslatedTests = (
   translatedTests: ReturnType<typeof getTranslatedBookTests>,

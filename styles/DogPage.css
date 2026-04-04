@@ -189,3 +189,31 @@ body {
 .lessons-button:active {
   transform: translateY(1px) scale(0.97);
 }
+
+@media (max-width: 899px) {
+  .dog-header-container {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+
+  .dog-header-image {
+    width: 128px;
+  }
+
+  .dog-page-title {
+    font-size: clamp(2.4rem, 11vw, 3.2rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .dog-page-subtitle {
+    font-size: 1.4rem;
+    margin: 0;
+  }
+
+  .dog-category-grid {
+    padding: 0 12px 24px;
+    box-sizing: border-box;
+  }
+}

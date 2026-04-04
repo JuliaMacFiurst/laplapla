@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -51,19 +51,19 @@ export default function StandaloneBookScreen({
     closeCurrentBookQuiz();
     const mode = explanationModes.find((item) => String(item.id) === String(modeId));
     const nextHref = mode ? buildBookModeHref(book, mode) : buildBookHref(book);
-    router.push(`${nextHref}?lang=${lang}`);
+    void router.push(`${nextHref}?lang=${lang}`);
   };
 
   const handleExplainMeaning = () => {
     closeCurrentBookQuiz();
-    router.push(`/caps/stories/create?lang=${lang}`);
+    void router.push(`/caps/stories/create?lang=${lang}`);
   };
 
   const handleCreateVideo = async () => {
     const studioSlides = await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    router.push(`/cats/studio?lang=${lang}`);
+    void router.push(`/cats/studio?lang=${lang}`);
   };
 
   if (loading && !currentBook) {

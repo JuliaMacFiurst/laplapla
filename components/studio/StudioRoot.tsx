@@ -12,7 +12,6 @@ import StudioPreviewPlayer from "./StudioPreviewPlayer";
 import { Lang, dictionaries } from "@/i18n";
 import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
-import { recordPreviewDom } from "@/lib/recordPreviewDom";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 
@@ -528,54 +527,6 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     setHistory((h) => [...h, project]);
     setFuture((f) => f.slice(1));
     setProject(next);
-  }
-
-  async function exportPreviewAsWebm() {
-    // Ensure preview is visible
-    setIsPreviewOpen(true);
-
-    // Wait for preview to mount
-    await new Promise((r) => setTimeout(r, 100));
-
-    // Try to fullscreen only the preview container
-    if (previewRef.current) {
-      try {
-        await previewRef.current.requestFullscreen();
-      } catch (e) {
-        console.warn("Fullscreen not allowed", e);
-      }
-    }
-
-    // Calculate total duration (voiceDuration or default 3 seconds)
-    const totalDurationMs =
-      project.slides.reduce((acc, s) => {
-        const d =
-          s.voiceDuration && s.voiceDuration > 0
-            ? s.voiceDuration
-            : 3;
-        return acc + d;
-      }, 0) * 1000;
-
-    try {
-      const blob = await recordPreviewDom(totalDurationMs);
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "studio-preview.webm";
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed", err);
-    } finally {
-      // Exit fullscreen if active
-      if (document.fullscreenElement) {
-        try {
-          await document.exitFullscreen();
-        } catch {}
-      }
-      setIsPreviewOpen(false);
-    }
   }
 
   return (

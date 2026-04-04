@@ -552,6 +552,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
               ) : null}
               <StoryCarousel
                 story={carouselStory}
+                lang={currentLang}
                 currentSlideIndex={currentSlideIndex}
                 onSlideIndexChange={setCurrentSlideIndex}
                 textClassName="story-carousel-text"

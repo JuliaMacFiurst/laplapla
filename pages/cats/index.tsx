@@ -4,6 +4,7 @@ import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export default function CatPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
@@ -82,6 +83,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
   const router = useRouter();
   const currentLang = getCurrentLang(router);
+  const isMobile = useIsMobile();
 
   return (
     <CatsLayout active="view" lang={lang}>
@@ -239,7 +241,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
         )}
       </div>
 
-      {slides.length > 0 && (
+      {slides.length > 0 && !isMobile && (
         <div style={{ marginTop: 20, textAlign: "center" }}>
           <button
             className="edit-slides-button"

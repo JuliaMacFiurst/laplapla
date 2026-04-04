@@ -360,6 +360,36 @@
   content: " ✨";
 }
 
+@media (max-width: 899px) {
+  .lessons-page {
+    padding: 1rem 0.75rem 2rem;
+  }
+
+  .lessons-title {
+    font-size: 2.4rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .lessons-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .lesson-title {
+    font-size: 1.2rem;
+  }
+
+  .lesson-info {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .lessons-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 lesson-dog-name::before,
 .lesson-dog-name::after {
   animation: dogStarTwinkle 2.5s ease-in-out infinite;

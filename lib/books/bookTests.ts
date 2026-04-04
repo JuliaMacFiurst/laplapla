@@ -5,6 +5,10 @@ interface PrivateBookTestQuestion extends BookTestQuestion {
 }
 
 interface PrivateBookTest extends Omit<BookTest, "questions"> {
+  id: string | number;
+  book_id: string | number;
+  title?: string | null;
+  description?: string | null;
   questions: PrivateBookTestQuestion[];
 }
 
@@ -106,7 +110,7 @@ export const normalizeBookTestsWithAnswers = (rows: unknown[]): PrivateBookTest[
   rows
     .map((rawRow) => asRecord(parseJson(rawRow)))
     .filter((row): row is RawRecord => Boolean(row))
-    .map((row, index) => {
+    .map((row, index): PrivateBookTest => {
       const questions = extractQuestions(row);
       return {
         id: typeof row.id === "string" || typeof row.id === "number" ? row.id : `quiz-${index}`,
@@ -114,12 +118,12 @@ export const normalizeBookTestsWithAnswers = (rows: unknown[]): PrivateBookTest[
         title: typeof row.title === "string" ? row.title : "",
         description: typeof row.description === "string" ? row.description : "",
         questions,
-      } satisfies PrivateBookTest;
+      };
     })
     .filter((test) => Array.isArray(test.questions) && test.questions.length > 0);
 
 export const normalizeBookTests = (rows: unknown[]): BookTest[] =>
-  normalizeBookTestsWithAnswers(rows).map((test) => ({
+  normalizeBookTestsWithAnswers(rows).map((test): BookTest => ({
     id: test.id,
     book_id: test.book_id,
     title: test.title,
