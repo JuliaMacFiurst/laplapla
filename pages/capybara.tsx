@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "next/router";
 import BookFeed from "@/components/BookFeed";
 import { useBook } from "@/hooks/useBook";
-import { buildBookHref, buildBookModeHref } from "@/lib/books";
+import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";

@@ -5,7 +5,7 @@ import StoryCarousel from "@/components/StoryCarousel";
 import TranslationWarning from "@/components/TranslationWarning";
 import type { Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
-import { STORY_STEP_KEYS, type StoryHeroOption, type StoryStepKey } from "@/lib/story/story-service";
+import { STORY_STEP_KEYS, type StoryHeroOption, type StoryStepKey } from "@/lib/story/story-shared";
 import { useStoryGenerator } from "@/hooks/useStoryGenerator";
 
 const buildTexts = (lang: Lang) => {

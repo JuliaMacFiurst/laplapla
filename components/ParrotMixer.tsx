@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useRef, useState } from "react";
 import { iconForInstrument } from "../utils/parrot-presets";
+import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 
 /** --- Types --- */
 export type LoopVariant = { id: string; src: string; label?: string };
@@ -1241,8 +1242,7 @@ function ParrotImage({
   parrotLine: string;
   ui: Props["ui"];
 }) {
-  const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const baseParrot = `${SUPA}/storage/v1/object/public/characters/parrots/blue_parrot`;
+  const baseParrot = buildSupabasePublicUrl("characters", "parrots/blue_parrot");
   const gifs = [
     `${baseParrot}/blue-parrot1.gif`,
     `${baseParrot}/blue-parrot2.gif`,

@@ -5,17 +5,13 @@ import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import {
   STORY_STEP_KEYS,
   blocksToSlides,
-  loadApprovedUserStories,
-  loadApprovedUserStory,
-  loadStoryTemplate,
-  loadStoryTemplateSummaries,
   type NormalizedStoryTemplate,
   type StoryBlock,
   type StoryHeroOption,
   type StoryPath,
   type StorySlide,
   type StoryStepKey,
-} from "@/lib/story/story-service";
+} from "@/lib/story/story-shared";
 
 export type StoryDraftState = {
   mode: "template" | "custom" | "user_story" | null;
@@ -64,6 +60,12 @@ type TemplatePreviewResponse = {
   errors?: string[];
 };
 
+type ApprovedUserStoryResponse = {
+  heroName: string;
+  slides: StorySlide[];
+  translated: boolean;
+};
+
 const CAPYBARA_WEBM = "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/cats/cap-paw.webm";
 
 const getFallbackImage = (seed: number) => `/images/capybaras/${fallbackImages[seed % fallbackImages.length]}`;
@@ -90,6 +92,34 @@ const buildInitialState = (): StoryDraftState => ({
 });
 
 const trimAnswer = (value: string) => value.trim().replace(/\s+/g, " ");
+
+async function parseJsonResponse<T>(response: Response): Promise<T> {
+  const payload = await response.json().catch(() => null) as (T & { error?: string }) | null;
+  if (!response.ok) {
+    throw new Error(payload?.error || `Request failed with status ${response.status}`);
+  }
+
+  if (!payload) {
+    throw new Error("Empty response payload");
+  }
+
+  return payload;
+}
+
+async function loadHeroOptions(lang: Lang) {
+  const response = await fetch(`/api/story/heroes?lang=${lang}`);
+  return parseJsonResponse<StoryHeroOption[]>(response);
+}
+
+async function loadApprovedUserStory(submissionId: string, lang: Lang) {
+  const response = await fetch(`/api/story/submission?id=${encodeURIComponent(submissionId)}&lang=${lang}`);
+  return parseJsonResponse<ApprovedUserStoryResponse>(response);
+}
+
+async function loadStoryTemplate(templateId: string, lang: Lang) {
+  const response = await fetch(`/api/story/template?id=${encodeURIComponent(templateId)}&lang=${lang}`);
+  return parseJsonResponse<NormalizedStoryTemplate>(response);
+}
 
 async function fetchGiphy(query: string) {
   const response = await fetch("/api/search-giphy", {
@@ -261,20 +291,9 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
 
     void (async () => {
       try {
-        const [nextTemplates, nextUserStories] = await Promise.all([
-          loadStoryTemplateSummaries(lang),
-          loadApprovedUserStories(lang),
-        ]);
+        const nextHeroOptions = await loadHeroOptions(lang);
         if (!cancelled) {
-          setHeroOptions([
-            ...nextTemplates.map((item) => ({
-              type: "template" as const,
-              id: item.id,
-              title: item.title,
-              heroName: item.heroName,
-            })),
-            ...nextUserStories,
-          ]);
+          setHeroOptions(nextHeroOptions);
         }
       } catch (error) {
         if (!cancelled) {

@@ -6,9 +6,8 @@ import { paintRegionFast } from "@/utils/paintRegionFast";
 import { drawLapLapLaWatermark } from "@/utils/drawLapLapLaWatermark";
 import { getRandomArtFact } from "@/lib/artFacts/getRandomArtFact";
 import TranslationWarning from "@/components/TranslationWarning";
-import { getTranslatedContent } from "@/lib/contentTranslations";
 import { getCurrentLang } from "@/lib/i18n/routing";
-import { supabase } from "@/lib/supabase/client";
+import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import { dictionaries, Lang } from "../../../i18n";
 // Color seed placed by a paw click
 type ColorSeed = {
@@ -30,8 +29,6 @@ import type {
   ReplayBrushSettings,
   ReplayRegionData,
 } from "@/components/Dogs/Replay/types";
-
-const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 type Lesson = {
   id?: string;
@@ -59,7 +56,7 @@ function DogImage({
   const [animIdx, setAnimIdx] = useState(0);
 
   // используем постер из Supabase storage в качестве базовой PNG-картинки и GIF-анимацию
-  const base = `${SUPA}/storage/v1/object/public/characters/dogs/${name}/anims/`;
+  const base = buildSupabasePublicUrl("characters", `dogs/${name}/anims`);
   const pngSrc = `${base}/${pose}-poster.png`;
 
   const animList: string[] = [`${base}/${pose}.gif`];
@@ -818,56 +815,21 @@ function LessonPlayerDesktop() {
     if (!slug || typeof slug !== "string") return;
 
     const fetchLesson = async () => {
-      const { data: lessonRow, error: lessonLookupError } = await supabase
-        .from("lessons")
-        .select("id")
-        .eq("slug", slug)
-        .single();
+      const response = await fetch(`/api/dog-lesson?slug=${encodeURIComponent(slug)}&lang=${lang}`);
+      const payload = await response.json() as { lesson?: Lesson; translated?: boolean; error?: string };
 
-      if (lessonLookupError || !lessonRow?.id) {
-        console.error("Ошибка загрузки id урока:", lessonLookupError);
+      if (!response.ok || !payload.lesson) {
+        console.error("Ошибка загрузки урока:", payload.error);
         return;
       }
 
-      const { content, translated } = await getTranslatedContent("lesson", lessonRow.id, lang);
-      const translatedLesson = content as Lesson;
-
-      if (Array.isArray(translatedLesson.steps)) {
-        translatedLesson.steps = await Promise.all(
-          translatedLesson.steps.map(async (step) => {
-            let imagePath = step.image;
-
-            if (!imagePath) return step;
-            if (imagePath.startsWith("public/")) {
-              imagePath = imagePath.replace(/^public\//, "");
-            }
-
-            imagePath = imagePath.replace(
-              /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/lessons\//,
-              "",
-            );
-
-            const { data: signedUrlData } = await supabase.storage
-              .from("lessons")
-              .createSignedUrl(imagePath, 60 * 60);
-
-            return {
-              ...step,
-              image: signedUrlData?.signedUrl?.startsWith("http")
-                ? signedUrlData.signedUrl
-                : `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/sign/${signedUrlData?.signedUrl}`,
-            };
-          }),
-        );
-      }
-
-      console.log("Данные урока:", translatedLesson);
-      if (!translatedLesson || !translatedLesson.category_slug) {
+      const translatedLesson = payload.lesson;
+      if (!translatedLesson.category_slug) {
         console.error("Ошибка: отсутствует category_slug в данных урока");
         return;
       }
       setLesson(translatedLesson);
-      setIsLessonTranslated(translated);
+      setIsLessonTranslated(Boolean(payload.translated));
       setBrushSize(5);
       clearReplayHistory();
       if (translatedLesson.steps.length > 0) {

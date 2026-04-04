@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fallbackImages } from "@/constants";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import type { dictionaries, Lang } from "@/i18n";
-import { supabase } from "@/lib/supabase";
 import type { Book, BookExplanation, BookTest, ExplanationMode, Slide } from "@/types/types";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
@@ -564,15 +563,18 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     }
 
     const request = (async () => {
-      const { data, error: modesError } = await supabase
-        .from("explanation_modes")
-        .select("*");
+      const response = await fetch("/api/books/explanation-modes");
+      const data = await response.json().catch(() => null) as ExplanationMode[] | { error?: string } | null;
 
-      if (modesError) {
-        throw modesError;
+      if (!response.ok || !Array.isArray(data)) {
+        throw new Error(
+          !Array.isArray(data) && data?.error
+            ? data.error
+            : "Failed to load explanation modes",
+        );
       }
 
-      const modes = (data || []) as ExplanationMode[];
+      const modes = data;
       setExplanationModes(modes);
       return modes;
     })();

@@ -1,100 +1,29 @@
-import { extractSlideKeywords } from "@/hooks/useBook";
 import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
 import { supabase } from "@/lib/supabase";
 import type { Lang } from "@/i18n";
-
-export const STORY_STEP_KEYS = [
-  "narration",
-  "intro",
-  "journey",
-  "problem",
-  "solution",
-  "ending",
-] as const;
-
-export type StoryStepKey = (typeof STORY_STEP_KEYS)[number];
-export type StoryChoiceIndex = 0 | 1 | 2;
-
-export type StoryPath = {
-  narration: StoryChoiceIndex;
-  intro: StoryChoiceIndex;
-  journey: StoryChoiceIndex;
-  problem: StoryChoiceIndex;
-  solution: StoryChoiceIndex;
-  ending: StoryChoiceIndex;
-};
-
-export const STORY_BLOCK_ORDER = [
-  "narration",
-  "intro",
-  "intro_fragment",
-  "journey",
-  "journey_fragment",
-  "problem",
-  "problem_fragment",
-  "solution",
-  "solution_fragment",
-  "ending",
-  "ending_fragment",
-] as const;
-
-export type StoryBlockStepKey = (typeof STORY_BLOCK_ORDER)[number];
-
-export type StoryBlock = {
-  step: StoryBlockStepKey;
-  text: string;
-  slides: string[];
-  keywords: string[];
-  mediaUrl?: string;
-};
-
-export type StorySlide = StoryBlock;
-
-export type StoryTemplateSummary = {
-  id: string;
-  title: string;
-  heroName: string;
-  translated?: boolean;
-};
-
-export type StoryHeroOption =
-  | {
-      type: "template";
-      id: string;
-      title: string;
-      heroName: string;
-      translated?: boolean;
-    }
-  | {
-      type: "user_story";
-      id: string;
-      heroName: string;
-      translated?: boolean;
-    };
+import {
+  STORY_BLOCK_ORDER,
+  STORY_STEP_KEYS,
+  splitTextToSlides,
+  type NormalizedStoryTemplate,
+  type StoryBlock,
+  type StoryBlockStepKey,
+  type StoryChoiceIndex,
+  type StoryHeroOption,
+  type StoryPath,
+  type StorySlide,
+  type StoryStepKey,
+  type StoryTemplateSummary,
+} from "@/lib/story/story-shared";
 
 type LooseRecord = Record<string, unknown>;
-
-type NormalizedChoice = {
-  id: string;
-  index: number;
-  text: string;
-  fragments: string[];
-};
 
 type NormalizedStep = {
   id: string;
   key: StoryStepKey;
   title: string;
   narration?: string;
-  choices: NormalizedChoice[];
-};
-
-export type NormalizedStoryTemplate = {
-  id: string;
-  title: string;
-  heroName: string;
-  steps: Record<StoryStepKey, NormalizedStep>;
-  translated?: boolean;
+  choices: NormalizedStoryTemplate["steps"][StoryStepKey]["choices"];
 };
 
 export type StoryPathValidationResult = {
@@ -567,19 +496,10 @@ const clampChoiceIndex = (value: number | undefined): StoryChoiceIndex => {
   return 0;
 };
 
-const makeKeywords = (text: string) => extractSlideKeywords(text);
-
 const STEP_FRAGMENT_SUFFIX = "_fragment";
 
 const toFragmentStepKey = (stepKey: Exclude<StoryStepKey, "narration">): StoryBlockStepKey =>
   `${stepKey}${STEP_FRAGMENT_SUFFIX}` as StoryBlockStepKey;
-
-export function splitTextToSlides(text: string): string[] {
-  return text
-    .split(/(?<=[.!?…])\s+/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
-}
 
 export function parseUserStoryToSlides(assembledStory: unknown): StorySlide[] {
   if (!isRecord(assembledStory) || !Array.isArray(assembledStory.steps)) {
@@ -602,7 +522,7 @@ export function parseUserStoryToSlides(assembledStory: unknown): StorySlide[] {
         step,
         text,
         slides: [text],
-        keywords: stepKeywords.length ? stepKeywords : makeKeywords(text),
+        keywords: stepKeywords,
         mediaUrl: undefined,
       }));
     });
@@ -821,7 +741,7 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
   const normalizedBlocks = blocks.map((block) => ({
     ...block,
     slides: splitTextToSlides(block.text),
-    keywords: block.keywords.length ? block.keywords : makeKeywords(block.text),
+    keywords: block.keywords,
   }));
 
   if (isDev() && !hasExactStoryOrder(normalizedBlocks)) {
@@ -834,18 +754,4 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
   });
 
   return normalizedBlocks;
-}
-
-export function blocksToSlides(blocks: StoryBlock[]): StorySlide[] {
-  return blocks.flatMap((block) => {
-    const slides = block.slides.length ? block.slides : splitTextToSlides(block.text);
-
-    return slides.map((text) => ({
-      step: block.step,
-      text,
-      slides: [text],
-      keywords: makeKeywords(text),
-      mediaUrl: block.mediaUrl,
-    }));
-  });
 }

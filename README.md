@@ -1,198 +1,109 @@
-# Капибары-Сказки
+# LapLapLa / capybara_tales
 
-Милое интерактивное приложение, где кавайные капибары рассказывают сюжеты известных детских книг или придумывают свои собственные оригинальные истории. Пользователи могут искать конкретные книги, просить капибар сочинить новую сказку или получать случайные истории.
+Интерактивный детский проект на `Next.js` с несколькими разделами: книги с капибарами, уроки рисования с собаками, музыкальный микшер с попугаями, карты с енотами, stories-конструктор и cat studio для сборки слайдов.
 
-## Особенности
+Проект сейчас использует `Pages Router`. Основной стек: `Next.js`, `React`, `TypeScript`, `CSS`, `Supabase`.
 
-*   Интерактивные слайды с текстом и изображениями капибар.
-*   Генерация сюжетов с помощью Google Gemini API.
-*   Три режима:
-    *   Поиск сюжета конкретной детской книги.
-    *   Генерация совершенно новой, вымышленной истории.
-    *   Получение сюжета случайной известной детской книги.
-*   Милый "кавайный" дизайн и тексты от лица дружелюбных капибар.
-*   Использование локальной коллекции иллюстраций капибар.
+## Актуальное состояние
 
-## Используемые технологии
+- `/capybara` и `/books/*` — библиотека книг и режимы объяснений.
+- `/caps/stories/create` — конструктор пользовательских историй.
+- `/cats`, `/cats/studio`, `/cats/export` — редактор и экспорт слайдов.
+- `/parrots` — музыкальный микшер на лупах.
+- `/dog`, `/dog/lessons`, `/dog/lessons/[slug]` — уроки рисования и интерактивный lesson player.
+- `/raccoons`, `/quests/quest-1` — карта и квесты.
 
-*   React
-*   TypeScript
-*   Tailwind CSS
-*   Google Gemini API (@google/genai)
+## Mobile status
 
-## Источники иллюстраций
-
-Некоторые изображения использованы из Veecteezy.com согласно условиям бесплатной лицензии с указанием авторства:
-- [https://www.vecteezy.com](https://www.vecteezy.com)
-- Illustrations by Veecteezy (Free License with attribution)
-
-Мы не продаём графику как самостоятельный продукт, а используем её только как часть интерфейса обучающего приложения.
-
-# LapLapLa – обучающая AI‑платформа для детей 🌈
-
-**LapLapLa** — это большой мультимодальный сайт, где дети учатся рисовать, изучают географию, слушают рассказы, создают музыку из лупов и общаются с забавными персонажами: капибарами, енотами и попугаями.
-
-Проект создаётся как современная, безопасная, дружелюбная образовательная среда, которая сочетает в себе творчество, интерактивность и искусственный интеллект.
-
----
-
-## ✨ Основные разделы проекта
-
-### 🎨 1. Уроки рисования
-* Короткие и понятные уроки.
-* Встроенная галерея работ.
-* Уроки хранятся в Supabase Storage и подгружаются динамически.
-
-### 🦝 2. Интерактивная карта «Енотики найдут»
-* SVG‑карта мира с кликабельными областями.
-* AI‑рассказы о странах, биомах, климате, культуре.
-* Озвучка через Google TTS.
-* Возможность сохранять иллюстрации, флаги, смешные гифки и карточки знаний.
-* Поддержка Supabase для хранения историй, изображений и аудио.
-
-### 🎵 3. Музыкальная студия «Попугай‑DJ»
-* Более 100 музыкальных лупов в разных жанрах (афро, латино, lo‑fi, k‑pop и т.д.).
-* Возможность создавать свой мини‑трек.
-* Сохранение готовой композиции локально.
-* Лупы хранятся в Supabase buckets.
-
-### 🐹 4. «Капибары‑сказочники»
-* Генерация сказок через AI.
-* Милые слайды с персонажами.
-* Возможность генерировать новые истории на любую тему.
-
----
-
-## 🧩 Технологии
-
-### Фронтенд
-* **Next.js / React**
-* **TypeScript**
+- Часть страниц адаптирована под мобильные экраны.
+- Сложные desktop-only сценарии на мобильных скрываются заглушкой с сообщением о будущем приложении `LapLapLa`.
+- Это касается прежде всего сложных редакторов, квестов и canvas-heavy экранов.
 
 
-### AI и мультимедиа
-* Google Gemini API (текст + генерации)
-* Google TTS
-* FFmpeg (для обработки аудио)
-* Supabase (Storage, Database, Auth)
+## Локальный запуск
 
-### Хранилища
-Используются Supabase buckets:
-* `lessons`
-* `artworks`
-* `map-data`
-* `map_audio`
-* `parrot-audio`
-* `characters`
+1. Установить зависимости:
 
-Каждое хранилище имеет свои RLS‑политики для приватного или публичного доступа.
+```bash
+npm install
+```
 
----
+2. Создать `.env.local` и заполнить нужные переменные.
 
-## 🚀 Цели проекта
-* Создать современную образовательную экосистему.
-* Объединить творчество и обучение.
-* Делать обучение весёлым, безопасным и визуально красивым.
-* Дать детям пространство для музыки, рисования, путешествий и историй.
+3. Запустить dev-сервер:
 
----
+```bash
+npm run dev
+```
 
-## 📜 Лицензии и авторские права
-* Некоторые иконки и иллюстрации взяты с **Pexels**, **Veecteezy**, **OpenArt**.
-* Используются только в составе обучающего интерфейса.
-* Мы не продаём графику отдельно.
+4. Проверить типы:
 
----
+```bash
+npm run lint
+```
 
-## 📬 Контакты
-Если хотите предложить идею, написать отзыв или сотрудничать — создавайте issue в репозитории.
+5. Собрать production build:
 
----
+```bash
+npm run build
+```
 
-LapLapLa — проект, который растёт каждый день.  
-Спасибо, что заглянули! 🌟
+## Переменные окружения
 
----
+Проект использует серверные интеграции с `Supabase`, `GIPHY`, `Pexels` и `Google TTS`.
 
-# LapLapLa – AI‑Powered Learning Platform for Kids 🌈 (English Version)
+Минимальный набор зависит от того, какой раздел вы тестируете, но обычно нужны:
 
-**LapLapLa** is a large multimodal educational website where children learn to draw, explore geography, listen to stories, create music from loops, and interact with fun characters: capybaras, raccoons, and parrots.
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GIPHY_API_KEY`
+- `PEXELS_API_KEY`
+- `GOOGLE_TTS_API_KEY`
 
-The project is designed as a modern, safe, friendly digital learning environment that combines creativity, interactivity, and artificial intelligence.
+Важно:
 
----
+- Секретные ключи должны использоваться только на сервере и через API routes.
+- Клиентские страницы не должны читать приватные env напрямую.
+- `NEXT_PUBLIC_*` переменные считаются публичными и допустимы только там, где это действительно нужно архитектурно.
 
-## ✨ Main Sections
+## Проверка перед деплоем
 
-### 🎨 1. Drawing Lessons
-* Short, simple, kid‑friendly lessons.
-* Built‑in gallery of artworks.
-* Lessons are stored in Supabase Storage and loaded dynamically.
+- `npm run lint`
+- `npm run build`
+- проверка локалей `ru`, `en`, `he`
+- ручной smoke-test desktop и mobile
+- проверка env: приватные ключи не должны попадать в клиентский bundle
 
-### 🦝 2. Interactive Map “Raccoons Will Find It”
-* Clickable SVG world map.
-* AI‑generated stories about countries, biomes, climate, and culture.
-* Voice‑over using Google TTS.
-* Support for saving illustrations, flags, funny GIFs, and knowledge cards.
-* Supabase used for storing stories, images, and audio files.
+## Лицензии и ассеты
 
-### 🎵 3. Music Studio “Parrot‑DJ”
-* 100+ music loops in various genres (afro, latin, lo‑fi, k‑pop, etc.).
-* Kids can create their own mini‑tracks.
-* Final compositions can be saved locally.
-* Loops are stored in Supabase buckets.
+В проекте используются собственные ассеты и внешние медиа-источники. Некоторые изображения, гифки и видео подгружаются из `Supabase Storage`, `GIPHY` и `Pexels`. Перед публичным релизом нужно отдельно проверить права на каждый внешний asset и правила атрибуции.
 
-### 🐹 4. “Capybara Storytellers”
-* AI‑generated fairy tales.
-* Cute slides with animated characters.
-* Ability to generate new stories on any topic.
+## English
 
----
+`LapLapLa / capybara_tales` is a multi-section children’s interactive site built with `Next.js Pages Router`, `React`, `TypeScript`, `CSS`, and `Supabase`.
 
-## 🧩 Technologies
+Current sections include:
 
-### Frontend
-* **Next.js / React**
-* **TypeScript**
+- capybara books and explanation modes
+- custom story builder
+- cat slide editor and export flow
+- parrot loop mixer
+- dog drawing lessons
+- raccoon maps and quest content
 
-### AI & Multimedia
-* Google Gemini API (text + generation)
-* Google TTS
-* FFmpeg for audio processing
-* Supabase (Storage, Database, Auth)
+Important project notes:
 
-### Storage
-Supabase buckets used in the project:
-* `lessons`
-* `artworks`
-* `map-data`
-* `map_audio`
-* `parrot-audio`
-* `characters`
+- the project is only partially mobile-ready
+- several complex screens are desktop-only for now
+- AI-based coloring is not a current product feature and should not be documented as such
+- the project does not use Tailwind as its main styling system
 
-Each bucket has dedicated RLS policies for secure public or private access.
+Before deployment, run:
 
----
-
-## 🚀 Project Goals
-* Build a modern educational ecosystem.
-* Combine learning with creativity.
-* Make education fun, safe, and visually engaging.
-* Provide children with space for music, drawing, exploration, and stories.
-
----
-
-## 📜 Licenses & Credits
-* Some icons and illustrations are sourced from **Pexels**, **Veecteezy**, **OpenArt**.
-* Used only as part of the educational interface.
-* Graphics are not sold as a standalone product.
-
----
-
-## 📬 Contact
-If you'd like to suggest an idea, share feedback, or collaborate — feel free to open an issue.
-
----
-
-LapLapLa is a project that grows every day.  
-Thank you for visiting! 🌟
+```bash
+npm run lint
+npm run build
+```

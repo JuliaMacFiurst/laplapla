@@ -2,14 +2,12 @@ import Head from "next/head";
 import Link from "next/link";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import StandaloneBookScreenPages from "@/components/StandaloneBookScreenPages";
-import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
 import {
-  findBookBySlug,
   findExplanationModeBySegment,
   getBookPathSlug,
   getLocalizedExplanationModeLabel,
-  loadExplanationModes,
-} from "@/lib/books";
+} from "@/lib/books/shared";
+import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
 import type { Book, ExplanationMode } from "@/types/types";
 
@@ -45,6 +43,7 @@ const BOOK_MODE_DESCRIPTION: Record<Lang, (title: string, modeLabel: string) => 
 const getModeLabel = (modeSegment: string, lang: Lang) => MODE_FALLBACK_LABELS[modeSegment]?.[lang] || modeSegment;
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
+  const { findBookBySlug, loadExplanationModes } = await import("@/lib/books");
   const slug = typeof context.params?.slug === "string" ? context.params.slug : "";
   const mode = typeof context.params?.mode === "string" ? context.params.mode : "";
   const lang = isLang(context.locale) ? context.locale : isLang(context.query.lang) ? context.query.lang : "ru";

@@ -1,10 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
 import { clothesScoreMap } from "./clothesScores";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export interface ClothesItem {
   id: string;
@@ -16,47 +10,19 @@ export interface ClothesItem {
 export async function loadClothesForCharacter(
   characterName: string
 ): Promise<ClothesItem[]> {
-    console.log(
-    "[loadClothesForCharacter] characterName =",
-    characterName
-  );
-  const folders = ["winter-clothes", "summer-clothes", "mid-season"];
-  let allItems: ClothesItem[] = [];
+  const response = await fetch(`/api/quests/dress-up-items?characterName=${encodeURIComponent(characterName)}`);
+  const payload = await response.json().catch(() => null) as ClothesItem[] | { error?: string } | null;
 
-  for (const folder of folders) {
-    const { data, error } = await supabase.storage
-      .from("quests") // bucket
-      .list(`1_quest/games/dress-up/${characterName}/${folder}`);
-
-    if (error) {
-      console.error("[loadClothesForCharacter] ERROR", error);
-      continue;
-    }
-
-    if (!data || data.length === 0) {
-      console.warn("[loadClothesForCharacter] EMPTY", characterName, folder);
-      continue;
-    }
-
-    for (const file of data) {
-      if (!file.name.endsWith(".webp")) continue;
-      if (file.name.includes("-dressed")) continue;
-
-      const id = file.name.replace(".webp", "");
-      const img =
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}` +
-        `/storage/v1/object/public/quests/1_quest/games/dress-up/` +
-        `${characterName}/${folder}/${file.name}`;
-
-      allItems.push({
-        id,
-        img,
-        score: clothesScoreMap[id] ?? 0,
-        season: folder
-      });
-    }
+  if (!response.ok || !Array.isArray(payload)) {
+    throw new Error(
+      !Array.isArray(payload) && payload?.error
+        ? payload.error
+        : "Failed to load dress-up items",
+    );
   }
 
-  console.log("[loadClothesForCharacter] RESULT", allItems);
-  return allItems;
+  return payload.map((item) => ({
+    ...item,
+    score: clothesScoreMap[item.id] ?? item.score ?? 0,
+  }));
 }

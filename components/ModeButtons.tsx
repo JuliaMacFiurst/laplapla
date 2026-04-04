@@ -1,5 +1,5 @@
 import type { Lang } from "@/i18n";
-import { getLocalizedExplanationModeLabel } from "@/lib/books";
+import { getLocalizedExplanationModeLabel } from "@/lib/books/shared";
 import type { ExplanationMode } from "@/types/types";
 
 interface ModeButtonsProps {

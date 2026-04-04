@@ -6,6 +6,7 @@ import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
+import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
 
@@ -156,15 +157,12 @@ function buildClientRaccoonFallback(
   targetId: string,
   slideText: string,
 ): NonNullable<MapPopupSearchResponse["item"]> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const seedSource = `${type}:${targetId}:${slideText}`;
   const seed = getSeedValue(seedSource);
   const preferGif = prefersMotionFallback(type, slideText);
   const primaryPool = preferGif ? RACCOON_WITH_MAP_FILES.gifs : RACCOON_WITH_MAP_FILES.pngs;
   const selectedFile = primaryPool[seed % primaryPool.length] ?? RACCOON_WITH_MAP_FILES.pngs[0];
-  const url = supabaseUrl
-    ? `${supabaseUrl}/storage/v1/object/public/characters/raccoons/raccoon_with_map/${selectedFile}`
-    : "/images/mystery.webp";
+  const url = buildSupabasePublicUrl("characters", `raccoons/raccoon_with_map/${selectedFile}`);
 
   return {
     url,
@@ -540,7 +538,7 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
 
     // ✅ ISO‑коды (две буквы)
     if (/^[a-z]{2}$/.test(lower)) {
-      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/flags-svg/flags-svg/${lower}.svg`;
+      return buildSupabasePublicUrl("flags-svg", `flags-svg/${lower}.svg`);
     }
 
     // ✅ Поиск кода страны по названию
@@ -548,7 +546,7 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
     const code = map[lower];
 
     return code
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/flags-svg/flags-svg/${code}.svg`
+      ? buildSupabasePublicUrl("flags-svg", `flags-svg/${code}.svg`)
       : null;
   };
 

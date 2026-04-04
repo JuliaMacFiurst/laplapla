@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import TranslationWarning from '@/components/TranslationWarning';
-import { getTranslatedContent } from '@/lib/contentTranslations';
 import { getCurrentLang } from '@/lib/i18n/routing';
 import { dictionaries, Lang } from '../i18n/index';
-import { supabase } from '@/lib/supabase/client';
 
 interface Artwork {
   id: string;
@@ -30,32 +28,15 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
 
   useEffect(() => {
     const fetchArtworks = async () => {
-      const { data, error } = await supabase
-        .from('artworks')
-        .select('id, title, description, image_url')
-        .eq('category_slug', categorySlug);
+      const response = await fetch(`/api/art-gallery?categorySlug=${encodeURIComponent(categorySlug)}&lang=${lang}`);
+      const payload = await response.json() as { artwork: Artwork | null; translated: boolean; error?: string };
 
-      if (error) {
-        console.error('Ошибка загрузки галереи:', error);
+      if (!response.ok) {
+        throw new Error(payload.error || 'Failed to load gallery');
       }
 
-      if (data && data.length > 0) {
-        const selectedArtwork = data[Math.floor(Math.random() * data.length)];
-        const { content, translated } = await getTranslatedContent('artwork', selectedArtwork.id, lang);
-        const artwork = content as Artwork & { image_url: string[] | string };
-
-        setIsArtworkTranslated(translated);
-        setArtworks([
-          {
-            ...artwork,
-            image_url: Array.isArray(artwork.image_url)
-              ? artwork.image_url
-              : typeof artwork.image_url === 'string'
-              ? JSON.parse(artwork.image_url)
-              : [],
-          },
-        ]);
-      }
+      setIsArtworkTranslated(payload.translated);
+      setArtworks(payload.artwork ? [payload.artwork] : []);
     };
 
     fetchArtworks().catch((fetchError) => {

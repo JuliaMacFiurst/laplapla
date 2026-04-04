@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState } from "react";
+import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 
-const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const base = `${SUPA}/storage/v1/object/public/characters/raccoons/raccoon_with_map`;
+const base = buildSupabasePublicUrl("characters", "raccoons/raccoon_with_map");
 
 export function RaccoonGuide({
   wiggle,

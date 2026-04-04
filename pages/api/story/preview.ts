@@ -4,9 +4,9 @@ import {
   ensureFullStoryPath,
   loadStoryTemplate,
   validateStoryPath,
-  type StoryChoiceIndex,
 } from "@/lib/story/story-service";
 import { getRequestLang } from "@/lib/i18n/routing";
+import type { StoryChoiceIndex } from "@/lib/story/story-shared";
 
 const isChoiceIndex = (value: unknown): value is StoryChoiceIndex =>
   value === 0 || value === 1 || value === 2;

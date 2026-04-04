@@ -1,32 +1,38 @@
 // pages/api/dog-lesson.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { SUPABASE_PUBLIC_ORIGIN } from '@/lib/publicAssetUrls';
+import { getRequestLang } from '@/lib/i18n/routing';
+import { getTranslatedContent } from '@/lib/contentTranslations';
+import { createServerSupabaseClient } from '@/lib/server/supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const { slug } = req.query;
 
   if (!slug || typeof slug !== 'string') {
     return res.status(400).json({ error: 'Slug is required' });
   }
 
-  const { data, error } = await supabase
+  const supabase = createServerSupabaseClient();
+  const { data: lessonRow, error: lessonLookupError } = await supabase
     .from('lessons')
-    .select('*')
+    .select('id')
     .eq('slug', slug)
     .single();
 
-  if (error || !data) {
+  if (lessonLookupError || !lessonRow?.id) {
     return res.status(404).json({ error: 'Lesson not found' });
   }
 
-  if (Array.isArray(data.steps)) {
+  const { content, translated } = await getTranslatedContent('lesson', lessonRow.id, getRequestLang(req));
+  const lesson = content as Record<string, unknown>;
+
+  if (Array.isArray(lesson.steps)) {
     const updatedSteps = await Promise.all(
-      data.steps.map(async (step: any) => {
+      lesson.steps.map(async (step: any) => {
         // Ensure step.image contains only the path inside the bucket (no 'public/' and no full URL)
         let imagePath = step.image;
         if (imagePath.startsWith('public/')) {
@@ -42,12 +48,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ...step,
           image: signedUrlData?.signedUrl?.startsWith('http')
             ? signedUrlData.signedUrl
-            : `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/sign/${signedUrlData?.signedUrl}`,
+            : `${SUPABASE_PUBLIC_ORIGIN}${signedUrlData?.signedUrl || ''}`,
         };
       })
     );
-    data.steps = updatedSteps;
+    lesson.steps = updatedSteps;
   }
 
-  res.status(200).json(data);
+  res.status(200).json({
+    translated,
+    lesson,
+  });
 }

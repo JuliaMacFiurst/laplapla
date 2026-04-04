@@ -3,8 +3,6 @@ import { useRouter } from 'next/router';
 import BackButton from '../../components/BackButton';
 import { dictionaries, Lang } from "../../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
-import { supabase } from "@/lib/supabase/client";
-import { getTranslatedContents } from "@/lib/contentTranslations";
 
 interface Lesson {
   id: string;
@@ -23,57 +21,20 @@ export default function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
 
   useEffect(() => {
-    console.log('📦 Категория из URL:', category);
     if (!category) return;
 
-
-    supabase
-      .from('lessons')
-      .select('id, title, preview, slug, category_slug')
-      .eq('category_slug', category)
-      .then(async ({ data, error }) => {
-        if (error) {
-          console.error('❌ Ошибка загрузки уроков:', error);
-        } else {
-          console.log('✅ Уроки получены из Supabase:', data);
-          const translatedLessons = data?.length
-            ? await getTranslatedContents('lesson', data.map((lesson) => lesson.id), lang)
-            : [];
-          const lessonsWithPublicUrls = translatedLessons.length
-            ? translatedLessons.map(({ content }) => content as Lesson)
-            : (data || []);
-          console.log('🖼 Публичные ссылки на превьюшки сгенерированы:', lessonsWithPublicUrls);
-
-          const fetchSignedUrls = async () => {
-            const signedLessons = await Promise.all(
-              lessonsWithPublicUrls.map(async (lesson) => {
-                // если превью отсутствует в базе — пропускаем создание signed URL
-                if (!lesson.preview) {
-                  return { ...lesson, preview: '' };
-                }
-                try {
-                  const { data: signedUrlData, error: signedUrlError } =
-                    await supabase.storage
-                      .from('lessons')
-                      .createSignedUrl(lesson.preview, 60); // срок действия 60 секунд
-
-                  if (signedUrlError || !signedUrlData) {
-                    console.error('Ошибка получения signed URL:', signedUrlError);
-                    return { ...lesson, preview: '' };
-                  }
-
-                  return { ...lesson, preview: signedUrlData.signedUrl };
-                } catch (err) {
-                  console.error('Непредвиденная ошибка при получении signed URL:', err);
-                  return { ...lesson, preview: '' };
-                }
-              })
-            );
-            setLessons(signedLessons);
-          };
-
-          fetchSignedUrls();
+    fetch(`/api/dog-lessons?category=${encodeURIComponent(category)}&lang=${lang}`)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to load lessons: ${response.status}`);
         }
+
+        return response.json() as Promise<Lesson[]>;
+      })
+      .then(setLessons)
+      .catch((error) => {
+        console.error('❌ Ошибка загрузки уроков:', error);
+        setLessons([]);
       });
   }, [category, lang]);
 

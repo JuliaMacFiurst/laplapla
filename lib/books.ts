@@ -225,8 +225,8 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
 
   const translationLookupLanguages = Array.from(new Set([lang, "en", "he", "ru"].filter(Boolean)));
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const supabaseUrl = process.env["SUPABASE_URL"] || "";
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"] || "";
   const { createClient } = await import("@supabase/supabase-js");
   const translationClient = supabaseUrl && serviceRoleKey
     ? createClient(supabaseUrl, serviceRoleKey)

@@ -3,7 +3,7 @@ import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useBook } from "@/hooks/useBook";
-import { buildBookHref, buildBookModeHref } from "@/lib/books";
+import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import { buildLocalizedHref } from "@/lib/i18n/routing";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book } from "@/types/types";

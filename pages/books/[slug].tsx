@@ -2,15 +2,10 @@ import Head from "next/head";
 import Link from "next/link";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import StandaloneBookScreenPages from "@/components/StandaloneBookScreenPages";
+import { buildBookPageDescription, getBookPathSlug } from "@/lib/books/shared";
 import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
-import {
-  buildBookPageDescription,
-  findBookBySlug,
-  getBookPathSlug,
-  translateBooksForLang,
-} from "@/lib/books";
 import { dictionaries, type Lang } from "@/i18n";
-import { supabase } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Book } from "@/types/types";
 
 type Props = {
@@ -38,6 +33,8 @@ const getBookSummary = (book: Book) =>
   buildBookPageDescription(book);
 
 const loadBookNeighbors = async (book: Book, lang: Lang) => {
+  const { translateBooksForLang } = await import("@/lib/books");
+  const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from("books")
     .select("*")
@@ -60,6 +57,7 @@ const loadBookNeighbors = async (book: Book, lang: Lang) => {
 };
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
+  const { findBookBySlug } = await import("@/lib/books");
   const slug = typeof context.params?.slug === "string" ? context.params.slug : "";
   const lang = isLang(context.locale) ? context.locale : isLang(context.query.lang) ? context.query.lang : "ru";
   const book = await findBookBySlug(slug, lang);
