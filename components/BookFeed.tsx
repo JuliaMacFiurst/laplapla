@@ -48,6 +48,8 @@ interface BookFeedProps {
   onCreateVideo: () => void;
   onModeSelect: (modeId: string | number) => void;
   onSlideIndexChange: (slideIndex: number) => void;
+  onFindNewImage: (slideIndex: number, context: { bookTitle: string; modeLabel?: string }) => void | Promise<void>;
+  isFindingNewImage?: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
   t?: CapybaraPageDict;
@@ -75,6 +77,8 @@ export default function BookFeed({
   onCreateVideo,
   onModeSelect,
   onSlideIndexChange,
+  onFindNewImage,
+  isFindingNewImage,
   mediaCache,
   onPreloadNextSlide,
   t,
@@ -305,6 +309,8 @@ export default function BookFeed({
                 onCreateVideo={isCurrentPanel ? onCreateVideo : () => {}}
                 onModeSelect={isCurrentPanel ? onModeSelect : () => {}}
                 onSlideIndexChange={isCurrentPanel ? onSlideIndexChange : () => {}}
+                onFindNewImage={isCurrentPanel ? onFindNewImage : async () => {}}
+                isFindingNewImage={isCurrentPanel ? isFindingNewImage : false}
                 mediaCache={panel.mediaCache}
                 onPreloadNextSlide={isCurrentPanel ? onPreloadNextSlide : () => {}}
                 t={dict}
@@ -347,6 +353,8 @@ export default function BookFeed({
               onCreateVideo={onCreateVideo}
               onModeSelect={onModeSelect}
               onSlideIndexChange={onSlideIndexChange}
+              onFindNewImage={onFindNewImage}
+              isFindingNewImage={isFindingNewImage}
               mediaCache={mediaCache}
               onPreloadNextSlide={onPreloadNextSlide}
               t={dict}

@@ -29,6 +29,8 @@ interface BookCardProps {
   onCreateVideo: () => void;
   onModeSelect: (modeId: string | number) => void;
   onSlideIndexChange: (slideIndex: number) => void;
+  onFindNewImage: (slideIndex: number, context: { bookTitle: string; modeLabel?: string }) => void | Promise<void>;
+  isFindingNewImage?: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
   t: CapybaraPageDict;
@@ -51,6 +53,8 @@ export default function BookCard({
   onCreateVideo,
   onModeSelect,
   onSlideIndexChange,
+  onFindNewImage,
+  isFindingNewImage,
   mediaCache,
   onPreloadNextSlide,
   t,
@@ -74,6 +78,8 @@ export default function BookCard({
         onCreateVideo={onCreateVideo}
         onModeSelect={onModeSelect}
         onSlideIndexChange={onSlideIndexChange}
+        onFindNewImage={onFindNewImage}
+        isFindingNewImage={isFindingNewImage}
         mediaCache={mediaCache}
         onPreloadNextSlide={onPreloadNextSlide}
         t={t}

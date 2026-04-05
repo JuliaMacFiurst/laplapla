@@ -19,6 +19,7 @@ export const en = {
     studioSubtitle: "Create your own explanation videos",
     backButton: "Back to cats",
     editInStudio: "Edit in Studio",
+    findNewImage: "Find a New Image",
 
     examplesTitle: "Try asking:",
     examples: {
@@ -588,6 +589,7 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
       aboutArtist: "🎵 Learn about the artist (YouTube)",
       aboutStyle: "🔍 Learn about the style (Google)",
       openSlideshowWithMusic: "Open slideshow with selected music",
+      findNewImage: "Find a New Image",
     },
     mixer: {
       titlePlay: "Play the prepared track",
@@ -704,6 +706,7 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
         takeTest: "Take Test",
         createVideo: "Create Video",
         createStory: "Create Story",
+        findNewImage: "Find a New Image",
       },
       errors: {
         invalidParams: "Missing book_id or mode_id.",

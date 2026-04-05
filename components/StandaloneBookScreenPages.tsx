@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { useState } from "react";
 import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -36,6 +37,7 @@ export default function StandaloneBookScreenPages({
     error,
     preloadNextSlideMedia,
     buildStudioSlides,
+    refreshSlideMedia,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
@@ -45,6 +47,7 @@ export default function StandaloneBookScreenPages({
     disableInitialRandom: true,
     initialModeId,
   });
+  const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
 
   const handleModeSelect = (modeId: string | number) => {
     closeCurrentBookQuiz();
@@ -63,6 +66,18 @@ export default function StandaloneBookScreenPages({
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
     void router.push(buildLocalizedHref("/cats/studio", lang), undefined, { locale: lang });
+  };
+
+  const handleFindNewImage = async (
+    slideIndex: number,
+    context: { bookTitle: string; modeLabel?: string },
+  ) => {
+    setRefreshingSlideIndex(slideIndex);
+    try {
+      await refreshSlideMedia(slideIndex, context);
+    } finally {
+      setRefreshingSlideIndex((current) => (current === slideIndex ? null : current));
+    }
   };
 
   if (loading && !currentBook) {
@@ -104,6 +119,8 @@ export default function StandaloneBookScreenPages({
         onCreateVideo={handleCreateVideo}
         onModeSelect={handleModeSelect}
         onSlideIndexChange={setCurrentBookSlideIndex}
+        onFindNewImage={handleFindNewImage}
+        isFindingNewImage={refreshingSlideIndex === currentSlideIndex}
         mediaCache={mediaCache}
         onPreloadNextSlide={(slideIndex) => {
           void preloadNextSlideMedia(slideIndex);

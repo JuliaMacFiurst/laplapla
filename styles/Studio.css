@@ -116,6 +116,40 @@
 .btn-pink { background: var(--soft-pink); }
 .btn-mint { background: var(--mint); }
 
+.slideshow-refresh-button {
+  width: fit-content !important;
+  max-width: min(100%, 240px);
+  min-width: 0;
+  padding: 8px 16px;
+  border-radius: 16px;
+  font-family: 'Amatic SC', cursive;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0.4px;
+  white-space: normal;
+  text-align: center;
+  flex: 0 1 auto;
+  margin-bottom: 70px;
+}
+
+.slideshow-refresh-button-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 12px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.story-navigation,
+.story-nav,
+.cat-slide,
+.slider-container {
+  overflow: visible;
+}
+
 .slide-thumb {
   width: 48px;
   height: 48px;

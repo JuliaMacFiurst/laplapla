@@ -35,6 +35,8 @@ interface BookScreenProps {
   onCreateVideo: () => void;
   onModeSelect: (modeId: string | number) => void;
   onSlideIndexChange: (slideIndex: number) => void;
+  onFindNewImage: (slideIndex: number, context: { bookTitle: string; modeLabel?: string }) => void | Promise<void>;
+  isFindingNewImage?: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
   t: CapybaraPageDict;
@@ -57,6 +59,8 @@ export default function BookScreen({
   onCreateVideo,
   onModeSelect,
   onSlideIndexChange,
+  onFindNewImage,
+  isFindingNewImage,
   mediaCache,
   onPreloadNextSlide,
   t,
@@ -135,6 +139,13 @@ export default function BookScreen({
     }),
     [book.id, book.title, selectedModeId, slides],
   );
+  const selectedModeLabel = useMemo(
+    () =>
+      modes.find((mode) => String(mode.id) === String(selectedModeId))?.title ||
+      modes.find((mode) => String(mode.id) === String(selectedModeId))?.name ||
+      undefined,
+    [modes, selectedModeId],
+  );
 
   return (
     <>
@@ -166,6 +177,8 @@ export default function BookScreen({
           t={t}
           currentSlideIndex={currentSlideIndex}
           onSlideIndexChange={onSlideIndexChange}
+          onFindNewImage={(slideIndex) => onFindNewImage(slideIndex, { bookTitle: book.title, modeLabel: selectedModeLabel })}
+          isFindingNewImage={isFindingNewImage}
           textClassName="story-carousel-text"
           emptyMessage={t.storyError}
           mediaCache={mediaCache}

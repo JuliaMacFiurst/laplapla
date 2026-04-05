@@ -29,6 +29,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     hasPreviousBook,
     preloadNextSlideMedia,
     buildStudioSlides,
+    refreshSlideMedia,
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
@@ -40,6 +41,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const [searchResults, setSearchResults] = useState<Book[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
   const searchRequestRef = useRef(0);
   const searchControllerRef = useRef<AbortController | null>(null);
   const lastSyncedPathRef = useRef<string | null>(null);
@@ -246,6 +248,18 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     await loadRandomBook();
   };
 
+  const handleFindNewImage = useCallback(async (
+    slideIndex: number,
+    context: { bookTitle: string; modeLabel?: string },
+  ) => {
+    setRefreshingSlideIndex(slideIndex);
+    try {
+      await refreshSlideMedia(slideIndex, context);
+    } finally {
+      setRefreshingSlideIndex((current) => (current === slideIndex ? null : current));
+    }
+  }, [refreshSlideMedia]);
+
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSearchOpen(false);
@@ -434,6 +448,8 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             onCreateVideo={handleCreateVideo}
             onModeSelect={handleModeSelect}
             onSlideIndexChange={setCurrentBookSlideIndex}
+            onFindNewImage={handleFindNewImage}
+            isFindingNewImage={refreshingSlideIndex === currentSlideIndex}
             mediaCache={mediaCache}
             onPreloadNextSlide={handlePreloadNextSlide}
             t={t}

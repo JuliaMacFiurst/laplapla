@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fallbackImages } from "@/constants";
+import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book, BookExplanation, BookTest, ExplanationMode, Slide } from "@/types/types";
@@ -337,7 +338,9 @@ const buildMediaPlan = (
 ): SlideMediaPlan => {
   const isContextSlide = shouldUseContextMedia(slideIndex, totalSlides);
   const contextualKeywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
-  const contextualQuery = contextualKeywords.join(" ") || normalizeText(slide.text) || "cute animals";
+  const contextualQuery = ["capybara", contextualKeywords.join(" ") || normalizeText(slide.text) || "cute"]
+    .filter(Boolean)
+    .join(" ");
   const capybaraQuery = pickCapybaraQuery(slide);
   const plan: SlideMediaPlan = isContextSlide
     ? {
@@ -441,6 +444,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
   const slideMediaInFlightRef = useRef<Set<number>>(new Set());
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
+  const [mediaCache, setMediaCache] = useState<ReadonlyMap<number, ResolvedSlideMedia>>(new Map());
   const [tests, setTests] = useState<BookTest[]>([]);
   const [explanationModes, setExplanationModes] = useState<ExplanationMode[]>([]);
   const [bookHistory, setBookHistory] = useState<BookHistoryEntry[]>([]);
@@ -454,7 +458,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
   }, [slides]);
 
   const clearMediaCache = useCallback(() => {
-    mediaCacheRef.current = new Map();
+    const nextCache = new Map<number, ResolvedSlideMedia>();
+    mediaCacheRef.current = nextCache;
+    setMediaCache(nextCache);
     slideMediaInFlightRef.current.clear();
     resetBookMediaState();
   }, []);
@@ -490,12 +496,14 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       return new Map<number, ResolvedSlideMedia>();
     }
 
-    slideMediaInFlightRef.current.add(slideIndex);
+      slideMediaInFlightRef.current.add(slideIndex);
 
     try {
       const initialMedia = await preloadSlideMedia(nextSlides[slideIndex], slideIndex, nextSlides.length, signal);
-      mediaCacheRef.current = new Map<number, ResolvedSlideMedia>([[slideIndex, initialMedia]]);
-      return new Map<number, ResolvedSlideMedia>([[slideIndex, initialMedia]]);
+      const nextCache = new Map<number, ResolvedSlideMedia>([[slideIndex, initialMedia]]);
+      mediaCacheRef.current = nextCache;
+      setMediaCache(nextCache);
+      return nextCache;
     } finally {
       slideMediaInFlightRef.current.delete(slideIndex);
     }
@@ -518,6 +526,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         const nextCache = new Map(mediaCacheRef.current);
         nextCache.set(nextIndex, media);
         mediaCacheRef.current = nextCache;
+        setMediaCache(nextCache);
       }
     } catch (error) {
       if (isAbortError(error)) {
@@ -550,7 +559,70 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     }
 
     mediaCacheRef.current = nextCache;
+    setMediaCache(nextCache);
     return buildStudioSlidesFromCapybaraSlides(nextSlides, nextCache);
+  }, []);
+
+  const refreshSlideMedia = useCallback(async (
+    slideIndex: number,
+    options?: {
+      bookTitle?: string;
+      modeLabel?: string;
+    },
+  ) => {
+    const slide = slidesRef.current[slideIndex];
+    if (!slide) {
+      return false;
+    }
+
+    const currentMedia = mediaCacheRef.current.get(slideIndex);
+    const queries = buildAnimalSlideMediaQueries(
+      ["capybara", "capybara animal"],
+      options?.bookTitle,
+      options?.modeLabel,
+      slide.text,
+      slide.keywords?.join(" "),
+    );
+
+    const alternative = await findAlternativeSlideMedia({
+      queries,
+      excludedUrls: [
+        currentMedia?.videoUrl,
+        currentMedia?.gifUrl,
+        currentMedia?.imageUrl,
+        currentMedia?.capybaraImage,
+      ].filter(Boolean) as string[],
+      preferredSources: ["giphy", "pexels"],
+    });
+
+    if (!alternative) {
+      return false;
+    }
+
+    const nextMedia: ResolvedSlideMedia =
+      alternative.mediaType === "video"
+        ? {
+            type: "video",
+            videoUrl: alternative.url,
+            capybaraImage: currentMedia?.capybaraImage,
+          }
+        : alternative.mediaType === "gif"
+          ? {
+              type: "gif",
+              gifUrl: alternative.url,
+            }
+          : {
+              type: "image",
+              imageUrl: alternative.url,
+              capybaraImage: alternative.url,
+              capybaraImageAlt: currentMedia?.capybaraImageAlt || "Capybara",
+            };
+
+    const nextCache = new Map(mediaCacheRef.current);
+    nextCache.set(slideIndex, nextMedia);
+    mediaCacheRef.current = nextCache;
+    setMediaCache(nextCache);
+    return true;
   }, []);
 
   const loadModes = useCallback(async () => {
@@ -923,6 +995,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     setSlides(previousEntry.slides);
     setTests(previousEntry.tests);
     mediaCacheRef.current = nextMediaCache;
+    setMediaCache(nextMediaCache);
     lastLoadedBookRef.current = String(previousEntry.book.id);
     lastTestsBookRef.current = String(previousEntry.book.id);
     setBookHistory((prev) => prev.slice(0, -1));
@@ -1011,7 +1084,8 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     setCurrentBookSlideIndex,
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
-    mediaCache: mediaCacheRef.current,
+    mediaCache,
+    refreshSlideMedia,
     hasPreviousBook: bookHistory.length > 0,
     meaningModeId: getMeaningModeId(explanationModes),
   };

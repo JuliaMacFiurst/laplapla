@@ -105,6 +105,7 @@ type DictionaryShape = {
 
     randomQuestion: string;
     editInStudio: string;
+    findNewImage: string;
 
     errors: {
       generic: string;
@@ -341,6 +342,7 @@ type DictionaryShape = {
       aboutArtist: string;
       aboutStyle: string;
       openSlideshowWithMusic: string;
+      findNewImage: string;
     };
     mixer: {
       titlePlay: string;
@@ -447,6 +449,7 @@ type DictionaryShape = {
         takeTest: string;
         createVideo: string;
         createStory: string;
+        findNewImage: string;
       };
       errors: {
         invalidParams: string;

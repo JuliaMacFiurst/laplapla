@@ -1,4 +1,5 @@
 import * as React from "react";
+import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 
 type Props = {
   lang: "ru" | "en" | "he";
@@ -13,6 +14,7 @@ type Props = {
     aboutArtist: string;
     aboutStyle: string;
     openSlideshowWithMusic: string;
+    findNewImage: string;
   };
   onResolvedSlidesChange?: (slides: Slide[]) => void;
   onOpenStudio?: () => void;
@@ -52,6 +54,7 @@ const PLACEHOLDER_MEDIA: MediaItem = {
   url: "/images/parrot.webp",
   mediaType: "image",
 };
+const PARROT_SEARCH_HINTS = ["parrot", "cute parrot", "funny parrot"];
 
 const STOPWORDS = new Set([
   "the", "and", "for", "with", "that", "this", "from", "into",
@@ -110,13 +113,12 @@ const getSpecialParrotQuery = (index: number, slideCount: number) => {
 const buildMediaQueries = (styleSlug: string, slideText: string) => {
   const keywords = extractKeywords(slideText, styleSlug);
   const style = styleSlug.trim().toLowerCase();
-  const base = [style, ...keywords].filter(Boolean).join(" ").trim();
-
-  return [
-    base,
+  return buildAnimalSlideMediaQueries(
+    PARROT_SEARCH_HINTS,
+    [style, ...keywords].filter(Boolean).join(" ").trim(),
     [style, ...keywords.slice(0, 3)].filter(Boolean).join(" ").trim(),
     [...keywords, style, "music"].filter(Boolean).join(" ").trim(),
-  ].filter((query, index, queries) => query && queries.indexOf(query) === index);
+  );
 };
 
 const isVideoUrl = (url: string) => /\.mp4(\?|$)|\.webm(\?|$)/i.test(url);
@@ -278,11 +280,20 @@ async function fetchMedia(
 const ParrotSlider = ({
   slides = [],
   isRtlText = false,
+  currentIndex,
+  onCurrentIndexChange,
+  onFindNewImage,
+  isFindingNewImage = false,
+  findNewImageLabel,
 }: {
   slides?: Slide[];
   isRtlText?: boolean;
+  currentIndex: number;
+  onCurrentIndexChange: (index: number) => void;
+  onFindNewImage?: (index: number) => void | Promise<void>;
+  isFindingNewImage?: boolean;
+  findNewImageLabel: string;
 }) => {
-  const [currentIndex, setCurrentIndex] = React.useState<number>(0);
   const sliderRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -293,20 +304,20 @@ const ParrotSlider = ({
       const scrollLeft = slider.scrollLeft;
       const slideWidth = slider.offsetWidth * 0.9 + 16;
       const index = Math.round(scrollLeft / slideWidth);
-      setCurrentIndex(index);
+      onCurrentIndexChange(index);
     };
 
     slider.addEventListener("scroll", handleScroll);
     return () => slider.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [onCurrentIndexChange]);
 
   React.useEffect(() => {
-    setCurrentIndex(0);
+    onCurrentIndexChange(0);
     sliderRef.current?.scrollTo({ left: 0, behavior: "auto" });
-  }, [slides]);
+  }, [onCurrentIndexChange, slides]);
 
   const goToSlide = (index: number) => {
-    setCurrentIndex(index);
+    onCurrentIndexChange(index);
     const slider = sliderRef.current;
     if (!slider) return;
     const slideWidth = slider.offsetWidth * 0.9 + 16;
@@ -475,6 +486,18 @@ const ParrotSlider = ({
           ›
         </button>
       </div>
+      {onFindNewImage ? (
+        <div className="slideshow-refresh-button-row" style={{ maxWidth: "1000px", margin: "0.75rem auto 0", padding: "0 2rem" }}>
+          <button
+            type="button"
+            className="studio-button btn-mint map-popup-action-button slideshow-refresh-button"
+            disabled={isFindingNewImage}
+            onClick={() => void onFindNewImage(currentIndex)}
+          >
+            {isFindingNewImage ? "..." : findNewImageLabel}
+          </button>
+        </div>
+      ) : null}
       <div className="nav-buttons">
         {slides.map((_, index) => (
           <button
@@ -502,6 +525,8 @@ export default function ParrotStoryCard({
   onOpenStudio,
 }: Props) {
   const [resolvedSlides, setResolvedSlides] = React.useState<Slide[]>(slides);
+  const [currentSlideIndex, setCurrentSlideIndex] = React.useState(0);
+  const [refreshingSlideIndex, setRefreshingSlideIndex] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -541,6 +566,40 @@ export default function ParrotStoryCard({
     onResolvedSlidesChange?.(resolvedSlides);
   }, [onResolvedSlidesChange, resolvedSlides]);
 
+  const handleFindNewImage = React.useCallback(async (slideIndex: number) => {
+    const slide = resolvedSlides[slideIndex];
+    if (!slide) {
+      return;
+    }
+
+    setRefreshingSlideIndex(slideIndex);
+    try {
+      const alternative = await findAlternativeSlideMedia({
+        queries: buildAnimalSlideMediaQueries(PARROT_SEARCH_HINTS, title, description, styleSlug, slide.text),
+        excludedUrls: slide.mediaUrl ? [slide.mediaUrl] : [],
+        preferredSources: ["giphy", "pexels"],
+      });
+
+      if (!alternative) {
+        return;
+      }
+
+      setResolvedSlides((currentSlides) =>
+        currentSlides.map((currentSlide, index) =>
+          index === slideIndex
+            ? {
+                ...currentSlide,
+                mediaUrl: alternative.url,
+                mediaType: alternative.mediaType,
+              }
+            : currentSlide,
+        ),
+      );
+    } finally {
+      setRefreshingSlideIndex((current) => (current === slideIndex ? null : current));
+    }
+  }, [description, resolvedSlides, styleSlug, title]);
+
   return (
     <div className={`story-container story-card-root force-ltr-layout ${lang === "he" ? "text-rtl-scope" : ""}`}>
       <div className="story-content" style={{ maxWidth: "1000px", margin: "0 auto" }}>
@@ -558,7 +617,15 @@ export default function ParrotStoryCard({
         </p>
         <div className="slider-container" style={{ position: "relative" }}>
           {(resolvedSlides?.length ?? 0) > 0 && (
-            <ParrotSlider slides={resolvedSlides} isRtlText={lang === "he"} />
+            <ParrotSlider
+              slides={resolvedSlides}
+              isRtlText={lang === "he"}
+              currentIndex={currentSlideIndex}
+              onCurrentIndexChange={setCurrentSlideIndex}
+              onFindNewImage={handleFindNewImage}
+              isFindingNewImage={refreshingSlideIndex === currentSlideIndex}
+              findNewImageLabel={ui.findNewImage}
+            />
           )}
         </div>
         <div className="parrot-button-container">

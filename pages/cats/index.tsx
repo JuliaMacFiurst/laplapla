@@ -3,6 +3,7 @@ import { dictionaries, Lang } from "../../i18n";
 import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import { useRouter } from "next/router";
+import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -29,6 +30,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [slides, setSlides] = useState<{ text: string; image?: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
 
   const activePreset = useMemo(() => {
     if (!activePresetKey) return null;
@@ -84,6 +86,39 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router);
   const isMobile = useIsMobile();
+
+  const handleFindNewImage = async (slideIndex: number) => {
+    const slide = slides[slideIndex];
+    if (!slide) {
+      return;
+    }
+
+    setRefreshingSlideIndex(slideIndex);
+    try {
+      const alternative = await findAlternativeSlideMedia({
+        queries: buildAnimalSlideMediaQueries(["cat", "kitten", "kitty"], inputText, slide.text),
+        excludedUrls: slide.image ? [slide.image] : [],
+        preferredSources: ["giphy", "pexels"],
+      });
+
+      if (!alternative) {
+        return;
+      }
+
+      setSlides((currentSlides) =>
+        currentSlides.map((currentSlide, index) =>
+          index === slideIndex
+            ? {
+                ...currentSlide,
+                image: alternative.url,
+              }
+            : currentSlide,
+        ),
+      );
+    } finally {
+      setRefreshingSlideIndex((current) => (current === slideIndex ? null : current));
+    }
+  };
 
   return (
     <CatsLayout active="view" lang={lang}>
@@ -234,6 +269,16 @@ export default function CatPage({ lang }: { lang: Lang }) {
                     className="cat-slide-text"
                     dangerouslySetInnerHTML={{ __html: slide.text }}
                   />
+                  <div className="slideshow-refresh-button-row">
+                    <button
+                      type="button"
+                      className="studio-button btn-mint map-popup-action-button slideshow-refresh-button"
+                      disabled={refreshingSlideIndex === idx}
+                      onClick={() => void handleFindNewImage(idx)}
+                    >
+                      {refreshingSlideIndex === idx ? "..." : t.findNewImage}
+                    </button>
+                  </div>
                 </div>
               );
             })}

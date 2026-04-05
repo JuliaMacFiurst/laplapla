@@ -21,6 +21,8 @@ interface StoryCarouselProps {
   t?: CapybaraPageDict;
   currentSlideIndex: number;
   onSlideIndexChange: (slideIndex: number) => void;
+  onFindNewImage?: (slideIndex: number) => void | Promise<void>;
+  isFindingNewImage?: boolean;
   textClassName?: string;
   emptyMessage?: string;
   mediaCache?: ReadonlyMap<number, SlideMedia>;
@@ -33,6 +35,8 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
   t,
   currentSlideIndex,
   onSlideIndexChange,
+  onFindNewImage,
+  isFindingNewImage,
   textClassName,
   emptyMessage,
   mediaCache,
@@ -107,6 +111,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
   const previousSlideLabel = dict.navigation?.previousSlide || "Previous slide";
   const nextSlideLabel = dict.navigation?.nextSlide || "Next slide";
   const slideCounterTemplate = dict.slideCounter || "Slide {current} of {total}";
+  const findNewImageLabel = dict.actions?.findNewImage || "Найти новую картинку";
 
   const currentSlide = story.slides[currentSlideIndex];
   const currentMedia = lockedMedia;
@@ -224,6 +229,18 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
                 </button>
               </div>
             </div>
+            {onFindNewImage ? (
+              <div className="slideshow-refresh-button-row">
+                <button
+                  type="button"
+                  className="studio-button btn-mint map-popup-action-button slideshow-refresh-button"
+                  disabled={isFindingNewImage}
+                  onClick={() => void onFindNewImage(currentSlideIndex)}
+                >
+                  {isFindingNewImage ? "..." : findNewImageLabel}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
