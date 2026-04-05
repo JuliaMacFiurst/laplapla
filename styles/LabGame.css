@@ -330,6 +330,11 @@
   transform: scale(1.04);
 }
 
+.quest-1-hebrew-font .lab-game-start-button,
+.quest-1-hebrew-font .lab-game-restart-button {
+  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+}
+
 @keyframes popIn {
   from {
     transform: scale(0.6);

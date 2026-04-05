@@ -57,8 +57,6 @@ npm run build
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `GIPHY_API_KEY`
 - `PEXELS_API_KEY`
 - `GOOGLE_TTS_API_KEY`
@@ -67,7 +65,7 @@ npm run build
 
 - Секретные ключи должны использоваться только на сервере и через API routes.
 - Клиентские страницы не должны читать приватные env напрямую.
-- `NEXT_PUBLIC_*` переменные считаются публичными и допустимы только там, где это действительно нужно архитектурно.
+- `NEXT_PUBLIC_*` переменные не входят в обязательный production-набор и считаются legacy fallback, если где-то ещё остаются в локальной конфигурации.
 
 ## Проверка перед деплоем
 
@@ -75,6 +73,7 @@ npm run build
 - `npm run build`
 - проверка локалей `ru`, `en`, `he`
 - ручной smoke-test desktop и mobile
+- проверка server-side интеграций: `Supabase`, `GIPHY`, `Pexels`, `Google TTS`
 - проверка env: приватные ключи не должны попадать в клиентский bundle
 
 ## Лицензии и ассеты

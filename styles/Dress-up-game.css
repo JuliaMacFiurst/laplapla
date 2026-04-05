@@ -693,3 +693,12 @@
 
   text-align: center;
 }
+
+.quest-1-hebrew-font .dressup-scoreboard-values,
+.quest-1-hebrew-font .dressup-character-counter,
+.quest-1-hebrew-font .stopwatch-digits,
+.quest-1-hebrew-font .final-summary-total-score,
+.quest-1-hebrew-font .final-summary-character-score,
+.quest-1-hebrew-font .final-summary-score {
+  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+}

@@ -978,6 +978,19 @@
   transform: translateY(-2px);
 }
 
+.quest-1-hebrew-font .preparation-popup__content,
+.quest-1-hebrew-font .garage-start-ride-btn,
+.quest-1-hebrew-font .garage-warning-popup,
+.quest-1-hebrew-font .garage-warning-actions button,
+.quest-1-hebrew-font .dog-sled-run-overlay button,
+.quest-1-hebrew-font .dog-sled-stop-btn,
+.quest-1-hebrew-font .dog-sled-star-counter,
+.quest-1-hebrew-font .dog-sled-finish-banner,
+.quest-1-hebrew-font .dog-sled-results-card,
+.quest-1-hebrew-font .dog-sled-results-actions button {
+  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+}
+
 
 @keyframes start-ride-pulse {
   0% {

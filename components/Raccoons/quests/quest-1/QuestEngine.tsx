@@ -66,7 +66,10 @@ export default function QuestEngine() {
   const Page = PAGES[pageId];
 
   return (
-    <div dir={lang === "he" ? "rtl" : "ltr"}>
+    <div
+      dir={lang === "he" ? "rtl" : "ltr"}
+      className={lang === "he" ? "quest-1-hebrew-font" : undefined}
+    >
       <Page go={setPageId} />
       <div
         className="quest-back-to-maps-button"

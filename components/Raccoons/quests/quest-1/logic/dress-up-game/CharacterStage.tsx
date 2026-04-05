@@ -17,7 +17,7 @@ export default function CharacterStage({
   onStartGame: () => void;
   onCharacterFinished: (result: CharacterResult) => void;
 }) {
-  const { t } = useQuest1I18n();
+  const { lang, t } = useQuest1I18n();
 
   if (!characters || characters.length === 0) {
     return (
@@ -27,7 +27,7 @@ export default function CharacterStage({
           textAlign: "center",
           paddingTop: "40px",
           color: "#fff",
-          fontFamily: "Amatic SC",
+          fontFamily: lang === "he" ? "Nunito" : "Amatic SC",
           fontSize: "32px",
         }}
       >

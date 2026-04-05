@@ -1286,6 +1286,26 @@
   outline-offset: 2px;
 }
 
+.quest-1-hebrew-font .quest-title-text,
+.quest-1-hebrew-font .quest-story-text,
+.quest-1-hebrew-font .quest-back-to-maps-button,
+.quest-1-hebrew-font .quest-map-translation-note,
+.quest-1-hebrew-font .boat-text,
+.quest-1-hebrew-font .ice-button .ice-text,
+.quest-1-hebrew-font .quest-exit-content,
+.quest-1-hebrew-font .quest-question,
+.quest-1-hebrew-font .quest-option,
+.quest-1-hebrew-font .quest-route-flight,
+.quest-1-hebrew-font .quest-route-c,
+.quest-1-hebrew-font .quest-speech,
+.quest-1-hebrew-font .dialog-next-btn,
+.quest-1-hebrew-font .quest-route-btn,
+.quest-1-hebrew-font .flight-test-answer,
+.quest-1-hebrew-font .nav-btn,
+.quest-1-hebrew-font .page-subtitle {
+  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+}
+
 @media (max-width: 900px) {
   .quest-bg-left,
   .quest-bg-right {
