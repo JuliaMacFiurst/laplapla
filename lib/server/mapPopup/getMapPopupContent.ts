@@ -3,6 +3,7 @@ import { getTranslationPayloadByContentIds, type TranslationPayload } from "@/li
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import { ensurePersistedStorySlides } from "@/lib/server/mapPopup/persistence";
 import type { MapPopupContent, MapPopupSlide, MapPopupType } from "@/types/mapPopup";
+import { devLog } from "@/utils/devLog";
 
 type MapStoryRow = {
   id: string | number;
@@ -282,11 +283,11 @@ export async function getMapPopupContent({
   targetId,
   lang = "ru",
 }: GetMapPopupContentParams): Promise<MapPopupContent | null> {
-  console.log(`[map-popup-content] loading type=${type} targetId=${targetId} lang=${lang}`);
+  devLog(`[map-popup-content] loading type=${type} targetId=${targetId} lang=${lang}`);
 
   const baseStory = await loadStory(type, targetId, lang);
   if (!baseStory) {
-    console.log(`[map-popup-content] no story found for type=${type} targetId=${targetId}`);
+    devLog(`[map-popup-content] no story found for type=${type} targetId=${targetId}`);
     return null;
   }
 
@@ -345,7 +346,7 @@ export async function getMapPopupContent({
     source,
   };
 
-  console.log(
+  devLog(
     `[map-popup-content] loaded type=${type} targetId=${targetId} lang=${lang} slides=${slides.length}`,
   );
 

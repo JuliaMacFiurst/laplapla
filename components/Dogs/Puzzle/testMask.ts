@@ -1,9 +1,10 @@
 import { loadPuzzleMask } from "./loadPuzzleMask"
+import { devLog } from "@/utils/devLog";
 
 export async function testPuzzleMask() {
 
   const paths = await loadPuzzleMask()
 
-  console.log("Puzzle pieces:", paths.length)
-  console.log(paths[0])
+  devLog("Puzzle pieces:", paths.length)
+  devLog(paths[0])
 }

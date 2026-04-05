@@ -21,6 +21,7 @@ import {
   useRef,
   useEffect,
 } from "react";
+import { devWarn } from "@/utils/devLog";
 
 export type AudioTrack = {
   id: string;
@@ -106,7 +107,7 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
       try {
         await audio.play();
       } catch (e) {
-        console.warn("Audio play error:", e);
+        devWarn("Audio play error:", e);
       }
     }
   };

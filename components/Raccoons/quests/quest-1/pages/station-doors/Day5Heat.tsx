@@ -6,6 +6,7 @@ import CharacterStage from "../../logic/dress-up-game/CharacterStage";
 import type { CharacterResult } from "@/types/types";
 import FinalSummary from "../../logic/dress-up-game/FinalSummary";
 import { useQuest1I18n } from "../../i18n";
+import { devLog } from "@/utils/devLog";
 
 export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
   const { t } = useQuest1I18n();
@@ -54,10 +55,10 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
               },
             ]}
             onCharacterSelected={(char) => {
-              console.log("Selected character:", char);
+              devLog("Selected character:", char);
             }}
             onStartGame={() => {
-              console.log("start game");
+              devLog("start game");
             }}
             onCharacterFinished={(result) => {
               setResults((prev) => {

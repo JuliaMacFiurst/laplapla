@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { devLog } from "@/utils/devLog";
 import { PuzzleEngine } from "./PuzzleEngine";
 
 type Props = {
@@ -8,7 +9,7 @@ type Props = {
 };
 
 export default function PuzzleCanvas({ sourceCanvas }: Props) {
-  console.log("PuzzleCanvas mounted");
+  devLog("PuzzleCanvas mounted");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<PuzzleEngine | null>(null);
   const trayRef = useRef<HTMLDivElement | null>(null);

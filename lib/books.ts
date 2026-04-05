@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
+import { devLog } from "@/utils/devLog";
 import type { Lang } from "@/i18n";
 import type { Book, ExplanationMode } from "@/types/types";
 
@@ -171,7 +172,7 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
   const slug = decodeURIComponent(rawSlug).trim();
   const normalizedSlug = normalizeBookSlug(slug);
   if (process.env.NODE_ENV === "development") {
-    console.log("[BOOK] slug lookup start:", {
+    devLog("[BOOK] slug lookup start:", {
       rawSlug,
       slug,
       normalizedSlug,
@@ -181,7 +182,7 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
 
   if (!slug) {
     if (process.env.NODE_ENV === "development") {
-      console.log("[BOOK] slug result:", undefined);
+      devLog("[BOOK] slug result:", undefined);
     }
     return null;
   }
@@ -194,7 +195,7 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
 
   if (!exactSlugError && exactSlugMatch) {
     if (process.env.NODE_ENV === "development") {
-      console.log("[BOOK] exact slug match:", {
+      devLog("[BOOK] exact slug match:", {
         slug,
         bookId: exactSlugMatch.id,
         bookSlug: exactSlugMatch.slug,
@@ -214,7 +215,7 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
   }
 
   if (process.env.NODE_ENV === "development") {
-    console.log("[BOOK] exact id match:", {
+    devLog("[BOOK] exact id match:", {
       slug,
       bookId: exactIdMatch?.id ?? null,
     });
@@ -268,7 +269,7 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
     });
 
   if (process.env.NODE_ENV === "development") {
-    console.log("[BOOK] translation lookup:", {
+    devLog("[BOOK] translation lookup:", {
       slug,
       lang,
       translationLookupLanguages,
@@ -293,7 +294,7 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
 
     if (translatedIdMatch) {
       if (process.env.NODE_ENV === "development") {
-        console.log("[BOOK] translation content_id match:", {
+        devLog("[BOOK] translation content_id match:", {
           slug,
           contentId: matchedTranslation.content_id,
           bookId: translatedIdMatch.id,
@@ -344,7 +345,7 @@ export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promis
   });
 
   if (process.env.NODE_ENV === "development") {
-    console.log("[BOOK] fallback scan result:", {
+    devLog("[BOOK] fallback scan result:", {
       slug,
       normalizedSlug,
       bookId: fallbackMatch?.id ?? null,

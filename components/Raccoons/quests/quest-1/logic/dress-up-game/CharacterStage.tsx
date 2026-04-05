@@ -5,6 +5,7 @@ import ClothesConveyor, { ClothesItem } from "./ClothesConveyor";
 import { loadClothesForCharacter } from "./loadClothesForCharacter";
 import type { CharacterResult, DressUpSeason, DressedItem } from "@/types/types";
 import { useQuest1I18n } from "../../i18n";
+import { devLog, devWarn } from "@/utils/devLog";
 
 export default function CharacterStage({
   characters,
@@ -135,7 +136,7 @@ export default function CharacterStage({
   }
 
   function handleDrop(itemId: string) {
-    console.log("[DressUp][DROP] raw itemId:", itemId);
+    devLog("[DressUp][DROP] raw itemId:", itemId);
     if (!itemId) return;
 
     // Normalize itemId: remove .webp extension and -dressed suffix if present
@@ -147,19 +148,19 @@ export default function CharacterStage({
       normalizedId = normalizedId.slice(0, -8);
     }
 
-    console.log("[DressUp][DROP] normalizedId:", normalizedId);
-    console.log("[DressUp][DROP] current character:", current?.name);
+    devLog("[DressUp][DROP] normalizedId:", normalizedId);
+    devLog("[DressUp][DROP] current character:", current?.name);
 
     if (dressedItems.some((di) => di.id === normalizedId)) {
-      console.log("[DressUp][DROP] already dressed:", normalizedId);
+      devLog("[DressUp][DROP] already dressed:", normalizedId);
       return;
     }
 
     const item = clothes.find((c) => c.id === normalizedId);
-    console.log("[DressUp][DROP] found item in clothes:", item);
+    devLog("[DressUp][DROP] found item in clothes:", item);
 
     if (!item) {
-      console.warn(
+      devWarn(
         "[DressUp][DROP] item NOT found in clothes, ignoring drop:",
         normalizedId
       );
@@ -168,7 +169,7 @@ export default function CharacterStage({
 
     const season = seasonFromId(normalizedId);
     const dressedSrc = `/supabase-storage/quests/1_quest/games/dress-up/${current.name}/${season}/${normalizedId}-dressed.webp`;
-    console.log("[DressUp][DROP] dressed image src:", dressedSrc);
+    devLog("[DressUp][DROP] dressed image src:", dressedSrc);
 
     if (item.score > 0) {
       setGoodScore((s) => s + item.score);
@@ -245,7 +246,7 @@ export default function CharacterStage({
             />
             {dressedItems.map(({ id, season }) => {
               const src = `/supabase-storage/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
-              console.log("[DressUp][RENDER] dressed item:", id, src);
+              devLog("[DressUp][RENDER] dressed item:", id, src);
 
               return (
                 <img
@@ -253,7 +254,7 @@ export default function CharacterStage({
                   src={src}
                   className={`dressup-clothing dressup-${id}`}
                   alt=""
-                  onLoad={() => console.log("[DressUp][IMG LOADED]", src)}
+                  onLoad={() => devLog("[DressUp][IMG LOADED]", src)}
                   onError={() => console.error("[DressUp][IMG ERROR]", src)}
                 />
               );

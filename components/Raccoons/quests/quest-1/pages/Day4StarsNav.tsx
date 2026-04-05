@@ -8,6 +8,7 @@ import { useRef, useState, useEffect } from "react";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
 import { getStarRouteDialogs, type StarDialogueStep } from "../i18n/dialogs";
+import { devLog } from "@/utils/devLog";
 
 export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
   const { lang, t } = useQuest1I18n();
@@ -90,7 +91,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
             ref={starsMapRef}
             racTextRef={racTextRef}
             onStep={(stepId: string) => {
-              console.log("[Day4StarsNav] onStep:", stepId);
+              devLog("[Day4StarsNav] onStep:", stepId);
 
               // Пропускаем служебный шаг
               if (stepId === "first_click") {

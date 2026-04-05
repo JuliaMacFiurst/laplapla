@@ -5,6 +5,7 @@ import { VideoCategories } from "./VideoCategories";
 import { ShortsRow } from "./ShortsRow";
 import { VideosRow } from "./VideosRow";
 import { dictionaries, Lang } from "../../i18n";
+import { devWarn } from "@/utils/devLog";
 
 // ⚠️ ВАЖНО: импорт ТОЛЬКО через index.ts видеомодуля
 import type { VideoCategoryKey, VideoItem } from "../../content/videos";
@@ -123,7 +124,7 @@ export function VideoSection({ lang }: { lang: Lang }) {
     const startIndex = items.findIndex((v) => v.youtubeId === youtubeId);
     // If we can't find it, don't silently fall back to 0 (it looks like “always plays first”).
     if (startIndex < 0) {
-      console.warn(
+      devWarn(
         "[VideoSection] openShort: youtubeId not found in filteredShorts",
         {
           youtubeId,
@@ -146,7 +147,7 @@ export function VideoSection({ lang }: { lang: Lang }) {
     const startIndex = items.findIndex((v) => v.youtubeId === youtubeId);
 
     if (startIndex < 0) {
-      console.warn(
+      devWarn(
         "[VideoSection] openVideo: youtubeId not found in filteredVideos",
         {
           youtubeId,

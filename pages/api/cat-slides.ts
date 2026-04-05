@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
 import { fetchVideoFromPexels } from "@/lib/pexelsVideo";
 import { withApiHandler } from "@/utils/apiHandler";
+import { devLog } from "@/utils/devLog";
 
 export const config = {
   api: {
@@ -127,7 +128,7 @@ const apiKey = process.env.GIPHY_API_KEY;
 */
 
 async function fetchGifFromGiphy(query: string, used: Set<string>): Promise<string | null> {
-  console.log("🌀 GIPHY search:", query);
+  devLog("🌀 GIPHY search:", query);
   const offset = Math.floor(Math.random() * 50); // 🔁 Случайное смещение
   const searchParams = new URLSearchParams({
     api_key: apiKey || '',
@@ -146,7 +147,7 @@ async function fetchGifFromGiphy(query: string, used: Set<string>): Promise<stri
 
   if (gifs?.length) {
     const chosen = gifs[Math.floor(Math.random() * gifs.length)];
-    console.log("🌀 GIPHY chosen:", chosen);
+    devLog("🌀 GIPHY chosen:", chosen);
     used.add(chosen);
     return chosen;
   }
@@ -171,13 +172,13 @@ function getTextPresetByPrompt(prompt: string, lang: string) {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log("🐱 /api/cat-slides called");
-  console.log("📥 body:", req.body);
+  devLog("🐱 /api/cat-slides called");
+  devLog("📥 body:", req.body);
 
   let { prompt, lang } = req.body;
 
   if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
-    console.log("🎲 No prompt provided, selecting random text preset");
+    devLog("🎲 No prompt provided, selecting random text preset");
     const presetsForLang = CAT_TEXT_PRESETS.filter(
       (p) => p.lang === lang
     );
@@ -190,14 +191,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
 
     prompt = randomPreset.prompt;
-    console.log("🎯 Random preset chosen:", randomPreset.prompt, randomPreset.lang);
+    devLog("🎯 Random preset chosen:", randomPreset.prompt, randomPreset.lang);
   }
 
   const slidePreset = getSlidePresetByPrompt(prompt);
   const textPreset = getTextPresetByPrompt(prompt, lang);
 
-  console.log("🔍 slidePreset found:", Boolean(slidePreset));
-  console.log("🔍 textPreset found:", Boolean(textPreset));
+  devLog("🔍 slidePreset found:", Boolean(slidePreset));
+  devLog("🔍 textPreset found:", Boolean(textPreset));
 
   type SourceSlide = {
     text: string;
@@ -213,8 +214,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       ? textPreset.texts.map((text) => ({ text }))
       : [];
 
-  console.log("🧩 sourceSlides length:", sourceSlides.length);
-  console.log("🧩 sourceSlides preview:", sourceSlides.slice(0, 2));
+  devLog("🧩 sourceSlides length:", sourceSlides.length);
+  devLog("🧩 sourceSlides preview:", sourceSlides.slice(0, 2));
 
   const slides = [];
   const usedGifs: Set<string> = new Set();
@@ -224,8 +225,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const text = slide.text;
     let image = slide.mediaUrl || '';
 
-    console.log("🖼 Slide text:", text);
-    console.log("🖼 Has predefined media:", Boolean(slide.mediaUrl));
+    devLog("🖼 Slide text:", text);
+    devLog("🖼 Has predefined media:", Boolean(slide.mediaUrl));
 
     const isEven = slides.length % 2 === 0;
 
@@ -257,7 +258,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     });
   }
 
-  console.log("✅ Slides ready:", slides.length);
+  devLog("✅ Slides ready:", slides.length);
   return res.status(200).json({ slides, prompt });
 }
 

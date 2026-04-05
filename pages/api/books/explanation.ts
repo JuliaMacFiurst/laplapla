@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { dictionaries } from "@/i18n";
 import { getRequestLang } from "@/lib/i18n/routing";
 import { getTranslatedSlidesForMode } from "@/lib/books";
+import { devLog } from "@/utils/devLog";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -45,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (process.env.NODE_ENV === "development") {
-      console.log("[BOOK API] explanation request:", {
+      devLog("[BOOK API] explanation request:", {
         lang,
         query: req.query,
         url: req.url,
@@ -71,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const translation = await getTranslationPayload("book", String(bookId), lang);
       const translatedSlides = getTranslatedSlidesForMode(translation, mode);
       if (process.env.NODE_ENV === "development") {
-        console.log("[BOOK API] explanation translation result:", {
+        devLog("[BOOK API] explanation translation result:", {
           lang,
           bookId: String(bookId),
           modeId: String(modeId),
@@ -102,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!data) {
       if (process.env.NODE_ENV === "development") {
-        console.log("[BOOK API] explanation fallback slides:", {
+        devLog("[BOOK API] explanation fallback slides:", {
           lang,
           bookId: String(bookId),
           modeId: String(modeId),
@@ -120,7 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const slides = parseSlides(data.slides);
 
     if (process.env.NODE_ENV === "development") {
-      console.log("[BOOK API] explanation db result:", {
+      devLog("[BOOK API] explanation db result:", {
         lang,
         bookId: String(bookId),
         modeId: String(modeId),

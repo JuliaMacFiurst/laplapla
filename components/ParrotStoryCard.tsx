@@ -1,5 +1,6 @@
 import * as React from "react";
 import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
+import { devDebug } from "@/utils/devLog";
 
 type Props = {
   lang: "ru" | "en" | "he";
@@ -178,7 +179,7 @@ const logMediaDebug = (payload: {
   mediaUrl?: string;
 }) => {
   if (process.env.NODE_ENV !== "development") return;
-  console.debug("[ParrotStoryCard]", payload);
+  devDebug("[ParrotStoryCard]", payload);
 };
 
 async function loadMediaItems(

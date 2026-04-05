@@ -5,9 +5,11 @@
 // ======================================================
 
 (function () {
-  const SERVER =
-    window.__BROWSER_CAPTURE_ENDPOINT__ ||
-    "http://127.0.0.1:5050/log/browser";
+  const SERVER = window.__BROWSER_CAPTURE_ENDPOINT__;
+
+  if (!SERVER) {
+    return;
+  }
 
   const PROJECT =
     window.__PROJECT_NAME__ ||

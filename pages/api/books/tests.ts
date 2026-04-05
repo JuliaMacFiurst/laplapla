@@ -4,6 +4,7 @@ import { getRequestLang } from "@/lib/i18n/routing";
 import { getTranslatedBookTests } from "@/lib/books";
 import { normalizeBookTests, normalizeBookTestsWithAnswers } from "@/lib/books/bookTests";
 import { supabase } from "@/lib/supabase";
+import { devLog } from "@/utils/devLog";
 
 const mergeTranslatedTests = (
   translatedTests: ReturnType<typeof getTranslatedBookTests>,
@@ -40,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (process.env.NODE_ENV === "development") {
-      console.log("[BOOK API] tests request:", {
+      devLog("[BOOK API] tests request:", {
         lang,
         query: req.query,
         url: req.url,
@@ -62,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const translation = await getTranslationPayload("book", String(bookId), lang);
       const translatedTests = getTranslatedBookTests(translation, String(bookId));
       if (process.env.NODE_ENV === "development") {
-        console.log("[BOOK API] tests translation result:", {
+        devLog("[BOOK API] tests translation result:", {
           lang,
           bookId: String(bookId),
           baseTestsCount: normalizedBaseTests.length,

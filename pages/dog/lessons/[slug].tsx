@@ -8,6 +8,7 @@ import { getRandomArtFact } from "@/lib/artFacts/getRandomArtFact";
 import TranslationWarning from "@/components/TranslationWarning";
 import { getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { devLog } from "@/utils/devLog";
 import { dictionaries, Lang } from "../../../i18n";
 // Color seed placed by a paw click
 type ColorSeed = {
@@ -368,7 +369,7 @@ function LessonPlayerDesktop() {
 
     regionDataRef.current = buildRegionMap(imageData);
 
-    console.log(
+    devLog(
       "Region map built:",
       regionDataRef.current?.regionCount,
       "regions",

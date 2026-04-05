@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
+import { devLog } from "@/utils/devLog";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -21,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .eq("language", language)
     .maybeSingle();
 
-  console.log("🧠 Ответ из Supabase:", data);
+  devLog("🧠 Ответ из Supabase:", data);
 
   if (error || !data) {
     return res.status(200).json({ content: null });

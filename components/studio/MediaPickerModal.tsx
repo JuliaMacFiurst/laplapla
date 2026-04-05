@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { dictionaries, Lang } from "@/i18n";
+import { devLog } from "@/utils/devLog";
 
 interface MediaPickerModalProps {
   lang: Lang;
@@ -151,7 +152,7 @@ export default function MediaPickerModal({
     const input = e.target;
     const file = input.files?.[0];
     if (!file) return;
-    console.log("UPLOAD:", file.type, file.name);
+    devLog("UPLOAD:", file.type, file.name);
     // Require rights confirmation
     if (!confirmRights) {
       setUploadError(t.errorConfirmRights);

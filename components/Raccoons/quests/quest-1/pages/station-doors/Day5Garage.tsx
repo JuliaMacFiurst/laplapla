@@ -8,6 +8,7 @@ import StatBar from "../../logic/dog-sled-game/StatBar";
 import SledAnimationOverlay from "../../logic/dog-sled-game/SledAnimationOverlay";
 import DogSledRunStage from "../../logic/dog-sled-game/DogSledRunStage";
 import { useQuest1I18n } from "../../i18n";
+import { devLog } from "@/utils/devLog";
 
 export type SledPart =
   | "reins"
@@ -80,11 +81,11 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
       keys.forEach((key) => {
         const patchValue = patch[key] ?? 0;
         if (patchValue === 0) {
-          console.log(`${key}: unchanged`);
+          devLog(`${key}: unchanged`);
         } else if (patchValue > 0) {
-          console.log(`${key}: increased by ${patchValue}`);
+          devLog(`${key}: increased by ${patchValue}`);
         } else {
-          console.log(`${key}: decreased by ${-patchValue}`);
+          devLog(`${key}: decreased by ${-patchValue}`);
         }
         newValues[key] = Math.min(1, Math.max(0, prev[key] + patchValue));
       });
@@ -156,9 +157,9 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
           onApply={(patch) => applyPatchWithLogs(patch)}
           onClose={() => setActivePart(null)}
           onPlayAnimation={(part) => {
-             console.log("[ANIMATION REQUEST]", part);
+             devLog("[ANIMATION REQUEST]", part);
             const animation = mapPartToAnimation(part);
-            console.log("[ANIMATION MAPPED]", animation);
+            devLog("[ANIMATION MAPPED]", animation);
 
             if (animation) {
               setActiveAnimation(animation);

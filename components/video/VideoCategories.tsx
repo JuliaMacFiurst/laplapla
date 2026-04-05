@@ -1,4 +1,5 @@
 import { dictionaries, Lang } from "../../i18n";
+import { devWarn } from "@/utils/devLog";
 
 const CATEGORY_COLORS = [
   "pink",
@@ -68,7 +69,7 @@ export function VideoCategories({
         const label = t[category.key];
 
         if (!label) {
-          console.warn(
+          devWarn(
             `[VideoCategories] Missing translation for category key: "${category.key}"`
           );
         }

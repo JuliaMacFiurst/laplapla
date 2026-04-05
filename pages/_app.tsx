@@ -34,6 +34,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const isExportPage = router.pathname === "/cats/export";
   const isCapybaraPage = router.pathname.startsWith("/capybara");
   const isProduction = process.env.NODE_ENV === "production";
+  const isBrowserCaptureEnabled =
+    !isProduction && process.env.NEXT_PUBLIC_ENABLE_BROWSER_CAPTURE === "true";
   const [lang, setLang] = useState<Lang | null>(null);
 
   // Determine language once on client
@@ -66,7 +68,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         <link rel="icon" sizes="512x512" href="/favicon_io/android-chrome-512x512.webp" />
       </Head>
 
-      {!isProduction && (
+      {isBrowserCaptureEnabled && (
         <>
           <Script id="ai-config" strategy="beforeInteractive">
             {`

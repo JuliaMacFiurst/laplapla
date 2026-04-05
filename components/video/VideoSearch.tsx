@@ -1,4 +1,5 @@
 import { dictionaries, type Lang } from "../../i18n";
+import { devLog } from "@/utils/devLog";
 
 type VideoSearchProps = {
   lang: Lang;
@@ -13,7 +14,7 @@ export function VideoSearch({ lang, query, onChange }: VideoSearchProps) {
       className="video-search"
       onSubmit={(e) => {
         e.preventDefault();
-        console.log("[VideoSearch] submit", { query });
+        devLog("[VideoSearch] submit", { query });
         onChange(query);
       }}
     >
