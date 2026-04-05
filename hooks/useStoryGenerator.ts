@@ -26,7 +26,6 @@ export type StoryDraftState = {
     template: boolean;
     generating: boolean;
     assembling: boolean;
-    saving: boolean;
   };
   error: string | null;
 };
@@ -48,7 +47,6 @@ type StoryTexts = {
   validationChooseHero: string;
   validationTemplateIntro: string;
   validationAnswerShort: string;
-  savePendingLabel: string;
   templatePreviewError: string;
 };
 
@@ -86,7 +84,6 @@ const buildInitialState = (): StoryDraftState => ({
     template: false,
     generating: false,
     assembling: false,
-    saving: false,
   },
   error: null,
 });
@@ -198,90 +195,12 @@ async function resolveSlideMedia(slide: StorySlide, index: number): Promise<Slid
   };
 }
 
-const buildStorySubmissionPayload = (
-  draft: StoryDraftState,
-  template: NormalizedStoryTemplate | null,
-  heroName: string,
-) => {
-  const templateId = draft.mode === "template" ? template?.id ?? draft.selectedTemplateId ?? null : null;
-  const canonicalAnswers = STORY_STEP_KEYS.map((stepKey) => {
-    const block = draft.accumulatedStory.find((item) => item.step === stepKey);
-    return block
-      ? {
-          step: block.step,
-          text: block.text,
-        }
-      : null;
-  }).filter(Boolean);
-
-  const userInput = draft.mode === "template"
-    ? {
-        heroInput: draft.heroInput,
-        selectedTemplateId: draft.selectedTemplateId,
-        path: draft.path,
-      }
-    : {
-        heroInput: draft.heroInput,
-        answers: canonicalAnswers,
-      };
-
-  return {
-    mode: draft.mode,
-    templateId,
-    heroName,
-    userInput,
-    assembledStory: {
-      heroName,
-      mode: draft.mode,
-      templateId,
-      steps: draft.accumulatedStory.map((block) => ({
-        step: block.step,
-        text: block.text,
-        slides: block.slides,
-        keywords: block.keywords,
-      })),
-    },
-    slides: draft.slideshow.map((slide) => ({
-      step: slide.step,
-      text: slide.text,
-      keywords: slide.keywords,
-      mediaUrl: slide.mediaUrl ?? null,
-    })),
-  };
-};
-
-const REQUIRED_SUBMISSION_STEPS = STORY_STEP_KEYS;
-const MIN_STEP_TEXT_LENGTH = 4;
-const MIN_TOTAL_STORY_LENGTH = 24;
-
-const validateStorySubmissionDraft = (draft: StoryDraftState) => {
-  const requiredBlocks = REQUIRED_SUBMISSION_STEPS.map((stepKey) =>
-    draft.accumulatedStory.find((block) => block.step === stepKey),
-  );
-
-  if (requiredBlocks.some((block) => !block)) {
-    return "История ещё не собрана полностью.";
-  }
-
-  if (requiredBlocks.some((block) => (block?.text.trim().length ?? 0) < MIN_STEP_TEXT_LENGTH)) {
-    return "Каждый шаг истории должен быть длиннее 3 символов.";
-  }
-
-  const totalLength = requiredBlocks.reduce((sum, block) => sum + (block?.text.trim().length ?? 0), 0);
-  if (totalLength < MIN_TOTAL_STORY_LENGTH) {
-    return "История получилась слишком короткой для отправки.";
-  }
-
-  return null;
-};
-
 export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const [draft, setDraft] = useState<StoryDraftState>(buildInitialState);
   const [heroOptions, setHeroOptions] = useState<StoryHeroOption[]>([]);
   const [template, setTemplate] = useState<NormalizedStoryTemplate | null>(null);
   const [activeUserStoryTranslated, setActiveUserStoryTranslated] = useState(true);
   const [mediaCache, setMediaCache] = useState<Map<number, SlideMedia>>(new Map());
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isCapybaraAnimating, setIsCapybaraAnimating] = useState(false);
   const mediaLoadIdRef = useRef(0);
@@ -383,7 +302,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   }, [draft.heroInput, draft.selectedTemplateId, draft.selectedUserStoryId, heroOptions, template?.heroName]);
 
   const loadUserStory = useCallback(async (submissionId: string) => {
-    setSaveMessage(null);
     setTemplate(null);
     setActiveUserStoryTranslated(lang === "ru");
     setDraft((prev) => ({
@@ -432,7 +350,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   }, [draft.loading.template, draft.mode, draft.selectedUserStoryId, draft.slideshow.length, loadUserStory]);
 
   const setSelectedHeroOption = useCallback((option: StoryHeroOption | null) => {
-    setSaveMessage(null);
     setTemplate(null);
     if (!option) {
       setActiveUserStoryTranslated(lang === "ru");
@@ -479,7 +396,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   }, [lang, loadUserStory]);
 
   const setHeroInput = useCallback((heroInput: string) => {
-    setSaveMessage(null);
     setDraft((prev) => ({
       ...prev,
       heroInput,
@@ -497,7 +413,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       return;
     }
 
-    setSaveMessage(null);
     setDraft((prev) => ({
       ...prev,
       error: null,
@@ -527,7 +442,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       return;
     }
 
-    setSaveMessage(null);
     const nextPath: Partial<StoryPath> = { intro: choiceIndex };
 
     setDraft((prev) => ({
@@ -590,7 +504,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       return;
     }
 
-    setSaveMessage(null);
     setDraft((prev) => ({
       ...prev,
       error: null,
@@ -628,7 +541,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       keywords: [],
     };
 
-    setSaveMessage(null);
     setDraft((prev) => {
       const accumulatedStory = [...prev.accumulatedStory, nextBlock];
       const nextDraft = {
@@ -660,67 +572,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     }
   }, [draft.accumulatedStory, draft.currentStep, draft.loading.assembling, draft.mode]);
 
-  const saveStory = useCallback(async () => {
-    if (draft.mode === "user_story") {
-      return;
-    }
-
-    if (draft.accumulatedStory.length === 0 || draft.slideshow.length === 0) {
-      return;
-    }
-
-    const validationError = validateStorySubmissionDraft(draft);
-    if (validationError) {
-      setDraft((prev) => ({
-        ...prev,
-        error: validationError,
-      }));
-      return;
-    }
-
-    setSaveMessage(null);
-    setDraft((prev) => ({
-      ...prev,
-      loading: { ...prev.loading, saving: true },
-      error: null,
-    }));
-
-    try {
-      const submissionPayload = buildStorySubmissionPayload(draft, template, heroName);
-      console.log("[SAVE STORY PAYLOAD]", submissionPayload);
-
-      const response = await fetch("/api/story/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submissionPayload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[SAVE STORY ERROR]", errorText);
-        throw new Error("Failed to submit story");
-      }
-
-      const payload = await response.json().catch(() => null) as { error?: string; message?: string; ok?: boolean; id?: string } | null;
-      console.log("[SAVE STORY SUCCESS]", payload);
-
-      setSaveMessage(texts.savePendingLabel);
-      return payload;
-    } catch (error) {
-      console.error("[SAVE STORY FAILED]", error);
-      setDraft((prev) => ({
-        ...prev,
-        error: error instanceof Error ? error.message : "Failed to submit story",
-      }));
-      throw error;
-    } finally {
-      setDraft((prev) => ({
-        ...prev,
-        loading: { ...prev.loading, saving: false },
-      }));
-    }
-  }, [draft, heroName, template, texts.savePendingLabel]);
-
   const openInEditor = useCallback(() => {
     const studioSlides = draft.slideshow.map((slide, index) => {
       const media = mediaCache.get(index);
@@ -750,7 +601,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
 
   const reset = useCallback(() => {
     setTemplate(null);
-    setSaveMessage(null);
     setMediaCache(new Map());
     setCurrentSlideIndex(0);
     setDraft((prev) => ({
@@ -779,7 +629,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     isCapybaraAnimating,
     mediaCache,
     previewText,
-    saveMessage,
     template,
     templateIntroChoices,
     activeUserStoryTranslated,
@@ -791,7 +640,6 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     loadUserStory,
     openInEditor,
     reset,
-    saveStory,
     setCurrentSlideIndex,
     setHeroInput,
     setSelectedHeroOption,

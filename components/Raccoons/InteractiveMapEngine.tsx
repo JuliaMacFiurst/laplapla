@@ -47,26 +47,6 @@ type MapPopupSearchResponse = {
   } | null;
 };
 
-type MapPopupPersistResponse = {
-  slide: {
-    id: string;
-    imageUrl: string | null;
-    imageCreditLine: string | null;
-  };
-  skipped?: boolean;
-};
-
-type MapPopupSlidesPersistResponse = {
-  slides: Array<{
-    id: string;
-    index: number;
-    text: string;
-    imageUrl?: string | null;
-    imageCreditLine?: string | null;
-  }>;
-  skipped?: boolean;
-};
-
 function buildMediaSearchParams(
   type: InteractiveMapProps["type"],
   slideText: string,
@@ -216,32 +196,6 @@ async function resolveSlideMedia(
   } catch {
     return buildClientRaccoonFallback(type, targetId, slideText);
   }
-}
-
-async function persistSlideMedia(
-  slideId: string,
-  imageUrl: string,
-  imageCreditLine: string | null | undefined,
-  overwrite = false,
-) {
-  const persistResponse = await fetch("/api/map-popup-media/persist", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      slideId,
-      imageUrl,
-      imageCreditLine,
-      overwrite,
-    }),
-  });
-
-  if (!persistResponse.ok) {
-    throw new Error(`Media persist failed: ${persistResponse.status}`);
-  }
-
-  return (await persistResponse.json()) as MapPopupPersistResponse;
 }
 
 export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
@@ -657,29 +611,6 @@ useEffect(() => {
         setPopupContent,
         setMediaStatusBySlideId,
       );
-
-      try {
-        const persistPayload = await persistSlideMedia(
-          currentPopupSlide.id,
-          resolvedItem.url,
-          resolvedItem.creditLine,
-          true,
-        );
-        if (!persistPayload.slide.imageUrl) {
-          return;
-        }
-
-        applyResolvedSlideMedia(
-          storyId,
-          persistPayload.slide.id,
-          persistPayload.slide.imageUrl,
-          persistPayload.slide.imageCreditLine,
-          setPopupContent,
-          setMediaStatusBySlideId,
-        );
-      } catch (error) {
-        console.error("Failed to persist refreshed slide media", error);
-      }
       setToast(lang === "ru" ? "Загружена новая картинка." : lang === "he" ? "נטענה תמונה חדשה." : "Loaded a new image.");
       setTimeout(() => setToast(null), 2500);
     } catch (error) {
@@ -893,30 +824,20 @@ useEffect(() => {
 
   const persistParsedSlides = async () => {
     try {
-      const parsedSlides = parseMapStoryContentToSlides(rawContent);
+      const parsedSlides = parseMapStoryContentToSlides(rawContent).map((slide, index) => ({
+        id: `parsed:${requestKey}:${index}`,
+        index: typeof slide.slideOrder === "number" ? slide.slideOrder : index,
+        text: slide.text,
+        imageUrl: null,
+        imageCreditLine: null,
+        imageAuthor: null,
+        imageSourceUrl: null,
+      }));
       if (parsedSlides.length === 0) {
         slideParseHydrationRef.current.delete(requestKey);
         return;
       }
-
-      const response = await fetch("/api/map-popup-slides/persist", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          storyId,
-          slides: parsedSlides,
-        }),
-      });
-
-      if (!response.ok) {
-        slideParseHydrationRef.current.delete(requestKey);
-        return;
-      }
-
-      const payload = (await response.json()) as MapPopupSlidesPersistResponse;
-      if (cancelled || !Array.isArray(payload.slides) || payload.slides.length === 0) {
+      if (cancelled) {
         slideParseHydrationRef.current.delete(requestKey);
         return;
       }
@@ -928,7 +849,7 @@ useEffect(() => {
 
         return {
           ...current,
-          slides: payload.slides,
+          slides: parsedSlides,
         };
       });
     } catch (error) {
@@ -1028,29 +949,6 @@ useEffect(() => {
           setPopupContent,
           setMediaStatusBySlideId,
         );
-
-        try {
-          const persistPayload = await persistSlideMedia(
-            slide.id,
-            resolvedItem.url,
-            resolvedItem.creditLine,
-          );
-          if (cancelled || !persistPayload.slide.imageUrl) {
-            return;
-          }
-
-          usedMediaUrls.add(persistPayload.slide.imageUrl);
-          applyResolvedSlideMedia(
-            storyId,
-            persistPayload.slide.id,
-            persistPayload.slide.imageUrl,
-            persistPayload.slide.imageCreditLine,
-            setPopupContent,
-            setMediaStatusBySlideId,
-          );
-        } catch (error) {
-          console.error("Failed to persist hydrated slide media", error);
-        }
       } catch (error) {
         console.error("Failed to hydrate popup slide media", error);
         markSlideMissing(slide.id);

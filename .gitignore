@@ -50,3 +50,8 @@ supabase/.db/
 
 # Generated assets cache (if any appear)
 public/tmp/
+
+# Local database and storage backups
+storage-backup/
+supabase-*.sql
+backups/

@@ -24,12 +24,9 @@ const buildTexts = (lang: Lang) => {
       coWriteButton: "Start co-writing",
       nextButton: "Next",
       tryAnotherButton: "Try another story",
-      saveButton: "Save my story",
       openEditorButton: "Open in the cat editor",
       previewTitle: "Your story so far",
       storyReadyTitle: "Your capybara story is ready",
-      saving: "Saving...",
-      pendingMessage: "The capybara will review your story 🧐",
       narrationAuto: (hero: string) => `Once upon a time, ${hero} opened a new story and invited the capybara to narrate it.`,
       customStepTitles: {
         narration: "Narrator voice",
@@ -78,12 +75,9 @@ const buildTexts = (lang: Lang) => {
       coWriteButton: "להתחיל לכתוב יחד",
       nextButton: "הבא",
       tryAnotherButton: "לנסות סיפור אחר",
-      saveButton: "לשמור את הסיפור שלי",
       openEditorButton: "לפתוח בעורך החתולים",
       previewTitle: "הסיפור שלכם עד עכשיו",
       storyReadyTitle: "סיפור הקפיברה שלכם מוכן",
-      saving: "שומר...",
-      pendingMessage: "הקפיברה תבדוק את הסיפור שלכם 🧐",
       narrationAuto: (hero: string) => `פעם אחת ${hero} פתח סיפור חדש, והקפיברה התחילה לספר אותו.`,
       customStepTitles: {
         narration: "קול המספר",
@@ -131,12 +125,9 @@ const buildTexts = (lang: Lang) => {
     coWriteButton: "Начать сочинять вместе",
     nextButton: "Дальше",
     tryAnotherButton: "Попробовать другую историю",
-    saveButton: "Сохрани мою историю",
     openEditorButton: "Открыть в редакторе котиков",
     previewTitle: "История уже звучит так",
     storyReadyTitle: "Твоя история с капибарой готова",
-    saving: "Сохраняем...",
-    pendingMessage: "Капибара проверит твою историю 🧐",
     narrationAuto: (hero: string) => `Жила-была капибара, и однажды ${hero} позвал её сочинить новую историю.`,
     customStepTitles: {
       narration: "Голос рассказчика",
@@ -190,7 +181,6 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     heroName,
     mediaCache,
     previewText,
-    saveMessage,
     template,
     templateIntroChoices,
     activeUserStoryTranslated,
@@ -200,7 +190,6 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     chooseTemplateIntro,
     openInEditor,
     reset,
-    saveStory,
     setCurrentSlideIndex,
     setHeroInput,
     setSelectedHeroOption,
@@ -213,7 +202,6 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     validationChooseHero: t.validationChooseHero,
     validationTemplateIntro: t.validationTemplateIntro,
     validationAnswerShort: t.validationAnswerShort,
-    savePendingLabel: t.pendingMessage,
     templatePreviewError: t.templatePreviewError,
   });
 
@@ -543,8 +531,6 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
           ) : null}
 
           {draft.error ? <p className="story-generator-error">{draft.error}</p> : null}
-          {saveMessage ? <p className="story-generator-success">{saveMessage}</p> : null}
-
           {isCompleted ? (
             <section className="story-result-card">
               {draft.mode === "user_story" && currentLang !== "ru" && !activeUserStoryTranslated ? (
@@ -560,23 +546,6 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
               />
 
               <div className="story-result-actions">
-                {draft.mode !== "user_story" ? (
-                  <button
-                    type="button"
-                    className="feed-action-button story-primary-button"
-                    disabled={draft.loading.saving}
-                    onClick={async () => {
-                      console.log("[CLICK SAVE]");
-                      try {
-                        await saveStory();
-                      } catch (error) {
-                        console.error(error);
-                      }
-                    }}
-                  >
-                    {draft.loading.saving ? t.saving : t.saveButton}
-                  </button>
-                ) : null}
                 <button
                   type="button"
                   className="feed-action-button"

@@ -76,6 +76,39 @@ npm run build
 - проверка server-side интеграций: `Supabase`, `GIPHY`, `Pexels`, `Google TTS`
 - проверка env: приватные ключи не должны попадать в клиентский bundle
 
+## Локальные backup-скрипты
+
+В проекте есть локальные backup-скрипты в папке `scripts/`.
+
+- `npm run backup:storage`
+  Делает полный backup всех баккетов `Supabase Storage` в локальную папку `backups/storage/`, сохраняя структуру папок внутри баккетов.
+- `npm run backup:db`
+  Делает plain SQL dump базы данных в `backups/database/supabase-DD.MM.YYYY.sql`.
+- `npm run backup:all`
+  Последовательно запускает backup storage и backup database.
+
+Важно:
+
+- Эти скрипты работают только локально и не должны запускаться в production/CI.
+- Перед запуском нужно явно разрешить local backup:
+
+```bash
+set -a
+source .env.local
+export LOCAL_BACKUP_ENABLED=true
+export SUPABASE_DB_HOST=db.wazoncnmsxbjzvbjenpw.supabase.co
+export SUPABASE_DB_PASSWORD='YOUR_PASSWORD'
+set +a
+```
+
+- После этого можно запускать:
+
+```bash
+npm run backup:storage
+npm run backup:db
+npm run backup:all
+```
+
 ## Лицензии и ассеты
 
 В проекте используются собственные ассеты и внешние медиа-источники. Некоторые изображения, гифки и видео подгружаются из `Supabase Storage`, `GIPHY` и `Pexels`. Перед публичным релизом нужно отдельно проверить права на каждый внешний asset и правила атрибуции.
