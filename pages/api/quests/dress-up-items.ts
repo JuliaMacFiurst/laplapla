@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { clothesScoreMap } from "@/components/Raccoons/quests/quest-1/logic/dress-up-game/clothesScores";
+import { withApiHandler } from "@/utils/apiHandler";
 
 type ClothesItem = {
   id: string;
@@ -9,11 +10,7 @@ type ClothesItem = {
   season: string;
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const characterName = typeof req.query.characterName === "string" ? req.query.characterName.trim() : "";
   if (!characterName) {
     return res.status(400).json({ error: "characterName is required" });
@@ -58,3 +55,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "Failed to load dress-up items" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET"],
+      limit: 30,
+      keyPrefix: "dress-up-items",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);

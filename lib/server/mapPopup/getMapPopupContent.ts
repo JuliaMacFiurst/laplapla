@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { getTranslationPayloadByContentIds, type TranslationPayload } from "@/lib/contentTranslations";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
+import { ensurePersistedStorySlides } from "@/lib/server/mapPopup/persistence";
 import type { MapPopupContent, MapPopupSlide, MapPopupType } from "@/types/mapPopup";
 
 type MapStoryRow = {
@@ -289,7 +290,10 @@ export async function getMapPopupContent({
     return null;
   }
 
-  const slideRows = await loadStorySlides(baseStory.id);
+  let slideRows = await loadStorySlides(baseStory.id);
+  if (slideRows.length === 0) {
+    slideRows = await ensurePersistedStorySlides(baseStory);
+  }
   const baseSlides = buildSlidesFromRows(baseStory, slideRows);
   const translation = lang !== "ru"
     ? await getTranslationPayloadByContentIds(

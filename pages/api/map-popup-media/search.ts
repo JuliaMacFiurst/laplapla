@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { MapPopupType } from "@/types/mapPopup";
 import { searchMapPopupMedia } from "@/lib/server/mapPopup/mediaSearch";
-import { applyApiGuard } from "@/utils/rateLimit";
+import { withApiHandler } from "@/utils/apiHandler";
 
 export const config = {
   api: {
@@ -38,19 +38,10 @@ function isMapPopupType(value: string): value is MapPopupType {
   ].includes(value);
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SearchResponse>,
 ) {
-  if (!applyApiGuard(req, res, {
-    methods: ["GET", "POST"],
-    limit: 20,
-    maxBodyBytes: req.method === "POST" ? 24 * 1024 : undefined,
-    keyPrefix: "map-popup-media-search",
-  })) {
-    return;
-  }
-
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
   const rawType = payload.type;
   const rawTargetId = payload.target_id;
@@ -92,3 +83,16 @@ export default async function handler(
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET", "POST"],
+      limit: 20,
+      maxBodyBytes: 24 * 1024,
+      keyPrefix: "map-popup-media-search",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);

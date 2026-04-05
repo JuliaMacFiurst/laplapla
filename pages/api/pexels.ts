@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
-import { applyApiGuard } from "@/utils/rateLimit";
+import { withApiHandler } from "@/utils/apiHandler";
 
 const TTL_MS = 60 * 60 * 1000;
 
@@ -24,19 +24,10 @@ type PexelsResponse = {
   cached: boolean;
 };
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PexelsResponse | { error: string }>,
 ) {
-  if (!applyApiGuard(req, res, {
-    methods: ["GET", "POST"],
-    limit: 30,
-    maxBodyBytes: req.method === "POST" ? 16 * 1024 : undefined,
-    keyPrefix: "pexels",
-  })) {
-    return;
-  }
-
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
   const rawQuery = Array.isArray(payload.q) ? payload.q[0] : payload.q;
   const rawLimit = Array.isArray(payload.limit) ? payload.limit[0] : payload.limit;
@@ -133,3 +124,16 @@ export default async function handler(
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET", "POST"],
+      limit: 30,
+      maxBodyBytes: 16 * 1024,
+      keyPrefix: "pexels",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);

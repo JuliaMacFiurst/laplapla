@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getRequestLang } from "@/lib/i18n/routing";
 import { getTranslatedContent } from "@/lib/contentTranslations";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
+import { withApiHandler } from "@/utils/apiHandler";
 
 type Artwork = {
   id: string;
@@ -10,11 +11,7 @@ type Artwork = {
   image_url: string[] | string;
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const categorySlug = typeof req.query.categorySlug === "string" ? req.query.categorySlug.trim() : "";
   if (!categorySlug) {
     return res.status(400).json({ error: "categorySlug is required" });
@@ -55,3 +52,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "Failed to load art gallery" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET"],
+      limit: 30,
+      keyPrefix: "art-gallery",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);

@@ -1,6 +1,6 @@
 // pages/api/fetch-pexels.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { applyApiGuard } from "@/utils/rateLimit";
+import { withApiHandler } from "@/utils/apiHandler";
 
 export const config = {
   api: {
@@ -10,16 +10,7 @@ export const config = {
   },
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!applyApiGuard(req, res, {
-    methods: ["GET", "POST"],
-    limit: 25,
-    maxBodyBytes: req.method === "POST" ? 24 * 1024 : undefined,
-    keyPrefix: "fetch-pexels",
-  })) {
-    return;
-  }
-
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "GET") {
     return res.status(200).json({ message: "✅ Pexels API endpoint is live. Use POST to search for images." });
   }
@@ -83,6 +74,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: err.message });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET", "POST"],
+      limit: 25,
+      maxBodyBytes: 24 * 1024,
+      keyPrefix: "fetch-pexels",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);
 
 // вспомогательная функция — корректирует запрос в зависимости от типа карты
 function buildQuery(keyword: string, type: string) {

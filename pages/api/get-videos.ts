@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
+import { withApiHandler } from "@/utils/apiHandler";
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -78,3 +79,15 @@ export default async function handler(
     return res.status(500).json({ error: "Unexpected error" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET"],
+      limit: 30,
+      keyPrefix: "get-videos",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);

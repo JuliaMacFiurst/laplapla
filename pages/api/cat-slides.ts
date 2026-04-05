@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
 import { fetchVideoFromPexels } from "@/lib/pexelsVideo";
-import { applyApiGuard } from "@/utils/rateLimit";
+import { withApiHandler } from "@/utils/apiHandler";
 
 export const config = {
   api: {
@@ -170,18 +170,9 @@ function getTextPresetByPrompt(prompt: string, lang: string) {
   );
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log("🐱 /api/cat-slides called");
   console.log("📥 body:", req.body);
-
-  if (!applyApiGuard(req, res, {
-    methods: ["POST"],
-    limit: 20,
-    maxBodyBytes: 24 * 1024,
-    keyPrefix: "cat-slides",
-  })) {
-    return;
-  }
 
   let { prompt, lang } = req.body;
 
@@ -269,3 +260,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   console.log("✅ Slides ready:", slides.length);
   return res.status(200).json({ slides, prompt });
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["POST"],
+      limit: 20,
+      maxBodyBytes: 24 * 1024,
+      keyPrefix: "cat-slides",
+    },
+  },
+  handler,
+);

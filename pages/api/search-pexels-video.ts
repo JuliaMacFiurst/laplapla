@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { searchPexelsVideos } from "@/lib/pexelsVideo";
-import { applyApiGuard } from "@/utils/rateLimit";
+import { withApiHandler } from "@/utils/apiHandler";
 
 export const config = {
   api: {
@@ -10,19 +10,10 @@ export const config = {
   },
 };
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (!applyApiGuard(req, res, {
-    methods: ["POST"],
-    limit: 25,
-    maxBodyBytes: 16 * 1024,
-    keyPrefix: "search-pexels-video",
-  })) {
-    return;
-  }
-
   const { query } = req.body;
 
   if (!query || typeof query !== "string") {
@@ -42,3 +33,15 @@ export default async function handler(
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["POST"],
+      limit: 25,
+      maxBodyBytes: 16 * 1024,
+      keyPrefix: "search-pexels-video",
+    },
+  },
+  handler,
+);

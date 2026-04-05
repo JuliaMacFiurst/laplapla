@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getMapPopupContent } from "@/lib/server/mapPopup/getMapPopupContent";
 import type { MapPopupContent, MapPopupType } from "@/types/mapPopup";
+import { withApiHandler } from "@/utils/apiHandler";
 
 function isMapPopupType(value: string): value is MapPopupType {
   return [
@@ -16,14 +17,10 @@ function isMapPopupType(value: string): value is MapPopupType {
   ].includes(value);
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<MapPopupContent | { error: string }>,
 ) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   const type = Array.isArray(req.query.type) ? req.query.type[0] : req.query.type;
   const targetId = Array.isArray(req.query.target_id) ? req.query.target_id[0] : req.query.target_id;
   const lang = Array.isArray(req.query.lang) ? req.query.lang[0] : req.query.lang;
@@ -53,3 +50,15 @@ export default async function handler(
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET"],
+      limit: 30,
+      keyPrefix: "map-popup-content",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);

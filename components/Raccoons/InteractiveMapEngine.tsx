@@ -100,6 +100,33 @@ async function requestMapPopupMedia(searchParams: URLSearchParams) {
   }
 }
 
+async function persistResolvedSlideMedia(params: {
+  storyId: string | number;
+  slideId: string;
+  slideOrder: number;
+  slideText: string;
+  imageUrl: string;
+  imageCreditLine?: string | null;
+}) {
+  await fetch("/api/map-popup-content/media", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  });
+}
+
+async function persistParsedSlidesToServer(storyId: string | number) {
+  await fetch("/api/map-popup-content/slides", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ storyId }),
+  });
+}
+
 const RACCOON_WITH_MAP_FILES = {
   gifs: [
     "raccoon-with-map.gif",
@@ -611,6 +638,16 @@ useEffect(() => {
         setPopupContent,
         setMediaStatusBySlideId,
       );
+
+      void persistResolvedSlideMedia({
+        storyId,
+        slideId: currentPopupSlide.id,
+        slideOrder: currentPopupSlide.index,
+        slideText: currentPopupSlide.text,
+        imageUrl: resolvedItem.url,
+        imageCreditLine: resolvedItem.creditLine,
+      });
+
       setToast(lang === "ru" ? "Загружена новая картинка." : lang === "he" ? "נטענה תמונה חדשה." : "Loaded a new image.");
       setTimeout(() => setToast(null), 2500);
     } catch (error) {
@@ -822,7 +859,7 @@ useEffect(() => {
   slideParseHydrationRef.current.add(requestKey);
   let cancelled = false;
 
-  const persistParsedSlides = async () => {
+  const parseAndPersistSlides = async () => {
     try {
       const parsedSlides = parseMapStoryContentToSlides(rawContent).map((slide, index) => ({
         id: `parsed:${requestKey}:${index}`,
@@ -852,13 +889,15 @@ useEffect(() => {
           slides: parsedSlides,
         };
       });
+
+      void persistParsedSlidesToServer(storyId);
     } catch (error) {
       slideParseHydrationRef.current.delete(requestKey);
       console.error("Failed to parse and persist popup slides", error);
     }
   };
 
-  void persistParsedSlides();
+  void parseAndPersistSlides();
 
   return () => {
     cancelled = true;
@@ -949,6 +988,15 @@ useEffect(() => {
           setPopupContent,
           setMediaStatusBySlideId,
         );
+
+        void persistResolvedSlideMedia({
+          storyId,
+          slideId: slide.id,
+          slideOrder: slide.index,
+          slideText: slide.text,
+          imageUrl: resolvedItem.url,
+          imageCreditLine: resolvedItem.creditLine,
+        });
       } catch (error) {
         console.error("Failed to hydrate popup slide media", error);
         markSlideMissing(slide.id);

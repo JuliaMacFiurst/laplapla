@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getRequestLang } from "@/lib/i18n/routing";
 import { getTranslatedContents } from "@/lib/contentTranslations";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
+import { withApiHandler } from "@/utils/apiHandler";
 
 type LessonRecord = {
   id: string;
@@ -11,11 +12,7 @@ type LessonRecord = {
   category_slug: string;
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const category = typeof req.query.category === "string" ? req.query.category.trim() : "";
   if (!category) {
     return res.status(400).json({ error: "Category is required" });
@@ -65,3 +62,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "Failed to load dog lessons" });
   }
 }
+
+export default withApiHandler(
+  {
+    guard: {
+      methods: ["GET"],
+      limit: 30,
+      keyPrefix: "dog-lessons",
+    },
+    cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+  },
+  handler,
+);
