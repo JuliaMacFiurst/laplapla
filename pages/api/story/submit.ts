@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/server/supabase";
 
 type StorySubmitBody = {
   mode?: "template" | "custom" | null;
@@ -25,22 +25,15 @@ type StorySubmitBody = {
   }>;
 };
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    return res.status(500).json({ error: "Supabase server env is not configured" });
-  }
-
   try {
     console.log("[API HIT]", req.body);
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const supabase = createServerSupabaseClient({ serviceRole: true });
     const { mode, templateId, heroName, userInput, assembledStory, slides } = req.body as StorySubmitBody;
 
     if (!heroName || typeof heroName !== "string" || !assembledStory) {

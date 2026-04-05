@@ -1,10 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+import { createServerSupabaseClient } from "@/lib/server/supabase";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -17,6 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: "Missing required query params" });
   }
 
+  const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from("map_stories")
     .select("*")

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { MapPopupContent, MapPopupSlide, MapPopupType } from "@/types/mapPopup";
 
 type MapStoryRow = {
@@ -29,17 +29,6 @@ type GetMapPopupContentParams = {
   targetId: string;
   lang?: string;
 };
-
-function getServerSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Supabase server env is not configured");
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey);
-}
 
 function extractYouTubeId(url: string | null | undefined): string | null {
   const value = typeof url === "string" ? url.trim() : "";
@@ -94,7 +83,7 @@ function pickYoutubeUrl(story: MapStoryRow, lang: string): string | null {
 }
 
 async function loadStory(type: MapPopupType, targetId: string, lang: string): Promise<MapStoryRow | null> {
-  const supabase = getServerSupabaseClient();
+  const supabase = createServerSupabaseClient({ serviceRole: true });
   const commaSeparatedSegments = targetId
     .split(",")
     .map((segment) => segment.trim())
@@ -187,7 +176,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
 }
 
 async function loadStorySlides(storyId: string | number): Promise<MapStorySlideRow[]> {
-  const supabase = getServerSupabaseClient();
+  const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase
     .from("map_story_slides")
     .select("id, story_id, slide_order, text, image_url, image_credit_line")

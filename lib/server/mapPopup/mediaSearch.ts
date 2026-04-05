@@ -1,4 +1,5 @@
 import type { MapPopupType } from "@/types/mapPopup";
+import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 
 type PexelsCandidate = {
@@ -447,12 +448,7 @@ function getSeedValue(seedSource: string) {
 }
 
 function buildRaccoonWithMapUrl(fileName: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-  if (!supabaseUrl) {
-    return `/images/mystery.webp`;
-  }
-
-  return `${supabaseUrl}/storage/v1/object/public/characters/raccoons/raccoon_with_map/${fileName}`;
+  return buildSupabasePublicUrl("characters", `raccoons/raccoon_with_map/${fileName}`);
 }
 
 function buildLocalFallbackCandidate(type: MapPopupType, targetId: string, slideText: string): MapPopupMediaCandidate {

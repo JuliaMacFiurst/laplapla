@@ -1,152 +1,99 @@
 # Project Context (Codex)
 
-This document is the single source of truth for near-term TODOs and high-level roadmap for the Capybara Tales / LapLapLa project.
-Goal: ship a safe, free demo that cannot burn paid API money, then gradually enable auth + credits.
+This document tracks the practical state of the Capybara Tales / LapLapLa project and the nearest release priorities.
+Current goal: ship a stable, safe public demo with mobile support where feasible and no accidental paid AI usage.
 
-## Current status (as of now)
-- Dog-sled quest: Preparation system is connected end-to-end:
-  - PreparationPopup -> Day5Garage (prep state) -> DogSledRunStage (prep prop)
-  - useSledRunConfig derives run config (speed/runStyle/obstacle rate/risk boost) from prep
-  - Debug logs and temporary hit-zones were used during development; must be removed before release.
+## Current status
 
----
+### Done recently
+- Mobile-first cleanup was completed for the routes where the experience remains usable on phones.
+- Complex desktop-only screens now show a clear mobile notice about the future LapLapLa app instead of exposing broken UX.
+- The project was aligned to a `Pages Router` setup and the ambiguous `App Router`/`i18n` warning was removed.
+- Build hardening is in place:
+  - `npm run lint` passes
+  - `npm run build` passes
+- Server-side env handling was tightened and private keys were checked to make sure they do not leak into the frontend bundle.
+- Legacy Gemini-based generation flow was removed from the codebase.
+- The old standalone TTS generation script was removed from the repository.
+- Raccoons map SVG loading was restored through a server-side API path instead of direct client storage access.
+- Dog-sled quest preparation flow is connected end-to-end:
+  - `PreparationPopup -> Day5Garage -> DogSledRunStage`
+  - `useSledRunConfig` derives run config from the preparation state
 
+### Product decisions already reflected in code
+- The project no longer uses Gemini generation in the current shipped flow.
+- The old AI coloring backend flow is not part of the active release scope.
+- Public demo behavior should rely on safe stored content, fixed assets, database-backed content, or server-controlled APIs.
 
+## Remaining product and gameplay work
 
-## Priority 2: Next gameplay blocks in Quest 1
-
-### 3) Laboratory mini-game (packing backpack)
-- New mini-game: pack a backpack for polar expedition.
-- Player must choose only necessary items.
-- If unnecessary item is added: Logan (raccoon) makes a funny comment.
-
-Acceptance criteria:
-- Clear list of items; feedback is immediate.
-- Incorrect choices trigger Logan comments (funny, kid-friendly).
-
-### 4) Day7 page (Ice cave + "treasure of time")
-- Scene: dogs + raccoon in an ice cave find a "treasure of time".
-- To get it: solve a puzzle (TBD).
-- Reward: artifact explains:
-  - deep freeze can preserve DNA chains
-  - how scientists might revive a mammoth
-  - why it’s not done yet (framed as fantasy)
-
-Acceptance criteria:
-- Day7 exists and is playable end-to-end.
-- Puzzle can be simple placeholder at first; narrative is clear.
-
-### 5) Quest 1 complete
-- After Day7, Quest 1 is complete with a satisfying ending.
-
----
-
-## Priority 3: Pre-deploy hardening (safety + i18n)
-
-### 6) Hebrew translation + language switch
-- Add RU/HE language toggle.
-- Translate essential UI before deploy (at least marketing + key navigation).
-- Use a simple dictionary-based approach (avoid over-engineering).
+### Quest 1 follow-up
+- Laboratory mini-game should be reviewed as a complete user flow:
+  - player picks expedition items
+  - Logan reacts to incorrect choices
+- Day 7 should be verified as a complete final sequence:
+  - ice cave
+  - treasure of time
+  - clear ending beat for Quest 1
 
 Acceptance criteria:
-- User can switch language from UI.
-- Main marketing text + core screens are readable in Hebrew.
+- Quest 1 is playable from start to finish without broken steps.
+- Narrative transitions are clear on desktop.
 
-### 7) Disable automatic AI generation (replace with safe stubs)
-Goal: public demo must NOT trigger paid AI costs.
+## Pre-deploy priorities
 
-- "Котики расскажут":
-  - show pre-generated example answers
-  - if user asks custom question without credits:
-    - show pre-generated slides explaining paid access requirement
-- "Капибары":
-  - pre-written short summaries for ~100 kids books
-  - ~30 pre-generated "capybara-made" stories
-- "Попугаи":
-  - pre-made stories about music styles
-  - completely disable generator (page remains free)
-- "Енотики (map)":
-  - use existing saved DB stories for free
-  - if no DB answer exists: show message "available by subscription"
-
-Quest:
-- Quest 1 is fully free (no AI generation needed)
-- Future quests become subscription-only.
+### Localization and UX
+- Keep RU / EN / HE language support stable across the main user-facing screens.
+- Continue checking Hebrew and RTL edge cases on mobile and desktop.
 
 Acceptance criteria:
-- No public path triggers paid AI calls without explicit paid access flag.
-- Clear UX copy for "subscription required".
+- Language switch works across the main sections.
+- Core marketing and navigation remain readable in Hebrew.
 
----
-
-## Priority 4: Coloring feature risk control (expensive backend)
-
-### 8) Coloring (Google Cloud) cost protection
-Problem:
-- Each coloring operation costs money; children love it.
-Goal:
-- Allow each child to try once in free demo WITHOUT runaway costs, even before auth/credits.
-
-Plan (minimal viable protection):
-- Add server-side gate + rate limit + one-time demo token per device/session.
-- Must not rely only on client-side checks.
-- Optimize backend calls (reduce frequency, batch where possible).
+### Safe public demo rules
+- No public flow should trigger hidden paid AI generation.
+- Desktop-only experiences should stay explicitly marked on mobile until a dedicated mobile version exists.
+- Public-facing routes should use server-controlled integrations and safe content sources.
 
 Acceptance criteria:
-- A new user can do 1 free coloring try.
-- Abuse is limited (rate limit + hard cap).
-- Costs are predictable and bounded.
+- No accidental paid generation paths exist in the public demo.
+- Unsupported mobile flows are blocked with clear UX copy.
 
----
-
-## Priority 5: Public demo deploy
-
-### 9) Burger menu presentation text + free demo deploy
-- Add a presentation/about text:
-  - fully author-driven project
-  - educational + safe
-- Deploy a fully free trial version (no auth yet).
-- Validate on real devices/browsers.
+### Deployment readiness
+- Validate critical routes manually on real devices and browsers.
+- Re-check production environment variables before deployment.
+- Keep the repo free of stale helper files and local machine artifacts.
 
 Acceptance criteria:
-- Deployed demo is stable.
-- Paid/expensive endpoints are disabled or gated.
-- Clear "about" narrative exists.
+- Production build is stable.
+- Main user journeys work after deploy.
 
----
+## Future roadmap
 
-## Priority 6: Monetization (after demo stability)
-
-### 10) Subscription/credits system
-- Research costs (Google & others) per feature:
-  - cats / capybaras / parrots / raccoons map / coloring
-- Decide pricing + credit packs (3 options).
-- Implement auth + purchase flow + credit deduction.
+### Monetization and access control
+- Research real operating costs per feature.
+- Decide whether credits, subscriptions, or a hybrid model make sense.
+- If monetization is added, enforce it server-side only.
 
 Acceptance criteria:
-- No user can exceed paid balance.
-- Credits are enforced server-side.
+- Paid usage cannot exceed server-side limits.
+- Pricing is tied to real infrastructure cost.
 
-### 11) Content-creator tool (slides/video, shareable)
-- Online editor for funny animals slides (9:16), share to social.
-- Uses: Gemini, Giphy, Pexels (check licensing for paid editor).
-- If any API is not allowed for paid usage:
-  - replace with permitted sources
-  - add doodle drawing tool
-  - allow upload or free image APIs
+### Creator/editor tooling
+- The 9:16 slides/video editor can continue as a separate feature track.
+- Prefer safe asset sources, uploads, and licensed media providers.
+- Do not reintroduce Gemini-specific generation assumptions into the roadmap unless product requirements change explicitly.
 
 Acceptance criteria:
-- MVP editor works with safe asset sources.
-- Share/export flow is reliable.
+- Any editor MVP works with approved sources only.
+- Export/share flow is reliable.
 
----
-
-## Non-goals (for now)
-- No "perfect" payment UX before demo.
-- No unbounded AI generation in public mode.
-- No complex i18n framework unless needed.
+## Non-goals for now
+- No uncontrolled paid AI generation in public mode.
+- No rushed payment UX before the demo is stable.
+- No unnecessary framework churn if the current `Pages Router` setup remains sufficient.
 
 ## Guiding principles
-- Safety first: no paid API calls without server-side gating.
-- Ship: prefer simple, testable steps.
-- Demo-first: show value before scaling automation.
+- Safety first: private keys stay server-side and expensive features stay gated.
+- Ship pragmatically: prefer small, verifiable steps.
+- Demo-first: keep the public experience understandable and stable.

@@ -1,17 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
-
-// ⚠️ anon key, потому что у нас RLS и только SELECT
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createServerSupabaseClient } from "@/lib/server/supabase";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
+    const supabase = createServerSupabaseClient();
+
     // Язык интерфейса сайта
     const lang = (req.query.lang as "en" | "ru" | "he") ?? "en";
 

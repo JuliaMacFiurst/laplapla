@@ -1,8 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { createServerSupabaseClient } from "@/lib/server/supabase";
 
 type SubmissionStep = {
   step?: string;
@@ -38,10 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    return res.status(500).json({ error: "Supabase server env is not configured" });
-  }
-
   const submissionId = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
   if (!submissionId) {
@@ -49,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const supabase = createServerSupabaseClient({ serviceRole: true });
 
     const { data: submission, error: submissionError } = await supabase
       .from("user_story_submissions")
