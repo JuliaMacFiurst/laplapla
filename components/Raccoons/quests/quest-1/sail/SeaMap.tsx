@@ -451,7 +451,7 @@ export default function SeaMap({
               muted
               loop
               playsInline
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/sailor-raccoon.webm"
+              src="/supabase-storage/quests/1_quest/images/sailor-raccoon.webm"
             />
           </div>
 
@@ -463,7 +463,7 @@ export default function SeaMap({
               muted
               loop
               playsInline
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/buldog-roland.webm"
+              src="/supabase-storage/quests/1_quest/images/buldog-roland.webm"
             />
           </div>
         </div></div>

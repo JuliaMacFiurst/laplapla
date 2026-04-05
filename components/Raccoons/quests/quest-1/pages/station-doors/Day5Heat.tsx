@@ -30,27 +30,27 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
             characters={[
               {
                 name: "Stas",
-                img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Stas/Stas.webp",
+                img: "/supabase-storage/quests/1_quest/games/dress-up/Stas/Stas.webp",
               },
               {
                 name: "Clare",
-                img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Clare/Clare.webp",
+                img: "/supabase-storage/quests/1_quest/games/dress-up/Clare/Clare.webp",
               },
               {
                 name: "Sam",
-                img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Sam/Sam.webp",
+                img: "/supabase-storage/quests/1_quest/games/dress-up/Sam/Sam.webp",
               },
               {
                 name: "Matilda",
-                img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
+                img: "/supabase-storage/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
               },
               {
                 name: "Joe",
-                img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Joe/Joe.webp",
+                img: "/supabase-storage/quests/1_quest/games/dress-up/Joe/Joe.webp",
               },
               {
                 name: "Tamara",
-                img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Tamara/Tamara.webp",
+                img: "/supabase-storage/quests/1_quest/games/dress-up/Tamara/Tamara.webp",
               },
             ]}
             onCharacterSelected={(char) => {
@@ -102,7 +102,7 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
               {/* пингвин */}
               <img
                 className="penguin"
-                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+                src="/supabase-storage/characters/other/penguin.gif"
                 alt="penguin"
               />
             </div>

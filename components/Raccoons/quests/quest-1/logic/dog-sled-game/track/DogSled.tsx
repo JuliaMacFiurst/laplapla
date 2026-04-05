@@ -39,27 +39,27 @@ interface DogSledVideoConfig {
 }
 const DOG_SLED_VIDEOS: Record<DogSledState, DogSledVideoConfig> = {
   run_fast: {
-    src: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/riding-sled/run_fast.webm",
+    src: "/supabase-storage/quests/1_quest/games/riding-sled/run_fast.webm",
     loop: true,
   },
   run_tired: {
-    src: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/riding-sled/run_tired.webm",
+    src: "/supabase-storage/quests/1_quest/games/riding-sled/run_tired.webm",
     loop: true,
   },
   slow_down: {
-    src: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/riding-sled/slow.webm",
+    src: "/supabase-storage/quests/1_quest/games/riding-sled/slow.webm",
     loop: false,
   },
   hooked: {
-    src: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/riding-sled/hit_obsracle.webm",
+    src: "/supabase-storage/quests/1_quest/games/riding-sled/hit_obsracle.webm",
     loop: false,
   },
   crash: {
-    src: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/riding-sled/fall.webm",
+    src: "/supabase-storage/quests/1_quest/games/riding-sled/fall.webm",
     loop: false,
   },
   recover: {
-    src: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/riding-sled/recover.webm",
+    src: "/supabase-storage/quests/1_quest/games/riding-sled/recover.webm",
     loop: false,
   },
 };

@@ -289,7 +289,7 @@ export default function FlightMap({
           muted
           loop
           playsInline
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/raccoon-points.webm"
+          src="/supabase-storage/quests/1_quest/images/raccoon-points.webm"
         />
         </div>
 
@@ -301,7 +301,7 @@ export default function FlightMap({
           muted
           loop
           playsInline
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/buldog-roland.webm"
+          src="/supabase-storage/quests/1_quest/images/buldog-roland.webm"
         />
       </div>
     </div>

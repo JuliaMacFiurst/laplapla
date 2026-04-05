@@ -50,7 +50,7 @@ export default function Day3Sail({ go }: { go: (id: PageId) => void }) {
           <div className="ice-window">
             <video className="quest-video" autoPlay muted loop playsInline>
               <source
-                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/sail-route.webm"
+                src="/supabase-storage/quests/1_quest/images/sail-route.webm"
                 type="video/webm"
               />
             </video>

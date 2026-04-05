@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Lang } from "@/i18n";
 import { fallbackImages } from "@/constants";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
+import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import {
   STORY_STEP_KEYS,
   blocksToSlides,
@@ -64,7 +65,7 @@ type ApprovedUserStoryResponse = {
   translated: boolean;
 };
 
-const CAPYBARA_WEBM = "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/cats/cap-paw.webm";
+const CAPYBARA_WEBM = buildSupabaseStorageUrl("characters/cats/cap-paw.webm");
 
 const getFallbackImage = (seed: number) => `/images/capybaras/${fallbackImages[seed % fallbackImages.length]}`;
 

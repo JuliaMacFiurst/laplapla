@@ -312,7 +312,7 @@ const StarsMap = forwardRef(function StarsMap(
             muted
             loop
             playsInline
-            src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/sailor-raccoon.webm"
+            src="/supabase-storage/quests/1_quest/images/sailor-raccoon.webm"
           />
         </div>
 
@@ -323,7 +323,7 @@ const StarsMap = forwardRef(function StarsMap(
             muted
             loop
             playsInline
-            src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/svensen-talks.webm"
+            src="/supabase-storage/quests/1_quest/images/svensen-talks.webm"
           />
         </div>
 

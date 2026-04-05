@@ -11,6 +11,7 @@ import { recordPreviewDom } from "@/lib/recordPreviewDom";
 import { cropAndConvert, preloadFFmpeg } from "@/lib/cropAndConvert";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -367,7 +368,7 @@ export default function StudioExportPage() {
             </div>
 
             <video
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/saving-tutorial.webm"
+              src={buildSupabaseStorageUrl("characters/other/saving-tutorial.webm")}
               controls
               autoPlay
               playsInline

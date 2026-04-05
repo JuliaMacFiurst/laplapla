@@ -1,6 +1,7 @@
 "use client";
 
 import type { SledAnimation } from "../../../../../../types/types";
+import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 
 interface Props {
   animation: SledAnimation;
@@ -8,11 +9,11 @@ interface Props {
 }
 
 const VIDEO_MAP: Record<Exclude<SledAnimation, null>, string> = {
-  loads: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dog-sled/dogs-video/loads.webm",
-  water: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dog-sled/dogs-video/water.webm",
-  food: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dog-sled/dogs-video/food.webm",
-  dogs: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dog-sled/dogs-video/dogs.webm",
-  skids: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dog-sled/dogs-video/skids.webm",
+  loads: buildSupabaseStorageUrl("quests/1_quest/games/dog-sled/dogs-video/loads.webm"),
+  water: buildSupabaseStorageUrl("quests/1_quest/games/dog-sled/dogs-video/water.webm"),
+  food: buildSupabaseStorageUrl("quests/1_quest/games/dog-sled/dogs-video/food.webm"),
+  dogs: buildSupabaseStorageUrl("quests/1_quest/games/dog-sled/dogs-video/dogs.webm"),
+  skids: buildSupabaseStorageUrl("quests/1_quest/games/dog-sled/dogs-video/skids.webm"),
 };
 
 export default function SledAnimationOverlay({ animation, onFinished }: Props) {

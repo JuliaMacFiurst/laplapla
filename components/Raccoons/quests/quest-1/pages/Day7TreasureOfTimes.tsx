@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/router";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
 
@@ -71,7 +72,7 @@ export default function Day7TreasureOfTimes() {
             {/* пингвин */}
             <img
               className="penguin"
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+              src={buildSupabaseStorageUrl("characters/other/penguin.gif")}
               alt="penguin"
             />
           </div>

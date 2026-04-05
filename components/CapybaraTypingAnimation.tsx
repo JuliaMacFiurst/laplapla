@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 
 const VIDEO_SOURCES = [
-  "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/capybara/cappy-typping1.webm",
-  "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/capybara/cappy-typping2.webm",
-  "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/capybara/cappy-typping3.webm",
+  buildSupabaseStorageUrl("characters/capybara/cappy-typping1.webm"),
+  buildSupabaseStorageUrl("characters/capybara/cappy-typping2.webm"),
+  buildSupabaseStorageUrl("characters/capybara/cappy-typping3.webm"),
 ] as const;
 
 const FALLBACK_IMAGE =
-  "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/capybara/capybara_typping-pic.webp";
+  buildSupabaseStorageUrl("characters/capybara/capybara_typping-pic.webp");
 
 const FADE_MS = 220;
 const getRandomDelay = () => 2000 + Math.floor(Math.random() * 2001);

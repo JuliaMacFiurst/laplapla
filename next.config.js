@@ -54,6 +54,8 @@ const securityHeaders = [
     : []),
 ];
 
+const supabaseStorageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   i18n: {
@@ -70,6 +72,18 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+    ];
+  },
+  async rewrites() {
+    if (!supabaseStorageOrigin) {
+      return [];
+    }
+
+    return [
+      {
+        source: "/supabase-storage/:path*",
+        destination: `${supabaseStorageOrigin.replace(/\/+$/, "")}/storage/v1/object/public/:path*`,
       },
     ];
   },

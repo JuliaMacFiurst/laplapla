@@ -3,7 +3,7 @@
   width: calc(100% - 120px);
   margin: 0 auto;
   min-height: 700px;
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/lab-game/lab-bg.webp");
+  background-image: url("/supabase-storage/quests/1_quest/games/lab-game/lab-bg.webp");
   background-size: cover;
   background-position: center;
   padding: 24px;

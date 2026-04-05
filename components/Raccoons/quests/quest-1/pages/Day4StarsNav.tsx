@@ -76,7 +76,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
               playsInline
             >
               <source
-                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/svensen-with-compass.webm"
+                src="/supabase-storage/quests/1_quest/images/svensen-with-compass.webm"
                 type="video/webm"
               />
             </video>
@@ -252,7 +252,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
         <div className="ice-text">{t.day4StarsNav.nextButton}</div>
         <img
           className="penguin"
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+          src="/supabase-storage/characters/other/penguin.gif"
           alt="penguin"
         />
       </div>

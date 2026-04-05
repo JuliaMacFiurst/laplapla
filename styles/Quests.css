@@ -1864,7 +1864,7 @@
   top: 58%;
   left: 35%;
 
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/door--heat.svg");
+  background-image: url("/supabase-storage/quests/1_quest/images/door--heat.svg");
   background-size: 130% 110%;
   background-repeat: no-repeat;
   background-position: center;
@@ -1883,7 +1883,7 @@
     height: 31%;
     top: 54%;
     left: 65%;
-    background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/door--garage.svg");
+    background-image: url("/supabase-storage/quests/1_quest/images/door--garage.svg");
   background-size: 130% 110%;
   background-repeat: no-repeat;
   background-position: center;
@@ -1903,7 +1903,7 @@
   top: 43%;
   left: 87%;
 
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/door--lab.svg");
+  background-image: url("/supabase-storage/quests/1_quest/images/door--lab.svg");
   background-size: 130% 110%;
   background-repeat: no-repeat;
   background-position: center;

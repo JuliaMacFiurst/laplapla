@@ -14,7 +14,7 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
         <div className="ice-window">
           <video className="quest-video" autoPlay muted loop playsInline>
             <source
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/day2.webm"
+              src="/supabase-storage/quests/1_quest/images/day2.webm"
               type="video/webm"
             />
           </video>

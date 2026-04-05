@@ -46,7 +46,7 @@ return (
         {/* фон станции */}
         <img
           className="station-bg"
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/Spitzbergen-station.webp"
+          src="/supabase-storage/quests/1_quest/images/Spitzbergen-station.webp"
           alt={t.day5Spitsbergen.stationImageAlt}
         />
 
@@ -58,7 +58,7 @@ return (
             loop
             playsInline
             className="station-video-element"
-            src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/tourists-group.webm"
+            src="/supabase-storage/quests/1_quest/images/tourists-group.webm"
           />
         </div>
 
@@ -120,7 +120,7 @@ return (
             {/* пингвин */}
             <img
               className="penguin"
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+              src="/supabase-storage/characters/other/penguin.gif"
               alt="penguin"
             />
           </div>

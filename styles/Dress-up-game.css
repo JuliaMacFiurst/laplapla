@@ -3,7 +3,7 @@
   max-width: 1600px;
   margin: 0 auto;
 
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/dress-up-bg.webp");
+  background-image: url("/supabase-storage/quests/1_quest/games/dress-up/Interface/dress-up-bg.webp");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: top center;
@@ -19,7 +19,7 @@
   max-width: 1600px;
   margin: 0 auto;
 
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/final-bg.webp");
+  background-image: url("/supabase-storage/quests/1_quest/games/dress-up/Interface/final-bg.webp");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: top center;
@@ -243,7 +243,7 @@
   cursor: pointer;
 
   /* вместо градиента — картинка */
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/start-btn.webp");
+  background-image: url("/supabase-storage/quests/1_quest/games/dress-up/Interface/start-btn.webp");
   background-size: contain; /* чтобы целиком влезала */
   background-repeat: no-repeat;
   background-position: center;
@@ -281,7 +281,7 @@
   cursor: pointer;
 
   /* вместо градиента — картинка */
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/restart-button.webp");
+  background-image: url("/supabase-storage/quests/1_quest/games/dress-up/Interface/restart-button.webp");
   background-size: contain; /* чтобы целиком влезала */
   background-repeat: no-repeat;
   background-position: center;
@@ -318,7 +318,7 @@
   cursor: pointer;
 
   /* вместо градиента — картинка */
-  background-image: url("https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/Next-button.webp");
+  background-image: url("/supabase-storage/quests/1_quest/games/dress-up/Interface/Next-button.webp");
   background-size: contain; /* чтобы целиком влезала */
   background-repeat: no-repeat;
   background-position: center;

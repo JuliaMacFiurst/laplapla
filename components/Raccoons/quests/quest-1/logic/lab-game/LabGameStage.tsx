@@ -110,7 +110,7 @@ export default function LabGameStage() {
                   {caughtThings.map((item) => (
                     <img
                       key={item.id}
-                      src={`https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/lab-game/lab-things/${item.id}.webp`}
+                      src={`/supabase-storage/quests/1_quest/games/lab-game/lab-things/${item.id}.webp`}
                       alt={item.label}
                       className="final-caught-thing"
                     />

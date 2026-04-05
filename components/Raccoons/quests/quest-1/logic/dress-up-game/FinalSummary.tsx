@@ -37,7 +37,7 @@ export default function FinalSummary({
 
               {/* НАДЕТАЯ ОДЕЖДА */}
               {result.dressedItems.map((item: DressedItem) => {
-                const src = `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/${result.character.name}/${item.season}/${item.id}-dressed.webp`;
+                const src = `/supabase-storage/quests/1_quest/games/dress-up/${result.character.name}/${item.season}/${item.id}-dressed.webp`;
 
                 return (
                   <img

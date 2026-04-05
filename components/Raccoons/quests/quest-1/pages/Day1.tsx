@@ -65,7 +65,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
         <div className="ice-window">
           <video className="quest-video" autoPlay muted loop playsInline>
             <source
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/output.webm"
+              src="/supabase-storage/quests/1_quest/images/output.webm"
               type="video/webm"
             />
           </video>
@@ -89,12 +89,12 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
       {/* АУДИО */}
       <audio
         id="fire"
-        src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/sounds/fireplace.ogg"
+        src="/supabase-storage/quests/1_quest/sounds/fireplace.ogg"
         loop
       />
       <audio
         id="music"
-        src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/sounds/furry_friends.ogg"
+        src="/supabase-storage/quests/1_quest/sounds/furry_friends.ogg"
         loop
       />
 
@@ -129,7 +129,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
               {/* пингвин */}
               <img
                 className="penguin"
-                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+                src="/supabase-storage/characters/other/penguin.gif"
                 alt="penguin"
               />
             </div>

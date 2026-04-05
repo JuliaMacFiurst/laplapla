@@ -247,7 +247,7 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
               {/* пингвин */}
               <img
                 className="penguin"
-                src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+                src="/supabase-storage/characters/other/penguin.gif"
                 alt="penguin"
               />
             </div>

@@ -7,6 +7,7 @@ import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import type { Track } from "@/components/studio/MusicPanel";
 import { PARROT_PRESETS } from "@/utils/parrot-presets";
 import { loadProject } from "@/lib/studioStorage";
+import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import type { StudioProject } from "@/types/studio";
 import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -242,7 +243,7 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
         </button>
       <video
         className="cat-paw-video"
-        src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/cats/cap-paw.webm"
+        src={buildSupabaseStorageUrl("characters/cats/cap-paw.webm")}
         autoPlay
         loop
         muted

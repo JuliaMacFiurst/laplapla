@@ -167,7 +167,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
         <div className="ice-text">{t.day4Takeoff.nextButton}</div>
         <img
           className="penguin"
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+          src="/supabase-storage/characters/other/penguin.gif"
           alt="penguin"
         />
       </div>

@@ -15,7 +15,7 @@ export interface PlaneWindshieldRef {
 const PlaneWindshield = forwardRef<PlaneWindshieldRef, PlaneWindshieldProps>(
   ({ angle, pushPull }, ref) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(
-    "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/lamding-signal.webm"
+    "/supabase-storage/quests/1_quest/images/lamding-signal.webm"
   );
   const videoRef = useRef<HTMLVideoElement>(null);
 

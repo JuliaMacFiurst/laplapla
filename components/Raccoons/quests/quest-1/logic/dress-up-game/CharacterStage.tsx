@@ -40,27 +40,27 @@ export default function CharacterStage({
   const fallbackCharacters = [
     {
       name: "Stas",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Stas/Stas.webp",
+      img: "/supabase-storage/quests/1_quest/games/dress-up/Stas/Stas.webp",
     },
     {
       name: "Clare",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Clare/Clare.webp",
+      img: "/supabase-storage/quests/1_quest/games/dress-up/Clare/Clare.webp",
     },
     {
       name: "Sam",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Sam/Sam.webp",
+      img: "/supabase-storage/quests/1_quest/games/dress-up/Sam/Sam.webp",
     },
     {
       name: "Matilda",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
+      img: "/supabase-storage/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
     },
     {
       name: "Joe",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Joe/Joe.webp",
+      img: "/supabase-storage/quests/1_quest/games/dress-up/Joe/Joe.webp",
     },
     {
       name: "Tamara",
-      img: "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Tamara/Tamara.webp",
+      img: "/supabase-storage/quests/1_quest/games/dress-up/Tamara/Tamara.webp",
     },
   ];
 
@@ -167,7 +167,7 @@ export default function CharacterStage({
     }
 
     const season = seasonFromId(normalizedId);
-    const dressedSrc = `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/${current.name}/${season}/${normalizedId}-dressed.webp`;
+    const dressedSrc = `/supabase-storage/quests/1_quest/games/dress-up/${current.name}/${season}/${normalizedId}-dressed.webp`;
     console.log("[DressUp][DROP] dressed image src:", dressedSrc);
 
     if (item.score > 0) {
@@ -205,7 +205,7 @@ export default function CharacterStage({
     <div className="dressup-stage">
       <div className="dressup-content">
         <img
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/Scoreboard.webp"
+          src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Scoreboard.webp"
           alt="scoreboard"
           className="dressup-scoreboard"
         />
@@ -220,11 +220,11 @@ export default function CharacterStage({
         </div>
         <div className="dressup-stopwatch">
           <img
-            src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/Stopwatch.webp"
+            src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Stopwatch.webp"
             className="stopwatch-bg"
           />
           <img
-            src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/Stopwatch-hand.webp"
+            src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Stopwatch-hand.webp"
             className="stopwatch-hand"
             style={{ transform: `rotate(${handRotation}deg)` }}
           />
@@ -244,7 +244,7 @@ export default function CharacterStage({
               className="dressup-character"
             />
             {dressedItems.map(({ id, season }) => {
-              const src = `https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
+              const src = `/supabase-storage/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
               console.log("[DressUp][RENDER] dressed item:", id, src);
 
               return (
@@ -304,7 +304,7 @@ export default function CharacterStage({
 
         {/* ЛЕНТА С ОДЕЖДОЙ И КНОПКА СТАРТ */}
         <img
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dress-up/Interface/Clothing-distribution-belt.webp"
+          src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Clothing-distribution-belt.webp"
           alt="clothes belt"
           className="dressup-belt"
         />

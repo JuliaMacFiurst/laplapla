@@ -25,7 +25,7 @@ export default function Day6Expedition({ go }: { go: (id: PageId) => void }) {
         <div className="ice-window">
           <video className="quest-video" autoPlay muted loop playsInline>
             <source
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/expedition.webm"
+              src="/supabase-storage/quests/1_quest/images/expedition.webm"
               type="video/webm"
             />
           </video>
@@ -53,7 +53,7 @@ export default function Day6Expedition({ go }: { go: (id: PageId) => void }) {
             <div className="ice-text">{t.day6.nextButton}</div>
             <img
               className="penguin"
-              src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/other/penguin.gif"
+              src="/supabase-storage/characters/other/penguin.gif"
               alt="penguin"
             />
           </div>

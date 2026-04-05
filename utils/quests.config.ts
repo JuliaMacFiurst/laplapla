@@ -1,6 +1,8 @@
+import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
+
 export const COMING_SOON_IMAGES = [
-  'https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/coming-soon-winter.webp',
-  'https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/coming-soon-summer.webp',
+  buildSupabaseStorageUrl("quests/1_quest/images/coming-soon-winter.webp"),
+  buildSupabaseStorageUrl("quests/1_quest/images/coming-soon-summer.webp"),
 ];
 
 export const quests = {
@@ -9,7 +11,7 @@ export const quests = {
     title: 'К северным берегам',
     subtitle: 'Первый большой квест',
     image:
-      'https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/first-quest-afisha.webp',
+      buildSupabaseStorageUrl("quests/1_quest/images/first-quest-afisha.webp"),
     status: 'active' as const,
   },
 

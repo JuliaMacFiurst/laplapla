@@ -47,7 +47,7 @@ export default function StatBar({ values, levels }: StatBarProps) {
         </div>
 
         <img
-          src="https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/games/dog-sled/stats-panel.webp"
+          src="/supabase-storage/quests/1_quest/games/dog-sled/stats-panel.webp"
           alt="Stats"
           className="stat-panel-frame"
           draggable={false}
