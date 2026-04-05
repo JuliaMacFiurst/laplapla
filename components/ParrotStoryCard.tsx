@@ -186,7 +186,16 @@ async function loadMediaItems(
   query: string,
 ): Promise<{ items: MediaItem[]; cacheHit: boolean }> {
   const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
-  const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=8`);
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      q: query,
+      limit: 8,
+    }),
+  });
   if (!response.ok) {
     return { items: [], cacheHit: false };
   }

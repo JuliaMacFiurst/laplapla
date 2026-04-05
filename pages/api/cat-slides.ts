@@ -1,6 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
 import { fetchVideoFromPexels } from "@/lib/pexelsVideo";
+import { applyApiGuard } from "@/utils/rateLimit";
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "24kb",
+    },
+  },
+};
 
 if (!process.env.GIPHY_API_KEY) {
   throw new Error("GIPHY_API_KEY is not set in environment variables.");
@@ -165,8 +174,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   console.log("🐱 /api/cat-slides called");
   console.log("📥 body:", req.body);
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST allowed' });
+  if (!applyApiGuard(req, res, {
+    methods: ["POST"],
+    limit: 20,
+    maxBodyBytes: 24 * 1024,
+    keyPrefix: "cat-slides",
+  })) {
+    return;
   }
 
   let { prompt, lang } = req.body;

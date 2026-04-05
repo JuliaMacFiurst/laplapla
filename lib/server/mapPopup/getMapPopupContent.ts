@@ -1,4 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
+import { getTranslationPayloadByContentIds, type TranslationPayload } from "@/lib/contentTranslations";
+import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import type { MapPopupContent, MapPopupSlide, MapPopupType } from "@/types/mapPopup";
 
 type MapStoryRow = {
@@ -83,7 +85,7 @@ function pickYoutubeUrl(story: MapStoryRow, lang: string): string | null {
 }
 
 async function loadStory(type: MapPopupType, targetId: string, lang: string): Promise<MapStoryRow | null> {
-  const supabase = createServerSupabaseClient({ serviceRole: true });
+  const supabase = createServerSupabaseClient();
   const commaSeparatedSegments = targetId
     .split(",")
     .map((segment) => segment.trim())
@@ -176,7 +178,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
 }
 
 async function loadStorySlides(storyId: string | number): Promise<MapStorySlideRow[]> {
-  const supabase = createServerSupabaseClient({ serviceRole: true });
+  const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from("map_story_slides")
     .select("id, story_id, slide_order, text, image_url, image_credit_line")
@@ -207,6 +209,73 @@ function buildSlidesFromRows(story: MapStoryRow, slideRows: MapStorySlideRow[]):
   }));
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function asArray(value: unknown) {
+  return Array.isArray(value) ? value : [];
+}
+
+function buildTranslatedSlides(
+  translation: TranslationPayload | null,
+  story: MapStoryRow,
+  fallbackSlides: MapPopupSlide[],
+): MapPopupSlide[] | null {
+  if (!translation) {
+    return null;
+  }
+
+  const directSlides = asArray(translation.slides)
+    .map((item, index) => {
+      const slide = asRecord(item);
+      const text = typeof slide?.text === "string" ? slide.text.trim() : "";
+      if (!text) {
+        return null;
+      }
+
+      const fallbackSlide = fallbackSlides[index];
+      return {
+        id: fallbackSlide?.id ?? `${story.type}:${story.target_id}:translated:${index}`,
+        index: fallbackSlide?.index ?? index,
+        text,
+        imageUrl: fallbackSlide?.imageUrl ?? null,
+        imageCreditLine: fallbackSlide?.imageCreditLine ?? null,
+        imageAuthor: fallbackSlide?.imageAuthor ?? null,
+        imageSourceUrl: fallbackSlide?.imageSourceUrl ?? null,
+      } satisfies MapPopupSlide;
+    })
+    .filter((item) => item !== null);
+
+  if (directSlides.length > 0) {
+    return directSlides;
+  }
+
+  const translatedContent = typeof translation.content === "string" ? translation.content.trim() : "";
+  if (!translatedContent) {
+    return null;
+  }
+
+  const parsedSlides = parseMapStoryContentToSlides(translatedContent)
+    .map((slide, index) => {
+      const fallbackSlide = fallbackSlides[index];
+      return {
+        id: fallbackSlide?.id ?? `${story.type}:${story.target_id}:translated:${index}`,
+        index: typeof fallbackSlide?.index === "number" ? fallbackSlide.index : slide.slideOrder,
+        text: slide.text,
+        imageUrl: fallbackSlide?.imageUrl ?? null,
+        imageCreditLine: fallbackSlide?.imageCreditLine ?? null,
+        imageAuthor: fallbackSlide?.imageAuthor ?? null,
+        imageSourceUrl: fallbackSlide?.imageSourceUrl ?? null,
+      } satisfies MapPopupSlide;
+    })
+    .filter((slide) => slide.text.length > 0);
+
+  return parsedSlides.length > 0 ? parsedSlides : null;
+}
+
 export async function getMapPopupContent({
   type,
   targetId,
@@ -221,14 +290,34 @@ export async function getMapPopupContent({
   }
 
   const slideRows = await loadStorySlides(baseStory.id);
-  const slides = buildSlidesFromRows(baseStory, slideRows);
+  const baseSlides = buildSlidesFromRows(baseStory, slideRows);
+  const translation = lang !== "ru"
+    ? await getTranslationPayloadByContentIds(
+        "map_story",
+        [baseStory.id, baseStory.target_id, targetId],
+        lang,
+      )
+    : null;
+  const translatedSlides = buildTranslatedSlides(translation, baseStory, baseSlides);
+  const translatedContent =
+    typeof translation?.content === "string"
+      ? translation.content.trim()
+      : "";
+  const slides = translatedSlides || baseSlides;
+  const rawContent = translatedContent || (typeof baseStory.content === "string" ? baseStory.content.trim() : "");
+  const resolvedLang = translation ? lang : (baseStory.language || lang);
+  const source: MapPopupContent["source"] = translation
+    ? "content_translations"
+    : slides.length > 0
+      ? "map_story_slides"
+      : "legacy_map_stories";
 
   const payload: MapPopupContent = {
     storyId: baseStory.id,
     type,
     targetId,
-    lang: baseStory.language || lang,
-    rawContent: typeof baseStory.content === "string" && baseStory.content.trim() ? baseStory.content.trim() : null,
+    lang: resolvedLang,
+    rawContent: rawContent || null,
     title: null,
     googleMapsUrl:
       typeof baseStory.google_maps_url === "string" && baseStory.google_maps_url.trim()
@@ -249,7 +338,7 @@ export async function getMapPopupContent({
         title: null,
       };
     })(),
-    source: "map_story_slides",
+    source,
   };
 
   console.log(

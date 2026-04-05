@@ -52,7 +52,16 @@ const fetchSourceItems = async (
   limit = 8,
 ): Promise<SlideMediaCandidate[]> => {
   const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
-  const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=${limit}`);
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      q: query,
+      limit,
+    }),
+  });
   if (!response.ok) {
     return [];
   }

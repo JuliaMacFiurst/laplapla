@@ -1,7 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
+import { applyApiGuard } from "@/utils/rateLimit";
 
 const TTL_MS = 60 * 60 * 1000;
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "16kb",
+    },
+  },
+};
 
 type PexelsItem = {
   url: string;
@@ -19,14 +28,22 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PexelsResponse | { error: string }>,
 ) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (!applyApiGuard(req, res, {
+    methods: ["GET", "POST"],
+    limit: 30,
+    maxBodyBytes: req.method === "POST" ? 16 * 1024 : undefined,
+    keyPrefix: "pexels",
+  })) {
+    return;
   }
 
-  const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
+  const rawQuery = Array.isArray(payload.q) ? payload.q[0] : payload.q;
+  const rawLimit = Array.isArray(payload.limit) ? payload.limit[0] : payload.limit;
+  const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
   const limit = Math.min(
     10,
-    Math.max(1, Number(typeof req.query.limit === "string" ? req.query.limit : "5") || 5),
+    Math.max(1, Number(typeof rawLimit === "string" || typeof rawLimit === "number" ? rawLimit : "5") || 5),
   );
 
   if (!query) {

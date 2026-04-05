@@ -1,6 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { MapPopupType } from "@/types/mapPopup";
 import { searchMapPopupMedia } from "@/lib/server/mapPopup/mediaSearch";
+import { applyApiGuard } from "@/utils/rateLimit";
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "24kb",
+    },
+  },
+};
 
 type SearchResponse =
   | {
@@ -33,8 +42,13 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SearchResponse>,
 ) {
-  if (req.method !== "GET" && req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (!applyApiGuard(req, res, {
+    methods: ["GET", "POST"],
+    limit: 20,
+    maxBodyBytes: req.method === "POST" ? 24 * 1024 : undefined,
+    keyPrefix: "map-popup-media-search",
+  })) {
+    return;
   }
 
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;

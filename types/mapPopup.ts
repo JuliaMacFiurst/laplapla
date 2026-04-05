@@ -35,5 +35,5 @@ export type MapPopupContent = {
   googleMapsUrl?: string | null;
   slides: MapPopupSlide[];
   video?: MapPopupVideo | null;
-  source: "map_story_slides" | "legacy_map_stories";
+  source: "map_story_slides" | "legacy_map_stories" | "content_translations";
 };

@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
 export type ContentType =
@@ -72,7 +71,7 @@ type ContentByType = {
   story_submission: StorySubmissionContent;
 };
 
-type TranslationPayload = {
+export type TranslationPayload = {
   title?: string;
   content?: string;
   description?: string;
@@ -80,6 +79,36 @@ type TranslationPayload = {
   hero_name?: string;
   assembled_story?: unknown;
   steps_frank?: string[];
+  slides?: Array<{
+    text?: string;
+    [key: string]: unknown;
+  }>;
+  sections?: Array<{
+    mode_slug?: string;
+    mode_name?: string;
+    slug?: string;
+    title?: string;
+    name?: string;
+    slides?: Array<{
+      text?: string;
+      [key: string]: unknown;
+    }>;
+    [key: string]: unknown;
+  }>;
+  tests?: Array<{
+    title?: string;
+    description?: string;
+    questions?: Array<{
+      question?: string;
+      answers?: Array<{
+        text?: string;
+        correct?: boolean;
+        [key: string]: unknown;
+      }>;
+      [key: string]: unknown;
+    }>;
+    [key: string]: unknown;
+  }>;
   [key: string]: unknown;
 };
 
@@ -92,20 +121,10 @@ const BASE_TABLES: Record<ContentType, string> = {
   story_submission: "user_story_submissions",
 };
 
-const getTranslationsClient = () => {
-  if (typeof window !== "undefined") {
-    return supabase;
-  }
+const getTranslationsClient = () => supabase;
 
-  const supabaseUrl = process.env["SUPABASE_URL"] || "";
-  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"] || "";
-
-  if (supabaseUrl && serviceRoleKey) {
-    return createClient(supabaseUrl, serviceRoleKey);
-  }
-
-  return supabase;
-};
+const normalizeContentIds = (contentIds: Array<string | number>) =>
+  Array.from(new Set(contentIds.map((contentId) => String(contentId).trim()).filter(Boolean)));
 
 function parseTranslationPayload(value: unknown): TranslationPayload | null {
   if (!value) {
@@ -227,23 +246,39 @@ export async function getTranslationPayload<T extends ContentType>(
   contentId: string | number,
   lang: string,
 ): Promise<TranslationPayload | null> {
+  return getTranslationPayloadByContentIds(contentType, [contentId], lang);
+}
+
+export async function getTranslationPayloadByContentIds<T extends ContentType>(
+  contentType: T,
+  contentIds: Array<string | number>,
+  lang: string,
+): Promise<TranslationPayload | null> {
   if (!lang || lang === "ru") {
     return null;
   }
 
-  const { data: translationRow, error: translationError } = await getTranslationsClient()
+  const normalizedIds = normalizeContentIds(contentIds);
+  if (normalizedIds.length === 0) {
+    return null;
+  }
+
+  const { data: translationRows, error: translationError } = await getTranslationsClient()
     .from("content_translations")
-    .select("translation")
+    .select("content_id, translation")
     .eq("content_type", contentType)
-    .eq("content_id", contentId)
     .eq("language", lang)
-    .maybeSingle();
+    .in("content_id", normalizedIds);
 
   if (translationError) {
     throw translationError;
   }
 
-  return parseTranslationPayload(translationRow?.translation);
+  const matchedRow = normalizedIds
+    .map((contentId) => (translationRows || []).find((row) => String(row.content_id) === contentId))
+    .find(Boolean);
+
+  return parseTranslationPayload(matchedRow?.translation);
 }
 
 export async function getTranslationPayloadMap<T extends ContentType>(
@@ -251,7 +286,7 @@ export async function getTranslationPayloadMap<T extends ContentType>(
   contentIds: Array<string | number>,
   lang: string,
 ): Promise<Map<string, TranslationPayload>> {
-  const uniqueIds = Array.from(new Set(contentIds.map((contentId) => String(contentId)).filter(Boolean)));
+  const uniqueIds = normalizeContentIds(contentIds);
   if (!lang || lang === "ru" || uniqueIds.length === 0) {
     return new Map();
   }

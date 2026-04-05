@@ -1,13 +1,27 @@
 // pages/api/fetch-pexels.ts
 import type { NextApiRequest, NextApiResponse } from "next";
+import { applyApiGuard } from "@/utils/rateLimit";
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "24kb",
+    },
+  },
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === "GET") {
-    return res.status(200).json({ message: "✅ Pexels API endpoint is live. Use POST to search for images." });
+  if (!applyApiGuard(req, res, {
+    methods: ["GET", "POST"],
+    limit: 25,
+    maxBodyBytes: req.method === "POST" ? 24 * 1024 : undefined,
+    keyPrefix: "fetch-pexels",
+  })) {
+    return;
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method === "GET") {
+    return res.status(200).json({ message: "✅ Pexels API endpoint is live. Use POST to search for images." });
   }
 
   const { keywords, type, orientation, size } = req.body;

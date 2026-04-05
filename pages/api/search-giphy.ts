@@ -1,13 +1,27 @@
 
 
 import type { NextApiRequest, NextApiResponse } from "next";
+import { applyApiGuard } from "@/utils/rateLimit";
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "16kb",
+    },
+  },
+};
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (!applyApiGuard(req, res, {
+    methods: ["POST"],
+    limit: 25,
+    maxBodyBytes: 16 * 1024,
+    keyPrefix: "search-giphy",
+  })) {
+    return;
   }
 
   const { query, offset = 0 } = req.body;
