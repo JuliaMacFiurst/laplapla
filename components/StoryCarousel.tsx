@@ -45,6 +45,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
   const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
   const [showError, setShowError] = useState(false);
   const [lockedMedia, setLockedMedia] = useState<SlideMedia | null>(null);
+  const [isPortraitMedia, setIsPortraitMedia] = useState(false);
   const textRef = useAutoFontSize<HTMLParagraphElement>([
     story.id,
     currentSlideIndex,
@@ -59,6 +60,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
 
   useEffect(() => {
     setLockedMedia(mediaCache?.get(currentSlideIndex) || null);
+    setIsPortraitMedia(false);
     onPreloadNextSlide?.(currentSlideIndex);
   }, [currentSlideIndex, mediaCache, onPreloadNextSlide, story.id]);
 
@@ -121,6 +123,10 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     Boolean(currentMedia?.gifUrl) ||
     Boolean(currentMedia?.videoUrl) ||
     Boolean(currentMedia?.imageUrl);
+  const textWordCount = currentSlide?.text.trim().split(/\s+/).filter(Boolean).length || 0;
+  const shouldStackLayout = textWordCount > 18 || currentMedia?.type === "video";
+  const compactText = textWordCount > 12;
+  const portraitLayout = isPortraitMedia || currentMedia?.type === "video";
   
   return (
     <div className="story-wrapper">
@@ -136,46 +142,63 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
             zIndex: 0,
           }}
         />
-        <div className="story-content">
-          <div className="story-media">
+        <div className={`story-content${shouldStackLayout ? " story-content-stacked" : ""}${portraitLayout ? " story-content-portrait" : ""}`}>
+          <div className={`story-media${portraitLayout ? " story-media-portrait" : ""}`}>
             <div className="story-image-wrapper">
               {currentSlide && hasMedia ? (
                 <>
                   {currentMedia?.type === "image" && currentMedia.capybaraImage ? (
                     <img
-                      className="story-image"
+                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
                       src={currentMedia.capybaraImage}
                       alt={currentMedia.capybaraImageAlt || "Капибара"}
+                      onLoad={(event) => {
+                        const image = event.currentTarget;
+                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+                      }}
                     />
                   ) : currentMedia?.type === "gif" && currentMedia.gifUrl ? (
                     <img
-                      className="story-image"
+                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
                       src={currentMedia.gifUrl}
                       alt="GIF"
+                      onLoad={(event) => {
+                        const image = event.currentTarget;
+                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+                      }}
                     />
                   ) : currentMedia?.type === "video" && currentMedia.videoUrl ? (
                     <video
                       src={currentMedia.videoUrl}
-                      className="story-video"
+                      className={`story-video${portraitLayout ? " story-video-portrait" : ""}`}
                       autoPlay
                       muted
                       loop
                       playsInline
-                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      onLoadedMetadata={(event) => {
+                        const video = event.currentTarget;
+                        setIsPortraitMedia(video.videoHeight > video.videoWidth * 1.05);
+                      }}
                     />
                   ) : currentMedia?.imageUrl ? (
                     <img
                       src={currentMedia.imageUrl}
                       alt="Фото капибары с Pexels"
-                      className="story-image"
-                      style={{ objectFit: "contain", maxHeight: "100%", maxWidth: "100%" }}
+                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
+                      onLoad={(event) => {
+                        const image = event.currentTarget;
+                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+                      }}
                     />
                   ) : (
                     <img
-                      className="story-image"
+                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
                       src={fallback}
                       alt="Запасная капибара"
-                      style={{ objectFit: "contain", maxHeight: "100%", maxWidth: "100%" }}
+                      onLoad={(event) => {
+                        const image = event.currentTarget;
+                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+                      }}
                     />
                   )}
                 </>
@@ -191,8 +214,11 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
             </div>
           </div>
 
-          <div className="story-text">
-            <p ref={textRef} className={textClassName || "slide-text"}>
+          <div className={`story-text${compactText ? " story-text-compact" : ""}`}>
+            <p
+              ref={textRef}
+              className={`${textClassName || "slide-text"}${compactText ? " story-carousel-text-compact" : ""}`}
+            >
               {currentSlide.text}
             </p>
           </div>

@@ -44,6 +44,37 @@ type GiphyItem = {
   height?: number;
 };
 
+const BLOCKED_MEDIA_TERMS = [
+  "kiss",
+  "kissing",
+  "romance",
+  "romantic",
+  "couple",
+  "sexy",
+  "sensual",
+  "lingerie",
+  "bikini",
+  "smoking",
+  "cigarette",
+  "tobacco",
+  "vape",
+  "hookah",
+  "alcohol",
+  "beer",
+  "wine",
+  "vodka",
+  "drunk",
+];
+
+const isSafeMediaText = (...values: Array<string | undefined | null>) => {
+  const haystack = values
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return !BLOCKED_MEDIA_TERMS.some((term) => haystack.includes(term));
+};
+
 type GiphyResponse = {
   items: GiphyItem[];
   query: string;
@@ -105,7 +136,15 @@ async function handler(
           width: Number(item?.images?.original?.width) || undefined,
           height: Number(item?.images?.original?.height) || undefined,
         }))
-        ?.filter((item: GiphyItem) => Boolean(item.url)) ?? [];
+        ?.filter((item: GiphyItem, index: number) =>
+          Boolean(item.url) &&
+          isSafeMediaText(
+            json?.data?.[index]?.title,
+            json?.data?.[index]?.slug,
+            json?.data?.[index]?.username,
+            query,
+          ),
+        ) ?? [];
 
     return res
       .status(200)

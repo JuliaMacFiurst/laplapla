@@ -41,6 +41,39 @@ type PexelsItem = {
   url: string;
   mediaType: "image" | "video";
   photographer?: string;
+  description?: string;
+};
+
+const BLOCKED_MEDIA_TERMS = [
+  "kiss",
+  "kissing",
+  "romance",
+  "romantic",
+  "couple",
+  "wedding",
+  "sexy",
+  "sensual",
+  "lingerie",
+  "bikini",
+  "smoking",
+  "cigarette",
+  "tobacco",
+  "vape",
+  "hookah",
+  "alcohol",
+  "beer",
+  "wine",
+  "vodka",
+  "drunk",
+];
+
+const isSafeMediaText = (...values: Array<string | undefined | null>) => {
+  const haystack = values
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return !BLOCKED_MEDIA_TERMS.some((term) => haystack.includes(term));
 };
 
 type PexelsResponse = {
@@ -118,8 +151,11 @@ async function handler(
           url: photo?.src?.large || photo?.src?.medium || photo?.src?.original,
           mediaType: "image" as const,
           photographer: photo?.photographer || undefined,
+          description: photo?.alt || undefined,
         }))
-        ?.filter((item: PexelsItem) => Boolean(item.url)) ?? [];
+        ?.filter((item: PexelsItem) =>
+          Boolean(item.url) && isSafeMediaText(item.description, item.photographer, query),
+        ) ?? [];
 
     const videos: PexelsItem[] =
       videoJson?.videos
@@ -131,8 +167,14 @@ async function handler(
               ?.link,
           mediaType: "video" as const,
           photographer: video?.user?.name || undefined,
+          description: [
+            video?.url,
+            ...(Array.isArray(video?.tags) ? video.tags.map((tag: any) => tag?.title || tag) : []),
+          ].filter(Boolean).join(" "),
         }))
-        ?.filter((item: PexelsItem) => Boolean(item.url)) ?? [];
+        ?.filter((item: PexelsItem) =>
+          Boolean(item.url) && isSafeMediaText(item.description, item.photographer, query),
+        ) ?? [];
 
     const items: PexelsItem[] = [];
     const maxLength = Math.max(photos.length, videos.length);

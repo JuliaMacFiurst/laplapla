@@ -916,12 +916,12 @@
 .story-carousel-text {
   z-index: 20;
   color: #1e293b;
-  font-size: clamp(1rem, 2.5vw, 2.5rem);
+  font-size: clamp(0.95rem, 2.1vw, 2.1rem);
   font-weight: 800;
   text-align: center;
-  padding: 1rem 1.5rem;
-  height: 20vh;
-  max-height: 20vh;
+  padding: 0.85rem 1.1rem;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -929,6 +929,12 @@
   overflow: hidden;
   letter-spacing: 0.05em;
   margin: 0;
+}
+
+.story-carousel-text-compact {
+  font-size: clamp(0.88rem, 1.7vw, 1.55rem);
+  line-height: 1.04;
+  padding: 0.65rem 0.9rem;
 }
 
 /* Сообщение если нет истории */
@@ -1095,7 +1101,7 @@
   border-radius: 1rem;
   gap: 1.5rem;
   min-height: auto;
-  max-height: 78vh;
+  max-height: 84vh;
 }
 
 .book-feed {
@@ -1289,20 +1295,20 @@
 
   .book-feed.book-feed-mobile .story-content {
     flex: 1 1 auto;
-    justify-content: space-between;
-    gap: 2rem;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 0.75rem;
     margin: 0;
   }
 
   .book-feed.book-feed-mobile .story-media {
-    max-height: 35vh;
+    max-height: 36vh;
   }
 
   .book-feed.book-feed-mobile .story-image-wrapper,
   .book-feed.book-feed-mobile .story-image,
   .book-feed.book-feed-mobile .story-video,
   .book-feed.book-feed-mobile .story-media-placeholder {
-    max-height: 35vh;
+    max-height: 36vh;
   }
 
   .book-feed.book-feed-mobile .story-text {
@@ -1310,12 +1316,12 @@
   }
 
   .book-feed.book-feed-mobile .story-carousel-text {
-    font-size: clamp(1rem, 2.4vw, 1.65rem);
+    font-size: clamp(0.85rem, 2vw, 1.35rem);
     line-height: 1.08;
     padding: 0.35rem 0.5rem;
     min-height: 0;
-    height: 20vh;
-    max-height: 20vh;
+    height: 100%;
+    max-height: 100%;
   }
 
   .book-feed.book-feed-mobile .book-card-title {
@@ -1870,7 +1876,7 @@
 }
 
 .story-media {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   max-height: none;
   display: flex;
@@ -1879,32 +1885,65 @@
 }
 
 .story-image-wrapper {
-  min-height: min(24vh, 220px);
+  min-height: min(18vh, 180px);
   width: 100%;
   height: 100%;
-  max-height: min(40vh, 420px);
   border-radius: 1rem;
   margin: 0;
 }
 
 .story-content {
   margin: 0;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.9rem;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
   min-height: 0;
   height: 100%;
   overflow: hidden;
 }
 
+.story-content-stacked {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.story-content-stacked .story-text {
+  order: 1;
+  max-height: min(24vh, 220px);
+}
+
+.story-content-stacked .story-media {
+  order: 2;
+}
+
+.story-content-stacked .story-image-wrapper {
+  min-height: min(16vh, 160px);
+  max-height: min(40vh, 440px);
+}
+
+.story-content-portrait .story-image-wrapper {
+  max-height: min(52vh, 620px);
+}
+
+.story-media-portrait {
+  justify-content: center;
+  align-items: center;
+}
+
 .story-text {
-  flex: 0 1 auto;
   min-height: 0;
-  max-height: min(18vh, 180px);
+  max-height: min(16vh, 160px);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background-color: #fafafa;
+  z-index: 20;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.story-text-compact {
+  max-height: min(20vh, 210px);
 }
 
 .story-image-background {
@@ -1921,13 +1960,18 @@
   position: relative;
   width: 100%;
   height: 100%;
-  max-height: 100%;
   object-fit: contain;
   z-index: 2;
   margin: 0;
   border: none; /* сброс всех границ */
   border-radius: 1rem; /* если нужно округление */
   box-shadow: none; 
+}
+
+.story-image-portrait,
+.story-video-portrait {
+  width: auto;
+  max-width: 100%;
 }
 
 .story-video {
@@ -1945,20 +1989,24 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  min-height: min(24vh, 220px);
-  max-height: min(40vh, 420px);
+  min-height: min(18vh, 180px);
+  max-height: min(44vh, 500px);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.42);
   border: 1px dashed rgba(15, 23, 42, 0.12);
 }
 
 .story-navigation {
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
   align-items: center;
   justify-content: center;
+  min-height: 0;
+}
+
+.story-nav-inner {
+  background-color: #ffff;
 }
 
 .story-nav {
@@ -2025,12 +2073,12 @@
   margin-left: auto;
   margin-right: auto;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   justify-content: stretch;
-  min-height: min(70vh, 760px);
-  max-height: min(74vh, 820px);
+  min-height: min(72vh, 780px);
+  max-height: min(82vh, 920px);
   min-width: 0;
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fallbackImages } from "@/constants";
-import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
+import { buildSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book, BookExplanation, BookTest, ExplanationMode, Slide } from "@/types/types";
@@ -66,8 +66,8 @@ const getFallbackImage = () =>
 const MEDIA_TIMEOUT_MS = 5000;
 const PRELOAD_AHEAD_COUNT = 4;
 const MAX_BOOK_MEDIA_QUERY_LENGTH = 120;
-const GIPHY_FALLBACK_QUERIES = ["capybara", "cute capybara", "capybara funny"];
-const PEXELS_FALLBACK_QUERIES = ["capybara", "cute capybara", "capybara animal"];
+const GIPHY_FALLBACK_QUERIES = ["nature", "landscape", "animals", "travel"];
+const PEXELS_FALLBACK_QUERIES = ["nature", "landscape", "travel", "wildlife"];
 
 const mediaResultCache = new Map<string, ResolvedSlideMedia>();
 let giphyUsed = 0;
@@ -165,6 +165,51 @@ const buildSlideCacheKey = (slide: Slide) =>
     keywords: slide.keywords || [],
   });
 
+const pickSeededItem = <T extends { url: string }>(
+  items: T[],
+  excludedUrls: string[],
+  seed: string,
+) => {
+  const candidates = items.filter((item) => item.url && !excludedUrls.includes(item.url));
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const pool = candidates.slice(0, Math.min(candidates.length, 6));
+  const index = hashString(seed) % pool.length;
+  return pool[index] || pool[0] || null;
+};
+
+const getRequiredCapybaraCount = (totalSlides: number) => {
+  if (totalSlides >= 9) {
+    return 4;
+  }
+  if (totalSlides >= 5) {
+    return 3;
+  }
+  return Math.min(2, totalSlides);
+};
+
+const getCapybaraAnchorIndices = (totalSlides: number) => {
+  const count = getRequiredCapybaraCount(totalSlides);
+  if (count <= 0) {
+    return [];
+  }
+
+  if (count === 1) {
+    return [0];
+  }
+
+  return Array.from(new Set(
+    Array.from({ length: count }, (_, index) =>
+      Math.round((index * Math.max(totalSlides - 1, 0)) / Math.max(count - 1, 1)),
+    ),
+  ));
+};
+
+const shouldPreferCapybaraMedia = (slideIndex: number, totalSlides: number) =>
+  getCapybaraAnchorIndices(totalSlides).includes(slideIndex);
+
 const shouldUseContextMedia = (slideIndex: number, totalSlides: number) =>
   slideIndex === 0 ||
   slideIndex === Math.floor(totalSlides / 2) ||
@@ -173,6 +218,21 @@ const shouldUseContextMedia = (slideIndex: number, totalSlides: number) =>
 const pickCapybaraQuery = (slide: Slide) => {
   const seed = hashString(buildSlideCacheKey(slide));
   return capybaraQueries[seed % capybaraQueries.length];
+};
+
+const buildContextualQueryVariants = (slide: Slide) => {
+  const normalizedText = normalizeText(slide.text);
+  const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
+  const keywordPhrase = keywords.join(" ").trim();
+  const firstKeyword = keywords[0] || "";
+  const firstTwoKeywords = keywords.slice(0, 2).join(" ").trim();
+
+  return unique([
+    clampMediaQuery(keywordPhrase),
+    clampMediaQuery(firstTwoKeywords),
+    clampMediaQuery(firstKeyword),
+    clampMediaQuery(normalizedText),
+  ]).filter(Boolean);
 };
 
 const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number) => {
@@ -245,6 +305,7 @@ const searchLibraryItems = async (
 
 const searchGiphyMeaning = async (
   query: string,
+  seed: string,
   excludedUrls: string[] = [],
   signal?: AbortSignal,
 ): Promise<ResolvedSlideMedia | null> => {
@@ -266,9 +327,13 @@ const searchGiphyMeaning = async (
 
   for (const currentQuery of normalizedQueries) {
     const items = await searchLibraryItems("/api/giphy", currentQuery, signal);
-    const gifUrl = items.find((item) => item.mediaType === "gif" && !excluded.has(item.url))?.url;
-    if (gifUrl) {
-      result = { type: "gif" as const, gifUrl };
+    const picked = pickSeededItem(
+      items.filter((item) => item.mediaType === "gif"),
+      Array.from(excluded),
+      `${seed}:${currentQuery}`,
+    );
+    if (picked?.url) {
+      result = { type: "gif" as const, gifUrl: picked.url };
       break;
     }
   }
@@ -281,6 +346,7 @@ const searchGiphyMeaning = async (
 
 const searchPexelsMeaning = async (
   query: string,
+  seed: string,
   keywords?: string[],
   excludedUrls: string[] = [],
   signal?: AbortSignal,
@@ -292,20 +358,28 @@ const searchPexelsMeaning = async (
   for (const currentQuery of queries) {
     const items = await searchLibraryItems("/api/pexels", currentQuery, signal);
 
-    const video = items.find((item) => item.mediaType === "video" && !excluded.has(item.url));
-    if (video?.url) {
-      return {
-        type: "video",
-        videoUrl: video.url,
-      };
-    }
-
-    const image = items.find((item) => item.mediaType === "image" && !excluded.has(item.url));
+    const image = pickSeededItem(
+      items.filter((item) => item.mediaType === "image"),
+      Array.from(excluded),
+      `${seed}:image:${currentQuery}`,
+    );
     if (image?.url) {
       return {
         type: "image",
         imageUrl: image.url,
         capybaraImage: image.url,
+      };
+    }
+
+    const video = pickSeededItem(
+      items.filter((item) => item.mediaType === "video"),
+      Array.from(excluded),
+      `${seed}:video:${currentQuery}`,
+    );
+    if (video?.url) {
+      return {
+        type: "video",
+        videoUrl: video.url,
       };
     }
   }
@@ -322,7 +396,11 @@ const searchPexelsMeaning = async (
   }
 
   const imageData = (await imageResponse.json()) as { images?: string[] };
-  const imageUrl = imageData.images?.find((url) => url && !excluded.has(url));
+  const imageUrl = pickSeededItem(
+    (imageData.images || []).filter(Boolean).map((url) => ({ url })),
+    Array.from(excluded),
+    `${seed}:fetch-pexels`,
+  )?.url;
   return imageUrl ? { type: "image", imageUrl, capybaraImage: imageUrl } : null;
 };
 
@@ -358,12 +436,11 @@ const searchPrimarySlideMedia = async (
   totalSlides: number,
   excludedUrls: string[] = [],
 ): Promise<ResolvedSlideMedia | null> => {
-  const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
-  const queries = buildAnimalSlideMediaQueries(
-    ["capybara", "capybara animal", "cute capybara"],
-    keywords.join(" "),
-    normalizeText(slide.text),
-  );
+  const contextualVariants = buildContextualQueryVariants(slide);
+  const queries = [
+    ...buildSlideMediaQueries(...contextualVariants),
+    ...contextualVariants,
+  ].filter(Boolean);
 
   const preferredSources =
     shouldUseContextMedia(slideIndex, totalSlides) && giphyUsed < MAX_GIPHY
@@ -460,11 +537,18 @@ const buildMediaPlan = (
   }
 
   const isContextSlide = shouldUseContextMedia(slideIndex, totalSlides);
+  const prefersCapybaraMedia = shouldPreferCapybaraMedia(slideIndex, totalSlides);
   const contextualKeywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
-  const contextualQuery = clampMediaQuery(["capybara", contextualKeywords.join(" ") || normalizeText(slide.text) || "cute"]
-    .filter(Boolean)
-    .join(" "));
+  const contextualQuery = clampMediaQuery(
+    contextualKeywords.join(" ") || normalizeText(slide.text) || "nature",
+  );
   const capybaraQuery = clampMediaQuery(pickCapybaraQuery(slide));
+  if (prefersCapybaraMedia) {
+    return {
+      type: "giphy",
+      query: capybaraQuery,
+    };
+  }
   const plan: SlideMediaPlan = isContextSlide
     ? {
         type: "giphy",
@@ -472,13 +556,13 @@ const buildMediaPlan = (
       }
     : {
         type: "pexels",
-        query: capybaraQuery,
+        query: contextualQuery,
       };
 
   if (plan.type === "giphy" && giphyUsed >= MAX_GIPHY) {
     return {
       type: "pexels",
-      query: capybaraQuery,
+      query: contextualQuery || capybaraQuery,
     };
   }
 
@@ -524,9 +608,30 @@ const preloadSlideMedia = async (
   const plan = buildMediaPlan(slide, slideIndex, totalSlides);
   const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
   const excludedUrls = getUsedMediaUrls(usedMediaUrls);
+  const seed = buildSlideCacheKey(slide);
+  const capybaraQuery = clampMediaQuery(pickCapybaraQuery(slide));
+  const prefersCapybaraMedia = shouldPreferCapybaraMedia(slideIndex, totalSlides);
 
   if (process.env.NODE_ENV === "development") {
     console.log("[MEDIA] preload:", slideIndex, plan.type);
+  }
+
+  if (prefersCapybaraMedia) {
+    const capybaraFirstResult = await withTimeout(
+      searchCapybaraFallback(
+        {
+          ...slide,
+          keywords: [capybaraQuery],
+        },
+        excludedUrls,
+        signal,
+      ),
+      MEDIA_TIMEOUT_MS,
+    );
+
+    if (capybaraFirstResult) {
+      return capybaraFirstResult;
+    }
   }
 
   const primaryResult = await withTimeout(
@@ -539,11 +644,11 @@ const preloadSlideMedia = async (
 
   const giphyPromise =
     plan.type === "giphy"
-      ? withTimeout(searchGiphyMeaning(plan.query, excludedUrls, signal), MEDIA_TIMEOUT_MS)
+      ? withTimeout(searchGiphyMeaning(plan.query, seed, excludedUrls, signal), MEDIA_TIMEOUT_MS)
       : Promise.resolve<ResolvedSlideMedia | null>(null);
   const pexelsPromise =
     plan.type === "pexels" || plan.type === "giphy"
-      ? withTimeout(searchPexelsMeaning(plan.query, keywords, excludedUrls, signal), MEDIA_TIMEOUT_MS)
+      ? withTimeout(searchPexelsMeaning(plan.query, seed, keywords, excludedUrls, signal), MEDIA_TIMEOUT_MS)
       : Promise.resolve<ResolvedSlideMedia | null>(null);
 
   const [giphyResult, pexelsResult] = await Promise.all([giphyPromise, pexelsPromise]);
@@ -788,13 +893,12 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       return false;
     }
 
-    const currentMedia = mediaCacheRef.current.get(slideIndex);
-    const queries = buildAnimalSlideMediaQueries(
-      ["capybara", "capybara animal"],
+  const currentMedia = mediaCacheRef.current.get(slideIndex);
+    const queries = buildSlideMediaQueries(
+      slide.keywords?.join(" "),
       options?.bookTitle,
       options?.modeLabel,
       slide.text,
-      slide.keywords?.join(" "),
     );
 
     const alternative = await findAlternativeSlideMedia({
