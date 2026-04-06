@@ -108,6 +108,32 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       };
     }, [currentIndex, slides, currentSlide, playEpoch]);
 
+    useEffect(() => {
+      const audio = voiceRef.current;
+      if (!audio) {
+        return;
+      }
+
+      if (!currentSlide?.voiceUrl) {
+        try {
+          audio.pause();
+          audio.removeAttribute("src");
+          audio.load();
+          musicEngineRef?.current?.restoreMusic?.();
+        } catch {}
+        return;
+      }
+
+      try {
+        audio.currentTime = 0;
+      } catch {}
+
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {});
+      }
+    }, [currentIndex, currentSlide?.voiceUrl, musicEngineRef, playEpoch]);
+
     if (!currentSlide) return null;
 
     return (
@@ -165,6 +191,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 />
               ) : (
                 <img
+                  key={`${currentSlide.id}:${currentSlide.mediaUrl}:${playEpoch}`}
                   src={currentSlide.mediaUrl}
                   alt=""
                   style={{
@@ -186,31 +213,28 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
           )}
 
           {/* VOICE */}
-          {currentSlide.voiceUrl && (
-            <audio
-              key={`${currentSlide.id}-${playEpoch}`}
-              ref={voiceRef}
-              src={currentSlide.voiceUrl}
-              autoPlay
-              playsInline
-              preload="auto"
-              onPlay={() => {
-                try {
-                  musicEngineRef?.current?.duckMusic?.();
-                } catch {}
-              }}
-              onEnded={() => {
-                try {
-                  musicEngineRef?.current?.restoreMusic?.();
-                } catch {}
-              }}
-              onPause={() => {
-                try {
-                  musicEngineRef?.current?.restoreMusic?.();
-                } catch {}
-              }}
-            />
-          )}
+          <audio
+            ref={voiceRef}
+            src={currentSlide.voiceUrl || undefined}
+            autoPlay
+            playsInline
+            preload="auto"
+            onPlay={() => {
+              try {
+                musicEngineRef?.current?.duckMusic?.();
+              } catch {}
+            }}
+            onEnded={() => {
+              try {
+                musicEngineRef?.current?.restoreMusic?.();
+              } catch {}
+            }}
+            onPause={() => {
+              try {
+                musicEngineRef?.current?.restoreMusic?.();
+              } catch {}
+            }}
+          />
 
           {/* TEXT */}
           {currentSlide.text && (

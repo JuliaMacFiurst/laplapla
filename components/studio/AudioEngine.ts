@@ -58,11 +58,13 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
 
     const audio = document.createElement("audio");
     audio.src = track.src;
+    audio.crossOrigin = "anonymous";
     audio.loop = true;
     const baseVolume = typeof track.volume === "number" ? track.volume : 1;
     audio.volume = baseVolume * musicMultiplierRef.current;
     audio.preload = "auto";
     audio.style.display = "none";
+    audio.dataset.studioEngine = "true";
 
     document.body.appendChild(audio);
 

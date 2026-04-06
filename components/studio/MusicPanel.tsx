@@ -138,6 +138,8 @@ type MusicPanelProps = {
   voiceDuration?: number;
   onRemoveVoice: () => void;
   onEnhanceVoice?: () => void;
+  onMakeVoiceLouder?: () => void;
+  onMakeChildVoice?: () => void;
   lang: Lang;
 };
 
@@ -153,6 +155,8 @@ export default function MusicPanel({
   voiceDuration,
   onRemoveVoice,
   onEnhanceVoice,
+  onMakeVoiceLouder,
+  onMakeChildVoice,
 }: MusicPanelProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const presets: ParrotPreset[] = PARROT_PRESETS;
@@ -307,35 +311,67 @@ export default function MusicPanel({
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+              alignItems: "stretch",
               gap: 12,
+              flexWrap: "wrap",
             }}
           >
-            <audio src={voiceUrl} controls style={{ flex: 1 }} />
+            <audio src={voiceUrl} controls style={{ flex: "1 1 260px", minWidth: 0 }} />
 
-            {onEnhanceVoice && (
-              <button
-                onClick={onEnhanceVoice}
-                className="studio-button btn-blue"
-                style={{ whiteSpace: "nowrap" }}
-              >
-                ✨ {t.improveVoice}
-              </button>
-            )}
-
-            <button
-              onClick={onRemoveVoice}
+            <div
               style={{
-                border: "none",
-                background: "#ff6b6b",
-                color: "#fff",
-                borderRadius: 8,
-                padding: "6px 10px",
-                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                flex: "0 0 auto",
+                alignItems: "stretch",
               }}
             >
-              ✕
-            </button>
+              {onEnhanceVoice && (
+                <button
+                  onClick={onEnhanceVoice}
+                  className="studio-button btn-blue"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  ✨ {t.improveVoice}
+                </button>
+              )}
+
+              {onMakeVoiceLouder && (
+                <button
+                  onClick={onMakeVoiceLouder}
+                  className="studio-button btn-mint"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  🔊 {t.makeLouder}
+                </button>
+              )}
+
+              {onMakeChildVoice && (
+                <button
+                  onClick={onMakeChildVoice}
+                  className="studio-button btn-lavender"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  🧒 {t.childVoice}
+                </button>
+              )}
+
+              <button
+                onClick={onRemoveVoice}
+                style={{
+                  border: "none",
+                  background: "#ff6b6b",
+                  color: "#fff",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {voiceDuration && (

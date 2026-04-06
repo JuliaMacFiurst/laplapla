@@ -73,6 +73,7 @@ export default function SlideCanvas9x16({ slide, lang }: SlideCanvasProps) {
       {mediaUrl ? (
         isVideo ? (
           <video
+            key={`${slide.id}:${mediaUrl}`}
             src={mediaUrl}
             style={{
               position: "absolute",
@@ -89,6 +90,7 @@ export default function SlideCanvas9x16({ slide, lang }: SlideCanvasProps) {
           />
         ) : (
           <img
+            key={`${slide.id}:${mediaUrl}`}
             src={mediaUrl}
             alt=""
             style={{

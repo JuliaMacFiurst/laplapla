@@ -34,6 +34,11 @@ interface SlideMediaPlan {
   query: string;
 }
 
+type LibrarySearchItem = {
+  url: string;
+  mediaType: "gif" | "image" | "video";
+};
+
 interface BookUiState {
   modeId: string | number | null;
   slideIndex: number;
@@ -59,6 +64,10 @@ const getFallbackImage = () =>
   `/images/capybaras/${fallbackImages[Math.floor(Math.random() * fallbackImages.length)]}`;
 
 const MEDIA_TIMEOUT_MS = 5000;
+const PRELOAD_AHEAD_COUNT = 4;
+const MAX_BOOK_MEDIA_QUERY_LENGTH = 120;
+const GIPHY_FALLBACK_QUERIES = ["capybara", "cute capybara", "capybara funny"];
+const PEXELS_FALLBACK_QUERIES = ["capybara", "cute capybara", "capybara animal"];
 
 const mediaResultCache = new Map<string, ResolvedSlideMedia>();
 let giphyUsed = 0;
@@ -105,6 +114,20 @@ const normalizeText = (value: string) =>
     .replace(/[^\p{L}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+const clampMediaQuery = (value: string, maxLength = MAX_BOOK_MEDIA_QUERY_LENGTH) =>
+  value
+    .trim()
+    .slice(0, maxLength)
+    .trim();
+
+const buildFallbackQueries = (query: string, fallbackQueries: string[]) =>
+  Array.from(
+    new Set(
+      [clampMediaQuery(query), ...fallbackQueries.map((item) => clampMediaQuery(item))]
+        .filter(Boolean),
+    ),
+  );
 
 const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean)));
 
@@ -197,8 +220,36 @@ const buildMediaUrl = (endpoint: string, slide: Slide) => {
   return query ? `${endpoint}?${query}` : endpoint;
 };
 
-const searchGiphyMeaning = async (query: string, signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
-  const cacheKey = `giphy:${query}`;
+const searchLibraryItems = async (
+  endpoint: "/api/giphy" | "/api/pexels",
+  query: string,
+  signal?: AbortSignal,
+  limit = 10,
+): Promise<LibrarySearchItem[]> => {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ q: query, limit }),
+    signal,
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = (await response.json()) as { items?: LibrarySearchItem[] };
+  return Array.isArray(data.items)
+    ? data.items.filter((item): item is LibrarySearchItem => Boolean(item?.url && item?.mediaType))
+    : [];
+};
+
+const searchGiphyMeaning = async (
+  query: string,
+  excludedUrls: string[] = [],
+  signal?: AbortSignal,
+): Promise<ResolvedSlideMedia | null> => {
+  const normalizedQueries = buildFallbackQueries(query, GIPHY_FALLBACK_QUERIES);
+  const cacheKey = `giphy:${normalizedQueries.join("|")}:${excludedUrls.join("|")}`;
   const cached = mediaResultCache.get(cacheKey);
   if (cached) {
     if (process.env.NODE_ENV === "development") {
@@ -207,47 +258,54 @@ const searchGiphyMeaning = async (query: string, signal?: AbortSignal): Promise<
     return cached;
   }
 
-  console.log("[MEDIA] preload:", query, "giphy");
+  if (process.env.NODE_ENV === "development") {
+    console.log("[MEDIA] preload:", normalizedQueries[0], "giphy");
+  }
+  const excluded = new Set(excludedUrls.filter(Boolean));
+  let result: ResolvedSlideMedia | null = null;
 
-  const response = await fetch("/api/search-giphy", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-    signal,
-  });
-
-  if (!response.ok) {
-    return null;
+  for (const currentQuery of normalizedQueries) {
+    const items = await searchLibraryItems("/api/giphy", currentQuery, signal);
+    const gifUrl = items.find((item) => item.mediaType === "gif" && !excluded.has(item.url))?.url;
+    if (gifUrl) {
+      result = { type: "gif" as const, gifUrl };
+      break;
+    }
   }
 
-  const data = (await response.json()) as { gifs?: string[] };
-  const gifUrl = data.gifs?.[0];
-  const result = gifUrl ? { type: "gif" as const, gifUrl } : null;
   if (result) {
     mediaResultCache.set(cacheKey, result);
   }
   return result;
 };
 
-const searchPexelsMeaning = async (query: string, keywords?: string[], signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+const searchPexelsMeaning = async (
+  query: string,
+  keywords?: string[],
+  excludedUrls: string[] = [],
+  signal?: AbortSignal,
+): Promise<ResolvedSlideMedia | null> => {
   const normalizedKeywords = keywords?.length ? keywords : query.split(" ").filter(Boolean);
-  const videoResponse = await fetch("/api/search-pexels-video", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-    signal,
-  });
+  const excluded = new Set(excludedUrls.filter(Boolean));
+  const queries = buildFallbackQueries(query, PEXELS_FALLBACK_QUERIES);
 
-  if (videoResponse.ok) {
-    const videoData = (await videoResponse.json()) as {
-      videos?: Array<{ videoUrl?: string; preview?: string; image?: string }>;
-    };
-    const video = videoData.videos?.[0];
-    if (video?.videoUrl) {
+  for (const currentQuery of queries) {
+    const items = await searchLibraryItems("/api/pexels", currentQuery, signal);
+
+    const video = items.find((item) => item.mediaType === "video" && !excluded.has(item.url));
+    if (video?.url) {
       return {
         type: "video",
-        videoUrl: video.videoUrl,
-        capybaraImage: video.preview || video.image,
+        videoUrl: video.url,
+      };
+    }
+
+    const image = items.find((item) => item.mediaType === "image" && !excluded.has(item.url));
+    if (image?.url) {
+      return {
+        type: "image",
+        imageUrl: image.url,
+        capybaraImage: image.url,
       };
     }
   }
@@ -264,7 +322,7 @@ const searchPexelsMeaning = async (query: string, keywords?: string[], signal?: 
   }
 
   const imageData = (await imageResponse.json()) as { images?: string[] };
-  const imageUrl = imageData.images?.[0];
+  const imageUrl = imageData.images?.find((url) => url && !excluded.has(url));
   return imageUrl ? { type: "image", imageUrl, capybaraImage: imageUrl } : null;
 };
 
@@ -298,6 +356,7 @@ const searchPrimarySlideMedia = async (
   slide: Slide,
   slideIndex: number,
   totalSlides: number,
+  excludedUrls: string[] = [],
 ): Promise<ResolvedSlideMedia | null> => {
   const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
   const queries = buildAnimalSlideMediaQueries(
@@ -313,6 +372,7 @@ const searchPrimarySlideMedia = async (
 
   const candidate = await findAlternativeSlideMedia({
     queries,
+    excludedUrls,
     preferredSources: [...preferredSources],
   });
 
@@ -323,11 +383,16 @@ const searchPrimarySlideMedia = async (
   return resolveCandidateToMedia(candidate);
 };
 
-const searchCapybaraFallback = async (slide: Slide, signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
+const searchCapybaraFallback = async (
+  slide: Slide,
+  excludedUrls: string[] = [],
+  signal?: AbortSignal,
+): Promise<ResolvedSlideMedia | null> => {
+  const excluded = new Set(excludedUrls.filter(Boolean));
   const gifResponse = await fetch(buildMediaUrl("/api/capybara-gifs", slide), { signal });
   if (gifResponse.ok) {
     const gifs = (await gifResponse.json()) as Array<{ gifUrl?: string }>;
-    const gifUrl = gifs[0]?.gifUrl;
+    const gifUrl = gifs.find((item) => item.gifUrl && !excluded.has(item.gifUrl))?.gifUrl;
     if (gifUrl) {
       return { type: "gif", gifUrl };
     }
@@ -339,7 +404,7 @@ const searchCapybaraFallback = async (slide: Slide, signal?: AbortSignal): Promi
   }
 
   const images = (await imageResponse.json()) as Array<{ imageUrl?: string; imageAlt?: string }>;
-  const image = images[0];
+  const image = images.find((item) => item.imageUrl && !excluded.has(item.imageUrl));
   return image?.imageUrl
     ? {
         type: "image",
@@ -383,16 +448,23 @@ const resetBookMediaState = () => {
 };
 
 const buildMediaPlan = (
-  slide: Slide,
+  slide: Slide | undefined,
   slideIndex: number,
   totalSlides: number,
 ): SlideMediaPlan => {
+  if (!slide) {
+    return {
+      type: "fallback",
+      query: "capybara",
+    };
+  }
+
   const isContextSlide = shouldUseContextMedia(slideIndex, totalSlides);
   const contextualKeywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
-  const contextualQuery = ["capybara", contextualKeywords.join(" ") || normalizeText(slide.text) || "cute"]
+  const contextualQuery = clampMediaQuery(["capybara", contextualKeywords.join(" ") || normalizeText(slide.text) || "cute"]
     .filter(Boolean)
-    .join(" ");
-  const capybaraQuery = pickCapybaraQuery(slide);
+    .join(" "));
+  const capybaraQuery = clampMediaQuery(pickCapybaraQuery(slide));
   const plan: SlideMediaPlan = isContextSlide
     ? {
         type: "giphy",
@@ -413,47 +485,79 @@ const buildMediaPlan = (
   return plan;
 };
 
+const getUsedMediaUrls = (usedMediaUrls: string[]) =>
+  Array.from(new Set(usedMediaUrls.filter(Boolean)));
+
+const collectResolvedMediaUrls = (entries: Iterable<ResolvedSlideMedia>) =>
+  Array.from(entries).flatMap((entry) =>
+    [entry.videoUrl, entry.gifUrl, entry.imageUrl, entry.capybaraImage].filter(Boolean) as string[],
+  );
+
+const getPreloadIndices = (activeIndex: number, totalSlides: number, count: number) => {
+  const indices: number[] = [];
+
+  for (let offset = 0; offset < count; offset += 1) {
+    const index = activeIndex + offset;
+    if (index >= 0 && index < totalSlides) {
+      indices.push(index);
+    }
+  }
+
+  return indices;
+};
+
 const preloadSlideMedia = async (
-  slide: Slide,
+  slide: Slide | undefined,
   slideIndex: number,
   totalSlides: number,
+  usedMediaUrls: string[] = [],
   signal?: AbortSignal,
 ): Promise<ResolvedSlideMedia> => {
   if (signal?.aborted) {
     throw createAbortError();
   }
 
+  if (!slide) {
+    return getFallbackMedia();
+  }
+
   const plan = buildMediaPlan(slide, slideIndex, totalSlides);
   const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
+  const excludedUrls = getUsedMediaUrls(usedMediaUrls);
 
   if (process.env.NODE_ENV === "development") {
     console.log("[MEDIA] preload:", slideIndex, plan.type);
   }
 
   const primaryResult = await withTimeout(
-    searchPrimarySlideMedia(slide, slideIndex, totalSlides),
+    searchPrimarySlideMedia(slide, slideIndex, totalSlides, excludedUrls),
     MEDIA_TIMEOUT_MS,
   );
   if (primaryResult) {
     return primaryResult;
   }
 
-  if (plan.type === "giphy") {
+  const giphyPromise =
+    plan.type === "giphy"
+      ? withTimeout(searchGiphyMeaning(plan.query, excludedUrls, signal), MEDIA_TIMEOUT_MS)
+      : Promise.resolve<ResolvedSlideMedia | null>(null);
+  const pexelsPromise =
+    plan.type === "pexels" || plan.type === "giphy"
+      ? withTimeout(searchPexelsMeaning(plan.query, keywords, excludedUrls, signal), MEDIA_TIMEOUT_MS)
+      : Promise.resolve<ResolvedSlideMedia | null>(null);
+
+  const [giphyResult, pexelsResult] = await Promise.all([giphyPromise, pexelsPromise]);
+
+  if (giphyResult) {
     giphyUsed += 1;
-    const giphyResult = await withTimeout(searchGiphyMeaning(plan.query, signal), MEDIA_TIMEOUT_MS);
-    if (giphyResult) {
-      return giphyResult;
-    }
+    return giphyResult;
   }
 
-  if (plan.type === "pexels" || plan.type === "giphy") {
-    const pexelsResult = await withTimeout(searchPexelsMeaning(plan.query, keywords, signal), MEDIA_TIMEOUT_MS);
-    if (pexelsResult) {
-      return pexelsResult;
-    }
+  if (pexelsResult) {
+    return pexelsResult;
   }
 
-  const capybaraResult = await withTimeout(searchCapybaraFallback({ ...slide, keywords }, signal), MEDIA_TIMEOUT_MS);
+  const capybaraResult = await withTimeout(searchCapybaraFallback({ ...slide, keywords }, excludedUrls, signal), MEDIA_TIMEOUT_MS);
   if (capybaraResult) {
     return capybaraResult;
   }
@@ -551,49 +655,94 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       return new Map<number, ResolvedSlideMedia>();
     }
 
-    if (slideMediaInFlightRef.current.has(slideIndex)) {
+    const preloadIndices = getPreloadIndices(slideIndex, nextSlides.length, PRELOAD_AHEAD_COUNT)
+      .filter((index) => Boolean(nextSlides[index]) && !slideMediaInFlightRef.current.has(index));
+
+    if (preloadIndices.length === 0) {
       return new Map<number, ResolvedSlideMedia>();
     }
 
-      slideMediaInFlightRef.current.add(slideIndex);
+    preloadIndices.forEach((index) => {
+      slideMediaInFlightRef.current.add(index);
+    });
 
     try {
-      const initialMedia = await preloadSlideMedia(nextSlides[slideIndex], slideIndex, nextSlides.length, signal);
-      const nextCache = new Map<number, ResolvedSlideMedia>([[slideIndex, initialMedia]]);
+      const nextCache = new Map<number, ResolvedSlideMedia>();
+
+      for (const index of preloadIndices) {
+        try {
+          const media = await preloadSlideMedia(
+            nextSlides[index],
+            index,
+            nextSlides.length,
+            collectResolvedMediaUrls(nextCache.values()),
+            signal,
+          );
+          nextCache.set(index, media);
+        } catch (error) {
+          if (isAbortError(error)) {
+            throw error;
+          }
+          console.error("[MEDIA INIT ERROR]:", error);
+        }
+      }
+
       mediaCacheRef.current = nextCache;
       setMediaCache(nextCache);
       return nextCache;
     } finally {
-      slideMediaInFlightRef.current.delete(slideIndex);
+      preloadIndices.forEach((index) => {
+        slideMediaInFlightRef.current.delete(index);
+      });
     }
   }, []);
 
   const preloadNextSlideMedia = useCallback(async (activeIndex: number) => {
-    const nextIndex = activeIndex + 1;
-    const nextSlide = slidesRef.current[nextIndex];
-    if (!nextSlide || mediaCacheRef.current.has(nextIndex) || slideMediaInFlightRef.current.has(nextIndex)) {
-      if (process.env.NODE_ENV === "development" && nextSlide) {
-        console.log("[GUARD] skip preload (already loaded):", nextIndex);
-      }
+    const preloadIndices = getPreloadIndices(activeIndex + 1, slidesRef.current.length, PRELOAD_AHEAD_COUNT - 1)
+      .filter((index) => {
+        const slide = slidesRef.current[index];
+        if (!slide) {
+          return false;
+        }
+        return !mediaCacheRef.current.has(index) && !slideMediaInFlightRef.current.has(index);
+      });
+
+    if (preloadIndices.length === 0) {
       return;
     }
 
+    preloadIndices.forEach((index) => {
+      slideMediaInFlightRef.current.add(index);
+    });
+
     try {
-      slideMediaInFlightRef.current.add(nextIndex);
-      const media = await preloadSlideMedia(nextSlide, nextIndex, slidesRef.current.length);
-      if (!mediaCacheRef.current.has(nextIndex)) {
-        const nextCache = new Map(mediaCacheRef.current);
-        nextCache.set(nextIndex, media);
-        mediaCacheRef.current = nextCache;
-        setMediaCache(nextCache);
+      const nextCache = new Map(mediaCacheRef.current);
+
+      for (const index of preloadIndices) {
+        try {
+          const media = await preloadSlideMedia(
+            slidesRef.current[index],
+            index,
+            slidesRef.current.length,
+            collectResolvedMediaUrls(nextCache.values()),
+          );
+          if (!nextCache.has(index)) {
+            nextCache.set(index, media);
+          }
+        } catch (error) {
+          if (isAbortError(error)) {
+            return;
+          }
+          console.error("[MEDIA ERROR]:", error);
+        }
       }
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-      console.error("[MEDIA ERROR]:", error);
+
+      mediaCacheRef.current = nextCache;
+      setMediaCache(nextCache);
     } finally {
-      slideMediaInFlightRef.current.delete(nextIndex);
+      preloadIndices.forEach((index) => {
+        slideMediaInFlightRef.current.delete(index);
+      });
     }
   }, []);
 
@@ -607,7 +756,12 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       }
 
       try {
-        const media = await preloadSlideMedia(nextSlides[index], index, nextSlides.length);
+        const media = await preloadSlideMedia(
+          nextSlides[index],
+          index,
+          nextSlides.length,
+          collectResolvedMediaUrls(nextCache.values()),
+        );
         nextCache.set(index, media);
       } catch (error) {
         if (isAbortError(error)) {

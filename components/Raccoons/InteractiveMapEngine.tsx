@@ -599,7 +599,8 @@ useEffect(() => {
     const importedSlides = buildStudioSlidesFromCapybaraSlides(
       popupSlides.map((slide) => ({
         text: slide.text || "",
-        imageUrl: slide.imageUrl || undefined,
+        imageUrl: isVideoMediaUrl(slide.imageUrl) ? undefined : slide.imageUrl || undefined,
+        videoUrl: isVideoMediaUrl(slide.imageUrl) ? slide.imageUrl || undefined : undefined,
       })),
     );
 

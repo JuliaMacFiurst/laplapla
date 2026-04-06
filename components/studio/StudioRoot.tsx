@@ -40,6 +40,24 @@ function createInitialProject(): StudioProject {
   };
 }
 
+function getImportedSlideFontSize(text: string) {
+  const wordCount = text
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .length;
+
+  if (wordCount > 20) {
+    return 22;
+  }
+
+  if (wordCount <= 10) {
+    return 30;
+  }
+
+  return 26;
+}
+
 interface StudioRootProps {
   lang: Lang;
   initialSlides?: Array<{
@@ -250,81 +268,297 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     return new Blob([view], { type: "audio/wav" });
   }
 
-  async function enhanceVoiceRecording() {
+  async function readVoiceUrlToArrayBuffer(voiceUrl: string) {
+    if (voiceUrl.startsWith("data:")) {
+      const commaIndex = voiceUrl.indexOf(",");
+      if (commaIndex === -1) {
+        throw new Error("Invalid data URL");
+      }
+
+      const meta = voiceUrl.slice(0, commaIndex);
+      const payload = voiceUrl.slice(commaIndex + 1);
+
+      if (meta.includes(";base64")) {
+        const binary = atob(payload);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+      }
+
+      const decoded = decodeURIComponent(payload);
+      return new TextEncoder().encode(decoded).buffer;
+    }
+
+    const response = await fetch(voiceUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to load voice recording: ${response.status}`);
+    }
+
+    return response.arrayBuffer();
+  }
+
+  function percentile(values: number[], ratio: number) {
+    if (values.length === 0) {
+      return 0;
+    }
+
+    const sorted = [...values].sort((a, b) => a - b);
+    const index = Math.min(sorted.length - 1, Math.max(0, Math.floor(sorted.length * ratio)));
+    return sorted[index] ?? 0;
+  }
+
+  function applyNoiseReduction(
+    samples: Float32Array,
+    sampleRate: number,
+    options?: { light?: boolean },
+  ) {
+    const light = options?.light ?? false;
+    const frameSize = Math.max(256, Math.floor(sampleRate * 0.02));
+    const frameRms: number[] = [];
+
+    for (let start = 0; start < samples.length; start += frameSize) {
+      let energy = 0;
+      const end = Math.min(samples.length, start + frameSize);
+      for (let i = start; i < end; i += 1) {
+        energy += samples[i] * samples[i];
+      }
+      frameRms.push(Math.sqrt(energy / Math.max(1, end - start)));
+    }
+
+    const noiseFloor = Math.max(light ? 0.001 : 0.0015, percentile(frameRms, light ? 0.12 : 0.2));
+    const openThreshold = Math.max(noiseFloor * (light ? 2 : 3), light ? 0.006 : 0.01);
+    const closeThreshold = Math.max(noiseFloor * (light ? 1.15 : 1.4), light ? 0.0025 : 0.004);
+    const attackCoeff = Math.exp(-1 / (sampleRate * (light ? 0.008 : 0.004)));
+    const releaseCoeff = Math.exp(-1 / (sampleRate * (light ? 0.12 : 0.06)));
+    let gain = 1;
+
+    for (let frameIndex = 0; frameIndex < frameRms.length; frameIndex += 1) {
+      const rms = frameRms[frameIndex];
+      let targetGain = 1;
+
+      if (rms <= closeThreshold) {
+        targetGain = light ? 0.55 : 0.18;
+      } else if (rms < openThreshold) {
+        const blend = (rms - closeThreshold) / Math.max(0.0001, openThreshold - closeThreshold);
+        const floorGain = light ? 0.55 : 0.18;
+        targetGain = floorGain + blend * (1 - floorGain);
+      }
+
+      const start = frameIndex * frameSize;
+      const end = Math.min(samples.length, start + frameSize);
+      for (let i = start; i < end; i += 1) {
+        const coeff = targetGain < gain ? attackCoeff : releaseCoeff;
+        gain = targetGain + (gain - targetGain) * coeff;
+        samples[i] *= gain;
+      }
+    }
+  }
+
+  function applyDeEsser(samples: Float32Array, sampleRate: number) {
+    const lowpassCoeff = Math.exp(-2 * Math.PI * 4500 / sampleRate);
+    const attackCoeff = Math.exp(-1 / (sampleRate * 0.0015));
+    const releaseCoeff = Math.exp(-1 / (sampleRate * 0.035));
+    let low = 0;
+    let envelope = 0;
+
+    const hfLevels = new Array<number>(samples.length);
+    for (let i = 0; i < samples.length; i += 1) {
+      low = (1 - lowpassCoeff) * samples[i] + lowpassCoeff * low;
+      const high = samples[i] - low;
+      const level = Math.abs(high);
+      envelope = level > envelope
+        ? level + (envelope - level) * attackCoeff
+        : level + (envelope - level) * releaseCoeff;
+      hfLevels[i] = envelope;
+    }
+
+    const threshold = Math.max(0.01, percentile(hfLevels, 0.82) * 0.9);
+    let gain = 1;
+
+    for (let i = 0; i < samples.length; i += 1) {
+      const overshoot = hfLevels[i] - threshold;
+      const targetGain = overshoot > 0
+        ? Math.max(0.55, 1 - overshoot / Math.max(threshold * 3, 0.0001))
+        : 1;
+      const coeff = targetGain < gain ? attackCoeff : releaseCoeff;
+      gain = targetGain + (gain - targetGain) * coeff;
+      samples[i] *= gain;
+    }
+  }
+
+  function applyCompressor(samples: Float32Array, sampleRate: number) {
+    const thresholdDb = -20;
+    const threshold = Math.pow(10, thresholdDb / 20);
+    const ratio = 3.5;
+    const attackCoeff = Math.exp(-1 / (sampleRate * 0.003));
+    const releaseCoeff = Math.exp(-1 / (sampleRate * 0.09));
+    const makeupGain = 1.18;
+    let envelope = 0;
+    let gain = 1;
+
+    for (let i = 0; i < samples.length; i += 1) {
+      const level = Math.abs(samples[i]);
+      envelope = level > envelope
+        ? level + (envelope - level) * attackCoeff
+        : level + (envelope - level) * releaseCoeff;
+
+      let targetGain = 1;
+      if (envelope > threshold) {
+        const inputDb = 20 * Math.log10(envelope);
+        const outputDb = thresholdDb + (inputDb - thresholdDb) / ratio;
+        const reductionDb = outputDb - inputDb;
+        targetGain = Math.pow(10, reductionDb / 20);
+      }
+
+      const coeff = targetGain < gain ? attackCoeff : releaseCoeff;
+      gain = targetGain + (gain - targetGain) * coeff;
+      samples[i] *= gain * makeupGain;
+    }
+  }
+
+  function applyLimiter(samples: Float32Array) {
+    let peak = 0;
+    for (let i = 0; i < samples.length; i += 1) {
+      peak = Math.max(peak, Math.abs(samples[i]));
+    }
+
+    const ceiling = 0.92;
+    const normalizeGain = peak > ceiling ? ceiling / peak : 1;
+
+    for (let i = 0; i < samples.length; i += 1) {
+      const sample = samples[i] * normalizeGain;
+      samples[i] = Math.max(-ceiling, Math.min(ceiling, sample));
+    }
+  }
+
+  function buildProcessedVoiceBuffer(
+    audioBuffer: AudioBuffer,
+    options?: { lightNoiseReduction?: boolean },
+  ) {
+    const processed = new AudioBuffer({
+      length: audioBuffer.length,
+      numberOfChannels: audioBuffer.numberOfChannels,
+      sampleRate: audioBuffer.sampleRate,
+    });
+
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel += 1) {
+      const input = audioBuffer.getChannelData(channel);
+      const output = processed.getChannelData(channel);
+      output.set(input);
+
+      applyNoiseReduction(output, audioBuffer.sampleRate, {
+        light: options?.lightNoiseReduction,
+      });
+      applyDeEsser(output, audioBuffer.sampleRate);
+      applyCompressor(output, audioBuffer.sampleRate);
+      applyLimiter(output);
+    }
+
+    return processed;
+  }
+
+  async function persistProcessedVoiceBuffer(processedBuffer: AudioBuffer) {
+    const wavBlob = bufferToWav(processedBuffer);
+
+    const reader = new FileReader();
+    const dataUrl: string = await new Promise((resolve) => {
+      reader.onloadend = () => resolve(String(reader.result));
+      reader.readAsDataURL(wavBlob);
+    });
+
+    const probeAudio = new Audio(dataUrl);
+    await new Promise((resolve) => {
+      probeAudio.onloadedmetadata = () => resolve(true);
+    });
+    const duration = probeAudio.duration;
+
+    setProject((prev) => {
+      const updatedSlides = prev.slides.map((s, i) =>
+        i === activeSlideIndex
+          ? { ...s, voiceUrl: dataUrl, voiceDuration: duration }
+          : s
+      );
+
+      const updatedProject = {
+        ...prev,
+        slides: updatedSlides,
+        updatedAt: Date.now(),
+      };
+
+      void saveProject(updatedProject).then(() => {
+        markProjectSaved(updatedProject);
+      });
+      return updatedProject;
+    });
+  }
+
+  async function processCurrentVoice(options?: {
+    outputGain?: number;
+    childVoice?: boolean;
+  }) {
     if (!activeSlide.voiceUrl) return;
 
+    const { outputGain = 1, childVoice = false } = options ?? {};
+
     try {
-      const response = await fetch(activeSlide.voiceUrl);
-      const arrayBuffer = await response.arrayBuffer();
+      const arrayBuffer = await readVoiceUrlToArrayBuffer(activeSlide.voiceUrl);
 
       const audioCtx = new AudioContext({ sampleRate: 48000 });
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      let processedBuffer = childVoice
+        ? audioBuffer
+        : buildProcessedVoiceBuffer(audioBuffer);
 
-      const offlineCtx = new OfflineAudioContext(
-        1,
-        audioBuffer.length,
-        48000
-      );
-
-      const source = offlineCtx.createBufferSource();
-      source.buffer = audioBuffer;
-
-      const compressor = offlineCtx.createDynamicsCompressor();
-      compressor.threshold.value = -18;
-      compressor.knee.value = 20;
-      compressor.ratio.value = 3;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.25;
-
-      const highpass = offlineCtx.createBiquadFilter();
-      highpass.type = "highpass";
-      highpass.frequency.value = 80;
-
-      const presence = offlineCtx.createBiquadFilter();
-      presence.type = "peaking";
-      presence.frequency.value = 3000;
-      presence.gain.value = 3;
-      presence.Q.value = 1;
-
-      source.connect(highpass);
-      highpass.connect(compressor);
-      compressor.connect(presence);
-      presence.connect(offlineCtx.destination);
-
-      source.start();
-      const renderedBuffer = await offlineCtx.startRendering();
-
-      const wavBlob = bufferToWav(renderedBuffer);
-
-      const reader = new FileReader();
-      const dataUrl: string = await new Promise((resolve) => {
-        reader.onloadend = () => resolve(String(reader.result));
-        reader.readAsDataURL(wavBlob);
-      });
-
-      setProject((prev) => {
-        const updatedSlides = prev.slides.map((s, i) =>
-          i === activeSlideIndex
-            ? { ...s, voiceUrl: dataUrl }
-            : s
+      if (childVoice) {
+        const pitchRate = 1.14;
+        const pitchedLength = Math.max(1, Math.ceil(processedBuffer.length / pitchRate));
+        const offlineCtx = new OfflineAudioContext(
+          processedBuffer.numberOfChannels,
+          pitchedLength,
+          processedBuffer.sampleRate,
         );
 
-        const updatedProject = {
-          ...prev,
-          slides: updatedSlides,
-          updatedAt: Date.now(),
-        };
+        const source = offlineCtx.createBufferSource();
+        source.buffer = processedBuffer;
+        source.playbackRate.value = pitchRate;
+        source.connect(offlineCtx.destination);
+        source.start();
 
-        void saveProject(updatedProject).then(() => {
-          markProjectSaved(updatedProject);
+        const pitchedBuffer = await offlineCtx.startRendering();
+        processedBuffer = buildProcessedVoiceBuffer(pitchedBuffer, {
+          lightNoiseReduction: true,
         });
-        return updatedProject;
-      });
+      }
 
+      if (outputGain !== 1) {
+        for (let channel = 0; channel < processedBuffer.numberOfChannels; channel += 1) {
+          const samples = processedBuffer.getChannelData(channel);
+          for (let i = 0; i < samples.length; i += 1) {
+            samples[i] *= outputGain;
+          }
+          applyLimiter(samples);
+        }
+      }
+
+      await persistProcessedVoiceBuffer(processedBuffer);
       audioCtx.close();
     } catch (err) {
       console.error("Enhance voice failed", err);
     }
+  }
+
+  async function enhanceVoiceRecording() {
+    await processCurrentVoice();
+  }
+
+  async function makeVoiceLouder() {
+    await processCurrentVoice({ outputGain: 1.35 });
+  }
+
+  async function makeChildVoice() {
+    await processCurrentVoice({ outputGain: 1.1, childVoice: true });
   }
 
   function removeVoiceFromSlide() {
@@ -421,6 +655,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
       (s) => ({
         id: crypto.randomUUID(),
         text: s.text,
+        fontSize: getImportedSlideFontSize(s.text),
         mediaUrl: toStudioMediaUrl(s.image),
         mediaType: s.mediaType ?? (s.image?.includes(".mp4") || s.image?.includes(".webm") ? "video" : "image"),
         mediaFit: s.mediaFit ?? "contain",
@@ -465,6 +700,28 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
       ...project,
       slides: updatedSlides,
       updatedAt: Date.now(),
+    });
+  }
+
+  function updateActiveSlide(
+    updater: (slide: StudioSlide) => StudioSlide,
+    slideIndex = activeSlideIndex,
+  ) {
+    setProject((currentProject) => {
+      pushHistory(currentProject);
+      const updatedSlides = [...currentProject.slides];
+      const currentSlide = updatedSlides[slideIndex];
+      if (!currentSlide) {
+        return currentProject;
+      }
+
+      updatedSlides[slideIndex] = updater(currentSlide);
+
+      return {
+        ...currentProject,
+        slides: updatedSlides,
+        updatedAt: Date.now(),
+      };
     });
   }
 
@@ -597,6 +854,8 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
             voiceDuration={activeSlide.voiceDuration}
             onRemoveVoice={removeVoiceFromSlide}
             onEnhanceVoice={enhanceVoiceRecording}
+            onMakeVoiceLouder={makeVoiceLouder}
+            onMakeChildVoice={makeChildVoice}
           />
           
         </div>
@@ -687,11 +946,12 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
         isOpen={isMediaOpen}
         onClose={() => setIsMediaOpen(false)}
         onSelect={({ url, mediaType }) => {
-          updateSlide({
-            ...activeSlide,
-            mediaUrl: url,
+          const normalizedUrl = toStudioMediaUrl(url) ?? url;
+          updateActiveSlide((slide) => ({
+            ...slide,
+            mediaUrl: normalizedUrl,
             mediaType,
-          });
+          }));
 
           setIsMediaOpen(false);
         }}

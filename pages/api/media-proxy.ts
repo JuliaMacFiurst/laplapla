@@ -1,8 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 const ALLOWED_HOSTS = new Set([
   "images.pexels.com",
+  "videos.pexels.com",
   "player.vimeo.com",
   "media.giphy.com",
   "media0.giphy.com",
@@ -32,12 +34,14 @@ function isAllowedRemote(url: string) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
-    return res.status(405).end("Method Not Allowed");
+    res.status(405).end("Method Not Allowed");
+    return;
   }
 
   const rawUrl = Array.isArray(req.query.url) ? req.query.url[0] : req.query.url;
   if (typeof rawUrl !== "string" || !isAllowedRemote(rawUrl)) {
-    return res.status(400).end("Invalid media URL");
+    res.status(400).end("Invalid media URL");
+    return;
   }
 
   try {
@@ -46,7 +50,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (!upstream.ok && upstream.status !== 206) {
-      return res.status(upstream.status).end("Failed to fetch media");
+      res.status(upstream.status).end("Failed to fetch media");
+      return;
     }
 
     const contentType = upstream.headers.get("content-type");
@@ -63,12 +68,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(upstream.status);
 
     if (!upstream.body) {
-      return res.end();
+      res.end();
+      return;
     }
 
-    Readable.fromWeb(upstream.body as any).pipe(res);
+    await pipeline(Readable.fromWeb(upstream.body as any), res);
+    return;
   } catch (error) {
+    const errorCode = (error as { code?: string } | null)?.code;
+    if (errorCode === "ERR_STREAM_PREMATURE_CLOSE") {
+      if (!res.writableEnded) {
+        res.end();
+      }
+      return;
+    }
+
     console.error("[/api/media-proxy] request failed", error);
-    return res.status(502).end("Media proxy failed");
+    if (!res.headersSent) {
+      res.status(502).end("Media proxy failed");
+    } else {
+      res.end();
+    }
+    return;
   }
 }

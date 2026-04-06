@@ -3,6 +3,31 @@ import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 import { withApiHandler } from "@/utils/apiHandler";
 
 const TTL_MS = 60 * 60 * 1000;
+const MAX_PEXELS_QUERY_LENGTH = 160;
+const MAX_PEXELS_QUERY_ENCODED_LENGTH = 120;
+
+function clampQueryByEncodedLength(value: string, maxEncodedLength: number) {
+  const words = value.split(/\s+/).filter(Boolean);
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (encodeURIComponent(next).length > maxEncodedLength) {
+      break;
+    }
+    current = next;
+  }
+
+  if (current) {
+    return current;
+  }
+
+  let trimmed = value.slice(0, MAX_PEXELS_QUERY_LENGTH).trim();
+  while (trimmed && encodeURIComponent(trimmed).length > maxEncodedLength) {
+    trimmed = trimmed.slice(0, -1).trim();
+  }
+  return trimmed;
+}
 
 export const config = {
   api: {
@@ -31,9 +56,11 @@ async function handler(
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
   const rawQuery = Array.isArray(payload.q) ? payload.q[0] : payload.q;
   const rawLimit = Array.isArray(payload.limit) ? payload.limit[0] : payload.limit;
-  const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
+  const query = typeof rawQuery === "string"
+    ? clampQueryByEncodedLength(rawQuery.trim().slice(0, MAX_PEXELS_QUERY_LENGTH).trim(), MAX_PEXELS_QUERY_ENCODED_LENGTH)
+    : "";
   const limit = Math.min(
-    10,
+    30,
     Math.max(1, Number(typeof rawLimit === "string" || typeof rawLimit === "number" ? rawLimit : "5") || 5),
   );
 
@@ -56,7 +83,6 @@ async function handler(
     const photoSearchParams = new URLSearchParams({
       query,
       per_page: String(limit),
-      orientation: "portrait",
     });
 
     const videoSearchParams = new URLSearchParams({
@@ -129,7 +155,7 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET", "POST"],
-      limit: 30,
+      limit: 120,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "pexels",
     },

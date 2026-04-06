@@ -26,6 +26,21 @@ export default function ReplayCanvas({
   const [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+
+    window.setTimeout(() => {
+      link.remove();
+      URL.revokeObjectURL(url);
+    }, 60_000);
+  };
+
   const hasActions = useMemo(
     () => actionGroups.some((group) => group.actions.length > 0),
     [actionGroups],
@@ -112,17 +127,14 @@ export default function ReplayCanvas({
     try {
       setBusy(true);
       const blob = await engine.exportVideo();
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "drawing-replay.webm";
-      link.click();
-
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, "drawing-replay.webm");
     } catch (error) {
       console.error(error);
-      alert("Не удалось экспортировать видео реплея.");
+      alert(
+        error instanceof Error
+          ? `Не удалось экспортировать видео реплея: ${error.message}`
+          : "Не удалось экспортировать видео реплея.",
+      );
     } finally {
       setBusy(false);
     }
@@ -140,17 +152,14 @@ export default function ReplayCanvas({
         fps: 12,
         workerScript: "/gif.worker.js",
       });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "drawing-replay.gif";
-      link.click();
-
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, "drawing-replay.gif");
     } catch (error) {
       console.error(error);
-      alert("GIF export требует gif.js в проекте.");
+      alert(
+        error instanceof Error
+          ? `Не удалось экспортировать GIF: ${error.message}`
+          : "Не удалось экспортировать GIF.",
+      );
     } finally {
       setBusy(false);
     }

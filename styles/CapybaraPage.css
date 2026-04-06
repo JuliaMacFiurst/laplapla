@@ -1866,35 +1866,41 @@
 .story-text,
 .story-navigation {
   width: 100%;
-  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .story-media {
-  max-height: 35vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .story-image-wrapper {
-  min-height: min(28vh, 280px);
+  min-height: min(24vh, 220px);
   width: 100%;
-  max-height: 45vh;
-  height: auto;
+  height: 100%;
+  max-height: min(40vh, 420px);
   border-radius: 1rem;
   margin: 0;
 }
 
 .story-content {
-  margin: 0.5rem 0;
+  margin: 0;
   flex-direction: column;
-  justify-content: center;
-  gap: 2.2rem;
+  justify-content: space-between;
+  gap: 0.9rem;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .story-text {
-  max-height: 20vh;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(18vh, 180px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1914,8 +1920,8 @@
 .story-image {
   position: relative;
   width: 100%;
-  height: auto;
-  max-height: 45vh;
+  height: 100%;
+  max-height: 100%;
   object-fit: contain;
   z-index: 2;
   margin: 0;
@@ -1927,9 +1933,9 @@
 .story-video {
   z-index: 4;
   max-width: 100%;
-  max-height: 45vh;
-  width: auto;
-  height: auto;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
@@ -1939,11 +1945,20 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  min-height: min(28vh, 280px);
-  max-height: 45vh;
+  min-height: min(24vh, 220px);
+  max-height: min(40vh, 420px);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.42);
   border: 1px dashed rgba(15, 23, 42, 0.12);
+}
+
+.story-navigation {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: center;
 }
 
 .story-nav {
@@ -1951,7 +1966,7 @@
   justify-content: center;
   width: 100%;
   z-index: 10;
-  margin-top: 0.5rem;
+  margin-top: 0;
 }
 
 .story-nav-inner {
@@ -2013,9 +2028,9 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-height: 70vh;
-  max-height: 74vh;
+  justify-content: stretch;
+  min-height: min(70vh, 760px);
+  max-height: min(74vh, 820px);
   min-width: 0;
 }
 

@@ -38,6 +38,31 @@ export default function MediaPickerModal({
   const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
   const MAX_VIDEO_SECONDS = 20;
 
+  async function searchLibraryMedia(
+    source: "giphy" | "pexels",
+    rawQuery: string,
+    limit: number,
+  ) {
+    const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q: rawQuery, limit }),
+    });
+
+    const data = await res.json().catch(() => null) as
+      | { items?: Array<{ url?: string; mediaType?: string }>; error?: string }
+      | null;
+
+    if (!res.ok) {
+      throw new Error(data?.error || `Media search failed: ${res.status}`);
+    }
+
+    return (data?.items || [])
+      .map((item) => item?.url || "")
+      .filter(Boolean);
+  }
+
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -73,33 +98,22 @@ export default function MediaPickerModal({
     setOffset(0);
 
     try {
+      const nextLimit = 10;
       if (activeTab === "giphy") {
-        const res = await fetch("/api/search-giphy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, offset: 0 }),
-        });
-
-        const data = await res.json();
-        const items = data.gifs || [];
+        const items = await searchLibraryMedia("giphy", query, nextLimit);
         setResults(items);
-        setHasMore(items.length >= 20);
+        setHasMore(items.length >= nextLimit);
       }
 
       if (activeTab === "pexels") {
-        const res = await fetch("/api/search-pexels-video", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, offset: 0 }),
-        });
-
-        const data = await res.json();
-        const items = data.videos || [];
+        const items = await searchLibraryMedia("pexels", query, nextLimit);
         setResults(items);
-        setHasMore(items.length >= 20);
+        setHasMore(items.length >= nextLimit);
       }
     } catch (err) {
       console.error("Media search error:", err);
+      setResults([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
@@ -108,36 +122,23 @@ export default function MediaPickerModal({
   async function handleLoadMore() {
     if (!query.trim()) return;
 
-    const nextOffset = offset + 20;
+    const nextOffset = offset + 10;
+    const nextLimit = nextOffset + 10;
     setLoading(true);
 
     try {
       if (activeTab === "giphy") {
-        const res = await fetch("/api/search-giphy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, offset: nextOffset }),
-        });
-
-        const data = await res.json();
-        const items = data.gifs || [];
-        setResults((prev) => [...prev, ...items]);
+        const items = await searchLibraryMedia("giphy", query, nextLimit);
+        setResults(items);
         setOffset(nextOffset);
-        setHasMore(items.length >= 20);
+        setHasMore(items.length >= nextLimit);
       }
 
       if (activeTab === "pexels") {
-        const res = await fetch("/api/search-pexels-video", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, offset: nextOffset }),
-        });
-
-        const data = await res.json();
-        const items = data.videos || [];
-        setResults((prev) => [...prev, ...items]);
+        const items = await searchLibraryMedia("pexels", query, nextLimit);
+        setResults(items);
         setOffset(nextOffset);
-        setHasMore(items.length >= 20);
+        setHasMore(items.length >= nextLimit);
       }
     } catch (err) {
       console.error("Load more error:", err);

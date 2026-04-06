@@ -80,6 +80,8 @@ export const ru = {
       addMusic: "Добавить музыку",
       recordVoice: "Записать голос",
       improveVoice: "Улучшить",
+      makeLouder: "Сделать громче",
+      childVoice: "Детский голос",
       stopRecording: "Остановить запись",
       currentTracks: "Текущие дорожки",
       activeTracks: "Активные дорожки",

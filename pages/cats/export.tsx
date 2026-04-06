@@ -18,8 +18,12 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 export default function StudioExportPage() {
   const [slides, setSlides] = useState<StudioSlide[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingDurationMs, setRecordingDurationMs] = useState<number | null>(null);
+  const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
+  const [recordingNow, setRecordingNow] = useState<number>(Date.now());
   const [processingProgress, setProcessingProgress] = useState<number | null>(null);
   const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const audioEngineRef = useRef<AudioEngineHandle | null>(null);
   const router = useRouter();
 
@@ -98,6 +102,18 @@ export default function StudioExportPage() {
   }, []);
 
   useEffect(() => {
+    if (!isRecording) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setRecordingNow(Date.now());
+    }, 250);
+
+    return () => window.clearInterval(interval);
+  }, [isRecording]);
+
+  useEffect(() => {
     function updateScale() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
@@ -142,13 +158,10 @@ export default function StudioExportPage() {
     }
 
     setIsRecording(true);
+    setExportError(null);
+    setRecordingDurationMs(totalDuration);
+    setRecordingStartedAt(Date.now());
     document.body.classList.add("recording-mode");
-
-    const totalDuration =
-      slides.reduce((acc, s) => {
-        const d = s.voiceDuration && s.voiceDuration > 0 ? s.voiceDuration : 3;
-        return acc + d;
-      }, 0) * 1000;
 
     try {
       // Ensure audio context resumes after user gesture
@@ -181,13 +194,28 @@ export default function StudioExportPage() {
       setFinalVideoUrl(url);
       setIsFinished(true);
       setProcessingProgress(null);
+    } catch (error) {
+      console.error("Export failed", error);
+      setExportError(
+        error instanceof Error
+          ? error.message
+          : `Export failed: ${String(error)}`,
+      );
     } finally {
       document.body.classList.remove("recording-mode");
       document.body.classList.remove("processing-mode");
+      setRecordingDurationMs(null);
+      setRecordingStartedAt(null);
       setProcessingStartTime(null);
       setIsRecording(false);
     }
   }
+
+  const totalDuration =
+    slides.reduce((acc, s) => {
+      const d = s.voiceDuration && s.voiceDuration > 0 ? s.voiceDuration : 3;
+      return acc + d;
+    }, 0) * 1000;
 
   function ShareModal({ videoUrl }: { videoUrl: string }) {
     return (
@@ -344,10 +372,25 @@ export default function StudioExportPage() {
         <div className="export-recording-indicator">
           <div className="export-recording-dot" />
           <div className="export-recording-text">
-            {t.recordingHint}
+            {recordingDurationMs && recordingStartedAt
+              ? (() => {
+                  const now = recordingNow;
+                  const elapsed = now - recordingStartedAt;
+                  const remainingMs = Math.max(0, recordingDurationMs - elapsed);
+                  return `${t.recordingHint} ${Math.ceil(remainingMs / 1000)} ${t.seconds}`;
+                })()
+              : t.recordingHint}
           </div>
           <div className="export-recording-bar">
             <div className="export-recording-bar-fill" />
+          </div>
+        </div>
+      )}
+      {exportError && (
+        <div className="export-processing-overlay">
+          <div className="export-processing-card">
+            <div className="export-processing-title">Export error</div>
+            <div className="export-processing-meta">{exportError}</div>
           </div>
         </div>
       )}

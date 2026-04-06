@@ -83,6 +83,8 @@ export const en = {
       addMusic: "Add Music",
       recordVoice: "Record Voice",
       improveVoice: "Improve Voice",
+      makeLouder: "Make Louder",
+      childVoice: "Child Voice",
       stopRecording: "Stop Recording",
       currentTracks: "Current Tracks",
       activeTracks: "Active Tracks",

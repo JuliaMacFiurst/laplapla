@@ -44,6 +44,21 @@ const TARGET_FPS = 30;
 const MAX_TARGET_FRAMES = TARGET_DURATION_SECONDS * TARGET_FPS;
 const STROKE_POINT_KEEP_EVERY = 3;
 
+function getSupportedReplayVideoMimeType(preferred?: string): string {
+  const candidates = [
+    preferred,
+    "video/webm;codecs=vp9",
+    "video/webm;codecs=vp8",
+    "video/webm",
+  ].filter((value): value is string => Boolean(value));
+
+  if (typeof MediaRecorder?.isTypeSupported !== "function") {
+    return candidates[0] ?? "video/webm";
+  }
+
+  return candidates.find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) ?? "video/webm";
+}
+
 export class ReplayEngine {
   private actionGroups: ReplayActionGroup[];
   private processedActionGroups: ReplayActionGroup[];
@@ -194,7 +209,7 @@ export class ReplayEngine {
 
   async exportVideo(options: VideoOptions = {}): Promise<Blob> {
     const fps = options.fps ?? 30;
-    const mimeType = options.mimeType ?? "video/webm;codecs=vp9";
+    const mimeType = getSupportedReplayVideoMimeType(options.mimeType);
     const bitsPerSecond = options.bitsPerSecond ?? 3_000_000;
 
     if (typeof MediaRecorder === "undefined") {
@@ -234,6 +249,11 @@ export class ReplayEngine {
       };
 
       recorder.onstop = () => {
+        if (!chunks.length) {
+          reject(new Error("Replay video export produced an empty file"));
+          return;
+        }
+
         resolve(new Blob(chunks, { type: mimeType }));
       };
     });
@@ -396,8 +416,12 @@ export class ReplayEngine {
       gif.addFrame(gifFrameCanvas, { copy: true, delay: gifFrameDelayMs });
     }
 
-    return new Promise<Blob>((resolve) => {
+    return new Promise<Blob>((resolve, reject) => {
       gif.on("finished", (blob: Blob) => resolve(blob));
+      gif.on("abort", () => reject(new Error("GIF export was aborted")));
+      gif.on("error", (error: unknown) =>
+        reject(error instanceof Error ? error : new Error(String(error))),
+      );
       gif.render();
     });
   }

@@ -152,6 +152,8 @@ type DictionaryShape = {
       addMusic: string;
       recordVoice: string;
       improveVoice: string;
+      makeLouder: string;
+      childVoice: string;
       stopRecording: string;
       currentTracks: string;
       activeTracks: string;
