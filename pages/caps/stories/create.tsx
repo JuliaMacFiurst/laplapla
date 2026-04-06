@@ -163,9 +163,62 @@ const buildTexts = (lang: Lang) => {
 
 const makeHeroPreviewKey = (heroName: string) => heroName.trim().toLowerCase();
 
-const HERO_GIPHY_PREVIEWS_ENABLED = false;
+const HERO_GIPHY_PREVIEWS_ENABLED = true;
 const heroPreviewCache: Record<string, string> = {};
 const heroPreviewStatusCache: Record<string, "pending" | "done" | "failed"> = {};
+
+async function searchPreviewEndpoint(
+  endpoint: "/api/giphy" | "/api/pexels",
+  query: string,
+  limit = 6,
+) {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ q: query, limit }),
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = await response.json() as {
+    items?: Array<{ url?: string; mediaType?: "image" | "video" | "gif" }>;
+  };
+
+  return (payload.items || [])
+    .map((item) => ({ url: item.url || "", mediaType: item.mediaType || "image" }))
+    .filter((item) => Boolean(item.url));
+}
+
+async function fetchHeroPreview(heroName: string) {
+  const queries = [
+    heroName,
+    `${heroName} cute`,
+    `${heroName} character`,
+    `capybara ${heroName}`,
+    "cute capybara",
+  ]
+    .map((value) => value.trim().replace(/\s+/g, " "))
+    .filter(Boolean)
+    .filter((value, index, list) => list.indexOf(value) === index);
+
+  for (const query of queries) {
+    const giphyItems = await searchPreviewEndpoint("/api/giphy", query, 5);
+    const giphyPreview = giphyItems.find((item) => item.mediaType === "gif");
+    if (giphyPreview?.url) {
+      return giphyPreview.url;
+    }
+
+    const pexelsItems = await searchPreviewEndpoint("/api/pexels", query, 6);
+    const pexelsPreview = pexelsItems.find((item) => item.mediaType === "image");
+    if (pexelsPreview?.url) {
+      return pexelsPreview.url;
+    }
+  }
+
+  return "";
+}
 
 export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   const router = useRouter();
@@ -287,20 +340,9 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
       const previewKey = makeHeroPreviewKey(heroName);
 
       try {
-        const response = await fetch("/api/search-giphy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: heroName }),
-        });
-
-        if (!response.ok) {
-          heroPreviewStatusCache[previewKey] = "failed";
-          return [heroName, ""] as const;
-        }
-
-        const payload = await response.json() as { gifs?: string[] };
-        heroPreviewStatusCache[previewKey] = payload.gifs?.[0] ? "done" : "failed";
-        return [heroName, payload.gifs?.[0] || ""] as const;
+        const previewUrl = await fetchHeroPreview(heroName);
+        heroPreviewStatusCache[previewKey] = previewUrl ? "done" : "failed";
+        return [heroName, previewUrl] as const;
       } catch {
         heroPreviewStatusCache[previewKey] = "failed";
         return [heroName, ""] as const;

@@ -40,6 +40,11 @@ type SlideMedia = {
   videoUrl?: string;
 };
 
+type LibraryMediaItem = {
+  url: string;
+  mediaType: "image" | "video" | "gif";
+};
+
 type StoryTexts = {
   narrationAuto: (hero: string) => string;
   templateIntroPrompt: string;
@@ -120,71 +125,160 @@ async function loadStoryTemplate(templateId: string, lang: Lang) {
 }
 
 async function fetchGiphy(query: string) {
-  const response = await fetch("/api/search-giphy", {
+  const response = await fetch("/api/giphy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ q: query, limit: 8 }),
   });
 
   if (!response.ok) {
-    return null;
+    return [];
   }
 
-  const data = await response.json() as { gifs?: string[] };
-  return data.gifs?.[0] || null;
+  const data = await response.json() as { items?: Array<{ url?: string; mediaType?: "gif" }> };
+  return (data.items || [])
+    .map((item) => ({ url: item.url || "", mediaType: "gif" as const }))
+    .filter((item) => Boolean(item.url));
 }
 
-async function fetchPexels(query: string, keywords: string[]) {
-  const videoResponse = await fetch("/api/search-pexels-video", {
+async function fetchPexels(query: string) {
+  const response = await fetch("/api/pexels", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ q: query, limit: 10 }),
   });
 
-  if (videoResponse.ok) {
-    const data = await videoResponse.json() as {
-      videos?: Array<{ videoUrl?: string; preview?: string; image?: string }>;
-    };
-    const video = data.videos?.[0];
-    if (video?.videoUrl) {
-      return {
-        type: "video" as const,
-        videoUrl: video.videoUrl,
-        capybaraImage: video.preview || video.image,
-      };
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = await response.json() as { items?: Array<{ url?: string; mediaType?: "image" | "video" }> };
+  return (data.items || [])
+    .map((item) => ({ url: item.url || "", mediaType: item.mediaType || "image" }))
+    .filter((item) => Boolean(item.url));
+}
+
+function uniqQueries(values: string[]) {
+  return values
+    .map((value) => value.trim().replace(/\s+/g, " "))
+    .filter(Boolean)
+    .filter((value, index, list) => list.indexOf(value) === index);
+}
+
+function buildSlideKeywords(slide: StorySlide) {
+  return slide.keywords?.length ? slide.keywords : slide.text.split(/\s+/).slice(0, 5);
+}
+
+function buildContextQueries(slide: StorySlide) {
+  const keywords = buildSlideKeywords(slide);
+  const keywordPhrase = keywords.join(" ").trim();
+
+  return uniqQueries([
+    keywordPhrase,
+    slide.text.split(/[.!?…]/)[0] || slide.text,
+    keywords.slice(0, 3).join(" "),
+    keywords[0] || "",
+  ]);
+}
+
+function buildCapybaraQueries(slide: StorySlide) {
+  const keywords = buildSlideKeywords(slide);
+  const keywordPhrase = keywords.join(" ").trim();
+
+  return uniqQueries([
+    `capybara ${keywordPhrase}`,
+    `cute capybara ${keywords[0] || ""}`,
+    `funny capybara ${keywords[0] || ""}`,
+    "cute capybara",
+    "funny capybara",
+    "capybara",
+  ]);
+}
+
+function getCapybaraPriorityIndices(totalSlides: number) {
+  if (totalSlides <= 0) {
+    return new Set<number>();
+  }
+
+  const quota = totalSlides >= 6 ? 3 : Math.min(2, totalSlides);
+  const indices = new Set<number>();
+  const anchors = quota === 3
+    ? [0, Math.floor((totalSlides - 1) / 2), totalSlides - 1]
+    : [0, totalSlides - 1];
+
+  anchors.forEach((index) => {
+    if (index >= 0 && index < totalSlides) {
+      indices.add(index);
+    }
+  });
+
+  for (let index = 0; indices.size < quota && index < totalSlides; index += 1) {
+    indices.add(index);
+  }
+
+  return indices;
+}
+
+function toSlideMedia(item: LibraryMediaItem): SlideMedia {
+  if (item.mediaType === "gif") {
+    return { type: "gif", gifUrl: item.url, capybaraImage: item.url };
+  }
+
+  if (item.mediaType === "video") {
+    return { type: "video", videoUrl: item.url, capybaraImage: item.url };
+  }
+
+  return { type: "image", imageUrl: item.url, capybaraImage: item.url };
+}
+
+async function searchItems(
+  queries: string[],
+  searchFn: (query: string) => Promise<LibraryMediaItem[]>,
+  excludedUrls: Set<string>,
+) {
+  for (const query of queries) {
+    const items = await searchFn(query);
+    const next = items.find((item) => !excludedUrls.has(item.url));
+    if (next) {
+      return next;
     }
   }
 
-  const imageResponse = await fetch("/api/fetch-pexels", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ keywords, type: "story", orientation: "landscape", size: "medium" }),
-  });
-
-  if (!imageResponse.ok) {
-    return null;
-  }
-
-  const data = await imageResponse.json() as { images?: string[] };
-  const imageUrl = data.images?.[0];
-  return imageUrl ? { type: "image" as const, imageUrl, capybaraImage: imageUrl } : null;
+  return null;
 }
 
-async function resolveSlideMedia(slide: StorySlide, index: number): Promise<SlideMedia> {
-  const keywords = slide.keywords?.length ? slide.keywords : slide.text.split(/\s+/).slice(0, 3);
-  const query = keywords.join(" ") || slide.text;
+async function resolveSlideMedia(
+  slide: StorySlide,
+  index: number,
+  totalSlides: number,
+  excludedUrls: Set<string>,
+): Promise<SlideMedia> {
+  const contextQueries = buildContextQueries(slide);
+  const capybaraQueries = buildCapybaraQueries(slide);
   const actionStep = slide.step === "journey" || slide.step === "problem" || slide.step === "solution";
+  const capybaraPriorityIndices = getCapybaraPriorityIndices(totalSlides);
+  const shouldPrioritizeCapybara = capybaraPriorityIndices.has(index);
 
-  if (actionStep) {
-    const gifUrl = await fetchGiphy(query);
-    if (gifUrl) {
-      return { type: "gif", gifUrl };
+  const searchPlan = shouldPrioritizeCapybara
+    ? [
+        { queries: capybaraQueries, searchFn: fetchGiphy },
+        { queries: capybaraQueries, searchFn: fetchPexels },
+        { queries: contextQueries, searchFn: actionStep ? fetchGiphy : fetchPexels },
+        { queries: contextQueries, searchFn: actionStep ? fetchPexels : fetchGiphy },
+      ]
+    : [
+        { queries: contextQueries, searchFn: actionStep ? fetchGiphy : fetchPexels },
+        { queries: contextQueries, searchFn: actionStep ? fetchPexels : fetchGiphy },
+        { queries: capybaraQueries, searchFn: fetchGiphy },
+        { queries: capybaraQueries, searchFn: fetchPexels },
+      ];
+
+  for (const step of searchPlan) {
+    const item = await searchItems(step.queries, step.searchFn, excludedUrls);
+    if (item) {
+      excludedUrls.add(item.url);
+      return toSlideMedia(item);
     }
-  }
-
-  const pexelsResult = await fetchPexels(query, keywords);
-  if (pexelsResult) {
-    return pexelsResult;
   }
 
   const fallbackImage = slide.mediaUrl || getFallbackImage(index + hashString(slide.text));
@@ -270,15 +364,27 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     setMediaCache(new Map());
 
     void (async () => {
-      const results = await Promise.all(
-        draft.slideshow.map((slide, index) =>
-          resolveSlideMedia(slide, index).catch(() => ({
-            type: "image" as const,
-            imageUrl: getFallbackImage(index),
-            capybaraImage: getFallbackImage(index),
-          })),
-        ),
-      );
+      const excludedUrls = new Set<string>();
+      const results: SlideMedia[] = [];
+
+      for (let index = 0; index < draft.slideshow.length; index += 1) {
+        const slide = draft.slideshow[index];
+        try {
+          const media = await resolveSlideMedia(slide, index, draft.slideshow.length, excludedUrls);
+          const resolvedUrl = media.gifUrl || media.videoUrl || media.imageUrl || media.capybaraImage;
+          if (resolvedUrl) {
+            excludedUrls.add(resolvedUrl);
+          }
+          results.push(media);
+        } catch {
+          const fallbackImage = getFallbackImage(index);
+          results.push({
+            type: "image",
+            imageUrl: fallbackImage,
+            capybaraImage: fallbackImage,
+          });
+        }
+      }
 
       if (mediaLoadIdRef.current !== loadId) {
         return;
