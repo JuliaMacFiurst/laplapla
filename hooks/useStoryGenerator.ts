@@ -591,7 +591,8 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
         textPosition: (slide as typeof slide & { textPosition?: "top" | "center" | "bottom" }).textPosition ?? "bottom",
         textAlign: (slide as typeof slide & { textAlign?: "left" | "center" | "right" }).textAlign ?? "center",
         textBgEnabled: (slide as typeof slide & { textBgEnabled?: boolean }).textBgEnabled ?? true,
-        textBgOpacity: (slide as typeof slide & { textBgOpacity?: number }).textBgOpacity ?? 0.2,
+        textBgColor: (slide as typeof slide & { textBgColor?: string }).textBgColor ?? "#ffffff",
+        textBgOpacity: (slide as typeof slide & { textBgOpacity?: number }).textBgOpacity ?? 1,
         mediaType,
       };
     });

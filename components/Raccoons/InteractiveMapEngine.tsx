@@ -7,6 +7,7 @@ import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
 
@@ -45,6 +46,18 @@ type MapPopupSearchResponse = {
     searchQuery: string;
     relevanceScore: number;
   } | null;
+  debug?: {
+    stage: string;
+    cacheHit: boolean;
+    type: string;
+    targetId: string;
+    slideTextSample: string;
+    pexelsQueries: string[];
+    giphyQueries: string[];
+    excludeCount: number;
+    chosenSource: string | null;
+    chosenQuery: string | null;
+  };
 };
 
 function buildMediaSearchParams(
@@ -94,7 +107,11 @@ async function requestMapPopupMedia(searchParams: URLSearchParams) {
       throw new Error(`Media search failed: ${response.status}`);
     }
 
-    return (await response.json()) as MapPopupSearchResponse;
+    const payload = (await response.json()) as MapPopupSearchResponse;
+    if (typeof window !== "undefined") {
+      console.log("[popup-media]", payload.debug ?? { missingDebug: true });
+    }
+    return payload;
   } finally {
     window.clearTimeout(timeoutId);
   }
@@ -108,13 +125,17 @@ async function persistResolvedSlideMedia(params: {
   imageUrl: string;
   imageCreditLine?: string | null;
 }) {
-  await fetch("/api/map-popup-content/media", {
+  const response = await fetch("/api/map-popup-content/media", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(params),
   });
+
+  if (!response.ok) {
+    throw new Error(`Persist popup media failed: ${response.status}`);
+  }
 }
 
 async function persistParsedSlidesToServer(storyId: string | number) {
@@ -179,6 +200,14 @@ function buildClientRaccoonFallback(
     searchQuery: `client-fallback:${seedSource}`,
     relevanceScore: 1,
   };
+}
+
+function isLocalMapFallbackUrl(url: string | null | undefined) {
+  if (!url) {
+    return false;
+  }
+
+  return url.includes("/raccoons/raccoon_with_map/");
 }
 
 function applyResolvedSlideMedia(
@@ -627,6 +656,7 @@ useEffect(() => {
     try {
       const usedMediaUrls = popupContent.slides
         .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
+        .filter((url) => url && !isLocalMapFallbackUrl(url))
         .filter(Boolean);
       const resolvedItem = await resolveSlideMedia(type, targetId, currentPopupSlide.text, usedMediaUrls);
 
@@ -639,14 +669,18 @@ useEffect(() => {
         setMediaStatusBySlideId,
       );
 
-      void persistResolvedSlideMedia({
-        storyId,
-        slideId: currentPopupSlide.id,
-        slideOrder: currentPopupSlide.index,
-        slideText: currentPopupSlide.text,
-        imageUrl: resolvedItem.url,
-        imageCreditLine: resolvedItem.creditLine,
-      });
+      if (resolvedItem.source !== "fallback") {
+        void persistResolvedSlideMedia({
+          storyId,
+          slideId: currentPopupSlide.id,
+          slideOrder: currentPopupSlide.index,
+          slideText: currentPopupSlide.text,
+          imageUrl: resolvedItem.url,
+          imageCreditLine: resolvedItem.creditLine,
+        }).catch((error) => {
+          console.error("Failed to persist refreshed slide media", error);
+        });
+      }
 
       setToast(lang === "ru" ? "Загружена новая картинка." : lang === "he" ? "נטענה תמונה חדשה." : "Loaded a new image.");
       setTimeout(() => setToast(null), 2500);
@@ -917,10 +951,14 @@ useEffect(() => {
   const usedMediaUrls = new Set(
     slides
       .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
+      .filter((url) => url && !isLocalMapFallbackUrl(url))
       .filter(Boolean),
   );
   const readySlideIds = slides
-    .filter((slide) => typeof slide.imageUrl === "string" && slide.imageUrl.trim())
+    .filter((slide) => {
+      const imageUrl = typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
+      return imageUrl && !isLocalMapFallbackUrl(imageUrl);
+    })
     .map((slide) => slide.id);
 
   if (readySlideIds.length > 0) {
@@ -944,7 +982,8 @@ useEffect(() => {
   };
 
   const slidesToHydrate = slides.filter((slide) => {
-    const hasImage = typeof slide.imageUrl === "string" && slide.imageUrl.trim();
+    const imageUrl = typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
+    const hasImage = Boolean(imageUrl) && !isLocalMapFallbackUrl(imageUrl);
     if (hasImage) {
       return false;
     }
@@ -989,14 +1028,18 @@ useEffect(() => {
           setMediaStatusBySlideId,
         );
 
-        void persistResolvedSlideMedia({
-          storyId,
-          slideId: slide.id,
-          slideOrder: slide.index,
-          slideText: slide.text,
-          imageUrl: resolvedItem.url,
-          imageCreditLine: resolvedItem.creditLine,
-        });
+        if (resolvedItem.source !== "fallback") {
+          void persistResolvedSlideMedia({
+            storyId,
+            slideId: slide.id,
+            slideOrder: slide.index,
+            slideText: slide.text,
+            imageUrl: resolvedItem.url,
+            imageCreditLine: resolvedItem.creditLine,
+          }).catch((error) => {
+            console.error("Failed to persist hydrated slide media", error);
+          });
+        }
       } catch (error) {
         console.error("Failed to hydrate popup slide media", error);
         markSlideMissing(slide.id);
@@ -1025,7 +1068,7 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-}, [popupContent?.slides, popupContent?.storyId, popupContent?.targetId, type]);
+}, [popupContent?.storyId, popupContent?.targetId, type]);
 
   useLayoutEffect(() => {
   const mapContent = mapContentRef.current;
@@ -1441,12 +1484,14 @@ useEffect(() => {
                             : null;
                         const persistedImageUrl =
                           typeof currentPopupSlide?.imageUrl === "string" ? currentPopupSlide.imageUrl.trim() : "";
-                        const imageUrl = persistedImageUrl || resolvedFallbackMedia?.url || "";
-                        const isUsingFallbackMedia = !persistedImageUrl && Boolean(resolvedFallbackMedia?.url);
+                        const hasResolvedPersistedImage = Boolean(persistedImageUrl) && !isLocalMapFallbackUrl(persistedImageUrl);
+                        const imageUrl = (hasResolvedPersistedImage ? persistedImageUrl : "") || resolvedFallbackMedia?.url || "";
+                        const displayMediaUrl = toStudioMediaUrl(imageUrl) || "";
+                        const isUsingFallbackMedia = !hasResolvedPersistedImage && Boolean(resolvedFallbackMedia?.url);
                         const isVideoSlide = isVideoMediaUrl(imageUrl);
                         const paragraphs = splitTextToParagraphs(currentPopupSlide?.text || "");
                         const creditLine =
-                          currentPopupSlide?.imageCreditLine?.trim() ||
+                          (hasResolvedPersistedImage ? currentPopupSlide?.imageCreditLine?.trim() : "") ||
                           resolvedFallbackMedia?.creditLine ||
                           "";
                         const mediaStatus = currentPopupSlide ? mediaStatusBySlideId[currentPopupSlide.id] : undefined;
@@ -1469,21 +1514,39 @@ useEffect(() => {
                           <>
                             {popupSlides.length > 0 ? (
                               <>
-                                {imageUrl ? (
+                                {displayMediaUrl ? (
                                   <div style={{ marginBottom: "12px", textAlign: "center" }}>
                                     {isVideoSlide ? (
                                       <video
-                                        src={imageUrl}
+                                        src={displayMediaUrl}
                                         autoPlay
                                         muted
                                         loop
                                         controls
                                         playsInline
+                                        onError={() => {
+                                          console.error("[popup-media/render-error]", {
+                                            kind: "video",
+                                            rawUrl: imageUrl,
+                                            displayMediaUrl,
+                                            slideId: currentPopupSlide?.id,
+                                            targetId: popupContent?.targetId,
+                                          });
+                                        }}
                                         style={{ width: "100%", maxWidth: "320px", borderRadius: "8px" }}
                                       />
                                     ) : (
                                       <img
-                                        src={imageUrl}
+                                        src={displayMediaUrl}
+                                        onError={() => {
+                                          console.error("[popup-media/render-error]", {
+                                            kind: "image",
+                                            rawUrl: imageUrl,
+                                            displayMediaUrl,
+                                            slideId: currentPopupSlide?.id,
+                                            targetId: popupContent?.targetId,
+                                          });
+                                        }}
                                         style={{ width: "100%", maxWidth: "320px", borderRadius: "8px" }}
                                         alt={popupContent.title || selectedElement || t.slideMediaAlt}
                                       />

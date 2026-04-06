@@ -39,6 +39,43 @@ function normalizeSlideRows(data: unknown): PersistedSlideRow[] {
   return Array.isArray(data) ? (data as PersistedSlideRow[]) : [];
 }
 
+function resolveSlideIdFromRows(
+  rows: PersistedSlideRow[],
+  {
+    slideId,
+    slideOrder,
+    slideText,
+  }: {
+    slideId?: string | null;
+    slideOrder?: number | null;
+    slideText?: string | null;
+  },
+) {
+  if (slideId && !slideId.startsWith("parsed:")) {
+    const byId = rows.find((row) => String(row.id) === slideId);
+    if (byId?.id) {
+      return byId.id;
+    }
+  }
+
+  if (typeof slideOrder === "number") {
+    const byOrder = rows.find((row) => row.slide_order === slideOrder);
+    if (byOrder?.id) {
+      return byOrder.id;
+    }
+  }
+
+  const normalizedSlideText = normalizeSlideText(slideText);
+  if (normalizedSlideText) {
+    const byText = rows.find((row) => normalizeSlideText(row.text) === normalizedSlideText);
+    if (byText?.id) {
+      return byText.id;
+    }
+  }
+
+  return null;
+}
+
 async function loadPersistedSlides(storyId: string | number) {
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase
@@ -138,58 +175,21 @@ export async function persistResolvedSlideMedia({
   const normalizedCreditLine = typeof imageCreditLine === "string" && imageCreditLine.trim()
     ? imageCreditLine.trim()
     : null;
-  const normalizedSlideText = normalizeSlideText(slideText);
 
-  const resolveTargetSlideId = async () => {
-    if (slideId && !slideId.startsWith("parsed:")) {
-      const { data, error } = await supabase
-        .from("map_story_slides")
-        .select("id")
-        .eq("id", slideId)
-        .eq("story_id", storyId)
-        .maybeSingle();
+  let slides = await loadPersistedSlides(storyId);
+  let targetSlideId = resolveSlideIdFromRows(slides, {
+    slideId,
+    slideOrder,
+    slideText,
+  });
 
-      if (error) {
-        throw error;
-      }
-
-      if (data?.id) {
-        return data.id;
-      }
-    }
-
-    if (typeof slideOrder === "number") {
-      const { data, error } = await supabase
-        .from("map_story_slides")
-        .select("id")
-        .eq("story_id", storyId)
-        .eq("slide_order", slideOrder)
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.id) {
-        return data.id;
-      }
-    }
-
-    if (normalizedSlideText) {
-      const slides = await loadPersistedSlides(storyId);
-      const matchedSlide = slides.find((slide) => normalizeSlideText(slide.text) === normalizedSlideText);
-      if (matchedSlide?.id) {
-        return matchedSlide.id;
-      }
-    }
-
-    return null;
-  };
-
-  let targetSlideId = await resolveTargetSlideId();
   if (!targetSlideId) {
-    await ensurePersistedSlidesByStoryId(storyId);
-    targetSlideId = await resolveTargetSlideId();
+    slides = await ensurePersistedSlidesByStoryId(storyId);
+    targetSlideId = resolveSlideIdFromRows(slides, {
+      slideId,
+      slideOrder,
+      slideText,
+    });
   }
 
   if (!targetSlideId) {

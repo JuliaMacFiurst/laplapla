@@ -14,6 +14,7 @@ import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
+import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 
 const PROJECT_ID = "current-studio-project";
 
@@ -50,6 +51,7 @@ interface StudioRootProps {
     textPosition?: "top" | "center" | "bottom";
     textAlign?: "left" | "center" | "right";
     textBgEnabled?: boolean;
+    textBgColor?: string;
     textBgOpacity?: number;
   }>;
   initialTracks?: Track[];
@@ -419,14 +421,15 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
       (s) => ({
         id: crypto.randomUUID(),
         text: s.text,
-        mediaUrl: s.image,
+        mediaUrl: toStudioMediaUrl(s.image),
         mediaType: s.mediaType ?? (s.image?.includes(".mp4") || s.image?.includes(".webm") ? "video" : "image"),
         mediaFit: s.mediaFit ?? "contain",
         mediaPosition: s.mediaPosition ?? "center",
         textPosition: s.textPosition ?? "bottom",
         textAlign: s.textAlign ?? "center",
         textBgEnabled: s.textBgEnabled ?? true,
-        textBgOpacity: s.textBgOpacity ?? 0.4,
+        textBgColor: s.textBgColor ?? "#ffffff",
+        textBgOpacity: s.textBgOpacity ?? 1,
         bgColor: "#ffffff",
         textColor: "#000000",
       }),

@@ -27,6 +27,26 @@ export type MapPopupMediaCandidate = {
   relevanceScore: number;
 };
 
+export type MapPopupMediaDebug = {
+  stage:
+    | "cache"
+    | "strict_pexels"
+    | "strict_giphy"
+    | "generic_provider"
+    | "relaxed_provider"
+    | "local_fallback"
+    | "no_queries";
+  cacheHit: boolean;
+  type: MapPopupType;
+  targetId: string;
+  slideTextSample: string;
+  pexelsQueries: string[];
+  giphyQueries: string[];
+  excludeCount: number;
+  chosenSource: "pexels" | "giphy" | "fallback" | null;
+  chosenQuery: string | null;
+};
+
 type SearchMediaParams = {
   type: MapPopupType;
   targetId: string;
@@ -37,10 +57,11 @@ type SearchMediaParams = {
 const PEXELS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const GIPHY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FINAL_RESULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const FALLBACK_RESULT_CACHE_TTL_MS = 2 * 60 * 1000;
 const GIPHY_COOLDOWN_TTL_MS = 15 * 60 * 1000;
 const GIPHY_MIN_REQUEST_INTERVAL_MS = 1200;
-const PROVIDER_REQUEST_TIMEOUT_MS = 3500;
-const SEARCH_DEADLINE_MS = 5000;
+const PROVIDER_REQUEST_TIMEOUT_MS = 6000;
+const SEARCH_DEADLINE_MS = 12000;
 const inflightGiphyRequests = new Map<string, Promise<GiphyCandidate[]>>();
 let lastGiphyRequestAt = 0;
 
@@ -79,6 +100,45 @@ const PEXELS_QUERY_SUFFIX: Record<MapPopupType, string> = {
   culture: "tradition architecture art",
   weather: "sky clouds atmosphere nature",
   food: "dish cuisine food",
+};
+
+const GENERIC_PROVIDER_QUERIES: Record<MapPopupType, { pexels: string[]; giphy: string[] }> = {
+  country: {
+    pexels: ["travel landscape", "city landmark", "nature landscape"],
+    giphy: ["travel nature", "landscape"],
+  },
+  river: {
+    pexels: ["river landscape", "water nature", "forest river"],
+    giphy: ["river nature", "water flow"],
+  },
+  sea: {
+    pexels: ["sea coast", "ocean waves", "beach nature"],
+    giphy: ["ocean waves", "sea"],
+  },
+  physic: {
+    pexels: ["mountains landscape", "nature panorama", "geography landscape"],
+    giphy: ["nature landscape", "mountains"],
+  },
+  flag: {
+    pexels: ["national flag", "flag waving", "country symbol"],
+    giphy: ["flag waving", "flag"],
+  },
+  animal: {
+    pexels: ["wildlife animal", "cute animal", "nature animal"],
+    giphy: ["cute animal", "animal"],
+  },
+  culture: {
+    pexels: ["traditional culture", "architecture travel", "folk art"],
+    giphy: ["tradition festival", "culture"],
+  },
+  weather: {
+    pexels: ["sky clouds", "rain storm", "snow weather"],
+    giphy: ["weather sky", "rain clouds"],
+  },
+  food: {
+    pexels: ["food dish", "cuisine plate", "delicious meal"],
+    giphy: ["food", "cooking"],
+  },
 };
 
 const RACCOON_WITH_MAP_FILES = {
@@ -204,7 +264,7 @@ function scoreCandidateText(candidateText: string, relevanceTerms: string[]) {
   }
 
   if (!normalized) {
-    return 0;
+    return 1;
   }
 
   let score = 0;
@@ -294,7 +354,9 @@ async function searchPexelsCandidates(query: string): Promise<PexelsCandidate[]>
 
     return setMemoryCache(cacheKey, [...photos, ...videos], PEXELS_CACHE_TTL_MS);
   } catch (error) {
-    console.error("[map-popup-media] Pexels request failed", error);
+    if ((error as { name?: string } | null)?.name !== "AbortError") {
+      console.error("[map-popup-media] Pexels request failed", error);
+    }
     return [];
   }
 }
@@ -361,7 +423,9 @@ async function searchGiphyCandidates(query: string): Promise<GiphyCandidate[]> {
     return setMemoryCache(cacheKey, items, GIPHY_CACHE_TTL_MS);
   })()
     .catch((error) => {
-      console.error("[map-popup-media] GIPHY request failed", error);
+      if ((error as { name?: string } | null)?.name !== "AbortError") {
+        console.error("[map-popup-media] GIPHY request failed", error);
+      }
       setMemoryCache(cooldownKey, true, GIPHY_COOLDOWN_TTL_MS);
       return [];
     })
@@ -397,7 +461,7 @@ function rankCandidates(
       const description = [candidate.alt, candidate.photographer].filter(Boolean).join(" ");
       const score =
         scoreCandidateText(description, relevanceTerms) +
-        (candidate.mediaType === "image" ? 7 : 4);
+        (candidate.mediaType === "image" ? 14 : 10);
 
       return {
         url: candidate.url,
@@ -410,7 +474,7 @@ function rankCandidates(
     }),
     ...giphyCandidates.map((candidate) => {
       const description = [candidate.title, candidate.username].filter(Boolean).join(" ");
-      const score = scoreCandidateText(description, relevanceTerms) + 3;
+      const score = scoreCandidateText(description, relevanceTerms) + 8;
 
       return {
         url: candidate.url,
@@ -423,7 +487,7 @@ function rankCandidates(
     }),
   ]
     .filter((candidate) => !normalizedExcludedUrls.has(candidate.url))
-    .filter((candidate) => candidate.relevanceScore > 0)
+    .filter((candidate) => candidate.relevanceScore > -50)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
 }
 
@@ -439,6 +503,56 @@ function chooseRankedCandidate(
   const seed = getSeedValue(seedSource);
 
   return shortlist[seed % shortlist.length] ?? shortlist[0];
+}
+
+function pickFirstSafeCandidate(
+  pexelsCandidates: PexelsCandidate[],
+  giphyCandidates: GiphyCandidate[],
+  normalizedExcludedUrls: Set<string>,
+  pexelsQuery: string,
+  giphyQuery: string,
+) {
+  for (const candidate of pexelsCandidates) {
+    if (!candidate.url || normalizedExcludedUrls.has(candidate.url)) {
+      continue;
+    }
+
+    const description = [candidate.alt, candidate.photographer].filter(Boolean).join(" ");
+    if (containsBlockedTerm(description)) {
+      continue;
+    }
+
+    return {
+      url: candidate.url,
+      mediaType: candidate.mediaType,
+      source: "pexels" as const,
+      creditLine: buildPexelsCredit(candidate),
+      searchQuery: pexelsQuery,
+      relevanceScore: 1,
+    };
+  }
+
+  for (const candidate of giphyCandidates) {
+    if (!candidate.url || normalizedExcludedUrls.has(candidate.url)) {
+      continue;
+    }
+
+    const description = [candidate.title, candidate.username].filter(Boolean).join(" ");
+    if (containsBlockedTerm(description)) {
+      continue;
+    }
+
+    return {
+      url: candidate.url,
+      mediaType: "gif" as const,
+      source: "giphy" as const,
+      creditLine: buildGiphyCredit(candidate),
+      searchQuery: giphyQuery,
+      relevanceScore: 1,
+    };
+  }
+
+  return null;
 }
 
 function getSeedValue(seedSource: string) {
@@ -503,6 +617,114 @@ async function searchPexelsFirst(
   return null;
 }
 
+async function searchGenericProviderFallback(
+  type: MapPopupType,
+  normalizedExcludedUrls: Set<string>,
+  searchStartedAt: number,
+) {
+  const fallback = GENERIC_PROVIDER_QUERIES[type];
+  const relevanceTerms = PEXELS_QUERY_SUFFIX[type].split(" ");
+
+  for (const pexelsQuery of fallback.pexels) {
+    if (isSearchDeadlineReached(searchStartedAt)) {
+      break;
+    }
+
+    const pexelsCandidates = await searchPexelsCandidates(pexelsQuery);
+    const ranked = rankCandidates(
+      pexelsCandidates,
+      [],
+      relevanceTerms,
+      normalizedExcludedUrls,
+      pexelsQuery,
+      "",
+    );
+
+    const selected = chooseRankedCandidate(ranked, `${type}:generic:${pexelsQuery}`);
+    if (selected) {
+      return selected;
+    }
+  }
+
+  for (const giphyQuery of fallback.giphy) {
+    if (isSearchDeadlineReached(searchStartedAt)) {
+      break;
+    }
+
+    const giphyCandidates = await searchGiphyCandidates(giphyQuery);
+    const ranked = rankCandidates(
+      [],
+      giphyCandidates,
+      relevanceTerms,
+      normalizedExcludedUrls,
+      "",
+      giphyQuery,
+    );
+
+    const selected = chooseRankedCandidate(ranked, `${type}:generic:${giphyQuery}`);
+    if (selected) {
+      return selected;
+    }
+  }
+
+  return null;
+}
+
+async function searchRelaxedProviderFallback(
+  type: MapPopupType,
+  pexelsQueries: string[],
+  giphyQueries: string[],
+  normalizedExcludedUrls: Set<string>,
+  searchStartedAt: number,
+) {
+  const combinedPexelsQueries = unique([
+    ...pexelsQueries,
+    ...GENERIC_PROVIDER_QUERIES[type].pexels,
+  ]);
+  const combinedGiphyQueries = unique([
+    ...giphyQueries,
+    ...GENERIC_PROVIDER_QUERIES[type].giphy,
+  ]);
+
+  for (const pexelsQuery of combinedPexelsQueries) {
+    if (isSearchDeadlineReached(searchStartedAt)) {
+      break;
+    }
+
+    const pexelsCandidates = await searchPexelsCandidates(pexelsQuery);
+    const directCandidate = pickFirstSafeCandidate(
+      pexelsCandidates,
+      [],
+      normalizedExcludedUrls,
+      pexelsQuery,
+      "",
+    );
+    if (directCandidate) {
+      return directCandidate;
+    }
+  }
+
+  for (const giphyQuery of combinedGiphyQueries) {
+    if (isSearchDeadlineReached(searchStartedAt)) {
+      break;
+    }
+
+    const giphyCandidates = await searchGiphyCandidates(giphyQuery);
+    const directCandidate = pickFirstSafeCandidate(
+      [],
+      giphyCandidates,
+      normalizedExcludedUrls,
+      "",
+      giphyQuery,
+    );
+    if (directCandidate) {
+      return directCandidate;
+    }
+  }
+
+  return null;
+}
+
 async function searchGiphyFallback(
   giphyQueries: string[],
   relevanceTerms: string[],
@@ -540,7 +762,7 @@ export async function searchMapPopupMedia({
   targetId,
   slideText,
   excludeUrls = [],
-}: SearchMediaParams): Promise<MapPopupMediaCandidate | null> {
+}: SearchMediaParams): Promise<{ item: MapPopupMediaCandidate | null; debug: MapPopupMediaDebug }> {
   const finalCacheKey = `map-popup:resolved:${type}:${normalizeText(targetId)}:${normalizeText(slideText)}`;
   const cached = getMemoryCache<MapPopupMediaCandidate>(finalCacheKey);
   const normalizedExcludedUrls = new Set(
@@ -549,13 +771,37 @@ export async function searchMapPopupMedia({
       .filter(Boolean),
   );
 
-  if (cached && !normalizedExcludedUrls.has(cached.url)) {
-    return cached;
+  const { pexelsQueries, giphyQueries } = buildFallbackQueries(type, targetId, slideText);
+  const createDebug = (
+    stage: MapPopupMediaDebug["stage"],
+    item: MapPopupMediaCandidate | null,
+    cacheHit: boolean,
+  ): MapPopupMediaDebug => ({
+    stage,
+    cacheHit,
+    type,
+    targetId,
+    slideTextSample: slideText.slice(0, 120),
+    pexelsQueries,
+    giphyQueries,
+    excludeCount: normalizedExcludedUrls.size,
+    chosenSource: item?.source ?? null,
+    chosenQuery: item?.searchQuery ?? null,
+  });
+
+  if (cached && cached.source !== "fallback" && !normalizedExcludedUrls.has(cached.url)) {
+    return {
+      item: cached,
+      debug: createDebug("cache", cached, true),
+    };
   }
 
-  const { pexelsQueries, giphyQueries, relevanceTerms } = buildFallbackQueries(type, targetId, slideText);
+  const { relevanceTerms } = buildFallbackQueries(type, targetId, slideText);
   if (pexelsQueries.length === 0 && giphyQueries.length === 0) {
-    return null;
+    return {
+      item: null,
+      debug: createDebug("no_queries", null, false),
+    };
   }
 
   const searchStartedAt = Date.now();
@@ -568,8 +814,10 @@ export async function searchMapPopupMedia({
     searchStartedAt,
   );
   if (resolvedFromPexels) {
-    setMemoryCache(finalCacheKey, resolvedFromPexels, FINAL_RESULT_CACHE_TTL_MS);
-    return resolvedFromPexels;
+    return {
+      item: setMemoryCache(finalCacheKey, resolvedFromPexels, FINAL_RESULT_CACHE_TTL_MS),
+      debug: createDebug("strict_pexels", resolvedFromPexels, false),
+    };
   }
 
   // Age safety for GIPHY comes from rating=g and blocked-term filtering.
@@ -582,11 +830,41 @@ export async function searchMapPopupMedia({
     searchStartedAt,
   );
   if (resolvedFromGiphy) {
-    setMemoryCache(finalCacheKey, resolvedFromGiphy, FINAL_RESULT_CACHE_TTL_MS);
-    return resolvedFromGiphy;
+    return {
+      item: setMemoryCache(finalCacheKey, resolvedFromGiphy, FINAL_RESULT_CACHE_TTL_MS),
+      debug: createDebug("strict_giphy", resolvedFromGiphy, false),
+    };
+  }
+
+  const genericProviderResult = await searchGenericProviderFallback(
+    type,
+    normalizedExcludedUrls,
+    searchStartedAt,
+  );
+  if (genericProviderResult) {
+    return {
+      item: setMemoryCache(finalCacheKey, genericProviderResult, FINAL_RESULT_CACHE_TTL_MS),
+      debug: createDebug("generic_provider", genericProviderResult, false),
+    };
+  }
+
+  const relaxedProviderResult = await searchRelaxedProviderFallback(
+    type,
+    pexelsQueries,
+    giphyQueries,
+    normalizedExcludedUrls,
+    searchStartedAt,
+  );
+  if (relaxedProviderResult) {
+    return {
+      item: setMemoryCache(finalCacheKey, relaxedProviderResult, FINAL_RESULT_CACHE_TTL_MS),
+      debug: createDebug("relaxed_provider", relaxedProviderResult, false),
+    };
   }
 
   const finalResult = buildLocalFallbackCandidate(type, targetId, slideText);
-  setMemoryCache(finalCacheKey, finalResult, FINAL_RESULT_CACHE_TTL_MS);
-  return finalResult;
+  return {
+    item: setMemoryCache(finalCacheKey, finalResult, FALLBACK_RESULT_CACHE_TTL_MS),
+    debug: createDebug("local_fallback", finalResult, false),
+  };
 }

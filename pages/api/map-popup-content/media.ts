@@ -81,7 +81,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["POST"],
-      limit: 15,
+      limit: 120,
+      windowMs: 60_000,
       maxBodyBytes: 12 * 1024,
       keyPrefix: "map-popup-content-media",
     },

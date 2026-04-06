@@ -58,7 +58,7 @@ const createAbortError = () => {
 const getFallbackImage = () =>
   `/images/capybaras/${fallbackImages[Math.floor(Math.random() * fallbackImages.length)]}`;
 
-const MEDIA_TIMEOUT_MS = 1500;
+const MEDIA_TIMEOUT_MS = 5000;
 
 const mediaResultCache = new Map<string, ResolvedSlideMedia>();
 let giphyUsed = 0;
@@ -207,10 +207,6 @@ const searchGiphyMeaning = async (query: string, signal?: AbortSignal): Promise<
     return cached;
   }
 
-  if (process.env.NODE_ENV !== "development") {
-    return null;
-  }
-
   console.log("[MEDIA] preload:", query, "giphy");
 
   const response = await fetch("/api/search-giphy", {
@@ -270,6 +266,61 @@ const searchPexelsMeaning = async (query: string, keywords?: string[], signal?: 
   const imageData = (await imageResponse.json()) as { images?: string[] };
   const imageUrl = imageData.images?.[0];
   return imageUrl ? { type: "image", imageUrl, capybaraImage: imageUrl } : null;
+};
+
+const resolveCandidateToMedia = (candidate: Awaited<ReturnType<typeof findAlternativeSlideMedia>>): ResolvedSlideMedia | null => {
+  if (!candidate) {
+    return null;
+  }
+
+  if (candidate.mediaType === "video") {
+    return {
+      type: "video",
+      videoUrl: candidate.url,
+    };
+  }
+
+  if (candidate.mediaType === "gif") {
+    return {
+      type: "gif",
+      gifUrl: candidate.url,
+    };
+  }
+
+  return {
+    type: "image",
+    imageUrl: candidate.url,
+    capybaraImage: candidate.url,
+  };
+};
+
+const searchPrimarySlideMedia = async (
+  slide: Slide,
+  slideIndex: number,
+  totalSlides: number,
+): Promise<ResolvedSlideMedia | null> => {
+  const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
+  const queries = buildAnimalSlideMediaQueries(
+    ["capybara", "capybara animal", "cute capybara"],
+    keywords.join(" "),
+    normalizeText(slide.text),
+  );
+
+  const preferredSources =
+    shouldUseContextMedia(slideIndex, totalSlides) && giphyUsed < MAX_GIPHY
+      ? ["giphy", "pexels"] as const
+      : ["pexels", "giphy"] as const;
+
+  const candidate = await findAlternativeSlideMedia({
+    queries,
+    preferredSources: [...preferredSources],
+  });
+
+  if (candidate?.mediaType === "gif") {
+    giphyUsed += 1;
+  }
+
+  return resolveCandidateToMedia(candidate);
 };
 
 const searchCapybaraFallback = async (slide: Slide, signal?: AbortSignal): Promise<ResolvedSlideMedia | null> => {
@@ -377,6 +428,14 @@ const preloadSlideMedia = async (
 
   if (process.env.NODE_ENV === "development") {
     console.log("[MEDIA] preload:", slideIndex, plan.type);
+  }
+
+  const primaryResult = await withTimeout(
+    searchPrimarySlideMedia(slide, slideIndex, totalSlides),
+    MEDIA_TIMEOUT_MS,
+  );
+  if (primaryResult) {
+    return primaryResult;
   }
 
   if (plan.type === "giphy") {

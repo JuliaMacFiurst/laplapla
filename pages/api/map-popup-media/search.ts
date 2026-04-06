@@ -21,6 +21,18 @@ type SearchResponse =
         searchQuery: string;
         relevanceScore: number;
       } | null;
+      debug: {
+        stage: string;
+        cacheHit: boolean;
+        type: string;
+        targetId: string;
+        slideTextSample: string;
+        pexelsQueries: string[];
+        giphyQueries: string[];
+        excludeCount: number;
+        chosenSource: string | null;
+        chosenQuery: string | null;
+      };
     }
   | { error: string };
 
@@ -70,14 +82,18 @@ async function handler(
   }
 
   try {
-    const item = await searchMapPopupMedia({
+    const result = await searchMapPopupMedia({
       type,
       targetId,
       slideText,
       excludeUrls,
     });
 
-    return res.status(200).json({ item });
+    if (process.env.NODE_ENV === "development") {
+      console.log("[map-popup-media/search]", result.debug);
+    }
+
+    return res.status(200).json(result);
   } catch (error) {
     console.error("[/api/map-popup-media/search] failed", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -88,7 +104,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET", "POST"],
-      limit: 20,
+      limit: 120,
+      windowMs: 60_000,
       maxBodyBytes: 24 * 1024,
       keyPrefix: "map-popup-media-search",
     },

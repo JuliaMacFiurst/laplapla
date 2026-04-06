@@ -16,6 +16,9 @@ export type ImportedStudioSlide = {
   mediaPosition: "center";
   textPosition: "bottom";
   textAlign: "center";
+  textBgEnabled?: boolean;
+  textBgColor?: string;
+  textBgOpacity?: number;
 };
 
 function resolveSlideMediaUrl(
@@ -68,6 +71,9 @@ export function buildStudioSlidesFromCapybaraSlides(
       mediaPosition: "center",
       textPosition: "bottom",
       textAlign: "center",
+      textBgEnabled: true,
+      textBgColor: "#ffffff",
+      textBgOpacity: 1,
     };
   });
 }

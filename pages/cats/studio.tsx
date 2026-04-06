@@ -22,6 +22,7 @@ type ImportedSlide = {
   textPosition?: "top" | "center" | "bottom";
   textAlign?: "left" | "center" | "right";
   textBgEnabled?: boolean;
+  textBgColor?: string;
   textBgOpacity?: number;
 };
 
