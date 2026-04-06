@@ -124,13 +124,103 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     Boolean(currentMedia?.videoUrl) ||
     Boolean(currentMedia?.imageUrl);
   const textWordCount = currentSlide?.text.trim().split(/\s+/).filter(Boolean).length || 0;
-  const shouldStackLayout = textWordCount > 18 || currentMedia?.type === "video";
   const compactText = textWordCount > 12;
+  const denseText = textWordCount > 20;
   const portraitLayout = isPortraitMedia || currentMedia?.type === "video";
+
+  const renderSlideMedia = (classNameSuffix = "") => {
+    if (!currentSlide || !hasMedia) {
+      return (
+        <div className="story-media-placeholder">
+          <img
+            className="capybara-spinner"
+            src="/spinners/capybara-spinner.webp"
+            alt="Загрузка медиа"
+          />
+        </div>
+      );
+    }
+
+    if (currentMedia?.type === "image" && currentMedia.capybaraImage) {
+      return (
+        <img
+          className={`story-image${classNameSuffix}`}
+          src={currentMedia.capybaraImage}
+          alt={currentMedia.capybaraImageAlt || "Капибара"}
+          onLoad={(event) => {
+            const image = event.currentTarget;
+            setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+          }}
+        />
+      );
+    }
+
+    if (currentMedia?.type === "gif" && currentMedia.gifUrl) {
+      return (
+        <img
+          className={`story-image${classNameSuffix}`}
+          src={currentMedia.gifUrl}
+          alt="GIF"
+          onLoad={(event) => {
+            const image = event.currentTarget;
+            setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+          }}
+        />
+      );
+    }
+
+    if (currentMedia?.type === "video" && currentMedia.videoUrl) {
+      return (
+        <video
+          src={currentMedia.videoUrl}
+          className={`story-video${classNameSuffix}`}
+          autoPlay
+          muted
+          loop
+          playsInline
+          onLoadedMetadata={(event) => {
+            const video = event.currentTarget;
+            setIsPortraitMedia(video.videoHeight > video.videoWidth * 1.05);
+          }}
+        />
+      );
+    }
+
+    if (currentMedia?.imageUrl) {
+      return (
+        <img
+          src={currentMedia.imageUrl}
+          alt="Фото капибары с Pexels"
+          className={`story-image${classNameSuffix}`}
+          onLoad={(event) => {
+            const image = event.currentTarget;
+            setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+          }}
+        />
+      );
+    }
+
+    return (
+      <img
+        className={`story-image${classNameSuffix}`}
+        src={fallback}
+        alt="Запасная капибара"
+        onLoad={(event) => {
+          const image = event.currentTarget;
+          setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+        }}
+      />
+    );
+  };
   
   return (
     <div className="story-wrapper">
-      <div className="story-inner">
+      <div className={`story-inner${portraitLayout ? " story-inner-portrait" : ""}`}>
+        {portraitLayout ? (
+          <div className="story-media-backdrop">
+            {renderSlideMedia(" story-backdrop-media")}
+          </div>
+        ) : null}
         <div
           className="story-background-blur"
           style={{
@@ -142,86 +232,21 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
             zIndex: 0,
           }}
         />
-        <div className={`story-content${shouldStackLayout ? " story-content-stacked" : ""}${portraitLayout ? " story-content-portrait" : ""}`}>
-          <div className={`story-media${portraitLayout ? " story-media-portrait" : ""}`}>
-            <div className="story-image-wrapper">
-              {currentSlide && hasMedia ? (
-                <>
-                  {currentMedia?.type === "image" && currentMedia.capybaraImage ? (
-                    <img
-                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
-                      src={currentMedia.capybaraImage}
-                      alt={currentMedia.capybaraImageAlt || "Капибара"}
-                      onLoad={(event) => {
-                        const image = event.currentTarget;
-                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
-                      }}
-                    />
-                  ) : currentMedia?.type === "gif" && currentMedia.gifUrl ? (
-                    <img
-                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
-                      src={currentMedia.gifUrl}
-                      alt="GIF"
-                      onLoad={(event) => {
-                        const image = event.currentTarget;
-                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
-                      }}
-                    />
-                  ) : currentMedia?.type === "video" && currentMedia.videoUrl ? (
-                    <video
-                      src={currentMedia.videoUrl}
-                      className={`story-video${portraitLayout ? " story-video-portrait" : ""}`}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      onLoadedMetadata={(event) => {
-                        const video = event.currentTarget;
-                        setIsPortraitMedia(video.videoHeight > video.videoWidth * 1.05);
-                      }}
-                    />
-                  ) : currentMedia?.imageUrl ? (
-                    <img
-                      src={currentMedia.imageUrl}
-                      alt="Фото капибары с Pexels"
-                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
-                      onLoad={(event) => {
-                        const image = event.currentTarget;
-                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
-                      }}
-                    />
-                  ) : (
-                    <img
-                      className={`story-image${portraitLayout ? " story-image-portrait" : ""}`}
-                      src={fallback}
-                      alt="Запасная капибара"
-                      onLoad={(event) => {
-                        const image = event.currentTarget;
-                        setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
-                      }}
-                    />
-                  )}
-                </>
-              ) : (
-                <div className="story-media-placeholder">
-                  <img
-                    className="capybara-spinner"
-                    src="/spinners/capybara-spinner.webp"
-                    alt="Загрузка медиа"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className={`story-text${compactText ? " story-text-compact" : ""}`}>
+        <div className="story-content">
+          <div className={`story-text${compactText ? " story-text-compact" : ""}${denseText ? " story-text-dense" : ""}`}>
             <p
               ref={textRef}
-              className={`${textClassName || "slide-text"}${compactText ? " story-carousel-text-compact" : ""}`}
+              className={`${textClassName || "slide-text"}${compactText ? " story-carousel-text-compact" : ""}${denseText ? " story-carousel-text-dense" : ""}`}
             >
               {currentSlide.text}
             </p>
           </div>
+
+          {!portraitLayout ? (
+            <div className="story-media">
+              {renderSlideMedia("")}
+            </div>
+          ) : null}
 
           <div className="story-navigation">
             <div className="story-nav">
