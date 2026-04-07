@@ -1,7 +1,5 @@
 const STUDIO_PROXY_HOSTS = new Set([
   "images.pexels.com",
-  "videos.pexels.com",
-  "player.vimeo.com",
 ]);
 const MAX_PROXY_URL_LENGTH = 1200;
 
@@ -9,9 +7,19 @@ function isRelativeUrl(url: string) {
   return url.startsWith("/") || url.startsWith("./") || url.startsWith("../");
 }
 
+function isVideoAssetUrl(url: string) {
+  return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url);
+}
+
 export function toStudioMediaUrl(url?: string | null) {
   if (!url) return undefined;
   if (isRelativeUrl(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+
+  // Proxying remote videos breaks range requests and hits the proxy size cap.
+  // Let the browser load video assets directly while keeping image proxying intact.
+  if (isVideoAssetUrl(url)) {
     return url;
   }
 
