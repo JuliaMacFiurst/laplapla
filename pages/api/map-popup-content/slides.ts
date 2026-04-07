@@ -1,6 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { resolveAdminAccess } from "@/lib/server/auth/adminAccess";
+import {
+  ensurePersistedSlidesByStoryId,
+  loadStoryPersistenceTarget,
+  resolveStorySlides,
+} from "@/lib/server/mapPopup/persistence";
 import { withApiHandler } from "@/utils/apiHandler";
-import { ensurePersistedSlidesByStoryId } from "@/lib/server/mapPopup/persistence";
 
 export const config = {
   api: {
@@ -21,6 +26,10 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PersistSlidesResponse>,
 ) {
+  if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+    return res.status(400).json({ error: "Invalid payload" });
+  }
+
   const { storyId } = req.body ?? {};
 
   const normalizedStoryId =
@@ -32,7 +41,21 @@ async function handler(
     return res.status(400).json({ error: "Invalid or missing storyId" });
   }
 
-  const slides = await ensurePersistedSlidesByStoryId(normalizedStoryId);
+  const [adminAccess, storyTarget] = await Promise.all([
+    resolveAdminAccess(req),
+    loadStoryPersistenceTarget(normalizedStoryId),
+  ]);
+  const slides = adminAccess.isAdmin
+    ? await ensurePersistedSlidesByStoryId(normalizedStoryId)
+    : await resolveStorySlides(normalizedStoryId);
+
+  console.info("[map-popup-content/slides] write attempt", {
+    action: adminAccess.isAdmin ? "success" : "skipped",
+    target_id: storyTarget?.target_id ?? null,
+    isAdmin: adminAccess.isAdmin,
+    timestamp: new Date().toISOString(),
+  });
+
   return res.status(200).json({ ok: true, slidesCount: slides.length });
 }
 

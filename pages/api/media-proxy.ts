@@ -76,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   } catch (error) {
     const errorCode = (error as { code?: string } | null)?.code;
-    if (errorCode === "ERR_STREAM_PREMATURE_CLOSE") {
+    if (errorCode === "ERR_STREAM_PREMATURE_CLOSE" || errorCode === "ERR_STREAM_UNABLE_TO_PIPE") {
       if (!res.writableEnded) {
         res.end();
       }

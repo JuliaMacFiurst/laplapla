@@ -7,6 +7,7 @@ import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { supabase } from "@/lib/supabase";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
@@ -58,6 +59,12 @@ type MapPopupSearchResponse = {
     chosenSource: string | null;
     chosenQuery: string | null;
   };
+};
+
+type MediaPersistenceStatus = {
+  action: "success" | "skipped" | "error";
+  isAdmin: boolean;
+  writeState: "saved" | "updated" | "error" | "skipped";
 };
 
 function buildMediaSearchParams(
@@ -124,25 +131,56 @@ async function persistResolvedSlideMedia(params: {
   slideText: string;
   imageUrl: string;
   imageCreditLine?: string | null;
-}) {
+}): Promise<MediaPersistenceStatus> {
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+
   const response = await fetch("/api/map-popup-content/media", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: JSON.stringify(params),
   });
 
+  const actionHeader = response.headers.get("X-Map-Popup-Media-Action");
+  const isAdminHeader = response.headers.get("X-Map-Popup-Media-Is-Admin");
+  const writeStateHeader = response.headers.get("X-Map-Popup-Media-Write-State");
+  const status: MediaPersistenceStatus = {
+    action: actionHeader === "success" || actionHeader === "skipped" || actionHeader === "error"
+      ? actionHeader
+      : response.ok
+        ? "success"
+        : "error",
+    isAdmin: isAdminHeader === "1",
+    writeState:
+      writeStateHeader === "saved" ||
+      writeStateHeader === "updated" ||
+      writeStateHeader === "error" ||
+      writeStateHeader === "skipped"
+        ? writeStateHeader
+        : response.ok
+          ? "updated"
+          : "error",
+  };
+
   if (!response.ok) {
-    throw new Error(`Persist popup media failed: ${response.status}`);
+    return status;
   }
+
+  return status;
 }
 
 async function persistParsedSlidesToServer(storyId: string | number) {
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+
   await fetch("/api/map-popup-content/slides", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: JSON.stringify({ storyId }),
   });
@@ -268,12 +306,15 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [mediaStatusBySlideId, setMediaStatusBySlideId] = useState<Record<string, "loading" | "missing" | "ready">>({});
   const [manualRefreshSlideId, setManualRefreshSlideId] = useState<string | null>(null);
+  const [dbWriteStatusBySlideId, setDbWriteStatusBySlideId] = useState<Record<string, "saved" | "updated" | "error">>({});
+  const [showAdminDbStatus, setShowAdminDbStatus] = useState(false);
   const lastClickTimeRef = useRef(0);
   const fetchIdRef = useRef(0);
   const isLoadingRef = useRef(false);
   const mediaHydrationRef = useRef(new Set<string>());
   const mediaAttemptedRef = useRef(new Set<string>());
   const slideParseHydrationRef = useRef(new Set<string>());
+  const mediaRequestVersionRef = useRef(new Map<string, number>());
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
   const hoveredPathRef = useRef<SVGPathElement | null>(null);
@@ -307,6 +348,35 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
     if (type === "animal") return "#86c232";
     if (type === "weather") return "#f6c453";
     return "#f97316";
+  };
+
+  const beginMediaRequest = (slideId: string) => {
+    const nextVersion = (mediaRequestVersionRef.current.get(slideId) ?? 0) + 1;
+    mediaRequestVersionRef.current.set(slideId, nextVersion);
+    return nextVersion;
+  };
+
+  const isLatestMediaRequest = (slideId: string, requestVersion: number) =>
+    (mediaRequestVersionRef.current.get(slideId) ?? 0) === requestVersion;
+
+  const applyDbWriteStatus = (slideId: string, status: MediaPersistenceStatus) => {
+    if (!status.isAdmin) {
+      return;
+    }
+
+    setShowAdminDbStatus(true);
+
+    const nextStatus =
+      status.writeState === "saved" || status.writeState === "updated" || status.writeState === "error"
+        ? status.writeState
+        : null;
+
+    if (nextStatus) {
+      setDbWriteStatusBySlideId((current) => ({
+        ...current,
+        [slideId]: nextStatus,
+      }));
+    }
   };
 
   const getSelectedFill = () => {
@@ -653,6 +723,7 @@ useEffect(() => {
 
     setManualRefreshSlideId(currentPopupSlide.id);
     setMediaStatusBySlideId((current) => ({ ...current, [currentPopupSlide.id]: "loading" }));
+    const requestVersion = beginMediaRequest(currentPopupSlide.id);
 
     try {
       const usedMediaUrls = popupContent.slides
@@ -660,6 +731,9 @@ useEffect(() => {
         .filter((url) => url && !isLocalMapFallbackUrl(url))
         .filter(Boolean);
       const resolvedItem = await resolveSlideMedia(type, targetId, currentPopupSlide.text, usedMediaUrls);
+      if (!isLatestMediaRequest(currentPopupSlide.id, requestVersion)) {
+        return;
+      }
 
       applyResolvedSlideMedia(
         storyId,
@@ -671,6 +745,13 @@ useEffect(() => {
       );
 
       if (resolvedItem.source !== "fallback") {
+        console.info("[popup-media] manual refresh persist", {
+          storyId,
+          slideId: currentPopupSlide.id,
+          slideOrder: currentPopupSlide.index,
+          imageUrl: resolvedItem.url,
+        });
+
         void persistResolvedSlideMedia({
           storyId,
           slideId: currentPopupSlide.id,
@@ -678,9 +759,17 @@ useEffect(() => {
           slideText: currentPopupSlide.text,
           imageUrl: resolvedItem.url,
           imageCreditLine: resolvedItem.creditLine,
-        }).catch((error) => {
-          console.error("Failed to persist refreshed slide media", error);
-        });
+        })
+          .then((status) => {
+            applyDbWriteStatus(currentPopupSlide.id, status);
+          })
+          .catch((error) => {
+            console.error("Failed to persist refreshed slide media", error);
+            setDbWriteStatusBySlideId((current) => ({
+              ...current,
+              [currentPopupSlide.id]: "error",
+            }));
+          });
       }
 
       setToast(lang === "ru" ? "Загружена новая картинка." : lang === "he" ? "נטענה תמונה חדשה." : "Loaded a new image.");
@@ -1010,11 +1099,16 @@ useEffect(() => {
       mediaHydrationRef.current.add(requestKey);
       mediaAttemptedRef.current.add(requestKey);
       setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "loading" }));
+      const requestVersion = beginMediaRequest(slide.id);
 
       try {
         const resolvedItem = await resolveSlideMedia(type, targetId, slide.text, usedMediaUrls);
         if (cancelled || !resolvedItem.url) {
           markSlideMissing(slide.id);
+          return;
+        }
+
+        if (!isLatestMediaRequest(slide.id, requestVersion)) {
           return;
         }
 
@@ -1037,9 +1131,17 @@ useEffect(() => {
             slideText: slide.text,
             imageUrl: resolvedItem.url,
             imageCreditLine: resolvedItem.creditLine,
-          }).catch((error) => {
-            console.error("Failed to persist hydrated slide media", error);
-          });
+          })
+            .then((status) => {
+              applyDbWriteStatus(slide.id, status);
+            })
+            .catch((error) => {
+              console.error("Failed to persist hydrated slide media", error);
+              setDbWriteStatusBySlideId((current) => ({
+                ...current,
+                [slide.id]: "error",
+              }));
+            });
         }
       } catch (error) {
         console.error("Failed to hydrate popup slide media", error);
@@ -1496,6 +1598,7 @@ useEffect(() => {
                           resolvedFallbackMedia?.creditLine ||
                           "";
                         const mediaStatus = currentPopupSlide ? mediaStatusBySlideId[currentPopupSlide.id] : undefined;
+                        const dbWriteStatus = currentPopupSlide ? dbWriteStatusBySlideId[currentPopupSlide.id] : undefined;
                         const mediaStatusLabel =
                           mediaStatus === "loading"
                             ? isUsingFallbackMedia
@@ -1510,6 +1613,42 @@ useEffect(() => {
                                   ? "טוענים תמונה..."
                                   : "Loading image..."
                             : "";
+                        const dbWriteStatusLabel =
+                          dbWriteStatus === "saved"
+                            ? lang === "ru"
+                              ? "Сохранилось в базу"
+                              : lang === "he"
+                                ? "נשמר בבסיס הנתונים"
+                                : "Saved to database"
+                            : dbWriteStatus === "updated"
+                              ? lang === "ru"
+                                ? "Обновилось в базе"
+                                : lang === "he"
+                                  ? "עודכן בבסיס הנתונים"
+                                  : "Updated in database"
+                              : dbWriteStatus === "error"
+                                ? lang === "ru"
+                                  ? "Не сохранилось в базу"
+                                  : lang === "he"
+                                    ? "לא נשמר בבסיס הנתונים"
+                                    : "Not saved to database"
+                                : "";
+                        const databaseLabel =
+                          hasResolvedPersistedImage && !dbWriteStatusLabel
+                            ? lang === "ru"
+                              ? "Взята из базы"
+                              : lang === "he"
+                                ? "נטען ממסד הנתונים"
+                                : "Loaded from database"
+                            : "";
+                        const dbWriteStatusColor =
+                          dbWriteStatus === "saved"
+                            ? "#15803d"
+                            : dbWriteStatus === "updated"
+                              ? "#1d4ed8"
+                              : dbWriteStatus === "error"
+                                ? "#b42318"
+                                : "";
 
                         return (
                           <>
@@ -1578,6 +1717,29 @@ useEffect(() => {
                                           : (lang === "ru" ? "Найти новую картинку" : lang === "he" ? "למצוא תמונה חדשה" : "Find a new image")}
                                       </button>
                                     </div>
+                                    {showAdminDbStatus && dbWriteStatusLabel ? (
+                                      <div
+                                        style={{
+                                          marginTop: "8px",
+                                          fontSize: "13px",
+                                          fontWeight: 600,
+                                          color: dbWriteStatusColor,
+                                        }}
+                                      >
+                                        {dbWriteStatusLabel}
+                                      </div>
+                                    ) : databaseLabel ? (
+                                      <div
+                                        style={{
+                                          marginTop: "8px",
+                                          fontSize: "13px",
+                                          fontWeight: 600,
+                                          color: "#8b5e34",
+                                        }}
+                                      >
+                                        {databaseLabel}
+                                      </div>
+                                    ) : null}
                                   </div>
                                 ) : mediaStatusLabel ? (
                                   <div

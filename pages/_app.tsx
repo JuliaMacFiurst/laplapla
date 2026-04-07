@@ -26,6 +26,7 @@ import Head from 'next/head';
 import Script from "next/script";
 import { dictionaries, Lang } from "../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { supabase } from "@/lib/supabase";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -37,6 +38,56 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const isBrowserCaptureEnabled =
     !isProduction && process.env.NEXT_PUBLIC_ENABLE_BROWSER_CAPTURE === "true";
   const [lang, setLang] = useState<Lang | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const initializeHandoffSession = async () => {
+      if (typeof window === "undefined") {
+        if (active) {
+          setAuthReady(true);
+        }
+        return;
+      }
+
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const hashParams = new URLSearchParams(hash);
+      const isAdminHandoff = hashParams.get("admin_handoff") === "1";
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+
+      if (isAdminHandoff && accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (!active) {
+          return;
+        }
+
+        if (error) {
+          console.warn("[admin-handoff] failed to set session");
+        } else {
+          const cleanUrl = `${window.location.pathname}${window.location.search}`;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      }
+
+      if (active) {
+        setAuthReady(true);
+      }
+    };
+
+    void initializeHandoffSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Determine language once on client
   useEffect(() => {
@@ -54,7 +105,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   }, [router.query.lang, router.locale]);
 
   // Prevent hydration mismatch
-  if (!lang) return null;
+  if (!lang || !authReady) return null;
   const t = dictionaries[lang];
 
   return (
