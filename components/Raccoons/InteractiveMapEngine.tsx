@@ -1634,7 +1634,7 @@ useEffect(() => {
                                     : "Not saved to database"
                                 : "";
                         const databaseLabel =
-                          hasResolvedPersistedImage && !dbWriteStatusLabel
+                          showAdminDbStatus && hasResolvedPersistedImage && !dbWriteStatusLabel
                             ? lang === "ru"
                               ? "Взята из базы"
                               : lang === "he"

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { resolveAdminAccess } from "@/lib/server/auth/adminAccess";
 import { withApiHandler } from "@/utils/apiHandler";
+import { applyApiGuard } from "@/utils/rateLimit";
 import {
   buildResolvedSlideMediaPreview,
   loadStoryPersistenceTarget,
@@ -54,6 +55,18 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PersistMediaResponse>,
 ) {
+  if (
+    !applyApiGuard(req, res, {
+      methods: ["POST"],
+      limit: 30,
+      windowMs: 60_000,
+      maxBodyBytes: 12 * 1024,
+      keyPrefix: "map-popup-content-media",
+    })
+  ) {
+    return;
+  }
+
   if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
     return res.status(400).json({ error: "Invalid payload" });
   }
@@ -175,8 +188,6 @@ export default withApiHandler(
   {
     guard: {
       methods: ["POST"],
-      limit: 120,
-      windowMs: 60_000,
       maxBodyBytes: 12 * 1024,
       keyPrefix: "map-popup-content-media",
     },

@@ -28,6 +28,49 @@ import { dictionaries, Lang } from "../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { supabase } from "@/lib/supabase";
 
+const ADMIN_APP_ORIGINS = [
+  process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
+  process.env["NEXT_PUBLIC_UPLOAD_LESSON_ORIGIN"],
+  process.env.NODE_ENV === "production" ? null : "http://localhost:3001",
+].filter((value): value is string => Boolean(value));
+
+type SupabaseSessionMessage = {
+  type: "SUPABASE_SESSION";
+  access_token: string;
+  refresh_token: string;
+};
+
+function isAllowedAdminOrigin(origin: string) {
+  return ADMIN_APP_ORIGINS.includes(origin);
+}
+
+function isSupabaseSessionMessage(value: unknown): value is SupabaseSessionMessage {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    (value as { type?: unknown }).type === "SUPABASE_SESSION" &&
+    typeof (value as { access_token?: unknown }).access_token === "string" &&
+    typeof (value as { refresh_token?: unknown }).refresh_token === "string",
+  );
+}
+
+function readSessionFromHash(hash: string) {
+  const normalizedHash = hash.startsWith("#") ? hash.slice(1) : hash;
+  const params = new URLSearchParams(normalizedHash);
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  const isAdminHandoff = params.get("admin_handoff") === "1";
+
+  if (!isAdminHandoff || !accessToken || !refreshToken) {
+    return null;
+  }
+
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
+}
+
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
@@ -35,6 +78,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const isExportPage = router.pathname === "/cats/export";
   const isCapybaraPage = router.pathname.startsWith("/capybara");
   const isProduction = process.env.NODE_ENV === "production";
+  const showHiddenAdminLogout =
+    !isProduction || router.query.debug === "true";
   const isBrowserCaptureEnabled =
     !isProduction && process.env.NEXT_PUBLIC_ENABLE_BROWSER_CAPTURE === "true";
   const [lang, setLang] = useState<Lang | null>(null);
@@ -42,27 +87,58 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     let active = true;
+    let handoffTimeoutId: number | null = null;
 
-    const initializeHandoffSession = async () => {
+    const finishAuthReady = () => {
+      if (active) {
+        setAuthReady(true);
+      }
+    };
+
+    const initializeSessionTransfer = async () => {
       if (typeof window === "undefined") {
-        if (active) {
-          setAuthReady(true);
-        }
+        finishAuthReady();
         return;
       }
 
-      const hash = window.location.hash.startsWith("#")
-        ? window.location.hash.slice(1)
-        : window.location.hash;
-      const hashParams = new URLSearchParams(hash);
-      const isAdminHandoff = hashParams.get("admin_handoff") === "1";
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
+      const sessionFromHash = readSessionFromHash(window.location.hash);
+      if (sessionFromHash) {
+        const { error } = await supabase.auth.setSession(sessionFromHash);
 
-      if (isAdminHandoff && accessToken && refreshToken) {
+        if (!active) {
+          return;
+        }
+
+        if (error) {
+          console.warn("[admin-handoff] failed to set session from hash");
+        } else {
+          const cleanUrl = `${window.location.pathname}${window.location.search}`;
+          window.history.replaceState(null, "", cleanUrl);
+        }
+
+        finishAuthReady();
+        return;
+      }
+
+      const shouldAwaitAdminMessage =
+        Boolean(window.opener) &&
+        typeof document.referrer === "string" &&
+        (() => {
+          try {
+            return isAllowedAdminOrigin(new URL(document.referrer).origin);
+          } catch {
+            return false;
+          }
+        })();
+
+      const handleMessage = async (event: MessageEvent) => {
+        if (!isAllowedAdminOrigin(event.origin) || !isSupabaseSessionMessage(event.data)) {
+          return;
+        }
+
         const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
+          access_token: event.data.access_token,
+          refresh_token: event.data.refresh_token,
         });
 
         if (!active) {
@@ -71,21 +147,42 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
         if (error) {
           console.warn("[admin-handoff] failed to set session");
-        } else {
-          const cleanUrl = `${window.location.pathname}${window.location.search}`;
-          window.history.replaceState({}, document.title, cleanUrl);
         }
+
+        if (handoffTimeoutId != null) {
+          window.clearTimeout(handoffTimeoutId);
+          handoffTimeoutId = null;
+        }
+
+        finishAuthReady();
+      };
+
+      window.addEventListener("message", handleMessage);
+
+      if (!shouldAwaitAdminMessage) {
+        finishAuthReady();
+      } else {
+        handoffTimeoutId = window.setTimeout(() => {
+          finishAuthReady();
+        }, 1500);
       }
 
-      if (active) {
-        setAuthReady(true);
-      }
+      return () => {
+        window.removeEventListener("message", handleMessage);
+      };
     };
 
-    void initializeHandoffSession();
+    let cleanup: (() => void) | undefined;
+    void initializeSessionTransfer().then((nextCleanup) => {
+      cleanup = nextCleanup;
+    });
 
     return () => {
       active = false;
+      if (handoffTimeoutId != null && typeof window !== "undefined") {
+        window.clearTimeout(handoffTimeoutId);
+      }
+      cleanup?.();
     };
   }, []);
 
@@ -107,6 +204,11 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   // Prevent hydration mismatch
   if (!lang || !authReady) return null;
   const t = dictionaries[lang];
+
+  const handleHiddenAdminLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
 
   return (
     <>
@@ -138,6 +240,31 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <div className="app-layout">
         {!isExportPage && <TopBar lang={lang} />}
         <Component {...pageProps} lang={lang} />
+
+        {showHiddenAdminLogout ? (
+          <button
+            type="button"
+            aria-label="Admin logout"
+            onClick={() => void handleHiddenAdminLogout()}
+            style={{
+              position: "fixed",
+              right: "8px",
+              bottom: "8px",
+              width: "18px",
+              height: "18px",
+              padding: 0,
+              border: 0,
+              borderRadius: "999px",
+              background: "rgba(0, 0, 0, 0.8)",
+              color: "transparent",
+              opacity: 0.18,
+              cursor: "pointer",
+              zIndex: 9999,
+            }}
+          >
+            .
+          </button>
+        ) : null}
 
         {!isQuestPage && !isExportPage && (
           <div className="footer-stack">

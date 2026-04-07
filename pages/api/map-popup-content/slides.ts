@@ -6,6 +6,7 @@ import {
   resolveStorySlides,
 } from "@/lib/server/mapPopup/persistence";
 import { withApiHandler } from "@/utils/apiHandler";
+import { applyApiGuard } from "@/utils/rateLimit";
 
 export const config = {
   api: {
@@ -26,6 +27,18 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PersistSlidesResponse>,
 ) {
+  if (
+    !applyApiGuard(req, res, {
+      methods: ["POST"],
+      limit: 30,
+      windowMs: 60_000,
+      maxBodyBytes: 8 * 1024,
+      keyPrefix: "map-popup-content-slides",
+    })
+  ) {
+    return;
+  }
+
   if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
     return res.status(400).json({ error: "Invalid payload" });
   }
@@ -63,7 +76,6 @@ export default withApiHandler(
   {
     guard: {
       methods: ["POST"],
-      limit: 15,
       maxBodyBytes: 8 * 1024,
       keyPrefix: "map-popup-content-slides",
     },

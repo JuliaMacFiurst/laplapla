@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 import { withApiHandler } from "@/utils/apiHandler";
+import { applyApiGuard } from "@/utils/rateLimit";
 
 const TTL_MS = 60 * 60 * 1000;
 const MAX_GIPHY_QUERY_LENGTH = 120;
@@ -85,6 +86,18 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<GiphyResponse | { error: string }>,
 ) {
+  if (
+    !applyApiGuard(req, res, {
+      methods: ["GET", "POST"],
+      limit: 30,
+      windowMs: 60_000,
+      maxBodyBytes: 16 * 1024,
+      keyPrefix: "giphy",
+    })
+  ) {
+    return;
+  }
+
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
   const rawQuery = Array.isArray(payload.q) ? payload.q[0] : payload.q;
   const rawLimit = Array.isArray(payload.limit) ? payload.limit[0] : payload.limit;
@@ -159,7 +172,6 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET", "POST"],
-      limit: 120,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "giphy",
     },

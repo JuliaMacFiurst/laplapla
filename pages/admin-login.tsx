@@ -22,18 +22,6 @@ function getStringParam(value: string | string[] | undefined) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function readHashParams() {
-  if (typeof window === "undefined") {
-    return new URLSearchParams();
-  }
-
-  const hash = window.location.hash.startsWith("#")
-    ? window.location.hash.slice(1)
-    : window.location.hash;
-
-  return new URLSearchParams(hash);
-}
-
 export default function AdminLoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -49,13 +37,6 @@ export default function AdminLoginPage() {
     let active = true;
 
     const nextTarget = getStringParam(router.query.next) || LAPLAPLA_TARGET_URL;
-    const queryAccessToken = getStringParam(router.query.access_token);
-    const queryRefreshToken = getStringParam(router.query.refresh_token);
-    const hashParams = readHashParams();
-    const hashAccessToken = getStringParam(hashParams.get("access_token") ?? undefined);
-    const hashRefreshToken = getStringParam(hashParams.get("refresh_token") ?? undefined);
-    const accessToken = queryAccessToken || hashAccessToken;
-    const refreshToken = queryRefreshToken || hashRefreshToken;
 
     const redirectToTarget = () => {
       if (typeof window !== "undefined") {
@@ -67,29 +48,6 @@ export default function AdminLoginPage() {
     };
 
     const initializeSession = async () => {
-      if (accessToken && refreshToken) {
-        const { error: setSessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (!active) {
-          return;
-        }
-
-        if (setSessionError) {
-          setError(setSessionError.message);
-          return;
-        }
-
-        if (typeof window !== "undefined" && window.location.hash) {
-          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-        }
-
-        redirectToTarget();
-        return;
-      }
-
       const { data, error: sessionError } = await supabase.auth.getSession();
       if (!active) {
         return;
@@ -110,7 +68,7 @@ export default function AdminLoginPage() {
     return () => {
       active = false;
     };
-  }, [router, router.isReady, router.query.access_token, router.query.next, router.query.refresh_token]);
+  }, [router, router.isReady, router.query.next]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
