@@ -23,10 +23,29 @@ type PersistSlidesResponse =
     }
   | { error: string };
 
+const ROUTE = "/api/map-popup-content/slides";
+
+function logApi(status: number, startedAt: number) {
+  console.log("[API]", {
+    route: ROUTE,
+    status,
+    duration: Date.now() - startedAt,
+  });
+}
+
+function logApiError(error: unknown) {
+  console.error("[API ERROR]", {
+    route: ROUTE,
+    error: error instanceof Error ? error.message : "Unknown error",
+  });
+}
+
 async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PersistSlidesResponse>,
 ) {
+  const startedAt = Date.now();
+
   if (
     !applyApiGuard(req, res, {
       methods: ["POST"],
@@ -36,11 +55,14 @@ async function handler(
       keyPrefix: "map-popup-content-slides",
     })
   ) {
+    logApi(res.statusCode, startedAt);
     return;
   }
 
   if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-    return res.status(400).json({ error: "Invalid payload" });
+    res.status(400).json({ error: "Invalid payload" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   const { storyId } = req.body ?? {};
@@ -51,25 +73,34 @@ async function handler(
       : null;
 
   if (normalizedStoryId == null) {
-    return res.status(400).json({ error: "Invalid or missing storyId" });
+    res.status(400).json({ error: "Invalid or missing storyId" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
-  const [adminAccess, storyTarget] = await Promise.all([
-    resolveAdminAccess(req),
-    loadStoryPersistenceTarget(normalizedStoryId),
-  ]);
-  const slides = adminAccess.isAdmin
-    ? await ensurePersistedSlidesByStoryId(normalizedStoryId)
-    : await resolveStorySlides(normalizedStoryId);
+  try {
+    const [adminAccess, storyTarget] = await Promise.all([
+      resolveAdminAccess(req),
+      loadStoryPersistenceTarget(normalizedStoryId),
+    ]);
+    const slides = adminAccess.isAdmin
+      ? await ensurePersistedSlidesByStoryId(normalizedStoryId)
+      : await resolveStorySlides(normalizedStoryId);
 
-  console.info("[map-popup-content/slides] write attempt", {
-    action: adminAccess.isAdmin ? "success" : "skipped",
-    target_id: storyTarget?.target_id ?? null,
-    isAdmin: adminAccess.isAdmin,
-    timestamp: new Date().toISOString(),
-  });
+    console.info("[map-popup-content/slides] write attempt", {
+      action: adminAccess.isAdmin ? "success" : "skipped",
+      target_id: storyTarget?.target_id ?? null,
+      isAdmin: adminAccess.isAdmin,
+      timestamp: new Date().toISOString(),
+    });
 
-  return res.status(200).json({ ok: true, slidesCount: slides.length });
+    res.status(200).json({ ok: true, slidesCount: slides.length });
+    logApi(res.statusCode, startedAt);
+    return;
+  } catch (error) {
+    logApiError(error);
+    throw error;
+  }
 }
 
 export default withApiHandler(

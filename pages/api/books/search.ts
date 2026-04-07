@@ -4,53 +4,62 @@ import { translateBooksForLang } from "@/lib/books";
 import { supabase } from "@/lib/supabase";
 import type { Book } from "@/types/types";
 
-const normalize = (value: unknown) =>
-  String(value ?? "")
-    .toLowerCase()
-    .trim();
+const MAX_RESULTS = 30;
+const ROUTE = "/api/books/search";
 
-const matchesQuery = (book: Record<string, unknown>, query: string) => {
-  const searchableValues = [
-    book.title,
-    book.author,
-    book.description,
-    Array.isArray(book.keywords) ? book.keywords.join(" ") : book.keywords,
-    book.year,
-    book.category,
-    book.category_id,
-  ];
+const escapeIlike = (value: string) =>
+  value.replace(/[,%_]/g, (char) => `\\${char}`);
 
-  return searchableValues.some((value) => normalize(value).includes(query));
-};
+function logApi(status: number, startedAt: number) {
+  console.log("[API]", {
+    route: ROUTE,
+    status,
+    duration: Date.now() - startedAt,
+  });
+}
+
+function logApiError(error: unknown) {
+  console.error("[API ERROR]", {
+    route: ROUTE,
+    error: error instanceof Error ? error.message : "Unknown error",
+  });
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const startedAt = Date.now();
   const lang = getRequestLang(req);
   const rawQuery = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q;
   const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
 
   if (!query) {
-    return res.status(200).json([]);
+    res.status(200).json([]);
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   try {
+    const escapedQuery = escapeIlike(query);
+    const searchPattern = `%${escapedQuery}%`;
     const { data, error } = await supabase
       .from("books")
-      .select("*")
-      .limit(500);
+      .select("id, title, slug, author, year")
+      .or([
+        `title.ilike.${searchPattern}`,
+        `slug.ilike.${searchPattern}`,
+        `author.ilike.${searchPattern}`,
+        `year.ilike.${searchPattern}`,
+      ].join(","))
+      .limit(MAX_RESULTS);
 
     if (error) {
       throw error;
     }
 
-    const normalizedQuery = normalize(query);
     const translatedBooks = await translateBooksForLang((data || []) as Book[], lang);
-    const results = (translatedBooks as Record<string, unknown>[])
-      .filter((book) => matchesQuery(book, normalizedQuery))
-      .slice(0, 20);
-
-    res.status(200).json(results);
+    res.status(200).json(translatedBooks);
+    logApi(res.statusCode, startedAt);
   } catch (error) {
-    console.error("Failed to search books:", error);
+    logApiError(error);
     res.status(500).json({ error: "Failed to search books" });
   }
 }

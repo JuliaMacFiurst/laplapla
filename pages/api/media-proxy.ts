@@ -15,6 +15,7 @@ const ALLOWED_HOSTS = new Set([
 
 const FETCH_TIMEOUT_MS = 7_000;
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
+const ROUTE = "/api/media-proxy";
 
 export const config = {
   api: {
@@ -31,6 +32,21 @@ class ResponseTooLargeError extends Error {
 
 function logBlocked(reason: string, url: string | null) {
   console.warn("[media-proxy] blocked", { reason, url });
+}
+
+function logApi(status: number, startedAt: number) {
+  console.log("[API]", {
+    route: ROUTE,
+    status,
+    duration: Date.now() - startedAt,
+  });
+}
+
+function logApiError(error: unknown) {
+  console.error("[API ERROR]", {
+    route: ROUTE,
+    error: error instanceof Error ? error.message : "Unknown error",
+  });
 }
 
 function getRawUrl(req: NextApiRequest) {
@@ -73,12 +89,14 @@ function createSizeLimitStream() {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const startedAt = Date.now();
   const rawUrl = getRawUrl(req) || null;
 
   if (req.method !== "GET") {
     logBlocked("method_not_allowed", rawUrl);
     res.setHeader("Allow", "GET");
     res.status(405).end("Method Not Allowed");
+    logApi(res.statusCode, startedAt);
     return;
   }
 
@@ -91,12 +109,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   ) {
     logBlocked("rate_limited", rawUrl);
+    logApi(res.statusCode, startedAt);
     return;
   }
 
   if (!rawUrl) {
     logBlocked("missing_url", null);
     res.status(400).end("Invalid media URL");
+    logApi(res.statusCode, startedAt);
     return;
   }
 
@@ -104,6 +124,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!parsedUrl.ok) {
     logBlocked(parsedUrl.reason, rawUrl);
     res.status(400).end("Invalid media URL");
+    logApi(res.statusCode, startedAt);
     return;
   }
 
@@ -126,6 +147,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (Number.isFinite(contentLength) && (contentLength as number) > MAX_RESPONSE_BYTES) {
       logBlocked("response_too_large", parsedUrl.url);
       res.status(413).end("Media too large");
+      logApi(res.statusCode, startedAt);
       return;
     }
 
@@ -143,6 +165,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (!upstream.body) {
       res.end();
+      logApi(res.statusCode, startedAt);
       return;
     }
 
@@ -151,6 +174,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       createSizeLimitStream(),
       res,
     );
+    logApi(res.statusCode, startedAt);
   } catch (error) {
     const errorCode = (error as { code?: string } | null)?.code;
 
@@ -158,6 +182,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       logBlocked("response_too_large", parsedUrl.url);
       if (!res.headersSent) {
         res.status(413).end("Media too large");
+        logApi(res.statusCode, startedAt);
       } else {
         res.destroy();
       }
@@ -171,6 +196,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return;
     }
 
+    logApiError(error);
     console.error("[media-proxy] error", {
       message: error instanceof Error ? error.message : "Unknown error",
       url: parsedUrl.url,
@@ -182,6 +208,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         (error.name === "AbortError" || error.message.toLowerCase().includes("aborted"));
 
       res.status(isAbortError ? 504 : 502).end("Media proxy failed");
+      logApi(res.statusCode, startedAt);
     } else {
       res.end();
     }

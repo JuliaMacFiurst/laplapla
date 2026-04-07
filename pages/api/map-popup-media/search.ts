@@ -36,6 +36,23 @@ type SearchResponse =
     }
   | { error: string };
 
+const ROUTE = "/api/map-popup-media/search";
+
+function logApi(status: number, startedAt: number) {
+  console.log("[API]", {
+    route: ROUTE,
+    status,
+    duration: Date.now() - startedAt,
+  });
+}
+
+function logApiError(error: unknown) {
+  console.error("[API ERROR]", {
+    route: ROUTE,
+    error: error instanceof Error ? error.message : "Unknown error",
+  });
+}
+
 function isMapPopupType(value: string): value is MapPopupType {
   return [
     "country",
@@ -54,6 +71,7 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SearchResponse>,
 ) {
+  const startedAt = Date.now();
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
   const rawType = payload.type;
   const rawTargetId = payload.target_id;
@@ -70,15 +88,21 @@ async function handler(
       : [];
 
   if (!type || !isMapPopupType(type)) {
-    return res.status(400).json({ error: "Invalid or missing type" });
+    res.status(400).json({ error: "Invalid or missing type" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   if (!targetId || typeof targetId !== "string") {
-    return res.status(400).json({ error: "Invalid or missing target_id" });
+    res.status(400).json({ error: "Invalid or missing target_id" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   if (!slideText || typeof slideText !== "string") {
-    return res.status(400).json({ error: "Invalid or missing slide_text" });
+    res.status(400).json({ error: "Invalid or missing slide_text" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   try {
@@ -93,10 +117,13 @@ async function handler(
       console.log("[map-popup-media/search]", result.debug);
     }
 
-    return res.status(200).json(result);
+    res.status(200).json(result);
+    logApi(res.statusCode, startedAt);
+    return;
   } catch (error) {
-    console.error("[/api/map-popup-media/search] failed", error);
-    return res.status(500).json({ error: "Internal server error" });
+    logApiError(error);
+    res.status(500).json({ error: "Internal server error" });
+    return;
   }
 }
 

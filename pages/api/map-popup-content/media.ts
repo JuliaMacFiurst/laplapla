@@ -30,6 +30,23 @@ type PersistMediaResponse =
     }
   | { error: string };
 
+const ROUTE = "/api/map-popup-content/media";
+
+function logApi(status: number, startedAt: number) {
+  console.log("[API]", {
+    route: ROUTE,
+    status,
+    duration: Date.now() - startedAt,
+  });
+}
+
+function logApiError(error: unknown) {
+  console.error("[API ERROR]", {
+    route: ROUTE,
+    error: error instanceof Error ? error.message : "Unknown error",
+  });
+}
+
 function isAllowedImageUrl(value: string) {
   return /^https?:\/\//i.test(value) || value.startsWith("/supabase-storage/");
 }
@@ -55,6 +72,8 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PersistMediaResponse>,
 ) {
+  const startedAt = Date.now();
+
   if (
     !applyApiGuard(req, res, {
       methods: ["POST"],
@@ -64,11 +83,14 @@ async function handler(
       keyPrefix: "map-popup-content-media",
     })
   ) {
+    logApi(res.statusCode, startedAt);
     return;
   }
 
   if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-    return res.status(400).json({ error: "Invalid payload" });
+    res.status(400).json({ error: "Invalid payload" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   const { storyId, slideId, slideOrder, slideText, imageUrl, imageCreditLine } = req.body ?? {};
@@ -93,15 +115,21 @@ async function handler(
       : null;
 
   if (normalizedStoryId == null) {
-    return res.status(400).json({ error: "Invalid or missing storyId" });
+    res.status(400).json({ error: "Invalid or missing storyId" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   if (!normalizedSlideId && !Number.isFinite(normalizedSlideOrder)) {
-    return res.status(400).json({ error: "Invalid or missing slide reference" });
+    res.status(400).json({ error: "Invalid or missing slide reference" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   if (!normalizedImageUrl || !isAllowedImageUrl(normalizedImageUrl)) {
-    return res.status(400).json({ error: "Invalid or missing imageUrl" });
+    res.status(400).json({ error: "Invalid or missing imageUrl" });
+    logApi(res.statusCode, startedAt);
+    return;
   }
 
   const [adminAccess, storyTarget] = await Promise.all([
@@ -153,7 +181,9 @@ async function handler(
         isAdmin: true,
         writeState: "error",
       });
-      return res.status(500).json({ error: "Failed to persist media" });
+      res.status(500).json({ error: "Failed to persist media" });
+      logApi(res.statusCode, startedAt);
+      return;
     }
 
     setPersistenceHeaders(res, {
@@ -163,8 +193,11 @@ async function handler(
         ? persistenceResult?.writeState ?? "error"
         : "skipped",
     });
-    return res.status(200).json({ ok: true, slide });
+    res.status(200).json({ ok: true, slide });
+    logApi(res.statusCode, startedAt);
+    return;
   } catch (error) {
+    logApiError(error);
     console.error("[map-popup-content/media] write failed", {
       target_id: storyTarget?.target_id ?? null,
       slide_id: normalizedSlideId,

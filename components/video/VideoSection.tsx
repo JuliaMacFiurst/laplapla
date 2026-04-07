@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { normalizeSearchQuery } from "../../utils/normalizeSearchQuery";
 import { VideoSearch } from "./VideoSearch";
 import { VideoCategories } from "./VideoCategories";
@@ -17,6 +17,7 @@ export function VideoSection({ lang }: { lang: Lang }) {
   const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const loadingRef = useRef(false);
 
   // активная категория для фильтрации (null = все)
   const [activeCategoryKey, setActiveCategoryKey] =
@@ -47,68 +48,45 @@ export function VideoSection({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     let cancelled = false;
-
-    async function loadVideos() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/get-videos?lang=${lang}`);
-        const data = await res.json();
-        if (!cancelled) {
-          setAllVideos(data);
-        }
-      } catch (e) {
-        console.error("[VideoSection] failed to load videos", e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    loadVideos();
-    return () => {
-      cancelled = true;
-    };
-  }, [lang]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     async function fetchVideos(query: string) {
+      if (loadingRef.current) {
+        return;
+      }
+
+      loadingRef.current = true;
+      setLoading(true);
+
       try {
-        const res = await fetch(
-          `/api/get-videos?lang=${lang}&q=${encodeURIComponent(query)}`,
-        );
+        const url = query
+          ? `/api/get-videos?lang=${lang}&q=${encodeURIComponent(query)}`
+          : `/api/get-videos?lang=${lang}`;
+        const res = await fetch(url);
         const data = await res.json();
         if (!cancelled) {
           setAllVideos(data);
         }
       } catch (e) {
-        console.error("[VideoSection] failed to search videos", e);
+        console.error(
+          query ? "[VideoSection] failed to search videos" : "[VideoSection] failed to load videos",
+          e,
+        );
       } finally {
-        if (!cancelled) setLoading(false);
+        loadingRef.current = false;
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
-    if (searchQuery.trim() === "") {
-      // if empty query, reload default videos
-      setLoading(true);
-      fetch(`/api/get-videos?lang=${lang}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (!cancelled) {
-            setAllVideos(data);
-          }
-        })
-        .catch((e) => {
-          console.error("[VideoSection] failed to load videos", e);
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+    const normalizedQuery = normalizeSearchQuery(searchQuery);
+
+    if (!normalizedQuery) {
+      void fetchVideos("");
     } else {
       timeoutId = setTimeout(() => {
-        const normalized = normalizeSearchQuery(searchQuery);
-        fetchVideos(normalized);
+        void fetchVideos(normalizedQuery);
       }, 400);
     }
 

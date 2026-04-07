@@ -255,7 +255,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
               padding: 0,
               border: 0,
               borderRadius: "999px",
-              background: "rgba(0, 0, 0, 0.8)",
+              background: "rgba(0, 0, 0, 0.08)",
               color: "transparent",
               opacity: 0.18,
               cursor: "pointer",
