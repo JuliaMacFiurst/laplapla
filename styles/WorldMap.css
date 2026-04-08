@@ -22,6 +22,31 @@
   font-family: "Quicksand", "Caveat", cursive;
 }
 
+.raccoons-search-block {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto 1.5rem;
+}
+
+.raccoons-search-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.raccoons-search-results {
+  max-width: 760px;
+  margin: 1rem auto 0;
+}
+
+.raccoons-search-result-card {
+  font-size: 1.45rem;
+  line-height: 1.25;
+}
+
 #countries-svg path {
   stroke: violet;
   stroke-width: 1;
@@ -175,6 +200,16 @@ svg path[data-selected="true"] {
   padding: 20px;
   width: 100%;
   box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .raccoons-search-form {
+    flex-direction: column;
+  }
+
+  .raccoons-search-block {
+    margin-bottom: 1rem;
+  }
 }
 
 #countries-svg path {

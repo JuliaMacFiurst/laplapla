@@ -18,7 +18,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
     return { notFound: true };
   }
 
-  const { title, groupedStories, hasAnyStories } = await loadSeoEntityPageData("forest", slug, lang);
+  const { title, groupedStories, hasAnyStories } = await loadSeoEntityPageData("sea", slug, lang);
   if (!hasAnyStories) {
     return { notFound: true };
   }
@@ -32,10 +32,10 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   };
 };
 
-export default function ForestSeoPage({
+export default function SeaSeoPage({
   title,
   groupedStories,
   lang,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  return <SeoEntityPage entityType="forest" title={title} groupedStories={groupedStories} lang={lang} />;
+  return <SeoEntityPage entityType="sea" title={title} groupedStories={groupedStories} lang={lang} />;
 }
