@@ -1,7 +1,12 @@
 import countryNames from "@/utils/country_names.json";
 import { getMapPopupContent } from "@/lib/server/mapPopup/getMapPopupContent";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
-import { loadMapTargetsByIds, type MapTargetRow } from "@/lib/server/mapTargets";
+import {
+  getLocalizedMapTargetTitle,
+  getMapTargetKey,
+  loadMapTargetsByKeys,
+  type MapTargetRow,
+} from "@/lib/server/mapTargets";
 import type { Lang } from "@/i18n";
 import type { MapPopupType } from "@/types/mapPopup";
 import type { GroupedStories, SeoEntityType } from "@/components/SeoEntityPage";
@@ -63,16 +68,19 @@ function createEmptyGroups(): GroupedStories {
 }
 
 function resolveCountryDisplayTitle(rawTargetId: string, lang?: Lang, mapTarget?: MapTargetRow | null) {
-  if (lang === "ru" && typeof mapTarget?.name_ru === "string" && mapTarget.name_ru.trim()) {
-    return mapTarget.name_ru.trim();
-  }
-
-  if (lang === "he" && typeof mapTarget?.name_he === "string" && mapTarget.name_he.trim()) {
-    return mapTarget.name_he.trim();
+  const localizedTitle = getLocalizedMapTargetTitle(mapTarget, lang);
+  if (localizedTitle) {
+    return localizedTitle;
   }
 
   const normalizedSlug = normalizeEntitySlug(rawTargetId);
-  const countryEntry = (countryNames as Record<string, { en?: string }>)[normalizedSlug];
+  const countryEntry = (countryNames as Record<string, { ru?: string; en?: string; he?: string }>)[normalizedSlug];
+  if (lang === "ru" && typeof countryEntry?.ru === "string" && countryEntry.ru.trim()) {
+    return countryEntry.ru.trim();
+  }
+  if (lang === "he" && typeof countryEntry?.he === "string" && countryEntry.he.trim()) {
+    return countryEntry.he.trim();
+  }
   return typeof countryEntry?.en === "string" && countryEntry.en.trim()
     ? countryEntry.en.trim()
     : slugToDisplayTitle(rawTargetId);
@@ -88,12 +96,9 @@ export function resolveEntityDisplayTitle(
     return resolveCountryDisplayTitle(rawTargetId, lang, mapTarget);
   }
 
-  if (lang === "ru" && typeof mapTarget?.name_ru === "string" && mapTarget.name_ru.trim()) {
-    return mapTarget.name_ru.trim();
-  }
-
-  if (lang === "he" && typeof mapTarget?.name_he === "string" && mapTarget.name_he.trim()) {
-    return mapTarget.name_he.trim();
+  const localizedTitle = getLocalizedMapTargetTitle(mapTarget, lang);
+  if (localizedTitle) {
+    return localizedTitle;
   }
 
   return slugToDisplayTitle(rawTargetId);
@@ -139,9 +144,6 @@ export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: str
     };
   }
 
-  const mapTargets = await loadMapTargetsByIds([rawTargetId]);
-  const mapTarget = mapTargets.get(rawTargetId) || null;
-  const title = resolveEntityDisplayTitle(entityType, rawTargetId, lang, mapTarget);
   const groupedStories = createEmptyGroups();
   const routeTypes = ROUTE_TYPE_MAP[entityType];
   const availableTypes = Array.from(
@@ -152,6 +154,17 @@ export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: str
         .filter((type): type is keyof GroupedStories => routeTypes.includes(type as keyof GroupedStories)),
     ),
   );
+  const mapTargets = await loadMapTargetsByKeys(
+    availableTypes.map((type) => ({
+      mapType: type,
+      targetId: rawTargetId,
+    })),
+  );
+  const primaryMapTarget =
+    availableTypes
+      .map((type) => mapTargets.get(getMapTargetKey(type, rawTargetId)) || null)
+      .find(Boolean) || null;
+  const title = resolveEntityDisplayTitle(entityType, rawTargetId, lang, primaryMapTarget);
 
   const resolvedStories = await Promise.all(
     availableTypes.map(async (type) => {

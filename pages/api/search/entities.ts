@@ -3,7 +3,11 @@ import countryNames from "@/utils/country_names.json";
 import { withApiHandler } from "@/utils/apiHandler";
 import { getRequestLang } from "@/lib/i18n/routing";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
-import { loadMapTargetsByIds } from "@/lib/server/mapTargets";
+import {
+  getLocalizedMapTargetTitle,
+  getMapTargetKey,
+  loadMapTargetsByKeys,
+} from "@/lib/server/mapTargets";
 import {
   normalizeEntitySlug,
   resolveEntityDisplayTitle,
@@ -140,8 +144,12 @@ async function buildIndex(): Promise<SearchIndexEntry[]> {
 
   const stories = Array.isArray(storyRows) ? (storyRows as MapStoryRow[]) : [];
   const storyIds = Array.from(new Set(stories.map((row) => String(row.id)).filter(Boolean)));
-  const rawTargetIds = Array.from(new Set(stories.map((row) => row.target_id).filter(Boolean)));
-  const mapTargets = await loadMapTargetsByIds(rawTargetIds);
+  const mapTargets = await loadMapTargetsByKeys(
+    stories.map((row) => ({
+      mapType: row.type,
+      targetId: row.target_id,
+    })),
+  );
 
   const translationsByContentId = new Map<string, TranslationRow[]>();
 
@@ -179,18 +187,26 @@ async function buildIndex(): Promise<SearchIndexEntry[]> {
 
     const key = `${route}:${slug}`;
     const aliases = new Set<string>();
-    const mapTarget = mapTargets.get(story.target_id) || null;
+    const mapTarget = mapTargets.get(getMapTargetKey(story.type, story.target_id)) || null;
     const defaultTitle = resolveEntityDisplayTitle(route, story.target_id, "en", mapTarget);
     const titles: Partial<Record<Lang, string>> = route === "country"
       ? getCountryLocalizedTitles(slug)
       : {};
 
-    if (typeof mapTarget?.name_ru === "string" && mapTarget.name_ru.trim()) {
-      titles.ru = mapTarget.name_ru.trim();
+    const titleRu = getLocalizedMapTargetTitle(mapTarget, "ru");
+    const titleEn = getLocalizedMapTargetTitle(mapTarget, "en");
+    const titleHe = getLocalizedMapTargetTitle(mapTarget, "he");
+
+    if (titleRu) {
+      titles.ru = titleRu;
     }
 
-    if (typeof mapTarget?.name_he === "string" && mapTarget.name_he.trim()) {
-      titles.he = mapTarget.name_he.trim();
+    if (titleEn) {
+      titles.en = titleEn;
+    }
+
+    if (titleHe) {
+      titles.he = titleHe;
     }
 
     addAlias(aliases, story.target_id);
