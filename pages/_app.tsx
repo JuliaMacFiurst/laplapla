@@ -28,6 +28,13 @@ import { dictionaries, Lang } from "../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { supabase } from "@/lib/supabase";
 
+const DEFAULT_SITE_URL = "https://laplapla.com";
+const DEFAULT_OG_DESCRIPTION: Record<Lang, string> = {
+  ru: "Интерактивные истории, карты и обучение для детей",
+  en: "Interactive stories, maps, and learning for kids",
+  he: "סיפורים אינטראקטיביים, מפות ולמידה לילדים",
+};
+
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
   process.env["NEXT_PUBLIC_UPLOAD_LESSON_ORIGIN"],
@@ -198,12 +205,16 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     window.localStorage.setItem("lang", detected);
 
     // Set dir globally
+    document.documentElement.lang = detected;
     document.documentElement.dir = detected === "he" ? "rtl" : "ltr";
   }, [router.query.lang, router.locale]);
 
   // Prevent hydration mismatch
   if (!lang || !authReady) return null;
   const t = dictionaries[lang];
+  const siteUrl = (process.env["NEXT_PUBLIC_SITE_URL"] || DEFAULT_SITE_URL).replace(/\/+$/, "") || DEFAULT_SITE_URL;
+  const currentPath = router.asPath ? router.asPath.split("#")[0] : "/";
+  const ogUrl = `${siteUrl}${currentPath === "/" ? "" : currentPath}`;
 
   const handleHiddenAdminLogout = async () => {
     await supabase.auth.signOut();
@@ -213,6 +224,11 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
+        <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
+        <meta key="og:type" property="og:type" content="website" />
+        <meta key="og:title" property="og:title" content="LapLapLa" />
+        <meta key="og:description" property="og:description" content={DEFAULT_OG_DESCRIPTION[lang]} />
+        <meta key="og:url" property="og:url" content={ogUrl} />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.webp" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.webp" />
         <link rel="apple-touch-icon" href="/favicon_io/apple-touch-icon.webp" />
