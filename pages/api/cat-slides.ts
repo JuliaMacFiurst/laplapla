@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
+import { CAT_PRESETS } from "../../content/cats";
 import { fetchVideoFromPexels } from "@/lib/pexelsVideo";
 import { withApiHandler } from "@/utils/apiHandler";
 import { devLog } from "@/utils/devLog";
@@ -161,16 +161,6 @@ function extractKeywords(text: string): string {
   return keywords ? `${keywords} cat` : 'cute cat';
 }
 
-function getSlidePresetByPrompt(prompt: string) {
-  return CAT_PRESETS.find((p) => p.prompt === prompt);
-}
-
-function getTextPresetByPrompt(prompt: string, lang: string) {
-  return CAT_TEXT_PRESETS.find(
-    (p) => p.prompt === prompt && p.lang === lang
-  );
-}
-
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   devLog("🐱 /api/cat-slides called");
   devLog("📥 body:", req.body);
@@ -179,8 +169,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
     devLog("🎲 No prompt provided, selecting random text preset");
-    const presetsForLang = CAT_TEXT_PRESETS.filter(
-      (p) => p.lang === lang
+    const presetsForLang = CAT_PRESETS.filter(
+      (preset) => preset.lang === lang && preset.kind === "text"
     );
 
     if (!presetsForLang.length) {
@@ -194,25 +184,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     devLog("🎯 Random preset chosen:", randomPreset.prompt, randomPreset.lang);
   }
 
-  const slidePreset = getSlidePresetByPrompt(prompt);
-  const textPreset = getTextPresetByPrompt(prompt, lang);
+  const preset = CAT_PRESETS.find(
+    (item) => item.prompt === prompt && item.lang === lang
+  );
 
-  devLog("🔍 slidePreset found:", Boolean(slidePreset));
-  devLog("🔍 textPreset found:", Boolean(textPreset));
+  devLog("🔍 preset found:", Boolean(preset));
+  devLog("🔍 preset kind:", preset?.kind);
 
   type SourceSlide = {
     text: string;
     mediaUrl?: string;
   };
 
-  const sourceSlides: SourceSlide[] = slidePreset
-    ? slidePreset.slides.map((s) => ({
-        text: s.text.replace(/<[^>]*>/g, '').trim(),
-        mediaUrl: s.mediaUrl,
-      }))
-    : textPreset
-      ? textPreset.texts.map((text) => ({ text }))
-      : [];
+  const sourceSlides: SourceSlide[] = !preset
+    ? []
+    : preset.kind === "full"
+      ? preset.slides.map((s) => ({
+          text: s.text.replace(/<[^>]*>/g, '').trim(),
+          mediaUrl: s.mediaUrl,
+        }))
+      : preset.texts.map((text) => ({ text }));
 
   devLog("🧩 sourceSlides length:", sourceSlides.length);
   devLog("🧩 sourceSlides preview:", sourceSlides.slice(0, 2));

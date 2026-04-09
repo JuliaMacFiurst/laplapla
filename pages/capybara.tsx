@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "next/router";
 import BookFeed from "@/components/BookFeed";
 import { useBook } from "@/hooks/useBook";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
@@ -10,6 +11,7 @@ import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i
 export default function CapybaraPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router) || lang;
+  const isMobile = useIsMobile();
   const dict = dictionaries[currentLang] || dictionaries.ru;
   const t = dict.capybaras.capybaraPage;
   const {
@@ -314,11 +316,15 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     void preloadNextSlideMedia(slideIndex);
   }, [preloadNextSlideMedia]);
 
+  const shouldHideHeaderCopyOnMobile = isMobile && !loading && Boolean(currentBook);
+
   return (
     <div className="capybara-page-container">
       <header className="capybara-page-header">
-        <h1 className="page-title">{t.title}</h1>
-        <p className="page-subtitle">{t.subtitle}</p>
+        <div className={shouldHideHeaderCopyOnMobile ? "capybara-page-header-copy capybara-page-header-copy-mobile-hidden" : "capybara-page-header-copy"}>
+          <h1 className="page-title">{t.title}</h1>
+          <p className="page-subtitle">{t.subtitle}</p>
+        </div>
         <button
           type="button"
           className="search-toggle-button"

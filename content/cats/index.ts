@@ -38,11 +38,15 @@ export type CatTextPreset = {
   texts: string[];    // ТОЛЬКО тексты слайдов
 };
 
+export type AnyCatPreset =
+  | ({ kind: "full" } & CatPreset)
+  | ({ kind: "text" } & CatTextPreset);
+
 // -----------------------------------------------------------------------------
 // Aggregated export
 // -----------------------------------------------------------------------------
 
-export const CAT_PRESETS: CatPreset[] = [
+export const CAT_FULL_PRESETS: CatPreset[] = [
   ...CAT_PRESETS_RU,
   ...CAT_PRESETS_EN,
   ...CAT_PRESETS_HE,
@@ -52,4 +56,9 @@ export const CAT_TEXT_PRESETS: CatTextPreset[] = [
   ...CAT_TEXT_PRESETS_RU,
   ...CAT_TEXT_PRESETS_EN,
   ...CAT_TEXT_PRESETS_HE,
+];
+
+export const CAT_PRESETS: AnyCatPreset[] = [
+  ...CAT_FULL_PRESETS.map((preset) => ({ kind: "full" as const, ...preset })),
+  ...CAT_TEXT_PRESETS.map((preset) => ({ kind: "text" as const, ...preset })),
 ];

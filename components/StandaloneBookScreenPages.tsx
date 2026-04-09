@@ -3,6 +3,7 @@ import { useState } from "react";
 import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useBook } from "@/hooks/useBook";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import { buildLocalizedHref } from "@/lib/i18n/routing";
@@ -25,6 +26,7 @@ export default function StandaloneBookScreenPages({
   initialModeId = null,
 }: StandaloneBookScreenPagesProps) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const {
     currentBook,
     slides,
@@ -101,32 +103,46 @@ export default function StandaloneBookScreenPages({
   }
 
   return (
-    <article className="book-card">
-      <BookScreen
-        book={currentBook}
-        lang={lang}
-        slides={slides}
-        tests={tests}
-        modes={explanationModes}
-        selectedModeId={selectedModeId}
-        currentSlideIndex={currentSlideIndex}
-        loading={loading}
-        showTests={showQuiz}
-        showRandomBookAction={false}
-        onRandomBook={() => {}}
-        onExplainMeaning={handleExplainMeaning}
-        onTakeTest={toggleCurrentBookQuiz}
-        onCreateVideo={handleCreateVideo}
-        onModeSelect={handleModeSelect}
-        onSlideIndexChange={setCurrentBookSlideIndex}
-        onFindNewImage={handleFindNewImage}
-        isFindingNewImage={refreshingSlideIndex === currentSlideIndex}
-        mediaCache={mediaCache}
-        onPreloadNextSlide={(slideIndex) => {
-          void preloadNextSlideMedia(slideIndex);
-        }}
-        t={t}
-      />
-    </article>
+    <>
+      {isMobile ? (
+        <div className="standalone-book-mobile-feed-back">
+          <button
+            type="button"
+            className="feed-action-button standalone-book-mobile-feed-back-button"
+            onClick={() => void router.push(buildLocalizedHref("/capybara", lang), undefined, { locale: lang })}
+          >
+            {t.search.backToFeed}
+          </button>
+        </div>
+      ) : null}
+
+      <article className="book-card">
+        <BookScreen
+          book={currentBook}
+          lang={lang}
+          slides={slides}
+          tests={tests}
+          modes={explanationModes}
+          selectedModeId={selectedModeId}
+          currentSlideIndex={currentSlideIndex}
+          loading={loading}
+          showTests={showQuiz}
+          showRandomBookAction={false}
+          onRandomBook={() => {}}
+          onExplainMeaning={handleExplainMeaning}
+          onTakeTest={toggleCurrentBookQuiz}
+          onCreateVideo={handleCreateVideo}
+          onModeSelect={handleModeSelect}
+          onSlideIndexChange={setCurrentBookSlideIndex}
+          onFindNewImage={handleFindNewImage}
+          isFindingNewImage={refreshingSlideIndex === currentSlideIndex}
+          mediaCache={mediaCache}
+          onPreloadNextSlide={(slideIndex) => {
+            void preloadNextSlideMedia(slideIndex);
+          }}
+          t={t}
+        />
+      </article>
+    </>
   );
 }

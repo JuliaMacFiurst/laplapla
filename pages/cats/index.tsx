@@ -1,29 +1,30 @@
 import { useState, useMemo, useEffect } from "react";
 import { dictionaries, Lang } from "../../i18n";
-import { CAT_PRESETS, CAT_TEXT_PRESETS } from "../../content/cats";
+import { CAT_PRESETS } from "../../content/cats";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import { useRouter } from "next/router";
 import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
+function pickRandomItems<T>(items: T[], count: number) {
+  const shuffled = [...items];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+
+  return shuffled.slice(0, count);
+}
+
 export default function CatPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
 
-  const PRESETS_ONLY = true;
-
   const presetsForLang = useMemo(
-    () => CAT_PRESETS.filter((p) => p.lang === lang),
+    () => CAT_PRESETS.filter((preset) => preset.lang === lang),
     [lang]
   );
-
-  const textPresetsForLang = useMemo(
-    () => CAT_TEXT_PRESETS.filter((p) => p.lang === lang),
-    [lang]
-  );
-
-  const findPresetByKey = (key: string) =>
-    presetsForLang.find((p) => p.id.startsWith(key));
 
   const [activePresetKey, setActivePresetKey] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
@@ -31,6 +32,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
+  const [examplePresets, setExamplePresets] = useState<typeof CAT_PRESETS>([]);
 
   const activePreset = useMemo(() => {
     if (!activePresetKey) return null;
@@ -53,28 +55,44 @@ export default function CatPage({ lang }: { lang: Lang }) {
     );
   }, [activePreset]);
 
-  const applyPreset = (preset: typeof presetsForLang[number]) => {
+  useEffect(() => {
+    const nextExamples = pickRandomItems(
+      presetsForLang,
+      3,
+    );
+
+    setExamplePresets(nextExamples);
+  }, [presetsForLang]);
+
+  const applyPreset = (preset: typeof CAT_PRESETS[number]) => {
+    if (preset.kind === "text") {
+      void handleTextPreset(preset);
+      return;
+    }
+
     const key = preset.id.split("-")[0];
     setActivePresetKey(key);
   };
 
-  const handleGenerate = async () => {
-    setLoading(true);
+  const handleTextPreset = async (preset: Extract<typeof CAT_PRESETS[number], { kind: "text" }>) => {
     setError(null);
     setSlides([]);
+    setLoading(true);
 
     try {
       const response = await fetch("/api/cat-slides", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: inputText, lang }),
+        body: JSON.stringify({
+          prompt: preset.prompt,
+          lang,
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error("Ошибка при запросе к серверу");
-      }
+      if (!response.ok) throw new Error("Failed to fetch slides");
 
       const data = await response.json();
+      setInputText(preset.prompt);
       setSlides(data.slides);
     } catch {
       setError(t.errors.generic);
@@ -126,37 +144,21 @@ export default function CatPage({ lang }: { lang: Lang }) {
       <p className="example-title">{t.examplesTitle}</p>
 
       <div className="example-buttons">
-        <button
-          className="example-button"
-          onClick={() => {
-            const preset = findPresetByKey("engine");
-            if (preset) applyPreset(preset);
-          }}
-        >
-          {t.examples.engine}
-        </button>
-
-        <button
-          className="example-button"
-          onClick={() => {
-            const preset = findPresetByKey("passionarity");
-            if (preset) applyPreset(preset);
-          }}
-        >
-          {t.examples.passionarity}
-        </button>
-
-        <button
-          className="example-button"
-          onClick={() => {
-            const preset = findPresetByKey("dreams");
-            if (preset) applyPreset(preset);
-          }}
-        >
-          {t.examples.dreams}
-        </button>
+        {examplePresets.map((item) => (
+          <button
+            key={`${item.kind}:${item.id}`}
+            className="example-button"
+            onClick={() => {
+              applyPreset(item);
+            }}
+          >
+            {item.prompt}
+          </button>
+        ))}
       </div>
 
+      {/* Free version: hide manual search until subscription gating is implemented. */}
+      {/*
       <div className="input-wrapper search-input-wrapper">
         <input
           className="question-input search-input"
@@ -168,62 +170,26 @@ export default function CatPage({ lang }: { lang: Lang }) {
         <button
           className="ask-button search-button"
           onClick={() => {
-            if (PRESETS_ONLY) {
-              setError(t.errors.catsAiNotAvailable);
-              return;
-            }
-            handleGenerate();
+            void handleGenerate();
           }}
           disabled={loading}
         >
           {loading ? t.thinkingShort : t.askButton}
         </button>
       </div>
+      */}
 
       {error && <p className="error-message">{error}</p>}
 
       <button
         className="random-question-button random-book-button"
         onClick={async () => {
-          setError(null);
-          setSlides([]);
+          if (!presetsForLang.length) return;
 
-          const allPresets = [
-            ...presetsForLang.map((p) => ({ type: "full" as const, preset: p })),
-            ...textPresetsForLang.map((p) => ({ type: "text" as const, preset: p })),
-          ];
+          const randomPreset =
+            presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
 
-          if (!allPresets.length) return;
-
-          const randomItem =
-            allPresets[Math.floor(Math.random() * allPresets.length)];
-
-          if (randomItem.type === "full") {
-            applyPreset(randomItem.preset);
-            return;
-          }
-
-          setLoading(true);
-          try {
-            const response = await fetch("/api/cat-slides", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                prompt: randomItem.preset.prompt,
-                lang,
-              }),
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch slides");
-
-            const data = await response.json();
-            setInputText(randomItem.preset.prompt);
-            setSlides(data.slides);
-          } catch {
-            setError(t.errors.generic);
-          } finally {
-            setLoading(false);
-          }
+          applyPreset(randomPreset);
         }}
       >
         {t.randomQuestion}

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 
-const MAX_FONT_SIZE_PX = 40;
-const MIN_FONT_SIZE_PX = 16;
+const DEFAULT_MAX_FONT_SIZE_PX = 40;
+const DEFAULT_MIN_FONT_SIZE_PX = 11;
 
 export function useAutoFontSize<T extends HTMLElement>(deps: readonly unknown[] = []) {
   const ref = useRef<T | null>(null);
@@ -13,16 +13,20 @@ export function useAutoFontSize<T extends HTMLElement>(deps: readonly unknown[] 
     }
 
     const fitText = () => {
-      let fontSize = MAX_FONT_SIZE_PX;
+      const computedFontSize = Number.parseFloat(window.getComputedStyle(element).fontSize);
+      let fontSize = Number.isFinite(computedFontSize) ? computedFontSize : DEFAULT_MAX_FONT_SIZE_PX;
+
       element.style.fontSize = `${fontSize}px`;
 
-      while (element.scrollHeight > element.clientHeight && fontSize > MIN_FONT_SIZE_PX) {
+      while (element.scrollHeight > element.clientHeight && fontSize > DEFAULT_MIN_FONT_SIZE_PX) {
         fontSize -= 1;
         element.style.fontSize = `${fontSize}px`;
       }
     };
 
     fitText();
+
+    const parentElement = element.parentElement;
 
     if (typeof ResizeObserver === "undefined") {
       window.addEventListener("resize", fitText);
@@ -34,6 +38,9 @@ export function useAutoFontSize<T extends HTMLElement>(deps: readonly unknown[] 
     });
 
     resizeObserver.observe(element);
+    if (parentElement) {
+      resizeObserver.observe(parentElement);
+    }
     return () => resizeObserver.disconnect();
   }, deps);
 
