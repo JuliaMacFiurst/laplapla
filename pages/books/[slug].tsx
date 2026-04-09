@@ -1,6 +1,6 @@
-import Head from "next/head";
 import Link from "next/link";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import SEO from "@/components/SEO";
 import StandaloneBookScreenPages from "@/components/StandaloneBookScreenPages";
 import { buildBookPageDescription, getBookPathSlug } from "@/lib/books/shared";
 import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
@@ -19,12 +19,6 @@ const BOOKS_LABEL: Record<Lang, string> = {
   ru: "Книги",
   en: "Books",
   he: "ספרים",
-};
-
-const BOOK_METADATA_SUFFIX: Record<Lang, string> = {
-  ru: "читать кратко",
-  en: "read in slides",
-  he: "לקרוא בסליידים",
 };
 
 const getBookSummary = (book: Book) =>
@@ -86,16 +80,17 @@ export default function BookPage({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const dict = dictionaries[lang] || dictionaries.ru;
   const t = dict.capybaras.capybaraPage;
+  const seo = dict.seo.capybaras.book;
+  const seoTitle = `${book.title} — ${seo.titleSuffix}`;
+  const seoDescription = getBookSummary(book) || seo.defaultDescription;
+  const seoPath = `/books/${getBookPathSlug(book)}`;
   const breadcrumbArrow = lang === "he" ? "←" : "→";
   const previousArrow = lang === "he" ? "→" : "←";
   const nextArrow = lang === "he" ? "←" : "→";
 
   return (
     <>
-      <Head>
-        <title>{`${book.title} — ${BOOK_METADATA_SUFFIX[lang]} | LapLapLa`}</title>
-        <meta name="description" content={getBookSummary(book)} />
-      </Head>
+      <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <main className="capybara-page-container">
         <nav aria-label="breadcrumb">
           <Link href={buildLocalizedHref("/capybara", lang)}>{BOOKS_LABEL[lang]}</Link> {breadcrumbArrow} <span>{book.title}</span>

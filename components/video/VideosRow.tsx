@@ -51,6 +51,7 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
         }
 
         const thumbnail = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+        const videoTitle = item.title?.[lang] ?? item.title?.en ?? item.id;
 
         return (
           <button
@@ -60,13 +61,13 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
             aria-label={t.openVideo ?? "Открыть видео"}
           >
             <div className="video-thumbnail">
-              <img src={thumbnail} alt="" loading="lazy" />
+              <img src={thumbnail} alt={videoTitle || "illustration"} loading="lazy" />
               <span className="video-play-icon">▶</span>
             </div>
 
             <div className="video-info">
               <div className="video-title">
-                {item.title?.[lang] ?? item.title?.en ?? item.id}
+                {videoTitle}
               </div>
 
               {item.durationLabel && (

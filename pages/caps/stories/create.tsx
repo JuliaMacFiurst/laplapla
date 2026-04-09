@@ -1,9 +1,10 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
+import SEO from "@/components/SEO";
 import StoryCarousel from "@/components/StoryCarousel";
 import TranslationWarning from "@/components/TranslationWarning";
-import type { Lang } from "@/i18n";
+import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { STORY_STEP_KEYS, type StoryHeroOption, type StoryStepKey } from "@/lib/story/story-shared";
 import { useStoryGenerator } from "@/hooks/useStoryGenerator";
@@ -223,6 +224,8 @@ async function fetchHeroPreview(heroName: string) {
 export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router) || lang;
+  const seo = dictionaries[currentLang].seo.capybaras.createStory;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/caps/stories/create";
   const t = useMemo(() => buildTexts(currentLang), [currentLang]);
   const [customAnswer, setCustomAnswer] = useState("");
   const [isHeroPickerOpen, setIsHeroPickerOpen] = useState(false);
@@ -389,8 +392,10 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   };
 
   return (
-    <div className="capybara-page-container story-generator-page">
-      <header className="capybara-page-header story-generator-header">
+    <>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <div className="capybara-page-container story-generator-page">
+        <header className="capybara-page-header story-generator-header">
         <button
           type="button"
           className="story-generator-back"
@@ -402,7 +407,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
         <p className="page-subtitle">{t.subtitle}</p>
       </header>
 
-      <main className="story-generator-main">
+        <main className="story-generator-main">
         <section className="story-generator-stage">
           <div className="story-capybara-card">
             <div className="story-capybara-portrait">
@@ -606,7 +611,8 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
             </section>
           ) : null}
         </section>
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }

@@ -68,7 +68,7 @@ export default function AboutContent({
           <h2>{title}</h2>
           {image && (
             <div className="about-author-image">
-              <img src={image} alt="" />
+              <img src={image} alt={title} />
             </div>
           )}
           {full && (

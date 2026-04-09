@@ -18,6 +18,7 @@ export default function ClothesConveyor({
   onItemReleased?: (id: string, x: number, y: number) => void;
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const getClothingAlt = (id: string) => id.replace(/[-_]+/g, " ").trim() || "illustration";
 
   const draggingItemRef = useRef<{
     id: string;
@@ -71,6 +72,7 @@ export default function ClothesConveyor({
         <img
           key={`${item.id}-${index}`}
           src={item.img}
+          alt={getClothingAlt(item.id)}
           className="conveyor-item"
           onPointerDown={(e) => {
             const cleanId = item.id.replace(/-dressed$/, "");

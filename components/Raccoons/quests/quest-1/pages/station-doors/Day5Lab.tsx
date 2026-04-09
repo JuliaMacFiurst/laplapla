@@ -36,7 +36,7 @@ export default function Day5Lab({ go }: { go: (id: PageId) => void }) {
             <img
               className="ice"
               src="/quests/assets/buttons/ice-button-bg.svg"
-              alt="ice-btn"
+              alt=""
             />
 
             {/* текст */}
@@ -46,7 +46,7 @@ export default function Day5Lab({ go }: { go: (id: PageId) => void }) {
             <img
               className="penguin"
               src="/supabase-storage/characters/other/penguin.gif"
-              alt="penguin"
+              alt=""
             />
           </div>
         </div>

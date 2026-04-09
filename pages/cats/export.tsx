@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import SEO from "@/components/SEO";
 import StudioPreviewPlayer from "@/components/studio/StudioPreviewPlayer";
 import AudioEngine, { type AudioEngineHandle } from "@/components/studio/AudioEngine";
 import type { Track } from "@/components/studio/MusicPanel";
@@ -29,6 +30,8 @@ export default function StudioExportPage() {
 
   const lang: Lang = getCurrentLang(router);
   const t = dictionaries[lang].cats.export;
+  const seo = dictionaries[lang].seo.cats.export;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/export";
   const isMobile = useIsMobile();
 
   const [projectData, setProjectData] = useState<any>(null);
@@ -306,7 +309,9 @@ export default function StudioExportPage() {
   if (!slides.length) return null;
 
   return (
-    <div className="export-root">
+    <>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <div className="export-root">
       {!isFinished ? (
         <button
           className="export-record-button"
@@ -437,6 +442,7 @@ export default function StudioExportPage() {
           />
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

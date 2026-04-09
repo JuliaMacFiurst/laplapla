@@ -1,7 +1,7 @@
 // pages/raccoons.tsx
 import { useState, type FormEvent } from "react";
-import Head from "next/head";
 import { useRouter } from "next/router";
+import SEO from "@/components/SEO";
 import MapWrapper from "@/components/Raccoons/MapWrapper";
 import MapTabs from "@/components/Raccoons/MapTabs";
 import { RaccoonGuide } from "@/components/Raccoons/RaccoonGuide";
@@ -49,6 +49,8 @@ export default function RaccoonsPage() {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const t = dictionaries[lang].raccoons;
+  const seo = dictionaries[lang].seo.raccoons.index;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/raccoons";
   const searchUi = SEARCH_UI[lang];
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<
@@ -131,10 +133,7 @@ export default function RaccoonsPage() {
 
   return (
     <>
-      <Head>
-        <title>{t.page.headTitle}</title>
-        <meta name="description" content={t.page.metaDescription} />
-      </Head>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
 
       <main className="min-h-screen">
         <div className="raccoons-home-wrapper">

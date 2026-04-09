@@ -31,7 +31,7 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
               <img
                 className="ice"
                 src="/quests/assets/buttons/ice-button-bg.svg"
-                alt="ice-btn"
+                alt=""
               />
 
               {/* текст */}
@@ -51,7 +51,7 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
               <img
                 className="small-ice"
                 src="/quests/assets/buttons/small-ice-btn.svg"
-                alt="ice-btn"
+                alt=""
               />
 
               {/* текст */}
@@ -71,7 +71,7 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
               <img
                 className="small-ice"
                 src="/quests/assets/buttons/small-ice-btn.svg"
-                alt="ice-btn"
+                alt=""
               />
 
               {/* текст */}

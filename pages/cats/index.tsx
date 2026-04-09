@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { dictionaries, Lang } from "../../i18n";
 import { CAT_PRESETS } from "../../content/cats";
 import CatsLayout from "@/components/Cats/CatsLayout";
@@ -20,6 +21,7 @@ function pickRandomItems<T>(items: T[], count: number) {
 
 export default function CatPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
+  const seo = dictionaries[lang].seo.cats.index;
 
   const presetsForLang = useMemo(
     () => CAT_PRESETS.filter((preset) => preset.lang === lang),
@@ -103,6 +105,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
   const router = useRouter();
   const currentLang = getCurrentLang(router);
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats";
   const isMobile = useIsMobile();
 
   const handleFindNewImage = async (slideIndex: number) => {
@@ -139,7 +142,9 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   return (
-    <CatsLayout active="view" lang={lang}>
+    <>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <CatsLayout active="view" lang={lang}>
 
       <p className="example-title">{t.examplesTitle}</p>
 
@@ -226,7 +231,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
                   ) : (
                     <img
                       src={slide.image}
-                      alt={`Slide ${idx + 1}`}
+                      alt={slide.text || "illustration"}
                       className="cat-slide-image"
                     />
                   )}
@@ -270,9 +275,10 @@ export default function CatPage({ lang }: { lang: Lang }) {
         </div>
       )}
 
-      <img src="/cat/mouse-hanging.webp" className="hanging-mouse" />
+      <img src="/cat/mouse-hanging.webp" alt="" className="hanging-mouse" />
 
-     <img src="/cat/ball.webp" alt="Ball" className="rolling-ball" />
-    </CatsLayout>
+     <img src="/cat/ball.webp" alt="" className="rolling-ball" />
+      </CatsLayout>
+    </>
   );
 }

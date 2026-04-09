@@ -1,6 +1,6 @@
-import Head from "next/head";
 import Link from "next/link";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import SEO from "@/components/SEO";
 import StandaloneBookScreenPages from "@/components/StandaloneBookScreenPages";
 import {
   findExplanationModeBySegment,
@@ -16,6 +16,7 @@ type Props = {
   lang: Lang;
   initialModeId: string | number | null;
   currentModeLabel: string;
+  modeSegment: string;
 };
 
 const MODE_FALLBACK_LABELS: Record<string, Record<Lang, string>> = {
@@ -32,12 +33,6 @@ const BOOKS_LABEL: Record<Lang, string> = {
   ru: "Книги",
   en: "Books",
   he: "ספרים",
-};
-
-const BOOK_MODE_DESCRIPTION: Record<Lang, (title: string, modeLabel: string) => string> = {
-  ru: (title, modeLabel) => `Объяснение книги "${title}" — ${modeLabel}`,
-  en: (title, modeLabel) => `Book explanation for "${title}" — ${modeLabel}`,
-  he: (title, modeLabel) => `הסבר על הספר "${title}" — ${modeLabel}`,
 };
 
 const getModeLabel = (modeSegment: string, lang: Lang) => MODE_FALLBACK_LABELS[modeSegment]?.[lang] || modeSegment;
@@ -65,6 +60,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
       lang,
       initialModeId: resolvedMode?.id ?? null,
       currentModeLabel,
+      modeSegment: mode,
     },
   };
 };
@@ -74,17 +70,19 @@ export default function BookModePage({
   lang,
   initialModeId,
   currentModeLabel,
+  modeSegment,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const dict = dictionaries[lang] || dictionaries.ru;
   const t = dict.capybaras.capybaraPage;
+  const seo = dict.seo.capybaras.book;
+  const seoTitle = `${book.title} — ${currentModeLabel}`;
+  const seoDescription = book.description?.trim() || `${currentModeLabel} — ${seo.modeDescription}`;
+  const seoPath = `/books/${getBookPathSlug(book)}/${modeSegment}`;
   const breadcrumbArrow = lang === "he" ? "←" : "→";
 
   return (
     <>
-      <Head>
-        <title>{`${book.title} — ${currentModeLabel} | LapLapLa`}</title>
-        <meta name="description" content={BOOK_MODE_DESCRIPTION[lang](book.title, currentModeLabel)} />
-      </Head>
+      <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <main className="capybara-page-container">
         <nav aria-label="breadcrumb">
           <Link href={buildLocalizedHref("/capybara", lang)}>{BOOKS_LABEL[lang]}</Link> {breadcrumbArrow} <Link href={buildLocalizedHref(`/books/${getBookPathSlug(book)}`, lang)}>{book.title}</Link> {breadcrumbArrow} <span>{currentModeLabel}</span>

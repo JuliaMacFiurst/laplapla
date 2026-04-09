@@ -1,4 +1,105 @@
 export const en = {
+  seo: {
+    home: {
+      title: "LapLapLa — interactive stories, maps, and creativity for kids",
+      description: "LapLapLa helps kids explore books, maps, music, and creativity through playful interactive stories.",
+    },
+    cats: {
+      index: {
+        title: "Cats Explain — simple explanations for kids",
+        description: "Little cats help explain tricky ideas with short stories, pictures, and playful slides.",
+      },
+      studio: {
+        title: "Paw Studio — create your own video",
+        description: "Build your own slides, music, and narration inside the LapLapLa studio.",
+      },
+      export: {
+        title: "Video Export — Paw Studio",
+        description: "Prepare and save the video you created in Paw Studio.",
+      },
+    },
+    dogs: {
+      index: {
+        title: "Dogs Draw — drawing lessons for kids",
+        description: "Choose a topic and open step-by-step drawing lessons with the dogs.",
+      },
+      lessons: {
+        titleSuffix: "drawing lessons",
+        defaultTitle: "Drawing lessons with dogs",
+        description: "Open a set of drawing lessons and choose what to draw next.",
+      },
+      lesson: {
+        titleSuffix: "drawing lesson",
+        defaultTitle: "Drawing lesson with dogs",
+        defaultDescription: "A step-by-step drawing lesson with hints, coloring, and creative play modes.",
+      },
+    },
+    parrots: {
+      title: "Parrots Sing — music stories for kids",
+      description: "Build your own chirp mix, hear stories about music styles, and open slide-based media.",
+    },
+    capybaras: {
+      index: {
+        title: "Capybaras Tell Stories — books and stories for kids",
+        description: "Pick a book, move through the story in slides, and take quizzes with the capybaras.",
+      },
+      createStory: {
+        title: "Make Your Own Story — write with the capybaras",
+        description: "Create your own story with a capybara, choose a hero, and build the plot step by step.",
+      },
+      book: {
+        titleSuffix: "read in slides",
+        defaultDescription: "The capybaras retell the book in short slides and help readers follow the story.",
+        modeDescription: "Book explanation in the selected mode.",
+      },
+    },
+    raccoons: {
+      index: {
+        title: "Raccoons Explore — an interactive map for kids",
+        description: "Explore countries, animals, rivers, and seas on an interactive map with raccoons.",
+      },
+      quest1: {
+        title: "To the Northern Shores — raccoon quest",
+        description: "Join the raccoons on a big adventure and explore the northern route step by step.",
+      },
+      map: {
+        countryTitleSuffix: "country facts for kids",
+        animalTitleSuffix: "animal facts for kids",
+        riverTitleSuffix: "river facts for kids",
+        seaTitleSuffix: "sea facts for kids",
+        biomeTitleSuffix: "biome facts for kids",
+        descriptionSuffix: "interactive stories, maps, and facts for kids",
+      },
+    },
+    about: {
+      index: {
+        title: "About LapLapLa",
+        description: "Learn how LapLapLa works, who it is for, and the ideas behind the project.",
+      },
+      section: {
+        titleSuffix: "about LapLapLa",
+        defaultDescription: "A LapLapLa project section about its ideas, format, and learning approach.",
+      },
+    },
+    legal: {
+      terms: {
+        title: "LapLapLa Terms of Service",
+        description: "Rules for using LapLapLa, user-created content, AI output, and third-party media.",
+      },
+      privacy: {
+        title: "LapLapLa Privacy Policy",
+        description: "How LapLapLa handles technical data, user privacy, and third-party services.",
+      },
+      licenses: {
+        title: "LapLapLa Licenses and Third-Party Services",
+        description: "Licensing information and external services used throughout LapLapLa.",
+      },
+    },
+    adminLogin: {
+      title: "LapLapLa Admin Login",
+      description: "Administrator sign-in page for protected LapLapLa tools.",
+    },
+  },
   home: {
     title: "LapLapLa",
     subtitle: "A hecking cute learning space for kids and grown-ups",

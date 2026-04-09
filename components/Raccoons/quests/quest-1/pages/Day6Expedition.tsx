@@ -48,13 +48,13 @@ export default function Day6Expedition({ go }: { go: (id: PageId) => void }) {
             <img
               className="ice"
               src="/quests/assets/buttons/ice-button-bg.svg"
-              alt="ice-btn"
+              alt=""
             />
             <div className="ice-text">{t.day6.nextButton}</div>
             <img
               className="penguin"
               src="/supabase-storage/characters/other/penguin.gif"
-              alt="penguin"
+              alt=""
             />
           </div>
         </div>

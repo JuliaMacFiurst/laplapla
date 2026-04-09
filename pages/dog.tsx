@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import SEO from "@/components/SEO";
 import { dictionaries, Lang } from "../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
@@ -49,8 +50,12 @@ export default function DogPage() {
   const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogsPage;
+  const seo = dict.seo.dogs.index;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/dog";
   return (
-    <main>
+    <>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <main>
       <div className="dog-header-container">
         <img src="/dog/frank.webp" alt="Фрэнк" className="dog-header-image" />
         <div className="dog-header-wrapper">
@@ -81,6 +86,7 @@ export default function DogPage() {
           </button>
         ))}
       </div>
-    </main>
+      </main>
+    </>
   );
 }

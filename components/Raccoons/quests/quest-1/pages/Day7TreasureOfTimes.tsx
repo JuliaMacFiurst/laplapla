@@ -63,7 +63,7 @@ export default function Day7TreasureOfTimes() {
             <img
               className="ice"
               src="/quests/assets/buttons/ice-button-bg.svg"
-              alt="ice-btn"
+              alt=""
             />
 
             {/* текст */}
@@ -73,7 +73,7 @@ export default function Day7TreasureOfTimes() {
             <img
               className="penguin"
               src={buildSupabaseStorageUrl("characters/other/penguin.gif")}
-              alt="penguin"
+              alt=""
             />
           </div>
         </div>

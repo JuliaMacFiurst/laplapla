@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import SEO from "@/components/SEO";
 import { Lang, AboutSectionKey, ABOUT_SECTIONS, dictionaries } from "../../i18n";
 import AboutContent from "../../components/AboutContent";
 import BackButton from "../../components/BackButton";
@@ -16,6 +17,12 @@ export default function AboutSectionPage() {
   }
 
   const sectionData = dictionaries[lang].about[section];
+  const seo = dictionaries[lang].seo.about.section;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || `/about/${section}`;
+  const seoTitle = `${sectionData.title} — ${seo.titleSuffix}`;
+  const seoDescription =
+    ("preview" in sectionData && typeof sectionData.preview === "string" && sectionData.preview) ||
+    seo.defaultDescription;
 
   const image =
     typeof sectionData === "object" && "image" in sectionData
@@ -23,17 +30,20 @@ export default function AboutSectionPage() {
       : undefined;
 
   return (
-    <main className="about-page" dir={lang === "he" ? "rtl" : "ltr"}>
-      <div className="home-wrapper">
-        <BackButton />
+    <>
+      <SEO title={seoTitle} description={seoDescription} path={seoPath} />
+      <main className="about-page" dir={lang === "he" ? "rtl" : "ltr"}>
+        <div className="home-wrapper">
+          <BackButton />
 
-        <AboutContent
-          mode="section"
-          title={sectionData.title}
-          full={sectionData.full}
-          image={image}
-        />
-      </div>
-    </main>
+          <AboutContent
+            mode="section"
+            title={sectionData.title}
+            full={sectionData.full}
+            image={image}
+          />
+        </div>
+      </main>
+    </>
   );
 }

@@ -49,6 +49,7 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
         }
 
         const thumbnail = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+        const shortTitle = item.title?.[lang] ?? item.title?.en ?? item.id;
 
         const color =
           SHORT_COLORS[index % SHORT_COLORS.length];
@@ -63,12 +64,12 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
             aria-label={t.openVideo ?? "Открыть видео"}
           >
             <div className="short-thumbnail">
-              <img src={thumbnail} alt="" loading="lazy" />
+              <img src={thumbnail} alt={shortTitle || "illustration"} loading="lazy" />
               <span className="short-play-icon">▶</span>
             </div>
 
             <div className="short-title">
-              {item.title?.[lang] ?? item.title?.en ?? item.id}
+              {shortTitle}
             </div>
           </button>
         );

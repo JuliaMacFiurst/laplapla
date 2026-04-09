@@ -79,7 +79,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
               <img
                 className="boat"
                 src="/quests/assets/buttons/boat-btn.svg"
-                alt="boat"
+                alt=""
               />
               <div className="boat-text">{t.day1.startButton}</div>
             </div>
@@ -120,7 +120,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
               <img
                 className="ice"
                 src="/quests/assets/buttons/ice-button-bg.svg"
-                alt="ice-btn"
+                alt=""
               />
 
               {/* текст */}
@@ -130,7 +130,7 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
               <img
                 className="penguin"
                 src="/supabase-storage/characters/other/penguin.gif"
-                alt="penguin"
+                alt=""
               />
             </div>
           </div>

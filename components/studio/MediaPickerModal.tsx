@@ -11,6 +11,13 @@ interface MediaPickerModalProps {
   onSelect: (payload: { url: string; mediaType: "image" | "video" }) => void;
 }
 
+function buildMediaPreviewAlt(url: string, index: number) {
+  const filename = url.split("?")[0]?.split("/").pop()?.replace(/\.[a-z0-9]+$/i, "") || "";
+  const normalized = filename.replace(/[-_]+/g, " ").trim();
+
+  return normalized || `illustration ${index + 1}`;
+}
+
 export default function MediaPickerModal({
   lang,
   isOpen,
@@ -392,7 +399,7 @@ export default function MediaPickerModal({
                     className="media-preview-video"
                   />
                 ) : (
-                  <img src={url} alt="" className="media-preview-image" />
+                  <img src={url} alt={buildMediaPreviewAlt(url, index)} className="media-preview-image" />
                 )}
               </div>
             ))}

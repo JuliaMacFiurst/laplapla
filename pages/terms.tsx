@@ -2,11 +2,15 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/router";
+import SEO from "@/components/SEO";
+import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
 
 export default function TermsPage() {
   const router = useRouter();
   const lang = getCurrentLang(router);
+  const seo = dictionaries[lang].seo.legal.terms;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/terms";
 
   const content = useMemo(() => {
     switch (lang) {
@@ -106,15 +110,18 @@ export default function TermsPage() {
   }, [lang]);
 
   return (
-    <div className="legal-page" style={{ maxWidth: 900, margin: "0 auto", padding: "60px 20px" }}>
-      <h1 style={{ marginBottom: 32 }}>{content.title}</h1>
+    <>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <div className="legal-page" style={{ maxWidth: 900, margin: "0 auto", padding: "60px 20px" }}>
+        <h1 style={{ marginBottom: 32 }}>{content.title}</h1>
 
-      {content.sections.map((section, idx) => (
-        <div key={idx} style={{ marginBottom: 32 }}>
-          <h2 style={{ marginBottom: 12 }}>{section.h}</h2>
-          <p style={{ lineHeight: 1.7 }}>{section.p}</p>
-        </div>
-      ))}
-    </div>
+        {content.sections.map((section, idx) => (
+          <div key={idx} style={{ marginBottom: 32 }}>
+            <h2 style={{ marginBottom: 12 }}>{section.h}</h2>
+            <p style={{ lineHeight: 1.7 }}>{section.p}</p>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

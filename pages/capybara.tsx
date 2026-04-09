@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
 import BookFeed from "@/components/BookFeed";
+import SEO from "@/components/SEO";
 import { useBook } from "@/hooks/useBook";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
@@ -14,6 +15,8 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const isMobile = useIsMobile();
   const dict = dictionaries[currentLang] || dictionaries.ru;
   const t = dict.capybaras.capybaraPage;
+  const seo = dict.seo.capybaras.index;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/capybara";
   const {
     currentBook,
     slides,
@@ -319,7 +322,9 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const shouldHideHeaderCopyOnMobile = isMobile && !loading && Boolean(currentBook);
 
   return (
-    <div className="capybara-page-container">
+    <>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <div className="capybara-page-container">
       <header className="capybara-page-header">
         <div className={shouldHideHeaderCopyOnMobile ? "capybara-page-header-copy capybara-page-header-copy-mobile-hidden" : "capybara-page-header-copy"}>
           <h1 className="page-title">{t.title}</h1>
@@ -462,6 +467,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
           />
         )}
       </main>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useMemo, useState } from "react";
-import Head from "next/head";
 import { useRouter } from "next/router";
+import SEO from "@/components/SEO";
 import ParrotMixer, { type MusicConfig } from "../components/ParrotMixer";
 import ParrotStoryCard, { type Slide as ParrotSlide } from "../components/ParrotStoryCard";
 import { PARROT_PRESETS } from "../utils/parrot-presets";
@@ -59,6 +59,8 @@ export default function ParrotsPage() {
   const lang = getCurrentLang(router);
   const dict = dictionaries[lang] || dictionaries.ru;
   const t = dict.parrots;
+  const seo = dict.seo.parrots;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/parrots";
   const isMobile = useIsMobile();
   const [activeId, setActiveId] = useState(PARROT_PRESETS[0].id);
   const preset = useMemo(() => PARROT_PRESETS.find(p => p.id === activeId)!, [activeId]);
@@ -141,7 +143,7 @@ export default function ParrotsPage() {
 
   return (
     <>
-      <Head><title>{t.page.headTitle}</title></Head>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
       <main className={`home-wrapper parrots-page force-ltr-layout ${lang === "he" ? "parrots-page-he" : ""}`}>
         <div className="parrots-mobile-hero">
           <h1 className="title page-title">{t.page.title}</h1>

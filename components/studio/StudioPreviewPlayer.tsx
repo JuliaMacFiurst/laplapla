@@ -193,7 +193,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 <img
                   key={`${currentSlide.id}:${currentSlide.mediaUrl}:${playEpoch}`}
                   src={currentSlide.mediaUrl}
-                  alt=""
+                  alt={currentSlide.text?.trim() || "illustration"}
                   style={{
                     position: "absolute",
                     width: "100%",

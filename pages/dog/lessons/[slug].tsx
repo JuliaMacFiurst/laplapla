@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
+import SEO from "@/components/SEO";
 import { buildRegionMap } from "@/utils/buildRegionMap";
 import { autoColorRegions } from "@/utils/autoColorRegions";
 import { paintRegionFast } from "@/utils/paintRegionFast";
@@ -117,9 +118,13 @@ function LessonPlayerDesktop() {
   const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogLesson;
+  const seo = dict.seo.dogs.lesson;
   const { slug } = router.query;
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/dog/lessons";
+  const seoTitle = lesson?.title ? `${lesson.title} — ${seo.titleSuffix}` : seo.defaultTitle;
+  const seoDescription = seo.defaultDescription;
   const [isLessonTranslated, setIsLessonTranslated] = useState(true);
   // --- Состояния для галереи ---
   const [showGallery, setShowGallery] = useState(false);
@@ -1403,12 +1408,14 @@ function LessonPlayerDesktop() {
   );
 
   return (
-    <div className="lesson-container">
-      <BackButton
-        href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`}
-      />
-      {lesson ? (
-        <div>
+    <>
+      <SEO title={seoTitle} description={seoDescription} path={seoPath} />
+      <div className="lesson-container">
+        <BackButton
+          href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`}
+        />
+        {lesson ? (
+          <div>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
           {!isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
           <div className="lesson-controls">
@@ -1867,7 +1874,7 @@ function LessonPlayerDesktop() {
                   <>
                     <img
                       src={isEraser ? "/dog/brush.png" : "/dog/erraser.png"}
-                      alt=""
+                      alt={isEraser ? t.brush : t.eraser}
                       className="lesson-tool-icon"
                     />
                     {isEraser ? t.brush : t.eraser}
@@ -1948,7 +1955,7 @@ function LessonPlayerDesktop() {
                   <>
                     <img
                       src="/dog/backward.png"
-                      alt=""
+                      alt={t.undo}
                       className="lesson-tool-icon"
                     />
                     {t.undo}
@@ -2031,7 +2038,7 @@ function LessonPlayerDesktop() {
                   <>
                     <img
                       src="/dog/forward.png"
-                      alt=""
+                      alt={t.redo}
                       className="lesson-tool-icon"
                     />
                     {t.redo}
@@ -2119,7 +2126,7 @@ function LessonPlayerDesktop() {
                   <>
                     <img
                       src="/dog/clear.png"
-                      alt=""
+                      alt={t.clear}
                       className="lesson-tool-icon"
                     />
                     {t.clear}
@@ -2169,7 +2176,7 @@ function LessonPlayerDesktop() {
                   <>
                     <img
                       src="/dog/save.png"
-                      alt=""
+                      alt={t.save}
                       className="lesson-tool-icon"
                     />
                     {t.save}
@@ -2289,11 +2296,12 @@ function LessonPlayerDesktop() {
               </div>,
               document.getElementById("modal-root")!,
             )}
-        </div>
-      ) : (
-        <p>{t.loadingLesson}</p>
-      )}
-    </div>
+          </div>
+        ) : (
+          <p>{t.loadingLesson}</p>
+        )}
+      </div>
+    </>
   );
 }
 

@@ -8,6 +8,7 @@ interface SlideCanvasProps {
 
 export default function SlideCanvas9x16({ slide, lang }: SlideCanvasProps) {
   const mediaUrl = slide.mediaUrl;
+  const mediaAlt = slide.text?.trim() || "illustration";
 
 
   const isVideo = slide.mediaType === "video";
@@ -92,7 +93,7 @@ export default function SlideCanvas9x16({ slide, lang }: SlideCanvasProps) {
           <img
             key={`${slide.id}:${mediaUrl}`}
             src={mediaUrl}
-            alt=""
+            alt={mediaAlt}
             style={{
               position: "absolute",
               inset: 0,

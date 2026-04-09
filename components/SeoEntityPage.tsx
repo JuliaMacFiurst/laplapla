@@ -1,6 +1,6 @@
-import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildCanonicalMapEntityPath, type CanonicalMapEntityType } from "@/lib/mapEntityRouting";
@@ -26,8 +26,6 @@ type Props = {
   groupedStories: GroupedStories;
   lang?: Lang;
 };
-
-const DEFAULT_SITE_URL = "https://laplapla.com";
 
 const SECTION_LABELS: Record<keyof GroupedStories, Record<Lang, string>> = {
   country: {
@@ -69,82 +67,6 @@ const SECTION_LABELS: Record<keyof GroupedStories, Record<Lang, string>> = {
     ru: "Биомы и рельеф",
     en: "Biomes and Landscape",
     he: "ביומות ותוואי שטח",
-  },
-};
-
-const PAGE_SEO: Record<SeoEntityType, Record<Lang, {
-  title: (name: string) => string;
-  description: (name: string) => string;
-}>> = {
-  country: {
-    ru: {
-      title: (name) => `${name}: страна, культура и факты для детей | LapLapLa`,
-      description: (name) => `Узнай о ${name}: культура, природа, еда и интересные факты для детей на LapLapLa.`,
-    },
-    en: {
-      title: (name) => `${name}: country, culture, and facts for kids | LapLapLa`,
-      description: (name) => `Discover ${name}: culture, nature, food, and fun facts for kids on LapLapLa.`,
-    },
-    he: {
-      title: (name) => `${name}: מדינה, תרבות ועובדות לילדים | LapLapLa`,
-      description: (name) => `גלו על ${name}: תרבות, טבע, אוכל ועובדות מעניינות לילדים ב-LapLapLa.`,
-    },
-  },
-  river: {
-    ru: {
-      title: (name) => `${name}: река и природные факты для детей | LapLapLa`,
-      description: (name) => `Узнай о реке ${name}: природа, климат и интересные факты для детей на LapLapLa.`,
-    },
-    en: {
-      title: (name) => `${name}: river facts for kids | LapLapLa`,
-      description: (name) => `Discover the ${name} river: nature, climate, and fun facts for kids on LapLapLa.`,
-    },
-    he: {
-      title: (name) => `${name}: עובדות על נהר לילדים | LapLapLa`,
-      description: (name) => `גלו על הנהר ${name}: טבע, אקלים ועובדות מעניינות לילדים ב-LapLapLa.`,
-    },
-  },
-  animal: {
-    ru: {
-      title: (name) => `${name}: животные и климат для детей | LapLapLa`,
-      description: (name) => `Узнай о ${name}: животные, климат, природа и интересные факты для детей на LapLapLa.`,
-    },
-    en: {
-      title: (name) => `${name}: animals and climate for kids | LapLapLa`,
-      description: (name) => `Discover ${name}: animals, climate, nature, and fun facts for kids on LapLapLa.`,
-    },
-    he: {
-      title: (name) => `${name}: בעלי חיים ואקלים לילדים | LapLapLa`,
-      description: (name) => `גלו על ${name}: בעלי חיים, אקלים, טבע ועובדות מעניינות לילדים ב-LapLapLa.`,
-    },
-  },
-  sea: {
-    ru: {
-      title: (name) => `${name}: море и факты для детей | LapLapLa`,
-      description: (name) => `Узнай о ${name}: природа, климат и интересные факты для детей на LapLapLa.`,
-    },
-    en: {
-      title: (name) => `${name}: sea facts for kids | LapLapLa`,
-      description: (name) => `Discover ${name}: nature, climate, and fun facts for kids on LapLapLa.`,
-    },
-    he: {
-      title: (name) => `${name}: עובדות על ים לילדים | LapLapLa`,
-      description: (name) => `גלו על ${name}: טבע, אקלים ועובדות מעניינות לילדים ב-LapLapLa.`,
-    },
-  },
-  biome: {
-    ru: {
-      title: (name) => `${name}: биом и факты для детей | LapLapLa`,
-      description: (name) => `Узнай о ${name}: природа, рельеф и интересные факты для детей на LapLapLa.`,
-    },
-    en: {
-      title: (name) => `${name}: biome facts for kids | LapLapLa`,
-      description: (name) => `Discover ${name}: nature, landscape, and fun facts for kids on LapLapLa.`,
-    },
-    he: {
-      title: (name) => `${name}: עובדות על ביומה לילדים | LapLapLa`,
-      description: (name) => `גלו על ${name}: טבע, נוף ועובדות מעניינות לילדים ב-LapLapLa.`,
-    },
   },
 };
 
@@ -272,24 +194,22 @@ export default function SeoEntityPage({
   const router = useRouter();
   const currentLang = lang ?? getCurrentLang(router);
   const dict = dictionaries[currentLang] || dictionaries.ru;
-  const pageSeo = PAGE_SEO[entityType][currentLang];
+  const mapSeo = dict.seo.raccoons.map;
+  const titleSuffixByType: Record<SeoEntityType, string> = {
+    country: mapSeo.countryTitleSuffix,
+    animal: mapSeo.animalTitleSuffix,
+    river: mapSeo.riverTitleSuffix,
+    sea: mapSeo.seaTitleSuffix,
+    biome: mapSeo.biomeTitleSuffix,
+  };
   const dir = currentLang === "he" ? "rtl" : "ltr";
-  const siteUrl = (process.env["NEXT_PUBLIC_SITE_URL"] || DEFAULT_SITE_URL).replace(/\/+$/, "") || DEFAULT_SITE_URL;
-  const canonicalUrl = `${siteUrl}${buildCanonicalMapEntityPath(entityType, slug)}`;
-  const seoTitle = pageSeo.title(title);
-  const seoDescription = pageSeo.description(title);
+  const seoTitle = `${title} — ${titleSuffixByType[entityType]}`;
+  const seoDescription = `${title} — ${mapSeo.descriptionSuffix}`;
+  const seoPath = buildCanonicalMapEntityPath(entityType, slug);
 
   return (
     <>
-      <Head>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={canonicalUrl} />
-      </Head>
+      <SEO title={seoTitle} description={seoDescription} path={seoPath} type="article" />
       <main
         dir={dir}
         style={{

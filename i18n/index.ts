@@ -6,6 +6,108 @@ export type Lang = "ru" | "he" | "en";
 
 // Describe ONLY the SHAPE of the dictionary, not literal string values
 type DictionaryShape = {
+  seo: {
+    home: {
+      title: string;
+      description: string;
+    };
+    cats: {
+      index: {
+        title: string;
+        description: string;
+      };
+      studio: {
+        title: string;
+        description: string;
+      };
+      export: {
+        title: string;
+        description: string;
+      };
+    };
+    dogs: {
+      index: {
+        title: string;
+        description: string;
+      };
+      lessons: {
+        titleSuffix: string;
+        defaultTitle: string;
+        description: string;
+      };
+      lesson: {
+        titleSuffix: string;
+        defaultTitle: string;
+        defaultDescription: string;
+      };
+    };
+    parrots: {
+      title: string;
+      description: string;
+    };
+    capybaras: {
+      index: {
+        title: string;
+        description: string;
+      };
+      createStory: {
+        title: string;
+        description: string;
+      };
+      book: {
+        titleSuffix: string;
+        defaultDescription: string;
+        modeDescription: string;
+      };
+    };
+    raccoons: {
+      index: {
+        title: string;
+        description: string;
+      };
+      quest1: {
+        title: string;
+        description: string;
+      };
+      map: {
+        countryTitleSuffix: string;
+        animalTitleSuffix: string;
+        riverTitleSuffix: string;
+        seaTitleSuffix: string;
+        biomeTitleSuffix: string;
+        descriptionSuffix: string;
+      };
+    };
+    about: {
+      index: {
+        title: string;
+        description: string;
+      };
+      section: {
+        titleSuffix: string;
+        defaultDescription: string;
+      };
+    };
+    legal: {
+      terms: {
+        title: string;
+        description: string;
+      };
+      privacy: {
+        title: string;
+        description: string;
+      };
+      licenses: {
+        title: string;
+        description: string;
+      };
+    };
+    adminLogin: {
+      title: string;
+      description: string;
+    };
+  };
+
   home: {
     title: string;
     subtitle: string;

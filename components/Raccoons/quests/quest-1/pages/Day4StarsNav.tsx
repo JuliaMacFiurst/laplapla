@@ -248,13 +248,13 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
         <img
           className="ice"
           src="/quests/assets/buttons/ice-button-bg.svg"
-          alt="ice-btn"
+          alt=""
         />
         <div className="ice-text">{t.day4StarsNav.nextButton}</div>
         <img
           className="penguin"
           src="/supabase-storage/characters/other/penguin.gif"
-          alt="penguin"
+          alt=""
         />
       </div>
 </div>

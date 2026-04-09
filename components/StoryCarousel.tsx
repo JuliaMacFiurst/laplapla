@@ -84,7 +84,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
           <img 
             className="capybara-spinner"
             src="/spinners/capybara-spinner.webp"
-            alt="Загрузка"
+            alt={story?.title || emptyMessage || "illustration"}
             style={{ width: "120px", height: "120px", objectFit: "contain" }}
           />
         </div>
@@ -127,6 +127,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
   const compactText = textWordCount > 12;
   const denseText = textWordCount > 20;
   const portraitLayout = isPortraitMedia || currentMedia?.type === "video";
+  const currentSlideAlt = currentSlide?.text?.trim() || story.title || "illustration";
 
   const renderSlideMedia = (classNameSuffix = "") => {
     if (!currentSlide || !hasMedia) {
@@ -135,7 +136,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
           <img
             className="capybara-spinner"
             src="/spinners/capybara-spinner.webp"
-            alt="Загрузка медиа"
+            alt={currentSlideAlt}
           />
         </div>
       );
@@ -146,7 +147,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
         <img
           className={`story-image${classNameSuffix}`}
           src={currentMedia.capybaraImage}
-          alt={currentMedia.capybaraImageAlt || "Капибара"}
+          alt={currentMedia.capybaraImageAlt || currentSlideAlt}
           onLoad={(event) => {
             const image = event.currentTarget;
             setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
@@ -160,7 +161,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
         <img
           className={`story-image${classNameSuffix}`}
           src={currentMedia.gifUrl}
-          alt="GIF"
+          alt={currentSlideAlt}
           onLoad={(event) => {
             const image = event.currentTarget;
             setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
@@ -190,7 +191,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
       return (
         <img
           src={currentMedia.imageUrl}
-          alt="Фото капибары с Pexels"
+          alt={currentSlideAlt}
           className={`story-image${classNameSuffix}`}
           onLoad={(event) => {
             const image = event.currentTarget;
@@ -204,7 +205,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
       <img
         className={`story-image${classNameSuffix}`}
         src={fallback}
-        alt="Запасная капибара"
+        alt={currentSlideAlt}
         onLoad={(event) => {
           const image = event.currentTarget;
           setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);

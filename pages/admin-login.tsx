@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import Head from "next/head";
 import { useRouter } from "next/router";
+import SEO from "@/components/SEO";
+import { dictionaries } from "@/i18n";
+import { getCurrentLang } from "@/lib/i18n/routing";
 import { supabase } from "@/lib/supabase";
 
 const LAPLAPLA_TARGET_URL =
@@ -24,6 +26,9 @@ function getStringParam(value: string | string[] | undefined) {
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const lang = getCurrentLang(router);
+  const seo = dictionaries[lang].seo.adminLogin;
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/admin-login";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const handledRef = useRef(false);
@@ -89,9 +94,7 @@ export default function AdminLoginPage() {
 
   return (
     <>
-      <Head>
-        <title>Admin Login</title>
-      </Head>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
       <main
         style={{
           minHeight: "100vh",

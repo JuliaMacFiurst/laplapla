@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import CatsLayout from "@/components/Cats/CatsLayout";
+import SEO from "@/components/SEO";
 import { Lang, dictionaries } from "@/i18n";
 import { useEffect, useState } from "react";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
@@ -112,8 +113,10 @@ function getOverwriteMessage(lang: Lang) {
 
 export default function CatsStudioPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
+  const seo = dictionaries[lang].seo.cats.studio;
   const router = useRouter();
   const currentLang = getCurrentLang(router);
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/studio";
   const isMobile = useIsMobile();
 
   const [initialSlides, setInitialSlides] = useState<
@@ -218,38 +221,41 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
   }
 
   return (
-    <CatsLayout active="studio" lang={lang}>
-      <div style={{ marginBottom: 24 }}>
-        
-      </div>
-      {isImportReady ? (
-        <StudioRoot
-          lang={lang}
-          initialSlides={initialSlides}
-          initialTracks={initialTracks}
-        />
-      ) : null}
+    <>
+      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <CatsLayout active="studio" lang={lang}>
+        <div style={{ marginBottom: 24 }}>
+          
+        </div>
+        {isImportReady ? (
+          <StudioRoot
+            lang={lang}
+            initialSlides={initialSlides}
+            initialTracks={initialTracks}
+          />
+        ) : null}
 
-      <button
-          className="back-to-cats-button"
-          onClick={() =>
-            router.push(
-              { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
-              undefined,
-              { locale: currentLang },
-            )
-          }
-        >
-          ← {t.backButton}
-        </button>
-      <video
-        className="cat-paw-video"
-        src={buildSupabaseStorageUrl("characters/cats/cap-paw.webm")}
-        autoPlay
-        loop
-        muted
-        playsInline
-      />
-    </CatsLayout>
+        <button
+            className="back-to-cats-button"
+            onClick={() =>
+              router.push(
+                { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
+                undefined,
+                { locale: currentLang },
+              )
+            }
+          >
+            ← {t.backButton}
+          </button>
+        <video
+          className="cat-paw-video"
+          src={buildSupabaseStorageUrl("characters/cats/cap-paw.webm")}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      </CatsLayout>
+    </>
   );
 }

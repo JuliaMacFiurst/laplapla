@@ -222,10 +222,12 @@ export default function CharacterStage({
         <div className="dressup-stopwatch">
           <img
             src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Stopwatch.webp"
+            alt=""
             className="stopwatch-bg"
           />
           <img
             src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Stopwatch-hand.webp"
+            alt=""
             className="stopwatch-hand"
             style={{ transform: `rotate(${handRotation}deg)` }}
           />
