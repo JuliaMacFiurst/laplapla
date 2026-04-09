@@ -18,6 +18,7 @@ type EntitySearchResult = {
   slug: string;
   href: string;
   title: string;
+  targetId: string;
 };
 
 const SEARCH_UI = {
@@ -57,6 +58,7 @@ export default function RaccoonsPage() {
   const [results, setResults] = useState<EntitySearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [hoveredResultTargetId, setHoveredResultTargetId] = useState<string | null>(null);
   const localizedQuests: Quest[] = [
     {
       ...quests.featured,
@@ -104,6 +106,22 @@ export default function RaccoonsPage() {
   const handleResultOpen = async (href: string) => {
     await router.push(buildLocalizedHref(href, lang), undefined, { locale: lang });
   };
+
+  const activeRouteForTab: EntitySearchResult["route"] | null =
+    activeTab === "country" || activeTab === "culture" || activeTab === "food"
+      ? "country"
+      : activeTab === "animal" || activeTab === "weather"
+        ? "animal"
+        : activeTab === "river"
+          ? "river"
+          : activeTab === "sea"
+            ? "sea"
+            : null;
+
+  const firstPreviewResult = activeRouteForTab
+    ? results.find((result) => result.route === activeRouteForTab) || null
+    : null;
+  const previewSelectedId = hoveredResultTargetId || firstPreviewResult?.targetId || null;
 
   if (isMobile) {
     return <MobileDesktopNotice lang={lang} />;
@@ -187,6 +205,10 @@ export default function RaccoonsPage() {
                         type="button"
                         className="search-result-card raccoons-search-result-card"
                         onClick={() => void handleResultOpen(result.href)}
+                        onMouseEnter={() => setHoveredResultTargetId(result.targetId)}
+                        onMouseLeave={() => setHoveredResultTargetId(null)}
+                        onFocus={() => setHoveredResultTargetId(result.targetId)}
+                        onBlur={() => setHoveredResultTargetId(null)}
                       >
                         {result.title}
                       </button>
@@ -196,7 +218,7 @@ export default function RaccoonsPage() {
               </div>
             ) : null}
           </div>
-          <MapWrapper type={activeTab} />
+          <MapWrapper type={activeTab} previewSelectedId={previewSelectedId} />
           <QuestSection quests={localizedQuests} />
         </div>
       </main>

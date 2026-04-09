@@ -17,6 +17,7 @@ interface InteractiveMapProps {
   type: 'country' | 'river' | 'sea' | 'physic' | 'flag' | 'animal' | 'culture' | 'weather' | 'food';
   popupFormatter: (id: string) => string;
   styleClass: string;
+  previewSelectedId?: string | null;
 }
 
 function splitTextToParagraphs(input: string | null | undefined): string[] {
@@ -292,7 +293,7 @@ async function resolveSlideMedia(
   }
 }
 
-export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
+export default function InteractiveMap({ svgPath, type, previewSelectedId }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const t = dictionaries[lang].raccoons.popup;
@@ -317,6 +318,7 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const mediaRequestVersionRef = useRef(new Map<string, number>());
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
+  const previewSelectedPathRef = useRef<SVGPathElement | null>(null);
   const hoveredPathRef = useRef<SVGPathElement | null>(null);
   const selectedElementRef = useRef<string | null>(null);
 
@@ -476,6 +478,7 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
   const syncInteractionOverlay = (
     hoveredPath: SVGPathElement | null = hoveredPathRef.current,
     selectedPath: SVGPathElement | null = lastSelectedPath.current,
+    previewPath: SVGPathElement | null = previewSelectedPathRef.current,
   ) => {
     const sourceSvg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
     if (!sourceSvg) {
@@ -497,12 +500,17 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
       hoveredPathRef.current = null;
     }
 
+    if (previewPath && !sourceSvg.contains(previewPath)) {
+      previewPath = null;
+      previewSelectedPathRef.current = null;
+    }
+
     const existingOverlay = sourceSvg.querySelector('[data-interaction-overlay="true"]');
     if (existingOverlay) {
       existingOverlay.remove();
     }
 
-    if (!hoveredPath && !selectedPath) {
+    if (!hoveredPath && !selectedPath && !previewPath) {
       return;
     }
 
@@ -522,7 +530,20 @@ export default function InteractiveMap({ svgPath, type }: InteractiveMapProps) {
       );
     }
 
+    if (!selectedPath && previewPath) {
+      overlayGroup.appendChild(
+        buildOverlayBranchClone(sourceSvg, previewPath, getSelectedFill(), "selected"),
+      );
+    }
+
     sourceSvg.appendChild(overlayGroup);
+  };
+
+  const resolvePathById = (sourceSvg: SVGSVGElement, id: string) => {
+    const escapedId = typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(id)
+      : id.replace(/["\\]/g, "\\$&");
+    return sourceSvg.querySelector(`path[id="${escapedId}"]`) as SVGPathElement | null;
   };
 
   const applySelectedStyle = (path: SVGPathElement) => {
@@ -1380,6 +1401,30 @@ useEffect(() => {
     mapContent.removeEventListener("click", handleContainerClick);
   };
 }, [svgContent, type]);
+
+  useEffect(() => {
+    const sourceSvg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
+    if (!sourceSvg) {
+      previewSelectedPathRef.current = null;
+      return;
+    }
+
+    if (selectedElementRef.current) {
+      previewSelectedPathRef.current = null;
+      syncInteractionOverlay();
+      return;
+    }
+
+    if (!previewSelectedId) {
+      previewSelectedPathRef.current = null;
+      syncInteractionOverlay();
+      return;
+    }
+
+    const previewPath = resolvePathById(sourceSvg, previewSelectedId);
+    previewSelectedPathRef.current = previewPath && isInteractivePath(previewPath) ? previewPath : null;
+    syncInteractionOverlay();
+  }, [previewSelectedId, svgContent, type]);
 
   // --- Добавляем refs и состояние для перетаскивания попапа ---
  const popupRef = useRef<HTMLDivElement | null>(null);

@@ -43,6 +43,7 @@ type SearchResponseItem = {
   slug: string;
   href: string;
   title: string;
+  targetId: string;
 };
 
 const ROUTE_TYPE_MAP: Record<SearchEntityRoute, MapPopupType[]> = {
@@ -316,6 +317,7 @@ function searchIndex(index: SearchIndexEntry[], rawQuery: string, lang: Lang): S
       route: entry.route,
       slug: entry.slug,
       href: `/${entry.route}/${entry.slug}`,
+      targetId: entry.rawTargetId,
       title:
         entry.titles[lang] ||
         entry.titles.en ||

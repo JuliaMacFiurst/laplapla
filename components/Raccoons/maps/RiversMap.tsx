@@ -1,6 +1,6 @@
 import InteractiveMapEngine from "@/components/Raccoons/InteractiveMapEngine";
 
-export default function RiversMap() {
+export default function RiversMap({ previewSelectedId }: { previewSelectedId?: string | null }) {
   return (
     <div className="rivers-map-container">
       <InteractiveMapEngine
@@ -8,6 +8,7 @@ export default function RiversMap() {
         type="river"
          popupFormatter={(id: string) => `Река: ${id.toUpperCase()}`}
         styleClass="river-svg"
+        previewSelectedId={previewSelectedId}
       />
     </div>
   );

@@ -19,27 +19,33 @@ type MapType =
   | "weather"
   | "food";
 
-export default function MapWrapper({ type }: { type: MapType }) {
+export default function MapWrapper({
+  type,
+  previewSelectedId,
+}: {
+  type: MapType;
+  previewSelectedId?: string | null;
+}) {
   switch (type) {
     case "country":
-      return <CountriesMap />;
+      return <CountriesMap previewSelectedId={previewSelectedId} />;
     case "river":
-      return <RiversMap />;
+      return <RiversMap previewSelectedId={previewSelectedId} />;
     case "sea":
-      return <SeaMap />;
+      return <SeaMap previewSelectedId={previewSelectedId} />;
     // пока заглушка — позже добавим реализацию для остальных типов
     case "physic":
       return <PhysicMap />
     case "flag":
       return <FlagMap />
     case "animal":
-      return <BiomesMap />
+      return <BiomesMap previewSelectedId={previewSelectedId} />
     case "culture":
-      return <СultureMap />
+      return <СultureMap previewSelectedId={previewSelectedId} />
     case "weather":
-      return <WeatherMap />
+      return <WeatherMap previewSelectedId={previewSelectedId} />
     case "food":
-      return <FoodMap />
+      return <FoodMap previewSelectedId={previewSelectedId} />
       return null;
     default:
       return null;
