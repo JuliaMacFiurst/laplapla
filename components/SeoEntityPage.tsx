@@ -1,7 +1,8 @@
 import Head from "next/head";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { dictionaries, type Lang } from "@/i18n";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import type { MapPopupContent } from "@/types/mapPopup";
 
 export type SeoEntityType = "country" | "animal" | "river" | "sea";
@@ -141,6 +142,12 @@ const SECTION_ORDER: Array<keyof GroupedStories> = [
   "sea",
   "physic",
 ];
+
+const BACK_TO_MAPS_LABEL: Record<Lang, string> = {
+  ru: "Назад к картам",
+  en: "Back to maps",
+  he: "חזרה למפות",
+};
 
 type StoryBlock =
   | { type: "paragraph"; id: string; text: string }
@@ -354,7 +361,26 @@ export default function SeoEntityPage({
           );
         })}
 
-        <p style={{ marginTop: "32px", color: "#555" }}>{dict.home.title}</p>
+        <div style={{ marginTop: "40px" }}>
+          <Link
+            href={{ pathname: "/raccoons", query: buildLocalizedQuery(currentLang) }}
+            locale={currentLang}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "12px 18px",
+              borderRadius: "999px",
+              backgroundColor: "#111827",
+              color: "#fff",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            {BACK_TO_MAPS_LABEL[currentLang]}
+          </Link>
+          <p style={{ marginTop: "16px", color: "#555" }}>{dict.home.title}</p>
+        </div>
       </main>
     </>
   );

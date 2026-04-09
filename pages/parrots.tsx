@@ -143,26 +143,28 @@ export default function ParrotsPage() {
     <>
       <Head><title>{t.page.headTitle}</title></Head>
       <main className={`home-wrapper parrots-page force-ltr-layout ${lang === "he" ? "parrots-page-he" : ""}`}>
-        <h1 className="title page-title">{t.page.title}</h1>
-        <p className="subtitle">{t.page.subtitle}</p>
+        <div className="parrots-mobile-hero">
+          <h1 className="title page-title">{t.page.title}</h1>
+          <p className="subtitle">{t.page.subtitle}</p>
 
-        <div className="style-presets-row" style={{ marginBottom: "1rem", justifyContent: "center", gap: 12, maxWidth: "100%" }}>
-          {localizedPresets.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setActiveId(p.id)}
-              className={`style-preset-btn ${p.id === activeId ? 'is-active' : ''}`}
-              style={{ backgroundImage: `url(${imageForPreset(p.id)})` }}
-              aria-pressed={p.id === activeId}
-              title={p.localizedTitle}
-            >
-              <span className="style-preset-label">{p.localizedTitle}</span>
-            </button>
-          ))}
+          <div className="style-presets-row" style={{ marginBottom: "1rem", justifyContent: "center", gap: 12, maxWidth: "100%" }}>
+            {localizedPresets.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setActiveId(p.id)}
+                className={`style-preset-btn ${p.id === activeId ? 'is-active' : ''}`}
+                style={{ backgroundImage: `url(${imageForPreset(p.id)})` }}
+                aria-pressed={p.id === activeId}
+                title={p.localizedTitle}
+              >
+                <span className="style-preset-label">{p.localizedTitle}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div
-          className="grid"
+          className="grid parrots-main-grid"
           style={{
             gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
             gap: isMobile ? 24 : 50,
@@ -172,7 +174,7 @@ export default function ParrotsPage() {
             margin: "0 auto"
           }}
         >
-          <div style={{ width: "100%" }}>
+          <div className="parrots-section parrots-mixer-section" style={{ width: "100%" }}>
             <ParrotMixer
               styleSlug={activeId}
               loops={preset.loops}
@@ -181,7 +183,7 @@ export default function ParrotsPage() {
               ui={t.mixer}
             />
           </div>
-          <div style={{ width: "100%" }}>
+          <div className="parrots-section parrots-story-section" style={{ width: "100%" }}>
             <ParrotStoryCard
               lang={lang}
               styleSlug={activeId}
@@ -200,11 +202,22 @@ export default function ParrotsPage() {
           /* Preset buttons row */
           .style-presets-row { display: flex; flex-wrap: wrap; justify-content: center; }
 
+          .parrots-mobile-hero {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .parrots-main-grid,
+          .parrots-section {
+            width: 100%;
+          }
+
           /* Square full-cover preset buttons (page-scoped, no .card) */
           .style-preset-btn {
             width: 140px;
             height: 140px;
             aspect-ratio: 1 / 1;
+            box-sizing: border-box;
             border-radius: 18px;
             border: 1px solid rgba(0,0,0,0.12);
             background: #fff center/cover no-repeat;
@@ -262,15 +275,64 @@ export default function ParrotsPage() {
           }
 
           @media (max-width: 640px) {
+            .parrots-page {
+              padding-left: 0;
+              padding-right: 0;
+              width: 100%;
+              max-width: 100%;
+              overflow-x: clip;
+            }
+
+            .parrots-mobile-hero {
+              width: 100%;
+              max-width: 100%;
+              padding: 0 0.75rem;
+              box-sizing: border-box;
+            }
+
+            .style-presets-row {
+              width: 100%;
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 0.75rem;
+              padding: 0;
+              margin-left: 0;
+              margin-right: 0;
+              box-sizing: border-box;
+            }
+
             .style-preset-btn {
-              width: 108px;
-              height: 108px;
+              width: 100%;
+              height: auto;
+              min-height: 124px;
               border-radius: 16px;
+              margin: 0;
             }
 
             .style-preset-label {
               font-size: 16px;
               padding: 4px 8px;
+            }
+
+            .parrots-main-grid {
+              width: 100%;
+              max-width: none !important;
+              padding: 0;
+              box-sizing: border-box;
+              gap: 1rem !important;
+              justify-items: center !important;
+            }
+
+            .parrots-mixer-section,
+            .parrots-story-section {
+              width: 100%;
+              max-width: 100%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              padding: 0;
+              margin: 0;
+              box-sizing: border-box;
             }
           }
         `}</style>

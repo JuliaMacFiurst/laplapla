@@ -432,6 +432,205 @@
   align-items: center;
   gap: 8px;
 }
+
+@media (max-width: 640px) {
+  .parrot-mixer {
+    --parrot-mobile-panel-width: min(500px, calc(100vw - 24px));
+  }
+
+  .parrot-mixer,
+  .parrot-mixer .story-content,
+  .mixer-loops-nav-inner,
+  .mixer-loop-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .parrot-mixer .story-content {
+    padding: 0 0.5rem;
+    overflow-x: clip;
+  }
+
+  .mixer-story-nav-inner {
+    width: var(--parrot-mobile-panel-width);
+    max-width: var(--parrot-mobile-panel-width);
+    height: 360px;
+    margin: 0 auto 0.75rem;
+    overflow: hidden;
+  }
+
+  .mixer-loops-nav-inner {
+    width: var(--parrot-mobile-panel-width);
+    max-width: var(--parrot-mobile-panel-width);
+    margin: 0 auto;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .mixer-loop-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .mixer-loop-item {
+    flex: 0 0 clamp(220px, 72vw, 320px);
+  }
+
+  .mixer-loop-button {
+    font-size: clamp(20px, 5vw, 24px);
+    white-space: normal;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .mixer-card.mixer-play.play-neo,
+  .mixer-card.mixer-stop.play-neo,
+  .mixer-card.mixer-save.play-neo,
+  .mixer-card.mixer-record {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+  }
+
+  .mixer-card.mixer-play.play-neo .play-tri {
+    border-top-width: 13px;
+    border-bottom-width: 13px;
+    border-left-width: 22px;
+  }
+
+  .mixer-card.mixer-stop.play-neo .pause-bars {
+    gap: 5px;
+  }
+
+  .mixer-card.mixer-stop.play-neo .pause-bars span {
+    width: 8px;
+    height: 28px;
+  }
+
+  .mixer-card.mixer-save.play-neo .save-download {
+    width: 32px;
+    height: 32px;
+  }
+
+  .mixer-card.mixer-save.play-neo .save-download::before {
+    top: 10px;
+    border-left-width: 9px;
+    border-right-width: 9px;
+    border-top-width: 12px;
+  }
+
+  .mixer-card.mixer-save.play-neo .save-download::after {
+    width: 22px;
+    height: 5px;
+  }
+
+  .mixer-card.mixer-save.play-neo .save-download .save-download-stem {
+    top: 3px;
+    width: 6px;
+    height: 17px;
+  }
+
+  .v-fader {
+    height: 124px;
+    padding: 10px 14px;
+  }
+
+  .v-fader .ticks {
+    width: 18px;
+  }
+
+  .v-fader .ticks.left {
+    margin-right: 6px;
+  }
+
+  .v-fader .ticks.right {
+    margin-left: 6px;
+  }
+
+  .v-fader .v-range::-webkit-slider-thumb,
+  .v-fader .v-range::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mixer-card.mixer-volume.anchor.btn-micvol-anchor,
+  .mixer-card.mixer-volume.anchor.btn-vocalvol-anchor {
+    width: 208px;
+    height: 64px;
+    padding: 10px 12px;
+  }
+
+  .mixer-card.mixer-volume.anchor.btn-micvol-anchor .vol-title,
+  .mixer-card.mixer-volume.anchor.btn-vocalvol-anchor .vol-title {
+    font-size: 13px;
+  }
+
+  .mixer-card.mixer-volume.anchor.btn-micvol-anchor::after,
+  .mixer-card.mixer-volume.anchor.btn-vocalvol-anchor::after {
+    left: 56px;
+    right: 56px;
+    bottom: 8px;
+  }
+
+  .mixer-card.mixer-volume.anchor.btn-monitor-anchor {
+    width: 112px;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .mixer-card.mixer-volume.anchor.btn-monitor-anchor .vol-title {
+    font-size: 14px;
+  }
+
+  .monitor-switch {
+    width: 64px;
+    height: 30px;
+  }
+
+  .monitor-switch::after {
+    top: 2px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .monitor-switch.on::after {
+    left: 37px;
+  }
+
+  .monitor-switch span {
+    left: 12px;
+    font-size: 12px;
+  }
+
+  .monitor-switch.on span {
+    left: 10px;
+  }
+
+  .rec-chip.anchor.rec-chip-anchor {
+    font-size: 13px;
+    padding: 6px 4px;
+  }
+
+  .rec-chip.anchor.rec-chip-anchor .rec-chip-play {
+    font-size: 13px;
+    padding: 2px 4px;
+  }
+
+  .rec-chip.anchor.rec-chip-anchor .rec-chip-del {
+    font-size: 18px;
+    padding: 0 4px;
+  }
+
+  .rec-live-dot {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mixer-card.mixer-record .rec-mic-svg {
+    width: 44px;
+  }
+}
 .mixer-loop-item.is-center .mixer-loop-button {
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16),
     0 0 0 3px rgba(179, 136, 255, 0.25);

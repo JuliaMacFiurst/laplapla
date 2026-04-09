@@ -450,7 +450,7 @@ const ParrotSlider = ({
           }}
         />
       </div>
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "2rem", maxWidth: "1000px", margin: "0 auto", marginTop: "-1rem" }}>
+      <div className="parrot-slider-arrows-row" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "2rem", maxWidth: "1000px", margin: "0 auto", marginTop: "-1rem" }}>
         <button
           onClick={() => sliderRef.current?.scrollBy({ left: -500, behavior: "smooth" })}
           disabled={currentIndex === 0}
@@ -672,6 +672,7 @@ export default function ParrotStoryCard({
           font-size: 24px;
           padding: 0.6rem 1.4rem;
           margin: 0.5rem;
+          box-sizing: border-box;
           border: 2px solid #ffd2ec;
           border-radius: 14px;
           /* background-color: #fff0f8; */
@@ -732,6 +733,7 @@ export default function ParrotStoryCard({
         .parrot-button-container {
           background-color: #fff4fa; /* светлый персиково-розовый, можно заменить */
           padding: 1.5rem 1rem;
+          box-sizing: border-box;
           border-radius: 40px;
           max-width: 360px;
           margin: 1.5rem auto 0 auto;
@@ -756,6 +758,75 @@ export default function ParrotStoryCard({
 
         .text-rtl-scope :global(.story-card-text-center) {
           text-align: center;
+        }
+
+        @media (max-width: 640px) {
+          .story-card-root {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .story-content {
+            width: 100%;
+            max-width: none !important;
+            padding: 0 0.75rem;
+            box-sizing: border-box;
+          }
+
+          .slider-container {
+            width: 100%;
+            max-width: min(1000px, calc(100vw - 24px));
+            margin: 0 auto;
+            box-sizing: border-box;
+          }
+
+          .slider-container :global(.text-overlay) {
+            width: min(100%, 400px) !important;
+            max-width: min(100%, 400px) !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            box-sizing: border-box;
+          }
+
+          .slider-container :global(.slide) {
+            width: min(92vw, 560px) !important;
+          }
+
+          .parrot-slider-arrows-row {
+            width: min(1000px, calc(100vw - 24px));
+            max-width: min(1000px, calc(100vw - 24px)) !important;
+            gap: 1rem !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            box-sizing: border-box;
+          }
+
+          .slider-container :global(.nav-buttons) {
+            width: 100%;
+          }
+
+          .slider-container :global(.slideshow-refresh-button-row) {
+            width: min(1000px, calc(100vw - 24px));
+            max-width: none !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            box-sizing: border-box;
+          }
+
+          .parrot-button-container {
+            width: 100%;
+            max-width: min(420px, calc(100vw - 24px));
+            padding: 1rem 0.75rem;
+            box-sizing: border-box;
+          }
+
+          .external-link-button {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+          }
         }
 
         @keyframes wiggle {
