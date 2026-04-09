@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { MapPopupType } from "@/types/mapPopup";
+import { warnAboutCanonicalRouteIssues } from "@/lib/mapEntityRouting";
 
 export type MapTargetRow = {
   map_type: string;
@@ -47,12 +48,28 @@ export async function loadMapTargetsByKeys(keys: Array<{ mapType: string; target
       throw error;
     }
 
-    return new Map(
-      ((data || []) as MapTargetRow[])
-        .filter((row) => typeof row.map_type === "string" && typeof row.target_id === "string")
-        .map((row) => [getMapTargetKey(row.map_type, row.target_id), row] as const),
+    const rows = ((data || []) as MapTargetRow[])
+      .filter((row) => typeof row.map_type === "string" && typeof row.target_id === "string");
+    warnAboutCanonicalRouteIssues(
+      rows.map((row) => ({ type: row.map_type, target_id: row.target_id })),
+      "map-targets",
+      {
+        throwOnCollision: false,
+        logCasingWarnings: false,
+      },
     );
+
+    return new Map(rows.map((row) => [getMapTargetKey(row.map_type, row.target_id), row] as const));
   } catch (error) {
+    const errorCode =
+      error && typeof error === "object" && "code" in error && typeof error.code === "string"
+        ? error.code
+        : null;
+
+    if (errorCode === "42501") {
+      return new Map<string, MapTargetRow>();
+    }
+
     if (process.env.NODE_ENV !== "production") {
       console.warn("[map-targets] failed to load map_targets rows, falling back to target_id", error);
     }

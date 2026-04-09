@@ -1,6 +1,7 @@
 import type { GetServerSideProps } from "next";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { loadSeoRouteSlugs, normalizeEntitySlug } from "@/lib/server/seoEntityPage";
+import { buildCanonicalMapEntityPath } from "@/lib/mapEntityRouting";
 
 const DEFAULT_SITE_URL = "https://laplapla.com";
 
@@ -61,6 +62,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
       animal: [] as string[],
       river: [] as string[],
       sea: [] as string[],
+      biome: [] as string[],
     })),
   ]);
 
@@ -68,10 +70,11 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     new Set([
       ...STATIC_PATHS,
       ...bookPaths,
-      ...seoRouteSlugs.country.map((slug) => `/country/${slug}`),
-      ...seoRouteSlugs.animal.map((slug) => `/animal/${slug}`),
-      ...seoRouteSlugs.river.map((slug) => `/river/${slug}`),
-      ...seoRouteSlugs.sea.map((slug) => `/sea/${slug}`),
+      ...seoRouteSlugs.country.map((slug) => buildCanonicalMapEntityPath("country", slug)),
+      ...seoRouteSlugs.animal.map((slug) => buildCanonicalMapEntityPath("animal", slug)),
+      ...seoRouteSlugs.river.map((slug) => buildCanonicalMapEntityPath("river", slug)),
+      ...seoRouteSlugs.sea.map((slug) => buildCanonicalMapEntityPath("sea", slug)),
+      ...seoRouteSlugs.biome.map((slug) => buildCanonicalMapEntityPath("biome", slug)),
     ]),
   ).map((routePath) => `${baseUrl}${routePath === "/" ? "" : routePath}`);
 

@@ -15,6 +15,11 @@ import {
 import type { SeoEntityType } from "@/components/SeoEntityPage";
 import type { MapPopupType } from "@/types/mapPopup";
 import type { Lang } from "@/i18n";
+import {
+  buildCanonicalMapEntityPath,
+  getCanonicalRouteForStoryType,
+  warnAboutCanonicalRouteIssues,
+} from "@/lib/mapEntityRouting";
 
 type SearchEntityRoute = SeoEntityType;
 
@@ -46,14 +51,7 @@ type SearchResponseItem = {
   targetId: string;
 };
 
-const ROUTE_TYPE_MAP: Record<SearchEntityRoute, MapPopupType[]> = {
-  country: ["country", "culture", "food"],
-  animal: ["animal", "weather"],
-  river: ["river"],
-  sea: ["sea"],
-};
-
-const SEARCHABLE_TYPES = Object.values(ROUTE_TYPE_MAP).flat();
+const SEARCHABLE_TYPES: MapPopupType[] = ["country", "culture", "food", "animal", "weather", "river", "sea", "physic"];
 const MAX_RESULTS = 20;
 
 let cachedIndex: SearchIndexEntry[] | null = null;
@@ -91,23 +89,7 @@ function parseTranslationRecord(value: unknown): Record<string, unknown> | null 
 }
 
 function resolveRoute(type: MapPopupType): SearchEntityRoute | null {
-  if (["country", "culture", "food"].includes(type)) {
-    return "country";
-  }
-
-  if (["animal", "weather"].includes(type)) {
-    return "animal";
-  }
-
-  if (type === "river") {
-    return "river";
-  }
-
-  if (type === "sea") {
-    return "sea";
-  }
-
-  return null;
+  return getCanonicalRouteForStoryType(type);
 }
 
 function getCountryLocalizedTitles(slug: string) {
@@ -144,6 +126,10 @@ async function buildIndex(): Promise<SearchIndexEntry[]> {
   }
 
   const stories = Array.isArray(storyRows) ? (storyRows as MapStoryRow[]) : [];
+  warnAboutCanonicalRouteIssues(stories, "search-index", {
+    throwOnCollision: false,
+    logCasingWarnings: false,
+  });
   const storyIds = Array.from(new Set(stories.map((row) => String(row.id)).filter(Boolean)));
   const mapTargets = await loadMapTargetsByKeys(
     stories.map((row) => ({
@@ -316,7 +302,7 @@ function searchIndex(index: SearchIndexEntry[], rawQuery: string, lang: Lang): S
     .map(({ entry }) => ({
       route: entry.route,
       slug: entry.slug,
-      href: `/${entry.route}/${entry.slug}`,
+      href: buildCanonicalMapEntityPath(entry.route, entry.slug),
       targetId: entry.rawTargetId,
       title:
         entry.titles[lang] ||

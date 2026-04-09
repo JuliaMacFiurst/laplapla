@@ -62,6 +62,7 @@ const nextConfig = {
     locales: ["ru", "en", "he"],
     defaultLocale: "ru",
   },
+  skipTrailingSlashRedirect: true,
   logging: {
     fetches: {
       fullUrl: false,

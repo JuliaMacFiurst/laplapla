@@ -44,7 +44,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   }, [activePresetKey, presetsForLang]);
 
   useEffect(() => {
-    if (!activePreset) return;
+    if (!activePreset || activePreset.kind !== "full") return;
 
     setInputText(activePreset.prompt);
     setSlides(

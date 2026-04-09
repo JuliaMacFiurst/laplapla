@@ -3,9 +3,10 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildCanonicalMapEntityPath, type CanonicalMapEntityType } from "@/lib/mapEntityRouting";
 import type { MapPopupContent } from "@/types/mapPopup";
 
-export type SeoEntityType = "country" | "animal" | "river" | "sea";
+export type SeoEntityType = CanonicalMapEntityType;
 
 export type GroupedStories = {
   country: MapPopupContent[];
@@ -20,6 +21,7 @@ export type GroupedStories = {
 
 type Props = {
   entityType: SeoEntityType;
+  slug: string;
   title: string;
   groupedStories: GroupedStories;
   lang?: Lang;
@@ -64,9 +66,9 @@ const SECTION_LABELS: Record<keyof GroupedStories, Record<Lang, string>> = {
     he: "ימים ואוקיינוסים",
   },
   physic: {
-    ru: "Природа и рельеф",
-    en: "Nature and Landscape",
-    he: "טבע ותוואי שטח",
+    ru: "Биомы и рельеф",
+    en: "Biomes and Landscape",
+    he: "ביומות ותוואי שטח",
   },
 };
 
@@ -128,6 +130,20 @@ const PAGE_SEO: Record<SeoEntityType, Record<Lang, {
     he: {
       title: (name) => `${name}: עובדות על ים לילדים | LapLapLa`,
       description: (name) => `גלו על ${name}: טבע, אקלים ועובדות מעניינות לילדים ב-LapLapLa.`,
+    },
+  },
+  biome: {
+    ru: {
+      title: (name) => `${name}: биом и факты для детей | LapLapLa`,
+      description: (name) => `Узнай о ${name}: природа, рельеф и интересные факты для детей на LapLapLa.`,
+    },
+    en: {
+      title: (name) => `${name}: biome facts for kids | LapLapLa`,
+      description: (name) => `Discover ${name}: nature, landscape, and fun facts for kids on LapLapLa.`,
+    },
+    he: {
+      title: (name) => `${name}: עובדות על ביומה לילדים | LapLapLa`,
+      description: (name) => `גלו על ${name}: טבע, נוף ועובדות מעניינות לילדים ב-LapLapLa.`,
     },
   },
 };
@@ -248,6 +264,7 @@ function getStoryBlocks(story: MapPopupContent, title: string): StoryBlock[] {
 
 export default function SeoEntityPage({
   entityType,
+  slug,
   title,
   groupedStories,
   lang,
@@ -258,7 +275,7 @@ export default function SeoEntityPage({
   const pageSeo = PAGE_SEO[entityType][currentLang];
   const dir = currentLang === "he" ? "rtl" : "ltr";
   const siteUrl = (process.env["NEXT_PUBLIC_SITE_URL"] || DEFAULT_SITE_URL).replace(/\/+$/, "") || DEFAULT_SITE_URL;
-  const canonicalUrl = `${siteUrl}${router.asPath ? router.asPath.split("#")[0] : ""}`;
+  const canonicalUrl = `${siteUrl}${buildCanonicalMapEntityPath(entityType, slug)}`;
   const seoTitle = pageSeo.title(title);
   const seoDescription = pageSeo.description(title);
 

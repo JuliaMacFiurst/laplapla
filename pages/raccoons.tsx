@@ -14,7 +14,7 @@ import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 type EntitySearchResult = {
-  route: "country" | "animal" | "river" | "sea";
+  route: "country" | "animal" | "river" | "sea" | "biome";
   slug: string;
   href: string;
   title: string;
@@ -116,6 +116,8 @@ export default function RaccoonsPage() {
           ? "river"
           : activeTab === "sea"
             ? "sea"
+            : activeTab === "physic"
+              ? "biome"
             : null;
 
   const firstPreviewResult = activeRouteForTab

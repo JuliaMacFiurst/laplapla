@@ -10,18 +10,18 @@ import {
 import type { Lang } from "@/i18n";
 import type { MapPopupType } from "@/types/mapPopup";
 import type { GroupedStories, SeoEntityType } from "@/components/SeoEntityPage";
+import {
+  buildCanonicalMapEntityPath,
+  getCanonicalRouteForStoryType,
+  getStoryTypesForCanonicalRoute,
+  normalizeSlug,
+  warnAboutCanonicalRouteIssues,
+} from "@/lib/mapEntityRouting";
 
 type MapStoryTargetRow = {
   type: MapPopupType;
   target_id: string;
   language: string;
-};
-
-const ROUTE_TYPE_MAP: Record<SeoEntityType, Array<keyof GroupedStories>> = {
-  country: ["country", "culture", "food"],
-  animal: ["animal", "weather"],
-  river: ["river"],
-  sea: ["sea"],
 };
 
 const SUPPORTED_GROUP_TYPES: Array<keyof GroupedStories> = [
@@ -35,14 +35,12 @@ const SUPPORTED_GROUP_TYPES: Array<keyof GroupedStories> = [
   "physic",
 ];
 
+function isGroupedStoryType(value: MapPopupType): value is keyof GroupedStories {
+  return SUPPORTED_GROUP_TYPES.includes(value as keyof GroupedStories);
+}
+
 export function normalizeEntitySlug(value: string) {
-  return decodeURIComponent(String(value || ""))
-    .trim()
-    .toLowerCase()
-    .replace(/[_\s]+/g, "-")
-    .replace(/[^\p{L}\p{N}-]+/gu, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+  return normalizeSlug(value);
 }
 
 export function slugToDisplayTitle(slug: string) {
@@ -106,7 +104,7 @@ export function resolveEntityDisplayTitle(
 
 async function loadRouteTargetRows(entityType: SeoEntityType, lang: Lang) {
   const supabase = createServerSupabaseClient();
-  const routeTypes = ROUTE_TYPE_MAP[entityType];
+  const routeTypes = getStoryTypesForCanonicalRoute(entityType);
   const languages = Array.from(new Set([lang, "ru"]));
   const { data, error } = await supabase
     .from("map_stories")
@@ -118,18 +116,64 @@ async function loadRouteTargetRows(entityType: SeoEntityType, lang: Lang) {
     throw error;
   }
 
-  return Array.isArray(data) ? (data as MapStoryTargetRow[]) : [];
+  const rows = Array.isArray(data) ? (data as MapStoryTargetRow[]) : [];
+  warnAboutCanonicalRouteIssues(rows, `loadRouteTargetRows:${entityType}`);
+  return rows;
 }
 
 function resolveRawTargetIdFromSlug(rows: MapStoryTargetRow[], slug: string, lang: Lang) {
-  const normalizedSlug = normalizeEntitySlug(slug);
+  const normalizedSlug = normalizeSlug(slug);
   const preferredRows = [
     ...rows.filter((row) => row.language === lang),
     ...rows.filter((row) => row.language !== lang),
   ];
 
-  const match = preferredRows.find((row) => normalizeEntitySlug(row.target_id) === normalizedSlug);
+  const match = preferredRows.find((row) => normalizeSlug(row.target_id) === normalizedSlug);
   return match?.target_id ?? null;
+}
+
+export async function resolveCanonicalEntityRouteBySlug(slug: string, lang: Lang) {
+  const supabase = createServerSupabaseClient();
+  const languages = Array.from(new Set([lang, "ru"]));
+  const supportedTypes = ["country", "culture", "food", "animal", "weather", "river", "sea", "physic"];
+  const { data, error } = await supabase
+    .from("map_stories")
+    .select("type, target_id, language")
+    .in("type", supportedTypes)
+    .in("language", languages);
+
+  if (error) {
+    throw error;
+  }
+
+  const normalizedSlug = normalizeSlug(slug);
+  const rows = Array.isArray(data) ? (data as MapStoryTargetRow[]) : [];
+  warnAboutCanonicalRouteIssues(rows, "resolveCanonicalEntityRouteBySlug", {
+    throwOnCollision: false,
+    logCasingWarnings: false,
+  });
+
+  const preferredRows = [
+    ...rows.filter((row) => row.language === lang),
+    ...rows.filter((row) => row.language !== lang),
+  ];
+
+  const match = preferredRows.find((row) => normalizeSlug(row.target_id) === normalizedSlug);
+  if (!match) {
+    return null;
+  }
+
+  const canonicalType = getCanonicalRouteForStoryType(match.type);
+  if (!canonicalType) {
+    return null;
+  }
+
+  return {
+    type: canonicalType,
+    slug: normalizedSlug,
+    rawTargetId: match.target_id,
+    canonicalPath: buildCanonicalMapEntityPath(canonicalType, normalizedSlug),
+  };
 }
 
 export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: string, lang: Lang) {
@@ -145,7 +189,7 @@ export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: str
   }
 
   const groupedStories = createEmptyGroups();
-  const routeTypes = ROUTE_TYPE_MAP[entityType];
+  const routeTypes = getStoryTypesForCanonicalRoute(entityType);
   const availableTypes = Array.from(
     new Set(
       routeTargetRows
@@ -179,14 +223,16 @@ export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: str
   );
 
   for (const item of resolvedStories) {
-    if (!item || !SUPPORTED_GROUP_TYPES.includes(item.type)) {
+    if (!item || !isGroupedStoryType(item.type)) {
       continue;
     }
 
     groupedStories[item.type].push(item.content);
   }
 
-  const hasAnyStories = routeTypes.some((type) => groupedStories[type].length > 0);
+  const hasAnyStories = routeTypes.some(
+    (type) => isGroupedStoryType(type) && groupedStories[type].length > 0,
+  );
 
   return {
     title,
@@ -200,7 +246,7 @@ export async function loadSeoRouteSlugs() {
   const { data, error } = await supabase
     .from("map_stories")
     .select("type, target_id")
-    .in("type", ["country", "culture", "food", "animal", "weather", "river", "sea"]);
+    .in("type", ["country", "culture", "food", "animal", "weather", "river", "sea", "physic"]);
 
   if (error) {
     throw error;
@@ -211,38 +257,28 @@ export async function loadSeoRouteSlugs() {
     animal: new Set<string>(),
     river: new Set<string>(),
     sea: new Set<string>(),
+    biome: new Set<string>(),
   };
 
   for (const row of (data || []) as Array<Pick<MapStoryTargetRow, "type" | "target_id">>) {
-    const normalizedSlug = normalizeEntitySlug(row.target_id);
+    const normalizedSlug = normalizeSlug(row.target_id);
     if (!normalizedSlug || normalizedSlug === "none" || normalizedSlug === "__none") {
       continue;
     }
 
-    if (["country", "culture", "food"].includes(row.type)) {
-      grouped.country.add(normalizedSlug);
-      continue;
-    }
-
-    if (["animal", "weather"].includes(row.type)) {
-      grouped.animal.add(normalizedSlug);
-      continue;
-    }
-
-    if (row.type === "river") {
-      grouped.river.add(normalizedSlug);
-      continue;
-    }
-
-    if (row.type === "sea") {
-      grouped.sea.add(normalizedSlug);
+    const canonicalType = getCanonicalRouteForStoryType(row.type);
+    if (canonicalType) {
+      grouped[canonicalType].add(normalizedSlug);
     }
   }
+
+  warnAboutCanonicalRouteIssues((data || []) as Array<Pick<MapStoryTargetRow, "type" | "target_id">>, "loadSeoRouteSlugs");
 
   return {
     country: Array.from(grouped.country),
     animal: Array.from(grouped.animal),
     river: Array.from(grouped.river),
     sea: Array.from(grouped.sea),
+    biome: Array.from(grouped.biome),
   };
 }

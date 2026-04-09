@@ -1,41 +1,26 @@
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import SeoEntityPage, { type GroupedStories } from "@/components/SeoEntityPage";
+import type { GetServerSideProps } from "next";
 import { isLang } from "@/lib/i18n/routing";
-import { loadSeoEntityPageData } from "@/lib/server/seoEntityPage";
-import type { Lang } from "@/i18n";
+import { buildCanonicalMapEntityPath, normalizeSlug } from "@/lib/mapEntityRouting";
 
-type Props = {
-  title: string;
-  groupedStories: GroupedStories;
-  lang: Lang;
-};
-
-export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const slug = typeof context.params?.slug === "string" ? context.params.slug : "";
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const rawSlug = typeof context.params?.slug === "string" ? context.params.slug : "";
   const lang = isLang(context.locale) ? context.locale : isLang(context.query.lang) ? context.query.lang : "ru";
+  const slug = normalizeSlug(rawSlug);
 
   if (!slug) {
     return { notFound: true };
   }
 
-  const { title, groupedStories, hasAnyStories } = await loadSeoEntityPageData("animal", slug, lang);
-  if (!hasAnyStories) {
-    return { notFound: true };
-  }
+  const destination = `${buildCanonicalMapEntityPath("animal", slug)}?lang=${lang}`;
 
   return {
-    props: {
-      title,
-      groupedStories,
-      lang,
+    redirect: {
+      destination,
+      permanent: true,
     },
   };
 };
 
-export default function AnimalSeoPage({
-  title,
-  groupedStories,
-  lang,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  return <SeoEntityPage entityType="animal" title={title} groupedStories={groupedStories} lang={lang} />;
+export default function AnimalSeoPageRedirect() {
+  return null;
 }
