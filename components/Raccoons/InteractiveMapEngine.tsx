@@ -20,6 +20,8 @@ interface InteractiveMapProps {
   previewSelectedId?: string | null;
 }
 
+const isDebugLogging = process.env.NODE_ENV !== "production";
+
 function splitTextToParagraphs(input: string | null | undefined): string[] {
   if (!input) {
     return [];
@@ -116,7 +118,7 @@ async function requestMapPopupMedia(searchParams: URLSearchParams) {
     }
 
     const payload = (await response.json()) as MapPopupSearchResponse;
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && isDebugLogging) {
       console.log("[popup-media]", payload.debug ?? { missingDebug: true });
     }
     return payload;
@@ -766,12 +768,14 @@ useEffect(() => {
       );
 
       if (resolvedItem.source !== "fallback") {
-        console.info("[popup-media] manual refresh persist", {
-          storyId,
-          slideId: currentPopupSlide.id,
-          slideOrder: currentPopupSlide.index,
-          imageUrl: resolvedItem.url,
-        });
+        if (isDebugLogging) {
+          console.info("[popup-media] manual refresh persist", {
+            storyId,
+            slideId: currentPopupSlide.id,
+            slideOrder: currentPopupSlide.index,
+            imageUrl: resolvedItem.url,
+          });
+        }
 
         void persistResolvedSlideMedia({
           storyId,

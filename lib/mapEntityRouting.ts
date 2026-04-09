@@ -3,6 +3,7 @@ import type { MapPopupType } from "@/types/mapPopup";
 export type CanonicalMapEntityType = "country" | "animal" | "river" | "sea" | "biome";
 
 export type CanonicalEntityRow = {
+  id?: string | number;
   type: string;
   target_id: string;
 };
@@ -63,6 +64,18 @@ const TYPE_ALIASES: Record<string, CanonicalMapEntityType> = {
   landscapes: "biome",
 };
 
+const CANONICAL_SLUG_OVERRIDES: Record<string, string> = {
+  "animal:Tundra,  Wrangel island": "tundra-wrangel-island-2",
+  "biome:Isthmus|CENTRAL AMERICA": "isthmus-central-america-2",
+  "animal:Taiga and Boreal Forest": "taiga-and-boreal-forest-2",
+  "animal:Saharan Halophytics, Flooded grasslands and savannas":
+    "saharan-halophytics-flooded-grasslands-and-savannas-2",
+  "animal:Mascarene Islands,Tropical and subtropical moist broadleaf forests":
+    "mascarene-islands-tropical-and-subtropical-moist-broadleaf-forests-2",
+  "animal:THE ZAMBEZIAN FLOODED GRASSLANDS,FLOODED GRASSLANDS AND SAVANNAS":
+    "the-zambezian-flooded-grasslands-flooded-grasslands-and-savannas-2",
+};
+
 export function normalizeSlug(input: string): string {
   return decodeURIComponent(String(input || ""))
     .normalize("NFKD")
@@ -78,6 +91,10 @@ export function normalizeSlug(input: string): string {
 export function normalizeMapEntityType(input: string): CanonicalMapEntityType | null {
   const normalized = String(input || "").trim().toLowerCase();
   return TYPE_ALIASES[normalized] ?? null;
+}
+
+export function resolveCanonicalTypeForRowType(input: string): CanonicalMapEntityType | null {
+  return normalizeMapEntityType(input) || getCanonicalRouteForStoryType(input as MapPopupType);
 }
 
 export function getCanonicalRouteForStoryType(type: MapPopupType): CanonicalMapEntityType | null {
@@ -108,6 +125,20 @@ export function getStoryTypesForCanonicalRoute(type: CanonicalMapEntityType): Ma
   return STORY_TYPE_BY_CANONICAL_ROUTE[type];
 }
 
+export function resolveCanonicalSlug(type: string, targetId: string): string {
+  const canonicalType = resolveCanonicalTypeForRowType(type);
+  const rawTargetId = String(targetId || "").trim();
+
+  if (canonicalType) {
+    const override = CANONICAL_SLUG_OVERRIDES[`${canonicalType}:${rawTargetId}`];
+    if (override) {
+      return override;
+    }
+  }
+
+  return normalizeSlug(rawTargetId);
+}
+
 export function buildCanonicalMapEntityPath(type: CanonicalMapEntityType, slug: string): string {
   return `/map/${type}/${normalizeSlug(slug)}`;
 }
@@ -129,8 +160,8 @@ export function findCanonicalSlugConflicts(rows: CanonicalEntityRow[]) {
   const routeInfoByCanonicalKey = new Map<string, { canonicalType: CanonicalMapEntityType; slug: string }>();
 
   for (const row of rows) {
-    const canonicalType = normalizeMapEntityType(row.type) || getCanonicalRouteForStoryType(row.type as MapPopupType);
-    const normalizedSlug = normalizeSlug(row.target_id);
+    const canonicalType = resolveCanonicalTypeForRowType(row.type);
+    const normalizedSlug = resolveCanonicalSlug(row.type, row.target_id);
 
     if (!canonicalType || !normalizedSlug || normalizedSlug === "none" || normalizedSlug === "__none") {
       continue;

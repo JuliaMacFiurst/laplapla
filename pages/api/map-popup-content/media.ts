@@ -3,7 +3,6 @@ import { resolveAdminAccess } from "@/lib/server/auth/adminAccess";
 import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
 import {
-  buildResolvedSlideMediaPreview,
   loadStoryPersistenceTarget,
   persistResolvedSlideMediaWithStatus,
 } from "@/lib/server/mapPopup/persistence";
@@ -31,8 +30,13 @@ type PersistMediaResponse =
   | { error: string };
 
 const ROUTE = "/api/map-popup-content/media";
+const isDebugLogging = process.env.NODE_ENV !== "production";
 
 function logApi(status: number, startedAt: number) {
+  if (!isDebugLogging) {
+    return;
+  }
+
   console.log("[API]", {
     route: ROUTE,
     status,
@@ -132,10 +136,19 @@ async function handler(
     return;
   }
 
-  const [adminAccess, storyTarget] = await Promise.all([
-    resolveAdminAccess(req),
-    loadStoryPersistenceTarget(normalizedStoryId),
-  ]);
+  const adminAccess = await resolveAdminAccess(req);
+  if (!adminAccess.isAdmin) {
+    setPersistenceHeaders(res, {
+      action: "error",
+      isAdmin: false,
+      writeState: "error",
+    });
+    res.status(403).json({ error: "Forbidden" });
+    logApi(res.statusCode, startedAt);
+    return;
+  }
+
+  const storyTarget = await loadStoryPersistenceTarget(normalizedStoryId);
   const timestamp = new Date().toISOString();
 
   const persistParams = {
@@ -148,34 +161,26 @@ async function handler(
   };
 
   try {
-    const persistenceResult = adminAccess.isAdmin
-      ? await persistResolvedSlideMediaWithStatus(persistParams)
-      : null;
-    const slide = adminAccess.isAdmin
-      ? persistenceResult?.slide ?? null
-      : await buildResolvedSlideMediaPreview(persistParams);
+    const persistenceResult = await persistResolvedSlideMediaWithStatus(persistParams);
+    const slide = persistenceResult?.slide ?? null;
+    const action = slide ? "success" : "error";
 
-    const action =
-      adminAccess.isAdmin
-        ? slide
-          ? "success"
-          : "error"
-        : "skipped";
+    if (isDebugLogging) {
+      console.info("[map-popup-content/media] write attempt", {
+        action,
+        target_id: storyTarget?.target_id ?? null,
+        story_id: slide?.story_id ?? normalizedStoryId,
+        slide_id: normalizedSlideId,
+        slide_order: Number.isFinite(normalizedSlideOrder) ? normalizedSlideOrder : null,
+        image_url: slide?.image_url ?? null,
+        reason: persistenceResult?.reason ?? null,
+        match_source: persistenceResult?.matchSource ?? null,
+        isAdmin: adminAccess.isAdmin,
+        timestamp,
+      });
+    }
 
-    console.info("[map-popup-content/media] write attempt", {
-      action,
-      target_id: storyTarget?.target_id ?? null,
-      story_id: slide?.story_id ?? normalizedStoryId,
-      slide_id: normalizedSlideId,
-      slide_order: Number.isFinite(normalizedSlideOrder) ? normalizedSlideOrder : null,
-      image_url: slide?.image_url ?? null,
-      reason: persistenceResult?.reason ?? null,
-      match_source: persistenceResult?.matchSource ?? null,
-      isAdmin: adminAccess.isAdmin,
-      timestamp,
-    });
-
-    if (adminAccess.isAdmin && !slide) {
+    if (!slide) {
       setPersistenceHeaders(res, {
         action: "error",
         isAdmin: true,
@@ -188,25 +193,25 @@ async function handler(
 
     setPersistenceHeaders(res, {
       action,
-      isAdmin: adminAccess.isAdmin,
-      writeState: adminAccess.isAdmin
-        ? persistenceResult?.writeState ?? "error"
-        : "skipped",
+      isAdmin: true,
+      writeState: persistenceResult?.writeState ?? "error",
     });
     res.status(200).json({ ok: true, slide });
     logApi(res.statusCode, startedAt);
     return;
   } catch (error) {
     logApiError(error);
-    console.error("[map-popup-content/media] write failed", {
-      target_id: storyTarget?.target_id ?? null,
-      slide_id: normalizedSlideId,
-      slide_order: Number.isFinite(normalizedSlideOrder) ? normalizedSlideOrder : null,
-      code: (error as { code?: string } | null)?.code ?? null,
-      message: error instanceof Error ? error.message : "Unknown error",
-      isAdmin: adminAccess.isAdmin,
-      timestamp,
-    });
+    if (isDebugLogging) {
+      console.error("[map-popup-content/media] write failed", {
+        target_id: storyTarget?.target_id ?? null,
+        slide_id: normalizedSlideId,
+        slide_order: Number.isFinite(normalizedSlideOrder) ? normalizedSlideOrder : null,
+        code: (error as { code?: string } | null)?.code ?? null,
+        message: error instanceof Error ? error.message : "Unknown error",
+        isAdmin: adminAccess.isAdmin,
+        timestamp,
+      });
+    }
 
     setPersistenceHeaders(res, {
       action: "error",

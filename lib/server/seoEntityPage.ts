@@ -15,10 +15,12 @@ import {
   getCanonicalRouteForStoryType,
   getStoryTypesForCanonicalRoute,
   normalizeSlug,
+  resolveCanonicalSlug,
   warnAboutCanonicalRouteIssues,
 } from "@/lib/mapEntityRouting";
 
 type MapStoryTargetRow = {
+  id: string | number;
   type: MapPopupType;
   target_id: string;
   language: string;
@@ -108,7 +110,7 @@ async function loadRouteTargetRows(entityType: SeoEntityType, lang: Lang) {
   const languages = Array.from(new Set([lang, "ru"]));
   const { data, error } = await supabase
     .from("map_stories")
-    .select("type, target_id, language")
+    .select("id, type, target_id, language")
     .in("type", routeTypes)
     .in("language", languages);
 
@@ -128,7 +130,7 @@ function resolveRawTargetIdFromSlug(rows: MapStoryTargetRow[], slug: string, lan
     ...rows.filter((row) => row.language !== lang),
   ];
 
-  const match = preferredRows.find((row) => normalizeSlug(row.target_id) === normalizedSlug);
+  const match = preferredRows.find((row) => resolveCanonicalSlug(row.type, row.target_id) === normalizedSlug);
   return match?.target_id ?? null;
 }
 
@@ -138,7 +140,7 @@ export async function resolveCanonicalEntityRouteBySlug(slug: string, lang: Lang
   const supportedTypes = ["country", "culture", "food", "animal", "weather", "river", "sea", "physic"];
   const { data, error } = await supabase
     .from("map_stories")
-    .select("type, target_id, language")
+    .select("id, type, target_id, language")
     .in("type", supportedTypes)
     .in("language", languages);
 
@@ -158,7 +160,7 @@ export async function resolveCanonicalEntityRouteBySlug(slug: string, lang: Lang
     ...rows.filter((row) => row.language !== lang),
   ];
 
-  const match = preferredRows.find((row) => normalizeSlug(row.target_id) === normalizedSlug);
+  const match = preferredRows.find((row) => resolveCanonicalSlug(row.type, row.target_id) === normalizedSlug);
   if (!match) {
     return null;
   }
@@ -170,9 +172,9 @@ export async function resolveCanonicalEntityRouteBySlug(slug: string, lang: Lang
 
   return {
     type: canonicalType,
-    slug: normalizedSlug,
+    slug: resolveCanonicalSlug(match.type, match.target_id),
     rawTargetId: match.target_id,
-    canonicalPath: buildCanonicalMapEntityPath(canonicalType, normalizedSlug),
+    canonicalPath: buildCanonicalMapEntityPath(canonicalType, resolveCanonicalSlug(match.type, match.target_id)),
   };
 }
 
@@ -245,7 +247,7 @@ export async function loadSeoRouteSlugs() {
   const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from("map_stories")
-    .select("type, target_id")
+    .select("id, type, target_id")
     .in("type", ["country", "culture", "food", "animal", "weather", "river", "sea", "physic"]);
 
   if (error) {
@@ -260,8 +262,8 @@ export async function loadSeoRouteSlugs() {
     biome: new Set<string>(),
   };
 
-  for (const row of (data || []) as Array<Pick<MapStoryTargetRow, "type" | "target_id">>) {
-    const normalizedSlug = normalizeSlug(row.target_id);
+  for (const row of (data || []) as Array<Pick<MapStoryTargetRow, "id" | "type" | "target_id">>) {
+    const normalizedSlug = resolveCanonicalSlug(row.type, row.target_id);
     if (!normalizedSlug || normalizedSlug === "none" || normalizedSlug === "__none") {
       continue;
     }

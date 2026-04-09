@@ -16,6 +16,7 @@ const ALLOWED_HOSTS = new Set([
 const FETCH_TIMEOUT_MS = 7_000;
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 const ROUTE = "/api/media-proxy";
+const isDebugLogging = process.env.NODE_ENV !== "production";
 
 export const config = {
   api: {
@@ -31,10 +32,18 @@ class ResponseTooLargeError extends Error {
 }
 
 function logBlocked(reason: string, url: string | null) {
+  if (!isDebugLogging) {
+    return;
+  }
+
   console.warn("[media-proxy] blocked", { reason, url });
 }
 
 function logApi(status: number, startedAt: number) {
+  if (!isDebugLogging) {
+    return;
+  }
+
   console.log("[API]", {
     route: ROUTE,
     status,

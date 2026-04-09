@@ -3,7 +3,6 @@ import { resolveAdminAccess } from "@/lib/server/auth/adminAccess";
 import {
   ensurePersistedSlidesByStoryId,
   loadStoryPersistenceTarget,
-  resolveStorySlides,
 } from "@/lib/server/mapPopup/persistence";
 import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
@@ -24,8 +23,13 @@ type PersistSlidesResponse =
   | { error: string };
 
 const ROUTE = "/api/map-popup-content/slides";
+const isDebugLogging = process.env.NODE_ENV !== "production";
 
 function logApi(status: number, startedAt: number) {
+  if (!isDebugLogging) {
+    return;
+  }
+
   console.log("[API]", {
     route: ROUTE,
     status,
@@ -79,20 +83,26 @@ async function handler(
   }
 
   try {
-    const [adminAccess, storyTarget] = await Promise.all([
-      resolveAdminAccess(req),
+    const adminAccess = await resolveAdminAccess(req);
+    if (!adminAccess.isAdmin) {
+      res.status(403).json({ error: "Forbidden" });
+      logApi(res.statusCode, startedAt);
+      return;
+    }
+
+    const [slides, storyTarget] = await Promise.all([
+      ensurePersistedSlidesByStoryId(normalizedStoryId),
       loadStoryPersistenceTarget(normalizedStoryId),
     ]);
-    const slides = adminAccess.isAdmin
-      ? await ensurePersistedSlidesByStoryId(normalizedStoryId)
-      : await resolveStorySlides(normalizedStoryId);
 
-    console.info("[map-popup-content/slides] write attempt", {
-      action: adminAccess.isAdmin ? "success" : "skipped",
-      target_id: storyTarget?.target_id ?? null,
-      isAdmin: adminAccess.isAdmin,
-      timestamp: new Date().toISOString(),
-    });
+    if (isDebugLogging) {
+      console.info("[map-popup-content/slides] write attempt", {
+        action: "success",
+        target_id: storyTarget?.target_id ?? null,
+        isAdmin: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     res.status(200).json({ ok: true, slidesCount: slides.length });
     logApi(res.statusCode, startedAt);

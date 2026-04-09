@@ -9,7 +9,6 @@ import {
   loadMapTargetsByKeys,
 } from "@/lib/server/mapTargets";
 import {
-  normalizeEntitySlug,
   resolveEntityDisplayTitle,
 } from "@/lib/server/seoEntityPage";
 import type { SeoEntityType } from "@/components/SeoEntityPage";
@@ -18,6 +17,7 @@ import type { Lang } from "@/i18n";
 import {
   buildCanonicalMapEntityPath,
   getCanonicalRouteForStoryType,
+  resolveCanonicalSlug,
   warnAboutCanonicalRouteIssues,
 } from "@/lib/mapEntityRouting";
 
@@ -167,7 +167,7 @@ async function buildIndex(): Promise<SearchIndexEntry[]> {
       continue;
     }
 
-    const slug = normalizeEntitySlug(story.target_id);
+    const slug = resolveCanonicalSlug(story.type, story.target_id);
     if (!slug || slug === "none" || slug === "__none") {
       continue;
     }

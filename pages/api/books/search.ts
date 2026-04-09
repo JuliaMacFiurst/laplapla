@@ -6,6 +6,7 @@ import type { Book } from "@/types/types";
 
 const MAX_RESULTS = 30;
 const ROUTE = "/api/books/search";
+const isDebugLogging = process.env.NODE_ENV !== "production";
 
 const normalize = (value: unknown) =>
   String(value ?? "")
@@ -28,6 +29,10 @@ const matchesQuery = (book: Record<string, unknown>, query: string) => {
 };
 
 function logApi(status: number, startedAt: number) {
+  if (!isDebugLogging) {
+    return;
+  }
+
   console.log("[API]", {
     route: ROUTE,
     status,
@@ -77,7 +82,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       responseBooks = await translateBooksForLang(filteredBooks, lang);
     } catch (translationError) {
-      console.error("translation error", translationError);
+      if (isDebugLogging) {
+        console.error("translation error", translationError);
+      }
       responseBooks = filteredBooks;
     }
 
