@@ -6,7 +6,6 @@ import CatsLayout from "@/components/Cats/CatsLayout";
 import { useRouter } from "next/router";
 import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
-import { useIsMobile } from "@/hooks/useIsMobile";
 
 function pickRandomItems<T>(items: T[], count: number) {
   const shuffled = [...items];
@@ -106,7 +105,6 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router);
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats";
-  const isMobile = useIsMobile();
 
   const handleFindNewImage = async (slideIndex: number) => {
     const slide = slides[slideIndex];
@@ -257,7 +255,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
         )}
       </div>
 
-      {slides.length > 0 && !isMobile && (
+      {slides.length > 0 && (
         <div style={{ marginTop: 20, textAlign: "center" }}>
           <button
             className="edit-slides-button"

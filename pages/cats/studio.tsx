@@ -10,8 +10,6 @@ import { PARROT_PRESETS } from "@/utils/parrot-presets";
 import { loadProject } from "@/lib/studioStorage";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import type { StudioProject } from "@/types/studio";
-import MobileDesktopNotice from "@/components/MobileDesktopNotice";
-import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ImportedSlide = {
   text: string;
@@ -117,7 +115,6 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router);
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/studio";
-  const isMobile = useIsMobile();
 
   const [initialSlides, setInitialSlides] = useState<
     ImportedSlide[] | undefined
@@ -215,10 +212,6 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
       console.error("Failed to parse slides from query");
     }
   }, [router.isReady, router.query]);
-
-  if (isMobile) {
-    return <MobileDesktopNotice lang={lang} />;
-  }
 
   return (
     <>

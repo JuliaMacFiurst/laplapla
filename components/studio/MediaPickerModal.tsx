@@ -269,24 +269,67 @@ export default function MediaPickerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="media-modal-overlay" onClick={onClose}>
-      <div className="media-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="media-modal-overlay"
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.82)",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        padding: "0",
+        zIndex: 200,
+      }}
+    >
+      <div
+        className="media-modal"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          maxHeight: "85dvh",
+          overflow: "auto",
+          background: "#161616",
+          color: "#fff",
+          borderTopLeftRadius: "20px",
+          borderTopRightRadius: "20px",
+          padding: "14px",
+          boxSizing: "border-box",
+        }}
+      >
         <div className="media-tabs">
           <button
             className={`media-tab-button ${activeTab === "giphy" ? "active" : ""}`}
             onClick={() => setActiveTab("giphy")}
+            style={{
+              minHeight: "44px",
+              padding: "10px 12px",
+              borderRadius: "12px",
+            }}
           >
             {t.tabGiphy}
           </button>
           <button
             className={`media-tab-button ${activeTab === "pexels" ? "active" : ""}`}
             onClick={() => setActiveTab("pexels")}
+            style={{
+              minHeight: "44px",
+              padding: "10px 12px",
+              borderRadius: "12px",
+            }}
           >
             {t.tabPexels}
           </button>
           <button
             className={`media-tab-button ${activeTab === "upload" ? "active" : ""}`}
             onClick={() => setActiveTab("upload")}
+            style={{
+              minHeight: "44px",
+              padding: "10px 12px",
+              borderRadius: "12px",
+            }}
           >
             {t.tabUpload}
           </button>
@@ -306,8 +349,14 @@ export default function MediaPickerModal({
               }}
               placeholder={t.searchPlaceholder}
               className="media-search-input"
+              style={{
+                minWidth: 0,
+                width: "100%",
+                minHeight: "44px",
+                boxSizing: "border-box",
+              }}
             />
-            <button className="media-search-button" onClick={handleSearch}>
+            <button className="media-search-button" onClick={handleSearch} style={{ minHeight: "44px", borderRadius: "12px", padding: "10px 12px" }}>
               {t.searchButton}
             </button>
           </div>
@@ -364,6 +413,7 @@ export default function MediaPickerModal({
               type="file"
               accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,image/jpeg,image/png,image/webp,video/mp4,video/webm"
               onChange={handleUpload}
+              style={{ width: "100%", boxSizing: "border-box" }}
             />
 
             {uploadError && <p className="media-upload-error">{uploadError}</p>}
@@ -372,7 +422,7 @@ export default function MediaPickerModal({
           </div>
         )}
 
-        <div className="media-results-grid">
+        <div className="media-results-grid" style={{ overflowX: "hidden" }}>
           {loading && <p>{t.loading}</p>}
 
           {!loading &&
@@ -387,6 +437,7 @@ export default function MediaPickerModal({
                   onSelect({ url, mediaType: isVideo ? "video" : "image" });
                   onClose();
                 }}
+                style={{ overflow: "hidden", borderRadius: "12px" }}
               >
                 {url.endsWith(".mp4") || url.endsWith(".webm") ? (
                   <video
@@ -397,9 +448,15 @@ export default function MediaPickerModal({
                     playsInline
                     preload="metadata"
                     className="media-preview-video"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 ) : (
-                  <img src={url} alt={buildMediaPreviewAlt(url, index)} className="media-preview-image" />
+                  <img
+                    src={url}
+                    alt={buildMediaPreviewAlt(url, index)}
+                    className="media-preview-image"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
                 )}
               </div>
             ))}
