@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { dictionaries, Lang } from "@/i18n";
 import { devLog } from "@/utils/devLog";
 
 interface MediaPickerModalProps {
   lang: Lang;
   isOpen: boolean;
+  isMobile?: boolean;
   onClose: () => void;
   onSelect: (payload: { url: string; mediaType: "image" | "video" }) => void;
 }
@@ -21,6 +22,7 @@ function buildMediaPreviewAlt(url: string, index: number) {
 export default function MediaPickerModal({
   lang,
   isOpen,
+  isMobile = false,
   onClose,
   onSelect,
 }: MediaPickerModalProps) {
@@ -32,12 +34,14 @@ export default function MediaPickerModal({
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [showLoadMoreButton, setShowLoadMoreButton] = useState(false);
 
   const t = dictionaries[lang].cats.studio.mediaPicker;
 
   const [confirmRights, setConfirmRights] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const lastObjectUrlRef = useRef<string | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   const MAX_IMAGE_MB = 10;
   const MAX_VIDEO_MB = 25;
@@ -95,8 +99,38 @@ export default function MediaPickerModal({
     if (!isOpen) {
       setUploadError(null);
       setConfirmRights(false);
+      setShowLoadMoreButton(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const frame = requestAnimationFrame(() => {
+      const node = resultsRef.current;
+      if (!node) return;
+      const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+      setShowLoadMoreButton((current) => {
+        if (distanceToBottom <= 48) return true;
+        if (distanceToBottom >= 120) return false;
+        return current;
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [isMobile, results, loading, hasMore]);
+
+  function handleResultsScroll() {
+    if (!isMobile) return;
+    const node = resultsRef.current;
+    if (!node) return;
+    const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+    setShowLoadMoreButton((current) => {
+      if (distanceToBottom <= 48) return true;
+      if (distanceToBottom >= 120) return false;
+      return current;
+    });
+  }
 
   async function handleSearch() {
     if (!query.trim()) return;
@@ -268,68 +302,85 @@ export default function MediaPickerModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div
-      className="media-modal-overlay"
-      onClick={onClose}
-      style={{
+  const mobileOverlayStyle: CSSProperties | undefined = isMobile
+    ? {
         position: "fixed",
         inset: 0,
         background: "rgba(0,0,0,0.82)",
         display: "flex",
-        alignItems: "flex-end",
+        alignItems: "stretch",
         justifyContent: "center",
         padding: "0",
         zIndex: 200,
-      }}
-    >
-      <div
-        className="media-modal"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: "100%",
-          maxHeight: "85dvh",
-          overflow: "auto",
-          background: "#161616",
-          color: "#fff",
-          borderTopLeftRadius: "20px",
-          borderTopRightRadius: "20px",
-          padding: "14px",
-          boxSizing: "border-box",
-        }}
-      >
+      }
+    : undefined;
+
+  const mobileModalStyle: CSSProperties | undefined = isMobile
+    ? {
+        width: "100%",
+        maxWidth: "100%",
+        height: "100dvh",
+        maxHeight: "100dvh",
+        overflow: "auto",
+        background: "#161616",
+        color: "#fff",
+        padding: "14px",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+      }
+    : undefined;
+
+  return (
+    <div className="media-modal-overlay" onClick={onClose} style={mobileOverlayStyle}>
+      <div className="media-modal" onClick={(e) => e.stopPropagation()} style={mobileModalStyle}>
+        {isMobile ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              marginBottom: "12px",
+            }}
+          >
+            <strong style={{ color: "#fff", fontSize: "16px" }}>Add media</strong>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "999px",
+                border: "none",
+                background: "#2a2a2a",
+                color: "#fff",
+                fontSize: "18px",
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ) : null}
         <div className="media-tabs">
           <button
             className={`media-tab-button ${activeTab === "giphy" ? "active" : ""}`}
             onClick={() => setActiveTab("giphy")}
-            style={{
-              minHeight: "44px",
-              padding: "10px 12px",
-              borderRadius: "12px",
-            }}
+            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
           >
             {t.tabGiphy}
           </button>
           <button
             className={`media-tab-button ${activeTab === "pexels" ? "active" : ""}`}
             onClick={() => setActiveTab("pexels")}
-            style={{
-              minHeight: "44px",
-              padding: "10px 12px",
-              borderRadius: "12px",
-            }}
+            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
           >
             {t.tabPexels}
           </button>
           <button
             className={`media-tab-button ${activeTab === "upload" ? "active" : ""}`}
             onClick={() => setActiveTab("upload")}
-            style={{
-              minHeight: "44px",
-              padding: "10px 12px",
-              borderRadius: "12px",
-            }}
+            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
           >
             {t.tabUpload}
           </button>
@@ -349,21 +400,25 @@ export default function MediaPickerModal({
               }}
               placeholder={t.searchPlaceholder}
               className="media-search-input"
-              style={{
+              style={isMobile ? {
                 minWidth: 0,
                 width: "100%",
                 minHeight: "44px",
                 boxSizing: "border-box",
-              }}
+              } : undefined}
             />
-            <button className="media-search-button" onClick={handleSearch} style={{ minHeight: "44px", borderRadius: "12px", padding: "10px 12px" }}>
+            <button
+              className="media-search-button"
+              onClick={handleSearch}
+              style={isMobile ? { minHeight: "44px", borderRadius: "12px", padding: "10px 12px" } : undefined}
+            >
               {t.searchButton}
             </button>
           </div>
         )}
 
         {activeTab === "giphy" && (
-          <div className="media-notice media-notice-warning">
+          <div className="media-notice media-notice-warning" style={isMobile ? { color: "#000" } : undefined}>
             <p style={{ margin: "0 0 6px 0" }}>{t.giphyNoticeTitle}</p>
             <ul style={{ margin: 0, paddingLeft: 16 }}>
               <li>{t.giphyRule1}</li>
@@ -384,7 +439,7 @@ export default function MediaPickerModal({
         )}
 
         {activeTab === "pexels" && (
-          <div className="media-notice">
+          <div className="media-notice" style={isMobile ? { color: "#000" } : undefined}>
             <p style={{ margin: "0 0 6px 0" }}>{t.pexelsNoticeTitle}</p>
             <ul style={{ margin: 0, paddingLeft: 16 }}>
               <li>{t.pexelsRule1}</li>
@@ -413,7 +468,7 @@ export default function MediaPickerModal({
               type="file"
               accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,image/jpeg,image/png,image/webp,video/mp4,video/webm"
               onChange={handleUpload}
-              style={{ width: "100%", boxSizing: "border-box" }}
+              style={isMobile ? { width: "100%", boxSizing: "border-box" } : undefined}
             />
 
             {uploadError && <p className="media-upload-error">{uploadError}</p>}
@@ -422,14 +477,31 @@ export default function MediaPickerModal({
           </div>
         )}
 
-        <div className="media-results-grid" style={{ overflowX: "hidden" }}>
-          {loading && <p>{t.loading}</p>}
+        <div
+          ref={resultsRef}
+          className={isMobile ? undefined : "media-results-grid"}
+          onScroll={handleResultsScroll}
+          style={isMobile ? {
+            overflowX: "hidden",
+            overflowY: "auto",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            alignContent: "flex-start",
+            flex: 1,
+            minHeight: 0,
+            width: "100%",
+            alignItems: "flex-start",
+            paddingBottom: hasMore ? "12px" : "0",
+          } : undefined}
+        >
+          {loading && <p style={isMobile ? { width: "100%", color: "#fff" } : undefined}>{t.loading}</p>}
 
           {!loading &&
             results.map((url, index) => (
               <div
                 key={index}
-                className="media-result-item"
+                className={isMobile ? undefined : "media-result-item"}
                 onClick={() => {
                   const lower = url.toLowerCase();
                   const isVideo =
@@ -437,7 +509,22 @@ export default function MediaPickerModal({
                   onSelect({ url, mediaType: isVideo ? "video" : "image" });
                   onClose();
                 }}
-                style={{ overflow: "hidden", borderRadius: "12px" }}
+                style={isMobile ? {
+                  overflow: "hidden",
+                  borderRadius: "12px",
+                  background: "#0f0f0f",
+                  aspectRatio: "1 / 1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: "0 0 calc((100% - 16px) / 3)",
+                  width: "calc((100% - 16px) / 3)",
+                  minWidth: 0,
+                  minHeight: 0,
+                  height: "calc((100vw - 28px - 16px - 16px) / 3)",
+                  maxHeight: "120px",
+                  boxSizing: "border-box",
+                } : undefined}
               >
                 {url.endsWith(".mp4") || url.endsWith(".webm") ? (
                   <video
@@ -448,19 +535,37 @@ export default function MediaPickerModal({
                     playsInline
                     preload="metadata"
                     className="media-preview-video"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={isMobile ? {
+                      width: "100%",
+                      height: "100%",
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                      borderRadius: "12px",
+                      display: "block",
+                      flex: "0 0 auto",
+                    } : undefined}
                   />
                 ) : (
                   <img
                     src={url}
                     alt={buildMediaPreviewAlt(url, index)}
-                    className="media-preview-image"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    className={isMobile ? undefined : "media-preview-image"}
+                    style={isMobile ? {
+                      width: "100%",
+                      height: "100%",
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                      borderRadius: "12px",
+                      display: "block",
+                      flex: "0 0 auto",
+                    } : undefined}
                   />
                 )}
               </div>
             ))}
-          {!loading && hasMore && (
+          {!loading && hasMore && !isMobile && (
             <div className="media-load-more-wrapper">
               <button
                 className={`media-load-more-button ${loading ? "loading" : ""}`}
@@ -472,6 +577,42 @@ export default function MediaPickerModal({
             </div>
           )}
         </div>
+        {isMobile && hasMore ? (
+          <div
+            style={{
+              position: "sticky",
+              bottom: 0,
+              minHeight: "74px",
+              paddingTop: "10px",
+              paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+              background: "linear-gradient(180deg, rgba(22,22,22,0) 0%, rgba(22,22,22,0.94) 26%, #161616 100%)",
+              marginTop: "auto",
+            }}
+          >
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleLoadMore}
+              style={{
+                width: "100%",
+                minHeight: "48px",
+                borderRadius: "14px",
+                border: "none",
+                background: "#ffb3d1",
+                color: "#000",
+                fontSize: "15px",
+                fontWeight: 700,
+                boxShadow: "0 10px 24px rgba(0,0,0,0.24)",
+                opacity: showLoadMoreButton || loading ? 1 : 0,
+                transform: showLoadMoreButton || loading ? "translateY(0)" : "translateY(10px)",
+                pointerEvents: showLoadMoreButton || loading ? "auto" : "none",
+                transition: "opacity 160ms ease, transform 160ms ease",
+              }}
+            >
+              {loading ? t.loading : t.loadMore || "Загрузить ещё"}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

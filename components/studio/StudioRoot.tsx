@@ -556,6 +556,7 @@ function StudioMobileLayout({
   project,
   activeSlide,
   activeSlideIndex,
+  isMediaOpen,
   setActiveSlideIndex,
   setProject,
   setIsMediaOpen,
@@ -703,6 +704,7 @@ function StudioMobileLayout({
             lang={lang}
             isMobile
             isTextEditing={mode === "text"}
+            isMediaEditing={mode === "media"}
             onUpdateSlide={updateSlide}
           />
         </div>
@@ -1058,53 +1060,36 @@ function StudioMobileLayout({
 
           {mode === "media" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {activeSlide.mediaUrl ? (
-                <div
-                  style={{
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    height: "160px",
-                  }}
-                >
-                  {activeSlide.mediaType === "video" ? (
-                    <video
-                      src={activeSlide.mediaUrl}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      src={activeSlide.mediaUrl}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  )}
-                </div>
-              ) : (
-                <div style={{ color: "#aaa" }}>No media</div>
-              )}
+              <div style={{ color: "#fff", fontSize: "13px", lineHeight: 1.4 }}>
+                Drag media on the canvas. Use the pink corner handle to resize it or the X button on the frame to remove it.
+              </div>
 
               <button
                 type="button"
                 onClick={() => setIsMediaOpen(true)}
                 style={mobileButtonStyle}
               >
-                Replace Media
+                {activeSlide.mediaUrl ? "Open library" : "Add media"}
               </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  updateSlide({ ...activeSlide, mediaUrl: undefined })
-                }
-                style={{
-                  ...mobileButtonStyle,
-                  background: "#ffb3d1",
-                  color: "#000",
-                }}
-              >
-                Remove Media
-              </button>
+              {activeSlide.mediaUrl ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateSlide({
+                      ...activeSlide,
+                      mediaFit: activeSlide.mediaFit === "cover" ? "contain" : "cover",
+                    })
+                  }
+                  style={{
+                    ...mobileButtonStyle,
+                    background: activeSlide.mediaFit === "cover" ? "#ffb3d1" : "#c9b6ff",
+                    color: "#000",
+                  }}
+                >
+                  {activeSlide.mediaFit === "cover" ? "Заполнить" : "По размеру"}
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -1160,6 +1145,20 @@ function StudioMobileLayout({
           </button>
         ))}
       </nav>
+      <MediaPickerModal
+        lang={lang}
+        isOpen={isMediaOpen}
+        isMobile
+        onClose={() => setIsMediaOpen(false)}
+        onSelect={({ url, mediaType }) => {
+          updateSlide({
+            ...activeSlide,
+            mediaUrl: toStudioMediaUrl(url) ?? url,
+            mediaType,
+          });
+          setIsMediaOpen(false);
+        }}
+      />
     </div>
   );
 }
