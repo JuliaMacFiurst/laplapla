@@ -1,6 +1,12 @@
 import InteractiveMapEngine from "@/components/Raccoons/InteractiveMapEngine";
 
-export default function CultureMap({ previewSelectedId }: { previewSelectedId?: string | null }) {
+export default function CultureMap({
+  previewSelectedId,
+  onUserSelect,
+}: {
+  previewSelectedId?: string | null;
+  onUserSelect?: (selectedId: string) => void;
+}) {
   return (
     <InteractiveMapEngine
       svgPath="countries/countries_interactive.svg"
@@ -8,6 +14,7 @@ export default function CultureMap({ previewSelectedId }: { previewSelectedId?: 
       popupFormatter={(id: string) => `Страна: ${id.toUpperCase()}`}
       styleClass="country-popup"
       previewSelectedId={previewSelectedId}
+      onUserSelect={onUserSelect}
     />
   );
 }

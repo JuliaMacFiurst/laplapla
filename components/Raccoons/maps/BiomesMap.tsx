@@ -1,6 +1,12 @@
 import InteractiveMapEngine from "@/components/Raccoons/InteractiveMapEngine";
 
-export default function BiomesMap({ previewSelectedId }: { previewSelectedId?: string | null }) {
+export default function BiomesMap({
+  previewSelectedId,
+  onUserSelect,
+}: {
+  previewSelectedId?: string | null;
+  onUserSelect?: (selectedId: string) => void;
+}) {
   return (
     <InteractiveMapEngine
       svgPath="biomes/Biomes_of_the_world.svg"
@@ -8,6 +14,7 @@ export default function BiomesMap({ previewSelectedId }: { previewSelectedId?: s
       popupFormatter={(id: string) => `Страна: ${id.toUpperCase()}`}
       styleClass="country-popup"
       previewSelectedId={previewSelectedId}
+      onUserSelect={onUserSelect}
     />
   );
 }

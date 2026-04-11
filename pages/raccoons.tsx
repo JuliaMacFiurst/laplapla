@@ -1,5 +1,5 @@
 // pages/raccoons.tsx
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
 import MapWrapper from "@/components/Raccoons/MapWrapper";
@@ -21,11 +21,14 @@ type EntitySearchResult = {
   targetId: string;
 };
 
+type MapTab = "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food";
+
 const SEARCH_UI = {
   ru: {
     placeholder: "Куда отправимся?",
     button: "Найти",
     clear: "Очистить",
+    showMore: "Показать ещё",
     empty: "Ничего не найдено.",
     error: "Поиск сейчас недоступен.",
   },
@@ -33,6 +36,7 @@ const SEARCH_UI = {
     placeholder: "Where shall we go?",
     button: "Search",
     clear: "Clear",
+    showMore: "Show more",
     empty: "Nothing found.",
     error: "Search is unavailable right now.",
   },
@@ -40,10 +44,13 @@ const SEARCH_UI = {
     placeholder: "לאן נצא?",
     button: "חיפוש",
     clear: "נקה",
+    showMore: "להציג עוד",
     empty: "לא נמצאו תוצאות.",
     error: "החיפוש אינו זמין כרגע.",
   },
 } as const;
+
+const SEARCH_RESULTS_PAGE_SIZE = 12;
 
 export default function RaccoonsPage() {
   const router = useRouter();
@@ -53,11 +60,11 @@ export default function RaccoonsPage() {
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/raccoons";
   const searchUi = SEARCH_UI[lang];
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<
-    "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food"
-  >("country");
+  const [activeTab, setActiveTab] = useState<MapTab>("country");
+  const [deepLinkedPreviewId, setDeepLinkedPreviewId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<EntitySearchResult[]>([]);
+  const [visibleResultsCount, setVisibleResultsCount] = useState(SEARCH_RESULTS_PAGE_SIZE);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [hoveredResultTargetId, setHoveredResultTargetId] = useState<string | null>(null);
@@ -74,12 +81,80 @@ export default function RaccoonsPage() {
     })),
   ];
 
+  const clearMapDeepLinkState = () => {
+    setDeepLinkedPreviewId(null);
+
+    if (!router.isReady) {
+      return;
+    }
+
+    const nextQuery = { ...router.query };
+    delete nextQuery.tab;
+    delete nextQuery.preview;
+
+    void router.replace(
+      {
+        pathname: "/raccoons",
+        query: nextQuery,
+      },
+      undefined,
+      { shallow: true, scroll: false },
+    );
+  };
+
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
+    const requestedTab = Array.isArray(router.query.tab) ? router.query.tab[0] : router.query.tab;
+    const requestedPreview = Array.isArray(router.query.preview) ? router.query.preview[0] : router.query.preview;
+    const normalizedTab: MapTab | null =
+      requestedTab === "country" ||
+      requestedTab === "river" ||
+      requestedTab === "sea" ||
+      requestedTab === "physic" ||
+      requestedTab === "flag" ||
+      requestedTab === "animal" ||
+      requestedTab === "culture" ||
+      requestedTab === "weather" ||
+      requestedTab === "food"
+        ? requestedTab
+        : null;
+
+    if (normalizedTab) {
+      if (normalizedTab !== activeTab) {
+        setActiveTab(normalizedTab);
+      }
+    }
+
+    if (typeof requestedPreview === "string" && requestedPreview.trim()) {
+      setDeepLinkedPreviewId(requestedPreview.trim());
+    }
+  }, [activeTab, router.isReady, router.query.preview, router.query.tab]);
+
+  const handleMapTabChange = (nextTab: MapTab) => {
+    clearMapDeepLinkState();
+    setActiveTab(nextTab);
+  };
+
+  const handleMapUserSelect = (selectedId: string) => {
+    if (!deepLinkedPreviewId) {
+      return;
+    }
+
+    if (selectedId !== deepLinkedPreviewId) {
+      clearMapDeepLinkState();
+    }
+  };
+
   const handleSearchSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
       setResults([]);
+      setVisibleResultsCount(SEARCH_RESULTS_PAGE_SIZE);
       setSearchMessage(null);
       return;
     }
@@ -95,10 +170,12 @@ export default function RaccoonsPage() {
 
       const nextResults = (await response.json()) as EntitySearchResult[];
       setResults(nextResults);
+      setVisibleResultsCount(SEARCH_RESULTS_PAGE_SIZE);
       setSearchMessage(nextResults.length === 0 ? searchUi.empty : null);
     } catch (error) {
       console.error("[raccoons-search] failed", error);
       setResults([]);
+      setVisibleResultsCount(SEARCH_RESULTS_PAGE_SIZE);
       setSearchMessage(searchUi.error);
     } finally {
       setSearchLoading(false);
@@ -125,7 +202,9 @@ export default function RaccoonsPage() {
   const firstPreviewResult = activeRouteForTab
     ? results.find((result) => result.route === activeRouteForTab) || null
     : null;
-  const previewSelectedId = hoveredResultTargetId || firstPreviewResult?.targetId || null;
+  const previewSelectedId = hoveredResultTargetId || firstPreviewResult?.targetId || deepLinkedPreviewId || null;
+  const visibleResults = results.slice(0, visibleResultsCount);
+  const hasMoreResults = results.length > visibleResults.length;
 
   if (isMobile) {
     return <MobileDesktopNotice lang={lang} />;
@@ -148,7 +227,7 @@ export default function RaccoonsPage() {
                 <p className="page-subtitle">{t.page.subtitle}</p>
               </div>
             </div>
-            <MapTabs selectedTab={activeTab} setSelectedTab={setActiveTab} />
+            <MapTabs selectedTab={activeTab} setSelectedTab={handleMapTabChange} />
             {lang !== "ru" && t.page.slidesTranslationNotice && (
               <p className="raccoons-map-translation-note" dir={lang === "he" ? "rtl" : "ltr"}>
                 {t.page.slidesTranslationNotice}
@@ -174,6 +253,7 @@ export default function RaccoonsPage() {
                     onClick={() => {
                       setQuery("");
                       setResults([]);
+                      setVisibleResultsCount(SEARCH_RESULTS_PAGE_SIZE);
                       setSearchMessage(null);
                     }}
                   >
@@ -200,7 +280,7 @@ export default function RaccoonsPage() {
 
                 {results.length > 0 ? (
                   <div className="search-results-list">
-                    {results.map((result) => (
+                    {visibleResults.map((result) => (
                       <button
                         key={`${result.route}:${result.slug}`}
                         type="button"
@@ -214,12 +294,21 @@ export default function RaccoonsPage() {
                         {result.title}
                       </button>
                     ))}
+                    {hasMoreResults ? (
+                      <button
+                        type="button"
+                        className="search-button"
+                        onClick={() => setVisibleResultsCount((count) => count + SEARCH_RESULTS_PAGE_SIZE)}
+                      >
+                        {searchUi.showMore}
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
             ) : null}
           </div>
-          <MapWrapper type={activeTab} previewSelectedId={previewSelectedId} />
+          <MapWrapper type={activeTab} previewSelectedId={previewSelectedId} onUserSelect={handleMapUserSelect} />
           <QuestSection quests={localizedQuests} />
         </div>
       </main>

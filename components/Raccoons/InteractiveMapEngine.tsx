@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { normalizeSlug } from "@/lib/mapEntityRouting";
 import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
@@ -18,6 +19,7 @@ interface InteractiveMapProps {
   popupFormatter: (id: string) => string;
   styleClass: string;
   previewSelectedId?: string | null;
+  onUserSelect?: (selectedId: string) => void;
 }
 
 const isDebugLogging = process.env.NODE_ENV !== "production";
@@ -295,7 +297,7 @@ async function resolveSlideMedia(
   }
 }
 
-export default function InteractiveMap({ svgPath, type, previewSelectedId }: InteractiveMapProps) {
+export default function InteractiveMap({ svgPath, type, previewSelectedId, onUserSelect }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const t = dictionaries[lang].raccoons.popup;
@@ -320,7 +322,7 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId }: Int
   const mediaRequestVersionRef = useRef(new Map<string, number>());
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
-  const previewSelectedPathRef = useRef<SVGPathElement | null>(null);
+  const previewSelectedPathsRef = useRef<SVGPathElement[]>([]);
   const hoveredPathRef = useRef<SVGPathElement | null>(null);
   const selectedElementRef = useRef<string | null>(null);
 
@@ -480,7 +482,7 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId }: Int
   const syncInteractionOverlay = (
     hoveredPath: SVGPathElement | null = hoveredPathRef.current,
     selectedPath: SVGPathElement | null = lastSelectedPath.current,
-    previewPath: SVGPathElement | null = previewSelectedPathRef.current,
+    previewPaths: SVGPathElement[] = previewSelectedPathsRef.current,
   ) => {
     const sourceSvg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
     if (!sourceSvg) {
@@ -502,17 +504,15 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId }: Int
       hoveredPathRef.current = null;
     }
 
-    if (previewPath && !sourceSvg.contains(previewPath)) {
-      previewPath = null;
-      previewSelectedPathRef.current = null;
-    }
+    previewPaths = previewPaths.filter((path) => sourceSvg.contains(path));
+    previewSelectedPathsRef.current = previewPaths;
 
     const existingOverlay = sourceSvg.querySelector('[data-interaction-overlay="true"]');
     if (existingOverlay) {
       existingOverlay.remove();
     }
 
-    if (!hoveredPath && !selectedPath && !previewPath) {
+    if (!hoveredPath && !selectedPath && previewPaths.length === 0) {
       return;
     }
 
@@ -532,20 +532,32 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId }: Int
       );
     }
 
-    if (!selectedPath && previewPath) {
-      overlayGroup.appendChild(
-        buildOverlayBranchClone(sourceSvg, previewPath, getSelectedFill(), "selected"),
-      );
+    if (!selectedPath && previewPaths.length > 0) {
+      previewPaths.forEach((previewPath) => {
+        overlayGroup.appendChild(
+          buildOverlayBranchClone(sourceSvg, previewPath, getSelectedFill(), "selected"),
+        );
+      });
     }
 
     sourceSvg.appendChild(overlayGroup);
   };
 
-  const resolvePathById = (sourceSvg: SVGSVGElement, id: string) => {
+  const resolvePathsById = (sourceSvg: SVGSVGElement, id: string) => {
     const escapedId = typeof CSS !== "undefined" && typeof CSS.escape === "function"
       ? CSS.escape(id)
       : id.replace(/["\\]/g, "\\$&");
-    return sourceSvg.querySelector(`path[id="${escapedId}"]`) as SVGPathElement | null;
+    const exactMatches = Array.from(sourceSvg.querySelectorAll(`path[id="${escapedId}"]`)) as SVGPathElement[];
+    if (exactMatches.length > 0) {
+      return exactMatches;
+    }
+
+    const normalizedTargetId = normalizeSlug(id);
+    const paths = Array.from(sourceSvg.querySelectorAll("path[id]")) as SVGPathElement[];
+    return paths.filter((path) => {
+      const pathId = path.getAttribute("id") || "";
+      return pathId.toLowerCase() === id.toLowerCase() || normalizeSlug(pathId) === normalizedTargetId;
+    });
   };
 
   const applySelectedStyle = (path: SVGPathElement) => {
@@ -1379,6 +1391,7 @@ useEffect(() => {
       return;
     }
 
+    onUserSelect?.(path.id);
     openSelection(path, path.id);
   };
 
@@ -1409,24 +1422,25 @@ useEffect(() => {
   useEffect(() => {
     const sourceSvg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
     if (!sourceSvg) {
-      previewSelectedPathRef.current = null;
+      previewSelectedPathsRef.current = [];
       return;
     }
 
     if (selectedElementRef.current) {
-      previewSelectedPathRef.current = null;
+      previewSelectedPathsRef.current = [];
       syncInteractionOverlay();
       return;
     }
 
     if (!previewSelectedId) {
-      previewSelectedPathRef.current = null;
+      previewSelectedPathsRef.current = [];
       syncInteractionOverlay();
       return;
     }
 
-    const previewPath = resolvePathById(sourceSvg, previewSelectedId);
-    previewSelectedPathRef.current = previewPath && isInteractivePath(previewPath) ? previewPath : null;
+    const previewPaths = resolvePathsById(sourceSvg, previewSelectedId)
+      .filter((path) => isInteractivePath(path));
+    previewSelectedPathsRef.current = previewPaths;
     syncInteractionOverlay();
   }, [previewSelectedId, svgContent, type]);
 

@@ -133,8 +133,12 @@ export const en = {
     askButton: "Ask!",
     thinkingShort: "The cats are thinking...",
     thinkingLong: "The cats are thinking about your question...",
+    thinkingLongWithQuestion: 'The cats are thinking about: "{question}"',
 
     randomQuestion: "Random question 🎲",
+    mobileIntroTitle: "Mini slideshow",
+    mobileIntroText: "Open a question and swipe right to read the slides one by one.",
+    swipeHint: "Swipe right to move to the next card",
 
     errors: {
       generic: "Something went wrong.",

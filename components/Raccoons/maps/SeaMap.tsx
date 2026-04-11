@@ -1,7 +1,13 @@
 
 import InteractiveMapEngine from '../InteractiveMapEngine';
 
-const SeaMap = ({ previewSelectedId }: { previewSelectedId?: string | null }) => {
+const SeaMap = ({
+  previewSelectedId,
+  onUserSelect,
+}: {
+  previewSelectedId?: string | null;
+  onUserSelect?: (selectedId: string) => void;
+}) => {
   return (
     <InteractiveMapEngine
       svgPath="seas/seas-colored-bordered.svg"
@@ -9,6 +15,7 @@ const SeaMap = ({ previewSelectedId }: { previewSelectedId?: string | null }) =>
       popupFormatter={(id: string) => `Море: ${id}`}
       styleClass="sea-svg"
       previewSelectedId={previewSelectedId}
+      onUserSelect={onUserSelect}
     />
   );
 };

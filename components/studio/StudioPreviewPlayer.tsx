@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, forwardRef } from "react";
 import { resolveFontFamily } from "@/lib/fonts";
 import type { StudioSlide } from "@/types/studio";
 import { dictionaries, type Lang } from "@/i18n";
+import type { CSSProperties } from "react";
 
 interface StudioPreviewPlayerProps {
   slides: StudioSlide[];
@@ -18,6 +19,143 @@ interface StudioPreviewPlayerProps {
   showWatermark?: boolean;
   showCloseButton?: boolean;
   isPlaybackEnabled?: boolean;
+}
+
+interface StudioSlideMediaProps {
+  slide: StudioSlide;
+  playEpoch?: number;
+  autoPlayVideo?: boolean;
+  style?: CSSProperties;
+}
+
+export function StudioSlideMedia({
+  slide,
+  playEpoch = 0,
+  autoPlayVideo = true,
+  style,
+}: StudioSlideMediaProps) {
+  const [mediaAspectRatio, setMediaAspectRatio] = useState(9 / 16);
+  const fitMode: "cover" | "contain" = slide.mediaFit ?? "cover";
+  const canvasAspectRatio = 9 / 16;
+
+  useEffect(() => {
+    setMediaAspectRatio(9 / 16);
+  }, [slide.id, slide.mediaUrl]);
+
+  function getMediaFrame() {
+    if (fitMode === "cover") {
+      return {
+        width: "100%",
+        height: "100%",
+        left: "0%",
+        top: "0%",
+      };
+    }
+
+    const safeMediaAspectRatio = mediaAspectRatio > 0 ? mediaAspectRatio : canvasAspectRatio;
+
+    if (safeMediaAspectRatio > canvasAspectRatio) {
+      const heightPercent = (canvasAspectRatio / safeMediaAspectRatio) * 100;
+      let topPercent = (100 - heightPercent) / 2;
+
+      if ((slide.mediaPosition ?? "center") === "top") {
+        topPercent = 0;
+      } else if ((slide.mediaPosition ?? "center") === "bottom") {
+        topPercent = 100 - heightPercent;
+      }
+
+      return {
+        width: "100%",
+        height: `${heightPercent}%`,
+        left: "0%",
+        top: `${topPercent}%`,
+      };
+    }
+
+    const widthPercent = (safeMediaAspectRatio / canvasAspectRatio) * 100;
+    return {
+      width: `${widthPercent}%`,
+      height: "100%",
+      left: `${(100 - widthPercent) / 2}%`,
+      top: "0%",
+    };
+  }
+
+  const mediaFrame = getMediaFrame();
+  const mediaPosition =
+    slide.mediaPosition === "top"
+      ? "center top"
+      : slide.mediaPosition === "bottom"
+        ? "center bottom"
+        : "center center";
+
+  if (!slide.mediaUrl) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        width: mediaFrame.width,
+        height: mediaFrame.height,
+        left: mediaFrame.left,
+        top: mediaFrame.top,
+        overflow: "hidden",
+        zIndex: 1,
+        transform: `translate(${slide.mediaOffsetX ?? 0}px, ${slide.mediaOffsetY ?? 0}px) scale(${slide.mediaScale ?? 1})`,
+        transformOrigin: "center center",
+        ...style,
+      }}
+    >
+      {slide.mediaType === "video" ? (
+        <video
+          key={`${slide.id}-${playEpoch}`}
+          src={slide.mediaUrl}
+          autoPlay={autoPlayVideo}
+          muted
+          loop
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: fitMode,
+            objectPosition: fitMode === "cover" ? mediaPosition : "center center",
+            zIndex: 1,
+          }}
+          onLoadedMetadata={(event) => {
+            const element = event.currentTarget;
+            if (element.videoWidth > 0 && element.videoHeight > 0) {
+              setMediaAspectRatio(element.videoWidth / element.videoHeight);
+            }
+          }}
+        />
+      ) : (
+        <img
+          key={`${slide.id}:${slide.mediaUrl}:${playEpoch}`}
+          src={slide.mediaUrl}
+          alt={slide.text?.trim() || "illustration"}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: fitMode,
+            objectPosition: fitMode === "cover" ? mediaPosition : "center center",
+            zIndex: 1,
+          }}
+          onLoad={(event) => {
+            const element = event.currentTarget;
+            if (element.naturalWidth > 0 && element.naturalHeight > 0) {
+              setMediaAspectRatio(element.naturalWidth / element.naturalHeight);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
 }
 
 const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>(
@@ -39,7 +177,6 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
   ) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [playEpoch, setPlayEpoch] = useState(0);
-    const [mediaAspectRatio, setMediaAspectRatio] = useState(9 / 16);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const voiceRef = useRef<HTMLAudioElement | null>(null);
 
@@ -50,8 +187,6 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       document.body.classList.contains("export-mode");
 
     const currentSlide = slides[currentIndex];
-    const fitMode: "cover" | "contain" = currentSlide.mediaFit ?? "cover";
-    const canvasAspectRatio = 9 / 16;
     const watermarkStyle = isMobileFullscreen
       ? {
           top: 10,
@@ -63,57 +198,6 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
           right: 40,
           width: 200,
         };
-
-    useEffect(() => {
-      setMediaAspectRatio(9 / 16);
-    }, [currentSlide.id, currentSlide.mediaUrl]);
-
-    function getMediaFrame() {
-      if (fitMode === "cover") {
-        return {
-          width: "100%",
-          height: "100%",
-          left: "0%",
-          top: "0%",
-        };
-      }
-
-      const safeMediaAspectRatio = mediaAspectRatio > 0 ? mediaAspectRatio : canvasAspectRatio;
-
-      if (safeMediaAspectRatio > canvasAspectRatio) {
-        const heightPercent = (canvasAspectRatio / safeMediaAspectRatio) * 100;
-        let topPercent = (100 - heightPercent) / 2;
-
-        if ((currentSlide.mediaPosition ?? "center") === "top") {
-          topPercent = 0;
-        } else if ((currentSlide.mediaPosition ?? "center") === "bottom") {
-          topPercent = 100 - heightPercent;
-        }
-
-        return {
-          width: "100%",
-          height: `${heightPercent}%`,
-          left: "0%",
-          top: `${topPercent}%`,
-        };
-      }
-
-      const widthPercent = (safeMediaAspectRatio / canvasAspectRatio) * 100;
-      return {
-        width: `${widthPercent}%`,
-        height: "100%",
-        left: `${(100 - widthPercent) / 2}%`,
-        top: "0%",
-      };
-    }
-
-    const mediaFrame = getMediaFrame();
-    const mediaPosition =
-      currentSlide.mediaPosition === "top"
-        ? "center top"
-        : currentSlide.mediaPosition === "bottom"
-          ? "center bottom"
-          : "center center";
 
     // --- HARD RESET: timer + voice + music + media epoch
     useEffect(() => {
@@ -300,68 +384,13 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
           }}
         >
           {/* MEDIA */}
-          {currentSlide.mediaUrl && (
-            <div
-              style={{
-                position: "absolute",
-                width: mediaFrame.width,
-                height: mediaFrame.height,
-                left: mediaFrame.left,
-                top: mediaFrame.top,
-                overflow: "hidden",
-                zIndex: 1,
-                transform: `translate(${currentSlide.mediaOffsetX ?? 0}px, ${currentSlide.mediaOffsetY ?? 0}px) scale(${currentSlide.mediaScale ?? 1})`,
-                transformOrigin: "center center",
-              }}
-            >
-              {currentSlide.mediaType === "video" ? (
-                <video
-                  key={`${currentSlide.id}-${playEpoch}`}
-                  src={currentSlide.mediaUrl}
-                  autoPlay={isPlaybackEnabled}
-                  muted
-                  loop
-                  playsInline
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: fitMode,
-                    objectPosition: fitMode === "cover" ? mediaPosition : "center center",
-                    zIndex: 1,
-                  }}
-                  onLoadedMetadata={(event) => {
-                    const element = event.currentTarget;
-                    if (element.videoWidth > 0 && element.videoHeight > 0) {
-                      setMediaAspectRatio(element.videoWidth / element.videoHeight);
-                    }
-                  }}
-                />
-              ) : (
-                <img
-                  key={`${currentSlide.id}:${currentSlide.mediaUrl}:${playEpoch}`}
-                  src={currentSlide.mediaUrl}
-                  alt={currentSlide.text?.trim() || "illustration"}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: fitMode,
-                    objectPosition: fitMode === "cover" ? mediaPosition : "center center",
-                    zIndex: 1,
-                  }}
-                  onLoad={(event) => {
-                    const element = event.currentTarget;
-                    if (element.naturalWidth > 0 && element.naturalHeight > 0) {
-                      setMediaAspectRatio(element.naturalWidth / element.naturalHeight);
-                    }
-                  }}
-                />
-              )}
-            </div>
-          )}
+          {currentSlide.mediaUrl ? (
+            <StudioSlideMedia
+              slide={currentSlide}
+              playEpoch={isPlaybackEnabled ? playEpoch : 0}
+              autoPlayVideo={isPlaybackEnabled}
+            />
+          ) : null}
 
           {/* VOICE */}
           <audio

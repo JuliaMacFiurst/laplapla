@@ -22,30 +22,32 @@ type MapType =
 export default function MapWrapper({
   type,
   previewSelectedId,
+  onUserSelect,
 }: {
   type: MapType;
   previewSelectedId?: string | null;
+  onUserSelect?: (selectedId: string) => void;
 }) {
   switch (type) {
     case "country":
-      return <CountriesMap previewSelectedId={previewSelectedId} />;
+      return <CountriesMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />;
     case "river":
-      return <RiversMap previewSelectedId={previewSelectedId} />;
+      return <RiversMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />;
     case "sea":
-      return <SeaMap previewSelectedId={previewSelectedId} />;
+      return <SeaMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />;
     // пока заглушка — позже добавим реализацию для остальных типов
     case "physic":
-      return <PhysicMap />
+      return <PhysicMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />
     case "flag":
       return <FlagMap />
     case "animal":
-      return <BiomesMap previewSelectedId={previewSelectedId} />
+      return <BiomesMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />
     case "culture":
-      return <СultureMap previewSelectedId={previewSelectedId} />
+      return <СultureMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />
     case "weather":
-      return <WeatherMap previewSelectedId={previewSelectedId} />
+      return <WeatherMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />
     case "food":
-      return <FoodMap previewSelectedId={previewSelectedId} />
+      return <FoodMap previewSelectedId={previewSelectedId} onUserSelect={onUserSelect} />
       return null;
     default:
       return null;

@@ -2,11 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import countryNames from "@/utils/country_names.json";
 import { withApiHandler } from "@/utils/apiHandler";
 import { getRequestLang } from "@/lib/i18n/routing";
-import { createServerSupabaseClient } from "@/lib/server/supabase";
 import {
   getLocalizedMapTargetTitle,
-  getMapTargetKey,
-  loadMapTargetsByKeys,
+  loadAllMapTargets,
+  type MapTargetRow,
 } from "@/lib/server/mapTargets";
 import {
   resolveEntityDisplayTitle,
@@ -18,22 +17,9 @@ import {
   buildCanonicalMapEntityPath,
   getCanonicalRouteForStoryType,
   resolveCanonicalSlug,
-  warnAboutCanonicalRouteIssues,
 } from "@/lib/mapEntityRouting";
 
 type SearchEntityRoute = SeoEntityType;
-
-type MapStoryRow = {
-  id: string | number;
-  type: MapPopupType;
-  target_id: string;
-};
-
-type TranslationRow = {
-  content_id: string | number;
-  language: string;
-  translation: unknown;
-};
 
 type SearchIndexEntry = {
   route: SearchEntityRoute;
@@ -52,12 +38,12 @@ type SearchResponseItem = {
 };
 
 const SEARCHABLE_TYPES: MapPopupType[] = ["country", "culture", "food", "animal", "weather", "river", "sea", "physic"];
-const MAX_RESULTS = 20;
+const MAX_RESULTS = 100;
 
 let cachedIndex: SearchIndexEntry[] | null = null;
 let cacheTimestamp = 0;
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 30 * 1000;
 
 function normalizeSearchValue(value: unknown) {
   return String(value ?? "")
@@ -71,25 +57,8 @@ function normalizeSearchValue(value: unknown) {
     .replace(/\s+/g, " ");
 }
 
-function parseTranslationRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value) as unknown;
-      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? parsed as Record<string, unknown>
-        : null;
-    } catch {
-      return null;
-    }
-  }
-
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
-}
-
-function resolveRoute(type: MapPopupType): SearchEntityRoute | null {
-  return getCanonicalRouteForStoryType(type);
+function resolveRoute(type: string): SearchEntityRoute | null {
+  return getCanonicalRouteForStoryType(type as MapPopupType);
 }
 
 function getCountryLocalizedTitles(slug: string) {
@@ -114,130 +83,173 @@ function addAlias(target: Set<string>, value: unknown) {
   }
 }
 
+const GENERIC_SEARCH_TERMS = new Set([
+  "река",
+  "реки",
+  "river",
+  "rivers",
+  "море",
+  "моря",
+  "sea",
+  "seas",
+  "океан",
+  "океаны",
+  "ocean",
+  "oceans",
+  "mount",
+  "mountain",
+  "mountains",
+  "lake",
+  "lakes",
+  "delta",
+  "branch",
+  "branches",
+  "strait",
+  "straits",
+  "gulf",
+  "gulfs",
+  "bay",
+  "bays",
+  "island",
+  "islands",
+  "peninsula",
+  "рукав",
+  "рукава",
+  "пролив",
+  "проливы",
+  "залив",
+  "заливы",
+  "остров",
+  "острова",
+  "полуостров",
+  "полуострова",
+  "гора",
+  "горы",
+  "озеро",
+  "озера",
+  "дельта",
+  "ים",
+  "נהר",
+  "מפרץ",
+  "מצר",
+  "אי",
+  "איים",
+  "חצי",
+  "האי",
+  "הר",
+  "אגם",
+]);
+
+function addExpandedAliases(target: Set<string>, value: unknown) {
+  const rawValue = String(value ?? "").trim();
+  if (!rawValue) {
+    return;
+  }
+
+  addAlias(target, rawValue);
+
+  const withoutParentheses = rawValue.replace(/\(([^)]+)\)/g, " ").trim();
+  if (withoutParentheses && withoutParentheses !== rawValue) {
+    addAlias(target, withoutParentheses);
+  }
+
+  for (const match of rawValue.matchAll(/\(([^)]+)\)/g)) {
+    const innerValue = match[1]?.trim();
+    if (innerValue) {
+      addAlias(target, innerValue);
+    }
+  }
+
+  for (const part of rawValue.split(/[,:;/]/g)) {
+    const trimmedPart = part.trim();
+    if (trimmedPart && trimmedPart !== rawValue) {
+      addAlias(target, trimmedPart);
+    }
+  }
+
+  const normalizedWords = normalizeSearchValue(rawValue)
+    .split(" ")
+    .map((word) => word.trim())
+    .filter(Boolean);
+  const significantWords = normalizedWords.filter((word) => !GENERIC_SEARCH_TERMS.has(word));
+
+  if (significantWords.length > 0 && significantWords.length !== normalizedWords.length) {
+    addAlias(target, significantWords.join(" "));
+  }
+}
+
+function buildEntryFromMapTarget(mapTarget: MapTargetRow): SearchIndexEntry | null {
+  const route = resolveRoute(mapTarget.map_type);
+  if (!route) {
+    return null;
+  }
+
+  const slug = resolveCanonicalSlug(mapTarget.map_type, mapTarget.target_id);
+  if (!slug || slug === "none" || slug === "__none") {
+    return null;
+  }
+
+  const aliases = new Set<string>();
+  const titles: Partial<Record<Lang, string>> = route === "country"
+    ? getCountryLocalizedTitles(slug)
+    : {};
+
+  const titleRu = getLocalizedMapTargetTitle(mapTarget, "ru");
+  const titleEn = getLocalizedMapTargetTitle(mapTarget, "en");
+  const titleHe = getLocalizedMapTargetTitle(mapTarget, "he");
+  const defaultTitle = resolveEntityDisplayTitle(route, mapTarget.target_id, "en", mapTarget);
+
+  if (titleRu) {
+    titles.ru = titleRu;
+  }
+
+  if (titleEn) {
+    titles.en = titleEn;
+  }
+
+  if (titleHe) {
+    titles.he = titleHe;
+  }
+
+  addExpandedAliases(aliases, mapTarget.target_id);
+  addExpandedAliases(aliases, slug);
+  addExpandedAliases(aliases, defaultTitle);
+  addExpandedAliases(aliases, titles.ru);
+  addExpandedAliases(aliases, titles.en);
+  addExpandedAliases(aliases, titles.he);
+
+  return {
+    route,
+    slug,
+    rawTargetId: mapTarget.target_id,
+    aliases: Array.from(aliases),
+    titles: {
+      en: defaultTitle,
+      ...titles,
+    },
+  };
+}
+
 async function buildIndex(): Promise<SearchIndexEntry[]> {
-  const supabase = createServerSupabaseClient();
-  const { data: storyRows, error: storyError } = await supabase
-    .from("map_stories")
-    .select("id, type, target_id")
-    .in("type", SEARCHABLE_TYPES);
-
-  if (storyError) {
-    throw storyError;
-  }
-
-  const stories = Array.isArray(storyRows) ? (storyRows as MapStoryRow[]) : [];
-  warnAboutCanonicalRouteIssues(stories, "search-index", {
-    throwOnCollision: false,
-    logCasingWarnings: false,
-  });
-  const storyIds = Array.from(new Set(stories.map((row) => String(row.id)).filter(Boolean)));
-  const mapTargets = await loadMapTargetsByKeys(
-    stories.map((row) => ({
-      mapType: row.type,
-      targetId: row.target_id,
-    })),
-  );
-
-  const translationsByContentId = new Map<string, TranslationRow[]>();
-
-  if (storyIds.length > 0) {
-    const { data: translationRows, error: translationError } = await supabase
-      .from("content_translations")
-      .select("content_id, language, translation")
-      .eq("content_type", "map_story")
-      .in("content_id", storyIds);
-
-    if (translationError) {
-      throw translationError;
-    }
-
-    for (const row of (translationRows || []) as TranslationRow[]) {
-      const key = String(row.content_id);
-      const bucket = translationsByContentId.get(key) || [];
-      bucket.push(row);
-      translationsByContentId.set(key, bucket);
-    }
-  }
-
+  const mapTargets = await loadAllMapTargets(SEARCHABLE_TYPES);
   const entries = new Map<string, SearchIndexEntry>();
 
-  for (const story of stories) {
-    const route = resolveRoute(story.type);
-    if (!route) {
+  for (const mapTarget of mapTargets) {
+    const entry = buildEntryFromMapTarget(mapTarget);
+    if (!entry) {
       continue;
     }
 
-    const slug = resolveCanonicalSlug(story.type, story.target_id);
-    if (!slug || slug === "none" || slug === "__none") {
-      continue;
-    }
-
-    const key = `${route}:${slug}`;
-    const aliases = new Set<string>();
-    const mapTarget = mapTargets.get(getMapTargetKey(story.type, story.target_id)) || null;
-    const defaultTitle = resolveEntityDisplayTitle(route, story.target_id, "en", mapTarget);
-    const titles: Partial<Record<Lang, string>> = route === "country"
-      ? getCountryLocalizedTitles(slug)
-      : {};
-
-    const titleRu = getLocalizedMapTargetTitle(mapTarget, "ru");
-    const titleEn = getLocalizedMapTargetTitle(mapTarget, "en");
-    const titleHe = getLocalizedMapTargetTitle(mapTarget, "he");
-
-    if (titleRu) {
-      titles.ru = titleRu;
-    }
-
-    if (titleEn) {
-      titles.en = titleEn;
-    }
-
-    if (titleHe) {
-      titles.he = titleHe;
-    }
-
-    addAlias(aliases, story.target_id);
-    addAlias(aliases, slug);
-    addAlias(aliases, defaultTitle);
-    addAlias(aliases, titles.ru);
-    addAlias(aliases, titles.en);
-    addAlias(aliases, titles.he);
-
-    const translations = translationsByContentId.get(String(story.id)) || [];
-    for (const translationRow of translations) {
-      const translation = parseTranslationRecord(translationRow.translation);
-      const translatedTitle = typeof translation?.title === "string" ? translation.title.trim() : "";
-      if (!translatedTitle) {
-        continue;
-      }
-
-      const translationLang = translationRow.language === "ru" || translationRow.language === "en" || translationRow.language === "he"
-        ? translationRow.language
-        : null;
-
-      addAlias(aliases, translatedTitle);
-      if (translationLang) {
-        titles[translationLang] = translatedTitle;
-      }
-    }
-
+    const key = `${entry.route}:${entry.slug}`;
     const existing = entries.get(key);
+
     if (existing) {
-      existing.aliases = Array.from(new Set([...existing.aliases, ...aliases]));
-      existing.titles = { ...titles, ...existing.titles };
+      existing.aliases = Array.from(new Set([...existing.aliases, ...entry.aliases]));
+      existing.titles = { ...entry.titles, ...existing.titles };
       continue;
     }
 
-    entries.set(key, {
-      route,
-      slug,
-      rawTargetId: story.target_id,
-      aliases: Array.from(aliases),
-      titles: {
-        en: defaultTitle,
-        ...titles,
-      },
-    });
+    entries.set(key, entry);
   }
 
   return Array.from(entries.values());
@@ -267,22 +279,32 @@ function scoreAlias(alias: string, query: string) {
   }
 
   if (normalizedAlias === query) {
-    return 100;
+    return 120;
   }
 
   if (normalizedAlias.startsWith(query)) {
-    return 70;
+    return 90;
   }
 
   if (normalizedAlias.split(" ").includes(query)) {
-    return 60;
+    return 75;
   }
 
   if (normalizedAlias.includes(query)) {
-    return 40;
+    return 50;
   }
 
   return 0;
+}
+
+function scoreEntry(entry: SearchIndexEntry, query: string) {
+  const bestAliasScore = entry.aliases.reduce((bestScore, alias) => Math.max(bestScore, scoreAlias(alias, query)), 0);
+  if (bestAliasScore === 0) {
+    return 0;
+  }
+
+  const aliasCountPenalty = Math.min(entry.aliases.length, 25) * 0.01;
+  return bestAliasScore - aliasCountPenalty;
 }
 
 function searchIndex(index: SearchIndexEntry[], rawQuery: string, lang: Lang): SearchResponseItem[] {
@@ -294,7 +316,7 @@ function searchIndex(index: SearchIndexEntry[], rawQuery: string, lang: Lang): S
   return index
     .map((entry) => ({
       entry,
-      score: entry.aliases.reduce((bestScore, alias) => Math.max(bestScore, scoreAlias(alias, query)), 0),
+      score: scoreEntry(entry, query),
     }))
     .filter((item) => item.score > 0)
     .sort((left, right) => right.score - left.score || left.entry.slug.localeCompare(right.entry.slug))
@@ -338,7 +360,7 @@ export default withApiHandler(
       limit: 60,
       keyPrefix: "search-entities",
     },
-    cacheControl: "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
+    cacheControl: "private, no-store, max-age=0",
   },
   handler,
 );

@@ -133,8 +133,12 @@ export const ru = {
     askButton: "Задать!",
     thinkingShort: "Котики думают...",
     thinkingLong: "Котики думают над ответом на твой вопрос...",
+    thinkingLongWithQuestion: 'Котики думают над вопросом: "{question}"',
 
     randomQuestion: "Случайный вопрос 🎲",
+    mobileIntroTitle: "Мини-слайдшоу",
+    mobileIntroText: "Открой вопрос и листай вправо, чтобы читать слайды один за другим.",
+    swipeHint: "Листай вправо, чтобы перейти к следующей карточке",
 
     errors: {
       generic: "Что-то пошло не так.",

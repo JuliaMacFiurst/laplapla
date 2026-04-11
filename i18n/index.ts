@@ -204,10 +204,14 @@ type DictionaryShape = {
     askButton: string;
     thinkingShort: string;
     thinkingLong: string;
+    thinkingLongWithQuestion: string;
 
     randomQuestion: string;
     editInStudio: string;
     findNewImage: string;
+    mobileIntroTitle: string;
+    mobileIntroText: string;
+    swipeHint: string;
 
     errors: {
       generic: string;

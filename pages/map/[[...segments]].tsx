@@ -16,6 +16,8 @@ type Props = {
   title: string;
   groupedStories: GroupedStories;
   lang: Lang;
+  hasAnyStories: boolean;
+  rawTargetId: string;
 };
 
 function readFirstQueryValue(value: string | string[] | undefined) {
@@ -126,10 +128,18 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
         };
       }
 
-      const { title, groupedStories, hasAnyStories } = await loadSeoEntityPageData(entityType, slug, lang);
-      if (!hasAnyStories) {
+      const pageData = await loadSeoEntityPageData(entityType, slug, lang);
+      const {
+        title,
+        groupedStories,
+        hasAnyStories,
+        entityExists,
+      } = pageData;
+      if (!entityExists) {
         return { notFound: true };
       }
+
+      const rawTargetId = pageData.rawTargetId || slug;
 
       return {
         props: {
@@ -138,6 +148,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
           title,
           groupedStories,
           lang,
+          hasAnyStories,
+          rawTargetId,
         },
       };
     }
@@ -160,6 +172,18 @@ export default function MapEntityPage({
   title,
   groupedStories,
   lang,
+  hasAnyStories,
+  rawTargetId,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  return <SeoEntityPage entityType={entityType} slug={slug} title={title} groupedStories={groupedStories} lang={lang} />;
+  return (
+    <SeoEntityPage
+      entityType={entityType}
+      slug={slug}
+      title={title}
+      groupedStories={groupedStories}
+      lang={lang}
+      hasAnyStories={hasAnyStories}
+      rawTargetId={rawTargetId}
+    />
+  );
 }

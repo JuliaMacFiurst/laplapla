@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/server/supabase";
 import {
   getLocalizedMapTargetTitle,
   getMapTargetKey,
+  loadAllMapTargets,
   loadMapTargetsByKeys,
   type MapTargetRow,
 } from "@/lib/server/mapTargets";
@@ -134,6 +135,15 @@ function resolveRawTargetIdFromSlug(rows: MapStoryTargetRow[], slug: string, lan
   return match?.target_id ?? null;
 }
 
+async function resolveMapTargetFromSlug(entityType: SeoEntityType, slug: string) {
+  const routeTypes = getStoryTypesForCanonicalRoute(entityType);
+  const normalizedSlug = normalizeSlug(slug);
+  const mapTargets = await loadAllMapTargets(routeTypes);
+
+  const match = mapTargets.find((row) => resolveCanonicalSlug(row.map_type, row.target_id) === normalizedSlug) || null;
+  return match;
+}
+
 export async function resolveCanonicalEntityRouteBySlug(slug: string, lang: Lang) {
   const supabase = createServerSupabaseClient();
   const languages = Array.from(new Set([lang, "ru"]));
@@ -180,13 +190,15 @@ export async function resolveCanonicalEntityRouteBySlug(slug: string, lang: Lang
 
 export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: string, lang: Lang) {
   const routeTargetRows = await loadRouteTargetRows(entityType, lang);
-  const rawTargetId = resolveRawTargetIdFromSlug(routeTargetRows, slug, lang);
+  const matchedMapTargetFromSlug = await resolveMapTargetFromSlug(entityType, slug);
+  const rawTargetId = resolveRawTargetIdFromSlug(routeTargetRows, slug, lang) || matchedMapTargetFromSlug?.target_id || null;
 
   if (!rawTargetId) {
     return {
       title: slugToDisplayTitle(slug),
       groupedStories: createEmptyGroups(),
       hasAnyStories: false,
+      entityExists: false,
     };
   }
 
@@ -201,13 +213,13 @@ export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: str
     ),
   );
   const mapTargets = await loadMapTargetsByKeys(
-    availableTypes.map((type) => ({
+    (availableTypes.length > 0 ? availableTypes : routeTypes).map((type) => ({
       mapType: type,
       targetId: rawTargetId,
     })),
   );
   const primaryMapTarget =
-    availableTypes
+    (availableTypes.length > 0 ? availableTypes : routeTypes)
       .map((type) => mapTargets.get(getMapTargetKey(type, rawTargetId)) || null)
       .find(Boolean) || null;
   const title = resolveEntityDisplayTitle(entityType, rawTargetId, lang, primaryMapTarget);
@@ -240,6 +252,8 @@ export async function loadSeoEntityPageData(entityType: SeoEntityType, slug: str
     title,
     groupedStories,
     hasAnyStories,
+    entityExists: true,
+    rawTargetId: rawTargetId || slug,
   };
 }
 

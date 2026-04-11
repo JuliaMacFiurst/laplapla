@@ -25,6 +25,8 @@ type Props = {
   title: string;
   groupedStories: GroupedStories;
   lang?: Lang;
+  hasAnyStories?: boolean;
+  rawTargetId: string;
 };
 
 const SECTION_LABELS: Record<keyof GroupedStories, Record<Lang, string>> = {
@@ -85,6 +87,30 @@ const BACK_TO_MAPS_LABEL: Record<Lang, string> = {
   ru: "Назад к картам",
   en: "Back to maps",
   he: "חזרה למפות",
+};
+
+const OPEN_ON_MAP_LABEL: Record<Lang, string> = {
+  ru: "Открыть на карте",
+  en: "Open on map",
+  he: "לפתוח במפה",
+};
+
+const COMING_SOON_COPY: Record<Lang, { title: string; body: string }> = {
+  ru: {
+    title: "История скоро появится",
+    body:
+      "Енотики уже собираются в путешествие, чтобы узнать побольше про это место. Скоро здесь появятся факты, картинки и история для детей.",
+  },
+  en: {
+    title: "A story is coming soon",
+    body:
+      "The raccoons are getting ready for a new journey to learn more about this place. Facts, pictures, and a kid-friendly story will appear here soon.",
+  },
+  he: {
+    title: "הסיפור יופיע בקרוב",
+    body:
+      "הדביבונים כבר מתכוננים למסע חדש כדי ללמוד יותר על המקום הזה. בקרוב יופיעו כאן עובדות, תמונות וסיפור ידידותי לילדים.",
+  },
 };
 
 type StoryBlock =
@@ -190,6 +216,8 @@ export default function SeoEntityPage({
   title,
   groupedStories,
   lang,
+  hasAnyStories = true,
+  rawTargetId,
 }: Props) {
   const router = useRouter();
   const currentLang = lang ?? getCurrentLang(router);
@@ -206,6 +234,7 @@ export default function SeoEntityPage({
   const seoTitle = `${title} — ${titleSuffixByType[entityType]}`;
   const seoDescription = `${title} — ${mapSeo.descriptionSuffix}`;
   const seoPath = buildCanonicalMapEntityPath(entityType, slug);
+  const mapTab = entityType === "biome" ? "physic" : entityType;
 
   return (
     <>
@@ -221,7 +250,48 @@ export default function SeoEntityPage({
       >
         <h1 style={{ marginBottom: "28px" }}>{title}</h1>
 
-        {SECTION_ORDER.map((sectionKey) => {
+        {!hasAnyStories ? (
+          <section
+            style={{
+              marginBottom: "32px",
+              padding: "24px",
+              borderRadius: "20px",
+              background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
+              border: "1px solid #fdba74",
+              boxShadow: "0 12px 30px rgba(234, 88, 12, 0.08)",
+            }}
+          >
+            <h2 style={{ marginBottom: "12px" }}>{COMING_SOON_COPY[currentLang].title}</h2>
+            <p style={{ margin: 0 }}>{COMING_SOON_COPY[currentLang].body}</p>
+            <div style={{ marginTop: "18px" }}>
+              <Link
+                href={{
+                  pathname: "/raccoons",
+                  query: buildLocalizedQuery(currentLang, {
+                    tab: mapTab,
+                    preview: rawTargetId,
+                  }),
+                }}
+                locale={currentLang}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "12px 18px",
+                  borderRadius: "999px",
+                  backgroundColor: "#ea580c",
+                  color: "#fff",
+                  textDecoration: "none",
+                  fontWeight: 700,
+                }}
+              >
+                {OPEN_ON_MAP_LABEL[currentLang]}
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
+        {hasAnyStories ? SECTION_ORDER.map((sectionKey) => {
           const stories = groupedStories[sectionKey];
           if (!stories.length) {
             return null;
@@ -296,7 +366,7 @@ export default function SeoEntityPage({
               })}
             </section>
           );
-        })}
+        }) : null}
 
         <div style={{ marginTop: "40px" }}>
           <Link
