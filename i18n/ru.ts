@@ -103,6 +103,7 @@ export const ru = {
   home: {
     title: "ЛапЛапЛа",
     subtitle: "лапусечный эрудитор для детей и взрослых",
+    mobileHelper: "Выбери, что хочешь изучить 👇",
     sections: {
       cats: "Котики объяснят",
       dogs: "Пёсики нарисуют",
@@ -273,6 +274,11 @@ export const ru = {
     emptyShorts: "Скоро здесь появятся видео",
     openVideo: "Открыть видео",
     backToList: "Назад",
+    mobileSectionTitle: "Видео для исследования",
+    mobileSectionSubtitle: "Выбери тему, а потом открой одно из трёх случайных видео.",
+    mobilePopularTitle: "Случайные видео",
+    mobileViewerHint: "Листай вверх и вниз, как в TikTok",
+    closeViewer: "Закрыть видео",
     categories: {
       all: "Все",
       science: "Наука",

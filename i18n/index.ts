@@ -111,6 +111,7 @@ type DictionaryShape = {
   home: {
     title: string;
     subtitle: string;
+    mobileHelper: string;
     sections: {
       cats: string;
       dogs: string;
@@ -170,6 +171,11 @@ type DictionaryShape = {
     emptyShorts: string;
     openVideo: string;
     backToList: string;
+    mobileSectionTitle: string;
+    mobileSectionSubtitle: string;
+    mobilePopularTitle: string;
+    mobileViewerHint: string;
+    closeViewer: string;
 
     categories: {
       science: string;

@@ -103,6 +103,7 @@ export const en = {
   home: {
     title: "LapLapLa",
     subtitle: "A hecking cute learning space for kids and grown-ups",
+    mobileHelper: "Choose what you want to explore 👇",
     sections: {
       cats: "Cats Explain",
       dogs: "Dogs Draw",
@@ -392,6 +393,11 @@ export const en = {
     emptyShorts: "Videos will appear here soon",
     openVideo: "Open video",
     backToList: "Back",
+    mobileSectionTitle: "Video exploration",
+    mobileSectionSubtitle: "Pick a topic, then open one of three random videos.",
+    mobilePopularTitle: "Random videos",
+    mobileViewerHint: "Swipe up and down like TikTok",
+    closeViewer: "Close video",
     categories: {
       all: "All",
       science: "Science",
