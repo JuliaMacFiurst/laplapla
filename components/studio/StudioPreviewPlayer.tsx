@@ -12,6 +12,11 @@ interface StudioPreviewPlayerProps {
   lang: Lang;
   isExternalRecording?: boolean;
   resetSignal?: number;
+  isMobileFullscreen?: boolean;
+  loopPlayback?: boolean;
+  onPlaybackComplete?: () => void;
+  showWatermark?: boolean;
+  showCloseButton?: boolean;
 }
 
 const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>(
@@ -22,11 +27,17 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       lang,
       onClose,
       resetSignal,
+      isMobileFullscreen = false,
+      loopPlayback = true,
+      onPlaybackComplete,
+      showWatermark = false,
+      showCloseButton = true,
     },
     containerRef,
   ) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [playEpoch, setPlayEpoch] = useState(0);
+    const [mediaAspectRatio, setMediaAspectRatio] = useState(9 / 16);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const voiceRef = useRef<HTMLAudioElement | null>(null);
 
@@ -37,6 +48,70 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       document.body.classList.contains("export-mode");
 
     const currentSlide = slides[currentIndex];
+    const fitMode: "cover" | "contain" = currentSlide.mediaFit ?? "cover";
+    const canvasAspectRatio = 9 / 16;
+    const watermarkStyle = isMobileFullscreen
+      ? {
+          top: 10,
+          right: 10,
+          width: 56,
+        }
+      : {
+          top: 40,
+          right: 40,
+          width: 200,
+        };
+
+    useEffect(() => {
+      setMediaAspectRatio(9 / 16);
+    }, [currentSlide.id, currentSlide.mediaUrl]);
+
+    function getMediaFrame() {
+      if (fitMode === "cover") {
+        return {
+          width: "100%",
+          height: "100%",
+          left: "0%",
+          top: "0%",
+        };
+      }
+
+      const safeMediaAspectRatio = mediaAspectRatio > 0 ? mediaAspectRatio : canvasAspectRatio;
+
+      if (safeMediaAspectRatio > canvasAspectRatio) {
+        const heightPercent = (canvasAspectRatio / safeMediaAspectRatio) * 100;
+        let topPercent = (100 - heightPercent) / 2;
+
+        if ((currentSlide.mediaPosition ?? "center") === "top") {
+          topPercent = 0;
+        } else if ((currentSlide.mediaPosition ?? "center") === "bottom") {
+          topPercent = 100 - heightPercent;
+        }
+
+        return {
+          width: "100%",
+          height: `${heightPercent}%`,
+          left: "0%",
+          top: `${topPercent}%`,
+        };
+      }
+
+      const widthPercent = (safeMediaAspectRatio / canvasAspectRatio) * 100;
+      return {
+        width: `${widthPercent}%`,
+        height: "100%",
+        left: `${(100 - widthPercent) / 2}%`,
+        top: "0%",
+      };
+    }
+
+    const mediaFrame = getMediaFrame();
+    const mediaPosition =
+      currentSlide.mediaPosition === "top"
+        ? "center top"
+        : currentSlide.mediaPosition === "bottom"
+          ? "center bottom"
+          : "center center";
 
     // --- HARD RESET: timer + voice + music + media epoch
     useEffect(() => {
@@ -101,13 +176,25 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
           : 3000;
 
       timeoutRef.current = setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % slides.length);
+        setCurrentIndex((prev) => {
+          const isLastSlide = prev >= slides.length - 1;
+          if (isLastSlide) {
+            if (!loopPlayback) {
+              onPlaybackComplete?.();
+              return prev;
+            }
+
+            return 0;
+          }
+
+          return prev + 1;
+        });
       }, duration);
 
       return () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
-    }, [currentIndex, slides, currentSlide, playEpoch]);
+    }, [currentIndex, slides, currentSlide, playEpoch, loopPlayback, onPlaybackComplete]);
 
     useEffect(() => {
       const audio = voiceRef.current;
@@ -138,20 +225,46 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
     if (!currentSlide) return null;
 
     return (
-      <div className="studio-preview-player" style={{ position: "relative" }}>
-        {!isExportMode && (
-          <button className="preview-close-button" onClick={onClose}>
+      <div
+        className="studio-preview-player"
+        style={{
+          position: "relative",
+          width: isMobileFullscreen ? "100%" : undefined,
+          height: isMobileFullscreen ? "100%" : undefined,
+          background: isMobileFullscreen ? currentSlide.bgColor || "#000" : undefined,
+          overflow: isMobileFullscreen ? "hidden" : undefined,
+        }}
+      >
+        {!isExportMode && showCloseButton ? (
+          <button
+            className="preview-close-button"
+            onClick={onClose}
+            style={isMobileFullscreen ? {
+              position: "absolute",
+              top: 12,
+              right: 12,
+              zIndex: 20,
+              minHeight: 40,
+              padding: "8px 12px",
+              borderRadius: 999,
+              border: "none",
+              background: "rgba(17,17,17,0.82)",
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 700,
+            } : undefined}
+          >
             {t.closePreview}
           </button>
-        )}
+        ) : null}
 
         <div
           ref={containerRef}
           className="preview-canvas-9x16"
           style={{
             position: "relative",
-            width: isExportMode ? 1080 : 360,
-            height: isExportMode ? 1920 : 640,
+            width: isExportMode ? 1080 : isMobileFullscreen ? "100%" : 360,
+            height: isExportMode ? 1920 : isMobileFullscreen ? "100%" : 640,
             aspectRatio: "9 / 16",
             overflow: "hidden",
             backgroundColor: currentSlide.bgColor || "#000",
@@ -167,7 +280,19 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
         >
           {/* MEDIA */}
           {currentSlide.mediaUrl && (
-            <>
+            <div
+              style={{
+                position: "absolute",
+                width: mediaFrame.width,
+                height: mediaFrame.height,
+                left: mediaFrame.left,
+                top: mediaFrame.top,
+                overflow: "hidden",
+                zIndex: 1,
+                transform: `translate(${currentSlide.mediaOffsetX ?? 0}px, ${currentSlide.mediaOffsetY ?? 0}px) scale(${currentSlide.mediaScale ?? 1})`,
+                transformOrigin: "center center",
+              }}
+            >
               {currentSlide.mediaType === "video" ? (
                 <video
                   key={`${currentSlide.id}-${playEpoch}`}
@@ -178,16 +303,18 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                   playsInline
                   style={{
                     position: "absolute",
+                    inset: 0,
                     width: "100%",
                     height: "100%",
-                    objectFit: currentSlide.mediaFit || "cover",
-                    objectPosition:
-                      currentSlide.mediaPosition === "top"
-                        ? "center top"
-                        : currentSlide.mediaPosition === "bottom"
-                          ? "center bottom"
-                          : "center center",
+                    objectFit: fitMode,
+                    objectPosition: fitMode === "cover" ? mediaPosition : "center center",
                     zIndex: 1,
+                  }}
+                  onLoadedMetadata={(event) => {
+                    const element = event.currentTarget;
+                    if (element.videoWidth > 0 && element.videoHeight > 0) {
+                      setMediaAspectRatio(element.videoWidth / element.videoHeight);
+                    }
                   }}
                 />
               ) : (
@@ -197,20 +324,22 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                   alt={currentSlide.text?.trim() || "illustration"}
                   style={{
                     position: "absolute",
+                    inset: 0,
                     width: "100%",
                     height: "100%",
-                    objectFit: currentSlide.mediaFit || "cover",
-                    objectPosition:
-                      currentSlide.mediaPosition === "top"
-                        ? "center top"
-                        : currentSlide.mediaPosition === "bottom"
-                          ? "center bottom"
-                          : "center center",
+                    objectFit: fitMode,
+                    objectPosition: fitMode === "cover" ? mediaPosition : "center center",
                     zIndex: 1,
+                  }}
+                  onLoad={(event) => {
+                    const element = event.currentTarget;
+                    if (element.naturalWidth > 0 && element.naturalHeight > 0) {
+                      setMediaAspectRatio(element.naturalWidth / element.naturalHeight);
+                    }
                   }}
                 />
               )}
-            </>
+            </div>
           )}
 
           {/* VOICE */}
@@ -273,6 +402,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 wordBreak: "break-word",
                 position: "relative",
                 zIndex: 2,
+                transform: `translate(${currentSlide.textOffsetX ?? 0}px, ${currentSlide.textOffsetY ?? 0}px)`,
               }}
             >
               {currentSlide.text}
@@ -280,18 +410,17 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
           )}
 
           {/* WATERMARK (EXPORT ONLY) */}
-          {isExportMode && (
+          {(isExportMode || showWatermark) && (
             <img
               src="/icons/watermark.webp"
               alt="watermark"
               style={{
                 position: "absolute",
-                top: 40,
-                right: 40,
-                width: 200,
+                ...watermarkStyle,
                 opacity: 0.8,
                 pointerEvents: "none",
                 userSelect: "none",
+                zIndex: 5,
               }}
             />
           )}

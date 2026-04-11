@@ -31,8 +31,15 @@ export default function SlideCanvas9x16({
   const isVideo = slide.mediaType === "video";
   const fitMode: "cover" | "contain" = slide.mediaFit ?? "cover";
   const t = dictionaries[lang].cats.studio;
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [mediaTransform, setMediaTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const [position, setPosition] = useState({
+    x: slide.textOffsetX ?? 0,
+    y: slide.textOffsetY ?? 0,
+  });
+  const [mediaTransform, setMediaTransform] = useState({
+    x: slide.mediaOffsetX ?? 0,
+    y: slide.mediaOffsetY ?? 0,
+    scale: slide.mediaScale ?? 1,
+  });
   const [mediaAspectRatio, setMediaAspectRatio] = useState(9 / 16);
   const dragStateRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
   const resizeStateRef = useRef<{ startY: number; baseFontSize: number } | null>(null);
@@ -88,14 +95,40 @@ export default function SlideCanvas9x16({
   const textRadius = textBgEnabled ? 12 * effectiveScale : 0;
 
   useEffect(() => {
-    setPosition({ x: 0, y: 0 });
-    setMediaTransform({ x: 0, y: 0, scale: 1 });
+    setPosition({
+      x: slide.textOffsetX ?? 0,
+      y: slide.textOffsetY ?? 0,
+    });
+    setMediaTransform({
+      x: slide.mediaOffsetX ?? 0,
+      y: slide.mediaOffsetY ?? 0,
+      scale: slide.mediaScale ?? 1,
+    });
     setMediaAspectRatio(9 / 16);
     dragStateRef.current = null;
     resizeStateRef.current = null;
     mediaDragStateRef.current = null;
     mediaResizeStateRef.current = null;
   }, [slide.id, slide.mediaUrl]);
+
+  useEffect(() => {
+    if (dragStateRef.current || resizeStateRef.current) return;
+
+    setPosition({
+      x: slide.textOffsetX ?? 0,
+      y: slide.textOffsetY ?? 0,
+    });
+  }, [slide.textOffsetX, slide.textOffsetY]);
+
+  useEffect(() => {
+    if (mediaDragStateRef.current || mediaResizeStateRef.current) return;
+
+    setMediaTransform({
+      x: slide.mediaOffsetX ?? 0,
+      y: slide.mediaOffsetY ?? 0,
+      scale: slide.mediaScale ?? 1,
+    });
+  }, [slide.mediaOffsetX, slide.mediaOffsetY, slide.mediaScale]);
 
   useEffect(() => {
     if (!isMobile || !slideRootRef.current || typeof ResizeObserver === "undefined") {
@@ -149,16 +182,31 @@ export default function SlideCanvas9x16({
   }
 
   function handleTextTouchMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (!showMobileEditorFrame || !dragStateRef.current) return;
+    if (!showMobileEditorFrame || !dragStateRef.current || !onUpdateSlide) return;
 
     const touch = e.touches[0];
     if (!touch) return;
 
     e.preventDefault();
-    setPosition({
+    const nextPosition = {
       x: dragStateRef.current.baseX + (touch.clientX - dragStateRef.current.startX),
       y: dragStateRef.current.baseY + (touch.clientY - dragStateRef.current.startY),
+    };
+    setPosition(nextPosition);
+    onUpdateSlide({
+      ...slide,
+      textOffsetX: Math.round(nextPosition.x),
+      textOffsetY: Math.round(nextPosition.y),
     });
+  }
+
+  function handleTextTouchEnd() {
+    dragStateRef.current = null;
+  }
+
+  function handleMediaTouchEnd() {
+    mediaDragStateRef.current = null;
+    mediaResizeStateRef.current = null;
   }
 
   function handleResizeStart(e: React.TouchEvent<HTMLDivElement>) {
@@ -207,17 +255,24 @@ export default function SlideCanvas9x16({
   }
 
   function handleMediaTouchMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (!showMobileMediaEditor || !mediaDragStateRef.current) return;
+    if (!showMobileMediaEditor || !mediaDragStateRef.current || !onUpdateSlide) return;
 
     const touch = e.touches[0];
     if (!touch) return;
 
     e.preventDefault();
-    setMediaTransform((current) => ({
-      ...current,
-      x: mediaDragStateRef.current!.baseX + (touch.clientX - mediaDragStateRef.current!.startX),
-      y: mediaDragStateRef.current!.baseY + (touch.clientY - mediaDragStateRef.current!.startY),
-    }));
+    const nextTransform = {
+      ...mediaTransform,
+      x: mediaDragStateRef.current.baseX + (touch.clientX - mediaDragStateRef.current.startX),
+      y: mediaDragStateRef.current.baseY + (touch.clientY - mediaDragStateRef.current.startY),
+    };
+    setMediaTransform(nextTransform);
+    onUpdateSlide({
+      ...slide,
+      mediaOffsetX: Math.round(nextTransform.x),
+      mediaOffsetY: Math.round(nextTransform.y),
+      mediaScale: nextTransform.scale,
+    });
   }
 
   function handleMediaResizeStart(e: React.TouchEvent<HTMLDivElement>) {
@@ -234,7 +289,7 @@ export default function SlideCanvas9x16({
   }
 
   function handleMediaResizeMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (!showMobileMediaEditor || !mediaResizeStateRef.current) return;
+    if (!showMobileMediaEditor || !mediaResizeStateRef.current || !onUpdateSlide) return;
 
     const touch = e.touches[0];
     if (!touch) return;
@@ -243,10 +298,17 @@ export default function SlideCanvas9x16({
     e.stopPropagation();
 
     const deltaY = touch.clientY - mediaResizeStateRef.current.startY;
+    const nextScale = clamp(mediaResizeStateRef.current.baseScale + deltaY / 240, 0.6, 2.2);
     setMediaTransform((current) => ({
       ...current,
-      scale: clamp(mediaResizeStateRef.current!.baseScale + deltaY / 240, 0.6, 2.2),
+      scale: nextScale,
     }));
+    onUpdateSlide({
+      ...slide,
+      mediaOffsetX: mediaTransform.x,
+      mediaOffsetY: mediaTransform.y,
+      mediaScale: Number(nextScale.toFixed(3)),
+    });
   }
 
   function handleTextInput(e: React.FormEvent<HTMLDivElement>) {
@@ -343,10 +405,12 @@ export default function SlideCanvas9x16({
             border: showMobileMediaEditor ? "1px dashed rgba(255, 179, 209, 0.9)" : "none",
             zIndex: 1,
             touchAction: showMobileMediaEditor ? "none" : "auto",
-          }}
-          onTouchStart={handleMediaTouchStart}
-          onTouchMove={handleMediaTouchMove}
-        >
+        }}
+        onTouchStart={handleMediaTouchStart}
+        onTouchMove={handleMediaTouchMove}
+        onTouchEnd={handleMediaTouchEnd}
+        onTouchCancel={handleMediaTouchEnd}
+      >
           {isVideo ? (
             <video
               key={`${slide.id}:${mediaUrl}`}
@@ -417,6 +481,8 @@ export default function SlideCanvas9x16({
                 }}
                 onTouchStart={handleMediaResizeStart}
                 onTouchMove={handleMediaResizeMove}
+                onTouchEnd={handleMediaTouchEnd}
+                onTouchCancel={handleMediaTouchEnd}
               />
             </>
           ) : null}
@@ -445,6 +511,8 @@ export default function SlideCanvas9x16({
         }}
         onTouchStart={handleTextTouchStart}
         onTouchMove={handleTextTouchMove}
+        onTouchEnd={handleTextTouchEnd}
+        onTouchCancel={handleTextTouchEnd}
       >
         {textBgEnabled ? (
           <div
@@ -471,7 +539,6 @@ export default function SlideCanvas9x16({
               contentEditable
               suppressContentEditableWarning
               onInput={handleTextInput}
-              onTouchStart={(e) => e.stopPropagation()}
               style={{
                 position: "relative",
                 zIndex: 1,

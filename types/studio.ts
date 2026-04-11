@@ -21,6 +21,14 @@ export type StudioSlide = {
   fontWeight?: number;
   fontStyle?: "normal" | "italic";
   fontFamily?: string;
+  textOffsetX?: number;
+  textOffsetY?: number;
+  mediaOffsetX?: number;
+  mediaOffsetY?: number;
+  mediaScale?: number;
+  voiceBaseUrl?: string;
+  voiceBaseDuration?: number;
+  activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
 }
 
 export type StudioProject = {

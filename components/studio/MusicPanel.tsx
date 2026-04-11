@@ -140,6 +140,7 @@ type MusicPanelProps = {
   onEnhanceVoice?: () => void;
   onMakeVoiceLouder?: () => void;
   onMakeChildVoice?: () => void;
+  activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
   lang: Lang;
 };
 
@@ -157,6 +158,7 @@ export default function MusicPanel({
   onEnhanceVoice,
   onMakeVoiceLouder,
   onMakeChildVoice,
+  activeVoiceEffects,
 }: MusicPanelProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const presets: ParrotPreset[] = PARROT_PRESETS;
@@ -330,30 +332,30 @@ export default function MusicPanel({
               {onEnhanceVoice && (
                 <button
                   onClick={onEnhanceVoice}
-                  className="studio-button btn-blue"
+                  className={`studio-button ${activeVoiceEffects?.enhance ? "btn-pink" : "btn-blue"}`}
                   style={{ whiteSpace: "nowrap" }}
                 >
-                  ✨ {t.improveVoice}
+                  {activeVoiceEffects?.enhance ? `✓ ${t.improveVoice}` : `✨ ${t.improveVoice}`}
                 </button>
               )}
 
               {onMakeVoiceLouder && (
                 <button
                   onClick={onMakeVoiceLouder}
-                  className="studio-button btn-mint"
+                  className={`studio-button ${activeVoiceEffects?.louder ? "btn-pink" : "btn-mint"}`}
                   style={{ whiteSpace: "nowrap" }}
                 >
-                  🔊 {t.makeLouder}
+                  {activeVoiceEffects?.louder ? `✓ ${t.makeLouder}` : `🔊 ${t.makeLouder}`}
                 </button>
               )}
 
               {onMakeChildVoice && (
                 <button
                   onClick={onMakeChildVoice}
-                  className="studio-button btn-lavender"
+                  className={`studio-button ${activeVoiceEffects?.child ? "btn-pink" : "btn-lavender"}`}
                   style={{ whiteSpace: "nowrap" }}
                 >
-                  🧒 {t.childVoice}
+                  {activeVoiceEffects?.child ? `✓ ${t.childVoice}` : `🧒 ${t.childVoice}`}
                 </button>
               )}
 

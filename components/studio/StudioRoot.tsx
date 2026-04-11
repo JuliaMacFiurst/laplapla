@@ -227,6 +227,51 @@ interface MobileAudioSheetProps {
 
 type VoiceActionKey = "enhance" | "louder" | "child";
 type VoiceActionStatus = "idle" | "loading" | "done";
+type MobileExportState = "idle" | "recording" | "processing" | "success" | "fallback-screen-record" | "failed";
+type MobileExportCapability = "checking" | "direct-record" | "guided-record";
+
+function getProjectPreviewDurationMs(project: StudioProject) {
+  return project.slides.reduce((total, slide) => {
+    const slideDuration = slide.voiceDuration && slide.voiceDuration > 0
+      ? slide.voiceDuration * 1000
+      : 3000;
+    return total + slideDuration;
+  }, 0);
+}
+
+function detectSupportedRecorderMimeType() {
+  if (typeof MediaRecorder === "undefined") return null;
+
+  const candidates = [
+    "video/mp4",
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm",
+  ];
+
+  for (const mimeType of candidates) {
+    if (MediaRecorder.isTypeSupported(mimeType)) {
+      return mimeType;
+    }
+  }
+
+  return "";
+}
+
+function detectMobileExportCapability(previewNode: HTMLDivElement | null): MobileExportCapability {
+  const mimeType = detectSupportedRecorderMimeType();
+  const canCapturePreview =
+    !!previewNode &&
+    typeof (previewNode as HTMLDivElement & {
+      captureStream?: (frameRate?: number) => MediaStream;
+    }).captureStream === "function";
+
+  if (mimeType && canCapturePreview) {
+    return "direct-record";
+  }
+
+  return "guided-record";
+}
 
 function MobileAudioSheet({ title, onClose, children }: MobileAudioSheetProps) {
   return (
@@ -517,6 +562,7 @@ function StudioDesktopLayout({
             onEnhanceVoice={enhanceVoiceRecording}
             onMakeVoiceLouder={makeVoiceLouder}
             onMakeChildVoice={makeChildVoice}
+            activeVoiceEffects={activeSlide.activeVoiceEffects}
           />
         </div>
 
@@ -626,6 +672,7 @@ function StudioMobileLayout({
   activeSlideIndex,
   isRecording,
   isMediaOpen,
+  previewRef,
   setActiveSlideIndex,
   setProject,
   setIsMediaOpen,
@@ -639,11 +686,26 @@ function StudioMobileLayout({
   startVoiceRecording,
   stopVoiceRecording,
   updateSlide,
+  deleteAll,
+  undo,
+  redo,
   audioEngineRef,
 }: StudioLayoutProps) {
   const [mode, setMode] = useState<"slides" | "text" | "media" | "audio" | "settings" | null>("slides");
   const [activePicker, setActivePicker] = useState<MobilePickerTarget>(null);
   const [activeAudioSheet, setActiveAudioSheet] = useState<"music" | "voice" | null>(null);
+  const [isPreviewSheetOpen, setIsPreviewSheetOpen] = useState(false);
+  const [isExportSheetOpen, setIsExportSheetOpen] = useState(false);
+  const [exportState, setExportState] = useState<MobileExportState>("idle");
+  const [exportStatusText, setExportStatusText] = useState("We’ll record your slideshow as it plays ✨");
+  const [exportBlobUrl, setExportBlobUrl] = useState<string | null>(null);
+  const [exportResetSignal, setExportResetSignal] = useState(0);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportSlideProgress, setExportSlideProgress] = useState(1);
+  const [exportedWithoutSound, setExportedWithoutSound] = useState(false);
+  const [isExportFallbackPlayerMode, setIsExportFallbackPlayerMode] = useState(false);
+  const [showExportFallbackHint, setShowExportFallbackHint] = useState(false);
+  const [exportCapability, setExportCapability] = useState<MobileExportCapability>("checking");
   const [selectedMusicPresetId, setSelectedMusicPresetId] = useState<string | null>(PARROT_PRESETS[0]?.id ?? null);
   const [previewingAudioId, setPreviewingAudioId] = useState<string | null>(null);
   const [areTracksPlaying, setAreTracksPlaying] = useState(false);
@@ -656,16 +718,19 @@ function StudioMobileLayout({
   const [textColorState, setTextColorState] = useState<MobileColorState>(() => hexToHsl("#ffffff"));
   const [bgColorState, setBgColorState] = useState<MobileColorState>(() => hexToHsl("#000000"));
   const [reorderSourceIndex, setReorderSourceIndex] = useState<number | null>(null);
+  const [isDeleteAllConfirmOpen, setIsDeleteAllConfirmOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const reorderPressTimerRef = useRef<number | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
+  const exportStopTimeoutRef = useRef<number | null>(null);
+  const exportSheetRef = useRef<HTMLDivElement | null>(null);
   const mobileModes = [
     { key: "slides", label: "Slides" },
     { key: "text", label: "Text" },
     { key: "media", label: "Media" },
     { key: "audio", label: "Audio" },
-    { key: "settings", label: "Settings" },
+    { key: "settings", label: "Save" },
   ] as const;
   const mobileButtonStyle = {
     minHeight: "44px",
@@ -676,6 +741,8 @@ function StudioMobileLayout({
     border: "none",
   } satisfies React.CSSProperties;
   const selectedMusicPreset = PARROT_PRESETS.find((preset) => preset.id === selectedMusicPresetId) ?? null;
+  const exportCaption = "Made with LapLapLa Cat Studio";
+  const exportCredits = "Some media may be sourced from GIPHY and Pexels. Created with LapLapLa Cat Studio.";
 
   useEffect(() => {
     return () => {
@@ -683,8 +750,49 @@ function StudioMobileLayout({
         previewAudioRef.current.pause();
         previewAudioRef.current.currentTime = 0;
       }
+      if (exportBlobUrl) {
+        URL.revokeObjectURL(exportBlobUrl);
+      }
+      if (exportStopTimeoutRef.current !== null) {
+        window.clearTimeout(exportStopTimeoutRef.current);
+      }
     };
-  }, []);
+  }, [exportBlobUrl]);
+
+  useEffect(() => {
+    if (!isExportSheetOpen) {
+      setExportCapability("checking");
+      return;
+    }
+
+    const detectCapability = () => {
+      setExportCapability(detectMobileExportCapability(previewRef.current));
+    };
+
+    detectCapability();
+
+    const timeoutId = window.setTimeout(detectCapability, 0);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isExportSheetOpen, previewRef]);
+
+  useEffect(() => {
+    setIsDeleteAllConfirmOpen(false);
+  }, [mode]);
+
+  useEffect(() => {
+    if (!isExportSheetOpen || exportState !== "idle") return;
+
+    if (exportCapability === "direct-record") {
+      setExportStatusText("We’ll record your slideshow as it plays ✨");
+      return;
+    }
+
+    if (exportCapability === "guided-record") {
+      setExportStatusText("Save locally with your phone’s screen recording.");
+    }
+  }, [exportCapability, exportState, isExportSheetOpen]);
 
   useEffect(() => {
     const engine = audioEngineRef.current;
@@ -824,6 +932,235 @@ function StudioMobileLayout({
     }
   }
 
+  function resetExportUi() {
+    if (exportStopTimeoutRef.current !== null) {
+      window.clearTimeout(exportStopTimeoutRef.current);
+      exportStopTimeoutRef.current = null;
+    }
+    if (exportBlobUrl) {
+      URL.revokeObjectURL(exportBlobUrl);
+    }
+    setExportBlobUrl(null);
+    setExportState("idle");
+    setExportStatusText("We’ll record your slideshow as it plays ✨");
+    setExportProgress(0);
+    setExportSlideProgress(1);
+    setExportedWithoutSound(false);
+    setIsExportFallbackPlayerMode(false);
+    setShowExportFallbackHint(false);
+  }
+
+  function startScreenRecordFallback() {
+    setExportState("fallback-screen-record");
+    setExportStatusText("Use your device screen recording to save this story.");
+    setExportProgress(0);
+    setExportSlideProgress(1);
+  }
+
+  function requestExportFullscreen() {
+    const node = exportSheetRef.current as
+      | (HTMLDivElement & {
+          webkitRequestFullscreen?: () => Promise<void> | void;
+        })
+      | null;
+
+    if (!node) return;
+
+    try {
+      if (typeof node.requestFullscreen === "function") {
+        void node.requestFullscreen().catch(() => {});
+        return;
+      }
+
+      if (typeof node.webkitRequestFullscreen === "function") {
+        void Promise.resolve(node.webkitRequestFullscreen()).catch(() => {});
+      }
+    } catch {}
+  }
+
+  function exitExportFullscreen() {
+    const currentDocument = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+    };
+
+    try {
+      if (typeof currentDocument.exitFullscreen === "function" && currentDocument.fullscreenElement) {
+        void currentDocument.exitFullscreen().catch(() => {});
+        return;
+      }
+
+      if (typeof currentDocument.webkitExitFullscreen === "function") {
+        void Promise.resolve(currentDocument.webkitExitFullscreen()).catch(() => {});
+      }
+    } catch {}
+  }
+
+  function openExportFallbackPlayer() {
+    setIsExportFallbackPlayerMode(true);
+    setShowExportFallbackHint(true);
+    setExportResetSignal((current) => current + 1);
+    setExportStatusText("Play the slideshow while your phone records the screen.");
+
+    window.setTimeout(() => {
+      requestExportFullscreen();
+    }, 0);
+  }
+
+  function closeExportFallbackPlayer() {
+    setIsExportFallbackPlayerMode(false);
+    setShowExportFallbackHint(false);
+    exitExportFullscreen();
+  }
+
+  useEffect(() => {
+    if (!isExportFallbackPlayerMode || !showExportFallbackHint) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setShowExportFallbackHint(false);
+    }, 4200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isExportFallbackPlayerMode, showExportFallbackHint]);
+
+  function handleExportPlaybackComplete() {
+    if (exportState !== "recording") return;
+
+    setExportState("processing");
+    setExportStatusText("Preparing your video...");
+    setExportProgress(1);
+  }
+
+  async function handleSaveExportedVideo() {
+    if (!exportBlobUrl) return;
+
+    const link = document.createElement("a");
+    link.href = exportBlobUrl;
+    link.download = "laplapla-story.webm";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function handleShareExportedVideo() {
+    if (!exportBlobUrl) return;
+
+    const response = await fetch(exportBlobUrl);
+    const blob = await response.blob();
+    const file = new File([blob], "laplapla-story.webm", { type: blob.type || "video/webm" });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "LapLapLa Story",
+        text: exportCaption,
+      });
+      return;
+    }
+
+    await handleSaveExportedVideo();
+  }
+
+  function beginExportProgress(totalDurationMs: number) {
+    const totalSlides = Math.max(1, project.slides.length);
+    const startTime = Date.now();
+
+    const interval = window.setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(0.98, elapsed / totalDurationMs);
+      const nextSlide = Math.min(
+        totalSlides,
+        Math.max(1, Math.floor(progress * totalSlides) + 1),
+      );
+
+      setExportProgress(progress);
+      setExportSlideProgress(nextSlide);
+      setExportStatusText(`Recording slide ${nextSlide} of ${totalSlides}...`);
+
+      if (elapsed >= totalDurationMs) {
+        window.clearInterval(interval);
+      }
+    }, 180);
+
+    return interval;
+  }
+
+  async function handleStartExport() {
+    resetExportUi();
+
+    const capability = detectMobileExportCapability(previewRef.current);
+    setExportCapability(capability);
+
+    if (capability !== "direct-record") {
+      startScreenRecordFallback();
+      return;
+    }
+
+    const mimeType = detectSupportedRecorderMimeType();
+    const previewNode = previewRef.current as HTMLDivElement & {
+      captureStream?: (frameRate?: number) => MediaStream;
+    };
+
+    const totalDurationMs = getProjectPreviewDurationMs(project) + 800;
+    setExportResetSignal((current) => current + 1);
+
+    if (!mimeType || typeof previewNode?.captureStream !== "function") {
+      startScreenRecordFallback();
+      return;
+    }
+
+    try {
+      const stream = previewNode.captureStream(30);
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const chunks: BlobPart[] = [];
+      const progressInterval = beginExportProgress(totalDurationMs);
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      recorder.onerror = () => {
+        window.clearInterval(progressInterval);
+        startScreenRecordFallback();
+      };
+
+      recorder.onstop = () => {
+        window.clearInterval(progressInterval);
+
+        if (chunks.length === 0) {
+          startScreenRecordFallback();
+          return;
+        }
+
+        const blob = new Blob(chunks, { type: mimeType || "video/webm" });
+        const nextUrl = URL.createObjectURL(blob);
+        setExportBlobUrl(nextUrl);
+        setExportState("success");
+        setExportStatusText("Your video is ready 🎉");
+        setExportProgress(1);
+        setExportedWithoutSound(true);
+      };
+
+      setExportState("recording");
+      setExportStatusText("Recording slide 1 of 1...");
+      setExportProgress(0);
+      setExportSlideProgress(1);
+      recorder.start();
+
+      exportStopTimeoutRef.current = window.setTimeout(() => {
+        if (recorder.state !== "inactive") {
+          recorder.stop();
+        }
+      }, totalDurationMs);
+    } catch (error) {
+      console.error("Mobile export failed", error);
+      startScreenRecordFallback();
+    }
+  }
+
   async function runVoiceAction(action: VoiceActionKey, handler?: () => Promise<void>) {
     if (!handler || !activeSlide.voiceUrl || voiceActionState[action] === "loading") return;
 
@@ -836,7 +1173,10 @@ function StudioMobileLayout({
       await handler();
       setVoiceActionState((current) => ({
         ...current,
-        [action]: "done",
+        enhance: action === "enhance" ? "idle" : current.enhance,
+        louder: action === "louder" ? "idle" : current.louder,
+        child: action === "child" ? "idle" : current.child,
+        [action]: "idle",
       }));
     } catch (error) {
       console.error(`Voice action failed: ${action}`, error);
@@ -849,8 +1189,9 @@ function StudioMobileLayout({
 
   function getVoiceActionButtonStyle(action: VoiceActionKey, baseBackground: string) {
     const status = voiceActionState[action];
+    const isActive = Boolean(activeSlide.activeVoiceEffects?.[action]);
 
-    if (status === "done") {
+    if (isActive) {
       return {
         ...mobileButtonStyle,
         background: "#111",
@@ -955,6 +1296,46 @@ function StudioMobileLayout({
           minWidth: 0,
         }}
       >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "8px",
+              marginBottom: mode ? "10px" : 0,
+            }}
+          >
+            <button
+              type="button"
+              onClick={undo}
+              style={{
+                ...mobileButtonStyle,
+                background: "#232323",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+              }}
+            >
+              <span aria-hidden="true">↩️</span>
+              Undo
+            </button>
+            <button
+              type="button"
+              onClick={redo}
+              style={{
+                ...mobileButtonStyle,
+                background: "#232323",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+              }}
+            >
+              <span aria-hidden="true">↪️</span>
+              Redo
+            </button>
+          </div>
+
           {mode === "slides" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ color: "#fff", fontSize: "12px", lineHeight: 1.35 }}>
@@ -1346,8 +1727,93 @@ function StudioMobileLayout({
           )}
 
           {mode === "settings" && (
-            <div style={{ color: "#fff" }}>
-              Settings coming next step
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ color: "#fff", fontSize: "13px", lineHeight: 1.4 }}>
+                Preview the full slideshow in a mobile full-screen player before export.
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPreviewSheetOpen(true)}
+                style={{
+                  ...mobileButtonStyle,
+                  background: "#8fdcff",
+                  color: "#000",
+                }}
+              >
+                Preview slideshow
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetExportUi();
+                  setIsExportSheetOpen(true);
+                }}
+                style={{
+                  ...mobileButtonStyle,
+                  background: "#ffb3d1",
+                  color: "#000",
+                }}
+              >
+                Export
+              </button>
+              <div style={{ color: "rgba(255,255,255,0.68)", fontSize: "12px", lineHeight: 1.35 }}>
+                We’ll record your slideshow as it plays ✨ Works on most devices
+              </div>
+              <div
+                style={{
+                  marginTop: "6px",
+                  paddingTop: "10px",
+                  borderTop: "1px solid rgba(255,255,255,0.08)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "12px", fontWeight: 700 }}>
+                  Danger zone
+                </div>
+                {!isDeleteAllConfirmOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteAllConfirmOpen(true)}
+                    style={{
+                      ...mobileButtonStyle,
+                      background: "rgba(255,107,107,0.16)",
+                      color: "#ffb3b3",
+                      border: "1px solid rgba(255,107,107,0.35)",
+                    }}
+                  >
+                    🗑️ Delete all
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ color: "#fff", fontSize: "12px", lineHeight: 1.4 }}>
+                      Delete the whole slideshow? This cannot be undone in one tap.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteAll();
+                        setIsDeleteAllConfirmOpen(false);
+                      }}
+                      style={{
+                        ...mobileButtonStyle,
+                        background: "#ff6b6b",
+                        color: "#fff",
+                      }}
+                    >
+                      Confirm delete all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsDeleteAllConfirmOpen(false)}
+                      style={mobileButtonStyle}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
       </div>
@@ -1584,6 +2050,33 @@ function StudioMobileLayout({
           onClose={() => setActiveAudioSheet(null)}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div
+              style={{
+                padding: "14px",
+                borderRadius: "16px",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "12px", fontWeight: 700 }}>
+                Текст слайда
+              </div>
+              <div
+                style={{
+                  color: "#fff",
+                  fontSize: "18px",
+                  lineHeight: 1.45,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {activeSlide.text?.trim() || "Текст для озвучки пока не добавлен."}
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -1662,7 +2155,7 @@ function StudioMobileLayout({
                     >
                       {voiceActionState.enhance === "loading"
                         ? "Обрабатываем..."
-                        : voiceActionState.enhance === "done"
+                        : activeSlide.activeVoiceEffects?.enhance
                           ? "✓ Улучшено"
                           : "Улучшить"}
                     </button>
@@ -1675,7 +2168,7 @@ function StudioMobileLayout({
                     >
                       {voiceActionState.louder === "loading"
                         ? "Обрабатываем..."
-                        : voiceActionState.louder === "done"
+                        : activeSlide.activeVoiceEffects?.louder
                           ? "✓ Громче"
                           : "Громче"}
                     </button>
@@ -1688,7 +2181,7 @@ function StudioMobileLayout({
                     >
                       {voiceActionState.child === "loading"
                         ? "Обрабатываем..."
-                        : voiceActionState.child === "done"
+                        : activeSlide.activeVoiceEffects?.child
                           ? "✓ Детский"
                           : "Детский голос"}
                     </button>
@@ -1702,6 +2195,367 @@ function StudioMobileLayout({
             )}
           </div>
         </MobileAudioSheet>
+      ) : null}
+      {isPreviewSheetOpen ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 150,
+            background: "#000",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  aspectRatio: "9 / 16",
+                  maxWidth: "100%",
+                  position: "relative",
+                }}
+              >
+                <StudioPreviewPlayer
+                  ref={previewRef}
+                  slides={project.slides}
+                  musicEngineRef={audioEngineRef}
+                  lang={lang}
+                  onClose={() => setIsPreviewSheetOpen(false)}
+                  isMobileFullscreen
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isExportSheetOpen ? (
+        <div
+          ref={exportSheetRef}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 160,
+            background: "#000",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {!isExportFallbackPlayerMode ? (
+            <div
+              style={{
+                padding: "12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+                <div>
+                  <div style={{ color: "#fff", fontSize: "18px", fontWeight: 700 }}>Export</div>
+                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "12px" }}>{exportStatusText}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExportSheetOpen(false);
+                  resetExportUi();
+                }}
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "999px",
+                  border: "none",
+                  background: "#2a2a2a",
+                  color: "#fff",
+                  fontSize: "18px",
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ) : null}
+
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              alignItems: isExportFallbackPlayerMode ? "stretch" : "center",
+              justifyContent: isExportFallbackPlayerMode ? "stretch" : "center",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            {isExportFallbackPlayerMode ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close fullscreen playback"
+                  onClick={closeExportFallbackPlayer}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "72px",
+                    height: "72px",
+                    border: "none",
+                    background: "transparent",
+                    color: "transparent",
+                    zIndex: 180,
+                    padding: 0,
+                  }}
+                >
+                  Close
+                </button>
+                {showExportFallbackHint ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 20,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      zIndex: 181,
+                      padding: "10px 14px",
+                      borderRadius: "999px",
+                      background: "rgba(17,17,17,0.86)",
+                      color: "#fff",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      lineHeight: 1.2,
+                      whiteSpace: "nowrap",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    Tap top-left corner to close
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+            <div
+              style={{
+                height: isExportFallbackPlayerMode ? "100dvh" : "100%",
+                width: isExportFallbackPlayerMode ? "100vw" : "auto",
+                aspectRatio: "9 / 16",
+                maxWidth: isExportFallbackPlayerMode ? "none" : "100%",
+                position: "relative",
+                flexShrink: 0,
+                overflow: "hidden",
+              }}
+            >
+              <StudioPreviewPlayer
+                ref={previewRef}
+                slides={project.slides}
+                musicEngineRef={audioEngineRef}
+                lang={lang}
+                onClose={() => {
+                  if (isExportFallbackPlayerMode) {
+                    closeExportFallbackPlayer();
+                    return;
+                  }
+
+                  setIsExportSheetOpen(false);
+                  resetExportUi();
+                }}
+                isMobileFullscreen
+                loopPlayback={exportState !== "recording" && exportState !== "processing"}
+                onPlaybackComplete={handleExportPlaybackComplete}
+                resetSignal={exportResetSignal}
+                showWatermark={exportState !== "idle"}
+                showCloseButton={!isExportFallbackPlayerMode}
+              />
+            </div>
+          </div>
+
+          {!isExportFallbackPlayerMode ? (
+            <div
+              style={{
+                padding: "14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.92) 18%, #000 100%)",
+              }}
+            >
+            {(exportState === "recording" || exportState === "processing") ? (
+              <>
+                <div style={{ color: "#fff", fontSize: "14px", fontWeight: 600 }}>
+                  {exportState === "processing"
+                    ? "Preparing your video..."
+                    : `Recording slide ${exportSlideProgress} of ${Math.max(1, project.slides.length)}`}
+                </div>
+                <div
+                  style={{
+                    width: "100%",
+                    height: "8px",
+                    borderRadius: "999px",
+                    background: "rgba(255,255,255,0.12)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.round(exportProgress * 100)}%`,
+                      height: "100%",
+                      background: "linear-gradient(90deg, #ffb3d1, #c9b6ff)",
+                      borderRadius: "999px",
+                    }}
+                  />
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.68)", fontSize: "12px" }}>
+                  Keep this page open while we export.
+                </div>
+              </>
+            ) : null}
+
+            {exportState === "idle" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleStartExport()}
+                  style={{
+                    ...mobileButtonStyle,
+                    background: "#ffb3d1",
+                    color: "#000",
+                    fontWeight: 700,
+                  }}
+                >
+                  {exportCapability === "direct-record" ? "Start export" : "Save to phone"}
+                </button>
+                {exportCapability === "direct-record" ? (
+                  <div style={{ color: "rgba(255,255,255,0.68)", fontSize: "12px", lineHeight: 1.35 }}>
+                    We’ll record your slideshow as it plays ✨ Works on most devices
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ color: "rgba(255,255,255,0.82)", fontSize: "12px", lineHeight: 1.35 }}>
+                      Local save on this phone uses built-in screen recording.
+                    </div>
+                    <div style={{ color: "rgba(255,255,255,0.56)", fontSize: "11px", lineHeight: 1.35 }}>
+                      Nothing is uploaded. The slideshow stays on your device while you save it.
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : null}
+
+            {exportState === "success" ? (
+              <>
+                <div style={{ color: "#fff", fontSize: "18px", fontWeight: 700 }}>
+                  Your video is ready 🎉
+                </div>
+                {exportBlobUrl ? (
+                  <video
+                    src={exportBlobUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={{
+                      width: "100%",
+                      maxHeight: "140px",
+                      objectFit: "contain",
+                      borderRadius: "16px",
+                      background: "#111",
+                    }}
+                  />
+                ) : null}
+                {exportedWithoutSound ? (
+                  <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "12px" }}>
+                    Exported without sound on this device
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void handleShareExportedVideo()}
+                  style={{
+                    ...mobileButtonStyle,
+                    background: "#ffb3d1",
+                    color: "#000",
+                    fontWeight: 700,
+                  }}
+                >
+                  Share
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveExportedVideo()}
+                  style={{
+                    ...mobileButtonStyle,
+                    background: "#c9b6ff",
+                    color: "#000",
+                  }}
+                >
+                  Save
+                </button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => void navigator.clipboard?.writeText(exportCaption)}
+                    style={{ ...mobileButtonStyle, flex: 1 }}
+                  >
+                    Copy caption
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void navigator.clipboard?.writeText(exportCredits)}
+                    style={{ ...mobileButtonStyle, flex: 1 }}
+                  >
+                    Copy credits
+                  </button>
+                </div>
+              </>
+            ) : null}
+
+            {exportState === "fallback-screen-record" ? (
+              <>
+                <div style={{ color: "#fff", fontSize: "18px", fontWeight: 700 }}>
+                  Record using your device
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.78)", fontSize: "13px", lineHeight: 1.45 }}>
+                  1. Start screen recording on your phone
+                  <br />
+                  2. Play the slideshow in fullscreen
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.56)", fontSize: "11px", lineHeight: 1.4 }}>
+                  This is the most reliable local-save path on mobile browsers right now.
+                </div>
+                <button
+                  type="button"
+                  onClick={openExportFallbackPlayer}
+                  style={{
+                    ...mobileButtonStyle,
+                    background: "#8fdcff",
+                    color: "#000",
+                  }}
+                >
+                  Open fullscreen player
+                </button>
+              </>
+            ) : null}
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -1858,7 +2712,14 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
         setProject((prev) => {
           const updatedSlides = prev.slides.map((s, i) =>
             i === activeSlideIndex
-              ? { ...s, voiceUrl: dataUrl, voiceDuration: duration }
+              ? {
+                  ...s,
+                  voiceUrl: dataUrl,
+                  voiceDuration: duration,
+                  voiceBaseUrl: undefined,
+                  voiceBaseDuration: undefined,
+                  activeVoiceEffects: undefined,
+                }
               : s
           );
 
@@ -2139,25 +3000,26 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     return processed;
   }
 
-  async function persistProcessedVoiceBuffer(processedBuffer: AudioBuffer) {
-    const wavBlob = bufferToWav(processedBuffer);
-
-    const reader = new FileReader();
-    const dataUrl: string = await new Promise((resolve) => {
-      reader.onloadend = () => resolve(String(reader.result));
-      reader.readAsDataURL(wavBlob);
-    });
-
-    const probeAudio = new Audio(dataUrl);
-    await new Promise((resolve) => {
-      probeAudio.onloadedmetadata = () => resolve(true);
-    });
-    const duration = probeAudio.duration;
-
+  async function persistVoiceData(
+    nextVoiceUrl: string,
+    nextDuration: number,
+    options?: {
+      voiceBaseUrl?: string;
+      voiceBaseDuration?: number;
+      activeVoiceEffects?: Partial<Record<VoiceActionKey, boolean>>;
+    },
+  ) {
     setProject((prev) => {
       const updatedSlides = prev.slides.map((s, i) =>
         i === activeSlideIndex
-          ? { ...s, voiceUrl: dataUrl, voiceDuration: duration }
+          ? {
+              ...s,
+              voiceUrl: nextVoiceUrl,
+              voiceDuration: nextDuration,
+              voiceBaseUrl: options?.voiceBaseUrl,
+              voiceBaseDuration: options?.voiceBaseDuration,
+              activeVoiceEffects: options?.activeVoiceEffects,
+            }
           : s
       );
 
@@ -2174,24 +3036,35 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     });
   }
 
+  function hasAnyVoiceEffects(effects?: Partial<Record<VoiceActionKey, boolean>>) {
+    return Boolean(effects?.enhance || effects?.louder || effects?.child);
+  }
+
   async function processCurrentVoice(options?: {
-    outputGain?: number;
-    childVoice?: boolean;
+    sourceVoiceUrl?: string;
+    sourceVoiceDuration?: number;
+    activeVoiceEffects?: Partial<Record<VoiceActionKey, boolean>>;
   }) {
     if (!activeSlide.voiceUrl) return;
 
-    const { outputGain = 1, childVoice = false } = options ?? {};
+    const {
+      sourceVoiceUrl,
+      sourceVoiceDuration,
+      activeVoiceEffects,
+    } = options ?? {};
 
     try {
-      const arrayBuffer = await readVoiceUrlToArrayBuffer(activeSlide.voiceUrl);
+      const originalVoiceUrl = activeSlide.voiceBaseUrl ?? activeSlide.voiceUrl;
+      const originalVoiceDuration = activeSlide.voiceBaseDuration ?? activeSlide.voiceDuration;
+      const inputVoiceUrl = sourceVoiceUrl ?? originalVoiceUrl;
+      const nextEffects = activeVoiceEffects ?? activeSlide.activeVoiceEffects ?? {};
+      const arrayBuffer = await readVoiceUrlToArrayBuffer(inputVoiceUrl);
 
       const audioCtx = new AudioContext({ sampleRate: 48000 });
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      let processedBuffer = childVoice
-        ? audioBuffer
-        : buildProcessedVoiceBuffer(audioBuffer);
+      let processedBuffer = audioBuffer;
 
-      if (childVoice) {
+      if (nextEffects.child) {
         const pitchRate = 1.14;
         const pitchedLength = Math.max(1, Math.ceil(processedBuffer.length / pitchRate));
         const offlineCtx = new OfflineAudioContext(
@@ -2207,12 +3080,19 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
         source.start();
 
         const pitchedBuffer = await offlineCtx.startRendering();
-        processedBuffer = buildProcessedVoiceBuffer(pitchedBuffer, {
+        processedBuffer = pitchedBuffer;
+      }
+
+      if (nextEffects.enhance) {
+        processedBuffer = buildProcessedVoiceBuffer(processedBuffer);
+      } else if (nextEffects.child) {
+        processedBuffer = buildProcessedVoiceBuffer(processedBuffer, {
           lightNoiseReduction: true,
         });
       }
 
-      if (outputGain !== 1) {
+      if (nextEffects.louder) {
+        const outputGain = 1.35;
         for (let channel = 0; channel < processedBuffer.numberOfChannels; channel += 1) {
           const samples = processedBuffer.getChannelData(channel);
           for (let i = 0; i < samples.length; i += 1) {
@@ -2222,23 +3102,75 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
         }
       }
 
-      await persistProcessedVoiceBuffer(processedBuffer);
+      const wavBlob = bufferToWav(processedBuffer);
+      const reader = new FileReader();
+      const dataUrl: string = await new Promise((resolve) => {
+        reader.onloadend = () => resolve(String(reader.result));
+        reader.readAsDataURL(wavBlob);
+      });
+
+      const probeAudio = new Audio(dataUrl);
+      await new Promise((resolve) => {
+        probeAudio.onloadedmetadata = () => resolve(true);
+      });
+      const duration = probeAudio.duration;
+
+      await persistVoiceData(dataUrl, duration, {
+        voiceBaseUrl: originalVoiceUrl,
+        voiceBaseDuration: originalVoiceDuration ?? sourceVoiceDuration ?? duration,
+        activeVoiceEffects: hasAnyVoiceEffects(nextEffects) ? nextEffects : undefined,
+      });
       audioCtx.close();
     } catch (err) {
       console.error("Enhance voice failed", err);
     }
   }
 
+  async function restoreBaseVoice() {
+    if (!activeSlide.voiceBaseUrl) return;
+
+    await persistVoiceData(
+      activeSlide.voiceBaseUrl,
+      activeSlide.voiceBaseDuration ?? activeSlide.voiceDuration ?? 0,
+      {
+        voiceBaseUrl: undefined,
+        voiceBaseDuration: undefined,
+        activeVoiceEffects: undefined,
+      },
+    );
+  }
+
+  async function toggleVoiceEffect(effect: VoiceActionKey) {
+    if (!activeSlide.voiceUrl) return;
+
+    const currentEffects = activeSlide.activeVoiceEffects ?? {};
+    const nextEffects: Partial<Record<VoiceActionKey, boolean>> = {
+      ...currentEffects,
+      [effect]: !currentEffects[effect],
+    };
+
+    if (!hasAnyVoiceEffects(nextEffects) && activeSlide.voiceBaseUrl) {
+      await restoreBaseVoice();
+      return;
+    }
+
+    await processCurrentVoice({
+      sourceVoiceUrl: activeSlide.voiceBaseUrl ?? activeSlide.voiceUrl,
+      sourceVoiceDuration: activeSlide.voiceBaseDuration ?? activeSlide.voiceDuration,
+      activeVoiceEffects: nextEffects,
+    });
+  }
+
   async function enhanceVoiceRecording() {
-    await processCurrentVoice();
+    await toggleVoiceEffect("enhance");
   }
 
   async function makeVoiceLouder() {
-    await processCurrentVoice({ outputGain: 1.35 });
+    await toggleVoiceEffect("louder");
   }
 
   async function makeChildVoice() {
-    await processCurrentVoice({ outputGain: 1.1, childVoice: true });
+    await toggleVoiceEffect("child");
   }
 
   function removeVoiceFromSlide() {
@@ -2250,6 +3182,9 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
       ...activeSlide,
       voiceUrl: undefined,
       voiceDuration: undefined,
+      voiceBaseUrl: undefined,
+      voiceBaseDuration: undefined,
+      activeVoiceEffects: undefined,
     });
   }
 
