@@ -15,6 +15,7 @@ import MediaPickerModal from "./MediaPickerModal";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
+import { PARROT_PRESETS } from "@/utils/parrot-presets";
 
 const PROJECT_ID = "current-studio-project";
 
@@ -215,6 +216,72 @@ interface MobileColorPickerProps {
   onChangeState: (state: MobileColorState) => void;
   onChangeOpacity?: (opacity: number) => void;
   onQuickSelect?: (hex: string) => void;
+}
+
+interface MobileAudioSheetProps {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+type VoiceActionKey = "enhance" | "louder" | "child";
+type VoiceActionStatus = "idle" | "loading" | "done";
+
+function MobileAudioSheet({ title, onClose, children }: MobileAudioSheetProps) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 140,
+        background: "rgba(0,0,0,0.82)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          height: "100dvh",
+          background: "#141414",
+          color: "#fff",
+          padding: "14px",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            marginBottom: "12px",
+          }}
+        >
+          <strong style={{ fontSize: "18px" }}>{title}</strong>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "999px",
+              border: "none",
+              background: "#2a2a2a",
+              color: "#fff",
+              fontSize: "18px",
+            }}
+          >
+            ×
+          </button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: "16px" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function MobileColorPicker({
@@ -556,22 +623,42 @@ function StudioMobileLayout({
   project,
   activeSlide,
   activeSlideIndex,
+  isRecording,
   isMediaOpen,
   setActiveSlideIndex,
   setProject,
   setIsMediaOpen,
   addSlide,
   deleteSlide,
+  updateMusicTracks,
+  removeVoiceFromSlide,
+  enhanceVoiceRecording,
+  makeVoiceLouder,
+  makeChildVoice,
   startVoiceRecording,
+  stopVoiceRecording,
   updateSlide,
+  audioEngineRef,
 }: StudioLayoutProps) {
   const [mode, setMode] = useState<"slides" | "text" | "media" | "audio" | "settings" | null>("slides");
   const [activePicker, setActivePicker] = useState<MobilePickerTarget>(null);
+  const [activeAudioSheet, setActiveAudioSheet] = useState<"music" | "voice" | null>(null);
+  const [selectedMusicPresetId, setSelectedMusicPresetId] = useState<string | null>(PARROT_PRESETS[0]?.id ?? null);
+  const [previewingAudioId, setPreviewingAudioId] = useState<string | null>(null);
+  const [areTracksPlaying, setAreTracksPlaying] = useState(false);
+  const [voicePreviewVolume, setVoicePreviewVolume] = useState(1);
+  const [voiceActionState, setVoiceActionState] = useState<Record<VoiceActionKey, VoiceActionStatus>>({
+    enhance: "idle",
+    louder: "idle",
+    child: "idle",
+  });
   const [textColorState, setTextColorState] = useState<MobileColorState>(() => hexToHsl("#ffffff"));
   const [bgColorState, setBgColorState] = useState<MobileColorState>(() => hexToHsl("#000000"));
   const [reorderSourceIndex, setReorderSourceIndex] = useState<number | null>(null);
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const reorderPressTimerRef = useRef<number | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const mobileModes = [
     { key: "slides", label: "Slides" },
     { key: "text", label: "Text" },
@@ -587,12 +674,49 @@ function StudioMobileLayout({
     color: "#fff",
     border: "none",
   } satisfies React.CSSProperties;
+  const selectedMusicPreset = PARROT_PRESETS.find((preset) => preset.id === selectedMusicPresetId) ?? null;
+
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const engine = audioEngineRef.current;
+    if (!engine) return;
+
+    const engineTracks = engine.getTracks();
+    const projectTrackIds = new Set(project.musicTracks.map((track) => track.id));
+    const engineTrackIds = new Set(engineTracks.map((track) => track.id));
+
+    engineTracks.forEach((track) => {
+      if (!projectTrackIds.has(track.id)) {
+        engine.removeTrack(track.id);
+      }
+    });
+
+    project.musicTracks.forEach((track) => {
+      if (!engineTrackIds.has(track.id)) {
+        engine.addTrack(track);
+      }
+      engine.setVolume(track.id, track.volume);
+    });
+  }, [audioEngineRef, project.musicTracks]);
 
   useEffect(() => {
     setTextColorState(hexToHsl(activeSlide.textColor ?? "#ffffff"));
     setBgColorState(hexToHsl(activeSlide.textBgColor ?? "#000000"));
     setActivePicker(null);
     setReorderSourceIndex(null);
+    setVoiceActionState({
+      enhance: "idle",
+      louder: "idle",
+      child: "idle",
+    });
   }, [activeSlide.id]);
 
   useEffect(() => {
@@ -642,6 +766,113 @@ function StudioMobileLayout({
     setReorderSourceIndex(null);
   }
 
+  function updateTrackVolume(trackId: string, volume: number) {
+    const nextTracks = project.musicTracks.map((track) =>
+      track.id === trackId ? { ...track, volume } : track,
+    );
+    updateMusicTracks(nextTracks);
+    audioEngineRef.current?.setVolume?.(trackId, volume);
+  }
+
+  function removeTrack(trackId: string) {
+    const nextTracks = project.musicTracks.filter((track) => track.id !== trackId);
+    updateMusicTracks(nextTracks);
+    audioEngineRef.current?.removeTrack?.(trackId);
+  }
+
+  function addMusicTrack(track: Track) {
+    if (project.musicTracks.length >= 4) return;
+    if (project.musicTracks.some((existingTrack) => existingTrack.id === track.id)) return;
+
+    updateMusicTracks([...project.musicTracks, track]);
+    audioEngineRef.current?.addTrack?.(track);
+    audioEngineRef.current?.setVolume?.(track.id, track.volume);
+  }
+
+  function togglePreviewAudio(id: string, src: string) {
+    if (previewingAudioId === id && previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current.currentTime = 0;
+      previewAudioRef.current = null;
+      setPreviewingAudioId(null);
+      return;
+    }
+
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current.currentTime = 0;
+    }
+
+    const audio = new Audio(src);
+    previewAudioRef.current = audio;
+    setPreviewingAudioId(id);
+    audio.onended = () => {
+      setPreviewingAudioId(null);
+      previewAudioRef.current = null;
+    };
+    void audio.play();
+  }
+
+  function togglePlayAllTracks() {
+    if (areTracksPlaying) {
+      audioEngineRef.current?.stopAll?.();
+      setAreTracksPlaying(false);
+    } else {
+      audioEngineRef.current?.playAll?.();
+      setAreTracksPlaying(true);
+    }
+  }
+
+  async function runVoiceAction(action: VoiceActionKey, handler?: () => Promise<void>) {
+    if (!handler || !activeSlide.voiceUrl || voiceActionState[action] === "loading") return;
+
+    setVoiceActionState((current) => ({
+      ...current,
+      [action]: "loading",
+    }));
+
+    try {
+      await handler();
+      setVoiceActionState((current) => ({
+        ...current,
+        [action]: "done",
+      }));
+    } catch (error) {
+      console.error(`Voice action failed: ${action}`, error);
+      setVoiceActionState((current) => ({
+        ...current,
+        [action]: "idle",
+      }));
+    }
+  }
+
+  function getVoiceActionButtonStyle(action: VoiceActionKey, baseBackground: string) {
+    const status = voiceActionState[action];
+
+    if (status === "done") {
+      return {
+        ...mobileButtonStyle,
+        background: "#111",
+        color: "#fff",
+        border: "1px solid rgba(152, 240, 197, 0.8)",
+      };
+    }
+
+    if (status === "loading") {
+      return {
+        ...mobileButtonStyle,
+        background: "#ffd36b",
+        color: "#000",
+      };
+    }
+
+    return {
+      ...mobileButtonStyle,
+      background: baseBackground,
+      color: "#000",
+    };
+  }
+
   useEffect(() => {
     if (!activePicker) return;
 
@@ -676,6 +907,7 @@ function StudioMobileLayout({
         zIndex: 100,
       }}
     >
+      <AudioEngine ref={audioEngineRef} maxTracks={4} />
       <div
         className="studio-mobile-canvas"
         style={{
@@ -1094,9 +1326,22 @@ function StudioMobileLayout({
           )}
 
           {mode === "audio" && (
-            <button type="button" onClick={() => void startVoiceRecording()} style={mobileButtonStyle}>
-              Record Voice
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setActiveAudioSheet("music")}
+                style={mobileButtonStyle}
+              >
+                Выбор музыки
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveAudioSheet("voice")}
+                style={mobileButtonStyle}
+              >
+                Record Voice
+              </button>
+            </div>
           )}
 
           {mode === "settings" && (
@@ -1159,6 +1404,304 @@ function StudioMobileLayout({
           setIsMediaOpen(false);
         }}
       />
+      {activeAudioSheet === "music" ? (
+        <MobileAudioSheet
+          title="Музыка"
+          onClose={() => {
+            if (previewAudioRef.current) {
+              previewAudioRef.current.pause();
+              previewAudioRef.current.currentTime = 0;
+              previewAudioRef.current = null;
+            }
+            setPreviewingAudioId(null);
+            setActiveAudioSheet(null);
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div
+              style={{
+                padding: "14px",
+                borderRadius: "16px",
+                background: "linear-gradient(rgb(188 255 239), rgb(255 246 162))",
+                color: "#000",
+              }}
+            >
+              <div style={{ marginBottom: "10px", fontWeight: 700 }}>Выбранные дорожки</div>
+              {project.musicTracks.length === 0 ? (
+                <div style={{ opacity: 0.7, fontSize: "14px" }}>Пока ничего не выбрано</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {project.musicTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      style={{
+                        padding: "10px",
+                        borderRadius: "12px",
+                        background: "rgba(255,255,255,0.62)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                        <strong style={{ fontSize: "14px" }}>{track.label}</strong>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            type="button"
+                            onClick={() => togglePreviewAudio(`track-${track.id}`, track.src)}
+                            style={{
+                              border: "none",
+                              background: "#e0f7ff",
+                              color: "#000",
+                              borderRadius: "10px",
+                              padding: "6px 10px",
+                            }}
+                          >
+                            {previewingAudioId === `track-${track.id}` ? "⏸" : "▶"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeTrack(track.id)}
+                            style={{
+                              border: "none",
+                              background: "#ff6b6b",
+                              color: "#fff",
+                              borderRadius: "10px",
+                              padding: "6px 10px",
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={track.volume}
+                        onChange={(e) => updateTrackVolume(track.id, Number(e.target.value))}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={togglePlayAllTracks}
+                    style={{
+                      ...mobileButtonStyle,
+                      background: areTracksPlaying ? "#ffb3d1" : "#8fdcff",
+                      color: "#000",
+                    }}
+                  >
+                    {areTracksPlaying ? "⏸ Pause All" : "▶ Play All"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {PARROT_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => setSelectedMusicPresetId(preset.id)}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "12px",
+                    border: selectedMusicPresetId === preset.id ? "2px solid #ffb3d1" : "1px solid rgba(255,255,255,0.16)",
+                    background: selectedMusicPresetId === preset.id ? "#2a1f28" : "#1f1f1f",
+                    color: "#fff",
+                  }}
+                >
+                  {preset.title}
+                </button>
+              ))}
+            </div>
+
+            {selectedMusicPreset ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {selectedMusicPreset.loops.map((loop) => (
+                  <div
+                    key={loop.id}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "14px",
+                      background: "#1d1d1d",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div style={{ color: "#fff", fontWeight: 700, marginBottom: "8px" }}>{loop.label}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                      {loop.variants.map((variant) => (
+                        <div key={variant.id} style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              addMusicTrack({
+                                id: variant.id,
+                                label: variant.label || loop.label,
+                                src: variant.src,
+                                volume: 1,
+                              })
+                            }
+                            style={{
+                              padding: "8px 10px",
+                              borderRadius: "10px",
+                              border: "1px solid rgba(255,255,255,0.16)",
+                              background: "#2a2a2a",
+                              color: "#fff",
+                            }}
+                          >
+                            {variant.label}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => togglePreviewAudio(variant.id, variant.src)}
+                            style={{
+                              padding: "8px 10px",
+                              borderRadius: "10px",
+                              border: "1px solid rgba(255,255,255,0.16)",
+                              background: previewingAudioId === variant.id ? "#ffb3d1" : "#c9b6ff",
+                              color: "#000",
+                            }}
+                          >
+                            {previewingAudioId === variant.id ? "⏸" : "▶"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </MobileAudioSheet>
+      ) : null}
+      {activeAudioSheet === "voice" ? (
+        <MobileAudioSheet
+          title="Record Voice"
+          onClose={() => setActiveAudioSheet(null)}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <button
+              type="button"
+              onClick={() => {
+                if (isRecording) {
+                  stopVoiceRecording();
+                } else {
+                  void startVoiceRecording();
+                }
+              }}
+              style={{
+                ...mobileButtonStyle,
+                background: isRecording ? "#ffb3d1" : "#98f0c5",
+                color: "#000",
+              }}
+            >
+              {isRecording ? "Stop Recording" : "Start Recording"}
+            </button>
+
+            {activeSlide.voiceUrl ? (
+              <div
+                style={{
+                  padding: "14px",
+                  borderRadius: "16px",
+                  background: "linear-gradient(rgb(203 190 243), rgb(255 214 230))",
+                  color: "#000",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                  <strong>Voice track</strong>
+                  <button
+                    type="button"
+                    onClick={removeVoiceFromSlide}
+                    style={{
+                      border: "none",
+                      background: "#ff6b6b",
+                      color: "#fff",
+                      borderRadius: "10px",
+                      padding: "6px 10px",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <audio
+                  ref={voiceAudioRef}
+                  src={activeSlide.voiceUrl}
+                  controls
+                  style={{ width: "100%" }}
+                />
+                <label style={{ fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  Playback volume
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={voicePreviewVolume}
+                    onChange={(e) => {
+                      const nextVolume = Number(e.target.value);
+                      setVoicePreviewVolume(nextVolume);
+                      if (voiceAudioRef.current) {
+                        voiceAudioRef.current.volume = nextVolume;
+                      }
+                    }}
+                  />
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {enhanceVoiceRecording ? (
+                    <button
+                      type="button"
+                      onClick={() => void runVoiceAction("enhance", enhanceVoiceRecording)}
+                      style={getVoiceActionButtonStyle("enhance", "#8fdcff")}
+                    >
+                      {voiceActionState.enhance === "loading"
+                        ? "Обрабатываем..."
+                        : voiceActionState.enhance === "done"
+                          ? "✓ Улучшено"
+                          : "Улучшить"}
+                    </button>
+                  ) : null}
+                  {makeVoiceLouder ? (
+                    <button
+                      type="button"
+                      onClick={() => void runVoiceAction("louder", makeVoiceLouder)}
+                      style={getVoiceActionButtonStyle("louder", "#98f0c5")}
+                    >
+                      {voiceActionState.louder === "loading"
+                        ? "Обрабатываем..."
+                        : voiceActionState.louder === "done"
+                          ? "✓ Громче"
+                          : "Громче"}
+                    </button>
+                  ) : null}
+                  {makeChildVoice ? (
+                    <button
+                      type="button"
+                      onClick={() => void runVoiceAction("child", makeChildVoice)}
+                      style={getVoiceActionButtonStyle("child", "#c9b6ff")}
+                    >
+                      {voiceActionState.child === "loading"
+                        ? "Обрабатываем..."
+                        : voiceActionState.child === "done"
+                          ? "✓ Детский"
+                          : "Детский голос"}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: "#aaa", fontSize: "14px" }}>
+                После записи здесь появится голосовая дорожка с управлением.
+              </div>
+            )}
+          </div>
+        </MobileAudioSheet>
+      ) : null}
     </div>
   );
 }
@@ -1200,7 +1743,54 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     if (isRecording) return;
 
     try {
-      const rawStream = await navigator.mediaDevices.getUserMedia({
+      const legacyNavigator = navigator as Navigator & {
+        getUserMedia?: (
+          constraints: MediaStreamConstraints,
+          successCallback: (stream: MediaStream) => void,
+          errorCallback: (error: unknown) => void,
+        ) => void;
+        webkitGetUserMedia?: (
+          constraints: MediaStreamConstraints,
+          successCallback: (stream: MediaStream) => void,
+          errorCallback: (error: unknown) => void,
+        ) => void;
+        mozGetUserMedia?: (
+          constraints: MediaStreamConstraints,
+          successCallback: (stream: MediaStream) => void,
+          errorCallback: (error: unknown) => void,
+        ) => void;
+      };
+
+      const legacyGetUserMedia = typeof navigator !== "undefined"
+        ? (
+            legacyNavigator.getUserMedia?.bind(navigator) ??
+            legacyNavigator.webkitGetUserMedia?.bind(navigator) ??
+            legacyNavigator.mozGetUserMedia?.bind(navigator)
+          )
+        : undefined;
+
+      const getUserMedia = navigator.mediaDevices?.getUserMedia
+        ? (constraints: MediaStreamConstraints) => navigator.mediaDevices.getUserMedia(constraints)
+        : legacyGetUserMedia
+          ? (constraints: MediaStreamConstraints) =>
+              new Promise<MediaStream>((resolve, reject) => {
+                legacyGetUserMedia(constraints, resolve, reject);
+              })
+          : null;
+
+      if (!getUserMedia) {
+        const isSecureOrigin = typeof window !== "undefined" ? window.isSecureContext : false;
+        const message = isSecureOrigin
+          ? "Voice recording is not supported in this browser."
+          : "Voice recording needs a secure origin (HTTPS or localhost).";
+        console.error(message);
+        if (typeof window !== "undefined") {
+          window.alert(message);
+        }
+        return;
+      }
+
+      const rawStream = await getUserMedia({
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
