@@ -1,4 +1,5 @@
 import type { StudioSlide } from "@/types/studio";
+import { AMATIC_FONT_FAMILY } from "@/lib/fonts";
 import SlideTextEditor from "./SlideTextEditor";
 import { dictionaries, type Lang } from "@/i18n";
 
@@ -249,7 +250,7 @@ export default function StudioSettingsPanel({
             lang={lang}
             value={textValue}
             onChange={onChangeText}
-            fontFamily="'Amatic SC', cursive"
+            fontFamily={AMATIC_FONT_FAMILY}
           />
         </div>
       </div>

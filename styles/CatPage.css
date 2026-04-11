@@ -96,7 +96,7 @@ html, body {
 
 .example-button {
   background-color: #ddd6fe; /* violet-200 */
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.5rem;
   letter-spacing: 0.05em;
   padding: 0.5rem 1.25rem;
@@ -125,7 +125,7 @@ html, body {
 .question-input {
   flex: 1;
   padding: 0.75rem 1rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.5rem;
   border-radius: 9999px;
   background: linear-gradient(135deg, #f3e8ff, #ffe4e1); /* плавный градиент сиреневого к персиковому */
@@ -146,7 +146,7 @@ html, body {
 }
 
 .ask-button {
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   padding: 0.5rem 1rem;
   border: none;
   cursor: pointer;
@@ -160,7 +160,7 @@ html, body {
 .error-message {
   color: #ef4444;
   margin-top: 0.5rem;
-  font-family: "Varela Round", system-ui, sans-serif;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
 }
 
 .slide-container {
@@ -176,7 +176,7 @@ html, body {
   border-radius: 0.25rem;
   padding: 1rem;
   font-size: 1.125rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 .random-question-button {
@@ -205,7 +205,7 @@ html, body {
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   transition: transform 0.2s ease;
   cursor: pointer;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   border: none;
 }
 
@@ -277,7 +277,7 @@ html, body {
 }
 
 .cat-spinner-text {
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.5em;
   color: #555;
   margin-top: 0.5em;
@@ -389,7 +389,7 @@ html, body {
 }
 
 html[dir="rtl"] .cat-slide {
-  font-family: "Varela Round", system-ui, sans-serif;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
 }
 
 .mode-tabs {
@@ -411,7 +411,7 @@ html[dir="rtl"] .cat-slide {
   background: linear-gradient(135deg, #f6cffa, #ccebfa);
   color: #ffffff;
   cursor: pointer;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.8rem;
   letter-spacing: 0.05em;
   box-shadow: inset -2px -2px 4px #fff9, inset 2px 2px 4px #0000000d, 2px 4px 8px #0000001a;
@@ -438,7 +438,7 @@ html[dir="rtl"] .cat-slide {
   border: none;
   color: #ffffff;
   font-size: 1.6rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   padding: 10px 22px;
   max-width: fit-content;
   border-radius: 999px;

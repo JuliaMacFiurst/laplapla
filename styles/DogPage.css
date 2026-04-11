@@ -3,7 +3,7 @@ body {
   padding: 0;
   background: linear-gradient(135deg, #ffe0f0 0%, #e0f7ff 100%);
   min-height: 100vh;
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
 }
 
 
@@ -57,7 +57,7 @@ body {
   font-size: 1.25rem;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   aspect-ratio: 1 / 1;
   display: flex;
   justify-content: center;
@@ -73,7 +73,7 @@ body {
   padding: 0.25rem 0.5rem;
   border-radius: 0;
   font-size: 1.25rem;
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   z-index: 4;
   position: absolute;
   bottom: 0;
@@ -138,7 +138,7 @@ body {
   background: rgba(255,255,255,0.35);
   backdrop-filter: blur(6px);
 
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 20px;
   font-weight: bold;
 

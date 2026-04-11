@@ -70,7 +70,7 @@
 .about-card-content h2 {
   margin: 0 0 12px;
 
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 36px;
   font-weight: 700;
 
@@ -80,7 +80,7 @@
 .about-card-content p {
   margin: 0;
 
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 20px;
   line-height: 1.6;
 
@@ -97,7 +97,7 @@
 }
 
 .about-section h2 {
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 48px;
   margin-bottom: 20px;
 
@@ -105,7 +105,7 @@
 }
 
 .about-section p {
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 20px;
   line-height: 1.7;
 
@@ -128,7 +128,7 @@
 }
 
 /* =========================
-   HEBREW FONT (Varela Round)
+   HEBREW FONT (var(--font-varela-round))
 ========================= */
 
 /* Основной текст на иврите */
@@ -136,14 +136,14 @@
 [dir="rtl"] .about-full-content,
 [dir="rtl"] .about-full-content p,
 [dir="rtl"] .about-full-content li {
-  font-family: 'Varela Round', system-ui, sans-serif;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
 }
 
 /* Заголовки на иврите оставляем лаплапловскими */
 [dir="rtl"] .about-card-content h2,
 [dir="rtl"] .about-section h2,
 [dir="rtl"] .about-full-content h3 {
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 /* =========================

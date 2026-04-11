@@ -104,7 +104,7 @@
   box-shadow: 0 0 15px 5px rgba(255, 105, 180, 0.6);
   animation: pulse-highlight 1.5s infinite, wiggle 2s infinite;
   transition: transform 0.2s ease;
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
 }
 
 .art-gallery-open-button:hover {

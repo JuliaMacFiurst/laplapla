@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, forwardRef } from "react";
+import { resolveFontFamily } from "@/lib/fonts";
 import type { StudioSlide } from "@/types/studio";
 import { dictionaries, type Lang } from "@/i18n";
 
@@ -245,7 +246,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 fontSize: isExportMode
                   ? (currentSlide.fontSize || 28) * (1080 / 360)
                   : currentSlide.fontSize || 28,
-                fontFamily: currentSlide.fontFamily || "'Amatic SC', cursive",
+                fontFamily: resolveFontFamily(currentSlide.fontFamily),
                 color: currentSlide.textColor || "#fff",
                 background: currentSlide.textBgEnabled
                   ? (() => {

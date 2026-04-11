@@ -1,8 +1,8 @@
-
-
 // utils/renderSlideToCanvas.ts
 // A deterministic, reusable Canvas renderer for 9:16 slides.
 // Designed to be shared by Preview (Canvas) and future ffmpeg export (frame-by-frame).
+
+import { resolveFontFamily } from "@/lib/fonts";
 
 export type MediaFit = "cover" | "contain";
 export type MediaPosition = "top" | "center" | "bottom";
@@ -200,7 +200,7 @@ function drawTextBlock(
   ctx.save();
 
   // Font setup
-  ctx.font = `${fontSize}px ${text.fontFamily || "sans-serif"}`;
+  ctx.font = `${fontSize}px ${resolveFontFamily(text.fontFamily) || "sans-serif"}`;
   ctx.textAlign = text.align;
   ctx.textBaseline = "top";
 

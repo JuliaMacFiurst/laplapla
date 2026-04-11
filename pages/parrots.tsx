@@ -233,7 +233,7 @@ export default function ParrotsPage() {
             overflow: hidden;
             cursor: pointer;
             transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-            font-family: 'Amatic SC', cursive;
+            font-family: var(--font-amatic-sc), cursive;
           }
           .style-preset-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.12); }
           .style-preset-btn.is-active {

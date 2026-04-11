@@ -152,7 +152,7 @@
   justify-content: space-between;
   gap: 8px;
   z-index: 11;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-weight: bold;
   font-size: 38px;
   pointer-events: none;
@@ -172,7 +172,7 @@
   position: absolute;
   top: 110px;          /* под табло очков */
   left: 76px;          /* та же ось, что и scoreboard */
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 28px;
   color: #1b9337;
   text-shadow: 0 0 6px rgba(120, 255, 190, 0.6);
@@ -220,7 +220,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 27px;
   color: #d70000;
   text-shadow: 0 0 6px rgba(255, 60, 60, 0.7);
@@ -628,7 +628,7 @@
   left: 45%;
   transform: translateX(-50%);
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 56px;
   font-weight: bold;
 
@@ -645,7 +645,7 @@
 .final-summary-character-score {
   margin-top: 8px;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 34px;
   font-weight: bold;
 
@@ -684,7 +684,7 @@
 .final-summary-score {
   margin-top: 6px;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 28px;
   font-weight: bold;
 
@@ -700,5 +700,5 @@
 .quest-1-hebrew-font .final-summary-total-score,
 .quest-1-hebrew-font .final-summary-character-score,
 .quest-1-hebrew-font .final-summary-score {
-  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+  font-family: var(--font-nunito), "Comic Sans MS", cursive, sans-serif;
 }

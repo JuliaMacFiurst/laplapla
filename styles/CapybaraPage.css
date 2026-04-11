@@ -9,7 +9,7 @@
   padding: 1rem;
   background: linear-gradient(to bottom right, #fbcfe8, #f3e8ff, #bae6fd);
   overflow-y: auto;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 /* Хедер */
@@ -75,7 +75,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.12rem;
   font-weight: 700;
   color: #64748b;
@@ -132,7 +132,7 @@
   margin-bottom: 0.5rem;
   max-width: 48rem;
   width: 100%;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   margin-left: auto;
   margin-right: auto;
 }
@@ -214,7 +214,7 @@
   font-size: 1rem;
   color: #334155;
   background: transparent;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   letter-spacing: 0.08em;
   font-size: 1.25rem;
 }
@@ -222,7 +222,7 @@
 .search-input::placeholder {
   letter-spacing: 0.08em;
   font-size: 1.25rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   color: #94a3b8;
 }
 
@@ -258,7 +258,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   font-size: 1.25rem;
   cursor: pointer;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   letter-spacing: 0.08em;
   border: none;
   flex: 0 0 auto;
@@ -348,7 +348,7 @@
 .story-inline-hint,
 .story-generator-error,
 .story-generator-success {
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 .story-field-label {
@@ -364,7 +364,7 @@
   border: 2px solid rgba(251, 146, 60, 0.2);
   border-radius: 22px;
   padding: 0.95rem 1rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.55rem;
   color: #334155;
   background: rgba(255, 255, 255, 0.92);
@@ -444,7 +444,7 @@
   border-radius: 24px;
   padding: 1rem 1.1rem;
   text-align: left;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.7rem;
   color: #5b5e75;
   background: linear-gradient(135deg, #fff7ed, #ffedd5);
@@ -478,7 +478,7 @@
   margin: 0;
   font-size: 1.2rem;
   line-height: 1.55;
-  font-family: 'Varela Round', sans-serif;
+  font-family: var(--font-varela-round), sans-serif;
 }
 
 .story-result-actions {
@@ -541,7 +541,7 @@
 .story-hero-picker-title {
   color: #7c2d12;
   font-size: 2.2rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 .story-hero-picker-hint {
@@ -549,7 +549,7 @@
   color: #7c2d12;
   font-size: 1.15rem;
   line-height: 1.5;
-  font-family: 'Varela Round', sans-serif;
+  font-family: var(--font-varela-round), sans-serif;
 }
 
 .story-hero-picker-close {
@@ -625,7 +625,7 @@
   color: #7c2d12;
   font-size: 2.4rem;
   font-weight: 700;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 .story-hero-card-copy {
@@ -636,7 +636,7 @@
   color: #7c2d12;
   font-size: 1.8rem;
   line-height: 1.05;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 .story-hero-card-meta {
@@ -644,7 +644,7 @@
   color: #475569;
   font-size: 0.95rem;
   line-height: 1.4;
-  font-family: 'Varela Round', sans-serif;
+  font-family: var(--font-varela-round), sans-serif;
 }
 
 @media (max-width: 760px) {
@@ -706,7 +706,7 @@
   border-radius: 9999px;
   background: linear-gradient(135deg, #14b8a6, #0891b2);
   color: white;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.3rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -730,7 +730,7 @@
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 .search-result-card:hover,
@@ -829,7 +829,7 @@
   font-size: 1.5rem;
   cursor: pointer;
   border: none;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   letter-spacing: 0.08em;
 }
 
@@ -1000,7 +1000,7 @@
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   transition: transform 0.2s ease;
   cursor: pointer;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   border: none;
 }
 
@@ -1160,7 +1160,7 @@
   color: #ffffff;
   font-size: 1.55rem;
   font-weight: 800;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   box-shadow: 0 18px 36px rgba(14, 116, 144, 0.28);
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
@@ -1549,7 +1549,7 @@
   border: 1px solid rgba(255, 255, 255, 0.92);
   border-radius: 9999px;
   padding: 0.8rem 1.2rem;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -1705,7 +1705,7 @@
   box-shadow:
     0 10px 22px rgba(148, 163, 184, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
 }
 
 .quiz-option:hover:not(:disabled) {
@@ -1758,7 +1758,7 @@
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
-  font-family: 'Amatic SC', 'Caveat', cursive;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   box-shadow:
     0 14px 26px rgba(96, 165, 250, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);

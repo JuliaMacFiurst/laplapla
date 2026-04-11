@@ -240,7 +240,7 @@
 }
 
 .lab-game-start-button {
-  font-family: Amatic SC, cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 28px;
   font-weight: 700;
   padding: 22px 48px;
@@ -312,7 +312,7 @@
 
 .lab-game-restart-button {
   margin-top: 20px;
-  font-family: Amatic SC, cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 36px;
   font-weight: 600;
   padding: 14px 32px;
@@ -332,7 +332,7 @@
 
 .quest-1-hebrew-font .lab-game-start-button,
 .quest-1-hebrew-font .lab-game-restart-button {
-  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+  font-family: var(--font-nunito), "Comic Sans MS", cursive, sans-serif;
 }
 
 @keyframes popIn {

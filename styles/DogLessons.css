@@ -8,7 +8,7 @@
   text-align: center;
   font-size: 3rem;
   margin-bottom: 2rem;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
 }
 
 .lessons-grid {
@@ -54,7 +54,7 @@
 .lesson-title {
   font-size: 1.5rem;
   margin: 0;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   color: #333;
   z-index: 1;
   position: relative;
@@ -74,7 +74,7 @@
   border-radius: 12px;
 
   cursor: pointer;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-weight: bold;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -163,7 +163,7 @@
 }
 
 .lesson-tools-panel label {
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.6rem;
 }
 
@@ -203,7 +203,7 @@
 }
 
 .lesson-tools-panel select {
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.2rem;
   border-radius: 8px;
   padding: 4px 6px;
@@ -227,7 +227,7 @@
   border: 6px solid #ffffff;
   border-radius: 40px;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 2rem;
   font-weight: bold;
   letter-spacing: 0.08em;
@@ -262,7 +262,7 @@
 
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
   transition: transform 0.08s ease;
-  font-family: Amatic SC, cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.4rem;
   font-weight: bold;
 }
@@ -290,7 +290,7 @@
   background-color: #ffe2b6;
   border: none;
   cursor: pointer;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: bold;
@@ -330,7 +330,7 @@
 .lesson-dog-name {
   margin-top: 6px;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.6rem;
   font-weight: bold;
 
@@ -456,12 +456,12 @@ lesson-dog-name::before,
 
 .lesson-toolbar label:first-of-type {
   font-size: 1.6rem;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
 }
 
 .lesson-brush-settings label {
   font-size: 1.6rem;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
 }
 
 .lesson-toolbar button:nth-child(1) {
@@ -475,21 +475,21 @@ lesson-dog-name::before,
 .lesson-button-eraser {
   background-color: #d3ffcf;
   border: none;
-  font-family: Amatic SC, cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.4rem;
   font-weight: bold;
 }
 
 .lesson-button-clear {
   background-color: #ffd1d1;
-  font-family: Amatic SC, cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.4rem;
   font-weight: bold;
 }
 
 .lesson-button-save {
   background-color: #f5ccff;
-  font-family: Amatic SC, cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.4rem;
   font-weight: bold;
 
@@ -507,7 +507,7 @@ lesson-dog-name::before,
   font-size: 1.4rem;
   border-radius: 6px;
   cursor: pointer;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   text-transform: uppercase;
   font-weight: bold;
   letter-spacing: 0.05em;
@@ -537,7 +537,7 @@ lesson-dog-name::before,
   font-size: 1.3rem;
   border: none;
   border-radius: 6px;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   text-transform: uppercase;
   font-weight: bold;
   letter-spacing: 0.05em;
@@ -573,7 +573,7 @@ lesson-dog-name::before,
   position: absolute;
   top: 5px;
   right: 5%;
-  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+  font-family: var(--font-nunito), "Comic Sans MS", cursive, sans-serif;
   z-index: 5;
 }
 
@@ -593,7 +593,7 @@ lesson-dog-name::before,
   background-color: #ffe2b6;
   border: none;
   cursor: pointer;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: bold;
@@ -649,7 +649,7 @@ lesson-dog-name::before,
   background-color: #ffe2b6;
   border: none;
   cursor: pointer;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: bold;
@@ -759,7 +759,7 @@ lesson-dog-name::before,
 }
 
 .colorizer-action-button {
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.6rem;
   font-weight: bold;
   padding: 10px 20px;
@@ -967,7 +967,7 @@ lesson-dog-name::before,
   max-width: 360px;
   text-align: center;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 28px;
 
 
@@ -1049,7 +1049,7 @@ lesson-dog-name::before,
 
   padding: 8px 14px;
 
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 20px;
 
   cursor: pointer;

@@ -19,7 +19,7 @@
   line-height: 1.45;
   text-align: center;
   color: rgba(157, 0, 0, 0.82);
-  font-family: "Quicksand", "Caveat", cursive;
+  font-family: "Quicksand", var(--font-caveat), cursive;
 }
 
 .raccoons-search-block {
@@ -459,7 +459,7 @@ svg path[data-selected="true"] {
   box-shadow: 4px -5px 9px 0px rgba(0, 0, 0, 0.1);
   line-height: 37px;
   font-weight: bold;
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.25rem;
   cursor: pointer;
   transform: translateY(0%) scale(1); /* изменено */

@@ -1,3 +1,5 @@
+import { AMATIC_FONT_FAMILY } from "@/lib/fonts";
+
 let logoImage: HTMLImageElement | null = null;
 let logoPromise: Promise<HTMLImageElement> | null = null;
 
@@ -53,7 +55,7 @@ export const drawLapLapLaWatermarkSync = (
 
   ctx.save();
   ctx.drawImage(logo, x, y, LOGO_WIDTH, LOGO_HEIGHT);
-  ctx.font = "20px 'Amatic SC', cursive";
+  ctx.font = `20px ${AMATIC_FONT_FAMILY}`;
   ctx.fillStyle = "#333";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";

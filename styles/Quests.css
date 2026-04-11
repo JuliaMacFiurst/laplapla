@@ -57,7 +57,7 @@
   margin: 0;
   padding: 0;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 44px;
   line-height: 11;
   color: rgba(10, 35, 57, 0.75);
@@ -150,7 +150,7 @@
   line-height: 1.5;
   color: #f8e7cc;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   letter-spacing: 1px;
 }
 
@@ -177,7 +177,7 @@
   min-height: 46px;
   padding: 10px 16px;
   border-radius: 999px;
-  font-family: "Quicksand", "Caveat", cursive;
+  font-family: "Quicksand", var(--font-caveat), cursive;
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
@@ -210,7 +210,7 @@
   line-height: 1.45;
   text-align: center;
   color: rgba(157, 0, 0, 0.82);
-  font-family: "Quicksand", "Caveat", cursive;
+  font-family: "Quicksand", var(--font-caveat), cursive;
   position: relative;
   z-index: 1;
 }
@@ -396,7 +396,7 @@
   width: 70%;
   text-align: center;
 
-  font-family: "Amatic SC", sans-serif;
+  font-family: var(--font-amatic-sc), sans-serif;
   font-size: 38px;
   font-weight: 700;
   line-height: 1.1;
@@ -515,7 +515,7 @@
   top: 50px;
   z-index: 3;
   max-width: 60%;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 36px;
   font-weight: 700;
   color: #204562;
@@ -600,7 +600,7 @@
   max-width: 420px;
 
   color: #ffe9c8;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   line-height: 1.4;
   font-size: 1.4rem;
 
@@ -635,7 +635,7 @@
   top: 40px;
   z-index: 3;
   max-width: 60%;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-weight: 700;
   text-align: center;
   font-size: 2.5rem;
@@ -743,7 +743,7 @@
   position: absolute;
   z-index: 3;
   max-width: 60%;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 34px;
   font-weight: 700;
   color: #204562;
@@ -781,7 +781,7 @@
   border-radius: 14px;
   cursor: pointer;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 1.6em;
   letter-spacing: 1px;
   color: #fff9f3;
@@ -1149,7 +1149,7 @@
   border-radius: 18px;
   border: 3px solid #d48d2a;
 
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 22px;
   line-height: 1.35;
   font-weight: 600;
@@ -1221,7 +1221,7 @@
   margin-top: 12px;
   padding: 10px 20px;
   font-size: 22px;
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   border-radius: 12px;
   background-color: #f7c97f;
   color: #4a2d00;
@@ -1266,7 +1266,7 @@
   border: 1px solid #bfa574;
   position: relative;
   z-index: 10000;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 30px;
   color: #753700;
   letter-spacing: 1px;
@@ -1303,7 +1303,7 @@
 .quest-1-hebrew-font .flight-test-answer,
 .quest-1-hebrew-font .nav-btn,
 .quest-1-hebrew-font .page-subtitle {
-  font-family: "Nunito", "Comic Sans MS", cursive, sans-serif;
+  font-family: var(--font-nunito), "Comic Sans MS", cursive, sans-serif;
 }
 
 @media (max-width: 900px) {
@@ -1378,7 +1378,7 @@
   background: #fff;
   border: 2px solid #c9b07a;
   border-radius: 12px;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 24px;
   color: #4a2d00;
   cursor: pointer;
@@ -1440,7 +1440,7 @@
   background: #ffe7bb;
   cursor: pointer;
   font-size: 26px;
-  font-family: "Amatic SC", cursive;
+  font-family: var(--font-amatic-sc), cursive;
   transition: 0.2s;
   box-shadow: 0 3px 0 #b07a22;
 }
@@ -1937,7 +1937,7 @@
 .station-label {
   position: absolute;
   z-index: 20;
-  font-family: "Amatic SC", cursive;          /* уменьшили шрифт */
+  font-family: var(--font-amatic-sc), cursive;          /* уменьшили шрифт */
   font-weight: 500;
   color: #7CFFB2;
 

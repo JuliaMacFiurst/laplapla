@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { resolveFontFamily } from "@/lib/fonts";
 import type { StudioSlide } from "@/types/studio";
 import { dictionaries, type Lang } from "@/i18n";
 
@@ -426,7 +427,7 @@ export default function SlideCanvas9x16({
         style={{
           position: "relative",
           zIndex: 2,
-          fontFamily: "'Amatic SC', cursive",
+          fontFamily: resolveFontFamily(slide.fontFamily),
           fontSize: effectiveFontSize,
           textAlign: slide.textAlign ?? "center",
           whiteSpace: "pre-wrap",

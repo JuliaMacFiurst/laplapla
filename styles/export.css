@@ -131,7 +131,7 @@ body.recording-mode .preview-close-button {
 
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.8);
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 18px;
 
   cursor: pointer;
@@ -325,7 +325,7 @@ body.processing-mode .export-back-button {
 /* ===== Header ===== */
 
 .export-tutorial-header {
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 26px;
   color: #444;
   display: flex;
@@ -360,7 +360,7 @@ body.processing-mode .export-back-button {
 /* ===== Text ===== */
 
 .export-tutorial-text {
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 20px;
   color: #666;
   line-height: 1.4;
@@ -504,7 +504,7 @@ body.processing-mode .export-back-button {
 }
 
 .export-share-title {
-  font-family: 'Amatic SC', cursive;
+  font-family: var(--font-amatic-sc), cursive;
   font-size: 32px;
   margin-bottom: 8px;
 }

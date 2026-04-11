@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { AMATIC_FONT_FAMILY, NUNITO_FONT_FAMILY } from "@/lib/fonts";
 import ClothesConveyor, { ClothesItem } from "./ClothesConveyor";
 import { loadClothesForCharacter } from "./loadClothesForCharacter";
 import type { CharacterResult, DressUpSeason, DressedItem } from "@/types/types";
@@ -28,7 +29,7 @@ export default function CharacterStage({
           textAlign: "center",
           paddingTop: "40px",
           color: "#fff",
-          fontFamily: lang === "he" ? "Nunito" : "Amatic SC",
+          fontFamily: lang === "he" ? NUNITO_FONT_FAMILY : AMATIC_FONT_FAMILY,
           fontSize: "32px",
         }}
       >

@@ -14,6 +14,7 @@ import { saveProject, loadProject } from "@/lib/studioStorage";
 import MediaPickerModal from "./MediaPickerModal";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
+import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import { PARROT_PRESETS } from "@/utils/parrot-presets";
 
@@ -45,7 +46,7 @@ function createInitialProject(): StudioProject {
     slides: [createEmptySlide()],
     musicTracks: [],
     updatedAt: Date.now(),
-    fontFamily: "'Amatic SC', cursive",
+    fontFamily: AMATIC_FONT_FAMILY,
   };
 }
 
@@ -2270,9 +2271,18 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
 
       const saved = await loadProject(PROJECT_ID);
       if (saved) {
-        projectRef.current = saved;
-        lastSavedSnapshotRef.current = JSON.stringify(saved);
-        setProject(saved);
+        const normalizedSaved = {
+          ...saved,
+          fontFamily: resolveFontFamily(saved.fontFamily),
+          slides: saved.slides.map((slide: StudioSlide) => ({
+            ...slide,
+            fontFamily: resolveFontFamily(slide.fontFamily),
+          })),
+        };
+
+        projectRef.current = normalizedSaved;
+        lastSavedSnapshotRef.current = JSON.stringify(normalizedSaved);
+        setProject(normalizedSaved);
       }
     }, 200);
 

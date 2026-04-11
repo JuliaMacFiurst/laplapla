@@ -53,7 +53,7 @@
   padding: 9px 16px;
   min-height: 40px;
   cursor: pointer;
-  font-family: "Varela Round", "Comic Sans MS", cursive;
+  font-family: var(--font-varela-round), "Comic Sans MS", cursive;
   font-size: 15px;
   font-weight: 700;
   color: #7e3f60;

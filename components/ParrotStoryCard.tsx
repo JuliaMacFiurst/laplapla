@@ -1,5 +1,6 @@
 import * as React from "react";
 import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
+import { AMATIC_FONT_FAMILY } from "@/lib/fonts";
 import { devDebug } from "@/utils/devLog";
 
 type Props = {
@@ -415,7 +416,7 @@ const ParrotSlider = ({
                     background: "linear-gradient(135deg, #fff3b0, #ffd6e7 55%, #d9f7ff)",
                     padding: "1.5rem",
                     boxSizing: "border-box",
-                    fontFamily: "'Amatic SC', cursive",
+                    fontFamily: AMATIC_FONT_FAMILY,
                     fontSize: "42px",
                     color: "#3a2a2a"
                   }}
@@ -455,7 +456,7 @@ const ParrotSlider = ({
           onClick={() => sliderRef.current?.scrollBy({ left: -500, behavior: "smooth" })}
           disabled={currentIndex === 0}
           style={{
-            fontFamily: "'Amatic SC', cursive",
+            fontFamily: AMATIC_FONT_FAMILY,
             fontSize: "48px",
             color: currentIndex === 0 ? "#ccc" : "#333",
             background: "transparent",
@@ -477,7 +478,7 @@ const ParrotSlider = ({
           onClick={() => sliderRef.current?.scrollBy({ left: 500, behavior: "smooth" })}
           disabled={currentIndex === slides.length - 1}
           style={{
-            fontFamily: "'Amatic SC', cursive",
+            fontFamily: AMATIC_FONT_FAMILY,
             fontSize: "48px",
             color: currentIndex === slides.length - 1 ? "#ccc" : "#333",
             background: "transparent",
@@ -641,7 +642,7 @@ export default function ParrotStoryCard({
         <div className="parrot-button-container">
           <h4
             className="story-card-text story-card-text-center"
-            style={{ fontFamily: "'Amatic SC', cursive", fontSize: "22px", marginBottom: "0.5rem", textAlign: "center" }}
+            style={{ fontFamily: AMATIC_FONT_FAMILY, fontSize: "22px", marginBottom: "0.5rem", textAlign: "center" }}
           >
             {ui.externalPrompt}
           </h4>
@@ -668,7 +669,7 @@ export default function ParrotStoryCard({
       </div>
       <style jsx>{`
         .external-link-button {
-          font-family: 'Amatic SC', cursive;
+          font-family: var(--font-amatic-sc), cursive;
           font-size: 24px;
           padding: 0.6rem 1.4rem;
           margin: 0.5rem;

@@ -26,6 +26,7 @@ import Head from 'next/head';
 import Script from "next/script";
 import { dictionaries, Lang } from "../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { fontVariableClasses } from "@/lib/fonts";
 import { supabase } from "@/lib/supabase";
 
 const ADMIN_APP_ORIGINS = [
@@ -212,7 +213,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   };
 
   return (
-    <>
+    <div className={fontVariableClasses}>
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.webp" />
@@ -347,6 +348,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </div>
       <div id="modal-root"></div>
       <div id="popup-root"></div>
-    </>
+    </div>
   );
 }

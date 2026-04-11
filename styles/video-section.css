@@ -66,7 +66,7 @@
 .video-category-chip {
   padding: 8px 16px;
   border-radius: 999px;
-  font-family: "Amatic SC", bold;
+  font-family: var(--font-amatic-sc), bold;
   font-size: 18px;
   cursor: default;
 
@@ -191,7 +191,7 @@
 }
 
 .short-title {
-  font-family: 'Amatic SC', bold;
+  font-family: var(--font-amatic-sc), bold;
   font-size: 18px;
   margin-top: 6px;
   text-align: center;
@@ -257,7 +257,7 @@
 }
 
 .video-title {
-  font-family: 'Amatic SC', bold;
+  font-family: var(--font-amatic-sc), bold;
   font-size: 18px;
   margin-bottom: 4px;
 }
@@ -495,15 +495,15 @@
 }
 
 .video-search-hint:lang(he) {
-  font-family: "Varela Round", system-ui, sans-serif;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
 }
 
 .video-category-chip:lang(he) {
-  font-family: "Varela Round", system-ui, sans-serif;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
 }
 
 .video-title:lang(he) {
-  font-family: "Varela Round", system-ui, sans-serif;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
 }
 
 /* ────────────── RTL arrows (dir="rtl") ────────────── */
