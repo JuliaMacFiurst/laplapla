@@ -689,6 +689,7 @@ function StudioMobileLayout({
   deleteAll,
   undo,
   redo,
+  router,
   audioEngineRef,
 }: StudioLayoutProps) {
   const [mode, setMode] = useState<"slides" | "text" | "media" | "audio" | "settings" | null>("slides");
@@ -705,7 +706,9 @@ function StudioMobileLayout({
   const [exportedWithoutSound, setExportedWithoutSound] = useState(false);
   const [isExportFallbackPlayerMode, setIsExportFallbackPlayerMode] = useState(false);
   const [showExportFallbackHint, setShowExportFallbackHint] = useState(false);
+  const [isExportFallbackPlaybackStarted, setIsExportFallbackPlaybackStarted] = useState(false);
   const [exportCapability, setExportCapability] = useState<MobileExportCapability>("checking");
+  const [slideTransitionDirection, setSlideTransitionDirection] = useState<"left" | "right" | null>(null);
   const [selectedMusicPresetId, setSelectedMusicPresetId] = useState<string | null>(PARROT_PRESETS[0]?.id ?? null);
   const [previewingAudioId, setPreviewingAudioId] = useState<string | null>(null);
   const [areTracksPlaying, setAreTracksPlaying] = useState(false);
@@ -726,6 +729,7 @@ function StudioMobileLayout({
   const exportStopTimeoutRef = useRef<number | null>(null);
   const exportSheetRef = useRef<HTMLDivElement | null>(null);
   const slideSwipeRef = useRef<{ startX: number; startY: number } | null>(null);
+  const previousSlideIndexRef = useRef(activeSlideIndex);
   const mobileModes = [
     { key: "slides", label: "Slides" },
     { key: "text", label: "Text" },
@@ -740,6 +744,15 @@ function StudioMobileLayout({
     background: "#2a2a2a",
     color: "#fff",
     border: "none",
+  } satisfies React.CSSProperties;
+  const mobileHintCardStyle = {
+    padding: "12px",
+    borderRadius: "14px",
+    background: "rgba(152, 240, 197, 0.16)",
+    border: "1px solid rgba(152, 240, 197, 0.42)",
+    color: "#dffff0",
+    fontSize: "12px",
+    lineHeight: 1.45,
   } satisfies React.CSSProperties;
   const selectedMusicPreset = PARROT_PRESETS.find((preset) => preset.id === selectedMusicPresetId) ?? null;
   const exportCaption = "Made with LapLapLa Cat Studio";
@@ -782,6 +795,22 @@ function StudioMobileLayout({
     setIsDeleteAllConfirmOpen(false);
   }, [mode]);
 
+  useEffect(() => {
+    const previousIndex = previousSlideIndexRef.current;
+    if (previousIndex === activeSlideIndex) return;
+
+    setSlideTransitionDirection(activeSlideIndex > previousIndex ? "left" : "right");
+    previousSlideIndexRef.current = activeSlideIndex;
+
+    const timeoutId = window.setTimeout(() => {
+      setSlideTransitionDirection(null);
+    }, 240);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeSlideIndex]);
+
   function handleCanvasTouchStart(e: React.TouchEvent<HTMLDivElement>) {
     const target = e.target;
     if (target instanceof Element && target.closest("[data-disable-slide-swipe='true']")) {
@@ -823,6 +852,20 @@ function StudioMobileLayout({
     if (deltaX > 0 && activeSlideIndex > 0) {
       setActiveSlideIndex(activeSlideIndex - 1);
     }
+  }
+
+  function handleCloseStudio() {
+    const shouldLeave = window.confirm("Close studio and return to cats? Recent changes may not be saved.");
+    if (!shouldLeave) return;
+
+    void router.push(
+      {
+        pathname: "/cats",
+        query: buildLocalizedQuery(lang),
+      },
+      undefined,
+      { locale: lang },
+    );
   }
 
   useEffect(() => {
@@ -992,6 +1035,7 @@ function StudioMobileLayout({
     setExportedWithoutSound(false);
     setIsExportFallbackPlayerMode(false);
     setShowExportFallbackHint(false);
+    setIsExportFallbackPlaybackStarted(false);
   }
 
   function startScreenRecordFallback() {
@@ -1042,8 +1086,8 @@ function StudioMobileLayout({
   function openExportFallbackPlayer() {
     setIsExportFallbackPlayerMode(true);
     setShowExportFallbackHint(true);
-    setExportResetSignal((current) => current + 1);
-    setExportStatusText("Play the slideshow while your phone records the screen.");
+    setIsExportFallbackPlaybackStarted(false);
+    setExportStatusText("Start screen recording, then tap the center of the screen to play from the beginning.");
 
     window.setTimeout(() => {
       requestExportFullscreen();
@@ -1053,7 +1097,15 @@ function StudioMobileLayout({
   function closeExportFallbackPlayer() {
     setIsExportFallbackPlayerMode(false);
     setShowExportFallbackHint(false);
+    setIsExportFallbackPlaybackStarted(false);
     exitExportFullscreen();
+  }
+
+  function startExportFallbackPlaybackFromBeginning() {
+    setShowExportFallbackHint(false);
+    setExportStatusText("Recording from slide 1...");
+    setIsExportFallbackPlaybackStarted(true);
+    setExportResetSignal((current) => current + 1);
   }
 
   useEffect(() => {
@@ -1294,6 +1346,26 @@ function StudioMobileLayout({
       }}
     >
       <AudioEngine ref={audioEngineRef} maxTracks={4} />
+      <button
+        type="button"
+        onClick={handleCloseStudio}
+        style={{
+          position: "absolute",
+          top: "calc(env(safe-area-inset-top, 0px) + 10px)",
+          left: "10px",
+          zIndex: 14,
+          minHeight: "40px",
+          padding: "8px 12px",
+          borderRadius: "999px",
+          border: "1px solid rgba(255,255,255,0.12)",
+          background: "rgba(17,17,17,0.82)",
+          color: "#fff",
+          fontSize: "13px",
+          fontWeight: 700,
+        }}
+      >
+        ← Cats
+      </button>
       <div
         className="studio-mobile-canvas"
         onTouchStart={handleCanvasTouchStart}
@@ -1322,14 +1394,49 @@ function StudioMobileLayout({
             overflow: "hidden",
           }}
         >
-          <SlideCanvas9x16
-            slide={activeSlide}
-            lang={lang}
-            isMobile
-            isTextEditing={mode === "text"}
-            isMediaEditing={mode === "media"}
-            onUpdateSlide={updateSlide}
-          />
+          <div
+            style={{
+              height: "100%",
+              width: "100%",
+              animation: slideTransitionDirection
+                ? slideTransitionDirection === "left"
+                  ? "mobile-slide-enter-from-right 240ms ease"
+                  : "mobile-slide-enter-from-left 240ms ease"
+                : undefined,
+            }}
+          >
+            <SlideCanvas9x16
+              slide={activeSlide}
+              lang={lang}
+              isMobile
+              isTextEditing={mode === "text"}
+              isMediaEditing={mode === "media"}
+              onUpdateSlide={updateSlide}
+            />
+          </div>
+          <style jsx>{`
+            @keyframes mobile-slide-enter-from-right {
+              0% {
+                opacity: 0.68;
+                transform: translateX(16%);
+              }
+              100% {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+
+            @keyframes mobile-slide-enter-from-left {
+              0% {
+                opacity: 0.68;
+                transform: translateX(-16%);
+              }
+              100% {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+          `}</style>
         </div>
       </div>
       <div
@@ -2391,13 +2498,38 @@ function StudioMobileLayout({
                       color: "#fff",
                       fontSize: "12px",
                       fontWeight: 600,
-                      lineHeight: 1.2,
-                      whiteSpace: "nowrap",
+                      lineHeight: 1.35,
+                      maxWidth: "calc(100% - 32px)",
+                      textAlign: "center",
                       pointerEvents: "none",
                     }}
                   >
-                    Tap top-left corner to close
+                    Start screen recording, then tap the center of the screen to play from the beginning. Tap top-left corner to close.
                   </div>
+                ) : null}
+                {!isExportFallbackPlaybackStarted ? (
+                  <button
+                    type="button"
+                    aria-label="Start slideshow from beginning"
+                    onClick={startExportFallbackPlaybackFromBeginning}
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: "44%",
+                      height: "24%",
+                      minWidth: "180px",
+                      minHeight: "120px",
+                      border: "none",
+                      background: "transparent",
+                      color: "transparent",
+                      zIndex: 179,
+                      padding: 0,
+                    }}
+                  >
+                    Play
+                  </button>
                 ) : null}
               </>
             ) : null}
@@ -2427,11 +2559,16 @@ function StudioMobileLayout({
                   resetExportUi();
                 }}
                 isMobileFullscreen
-                loopPlayback={exportState !== "recording" && exportState !== "processing"}
+                loopPlayback={
+                  isExportFallbackPlayerMode
+                    ? !isExportFallbackPlaybackStarted
+                    : exportState !== "recording" && exportState !== "processing"
+                }
                 onPlaybackComplete={handleExportPlaybackComplete}
                 resetSignal={exportResetSignal}
                 showWatermark={exportState !== "idle"}
                 showCloseButton={!isExportFallbackPlayerMode}
+                isPlaybackEnabled={!isExportFallbackPlayerMode || isExportFallbackPlaybackStarted}
               />
             </div>
           </div>
@@ -2505,6 +2642,17 @@ function StudioMobileLayout({
                     </div>
                   </div>
                 )}
+                {exportCapability === "guided-record" ? (
+                  <div style={mobileHintCardStyle}>
+                    <strong style={{ display: "block", marginBottom: "6px", color: "#98f0c5" }}>
+                      Before you start
+                    </strong>
+                    <div>1. Tap <strong>Save to phone</strong>.</div>
+                    <div>2. Turn on screen recording from your phone controls.</div>
+                    <div>3. In fullscreen, tap the <strong>center</strong> of the screen to start the slideshow from slide 1.</div>
+                    <div>4. To close fullscreen later, tap the <strong>top-left corner</strong>.</div>
+                  </div>
+                ) : null}
               </>
             ) : null}
 
@@ -2588,6 +2736,16 @@ function StudioMobileLayout({
                 </div>
                 <div style={{ color: "rgba(255,255,255,0.56)", fontSize: "11px", lineHeight: 1.4 }}>
                   This is the most reliable local-save path on mobile browsers right now.
+                </div>
+                <div style={mobileHintCardStyle}>
+                  <strong style={{ display: "block", marginBottom: "6px", color: "#98f0c5" }}>
+                    How to record on your phone
+                  </strong>
+                  <div>1. Open your phone’s quick settings / control center.</div>
+                  <div>2. Start <strong>Screen Recording</strong>.</div>
+                  <div>3. Return here and tap <strong>Open fullscreen player</strong>.</div>
+                  <div>4. In fullscreen, tap the <strong>center</strong> to begin from the first slide.</div>
+                  <div>5. Tap the <strong>top-left corner</strong> when you want to close fullscreen.</div>
                 </div>
                 <button
                   type="button"

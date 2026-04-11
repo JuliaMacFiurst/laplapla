@@ -17,6 +17,7 @@ interface StudioPreviewPlayerProps {
   onPlaybackComplete?: () => void;
   showWatermark?: boolean;
   showCloseButton?: boolean;
+  isPlaybackEnabled?: boolean;
 }
 
 const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>(
@@ -32,6 +33,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       onPlaybackComplete,
       showWatermark = false,
       showCloseButton = true,
+      isPlaybackEnabled = true,
     },
     containerRef,
   ) {
@@ -146,15 +148,24 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       setPlayEpoch((e) => e + 1);
 
       // Try to start music again on next tick
-      setTimeout(() => {
-        try {
-          musicEngineRef?.current?.playAll?.();
-        } catch {}
-      }, 0);
-    }, [resetSignal, musicEngineRef]);
+      if (isPlaybackEnabled) {
+        setTimeout(() => {
+          try {
+            musicEngineRef?.current?.playAll?.();
+          } catch {}
+        }, 0);
+      }
+    }, [resetSignal, musicEngineRef, isPlaybackEnabled]);
 
     // --- Start music when preview mounts, stop on unmount
     useEffect(() => {
+      if (!isPlaybackEnabled) {
+        try {
+          musicEngineRef?.current?.pauseAll?.();
+        } catch {}
+        return;
+      }
+
       if (musicEngineRef?.current?.playAll) {
         musicEngineRef.current.playAll();
       }
@@ -164,10 +175,11 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
           musicEngineRef.current.pauseAll();
         }
       };
-    }, [musicEngineRef]);
+    }, [isPlaybackEnabled, musicEngineRef]);
 
     // --- Auto duration logic (voice or default 3s)
     useEffect(() => {
+      if (!isPlaybackEnabled) return;
       if (!currentSlide) return;
 
       const duration =
@@ -194,11 +206,20 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       return () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
-    }, [currentIndex, slides, currentSlide, playEpoch, loopPlayback, onPlaybackComplete]);
+    }, [currentIndex, slides, currentSlide, playEpoch, loopPlayback, onPlaybackComplete, isPlaybackEnabled]);
 
     useEffect(() => {
       const audio = voiceRef.current;
       if (!audio) {
+        return;
+      }
+
+      if (!isPlaybackEnabled) {
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+          musicEngineRef?.current?.restoreMusic?.();
+        } catch {}
         return;
       }
 
@@ -220,7 +241,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       if (playPromise && typeof playPromise.catch === "function") {
         playPromise.catch(() => {});
       }
-    }, [currentIndex, currentSlide?.voiceUrl, musicEngineRef, playEpoch]);
+    }, [currentIndex, currentSlide?.voiceUrl, musicEngineRef, playEpoch, isPlaybackEnabled]);
 
     if (!currentSlide) return null;
 
@@ -297,7 +318,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 <video
                   key={`${currentSlide.id}-${playEpoch}`}
                   src={currentSlide.mediaUrl}
-                  autoPlay
+                  autoPlay={isPlaybackEnabled}
                   muted
                   loop
                   playsInline
