@@ -4,11 +4,6 @@ import { Nunito } from "next/font/google";
 export const amatic = localFont({
   src: [
     {
-      path: "../assets/fonts/AmaticSC-Regular.ttf",
-      weight: "400",
-      style: "normal",
-    },
-    {
       path: "../assets/fonts/AmaticSC-Bold.ttf",
       weight: "700",
       style: "normal",
