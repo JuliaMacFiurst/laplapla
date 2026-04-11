@@ -392,6 +392,7 @@ export default function SlideCanvas9x16({
     >
       {mediaUrl ? (
         <div
+          data-disable-slide-swipe={showMobileMediaEditor ? "true" : undefined}
           style={{
             position: "absolute",
             width: mediaFrame.width,
@@ -490,6 +491,7 @@ export default function SlideCanvas9x16({
       ) : null}
 
       <div
+        data-disable-slide-swipe={showMobileEditorFrame ? "true" : undefined}
         style={{
           position: "relative",
           zIndex: 2,

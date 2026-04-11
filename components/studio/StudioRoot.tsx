@@ -725,6 +725,7 @@ function StudioMobileLayout({
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const exportStopTimeoutRef = useRef<number | null>(null);
   const exportSheetRef = useRef<HTMLDivElement | null>(null);
+  const slideSwipeRef = useRef<{ startX: number; startY: number } | null>(null);
   const mobileModes = [
     { key: "slides", label: "Slides" },
     { key: "text", label: "Text" },
@@ -780,6 +781,49 @@ function StudioMobileLayout({
   useEffect(() => {
     setIsDeleteAllConfirmOpen(false);
   }, [mode]);
+
+  function handleCanvasTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    const target = e.target;
+    if (target instanceof Element && target.closest("[data-disable-slide-swipe='true']")) {
+      slideSwipeRef.current = null;
+      return;
+    }
+
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    slideSwipeRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+    };
+  }
+
+  function handleCanvasTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
+    if (!slideSwipeRef.current) return;
+
+    const touch = e.changedTouches[0];
+    if (!touch) {
+      slideSwipeRef.current = null;
+      return;
+    }
+
+    const deltaX = touch.clientX - slideSwipeRef.current.startX;
+    const deltaY = touch.clientY - slideSwipeRef.current.startY;
+    slideSwipeRef.current = null;
+
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    if (deltaX < 0 && activeSlideIndex < project.slides.length - 1) {
+      setActiveSlideIndex(activeSlideIndex + 1);
+      return;
+    }
+
+    if (deltaX > 0 && activeSlideIndex > 0) {
+      setActiveSlideIndex(activeSlideIndex - 1);
+    }
+  }
 
   useEffect(() => {
     if (!isExportSheetOpen || exportState !== "idle") return;
@@ -1252,6 +1296,11 @@ function StudioMobileLayout({
       <AudioEngine ref={audioEngineRef} maxTracks={4} />
       <div
         className="studio-mobile-canvas"
+        onTouchStart={handleCanvasTouchStart}
+        onTouchEnd={handleCanvasTouchEnd}
+        onTouchCancel={() => {
+          slideSwipeRef.current = null;
+        }}
         style={{
           flex: "1 1 auto",
           display: "flex",
