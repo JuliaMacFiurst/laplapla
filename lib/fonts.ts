@@ -1,5 +1,4 @@
 import localFont from "next/font/local";
-import { Nunito } from "next/font/google";
 
 export const amatic = localFont({
   src: [
@@ -37,9 +36,14 @@ export const varelaRound = localFont({
   variable: "--font-varela-round",
 });
 
-export const nunito = Nunito({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
+export const nunito = localFont({
+  src: [
+    {
+      path: "../assets/fonts/Nunito-VariableFont_wght.ttf",
+      style: "normal",
+      weight: "200 1000",
+    },
+  ],
   display: "swap",
   variable: "--font-nunito",
 });

@@ -226,7 +226,7 @@ function LessonPlayerDesktop() {
   const HISTORY_LIMIT = 50;
 
   const [undoStack, setUndoStack] = useState<UndoState[]>([]);
-  const [_redoStack, setRedoStack] = useState<UndoState[]>([]);
+  const [redoStack, setRedoStack] = useState<UndoState[]>([]);
   const [brushColor, setBrushColor] = useState<string>("#000000");
   const [brushOpacity, setBrushOpacity] = useState<number>(1);
   const [brushStyle, setBrushStyle] = useState<
@@ -256,6 +256,8 @@ function LessonPlayerDesktop() {
   >(null);
   const [artworkSaved, setArtworkSaved] = useState(false);
   const [hasCompletedFirstColoring, setHasCompletedFirstColoring] = useState(false);
+  const [mobileFibiAdviceReady, setMobileFibiAdviceReady] = useState(false);
+  const [mobileFibiFact, setMobileFibiFact] = useState("");
   const [replayExportDone, setReplayExportDone] = useState<{
     video: boolean;
     gif: boolean;
@@ -424,6 +426,12 @@ function LessonPlayerDesktop() {
       : lang === "en"
         ? "I know a lot about artists! Tap Open Gallery."
         : "А я знаю много о художниках! Нажми на кнопку Открыть Галерею.";
+  const fibiAdviceButtonLabel =
+    lang === "he"
+      ? "טיפ של אמן"
+      : lang === "en"
+        ? "Artist tip"
+        : "Совет художника";
   const replayDoneLabel =
     lang === "he"
       ? "נשמר"
@@ -503,6 +511,103 @@ function LessonPlayerDesktop() {
     if (!group) return;
     replayCommittedGroupsRef.current.push(group);
     setReplayRevision((prev) => prev + 1);
+  };
+
+  const captureCanvasState = (): UndoState | null => {
+    const drawingCanvas = drawingCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
+    const pawCanvas = pawOverlayCanvasRef.current;
+
+    const dCtx = drawingCanvas?.getContext("2d");
+    const cCtx = colorCanvas?.getContext("2d");
+    const pCtx = pawCanvas?.getContext("2d");
+
+    if (
+      !drawingCanvas ||
+      !colorCanvas ||
+      !pawCanvas ||
+      !dCtx ||
+      !cCtx ||
+      !pCtx
+    ) {
+      return null;
+    }
+
+    return {
+      drawing: dCtx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height),
+      color: cCtx.getImageData(0, 0, colorCanvas.width, colorCanvas.height),
+      paw: pCtx.getImageData(0, 0, pawCanvas.width, pawCanvas.height),
+      seeds: [...seedsRef.current],
+    };
+  };
+
+  const restoreCanvasState = (state: UndoState) => {
+    const drawingCanvas = drawingCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
+    const pawCanvas = pawOverlayCanvasRef.current;
+
+    const dCtx = drawingCanvas?.getContext("2d");
+    const cCtx = colorCanvas?.getContext("2d");
+    const pCtx = pawCanvas?.getContext("2d");
+
+    if (
+      !drawingCanvas ||
+      !colorCanvas ||
+      !pawCanvas ||
+      !dCtx ||
+      !cCtx ||
+      !pCtx
+    ) {
+      return false;
+    }
+
+    dCtx.putImageData(state.drawing, 0, 0);
+    cCtx.putImageData(state.color, 0, 0);
+    pCtx.putImageData(state.paw, 0, 0);
+    seedsRef.current = [...state.seeds];
+    setColorSeedCount(state.seeds.length);
+    setHasUnsavedChanges(true);
+    return true;
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+
+    const previous = undoStack[undoStack.length - 1];
+    const currentState = captureCanvasState();
+
+    if (!restoreCanvasState(previous)) {
+      return;
+    }
+
+    setUndoStack((prev) => prev.slice(0, -1));
+    if (currentState) {
+      setRedoStack((prev) => [...prev, currentState]);
+    }
+    undoReplayGroup();
+  };
+
+  const handleRedo = () => {
+    setRedoStack((prevRedo) => {
+      if (prevRedo.length === 0) return prevRedo;
+
+      const state = prevRedo[prevRedo.length - 1];
+      const currentState = captureCanvasState();
+
+      if (!restoreCanvasState(state)) {
+        return prevRedo;
+      }
+
+      if (currentState) {
+        setUndoStack((prevUndo) => {
+          const next = [...prevUndo, currentState];
+          return next.slice(-HISTORY_LIMIT);
+        });
+      }
+      redoReplayGroup();
+
+      return prevRedo.slice(0, -1);
+    });
   };
 
   const clearReplayHistory = () => {
@@ -594,6 +699,25 @@ function LessonPlayerDesktop() {
 
     return () => window.clearTimeout(timeoutId);
   }, [mobileFillTooltip]);
+
+  useEffect(() => {
+    const lessonFinished = lesson
+      ? currentStepIndex === lesson.steps.length - 1
+      : false;
+    const shouldShowMobileFibi = isMobile && hasCompletedFirstColoring && lessonFinished;
+    if (!shouldShowMobileFibi) {
+      setMobileFibiAdviceReady(false);
+      setMobileFibiFact("");
+      return;
+    }
+
+    setMobileFibiFact("");
+    const timerId = window.setTimeout(() => {
+      setMobileFibiAdviceReady(true);
+    }, 60_000);
+
+    return () => window.clearTimeout(timerId);
+  }, [currentStepIndex, hasCompletedFirstColoring, isMobile, lesson]);
 
   const computeRegionMap = () => {
     const drawingCanvas = drawingCanvasRef.current;
@@ -1992,15 +2116,30 @@ function LessonPlayerDesktop() {
                   </div>
                   {hasCompletedFirstColoring && isLessonComplete ? (
                     <div className="lesson-mobile-fibi">
-                      <img
-                        src="/dog/fibi.webp"
-                        alt={t.fibiName}
-                        className="lesson-mobile-fibi-avatar"
-                      />
-                      <div className="lesson-mobile-fibi-bubble">
-                        {fibiGalleryHint}
-                      </div>
+                    <img
+                      src="/dog/fibi.webp"
+                      alt={t.fibiName}
+                      className="lesson-mobile-fibi-avatar"
+                    />
+                    <div className="lesson-mobile-fibi-bubble">
+                        {mobileFibiAdviceReady ? (
+                          <>
+                            {mobileFibiFact ? (
+                              <div className="lesson-mobile-fibi-fact">{mobileFibiFact}</div>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="lesson-mobile-fibi-advice"
+                              onClick={() => setMobileFibiFact(getRandomArtFact(lang))}
+                            >
+                              {fibiAdviceButtonLabel}
+                            </button>
+                          </>
+                        ) : (
+                          fibiGalleryHint
+                        )}
                     </div>
+                  </div>
                   ) : null}
                 </div>
               </div>
@@ -2015,18 +2154,6 @@ function LessonPlayerDesktop() {
                 }`}
               >
                 <div className="lesson-canvas-wrapper lesson-canvas-wrapper-mobile">
-                  {showColorizer &&
-                  animationMode !== "puzzle" &&
-                  animationMode !== "replay" ? (
-                    <button
-                      type="button"
-                      className="lesson-mobile-colorize-cta"
-                      onClick={handleColorize}
-                    >
-                      🌈 {t.colorizeSketch}
-                    </button>
-                  ) : null}
-
                   {!hasStarted && (
                     <button
                       id="start-button-mobile"
@@ -2129,12 +2256,49 @@ function LessonPlayerDesktop() {
                   ) : null}
 
                   {animationMode !== "puzzle" && animationMode !== "replay" ? (
-                    <div className="lesson-step-counter lesson-step-counter-mobile">
-                      {currentStepIndex >= 0 ? (
-                        <p>
-                          <strong>{currentStepIndex + 1}</strong> {t.stepOf} {lesson.steps.length}
-                        </p>
+                    <div className="lesson-mobile-canvas-topbar">
+                      {hasStarted ? (
+                        <div className="lesson-mobile-history-controls" aria-label="History controls">
+                          <button
+                            type="button"
+                            className="lesson-mobile-history-button"
+                            onClick={handleUndo}
+                            disabled={undoStack.length === 0}
+                            aria-label={t.undo}
+                          >
+                            <img src="/dog/backward.png" alt="" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="lesson-mobile-history-button"
+                            onClick={handleRedo}
+                            disabled={redoStack.length === 0}
+                            aria-label={t.redo}
+                          >
+                            <img src="/dog/forward.png" alt="" aria-hidden="true" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div />
+                      )}
+                      {showColorizer ? (
+                        <div className="lesson-mobile-canvas-topbar-center">
+                          <button
+                            type="button"
+                            className="lesson-mobile-colorize-cta"
+                            onClick={handleColorize}
+                          >
+                            🌈 {t.colorizeSketch}
+                          </button>
+                        </div>
                       ) : null}
+                      <div className="lesson-step-counter lesson-step-counter-mobile">
+                        {currentStepIndex >= 0 ? (
+                          <p>
+                            <strong>{currentStepIndex + 1}</strong> {t.stepOf} {lesson.steps.length}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -2897,75 +3061,7 @@ function LessonPlayerDesktop() {
                 </button>
                 <button
                   className="lesson-button"
-                  onClick={() => {
-                    if (undoStack.length === 0) return;
-
-                    const drawingCanvas = drawingCanvasRef.current;
-                    const colorCanvas = colorCanvasRef.current;
-                    const pawCanvas = pawOverlayCanvasRef.current;
-
-                    const dCtx = drawingCanvas?.getContext("2d");
-                    const cCtx = colorCanvas?.getContext("2d");
-                    const pCtx = pawCanvas?.getContext("2d");
-
-                    const previous = undoStack[undoStack.length - 1];
-
-                    // capture CURRENT canvas state so redo can restore it
-                    let currentState: UndoState | null = null;
-
-                    if (
-                      drawingCanvas &&
-                      colorCanvas &&
-                      pawCanvas &&
-                      dCtx &&
-                      cCtx &&
-                      pCtx
-                    ) {
-                      currentState = {
-                        drawing: dCtx.getImageData(
-                          0,
-                          0,
-                          drawingCanvas.width,
-                          drawingCanvas.height,
-                        ),
-                        color: cCtx.getImageData(
-                          0,
-                          0,
-                          colorCanvas.width,
-                          colorCanvas.height,
-                        ),
-                        paw: pCtx.getImageData(
-                          0,
-                          0,
-                          pawCanvas.width,
-                          pawCanvas.height,
-                        ),
-                        seeds: [...seedsRef.current],
-                      };
-
-                      // restore previous state
-                      if (previous.drawing instanceof ImageData) {
-                        dCtx.putImageData(previous.drawing, 0, 0);
-                      }
-
-                      if (previous.color instanceof ImageData) {
-                        cCtx.putImageData(previous.color, 0, 0);
-                      }
-
-                      if (previous.paw instanceof ImageData) {
-                        pCtx.putImageData(previous.paw, 0, 0);
-                      }
-
-                      seedsRef.current = [...previous.seeds];
-                    }
-
-                    // update stacks
-                    setUndoStack((prev) => prev.slice(0, -1));
-                    if (currentState) {
-                      setRedoStack((prev) => [...prev, currentState]);
-                    }
-                    undoReplayGroup();
-                  }}
+                  onClick={handleUndo}
                 >
                   <>
                     <img
@@ -2978,77 +3074,7 @@ function LessonPlayerDesktop() {
                 </button>
                 <button
                   className="lesson-button lesson-button-redo"
-                  onClick={() => {
-                    setRedoStack((prevRedo) => {
-                      if (prevRedo.length === 0) return prevRedo;
-
-                      const state = prevRedo[prevRedo.length - 1];
-
-                      const drawingCanvas = drawingCanvasRef.current;
-                      const colorCanvas = colorCanvasRef.current;
-                      const pawCanvas = pawOverlayCanvasRef.current;
-
-                      const dCtx = drawingCanvas?.getContext("2d");
-                      const cCtx = colorCanvas?.getContext("2d");
-                      const pCtx = pawCanvas?.getContext("2d");
-
-                      if (
-                        drawingCanvas &&
-                        colorCanvas &&
-                        pawCanvas &&
-                        dCtx &&
-                        cCtx &&
-                        pCtx
-                      ) {
-                        // capture CURRENT state so Undo works after Redo
-                        const currentState: UndoState = {
-                          drawing: dCtx.getImageData(
-                            0,
-                            0,
-                            drawingCanvas.width,
-                            drawingCanvas.height,
-                          ),
-                          color: cCtx.getImageData(
-                            0,
-                            0,
-                            colorCanvas.width,
-                            colorCanvas.height,
-                          ),
-                          paw: pCtx.getImageData(
-                            0,
-                            0,
-                            pawCanvas.width,
-                            pawCanvas.height,
-                          ),
-                          seeds: [...seedsRef.current],
-                        };
-
-                        // apply redo state
-                        if (state.drawing instanceof ImageData) {
-                          dCtx.putImageData(state.drawing, 0, 0);
-                        }
-
-                        if (state.color instanceof ImageData) {
-                          cCtx.putImageData(state.color, 0, 0);
-                        }
-
-                        if (state.paw instanceof ImageData) {
-                          pCtx.putImageData(state.paw, 0, 0);
-                        }
-
-                        seedsRef.current = [...state.seeds];
-
-                        // push previous canvas state to undo stack, limit size
-                        setUndoStack((prevUndo) => {
-                          const next = [...prevUndo, currentState];
-                          return next.slice(-HISTORY_LIMIT);
-                        });
-                        redoReplayGroup();
-                      }
-
-                      return prevRedo.slice(0, -1);
-                    });
-                  }}
+                  onClick={handleRedo}
                 >
                   <>
                     <img

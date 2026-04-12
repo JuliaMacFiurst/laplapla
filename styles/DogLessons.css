@@ -1504,21 +1504,26 @@ lesson-dog-name::before,
     color: #fff;
   }
 
-  .lesson-mobile-frank {
+  .lesson-mobile-frank,
+  .lesson-mobile-fibi {
     display: grid;
     grid-template-columns: 88px minmax(0, 1fr);
     gap: 10px;
     align-items: center;
     min-width: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
 
-  .lesson-mobile-frank-avatar {
+  .lesson-mobile-frank-avatar,
+  .lesson-mobile-fibi-avatar {
     width: 128px;
     height: 128px;
     object-fit: contain;
   }
 
-  .lesson-mobile-frank-bubble {
+  .lesson-mobile-frank-bubble,
+  .lesson-mobile-fibi-bubble {
     min-width: 0;
     width: 100%;
     max-width: 100%;
@@ -1535,29 +1540,31 @@ lesson-dog-name::before,
   }
 
   .lesson-mobile-fibi {
-    display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
-    gap: 8px;
-    align-items: end;
-    padding: 0;
-    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr) 128px;
   }
 
   .lesson-mobile-fibi-avatar {
-    width: 52px;
-    height: 52px;
-    object-fit: contain;
+    order: 2;
   }
 
   .lesson-mobile-fibi-bubble {
-    min-width: 0;
-    padding: 7px 10px;
-    border-radius: 16px;
-    background: rgba(255,255,255,0.1);
-    color: #fff7fb;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
-    font-size: 0.88rem;
-    line-height: 1.12;
+    order: 1;
+  }
+
+  .lesson-mobile-fibi-fact {
+    margin-bottom: 8px;
+  }
+
+  .lesson-mobile-fibi-advice {
+    min-height: 36px;
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #ffd6e8, #ffe6b5);
+    color: #382631;
+    font-family: var(--font-amatic-sc), cursive;
+    font-size: 1.08rem;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
   }
 
   .lesson-mobile-stage {
@@ -1596,7 +1603,7 @@ lesson-dog-name::before,
     box-shadow:
       0 20px 28px rgba(122, 95, 120, 0.12),
       inset 0 1px 0 rgba(255,255,255,0.72);
-    overflow: hidden;
+    overflow: visible;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -1625,8 +1632,78 @@ lesson-dog-name::before,
   }
 
   .lesson-step-counter-mobile {
-    top: 8px;
-    right: 12px;
+    position: static;
+    top: auto;
+    right: auto;
+  }
+
+  .lesson-step-counter-mobile strong {
+    color: rgb(255, 196, 206);
+  }
+
+  .lesson-mobile-canvas-topbar {
+    position: absolute;
+    top: -38px;
+    left: 10px;
+    right: 10px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .lesson-mobile-canvas-topbar-center {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+  }
+
+  .lesson-mobile-history-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .lesson-mobile-history-button {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(36, 39, 47, 0.76);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(6px);
+  }
+
+  .lesson-mobile-canvas-topbar .lesson-step-counter-mobile p {
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(36, 39, 47, 0.82);
+    color: #fff7fb;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+  }
+
+  .lesson-mobile-history-button img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+  }
+
+  .lesson-mobile-history-button:disabled {
+    opacity: 0.42;
   }
 
   .lesson-mobile-panel-shell {
@@ -1774,10 +1851,10 @@ lesson-dog-name::before,
   }
 
   .lesson-mobile-colorize-cta {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: static;
+    top: auto;
+    left: auto;
+    transform: none;
     z-index: 3;
     min-height: 32px;
     border: 0;
@@ -2113,12 +2190,18 @@ lesson-dog-name::before,
   }
 
 
-  .lesson-mobile-frank {
+  .lesson-mobile-frank,
+  .lesson-mobile-fibi {
     grid-template-columns: 74px minmax(0, 1fr);
   }
 
-  .lesson-mobile-frank-avatar {
+  .lesson-mobile-frank-avatar,
+  .lesson-mobile-fibi-avatar {
     width: 74px;
     height: 74px;
+  }
+
+  .lesson-mobile-fibi {
+    grid-template-columns: minmax(0, 1fr) 74px;
   }
 }
