@@ -9,6 +9,10 @@ type Props = {
   regionMaps: Map<number, ReplayRegionData>;
   width?: number;
   height?: number;
+  autoExport?: "video" | "gif" | null;
+  onAutoExportDone?: () => void;
+  onExportComplete?: (type: "video" | "gif") => void;
+  savingLabel?: string;
   onClose?: () => void;
 };
 
@@ -17,6 +21,10 @@ export default function ReplayCanvas({
   regionMaps,
   width = 512,
   height = 512,
+  autoExport = null,
+  onAutoExportDone,
+  onExportComplete,
+  savingLabel = "Сохранение...",
   onClose,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -25,6 +33,10 @@ export default function ReplayCanvas({
   const [playing, setPlaying] = useState(true);
   const [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [exportDone, setExportDone] = useState<{
+    video: boolean;
+    gif: boolean;
+  }>({ video: false, gif: false });
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -122,12 +134,15 @@ export default function ReplayCanvas({
 
   const exportVideo = async () => {
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine) return false;
 
     try {
       setBusy(true);
       const blob = await engine.exportVideo();
       downloadBlob(blob, "drawing-replay.webm");
+      setExportDone((prev) => ({ ...prev, video: true }));
+      onExportComplete?.("video");
+      return true;
     } catch (error) {
       console.error(error);
       alert(
@@ -135,6 +150,7 @@ export default function ReplayCanvas({
           ? `Не удалось экспортировать видео реплея: ${error.message}`
           : "Не удалось экспортировать видео реплея.",
       );
+      return false;
     } finally {
       setBusy(false);
     }
@@ -142,7 +158,7 @@ export default function ReplayCanvas({
 
   const exportGIF = async () => {
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine) return false;
 
     try {
       setBusy(true);
@@ -153,6 +169,9 @@ export default function ReplayCanvas({
         workerScript: "/gif.worker.js",
       });
       downloadBlob(blob, "drawing-replay.gif");
+      setExportDone((prev) => ({ ...prev, gif: true }));
+      onExportComplete?.("gif");
+      return true;
     } catch (error) {
       console.error(error);
       alert(
@@ -160,10 +179,33 @@ export default function ReplayCanvas({
           ? `Не удалось экспортировать GIF: ${error.message}`
           : "Не удалось экспортировать GIF.",
       );
+      return false;
     } finally {
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (!autoExport || !hasActions || busy) return;
+
+    const timer = window.setTimeout(() => {
+      if (autoExport === "video") {
+        void exportVideo().then((success) => {
+          if (success) {
+            onAutoExportDone?.();
+          }
+        });
+      } else {
+        void exportGIF().then((success) => {
+          if (success) {
+            onAutoExportDone?.();
+          }
+        });
+      }
+    }, 200);
+
+    return () => window.clearTimeout(timer);
+  }, [autoExport, busy, hasActions]);
 
   return (
     <div className="replay-root">
@@ -200,12 +242,18 @@ export default function ReplayCanvas({
           ↺ Restart
         </button>
         <button className="replay-btn replay-btn-export" onClick={exportVideo} disabled={!hasActions || busy}>
-          ⬇ Video
+          {exportDone.video ? "Done" : "⬇ Video"}
         </button>
         <button className="replay-btn replay-btn-export" onClick={exportGIF} disabled={!hasActions || busy}>
-          ⬇ GIF
+          {exportDone.gif ? "Done" : "⬇ GIF"}
         </button>
       </div>
+
+      {busy ? (
+        <div className="replay-saving-overlay" role="status" aria-live="polite">
+          <div className="replay-saving-overlay__panel">{savingLabel}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

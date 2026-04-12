@@ -109,7 +109,7 @@ export class PuzzleEngine {
 
     const dist = Math.sqrt(dx * dx + dy * dy)
 
-    const SNAP_DISTANCE = 40
+    const SNAP_DISTANCE = 72
 
     if (dist < SNAP_DISTANCE) {
 

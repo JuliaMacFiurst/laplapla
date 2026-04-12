@@ -6,25 +6,56 @@ import { PuzzleEngine } from "./PuzzleEngine";
 
 type Props = {
   sourceCanvas: HTMLCanvasElement;
+  traySelector?: string;
 };
 
-export default function PuzzleCanvas({ sourceCanvas }: Props) {
+export default function PuzzleCanvas({
+  sourceCanvas,
+  traySelector = ".lesson-puzzle-tray-inner",
+}: Props) {
   devLog("PuzzleCanvas mounted");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<PuzzleEngine | null>(null);
   const trayRef = useRef<HTMLDivElement | null>(null);
 
   const dragSourceRef = useRef<"tray" | "board" | null>(null);
-  const draggedTrayImgRef = useRef<HTMLImageElement | null>(null);
+  const draggedTrayImgRef = useRef<HTMLElement | null>(null);
 
   const draggingPieceRef = useRef<any>(null);
   const offsetRef = useRef({ x: 0, y: 0 });
+  const activePointerIdRef = useRef<number | null>(null);
   const snapFlashRef = useRef<number>(0);
   const winTriggeredRef = useRef(false);
   const winTimeRef = useRef<number>(0);
   const starsRef = useRef<
     { x: number; y: number; vx: number; vy: number; size: number }[]
   >([]);
+
+  const renderPieces = (
+    ctx: CanvasRenderingContext2D,
+    activePiece: any | null,
+  ) => {
+    const engine = engineRef.current;
+    if (!engine) return;
+
+    const activeGroupId = activePiece?.groupId ?? null;
+    const inactivePieces = engine.pieces.filter(
+      (piece) => piece.groupId !== activeGroupId,
+    );
+    const activeGroupPieces = activeGroupId === null
+      ? []
+      : engine.getGroupPieces(activeGroupId);
+
+    ctx.clearRect(0, 0, engine.width, engine.height + 300);
+
+    inactivePieces.forEach((piece) => {
+      ctx.drawImage(piece.canvas, piece.x, piece.y);
+    });
+
+    activeGroupPieces.forEach((piece) => {
+      ctx.drawImage(piece.canvas, piece.x, piece.y);
+    });
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -36,13 +67,22 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
 
     function getCanvasPoint(clientX: number, clientY: number) {
       const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
       return {
-        x: clientX - rect.left,
-        y: clientY - rect.top,
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY,
       };
     }
 
-    function handleGlobalMouseMove(e: MouseEvent) {
+    function handleGlobalPointerMove(e: PointerEvent) {
+      if (
+        activePointerIdRef.current !== null &&
+        e.pointerId !== activePointerIdRef.current
+      ) {
+        return;
+      }
+
       const piece = draggingPieceRef.current;
       if (!piece || piece.locked) return;
 
@@ -74,7 +114,14 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
       }
     }
 
-    function handleGlobalMouseUp(e: MouseEvent) {
+    function handleGlobalPointerUp(e: PointerEvent) {
+      if (
+        activePointerIdRef.current !== null &&
+        e.pointerId !== activePointerIdRef.current
+      ) {
+        return;
+      }
+
       const engine = engineRef.current;
       const piece = draggingPieceRef.current;
 
@@ -174,27 +221,12 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
             // avoid creating duplicates if the piece is already in the tray
             const existing = trayRef.current.querySelector(
               `[data-piece-id="${piece.id}"]`,
-            ) as HTMLImageElement | null;
+            ) as HTMLElement | null;
 
             let img = existing;
 
             if (!img) {
-              img = document.createElement("img");
-              img.src = piece.canvas.toDataURL();
-              img.dataset.pieceId = piece.id;
-              img.style.width = piece.canvas.width + "px";
-              img.style.height = piece.canvas.height + "px";
-              img.style.cursor = "grab";
-              img.style.userSelect = "none";
-              img.style.pointerEvents = "auto";
-
-              img.onmousedown = (ev) => {
-                ev.preventDefault();
-                draggingPieceRef.current = piece;
-                dragSourceRef.current = "tray";
-                draggedTrayImgRef.current = img!;
-                img!.style.opacity = "0.35";
-              };
+              img = createTrayPieceElement(piece);
 
               // put piece back at the start of the tray
               trayRef.current.prepend(img);
@@ -230,7 +262,92 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
       draggingPieceRef.current = null;
       dragSourceRef.current = null;
       draggedTrayImgRef.current = null;
+      activePointerIdRef.current = null;
     }
+
+    const attachTrayPointerHandler = (
+      handle: HTMLElement,
+      trayItem: HTMLElement,
+      piece: any,
+    ) => {
+      handle.onpointerdown = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        activePointerIdRef.current = ev.pointerId;
+        draggingPieceRef.current = piece;
+        dragSourceRef.current = "tray";
+        draggedTrayImgRef.current = trayItem;
+        trayItem.style.opacity = "0.35";
+      };
+    };
+
+    const createTrayPieceElement = (piece: any) => {
+      const isMobileTray = traySelector.includes("mobile");
+      const item = document.createElement("div");
+      item.dataset.pieceId = piece.id;
+      item.className = "lesson-puzzle-tray-piece";
+      item.style.position = "relative";
+      item.style.display = "inline-flex";
+      item.style.alignItems = "center";
+      item.style.justifyContent = "center";
+      item.style.width = isMobileTray ? "84px" : `${piece.canvas.width}px`;
+      item.style.minWidth = isMobileTray ? "84px" : `${piece.canvas.width}px`;
+      item.style.height = isMobileTray ? "64px" : `${piece.canvas.height}px`;
+      item.style.padding = isMobileTray ? "6px" : "0";
+      item.style.borderRadius = isMobileTray ? "14px" : "0";
+      item.style.background = isMobileTray ? "rgba(255,255,255,0.08)" : "transparent";
+      item.style.boxSizing = "border-box";
+      item.style.flex = "0 0 auto";
+      if (isMobileTray) {
+        item.style.pointerEvents = "none";
+        item.style.touchAction = "pan-x";
+      }
+
+      const img = document.createElement("img");
+      img.src = piece.canvas.toDataURL();
+      img.alt = "";
+      img.style.width = isMobileTray ? "auto" : `${piece.canvas.width}px`;
+      img.style.height = isMobileTray ? "48px" : `${piece.canvas.height}px`;
+      img.style.maxWidth = isMobileTray ? "60px" : `${piece.canvas.width}px`;
+      img.style.objectFit = "contain";
+      img.style.pointerEvents = "none";
+      img.style.userSelect = "none";
+
+      item.appendChild(img);
+
+      if (isMobileTray) {
+        const handle = document.createElement("button");
+        handle.type = "button";
+        handle.textContent = "↗";
+        handle.setAttribute("aria-label", "Drag puzzle piece");
+        handle.style.position = "absolute";
+        handle.style.right = "4px";
+        handle.style.bottom = "4px";
+        handle.style.width = "22px";
+        handle.style.height = "22px";
+        handle.style.border = "0";
+        handle.style.borderRadius = "999px";
+        handle.style.background = "rgba(29,31,38,0.86)";
+        handle.style.color = "#fff";
+        handle.style.fontSize = "12px";
+        handle.style.lineHeight = "1";
+        handle.style.display = "inline-flex";
+        handle.style.alignItems = "center";
+        handle.style.justifyContent = "center";
+        handle.style.touchAction = "none";
+        handle.style.pointerEvents = "auto";
+
+        attachTrayPointerHandler(handle, item, piece);
+        item.appendChild(handle);
+      } else {
+        item.style.cursor = "grab";
+        item.style.pointerEvents = "auto";
+        item.style.touchAction = "none";
+        attachTrayPointerHandler(item, item, piece);
+      }
+
+      return item;
+    };
 
     async function init() {
       if (!sourceCanvas) return;
@@ -238,11 +355,16 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
       await engine.init(sourceCanvas);
 
       trayRef.current = document.querySelector(
-        ".lesson-puzzle-tray-inner",
+        traySelector,
       ) as HTMLDivElement | null;
       // put puzzle pieces into tray
       if (trayRef.current) {
         trayRef.current.innerHTML = "";
+        const isMobileTray = traySelector.includes("mobile");
+        if (isMobileTray) {
+          trayRef.current.style.touchAction = "pan-x";
+          trayRef.current.style.pointerEvents = "auto";
+        }
 
         // shuffle pieces so tray order is random
         const shuffledPieces = [...engine.pieces];
@@ -252,24 +374,13 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
         }
 
         shuffledPieces.forEach((piece) => {
-          const img = document.createElement("img");
-          img.src = piece.canvas.toDataURL();
-          img.dataset.pieceId = piece.id;
-          img.style.width = piece.canvas.width + "px";
-          img.style.height = piece.canvas.height + "px";
-          img.style.cursor = "grab";
-          img.style.userSelect = "none";
-          img.style.pointerEvents = "auto";
-
-          img.onmousedown = (ev) => {
-            ev.preventDefault();
-            draggingPieceRef.current = piece;
-            dragSourceRef.current = "tray";
-            draggedTrayImgRef.current = img;
-            img.style.opacity = "0.35";
-          };
-
-          trayRef.current!.appendChild(img);
+          const item = createTrayPieceElement(piece);
+          if (!isMobileTray) {
+            item.style.width = `${piece.canvas.width}px`;
+            item.style.minWidth = `${piece.canvas.width}px`;
+            item.style.height = `${piece.canvas.height}px`;
+          }
+          trayRef.current!.appendChild(item);
         });
       }
 
@@ -279,7 +390,7 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
     function loop() {
       if (!engineRef.current) return;
 
-      engineRef.current.render(ctx);
+      renderPieces(ctx, draggingPieceRef.current);
 
       if (winTriggeredRef.current) {
         const elapsed = performance.now() - winTimeRef.current;
@@ -389,31 +500,36 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
 
     init();
 
-    document.addEventListener("mousemove", handleGlobalMouseMove);
-    document.addEventListener("mouseup", handleGlobalMouseUp);
+    document.addEventListener("pointermove", handleGlobalPointerMove);
+    document.addEventListener("pointerup", handleGlobalPointerUp);
+    document.addEventListener("pointercancel", handleGlobalPointerUp);
 
     return () => {
-      document.removeEventListener("mousemove", handleGlobalMouseMove);
-      document.removeEventListener("mouseup", handleGlobalMouseUp);
+      document.removeEventListener("pointermove", handleGlobalPointerMove);
+      document.removeEventListener("pointerup", handleGlobalPointerUp);
+      document.removeEventListener("pointercancel", handleGlobalPointerUp);
     };
-  }, [sourceCanvas]);
+  }, [sourceCanvas, traySelector]);
 
-  function getMousePos(e: React.MouseEvent) {
+  function getPointerPos(clientX: number, clientY: number) {
     const rect = canvasRef.current!.getBoundingClientRect();
+    const scaleX = canvasRef.current!.width / rect.width;
+    const scaleY = canvasRef.current!.height / rect.height;
 
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
     };
   }
 
-  function handleMouseDown(e: React.MouseEvent) {
+  function handlePointerDown(e: React.PointerEvent) {
     e.preventDefault();
 
     const engine = engineRef.current;
     if (!engine) return;
 
-    const pos = getMousePos(e);
+    activePointerIdRef.current = e.pointerId;
+    const pos = getPointerPos(e.clientX, e.clientY);
 
     const piece = [...engine.pieces].reverse().find((p) => {
       if (p.locked) return false;
@@ -437,7 +553,14 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
     };
   }
 
-  function handleMouseMove(e: React.MouseEvent) {
+  function handlePointerMove(e: React.PointerEvent) {
+    if (
+      activePointerIdRef.current !== null &&
+      e.pointerId !== activePointerIdRef.current
+    ) {
+      return;
+    }
+
     const piece = draggingPieceRef.current;
     if (!piece || piece.locked || dragSourceRef.current !== "board") return;
 
@@ -446,7 +569,7 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
 
     const group = engine.getGroupPieces(piece.groupId);
 
-    const pos = getMousePos(e);
+    const pos = getPointerPos(e.clientX, e.clientY);
 
     const targetX = pos.x - offsetRef.current.x;
     const targetY = pos.y - offsetRef.current.y;
@@ -460,7 +583,14 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
     });
   }
 
-  function handleMouseUp() {
+  function handlePointerUp(e: React.PointerEvent) {
+    if (
+      activePointerIdRef.current !== null &&
+      e.pointerId !== activePointerIdRef.current
+    ) {
+      return;
+    }
+
     const engine = engineRef.current;
     const piece = draggingPieceRef.current;
 
@@ -517,6 +647,8 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
       draggingPieceRef.current = null;
       dragSourceRef.current = null;
     }
+
+    activePointerIdRef.current = null;
   }
 
   return (
@@ -535,16 +667,21 @@ export default function PuzzleCanvas({ sourceCanvas }: Props) {
         ref={canvasRef}
         width={512}
         height={512}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         style={{
           border: "2px solid #d9d9d9",
           background: "#fff",
           display: "block",
           margin: "0 auto",
           cursor: "grab",
-          maxWidth: "512px",
+          width: "100%",
+          maxWidth: "100%",
+          maxHeight: "100%",
+          boxSizing: "border-box",
+          touchAction: "none",
         }}
       />
     </div>

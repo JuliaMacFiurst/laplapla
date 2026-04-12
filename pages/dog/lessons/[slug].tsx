@@ -7,7 +7,7 @@ import { paintRegionFast } from "@/utils/paintRegionFast";
 import { drawLapLapLaWatermark } from "@/utils/drawLapLapLaWatermark";
 import { getRandomArtFact } from "@/lib/artFacts/getRandomArtFact";
 import TranslationWarning from "@/components/TranslationWarning";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import { devLog } from "@/utils/devLog";
 import { dictionaries, Lang } from "../../../i18n";
@@ -23,6 +23,7 @@ import { useRouter } from "next/router";
 import BackButton from "@/components/BackButton";
 import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
 import ReplayCanvas from "@/components/Dogs/Replay/ReplayCanvas";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type {
   ReplayAction,
   ReplayActionGroup,
@@ -39,6 +40,91 @@ type Lesson = {
     image: string;
   }[];
 };
+
+type MobileColorState = {
+  hue: number;
+  darkness: number;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function hslToHex(hue: number, saturation: number, lightness: number) {
+  const s = saturation / 100;
+  const l = lightness / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const hPrime = hue / 60;
+  const x = c * (1 - Math.abs((hPrime % 2) - 1));
+
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (hPrime >= 0 && hPrime < 1) {
+    r = c;
+    g = x;
+  } else if (hPrime < 2) {
+    r = x;
+    g = c;
+  } else if (hPrime < 3) {
+    g = c;
+    b = x;
+  } else if (hPrime < 4) {
+    g = x;
+    b = c;
+  } else if (hPrime < 5) {
+    r = x;
+    b = c;
+  } else {
+    r = c;
+    b = x;
+  }
+
+  const m = l - c / 2;
+  const toHex = (channel: number) =>
+    Math.round((channel + m) * 255)
+      .toString(16)
+      .padStart(2, "0");
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function hexToHsl(hex: string): MobileColorState {
+  const cleaned = hex.replace("#", "");
+  const normalized = cleaned.length === 3
+    ? cleaned.split("").map((char) => `${char}${char}`).join("")
+    : cleaned.padEnd(6, "0").slice(0, 6);
+
+  const r = parseInt(normalized.slice(0, 2), 16) / 255;
+  const g = parseInt(normalized.slice(2, 4), 16) / 255;
+  const b = parseInt(normalized.slice(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+
+  let hue = 0;
+  if (delta !== 0) {
+    if (max === r) {
+      hue = 60 * (((g - b) / delta) % 6);
+    } else if (max === g) {
+      hue = 60 * ((b - r) / delta + 2);
+    } else {
+      hue = 60 * ((r - g) / delta + 4);
+    }
+  }
+
+  return {
+    hue: (hue + 360) % 360,
+    darkness: Math.round((1 - lightness) * 100),
+  };
+}
+
+function buildColorFromState(state: MobileColorState) {
+  return hslToHex(state.hue, 100, clamp(100 - state.darkness, 18, 82));
+}
 
 // DogImage component: PNG 10s → optional animated WebP/GIF 5s → PNG …
 function DogImage({
@@ -113,6 +199,7 @@ function DogImage({
 
 function LessonPlayerDesktop() {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogLesson;
@@ -157,7 +244,24 @@ function LessonPlayerDesktop() {
   const [animationMode, setAnimationMode] = useState<
     "puzzle" | "flow" | "mix" | "replay" | null
   >(null);
+  const [mobilePanel, setMobilePanel] = useState<
+    "brushes" | "coloring" | "animate" | "save" | null
+  >(null);
+  const [mobileBrushColor, setMobileBrushColor] = useState<MobileColorState>(
+    () => hexToHsl("#000000"),
+  );
+  const [replayAutoExport, setReplayAutoExport] = useState<
+    "video" | "gif" | null
+  >(null);
+  const [artworkSaved, setArtworkSaved] = useState(false);
+  const [replayExportDone, setReplayExportDone] = useState<{
+    video: boolean;
+    gif: boolean;
+  }>({ video: false, gif: false });
   const [replayRevision, setReplayRevision] = useState(0);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [mobileFillTooltip, setMobileFillTooltip] = useState<string | null>(null);
+  const [colorSeedCount, setColorSeedCount] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
@@ -179,6 +283,7 @@ function LessonPlayerDesktop() {
   const regionMapIdRef = useRef(1);
 
   const debugRenderRegions = () => {
+    setHasUnsavedChanges(true);
     const colorCanvas = colorCanvasRef.current;
     // On tablets / touch devices we clear seed history to prevent slowdown
     const isTouchDevice =
@@ -187,6 +292,7 @@ function LessonPlayerDesktop() {
 
     if (isTouchDevice) {
       seedsRef.current = [];
+      setColorSeedCount(0);
       setUndoStack([]);
       setRedoStack([]);
       clearReplayHistory();
@@ -290,6 +396,53 @@ function LessonPlayerDesktop() {
     null,
   );
   const pawImgRef = useRef<HTMLImageElement | null>(null);
+  const allowNavigationRef = useRef(false);
+  const leaveWarningMessage =
+    lang === "he"
+      ? "אם תצאו עכשיו, הציור שלא נשמר יאבד."
+      : lang === "en"
+        ? "If you leave now, your unsaved drawing will be lost."
+        : "Если выйти сейчас, несохранённый рисунок потеряется.";
+  const fillLockedMessage =
+    lang === "he"
+      ? "אפשר לצבוע רק אחרי שכל שלבי השיעור הושלמו."
+      : lang === "en"
+        ? "Coloring unlocks only after you finish every lesson step."
+        : "Раскрашивание откроется только после завершения всех шагов урока.";
+  const placePawsHint =
+    lang === "he"
+      ? "פזרו כפות צבעוניות על הקנבס ואז לחצו על הכפתור."
+      : lang === "en"
+        ? "Place colorful paws on the canvas, then tap the button."
+        : "Расставь цветные лапки на холсте и нажми на кнопку.";
+  const replayDoneLabel =
+    lang === "he"
+      ? "נשמר"
+      : lang === "en"
+        ? "Done"
+        : "Сохранено";
+  const savingOverlayLabel =
+    lang === "he"
+      ? "שומר..."
+      : lang === "en"
+        ? "Saving..."
+        : "Сохранение...";
+  const shouldWarnBeforeExit = isMobile
+    ? Boolean(lesson) && currentStepIndex >= 0
+    : hasUnsavedChanges;
+
+  const confirmLessonLeave = () => {
+    if (!shouldWarnBeforeExit) {
+      return true;
+    }
+
+    const confirmed = window.confirm(leaveWarningMessage);
+    if (confirmed) {
+      allowNavigationRef.current = true;
+    }
+
+    return confirmed;
+  };
 
   const getReplayBrushSettings = (): ReplayBrushSettings => ({
     size: brushSizeRef.current,
@@ -359,6 +512,80 @@ function LessonPlayerDesktop() {
     pawImgRef.current = img;
   }, []);
 
+  useEffect(() => {
+    if (!shouldWarnBeforeExit) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = leaveWarningMessage;
+      return leaveWarningMessage;
+    };
+
+    const handleRouteChangeStart = (url: string) => {
+      if (allowNavigationRef.current || !shouldWarnBeforeExit || url === router.asPath) {
+        return;
+      }
+
+      if (confirmLessonLeave()) {
+        return;
+      }
+
+      router.events.emit("routeChangeError");
+      throw new Error("Navigation aborted due to unsaved drawing");
+    };
+
+    const resetAllowNavigation = () => {
+      allowNavigationRef.current = false;
+    };
+
+    const originalBeforePopState = router.beforePopState;
+    router.beforePopState(({ as }) => {
+      if (allowNavigationRef.current || !shouldWarnBeforeExit || as === router.asPath) {
+        return true;
+      }
+
+      if (confirmLessonLeave()) {
+        return true;
+      }
+
+      return false;
+    });
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    router.events.on("routeChangeStart", handleRouteChangeStart);
+    router.events.on("routeChangeComplete", resetAllowNavigation);
+    router.events.on("routeChangeError", resetAllowNavigation);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      router.events.off("routeChangeStart", handleRouteChangeStart);
+      router.events.off("routeChangeComplete", resetAllowNavigation);
+      router.events.off("routeChangeError", resetAllowNavigation);
+      router.beforePopState(() => true);
+      void originalBeforePopState;
+    };
+  }, [confirmLessonLeave, leaveWarningMessage, router, shouldWarnBeforeExit]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    document.body.classList.toggle("dog-lesson-mobile-page", isMobile);
+
+    return () => {
+      document.body.classList.remove("dog-lesson-mobile-page");
+    };
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!mobileFillTooltip) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setMobileFillTooltip(null);
+    }, 2200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [mobileFillTooltip]);
+
   const computeRegionMap = () => {
     const drawingCanvas = drawingCanvasRef.current;
     if (!drawingCanvas) return;
@@ -383,6 +610,7 @@ function LessonPlayerDesktop() {
   };
 
   const handleColorize = () => {
+    setHasUnsavedChanges(true);
     setShowColorizer(true);
     if (!regionDataRef.current) {
       computeRegionMap();
@@ -563,6 +791,7 @@ function LessonPlayerDesktop() {
     const b = parseInt(hex.slice(5, 7), 16);
     const color: [number, number, number] = [r, g, b];
     beginReplayGroup();
+    setHasUnsavedChanges(true);
 
     // --- проверяем, не является ли область очень маленькой ---
     let regionSize = regionSizeCacheRef.current.get(regionId);
@@ -634,6 +863,7 @@ function LessonPlayerDesktop() {
 
     // store seed
     seedsRef.current.push({ x: seedX, y: seedY, regionId, color });
+    setColorSeedCount(seedsRef.current.length);
 
     // ограничиваем количество лапок чтобы планшеты не тормозили
     const MAX_SEEDS = 80;
@@ -741,6 +971,9 @@ function LessonPlayerDesktop() {
     brushColorRef.current = brushColor;
   }, [brushColor]);
   useEffect(() => {
+    setMobileBrushColor(hexToHsl(brushColor));
+  }, [brushColor]);
+  useEffect(() => {
     brushOpacityRef.current = brushOpacity;
   }, [brushOpacity]);
   // useEffect для обновления ref при изменении brushStyle
@@ -842,6 +1075,10 @@ function LessonPlayerDesktop() {
       setLesson(translatedLesson);
       setIsLessonTranslated(Boolean(payload.translated));
       setBrushSize(5);
+      setHasUnsavedChanges(false);
+      setColorSeedCount(0);
+      setArtworkSaved(false);
+      setReplayExportDone({ video: false, gif: false });
       clearReplayHistory();
       if (translatedLesson.steps.length > 0) {
         setCurrentStepIndex(0);
@@ -1175,6 +1412,7 @@ function LessonPlayerDesktop() {
       if (!ctx) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       e.preventDefault();
+      setHasUnsavedChanges(true);
 
       // новое действие → очищаем redo
       setRedoStack([]);
@@ -1434,11 +1672,15 @@ function LessonPlayerDesktop() {
     setUndoStack([]);
     setRedoStack([]);
     clearReplayHistory();
+    setArtworkSaved(false);
+    setReplayExportDone({ video: false, gif: false });
 
     seedsRef.current = [];
+    setColorSeedCount(0);
     regionDataRef.current = null;
 
     setCurrentStepIndex(0);
+    setHasUnsavedChanges(false);
 
     setTimeout(() => {
       drawStepOnCanvas(0);
@@ -1456,44 +1698,790 @@ function LessonPlayerDesktop() {
     [replayRevision],
   );
 
+  const isLessonComplete = lesson
+    ? currentStepIndex === lesson.steps.length - 1
+    : false;
+
+  const frankSpeech = frankSpeechOverride
+    ? frankSpeechOverride
+    : animationMenuOpen
+      ? t.frankChooseAction
+      : animationMode === "puzzle"
+        ? t.frankPuzzle
+        : showColorizer && colorSeedCount === 0
+          ? placePawsHint
+        : animationMode === "flow"
+          ? typeof window !== "undefined" &&
+            ("ontouchstart" in window || navigator.maxTouchPoints > 0)
+            ? t.frankFlowTouch
+            : t.frankFlowDesktop
+          : animationMode === "mix"
+            ? t.frankMix
+            : animationMode === "replay"
+              ? t.frankReplay
+              : isLessonComplete
+                ? `🎨 ${t.frankColor}`
+                : currentStepIndex >= 0 && lesson?.steps[currentStepIndex]?.frank
+                  ? lesson.steps[currentStepIndex].frank
+                  : t.frankWelcome;
+
+  const handleAdvanceLesson = () => {
+    if (!lesson) return;
+
+    if (!hasStarted) {
+      setHasStarted(true);
+      setCurrentStepIndex(0);
+      drawStepOnCanvas(0);
+      return;
+    }
+
+    if (currentStepIndex === lesson.steps.length - 1) {
+      setShowRestartConfirm(true);
+      return;
+    }
+
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < lesson.steps.length) {
+      setCurrentStepIndex(nextIndex);
+      drawStepOnCanvas(nextIndex);
+    }
+  };
+
+  const handleLockedFillAction = () => {
+    setMobileFillTooltip(fillLockedMessage);
+  };
+
+  const closeMobilePanel = () => {
+    if (mobilePanel === "animate") {
+      setAnimationMode(null);
+      setAnimationMenuOpen(false);
+    }
+
+    setMobilePanel(null);
+  };
+
+  const closeMagicMode = () => {
+    setAnimationMode(null);
+    setAnimationMenuOpen(false);
+    setMobilePanel(null);
+  };
+
+  const saveArtwork = async () => {
+    const drawingCanvas = drawingCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
+    const pawCanvas = pawOverlayCanvasRef.current;
+
+    if (!drawingCanvas) return;
+
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = drawingCanvas.width;
+    tempCanvas.height = drawingCanvas.height;
+
+    const tempCtx = tempCanvas.getContext("2d");
+    if (!tempCtx) return;
+
+    tempCtx.fillStyle = "#ffffff";
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+    if (colorCanvas) {
+      tempCtx.drawImage(colorCanvas, 0, 0);
+    }
+
+    tempCtx.drawImage(drawingCanvas, 0, 0);
+
+    if (pawCanvas) {
+      tempCtx.drawImage(pawCanvas, 0, 0);
+    }
+
+    await drawLapLapLaWatermark(tempCtx, tempCanvas);
+
+    const link = document.createElement("a");
+    link.download = `${lesson?.title || "drawing"}.png`;
+    link.href = tempCanvas.toDataURL("image/png");
+    link.click();
+    setArtworkSaved(true);
+    setHasUnsavedChanges(false);
+  };
+
+  const clearArtwork = () => {
+    if (!confirm(t.confirmClear)) return;
+
+    const drawingCanvas = drawingCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
+    const pawCanvas = pawOverlayCanvasRef.current;
+
+    const dCtx = drawingCanvas?.getContext("2d");
+    const cCtx = colorCanvas?.getContext("2d");
+    const pCtx = pawCanvas?.getContext("2d");
+
+    if (drawingCanvas && dCtx) {
+      const fadeOut = () => {
+        let alpha = 1;
+
+        const fadeStep = () => {
+          dCtx.fillStyle = `rgba(255,255,255,0.1)`;
+          dCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+          alpha -= 0.1;
+
+          if (alpha > 0) {
+            requestAnimationFrame(fadeStep);
+          } else {
+            dCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+            if (colorCanvas && cCtx) {
+              cCtx.clearRect(0, 0, colorCanvas.width, colorCanvas.height);
+            }
+
+            if (pawCanvas && pCtx) {
+              pCtx.clearRect(0, 0, pawCanvas.width, pawCanvas.height);
+            }
+
+            seedsRef.current = [];
+            setColorSeedCount(0);
+            setUndoStack([]);
+            setRedoStack([]);
+            clearReplayHistory();
+            setArtworkSaved(false);
+            setReplayExportDone({ video: false, gif: false });
+            setHasUnsavedChanges(false);
+          }
+        };
+
+        fadeStep();
+      };
+
+      fadeOut();
+    }
+  };
+
+  const openPuzzleMode = () => {
+    setFrankPose(getRandomPose(frankPoses));
+
+    const drawing = drawingCanvasRef.current;
+    const color = colorCanvasRef.current;
+    const paw = pawOverlayCanvasRef.current;
+    if (!drawing) return;
+
+    const combined = document.createElement("canvas");
+    combined.width = drawing.width;
+    combined.height = drawing.height;
+
+    const cctx = combined.getContext("2d");
+
+    if (cctx) {
+      cctx.fillStyle = "#ffffff";
+      cctx.fillRect(0, 0, combined.width, combined.height);
+
+      if (color) cctx.drawImage(color, 0, 0);
+      if (drawing) cctx.drawImage(drawing, 0, 0);
+      if (paw) cctx.drawImage(paw, 0, 0);
+    }
+
+    puzzleSourceCanvasRef.current = combined;
+    setAnimationMode("puzzle");
+    setAnimationMenuOpen(false);
+    setMobilePanel(isMobile ? null : "animate");
+  };
+
+  const openReplayMode = (autoExport: "video" | "gif" | null = null) => {
+    setFrankPose(getRandomPose(frankPoses));
+    setReplayAutoExport(autoExport);
+    setAnimationMode("replay");
+    setAnimationMenuOpen(false);
+    if (!autoExport) {
+      setMobilePanel("save");
+    }
+  };
+
+  const navigateBackToLessons = () => {
+    const targetHref = `/dog/lessons?category=${lesson?.category_slug ?? ""}`;
+    const localizedHref = buildLocalizedHref(targetHref, lang);
+    if (!confirmLessonLeave()) return;
+    void router.push(localizedHref, undefined, { locale: lang });
+  };
+
+  const updateBrushColorFromClientPoint = (
+    event: React.TouchEvent<HTMLDivElement>,
+  ) => {
+    const wheel = event.currentTarget;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const rect = wheel.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const angle = Math.atan2(touch.clientY - centerY, touch.clientX - centerX);
+    const hue = ((angle * 180) / Math.PI + 360) % 360;
+
+    setMobileBrushColor((prev) => {
+      const next = {
+        ...prev,
+        hue,
+      };
+      setBrushColor(buildColorFromState(next));
+      return next;
+    });
+  };
+
   return (
     <>
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <div className="lesson-container">
-        <BackButton
-          href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`}
-        />
+        {!isMobile ? (
+          <BackButton
+            href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`}
+          />
+        ) : null}
         {lesson ? (
           <div>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
-          {!isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
+          {!isMobile && !isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
+          {isMobile ? (
+            <div className="lesson-mobile-shell">
+              <div className="lesson-mobile-topbar">
+                <div className="lesson-mobile-topbar-main">
+                  <div className="lesson-mobile-action-row">
+                    <button
+                      type="button"
+                      className="lesson-mobile-inline-back"
+                      aria-label="Back to lessons"
+                      onClick={navigateBackToLessons}
+                    >
+                      ✕
+                    </button>
+                    <button
+                      type="button"
+                      className="lesson-mobile-primary"
+                      onClick={handleAdvanceLesson}
+                    >
+                      {!hasStarted
+                        ? t.startLesson
+                        : isLessonComplete
+                          ? t.repeatLesson
+                          : `${t.nextStep} 🐾`}
+                    </button>
+                    {isLessonComplete ? (
+                      <button
+                        type="button"
+                        className="lesson-mobile-gallery"
+                        onClick={() => setShowGallery(true)}
+                      >
+                        🖼 {t.openGallery}
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="lesson-mobile-frank">
+                    <img src="/dog/frank.webp" alt={t.frankName} className="lesson-mobile-frank-avatar" />
+                    <div className="lesson-mobile-frank-bubble">
+                      {frankSpeech}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`lesson-mobile-stage ${
+                  mobilePanel === "coloring" && showColorizer
+                    ? "lesson-mobile-stage-raised"
+                    : animationMode === "puzzle"
+                      ? "lesson-mobile-stage-puzzle"
+                      : ""
+                }`}
+              >
+                <div className="lesson-canvas-wrapper lesson-canvas-wrapper-mobile">
+                  {showColorizer &&
+                  animationMode !== "puzzle" &&
+                  animationMode !== "replay" ? (
+                    <button
+                      type="button"
+                      className="lesson-mobile-colorize-cta"
+                      onClick={handleColorize}
+                    >
+                      🌈 {t.colorizeSketch}
+                    </button>
+                  ) : null}
+
+                  {!hasStarted && (
+                    <button
+                      id="start-button-mobile"
+                      className="lesson-button-start"
+                      onClick={() => {
+                        setCurrentStepIndex(0);
+                        drawStepOnCanvas(0);
+                        const canvas = drawingCanvasRef.current;
+                        const ctx = canvas?.getContext("2d");
+                        if (ctx) applyBrushSettings(ctx);
+                        setHasStarted(true);
+                      }}
+                    >
+                      <div className="lesson-start-text">{t.start}</div>
+                    </button>
+                  )}
+
+                  {!showColorizer && (
+                    <canvas
+                      id="lesson-canvas-mobile"
+                      className="lesson-canvas-bg"
+                      ref={canvasRef}
+                      width={512}
+                      height={512}
+                    />
+                  )}
+                  <canvas
+                    id="color-canvas-mobile"
+                    className="lesson-canvas-color"
+                    ref={colorCanvasRef}
+                    width={512}
+                    height={512}
+                  />
+                  <canvas
+                    id="paw-overlay-canvas-mobile"
+                    className="lesson-canvas-paw-overlay"
+                    ref={pawOverlayCanvasRef}
+                    width={512}
+                    height={512}
+                  />
+                  <canvas
+                    id="drawing-canvas-mobile"
+                    className="lesson-canvas-draw"
+                    ref={drawingCanvasRef}
+                    width={512}
+                    height={512}
+                    style={{
+                      userSelect: "none",
+                      WebkitUserSelect: "none",
+                      touchAction: "none",
+                      cursor: showColorizer
+                        ? isDrawingState
+                          ? "url('/dog/pencile.png') 0 32, auto"
+                          : "url('/dog/paw.svg') 16 16, auto"
+                        : "url('/dog/pencile.png') 0 32, auto",
+                    }}
+                  />
+
+                  {animationMode === "puzzle" ? (
+                    <div className="lesson-puzzle-mode lesson-puzzle-mode-mobile">
+                      <div className="lesson-puzzle-board lesson-puzzle-board-mobile">
+                        <PuzzleCanvas
+                          sourceCanvas={puzzleSourceCanvasRef.current!}
+                          traySelector=".lesson-puzzle-tray-inner-mobile-active"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="lesson-mobile-mode-close"
+                        onClick={closeMagicMode}
+                        aria-label="Close puzzle mode"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {animationMode === "replay" ? (
+                    <div className="lesson-puzzle-mode lesson-puzzle-mode-mobile">
+                      <ReplayCanvas
+                        actionGroups={replayActionGroups}
+                        regionMaps={regionMapsRef.current}
+                        width={512}
+                        height={512}
+                        autoExport={replayAutoExport}
+                        onAutoExportDone={() => setReplayAutoExport(null)}
+                        onExportComplete={(type) => {
+                          setReplayExportDone((prev) => ({
+                            ...prev,
+                            [type]: true,
+                          }));
+                        }}
+                        savingLabel={savingOverlayLabel}
+                        onClose={() => {
+                          setReplayAutoExport(null);
+                          setAnimationMode(null);
+                        }}
+                      />
+                    </div>
+                  ) : null}
+
+                  {animationMode !== "puzzle" && animationMode !== "replay" ? (
+                    <div className="lesson-step-counter lesson-step-counter-mobile">
+                      {currentStepIndex >= 0 ? (
+                        <p>
+                          <strong>{currentStepIndex + 1}</strong> {t.stepOf} {lesson.steps.length}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className={`lesson-mobile-panel-shell ${mobilePanel ? "open" : ""}`}>
+                <div className={`lesson-mobile-panel-content ${mobilePanel ? "open" : ""}`}>
+                  {mobilePanel ? (
+                    <button
+                      type="button"
+                      className="lesson-mobile-panel-close"
+                      onClick={closeMobilePanel}
+                      aria-label="Close menu"
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                  {mobilePanel === "brushes" ? (
+                    <div className="lesson-mobile-section">
+                      <div className="lesson-mobile-field">
+                        <label>{t.brushStyle}</label>
+                        <select
+                          value={brushStyle}
+                          onChange={(e) =>
+                            setBrushStyle(
+                              e.target.value as
+                                | "normal"
+                                | "smooth"
+                                | "sparkle"
+                                | "rainbow"
+                                | "chameleon"
+                                | "gradient"
+                                | "neon"
+                                | "watercolor",
+                            )
+                          }
+                        >
+                          <option value="smooth">{t.brushNormal}</option>
+                          <option value="sparkle">{t.brushSparkle}</option>
+                          <option value="rainbow">{t.brushRainbow}</option>
+                          <option value="chameleon">{t.brushChameleon}</option>
+                          <option value="gradient">{t.brushGradient}</option>
+                          <option value="neon">{t.brushNeon}</option>
+                          <option value="watercolor">{t.brushWatercolor}</option>
+                        </select>
+                      </div>
+                      <div className="lesson-mobile-field lesson-mobile-field-inline">
+                        <label>{t.brushColor}</label>
+                        <button
+                          type="button"
+                          className="lesson-mobile-chip"
+                          onClick={() => setIsEraser((prev) => !prev)}
+                        >
+                          {isEraser ? t.brush : t.eraser}
+                        </button>
+                      </div>
+                      <div className="lesson-mobile-color-picker">
+                        <div className="lesson-mobile-color-picker__header">
+                          <div className="lesson-mobile-color-picker__title">Color</div>
+                          <div className="lesson-mobile-color-picker__meta">
+                            {[
+                              { label: "White", hex: "#ffffff" },
+                              { label: "Black", hex: "#000000" },
+                            ].map((quickColor) => (
+                              <button
+                                key={quickColor.hex}
+                                type="button"
+                                aria-label={quickColor.label}
+                                onClick={() => {
+                                  setBrushColor(quickColor.hex);
+                                  setMobileBrushColor(hexToHsl(quickColor.hex));
+                                }}
+                                className="lesson-mobile-quick-color"
+                                style={{ background: quickColor.hex }}
+                              />
+                            ))}
+                            <div
+                              className="lesson-mobile-color-preview"
+                              style={{ background: brushColor }}
+                            />
+                          </div>
+                        </div>
+                        <div
+                          className="lesson-mobile-color-wheel"
+                          onTouchStart={updateBrushColorFromClientPoint}
+                          onTouchMove={(e) => {
+                            e.preventDefault();
+                            updateBrushColorFromClientPoint(e);
+                          }}
+                        />
+                        <label className="lesson-mobile-field">
+                          <span>Darkness</span>
+                          <input
+                            type="range"
+                            min="0"
+                            max="82"
+                            value={mobileBrushColor.darkness}
+                            onChange={(e) => {
+                              const darkness = Number(e.target.value);
+                              setMobileBrushColor((prev) => {
+                                const next = { ...prev, darkness };
+                                setBrushColor(buildColorFromState(next));
+                                return next;
+                              });
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <div className="lesson-mobile-field">
+                        <label>{t.brushSize}</label>
+                        <input
+                          type="range"
+                          min={1}
+                          max={20}
+                          value={brushSize}
+                          onChange={(e) => setBrushSize(Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="lesson-mobile-field">
+                        <label>{t.opacity}</label>
+                        <input
+                          type="range"
+                          min={0.05}
+                          max={1}
+                          step={0.05}
+                          value={brushOpacity}
+                          onChange={(e) => setBrushOpacity(Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {mobilePanel === "coloring" ? (
+                    <div className="lesson-mobile-section">
+                      {mobileFillTooltip ? (
+                        <div className="lesson-mobile-tooltip" role="status" aria-live="polite">
+                          {mobileFillTooltip}
+                        </div>
+                      ) : null}
+                      <div className="lesson-mobile-button-grid">
+                        <button
+                          type="button"
+                          className={`lesson-mobile-action lesson-mobile-action-accent ${
+                            !isLessonComplete ? "is-locked" : ""
+                          }`}
+                          onClick={() => {
+                            if (!isLessonComplete) {
+                              handleLockedFillAction();
+                              return;
+                            }
+                            handleColorize();
+                          }}
+                          aria-disabled={!isLessonComplete}
+                          title={!isLessonComplete ? fillLockedMessage : undefined}
+                        >
+                          🌈 {t.colorizeSketch}
+                        </button>
+                        <button
+                          type="button"
+                          className={`lesson-mobile-action ${
+                            !isLessonComplete ? "is-locked" : ""
+                          }`}
+                          onClick={() => {
+                            if (!isLessonComplete) {
+                              handleLockedFillAction();
+                              return;
+                            }
+                            debugRenderRegions();
+                          }}
+                          aria-disabled={!isLessonComplete}
+                          title={!isLessonComplete ? fillLockedMessage : undefined}
+                        >
+                          🧪 {t.autoColorize}
+                        </button>
+                      </div>
+                      {showColorizer ? (
+                        <div className="lesson-mobile-color-picker lesson-mobile-color-picker-fill">
+                          <div className="lesson-mobile-color-picker__header">
+                            <span className="lesson-mobile-color-picker__title">
+                              {t.brushColor}
+                            </span>
+                            <div className="lesson-mobile-color-picker__meta">
+                              {[
+                                { label: "White", hex: "#ffffff" },
+                                { label: "Black", hex: "#000000" },
+                              ].map((quickColor) => (
+                                <button
+                                  key={quickColor.hex}
+                                  type="button"
+                                  className="lesson-mobile-quick-color"
+                                  style={{ background: quickColor.hex }}
+                                  onClick={() => {
+                                    setBrushColor(quickColor.hex);
+                                    setMobileBrushColor(hexToHsl(quickColor.hex));
+                                  }}
+                                  aria-label={quickColor.label}
+                                />
+                              ))}
+                              <button
+                                type="button"
+                                className="lesson-mobile-color-preview"
+                                style={{ background: brushColor }}
+                                aria-label={`Current color ${brushColor}`}
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className="lesson-mobile-color-wheel"
+                            onTouchStart={updateBrushColorFromClientPoint}
+                            onTouchMove={(e) => {
+                              e.preventDefault();
+                              updateBrushColorFromClientPoint(e);
+                            }}
+                          />
+                          <label className="lesson-mobile-field">
+                            <span>Darkness</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="82"
+                              value={mobileBrushColor.darkness}
+                              onChange={(e) => {
+                                const darkness = Number(e.target.value);
+                                setMobileBrushColor((prev) => {
+                                  const next = { ...prev, darkness };
+                                  setBrushColor(buildColorFromState(next));
+                                  return next;
+                                });
+                              }}
+                            />
+                          </label>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {mobilePanel === "animate" ? (
+                    <div className="lesson-mobile-section">
+                      <div className="lesson-mobile-button-grid">
+                        <button
+                          type="button"
+                          className="lesson-mobile-action lesson-mobile-action-accent"
+                          onClick={openPuzzleMode}
+                        >
+                          🧩 {t.makePuzzle}
+                        </button>
+                        <button
+                          type="button"
+                          className="lesson-mobile-action"
+                          onClick={() => alert(t.comingSoon)}
+                        >
+                          🌊 {t.paintFlow}
+                        </button>
+                        <button
+                          type="button"
+                          className="lesson-mobile-action"
+                          onClick={() => alert(t.comingSoon)}
+                        >
+                          🎨 {t.mixPaints}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {mobilePanel === "save" ? (
+                    <div className="lesson-mobile-section">
+                      <div className="lesson-mobile-button-grid">
+                        <button
+                          type="button"
+                          className="lesson-mobile-action lesson-mobile-action-accent"
+                          onClick={() => {
+                            void saveArtwork();
+                          }}
+                        >
+                          {artworkSaved ? replayDoneLabel : `💾 ${t.save}`}
+                        </button>
+                        <button
+                          type="button"
+                          className="lesson-mobile-action"
+                          onClick={() => openReplayMode()}
+                        >
+                          🎬 {t.replayProcess}
+                        </button>
+                        <button
+                          type="button"
+                          className="lesson-mobile-action"
+                          onClick={() => openReplayMode("video")}
+                        >
+                          {replayExportDone.video ? replayDoneLabel : "⬇ Video"}
+                        </button>
+                        <button
+                          type="button"
+                          className="lesson-mobile-action"
+                          onClick={() => openReplayMode("gif")}
+                        >
+                          {replayExportDone.gif ? replayDoneLabel : "⬇ GIF"}
+                        </button>
+                      </div>
+                      <div className="lesson-mobile-danger">
+                        <div className="lesson-mobile-danger-label">Danger zone</div>
+                        <button
+                          type="button"
+                          className="lesson-mobile-danger-button"
+                          onClick={clearArtwork}
+                        >
+                          🗑 {t.clear}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {animationMode !== "puzzle" ? (
+                <nav className="lesson-mobile-nav" aria-label="Lesson mobile tools">
+                  {[
+                    ["brushes", "Brush"],
+                    ["coloring", "Fill"],
+                    ["animate", "Magic"],
+                    ["save", "Save"],
+                  ].map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={mobilePanel === key ? "active" : ""}
+                      onClick={() =>
+                        setMobilePanel((current) =>
+                          current === key ? null : (key as "brushes" | "coloring" | "animate" | "save"),
+                        )
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+                ) : null}
+              </div>
+
+              {animationMode === "puzzle" ? (
+                <div className="lesson-mobile-puzzle-dock">
+                  <button
+                    type="button"
+                    className="lesson-puzzle-scroll-left"
+                    onClick={() => {
+                      const el = document.querySelector(
+                        ".lesson-puzzle-tray-inner-mobile-active",
+                      ) as HTMLElement | null;
+                      el?.scrollBy({ left: -200, behavior: "smooth" });
+                    }}
+                  >
+                    ◀
+                  </button>
+                  <div className="lesson-puzzle-tray-inner lesson-puzzle-tray-inner-mobile lesson-puzzle-tray-inner-mobile-active" />
+                  <button
+                    type="button"
+                    className="lesson-puzzle-scroll-right"
+                    onClick={() => {
+                      const el = document.querySelector(
+                        ".lesson-puzzle-tray-inner-mobile-active",
+                      ) as HTMLElement | null;
+                      el?.scrollBy({ left: 200, behavior: "smooth" });
+                    }}
+                  >
+                    ▶
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
           <div className="lesson-controls">
             <button
               className="lesson-button lesson-button-next"
-              onClick={() => {
-                if (!lesson) return;
-
-                // --- Start lesson ---
-                if (!hasStarted) {
-                  setHasStarted(true);
-                  setCurrentStepIndex(0);
-                  drawStepOnCanvas(0);
-                  return;
-                }
-
-                // --- Restart lesson ---
-                if (currentStepIndex === lesson.steps.length - 1) {
-                  setShowRestartConfirm(true);
-                  return;
-                }
-
-                // --- Normal next step ---
-                const nextIndex = currentStepIndex + 1;
-                if (nextIndex < lesson.steps.length) {
-                  setCurrentStepIndex(nextIndex);
-                  drawStepOnCanvas(nextIndex);
-                }
-              }}
+              onClick={handleAdvanceLesson}
             >
               {!hasStarted ? (
                 t.startLesson
@@ -1503,7 +2491,7 @@ function LessonPlayerDesktop() {
                 <>{t.nextStep} 🐾</>
               )}
             </button>
-            {lesson && currentStepIndex === lesson.steps.length - 1 && (
+            {lesson && isLessonComplete && (
               <div className="lesson-color-controls">
                 <button
                   className={`lesson-button lesson-button-colorize ${
@@ -1540,39 +2528,12 @@ function LessonPlayerDesktop() {
               </div>
             )}
           </div>
+          )}
           {animationMenuOpen && (
             <div className="lesson-animation-menu">
               <button
                 className="lesson-animation-button btn-mint"
-                onClick={() => {
-                  setFrankPose(getRandomPose(frankPoses));
-
-                  // build combined canvas for puzzle source
-                  const drawing = drawingCanvasRef.current;
-                  const color = colorCanvasRef.current;
-                  const paw = pawOverlayCanvasRef.current;
-                  if (!drawing) return;
-
-                  const combined = document.createElement("canvas");
-                  combined.width = drawing.width;
-                  combined.height = drawing.height;
-
-                  const cctx = combined.getContext("2d");
-
-                  if (cctx) {
-                    cctx.fillStyle = "#ffffff";
-                    cctx.fillRect(0, 0, combined.width, combined.height);
-
-                    if (color) cctx.drawImage(color, 0, 0);
-                    if (drawing) cctx.drawImage(drawing, 0, 0);
-                    if (paw) cctx.drawImage(paw, 0, 0);
-                  }
-
-                  puzzleSourceCanvasRef.current = combined;
-
-                  setAnimationMode("puzzle");
-                  setAnimationMenuOpen(false);
-                }}
+                onClick={openPuzzleMode}
               >
                 🧩 {t.makePuzzle}
               </button>
@@ -1601,16 +2562,13 @@ function LessonPlayerDesktop() {
 
               <button
                 className="lesson-animation-button btn-yellow"
-                onClick={() => {
-                  setFrankPose(getRandomPose(frankPoses));
-                  setAnimationMode("replay");
-                  setAnimationMenuOpen(false);
-                }}
+                onClick={() => openReplayMode()}
               >
                 🎬 {t.replayProcess}
               </button>
             </div>
           )}
+          {!isMobile ? (
           <div className="lesson-main-row">
             <div
               className="lesson-frank"
@@ -1627,25 +2585,7 @@ function LessonPlayerDesktop() {
                     name="frank"
                     pose={frankPose}
                     speech={
-                      frankSpeechOverride
-                        ? frankSpeechOverride
-                        : animationMenuOpen
-                          ? t.frankChooseAction
-                          : animationMode === "puzzle"
-                            ? t.frankPuzzle
-                            : animationMode === "flow"
-                              ? typeof window !== "undefined" &&
-                                ("ontouchstart" in window ||
-                                  navigator.maxTouchPoints > 0)
-                                ? t.frankFlowTouch
-                                : t.frankFlowDesktop
-                              : animationMode === "mix"
-                                ? t.frankMix
-                                : animationMode === "replay"
-                                  ? t.frankReplay
-                                  : currentStepIndex === lesson.steps.length - 1
-                                    ? <> {t.frankColor} 🎨 </>
-                                    : lesson.steps[currentStepIndex].frank
+                      frankSpeech
                     }
                     size={220}
                   />
@@ -1744,6 +2684,7 @@ function LessonPlayerDesktop() {
                   regionMaps={regionMapsRef.current}
                   width={512}
                   height={512}
+                  savingLabel={savingOverlayLabel}
                   onClose={() => setAnimationMode(null)}
                 />
               ) : animationMode === "puzzle" ? (
@@ -1911,8 +2852,9 @@ function LessonPlayerDesktop() {
               </div>
             </div>
           </div>
+          ) : null}
 
-          {animationMode !== "puzzle" && animationMode !== "replay" && (
+          {!isMobile && animationMode !== "puzzle" && animationMode !== "replay" && (
             <div className="lesson-tools-panel">
               <div className="lesson-tools-panel-1">
                 <button
@@ -2094,82 +3036,7 @@ function LessonPlayerDesktop() {
                 </button>
                 <button
                   className="lesson-button lesson-button-clear"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        t.confirmClear,)
-                    ) {
-                      const drawingCanvas = drawingCanvasRef.current;
-                      const colorCanvas = colorCanvasRef.current;
-                      const pawCanvas = pawOverlayCanvasRef.current;
-
-                      const dCtx = drawingCanvas?.getContext("2d");
-                      const cCtx = colorCanvas?.getContext("2d");
-                      const pCtx = pawCanvas?.getContext("2d");
-
-                      if (drawingCanvas && dCtx) {
-                        const fadeOut = () => {
-                          let alpha = 1;
-
-                          const fadeStep = () => {
-                            dCtx.fillStyle = `rgba(255,255,255,0.1)`;
-                            dCtx.fillRect(
-                              0,
-                              0,
-                              drawingCanvas.width,
-                              drawingCanvas.height,
-                            );
-
-                            alpha -= 0.1;
-
-                            if (alpha > 0) {
-                              requestAnimationFrame(fadeStep);
-                            } else {
-                              // clear drawing
-                              dCtx.clearRect(
-                                0,
-                                0,
-                                drawingCanvas.width,
-                                drawingCanvas.height,
-                              );
-
-                              // clear color fill
-                              if (colorCanvas && cCtx) {
-                                cCtx.clearRect(
-                                  0,
-                                  0,
-                                  colorCanvas.width,
-                                  colorCanvas.height,
-                                );
-                              }
-
-                              // clear paw overlay
-                              if (pawCanvas && pCtx) {
-                                pCtx.clearRect(
-                                  0,
-                                  0,
-                                  pawCanvas.width,
-                                  pawCanvas.height,
-                                );
-                              }
-
-                              // reset color seeds
-                              seedsRef.current = [];
-
-                              // reset history
-                              setUndoStack([]);
-                              setRedoStack([]);
-                              clearReplayHistory();
-                            }
-                          };
-
-                          fadeStep();
-                        };
-
-                        fadeOut();
-                      }
-                    }
-                  }}
+                  onClick={clearArtwork}
                 >
                   <>
                     <img
@@ -2182,43 +3049,8 @@ function LessonPlayerDesktop() {
                 </button>
                 <button
                   className="lesson-button lesson-button-save"
-                  onClick={async () => {
-                    const drawingCanvas = drawingCanvasRef.current;
-                    const colorCanvas = colorCanvasRef.current;
-                    const pawCanvas = pawOverlayCanvasRef.current;
-
-                    if (!drawingCanvas) return;
-
-                    const tempCanvas = document.createElement("canvas");
-                    tempCanvas.width = drawingCanvas.width;
-                    tempCanvas.height = drawingCanvas.height;
-
-                    const tempCtx = tempCanvas.getContext("2d");
-                    if (!tempCtx) return;
-
-                    // white background
-                    tempCtx.fillStyle = "#ffffff";
-                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-                    // draw color layer
-                    if (colorCanvas) {
-                      tempCtx.drawImage(colorCanvas, 0, 0);
-                    }
-
-                    // draw sketch lines
-                    tempCtx.drawImage(drawingCanvas, 0, 0);
-
-                    // draw paw overlay if any
-                    if (pawCanvas) {
-                      tempCtx.drawImage(pawCanvas, 0, 0);
-                    }
-
-                    await drawLapLapLaWatermark(tempCtx, tempCanvas);
-
-                    const link = document.createElement("a");
-                    link.download = `${lesson?.title || "drawing"}.png`;
-                    link.href = tempCanvas.toDataURL("image/png");
-                    link.click();
+                  onClick={() => {
+                    void saveArtwork();
                   }}
                 >
                   <>
