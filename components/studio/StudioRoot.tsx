@@ -73,6 +73,7 @@ interface StudioRootProps {
   initialSlides?: Array<{
     text: string;
     image?: string;
+    mediaUrl?: string;
     mediaType?: "image" | "video";
     mediaFit?: "cover" | "contain";
     mediaPosition?: "top" | "center" | "bottom";
@@ -3483,12 +3484,18 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     }
 
     const mappedSlides: StudioSlide[] = (initialSlides ?? []).map(
-      (s) => ({
+      (s) => {
+        const importedMediaUrl = s.image ?? s.mediaUrl;
+        return ({
         id: createStudioId(),
         text: s.text,
         fontSize: getImportedSlideFontSize(s.text),
-        mediaUrl: toStudioMediaUrl(s.image),
-        mediaType: s.mediaType ?? (s.image?.includes(".mp4") || s.image?.includes(".webm") ? "video" : "image"),
+        mediaUrl: toStudioMediaUrl(importedMediaUrl),
+        mediaType:
+          s.mediaType ??
+          (importedMediaUrl?.includes(".mp4") || importedMediaUrl?.includes(".webm")
+            ? "video"
+            : "image"),
         mediaFit: s.mediaFit ?? "contain",
         mediaPosition: s.mediaPosition ?? "center",
         textPosition: s.textPosition ?? "bottom",
@@ -3498,7 +3505,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
         textBgOpacity: s.textBgOpacity ?? 1,
         bgColor: "#ffffff",
         textColor: "#000000",
-      }),
+      })},
     );
 
     const newProject: StudioProject = {

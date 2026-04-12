@@ -24,6 +24,7 @@ export default function PuzzleCanvas({
   const draggingPieceRef = useRef<any>(null);
   const offsetRef = useRef({ x: 0, y: 0 });
   const activePointerIdRef = useRef<number | null>(null);
+  const loopFrameRef = useRef<number | null>(null);
   const snapFlashRef = useRef<number>(0);
   const winTriggeredRef = useRef(false);
   const winTimeRef = useRef<number>(0);
@@ -59,6 +60,7 @@ export default function PuzzleCanvas({
 
   useEffect(() => {
     const canvas = canvasRef.current!;
+    let destroyed = false;
 
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -384,7 +386,8 @@ export default function PuzzleCanvas({
         });
       }
 
-      requestAnimationFrame(loop);
+      if (destroyed) return;
+      loopFrameRef.current = requestAnimationFrame(loop);
     }
 
     function loop() {
@@ -495,7 +498,8 @@ export default function PuzzleCanvas({
         ctx.restore();
       }
 
-      requestAnimationFrame(loop);
+      if (destroyed) return;
+      loopFrameRef.current = requestAnimationFrame(loop);
     }
 
     init();
@@ -505,6 +509,11 @@ export default function PuzzleCanvas({
     document.addEventListener("pointercancel", handleGlobalPointerUp);
 
     return () => {
+      destroyed = true;
+      if (loopFrameRef.current !== null) {
+        cancelAnimationFrame(loopFrameRef.current);
+        loopFrameRef.current = null;
+      }
       document.removeEventListener("pointermove", handleGlobalPointerMove);
       document.removeEventListener("pointerup", handleGlobalPointerUp);
       document.removeEventListener("pointercancel", handleGlobalPointerUp);

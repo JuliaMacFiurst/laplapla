@@ -13,6 +13,9 @@ type Artwork = {
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   const categorySlug = typeof req.query.categorySlug === "string" ? req.query.categorySlug.trim() : "";
+  const excludeIds = typeof req.query.excludeIds === "string"
+    ? req.query.excludeIds.split(",").map((id) => id.trim()).filter(Boolean)
+    : [];
   if (!categorySlug) {
     return res.status(400).json({ error: "categorySlug is required" });
   }
@@ -32,7 +35,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ artwork: null, translated: true });
     }
 
-    const selectedArtwork = data[Math.floor(Math.random() * data.length)];
+    const availableIds = data.map((item) => item.id);
+    const filteredIds = availableIds.filter((id) => !excludeIds.includes(id));
+    const lastViewedId = excludeIds[excludeIds.length - 1];
+    const fallbackPool =
+      filteredIds.length > 0
+        ? filteredIds
+        : availableIds.length > 1 && lastViewedId
+          ? availableIds.filter((id) => id !== lastViewedId)
+          : availableIds;
+    const selectedArtworkId =
+      fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+
+    const selectedArtwork = { id: selectedArtworkId };
     const { content, translated } = await getTranslatedContent("artwork", selectedArtwork.id, getRequestLang(req));
     const artwork = content as Artwork;
 

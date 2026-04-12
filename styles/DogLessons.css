@@ -1439,7 +1439,7 @@ lesson-dog-name::before,
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   .lesson-mobile-action-row {
@@ -1532,6 +1532,32 @@ lesson-dog-name::before,
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
     font-size: 1.02rem;
     line-height: 1.15;
+  }
+
+  .lesson-mobile-fibi {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 8px;
+    align-items: end;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .lesson-mobile-fibi-avatar {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+  }
+
+  .lesson-mobile-fibi-bubble {
+    min-width: 0;
+    padding: 7px 10px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.1);
+    color: #fff7fb;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    font-size: 0.88rem;
+    line-height: 1.12;
   }
 
   .lesson-mobile-stage {

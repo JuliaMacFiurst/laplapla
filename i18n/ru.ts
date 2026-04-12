@@ -415,6 +415,12 @@ export const ru = {
     },
     artGalleryModal: {
       artGalleryTitle: "Картины великих художников",
+      loadingGallery: "Загружаю галерею...",
+      swipeHint: "Листай вправо",
+      findNewImage: "Найти новую картинку",
+      editInCats: "Открыть в редакторе котиков",
+      closeGallery: "Закрыть галерею",
+      moreArtists: "Еще про художников",
     },
   },
 

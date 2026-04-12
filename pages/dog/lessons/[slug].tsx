@@ -19,6 +19,7 @@ type ColorSeed = {
   color: [number, number, number];
 };
 import ArtGalleryModal from "@/components/ArtGalleryModal";
+import MobileArtGallery from "@/components/Dogs/MobileArtGallery";
 import { useRouter } from "next/router";
 import BackButton from "@/components/BackButton";
 import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
@@ -254,6 +255,7 @@ function LessonPlayerDesktop() {
     "video" | "gif" | null
   >(null);
   const [artworkSaved, setArtworkSaved] = useState(false);
+  const [hasCompletedFirstColoring, setHasCompletedFirstColoring] = useState(false);
   const [replayExportDone, setReplayExportDone] = useState<{
     video: boolean;
     gif: boolean;
@@ -284,6 +286,7 @@ function LessonPlayerDesktop() {
 
   const debugRenderRegions = () => {
     setHasUnsavedChanges(true);
+    setHasCompletedFirstColoring(true);
     const colorCanvas = colorCanvasRef.current;
     // On tablets / touch devices we clear seed history to prevent slowdown
     const isTouchDevice =
@@ -415,6 +418,12 @@ function LessonPlayerDesktop() {
       : lang === "en"
         ? "Place colorful paws on the canvas, then tap the button."
         : "Расставь цветные лапки на холсте и нажми на кнопку.";
+  const fibiGalleryHint =
+    lang === "he"
+      ? "אני יודעת הרבה על אמנים! לחצו על הכפתור פתח גלריה."
+      : lang === "en"
+        ? "I know a lot about artists! Tap Open Gallery."
+        : "А я знаю много о художниках! Нажми на кнопку Открыть Галерею.";
   const replayDoneLabel =
     lang === "he"
       ? "נשמר"
@@ -612,6 +621,7 @@ function LessonPlayerDesktop() {
   const handleColorize = () => {
     setHasUnsavedChanges(true);
     setShowColorizer(true);
+    setHasCompletedFirstColoring(true);
     if (!regionDataRef.current) {
       computeRegionMap();
     }
@@ -1078,6 +1088,7 @@ function LessonPlayerDesktop() {
       setHasUnsavedChanges(false);
       setColorSeedCount(0);
       setArtworkSaved(false);
+      setHasCompletedFirstColoring(false);
       setReplayExportDone({ video: false, gif: false });
       clearReplayHistory();
       if (translatedLesson.steps.length > 0) {
@@ -1673,6 +1684,7 @@ function LessonPlayerDesktop() {
     setRedoStack([]);
     clearReplayHistory();
     setArtworkSaved(false);
+    setHasCompletedFirstColoring(false);
     setReplayExportDone({ video: false, gif: false });
 
     seedsRef.current = [];
@@ -1843,6 +1855,7 @@ function LessonPlayerDesktop() {
             setRedoStack([]);
             clearReplayHistory();
             setArtworkSaved(false);
+            setHasCompletedFirstColoring(false);
             setReplayExportDone({ video: false, gif: false });
             setHasUnsavedChanges(false);
           }
@@ -1977,6 +1990,18 @@ function LessonPlayerDesktop() {
                       {frankSpeech}
                     </div>
                   </div>
+                  {hasCompletedFirstColoring && isLessonComplete ? (
+                    <div className="lesson-mobile-fibi">
+                      <img
+                        src="/dog/fibi.webp"
+                        alt={t.fibiName}
+                        className="lesson-mobile-fibi-avatar"
+                      />
+                      <div className="lesson-mobile-fibi-bubble">
+                        {fibiGalleryHint}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -3154,28 +3179,34 @@ function LessonPlayerDesktop() {
           {/* Модалка галереи */}
           {showGallery &&
             lesson &&
-            ReactDOM.createPortal(
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  width: "100vw",
-                  height: "100vh",
-                  backgroundColor: "rgba(0, 0, 0, 0.5)",
-                  zIndex: 9999,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <ArtGalleryModal
-                  categorySlug={lesson.category_slug}
-                  onClose={() => setShowGallery(false)}
-                />
-              </div>,
-              document.getElementById("modal-root")!,
-            )}
+            (isMobile ? (
+              <MobileArtGallery
+                categorySlug={lesson.category_slug}
+                isOpen={showGallery}
+                onClose={() => setShowGallery(false)}
+              />
+            ) : ReactDOM.createPortal(
+                <div
+                  style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100vw",
+                    height: "100vh",
+                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    zIndex: 9999,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ArtGalleryModal
+                    categorySlug={lesson.category_slug}
+                    onClose={() => setShowGallery(false)}
+                  />
+                </div>,
+                document.getElementById("modal-root")!,
+              ))}
           </div>
         ) : (
           <p>{t.loadingLesson}</p>

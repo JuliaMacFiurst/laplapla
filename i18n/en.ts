@@ -382,6 +382,12 @@ export const en = {
     },
     artGalleryModal: {
       artGalleryTitle: "Gallery of Great Artists",
+      loadingGallery: "Loading gallery...",
+      swipeHint: "Swipe right",
+      findNewImage: "Find new image",
+      editInCats: "Open in Cat Editor",
+      closeGallery: "Close gallery",
+      moreArtists: "More about artists",
     },
   },
 
