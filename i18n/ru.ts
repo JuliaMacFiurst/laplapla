@@ -322,6 +322,8 @@ export const ru = {
       chooseLesson: "Выбери урок",
       startDrawing: "Начать рисовать",
       noPreview: "Нет превью",
+      loadingLessons: "Загружаем уроки...",
+      noLessons: "Здесь скоро появятся уроки",
     },
     dogLesson: {
       startLesson: "Начать урок",

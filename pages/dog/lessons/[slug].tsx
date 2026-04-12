@@ -23,8 +23,6 @@ import { useRouter } from "next/router";
 import BackButton from "@/components/BackButton";
 import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
 import ReplayCanvas from "@/components/Dogs/Replay/ReplayCanvas";
-import MobileDesktopNotice from "@/components/MobileDesktopNotice";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import type {
   ReplayAction,
   ReplayActionGroup,
@@ -280,6 +278,9 @@ function LessonPlayerDesktop() {
 
   const isDrawing = useRef(false);
   const [isDrawingState, setIsDrawingState] = useState(false);
+  const activePointerIdRef = useRef<number | null>(null);
+  const pointerMovedRef = useRef(false);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   // Для плавных кистей: храним hue и прогресс градиента
   const hueRef = useRef(0);
   const gradientProgressRef = useRef(0);
@@ -517,8 +518,7 @@ function LessonPlayerDesktop() {
     return null;
   };
 
-  // Simple click-to-color prototype: clicking the canvas colors the region that was clicked
-  const handleCanvasColorClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const placeColorSeedAt = (x: number, y: number) => {
     // раскраска доступна только после нажатия "Раскрасить"
     // и должна быть полностью отключена в режиме пазла
     if (!showColorizer || animationMode === "puzzle") return;
@@ -535,16 +535,21 @@ function LessonPlayerDesktop() {
 
     if (!regionDataRef.current) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor(e.clientX - rect.left);
-    const y = Math.floor(e.clientY - rect.top);
+    const localX = Math.max(
+      0,
+      Math.min(regionDataRef.current.width - 1, Math.floor(x)),
+    );
+    const localY = Math.max(
+      0,
+      Math.min(regionDataRef.current.height - 1, Math.floor(y)),
+    );
 
     const { width, regionMap } = regionDataRef.current;
 
     // --- Use nearest region search ---
     const nearest = findNearestRegion(
-      x,
-      y,
+      localX,
+      localY,
       regionMap,
       width,
       regionDataRef.current.height,
@@ -857,28 +862,40 @@ function LessonPlayerDesktop() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const getCoordinates = (e: MouseEvent | TouchEvent) => {
+    const getCoordinates = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      if (e instanceof TouchEvent) {
-        return {
-          x: e.touches[0].clientX - rect.left,
-          y: e.touches[0].clientY - rect.top,
-        };
-      } else {
-        return {
-          x: (e as MouseEvent).clientX - rect.left,
-          y: (e as MouseEvent).clientY - rect.top,
-        };
-      }
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY,
+      };
     };
 
-    const draw = (e: MouseEvent | TouchEvent) => {
-      if (!isDrawing.current || !ctx) return;
+    const draw = (e: PointerEvent) => {
+      if (
+        !isDrawing.current ||
+        !ctx ||
+        activePointerIdRef.current === null ||
+        e.pointerId !== activePointerIdRef.current
+      ) {
+        return;
+      }
+
+      e.preventDefault();
       // user is dragging → switch cursor to pencil
       if (!isDrawingState) {
         setIsDrawingState(true);
       }
-      const { x, y } = getCoordinates(e);
+      const { x, y } = getCoordinates(e.clientX, e.clientY);
+      const pointerStart = pointerStartRef.current;
+      if (pointerStart) {
+        const travel = Math.hypot(x - pointerStart.x, y - pointerStart.y);
+        if (travel > 3) {
+          pointerMovedRef.current = true;
+        }
+      }
       const lastReplayPoint = lastReplayStrokePointRef.current;
       if (!lastReplayPoint) {
         appendReplayAction({
@@ -1154,8 +1171,11 @@ function LessonPlayerDesktop() {
       }
     };
 
-    const startDrawing = (e: MouseEvent | TouchEvent) => {
+    const startDrawing = (e: PointerEvent) => {
       if (!ctx) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      e.preventDefault();
+
       // новое действие → очищаем redo
       setRedoStack([]);
       setUndoStack((prev) => {
@@ -1188,9 +1208,15 @@ function LessonPlayerDesktop() {
         return next.slice(-HISTORY_LIMIT);
       });
       isDrawing.current = true;
+      activePointerIdRef.current = e.pointerId;
+      pointerMovedRef.current = false;
       // do NOT switch cursor yet; wait until actual movement
       // while drawing we disable color click logic
-      const { x, y } = getCoordinates(e);
+      const { x, y } = getCoordinates(e.clientX, e.clientY);
+      pointerStartRef.current = { x, y };
+      if (typeof canvas.setPointerCapture === "function") {
+        canvas.setPointerCapture(e.pointerId);
+      }
       beginReplayGroup();
       appendReplayAction({
         type: "strokeStart",
@@ -1208,45 +1234,68 @@ function LessonPlayerDesktop() {
       lastPointRef.current = { x, y };
     };
 
-    const endDrawing = () => {
+    const endDrawing = (e: PointerEvent) => {
+      if (
+        activePointerIdRef.current !== null &&
+        e.pointerId !== activePointerIdRef.current
+      ) {
+        return;
+      }
+
+      e.preventDefault();
       const wasDrawing = isDrawing.current;
+      const shouldPlaceColorSeed =
+        wasDrawing &&
+        showColorizer &&
+        !pointerMovedRef.current &&
+        !isEraserRef.current &&
+        pointerStartRef.current;
+
       isDrawing.current = false;
+      activePointerIdRef.current = null;
       setIsDrawingState(false);
       ctx.beginPath();
       lastPointRef.current = null;
       lastReplayStrokePointRef.current = null;
       // drawing changed → region map is no longer valid
       regionDataRef.current = null;
-      if (wasDrawing) {
+
+      if (typeof canvas.releasePointerCapture === "function") {
+        try {
+          canvas.releasePointerCapture(e.pointerId);
+        } catch {
+          // Pointer capture may already be released.
+        }
+      }
+
+      if (shouldPlaceColorSeed && pointerStartRef.current) {
+        discardReplayGroup();
+        placeColorSeedAt(pointerStartRef.current.x, pointerStartRef.current.y);
+      } else if (wasDrawing) {
         appendReplayAction({ type: "strokeEnd" });
         commitReplayGroup();
       } else {
         discardReplayGroup();
       }
+
+      pointerStartRef.current = null;
+      pointerMovedRef.current = false;
     };
 
-    canvas.addEventListener("mousedown", startDrawing);
-    canvas.addEventListener("mousemove", draw);
-    canvas.addEventListener("mouseup", endDrawing);
-    canvas.addEventListener("mouseleave", endDrawing);
-
-    canvas.addEventListener("touchstart", startDrawing);
-    canvas.addEventListener("touchmove", draw);
-    canvas.addEventListener("touchend", endDrawing);
-    canvas.addEventListener("touchcancel", endDrawing);
+    canvas.addEventListener("pointerdown", startDrawing);
+    canvas.addEventListener("pointermove", draw);
+    canvas.addEventListener("pointerup", endDrawing);
+    canvas.addEventListener("pointercancel", endDrawing);
+    canvas.addEventListener("pointerleave", endDrawing);
 
     return () => {
-      canvas.removeEventListener("mousedown", startDrawing);
-      canvas.removeEventListener("mousemove", draw);
-      canvas.removeEventListener("mouseup", endDrawing);
-      canvas.removeEventListener("mouseleave", endDrawing);
-
-      canvas.removeEventListener("touchstart", startDrawing);
-      canvas.removeEventListener("touchmove", draw);
-      canvas.removeEventListener("touchend", endDrawing);
-      canvas.removeEventListener("touchcancel", endDrawing);
+      canvas.removeEventListener("pointerdown", startDrawing);
+      canvas.removeEventListener("pointermove", draw);
+      canvas.removeEventListener("pointerup", endDrawing);
+      canvas.removeEventListener("pointercancel", endDrawing);
+      canvas.removeEventListener("pointerleave", endDrawing);
     };
-  }, [hasStarted]);
+  }, [hasStarted, showColorizer]);
 
   // --- Добавляем случайные позы для Фрэнка и Фиби ---
   const frankPoses = [
@@ -1807,7 +1856,6 @@ function LessonPlayerDesktop() {
                   ref={drawingCanvasRef}
                   width={512}
                   height={512}
-                  onClick={handleCanvasColorClick}
                   style={{
                     display:
                       animationMode === "puzzle" || animationMode === "replay"
@@ -2306,13 +2354,5 @@ function LessonPlayerDesktop() {
 }
 
 export default function LessonPlayer() {
-  const router = useRouter();
-  const lang = getCurrentLang(router) as Lang;
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return <MobileDesktopNotice lang={lang || "ru"} />;
-  }
-
   return <LessonPlayerDesktop />;
 }

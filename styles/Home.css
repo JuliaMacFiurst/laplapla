@@ -907,7 +907,7 @@ body {
   }
 
   .home-wrapper-mobile .card:hover img {
-    transform: translateX(-50%);
+    transform: translateX(50%) translateY(10px);
   }
 
   .home-wrapper-mobile .label {

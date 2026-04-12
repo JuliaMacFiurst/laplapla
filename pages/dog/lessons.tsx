@@ -18,6 +18,10 @@ export default function LessonsPage() {
   const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.lessonsPage;
+  const loadingLessonsLabel =
+    ("loadingLessons" in t ? t.loadingLessons : t.chooseLesson) as string;
+  const noLessonsLabel =
+    ("noLessons" in t ? t.noLessons : t.noPreview) as string;
   const seo = dict.seo.dogs.lessons;
   const category = router.query.category as string;
   const categoryKey = category as keyof typeof dict.dogs.dogsPage.categories;
@@ -25,9 +29,11 @@ export default function LessonsPage() {
   const seoTitle = categoryLabel ? `${categoryLabel} — ${seo.titleSuffix}` : seo.defaultTitle;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/dog/lessons";
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!category) return;
+    setIsLoading(true);
 
     fetch(`/api/dog-lessons?category=${encodeURIComponent(category)}&lang=${lang}`)
       .then(async (response) => {
@@ -41,6 +47,9 @@ export default function LessonsPage() {
       .catch((error) => {
         console.error('❌ Ошибка загрузки уроков:', error);
         setLessons([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   }, [category, lang]);
 
@@ -48,9 +57,15 @@ export default function LessonsPage() {
     <>
       <SEO title={seoTitle} description={seo.description} path={seoPath} />
       <main className="lessons-page">
-         <BackButton href={`/dog?lang=${lang}`}/>
+        <BackButton href={`/dog?lang=${lang}`}/>
+        {categoryLabel ? (
+          <p className="lessons-category-label">{categoryLabel}</p>
+        ) : null}
         <h1 className="lessons-title page-title">{t.chooseLesson}</h1>
         <div className="lessons-grid">
+          {isLoading ? (
+            <div className="lessons-empty-state">{loadingLessonsLabel}</div>
+          ) : null}
           {lessons.map((lesson) => (
             <div key={lesson.id} className="lesson-card">
               {lesson.preview ? (
@@ -78,6 +93,9 @@ export default function LessonsPage() {
               </div>
             </div>
           ))}
+          {!isLoading && lessons.length === 0 ? (
+            <div className="lessons-empty-state">{noLessonsLabel}</div>
+          ) : null}
         </div>
       </main>
     </>

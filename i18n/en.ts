@@ -288,6 +288,8 @@ export const en = {
       chooseLesson: "Choose a lesson",
       startDrawing: "Start drawing",
       noPreview: "No preview",
+      loadingLessons: "Loading lessons...",
+      noLessons: "Lessons will appear here soon",
     },
     dogLesson: {
       startLesson: "Start lesson",

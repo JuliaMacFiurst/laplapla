@@ -55,7 +55,7 @@ export default function DogPage() {
   return (
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
-      <main>
+      <main className="dog-page">
       <div className="dog-header-container">
         <img src="/dog/frank.webp" alt="Фрэнк" className="dog-header-image" />
         <div className="dog-header-wrapper">
