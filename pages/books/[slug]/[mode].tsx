@@ -7,7 +7,7 @@ import {
   getBookPathSlug,
   getLocalizedExplanationModeLabel,
 } from "@/lib/books/shared";
-import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
+import { isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
 import type { Book, ExplanationMode } from "@/types/types";
 
@@ -29,10 +29,10 @@ const MODE_FALLBACK_LABELS: Record<string, Record<Lang, string>> = {
   "20-seconds": { ru: "Книга за 20 секунд", en: "Book in 20 seconds", he: "ספר ב-20 שניות" },
 };
 
-const BOOKS_LABEL: Record<Lang, string> = {
-  ru: "Книги",
-  en: "Books",
-  he: "ספרים",
+const BACK_TO_FEED_LABEL: Record<Lang, string> = {
+  ru: "↖Назад к ленте книг",
+  en: "↖Back to books feed",
+  he: "↖חזרה לפיד הספרים",
 };
 
 const getModeLabel = (modeSegment: string, lang: Lang) => MODE_FALLBACK_LABELS[modeSegment]?.[lang] || modeSegment;
@@ -78,14 +78,25 @@ export default function BookModePage({
   const seoTitle = `${book.title} — ${currentModeLabel}`;
   const seoDescription = book.description?.trim() || `${currentModeLabel} — ${seo.modeDescription}`;
   const seoPath = `/books/${getBookPathSlug(book)}/${modeSegment}`;
-  const breadcrumbArrow = lang === "he" ? "←" : "→";
 
   return (
     <>
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <main className="capybara-page-container">
         <nav aria-label="breadcrumb">
-          <Link href={buildLocalizedHref("/capybara", lang)}>{BOOKS_LABEL[lang]}</Link> {breadcrumbArrow} <Link href={buildLocalizedHref(`/books/${getBookPathSlug(book)}`, lang)}>{book.title}</Link> {breadcrumbArrow} <span>{currentModeLabel}</span>
+          <Link
+            href={{
+              pathname: "/capybara",
+              query: {
+                lang,
+                book: getBookPathSlug(book),
+                mode: modeSegment,
+              },
+            }}
+            locale={lang}
+          >
+            {BACK_TO_FEED_LABEL[lang]}
+          </Link>
         </nav>
         <StandaloneBookScreenPages
           book={book}

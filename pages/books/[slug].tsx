@@ -15,10 +15,10 @@ type Props = {
   lang: Lang;
 };
 
-const BOOKS_LABEL: Record<Lang, string> = {
-  ru: "Книги",
-  en: "Books",
-  he: "ספרים",
+const BACK_TO_FEED_LABEL: Record<Lang, string> = {
+  ru: "↖Назад к ленте книг",
+  en: "↖Back to books feed",
+  he: "↖חזרה לפיד הספרים",
 };
 
 const getBookSummary = (book: Book) =>
@@ -84,7 +84,6 @@ export default function BookPage({
   const seoTitle = `${book.title} — ${seo.titleSuffix}`;
   const seoDescription = getBookSummary(book) || seo.defaultDescription;
   const seoPath = `/books/${getBookPathSlug(book)}`;
-  const breadcrumbArrow = lang === "he" ? "←" : "→";
   const previousArrow = lang === "he" ? "→" : "←";
   const nextArrow = lang === "he" ? "←" : "→";
 
@@ -93,7 +92,18 @@ export default function BookPage({
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <main className="capybara-page-container">
         <nav aria-label="breadcrumb">
-          <Link href={buildLocalizedHref("/capybara", lang)}>{BOOKS_LABEL[lang]}</Link> {breadcrumbArrow} <span>{book.title}</span>
+          <Link
+            href={{
+              pathname: "/capybara",
+              query: {
+                lang,
+                book: getBookPathSlug(book),
+              },
+            }}
+            locale={lang}
+          >
+            {BACK_TO_FEED_LABEL[lang]}
+          </Link>
         </nav>
         <StandaloneBookScreenPages book={book} lang={lang} t={t} />
         <div className="book-seo-navigation">

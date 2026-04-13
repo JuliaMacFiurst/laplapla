@@ -346,7 +346,7 @@ export default function BookFeed({
                 selectedModeId={isInteractivePanel ? selectedModeId : panel.selectedModeId}
                 currentSlideIndex={isInteractivePanel ? currentSlideIndex : panel.currentSlideIndex}
                 loading={isInteractivePanel ? loading : true}
-                showTests={isInteractivePanel ? panel.showTests : false}
+                showTests={isInteractivePanel ? showTests : false}
                 showRandomBookAction={isInteractivePanel ? showRandomBookAction : false}
                 onRandomBook={isInteractivePanel ? onNextBook : () => {}}
                 onExplainMeaning={isInteractivePanel ? onExplainMeaning : () => {}}

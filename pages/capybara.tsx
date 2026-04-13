@@ -4,7 +4,7 @@ import BookFeed from "@/components/BookFeed";
 import SEO from "@/components/SEO";
 import { useBook } from "@/hooks/useBook";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
+import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBookPathSlug } from "@/lib/books/shared";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
@@ -54,6 +54,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const searchOverlayRef = useRef<HTMLDivElement | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const previousLangRef = useRef(currentLang);
+  const didResolveRouteBookRef = useRef(false);
 
   const abortSearchPipeline = useCallback(() => {
     searchControllerRef.current?.abort();
@@ -124,6 +125,66 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   }, [abortSearchPipeline, inputValue, resetSearchState, t.search.noResults, t.search.searchError]);
 
   useEffect(() => () => abortSearchPipeline(), [abortSearchPipeline]);
+
+  useEffect(() => {
+    if (!router.isReady || didResolveRouteBookRef.current) {
+      return;
+    }
+
+    const routeBook = Array.isArray(router.query.book) ? router.query.book[0] : router.query.book;
+    const routeMode = Array.isArray(router.query.mode) ? router.query.mode[0] : router.query.mode;
+
+    if (!routeBook) {
+      didResolveRouteBookRef.current = true;
+      return;
+    }
+
+    if (routeMode && explanationModes.length === 0) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/books/search?q=${encodeURIComponent(String(routeBook))}&lang=${currentLang}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(t.search.searchError);
+        }
+
+        const results = (await response.json()) as Book[];
+        const matchedBook = results.find((candidate) => getBookPathSlug(candidate) === String(routeBook)) || results[0];
+
+        if (!matchedBook) {
+          didResolveRouteBookRef.current = true;
+          return;
+        }
+
+        const matchedMode = routeMode
+          ? findExplanationModeBySegment(explanationModes, String(routeMode))
+          : null;
+
+        await loadBook(matchedBook, matchedMode?.id ?? null, {
+          pushHistory: false,
+          signal: controller.signal,
+          forceReload: true,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        console.error("[BOOK] failed to resolve book from route:", error);
+      } finally {
+        didResolveRouteBookRef.current = true;
+      }
+    })();
+
+    return () => controller.abort();
+  }, [currentLang, explanationModes, loadBook, router.isReady, router.query.book, router.query.mode, t.search.searchError]);
 
   useEffect(() => {
     if (previousLangRef.current === currentLang) {

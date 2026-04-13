@@ -77,7 +77,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
   const isCatsPage = router.pathname.startsWith("/cats");
   const isExportPage = router.pathname === "/cats/export";
-  const isCapybaraPage = router.pathname.startsWith("/capybara");
+  const isCapybaraPage =
+    router.pathname.startsWith("/capybara") ||
+    router.pathname.startsWith("/books") ||
+    router.pathname.startsWith("/caps/stories/create");
   const isProduction = process.env.NODE_ENV === "production";
   const showHiddenAdminLogout =
     !isProduction || router.query.debug === "true";

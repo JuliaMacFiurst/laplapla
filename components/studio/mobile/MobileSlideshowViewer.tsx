@@ -134,7 +134,7 @@ export default function MobileSlideshowViewer({
             </div>
 
             <div className="mobile-slideshow-controls">
-              {isLastSlide ? (
+              {isLastSlide && randomQuestionLabel ? (
                 <button
                   type="button"
                   className="mobile-slideshow-random"
@@ -148,26 +148,30 @@ export default function MobileSlideshowViewer({
               ) : null}
 
               <div className="mobile-slideshow-actions">
-                <button
-                  type="button"
-                  className="mobile-slideshow-action"
-                  onClick={() => {
-                    onInteract();
-                    void onFindNewImage(currentSlideIndex);
-                  }}
-                >
-                  {findNewImageLabel}
-                </button>
-                <button
-                  type="button"
-                  className="mobile-slideshow-action mobile-slideshow-action-primary"
-                  onClick={() => {
-                    onInteract();
-                    onEditInStudio();
-                  }}
-                >
-                  {editInStudioLabel}
-                </button>
+                {findNewImageLabel ? (
+                  <button
+                    type="button"
+                    className="mobile-slideshow-action"
+                    onClick={() => {
+                      onInteract();
+                      void onFindNewImage(currentSlideIndex);
+                    }}
+                  >
+                    {findNewImageLabel}
+                  </button>
+                ) : null}
+                {editInStudioLabel ? (
+                  <button
+                    type="button"
+                    className="mobile-slideshow-action mobile-slideshow-action-primary"
+                    onClick={() => {
+                      onInteract();
+                      onEditInStudio();
+                    }}
+                  >
+                    {editInStudioLabel}
+                  </button>
+                ) : null}
               </div>
             </div>
           </>

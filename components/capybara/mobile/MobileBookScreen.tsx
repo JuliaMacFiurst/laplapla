@@ -194,7 +194,7 @@ export default function MobileBookScreen({
       </div>
 
       {showTests ? (
-        <div className="mobile-quiz-sheet" role="dialog" aria-modal="false">
+        <div className="mobile-quiz-sheet" role="dialog" aria-modal="true">
           <div className="mobile-quiz-sheet-header">
             <div>
               <p className="mobile-quiz-sheet-caption">{testCaption}</p>
@@ -206,7 +206,7 @@ export default function MobileBookScreen({
           </div>
 
           {activeTest ? (
-            <BookQuiz bookId={book.id} test={activeTest} t={t} />
+            <BookQuiz bookId={book.id} test={activeTest} t={t} variant="mobile-fullscreen" />
           ) : (
             <p className="book-tests-empty">Тест пока недоступен</p>
           )}

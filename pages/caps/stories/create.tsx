@@ -1,6 +1,8 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
+import MobileStoryComposer from "@/components/caps/mobile/MobileStoryComposer";
+import MobileGeneratedStoryViewer from "@/components/caps/mobile/MobileGeneratedStoryViewer";
 import SEO from "@/components/SEO";
 import StoryCarousel from "@/components/StoryCarousel";
 import TranslationWarning from "@/components/TranslationWarning";
@@ -8,6 +10,7 @@ import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { STORY_STEP_KEYS, type StoryHeroOption, type StoryStepKey } from "@/lib/story/story-shared";
 import { useStoryGenerator } from "@/hooks/useStoryGenerator";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const buildTexts = (lang: Lang) => {
   if (lang === "en") {
@@ -224,6 +227,7 @@ async function fetchHeroPreview(heroName: string) {
 export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router) || lang;
+  const isMobile = useIsMobile();
   const seo = dictionaries[currentLang].seo.capybaras.createStory;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/caps/stories/create";
   const t = useMemo(() => buildTexts(currentLang), [currentLang]);
@@ -231,6 +235,8 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
   const [isHeroPickerOpen, setIsHeroPickerOpen] = useState(false);
   const [heroSearchQuery, setHeroSearchQuery] = useState("");
   const [heroPreviewMap, setHeroPreviewMap] = useState<Record<string, string>>(() => ({ ...heroPreviewCache }));
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const {
     currentSlideIndex,
     draft,
@@ -391,23 +397,140 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     return "";
   };
 
+  const currentPrompt = isCompleted
+    ? t.storyReadyTitle
+    : activeStep
+      ? t.customStepPrompts[activeStep](heroName)
+      : draft.mode === "template" && template
+        ? t.templateIntroPrompt
+        : t.subtitle;
+
+  useEffect(() => {
+    if (!isMobile || !isSettingsOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && !settingsMenuRef.current?.contains(target)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isMobile, isSettingsOpen]);
+
+  const handleSwitchLanguage = async (nextLang: Lang) => {
+    setIsSettingsOpen(false);
+    await router.push(
+      {
+        pathname: router.pathname,
+        query: buildLocalizedQuery(nextLang),
+      },
+      undefined,
+      { locale: nextLang },
+    );
+  };
+
   return (
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
       <div className="capybara-page-container story-generator-page">
+        {isMobile ? (
+          <div className="capybara-mobile-topbar story-generator-mobile-topbar">
+            <button
+              type="button"
+              className="capybara-mobile-topbar-button capybara-mobile-topbar-close"
+              onClick={() => void router.push({ pathname: "/capybara", query: buildLocalizedQuery(currentLang) }, undefined, { locale: currentLang })}
+              aria-label="Close"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+            <div className="story-generator-mobile-topbar-spacer" />
+            <div ref={settingsMenuRef} className="capybara-mobile-settings">
+              <button
+                type="button"
+                className="capybara-mobile-topbar-button capybara-mobile-topbar-settings"
+                onClick={() => setIsSettingsOpen((current) => !current)}
+                aria-label="Settings"
+              >
+                <span aria-hidden="true">•••</span>
+              </button>
+              {isSettingsOpen ? (
+                <div className="capybara-mobile-settings-menu">
+                  {(["ru", "en", "he"] as Lang[]).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      className={`capybara-mobile-settings-item ${item === currentLang ? "capybara-mobile-settings-item-active" : ""}`}
+                      onClick={() => void handleSwitchLanguage(item)}
+                    >
+                      {item.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
         <header className="capybara-page-header story-generator-header">
-        <button
-          type="button"
-          className="story-generator-back"
-          onClick={() => router.push({ pathname: "/capybara", query: buildLocalizedQuery(currentLang) }, undefined, { locale: currentLang })}
-        >
-          ← {t.backButton}
-        </button>
-        <h1 className="page-title">{t.title}</h1>
-        <p className="page-subtitle">{t.subtitle}</p>
-      </header>
+          <button
+            type="button"
+            className="story-generator-back"
+            onClick={() => router.push({ pathname: "/capybara", query: buildLocalizedQuery(currentLang) }, undefined, { locale: currentLang })}
+          >
+            ← {t.backButton}
+          </button>
+          <h1 className="page-title">{t.title}</h1>
+          <p className="page-subtitle">{t.subtitle}</p>
+        </header>
 
         <main className="story-generator-main">
+        {isMobile ? (
+          isCompleted ? (
+            <MobileGeneratedStoryViewer
+              lang={currentLang}
+              title={heroName}
+              slides={draft.slideshow}
+              currentSlideIndex={currentSlideIndex}
+              mediaCache={mediaCache}
+              onSlideIndexChange={setCurrentSlideIndex}
+              onOpenEditor={openInEditor}
+              onReset={reset}
+              openEditorLabel={t.openEditorButton}
+              tryAnotherLabel={t.tryAnotherButton}
+            />
+          ) : (
+            <MobileStoryComposer
+              lang={currentLang}
+              t={t}
+              draft={draft}
+              currentPrompt={currentPrompt}
+              previewText={previewText}
+              customAnswer={customAnswer}
+              activeStep={activeStep}
+              activeStepIndex={activeStepIndex}
+              templateIntroChoices={templateIntroChoices}
+              filteredHeroOptions={filteredHeroOptions}
+              selectedHeroOption={selectedHeroOption}
+              heroPreviewMap={heroPreviewMap}
+              heroSearchQuery={heroSearchQuery}
+              activeUserStoryTranslated={activeUserStoryTranslated}
+              getHeroCardMeta={getHeroCardMeta}
+              makeHeroPreviewKey={makeHeroPreviewKey}
+              setHeroSearchQuery={setHeroSearchQuery}
+              setIsHeroPickerOpen={setIsHeroPickerOpen}
+              setSelectedHeroOption={setSelectedHeroOption}
+              setHeroInput={setHeroInput}
+              setCustomAnswer={setCustomAnswer}
+              onStart={handleStart}
+              onChooseTemplateIntro={chooseTemplateIntro}
+              onSubmitCustom={handleSubmitCustom}
+              isHeroPickerOpen={isHeroPickerOpen}
+            />
+          )
+        ) : (
         <section className="story-generator-stage">
           <div className="story-capybara-card">
             <div className="story-capybara-portrait">
@@ -611,6 +734,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
             </section>
           ) : null}
         </section>
+        )}
         </main>
       </div>
     </>

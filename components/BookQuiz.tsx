@@ -8,6 +8,7 @@ interface BookQuizProps {
   bookId: string | number;
   test: BookTest | null;
   t: CapybaraPageDict;
+  variant?: "default" | "mobile-fullscreen";
 }
 
 interface AnswerResponse {
@@ -15,7 +16,15 @@ interface AnswerResponse {
   correctAnswerIndex?: number;
 }
 
-export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
+type QuizResultMedia =
+  | {
+      mediaType: "gif" | "image";
+      url: string;
+      alt: string;
+    }
+  | null;
+
+export default function BookQuiz({ bookId, test, t, variant = "default" }: BookQuizProps) {
   const normalizedQuiz = useMemo(() => {
     if (test && Array.isArray(test.questions)) {
       return test;
@@ -61,6 +70,8 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
   const [isCheckingAnswer, setIsCheckingAnswer] = useState(false);
   const [answerError, setAnswerError] = useState<string | null>(null);
+  const [resultMedia, setResultMedia] = useState<QuizResultMedia>(null);
+  const [isResultMediaLoading, setIsResultMediaLoading] = useState(false);
 
   useEffect(() => {
     setCurrentQuestionIndex(0);
@@ -70,6 +81,8 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
     setCorrectAnswersCount(0);
     setIsCheckingAnswer(false);
     setAnswerError(null);
+    setResultMedia(null);
+    setIsResultMediaLoading(false);
   }, [quizIdentity]);
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -154,12 +167,110 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
     return "Капибара думает, что стоит перечитать книгу";
   }, [correctAnswersCount, questions.length]);
 
+  const resultMood = useMemo(() => {
+    const wrongAnswersCount = questions.length - correctAnswersCount;
+
+    if (questions.length > 0 && wrongAnswersCount === 0) {
+      return {
+        mood: "happy",
+        keywords: ["happy", "smiling", "celebration"],
+        alt: "Happy capybara",
+      };
+    }
+
+    if (wrongAnswersCount <= 3) {
+      return {
+        mood: "serious",
+        keywords: ["serious", "thoughtful", "focused"],
+        alt: "Serious capybara",
+      };
+    }
+
+    return {
+      mood: "sad",
+      keywords: ["sad", "upset", "tears"],
+      alt: "Sad capybara",
+    };
+  }, [correctAnswersCount, questions.length]);
+
+  useEffect(() => {
+    if (!showQuizResult) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    void (async () => {
+      setIsResultMediaLoading(true);
+      setResultMedia(null);
+
+      const keywords = ["capybara", ...resultMood.keywords].join(",");
+
+      try {
+        try {
+          const gifResponse = await fetch(`/api/capybara-gifs?keywords=${encodeURIComponent(keywords)}&mood=${encodeURIComponent(resultMood.mood)}`, {
+            signal: controller.signal,
+          });
+
+          if (gifResponse.ok) {
+            const gifs = (await gifResponse.json()) as Array<{ gifUrl?: string }>;
+            const gifUrl = gifs.find((item) => typeof item.gifUrl === "string" && item.gifUrl)?.gifUrl;
+
+            if (gifUrl) {
+              setResultMedia({
+                mediaType: "gif",
+                url: gifUrl,
+                alt: resultMood.alt,
+              });
+              return;
+            }
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            return;
+          }
+        }
+
+        try {
+          const imageResponse = await fetch(`/api/capybara-images?keywords=${encodeURIComponent(keywords)}&mood=${encodeURIComponent(resultMood.mood)}`, {
+            signal: controller.signal,
+          });
+
+          if (!imageResponse.ok) {
+            throw new Error("Failed to fetch result image");
+          }
+
+          const images = (await imageResponse.json()) as Array<{ imageUrl?: string; imageAlt?: string }>;
+          const image = images.find((item) => typeof item.imageUrl === "string" && item.imageUrl);
+
+          if (image?.imageUrl) {
+            setResultMedia({
+              mediaType: "image",
+              url: image.imageUrl,
+              alt: image.imageAlt || resultMood.alt,
+            });
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            return;
+          }
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsResultMediaLoading(false);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [resultMood.alt, resultMood.keywords, resultMood.mood, showQuizResult]);
+
   if (!normalizedQuiz || questions.length === 0) {
     return <p className="book-tests-empty">Тест пока недоступен</p>;
   }
 
   return (
-    <div className="quiz-container">
+    <div className={`quiz-container${variant === "mobile-fullscreen" ? " quiz-container-mobile-fullscreen" : ""}`}>
       {normalizedQuiz.description ? <p className="quiz-description">{normalizedQuiz.description}</p> : null}
       {!showQuizResult && currentQuestion ? (
         <>
@@ -211,6 +322,17 @@ export default function BookQuiz({ bookId, test, t }: BookQuizProps) {
 
       {showQuizResult ? (
         <div className="quiz-result-modal" role="dialog" aria-modal="false">
+          {resultMedia ? (
+            <div className="quiz-result-media">
+              <img
+                src={resultMedia.url}
+                alt={resultMedia.alt}
+                className="quiz-result-media-asset"
+              />
+            </div>
+          ) : isResultMediaLoading ? (
+            <div className="quiz-result-media quiz-result-media-loading" aria-hidden="true" />
+          ) : null}
           <p className="quiz-result-score">
             {t.quiz.resultSummary
               .replace("{correct}", String(correctAnswersCount))
