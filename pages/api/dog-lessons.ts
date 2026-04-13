@@ -12,6 +12,8 @@ type LessonRecord = {
   category_slug: string;
 };
 
+const LESSON_PREVIEW_URL_TTL_SECONDS = 60 * 60;
+
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   const category = typeof req.query.category === "string" ? req.query.category.trim() : "";
   if (!category) {
@@ -46,7 +48,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
         const { data: signedUrlData, error: signedUrlError } = await supabase.storage
           .from("lessons")
-          .createSignedUrl(lesson.preview, 60);
+          .createSignedUrl(lesson.preview, LESSON_PREVIEW_URL_TTL_SECONDS);
 
         if (signedUrlError || !signedUrlData?.signedUrl) {
           return { ...lesson, preview: "" };
