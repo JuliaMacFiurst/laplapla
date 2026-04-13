@@ -91,6 +91,7 @@ export default function BookFeed({
   const mobileLoadQueuedRef = useRef(false);
   const [isMobileFeed, setIsMobileFeed] = useState(false);
   const [mobilePanels, setMobilePanels] = useState<MobileBookPanel[]>([]);
+  const [activeMobilePanelId, setActiveMobilePanelId] = useState<string | null>(null);
   const previousBookLabel = dict.navigation?.previousBook || "Previous book";
   const nextBookLabel = dict.navigation?.nextBook || "Next book";
 
@@ -140,6 +141,7 @@ export default function BookFeed({
     }
 
     setMobilePanels([]);
+    setActiveMobilePanelId(null);
     mobileLoadQueuedRef.current = false;
   }, [isMobileFeed]);
 
@@ -201,6 +203,14 @@ export default function BookFeed({
   ]);
 
   useEffect(() => {
+    if (!isMobileFeed) {
+      return;
+    }
+
+    setActiveMobilePanelId((current) => current ?? mobilePanels[mobilePanels.length - 1]?.panelId ?? null);
+  }, [isMobileFeed, mobilePanels]);
+
+  useEffect(() => {
     if (!isMobileFeed || !feedRef.current || !lastPanelRef.current) {
       return;
     }
@@ -224,6 +234,37 @@ export default function BookFeed({
     observer.observe(lastPanelRef.current);
     return () => observer.disconnect();
   }, [isMobileFeed, loading, mobilePanels, onNextBook]);
+
+  useEffect(() => {
+    if (!isMobileFeed || !feedRef.current) {
+      return;
+    }
+
+    const panels = Array.from(feedRef.current.querySelectorAll<HTMLDivElement>(".book-panel[data-panel-id]"));
+    if (!panels.length) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visiblePanel = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        const panelId = visiblePanel?.target.getAttribute("data-panel-id");
+        if (panelId) {
+          setActiveMobilePanelId(panelId);
+        }
+      },
+      {
+        root: feedRef.current,
+        threshold: [0.45, 0.65, 0.85],
+      },
+    );
+
+    panels.forEach((panel) => observer.observe(panel));
+    return () => observer.disconnect();
+  }, [isMobileFeed, mobilePanels]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -284,35 +325,40 @@ export default function BookFeed({
 
       {book && isMobileFeed ? (
         mobilePanels.map((panel, index) => {
-          const isCurrentPanel = index === mobilePanels.length - 1;
+          const isLatestPanel = index === mobilePanels.length - 1;
+          const isInteractivePanel = activeMobilePanelId
+            ? activeMobilePanelId === panel.panelId
+            : isLatestPanel;
 
           return (
             <div
               key={panel.panelId}
-              ref={isCurrentPanel ? lastPanelRef : null}
-              className="book-panel"
+              ref={isLatestPanel ? lastPanelRef : null}
+              data-panel-id={panel.panelId}
+              className={`book-panel ${activeMobilePanelId === panel.panelId ? "book-panel-active" : "book-panel-inactive"}`}
             >
               <BookCard
-                book={panel.book}
+                book={isInteractivePanel ? (book || panel.book) : panel.book}
                 lang={lang}
-                slides={panel.slides}
-                tests={panel.tests}
+                slides={isInteractivePanel ? slides : panel.slides}
+                tests={isInteractivePanel ? tests : panel.tests}
                 modes={modes}
-                selectedModeId={panel.selectedModeId}
-                currentSlideIndex={panel.currentSlideIndex}
-                loading={isCurrentPanel ? loading : true}
-                showTests={isCurrentPanel ? panel.showTests : false}
-                showRandomBookAction={isCurrentPanel ? showRandomBookAction : false}
-                onRandomBook={isCurrentPanel ? onNextBook : () => {}}
-                onExplainMeaning={isCurrentPanel ? onExplainMeaning : () => {}}
-                onTakeTest={isCurrentPanel ? onTakeTest : () => {}}
-                onCreateVideo={isCurrentPanel ? onCreateVideo : () => {}}
-                onModeSelect={isCurrentPanel ? onModeSelect : () => {}}
-                onSlideIndexChange={isCurrentPanel ? onSlideIndexChange : () => {}}
-                onFindNewImage={isCurrentPanel ? onFindNewImage : async () => {}}
-                isFindingNewImage={isCurrentPanel ? isFindingNewImage : false}
-                mediaCache={panel.mediaCache}
-                onPreloadNextSlide={isCurrentPanel ? onPreloadNextSlide : () => {}}
+                selectedModeId={isInteractivePanel ? selectedModeId : panel.selectedModeId}
+                currentSlideIndex={isInteractivePanel ? currentSlideIndex : panel.currentSlideIndex}
+                loading={isInteractivePanel ? loading : true}
+                showTests={isInteractivePanel ? panel.showTests : false}
+                showRandomBookAction={isInteractivePanel ? showRandomBookAction : false}
+                onRandomBook={isInteractivePanel ? onNextBook : () => {}}
+                onExplainMeaning={isInteractivePanel ? onExplainMeaning : () => {}}
+                onTakeTest={isInteractivePanel ? onTakeTest : () => {}}
+                onCreateVideo={isInteractivePanel ? onCreateVideo : () => {}}
+                onModeSelect={isInteractivePanel ? onModeSelect : () => {}}
+                onSlideIndexChange={isInteractivePanel ? onSlideIndexChange : () => {}}
+                onFindNewImage={isInteractivePanel ? onFindNewImage : async () => {}}
+                isFindingNewImage={isInteractivePanel ? isFindingNewImage : false}
+                mediaCache={isInteractivePanel ? mediaCache : panel.mediaCache}
+                onPreloadNextSlide={isInteractivePanel ? onPreloadNextSlide : () => {}}
+                showEmptyError={isInteractivePanel ? Boolean(error && !loading && slides.length === 0) : false}
                 t={dict}
               />
             </div>
@@ -357,6 +403,7 @@ export default function BookFeed({
               isFindingNewImage={isFindingNewImage}
               mediaCache={mediaCache}
               onPreloadNextSlide={onPreloadNextSlide}
+              showEmptyError={Boolean(error && !loading && slides.length === 0)}
               t={dict}
             />
           </div>

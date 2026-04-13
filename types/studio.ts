@@ -29,6 +29,7 @@ export type StudioSlide = {
   voiceBaseUrl?: string;
   voiceBaseDuration?: number;
   activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
+  introLayout?: "book-meta";
 }
 
 export type StudioProject = {

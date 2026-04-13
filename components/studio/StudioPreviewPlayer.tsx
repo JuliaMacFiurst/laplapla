@@ -28,6 +28,47 @@ interface StudioSlideMediaProps {
   style?: CSSProperties;
 }
 
+function renderStudioText(slide: StudioSlide) {
+  if (slide.introLayout !== "book-meta") {
+    return slide.text;
+  }
+
+  const lines = (slide.text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: "0.5em",
+        justifyItems: "center",
+      }}
+    >
+      {lines.map((line, index) => (
+        <div
+          key={`${index}-${line}`}
+          style={{
+            width: "100%",
+            padding: index === 0 ? "0.5em 0.9em" : "0.42em 0.85em",
+            borderRadius: 999,
+            background: index === 0
+              ? "rgba(255, 232, 239, 0.92)"
+              : "rgba(255, 255, 255, 0.92)",
+            boxShadow: "0 8px 24px rgba(148, 163, 184, 0.12)",
+            fontWeight: index === 0 ? 900 : 700,
+            fontSize: index === 0 ? "1.12em" : "0.86em",
+            lineHeight: 1.15,
+          }}
+        >
+          {line}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function StudioSlideMedia({
   slide,
   playEpoch = 0,
@@ -418,9 +459,9 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
 
           {/* TEXT */}
           {currentSlide.text && (
-            <div
-              style={{
-                padding: 20,
+              <div
+                style={{
+                  padding: 20,
                 textAlign: currentSlide.textAlign || "center",
                 fontSize: isExportMode
                   ? (currentSlide.fontSize || 28) * (1080 / 360)
@@ -452,12 +493,12 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 wordBreak: "break-word",
                 position: "relative",
                 zIndex: 2,
-                transform: `translate(${currentSlide.textOffsetX ?? 0}px, ${currentSlide.textOffsetY ?? 0}px)`,
-              }}
-            >
-              {currentSlide.text}
-            </div>
-          )}
+                  transform: `translate(${currentSlide.textOffsetX ?? 0}px, ${currentSlide.textOffsetY ?? 0}px)`,
+                }}
+              >
+                {renderStudioText(currentSlide)}
+              </div>
+            )}
 
           {/* WATERMARK (EXPORT ONLY) */}
           {(isExportMode || showWatermark) && (

@@ -47,10 +47,12 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const searchRequestRef = useRef(0);
   const searchControllerRef = useRef<AbortController | null>(null);
   const lastSyncedPathRef = useRef<string | null>(null);
   const searchOverlayRef = useRef<HTMLDivElement | null>(null);
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const previousLangRef = useRef(currentLang);
 
   const abortSearchPipeline = useCallback(() => {
@@ -212,20 +214,25 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   }, [currentBook, mode, selectedModeId, syncBookRoute]);
 
   useEffect(() => {
-    if (!isSearchOpen) {
+    if (!isSearchOpen && !isSettingsOpen) {
       return;
     }
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
-      if (!searchOverlayRef.current?.contains(target)) {
+      if (isSearchOpen && !searchOverlayRef.current?.contains(target)) {
         setIsSearchOpen(false);
+      }
+
+      if (isSettingsOpen && !settingsMenuRef.current?.contains(target)) {
+        setIsSettingsOpen(false);
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsSearchOpen(false);
+        setIsSettingsOpen(false);
       }
     };
 
@@ -237,7 +244,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
       document.removeEventListener("touchstart", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isSearchOpen]);
+  }, [isSearchOpen, isSettingsOpen]);
 
   const handleModeSelect = async (modeId: string | number) => {
     if (!currentBook) {
@@ -319,6 +326,19 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     void preloadNextSlideMedia(slideIndex);
   }, [preloadNextSlideMedia]);
 
+  const handleSwitchLanguage = useCallback(async (nextLang: Lang) => {
+    setIsSettingsOpen(false);
+    setIsSearchOpen(false);
+    await router.push(
+      {
+        pathname: router.pathname,
+        query: buildLocalizedQuery(nextLang),
+      },
+      undefined,
+      { locale: nextLang },
+    );
+  }, [router]);
+
   const shouldHideHeaderCopyOnMobile = isMobile && !loading && Boolean(currentBook);
 
   return (
@@ -330,14 +350,59 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
           <h1 className="page-title">{t.title}</h1>
           <p className="page-subtitle">{t.subtitle}</p>
         </div>
-        <button
-          type="button"
-          className="search-toggle-button"
-          onClick={() => setIsSearchOpen(true)}
-          aria-label={t.search.placeholder}
-        >
-          <span aria-hidden="true">🔍</span>
-        </button>
+        {isMobile ? (
+          <div className="capybara-mobile-topbar">
+            <button
+              type="button"
+              className="capybara-mobile-topbar-button capybara-mobile-topbar-close"
+              onClick={() => void router.push({ pathname: "/", query: buildLocalizedQuery(currentLang) }, undefined, { locale: currentLang })}
+              aria-label="Close"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+            <button
+              type="button"
+              className="capybara-mobile-topbar-button capybara-mobile-topbar-search"
+              onClick={() => setIsSearchOpen(true)}
+              aria-label={t.search.placeholder}
+            >
+              <span className="search-toggle-button-icon" aria-hidden="true">⌕</span>
+            </button>
+            <div ref={settingsMenuRef} className="capybara-mobile-settings">
+              <button
+                type="button"
+                className="capybara-mobile-topbar-button capybara-mobile-topbar-settings"
+                onClick={() => setIsSettingsOpen((current) => !current)}
+                aria-label="Settings"
+              >
+                <span aria-hidden="true">•••</span>
+              </button>
+              {isSettingsOpen ? (
+                <div className="capybara-mobile-settings-menu">
+                  {(["ru", "en", "he"] as Lang[]).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      className={`capybara-mobile-settings-item ${item === currentLang ? "capybara-mobile-settings-item-active" : ""}`}
+                      onClick={() => void handleSwitchLanguage(item)}
+                    >
+                      {item.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="search-toggle-button"
+            onClick={() => setIsSearchOpen(true)}
+            aria-label={t.search.placeholder}
+          >
+            <span className="search-toggle-button-icon" aria-hidden="true">⌕</span>
+          </button>
+        )}
         <form className="search-form" onSubmit={handleSearchSubmit}>
           <div className="search-input-wrapper">
             <input

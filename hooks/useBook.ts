@@ -524,6 +524,11 @@ const resetBookMediaState = () => {
   giphyUsed = 0;
 };
 
+const FIRST_SLIDE_MEMORY_LIMIT = 10;
+
+const getPrimaryMediaUrl = (media: ResolvedSlideMedia | null | undefined) =>
+  media?.videoUrl || media?.gifUrl || media?.imageUrl || media?.capybaraImage || "";
+
 const buildMediaPlan = (
   slide: Slide | undefined,
   slideIndex: number,
@@ -595,6 +600,7 @@ const preloadSlideMedia = async (
   slideIndex: number,
   totalSlides: number,
   usedMediaUrls: string[] = [],
+  recentFirstSlideMediaUrls: string[] = [],
   signal?: AbortSignal,
 ): Promise<ResolvedSlideMedia> => {
   if (signal?.aborted) {
@@ -607,7 +613,10 @@ const preloadSlideMedia = async (
 
   const plan = buildMediaPlan(slide, slideIndex, totalSlides);
   const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
-  const excludedUrls = getUsedMediaUrls(usedMediaUrls);
+  const excludedUrls = getUsedMediaUrls([
+    ...usedMediaUrls,
+    ...(slideIndex === 0 ? recentFirstSlideMediaUrls : []),
+  ]);
   const seed = buildSlideCacheKey(slide);
   const capybaraQuery = clampMediaQuery(pickCapybaraQuery(slide));
   const prefersCapybaraMedia = shouldPreferCapybaraMedia(slideIndex, totalSlides);
@@ -710,6 +719,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
   const explanationRequestRef = useRef<Map<string, Promise<BookExplanation>>>(new Map());
   const testsRequestRef = useRef<Map<string, Promise<BookTest[]>>>(new Map());
   const slideMediaInFlightRef = useRef<Set<number>>(new Set());
+  const recentFirstSlideMediaUrlsRef = useRef<string[]>([]);
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [mediaCache, setMediaCache] = useState<ReadonlyMap<number, ResolvedSlideMedia>>(new Map());
@@ -781,6 +791,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
             index,
             nextSlides.length,
             collectResolvedMediaUrls(nextCache.values()),
+            recentFirstSlideMediaUrlsRef.current,
             signal,
           );
           nextCache.set(index, media);
@@ -800,6 +811,18 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         slideMediaInFlightRef.current.delete(index);
       });
     }
+  }, []);
+
+  const rememberFirstSlideMedia = useCallback((cache: ReadonlyMap<number, ResolvedSlideMedia>) => {
+    const firstUrl = getPrimaryMediaUrl(cache.get(0));
+    if (!firstUrl) {
+      return;
+    }
+
+    recentFirstSlideMediaUrlsRef.current = [
+      ...recentFirstSlideMediaUrlsRef.current.filter((url) => url !== firstUrl),
+      firstUrl,
+    ].slice(-FIRST_SLIDE_MEMORY_LIMIT);
   }, []);
 
   const preloadNextSlideMedia = useCallback(async (activeIndex: number) => {
@@ -830,6 +853,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
             index,
             slidesRef.current.length,
             collectResolvedMediaUrls(nextCache.values()),
+            recentFirstSlideMediaUrlsRef.current,
           );
           if (!nextCache.has(index)) {
             nextCache.set(index, media);
@@ -866,6 +890,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
           index,
           nextSlides.length,
           collectResolvedMediaUrls(nextCache.values()),
+          recentFirstSlideMediaUrlsRef.current,
         );
         nextCache.set(index, media);
       } catch (error) {
@@ -878,8 +903,15 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
 
     mediaCacheRef.current = nextCache;
     setMediaCache(nextCache);
-    return buildStudioSlidesFromCapybaraSlides(nextSlides, nextCache);
-  }, []);
+    return buildStudioSlidesFromCapybaraSlides(nextSlides, nextCache, currentBook
+      ? {
+          title: String(currentBook.title ?? "").trim(),
+          author: currentBook.author,
+          year: currentBook.year,
+          ageGroup: currentBook.age_group,
+        }
+      : undefined);
+  }, [currentBook]);
 
   const refreshSlideMedia = useCallback(async (
     slideIndex: number,
@@ -1027,6 +1059,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       try {
         const explanation = await fetchExplanation(bookId, modeId);
         const nextSlides = prepareSlides(explanation.slides || []);
+        if (nextSlides.length === 0) {
+          throw new Error(t.storyError);
+        }
         await preloadInitialSlideMedia(nextSlides, 0);
         if (requestId !== requestRef.current) {
           return;
@@ -1048,7 +1083,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         setLoading(false);
       }
     },
-    [clearMediaCache, currentBook, fetchExplanation, preloadInitialSlideMedia, selectedModeIdKey, t.errors.explanationGeneric, updateBookUiState],
+    [clearMediaCache, currentBook, fetchExplanation, preloadInitialSlideMedia, selectedModeIdKey, t.errors.explanationGeneric, t.storyError, updateBookUiState],
   );
 
   const fetchTests = useCallback(async (bookId: string | number, signal?: AbortSignal) => {
@@ -1159,13 +1194,18 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         return null;
       }
 
+      const nextSlides = prepareSlides(explanation.slides || []);
+      if (nextSlides.length === 0) {
+        throw new Error(t.storyError);
+      }
+
       return {
-        nextSlides: prepareSlides(explanation.slides || []),
+        nextSlides,
         nextTests: (nextTests || []) as BookTest[],
         resolvedModeId,
       };
     },
-    [explanationModes, fetchExplanation, fetchTests, loadModes, t.errors.noExplanations, t.errors.noModes],
+    [explanationModes, fetchExplanation, fetchTests, loadModes, t.errors.noExplanations, t.errors.noModes, t.storyError],
   );
 
   const loadBook = useCallback(
@@ -1225,7 +1265,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
 
         const previousUiState = bookUiStateById[bookKey] || createDefaultBookUiState();
         const nextSlideIndex = clampSlideIndex(previousUiState.slideIndex, hydrated.nextSlides);
-        await preloadInitialSlideMedia(hydrated.nextSlides, nextSlideIndex, options?.signal);
+        const nextMediaCache = await preloadInitialSlideMedia(hydrated.nextSlides, nextSlideIndex, options?.signal);
         if (requestId !== requestRef.current) {
           return;
         }
@@ -1243,6 +1283,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
           modeId: prev.modeId ?? hydrated.resolvedModeId,
           slideIndex: clampSlideIndex(prev.slideIndex, hydrated.nextSlides),
         }));
+        rememberFirstSlideMedia(nextMediaCache);
         if (previousEntry) {
           setBookHistory((prev) => [...prev, previousEntry]);
         }
@@ -1267,7 +1308,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         }
       }
     },
-    [bookUiStateById, clearMediaCache, currentBook, currentBookKey, hydrateBook, preloadInitialSlideMedia, slides, t.errors.bookLoad, tests, updateBookUiState],
+    [bookUiStateById, clearMediaCache, currentBook, currentBookKey, hydrateBook, preloadInitialSlideMedia, rememberFirstSlideMedia, slides, t.errors.bookLoad, tests, updateBookUiState],
   );
 
   const loadRandomBook = useCallback(

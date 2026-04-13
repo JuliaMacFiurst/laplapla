@@ -9,7 +9,51 @@ interface SlideCanvasProps {
   isMobile?: boolean;
   isTextEditing?: boolean;
   isMediaEditing?: boolean;
-  onUpdateSlide?: (updatedSlide: StudioSlide) => void;
+  onUpdateSlide?: (
+    updatedSlide: StudioSlide,
+    options?: { commitHistory?: boolean },
+  ) => void;
+}
+
+function renderStudioText(slide: StudioSlide) {
+  if (slide.introLayout !== "book-meta") {
+    return slide.text || "";
+  }
+
+  const lines = (slide.text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: "0.5em",
+        justifyItems: "center",
+      }}
+    >
+      {lines.map((line, index) => (
+        <div
+          key={`${index}-${line}`}
+          style={{
+            width: "100%",
+            padding: index === 0 ? "0.5em 0.9em" : "0.42em 0.85em",
+            borderRadius: "999px",
+            background: index === 0
+              ? "rgba(255, 232, 239, 0.92)"
+              : "rgba(255, 255, 255, 0.92)",
+            boxShadow: "0 8px 24px rgba(148, 163, 184, 0.12)",
+            fontWeight: index === 0 ? 900 : 700,
+            fontSize: index === 0 ? "1.12em" : "0.86em",
+            lineHeight: 1.15,
+          }}
+        >
+          {line}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function SlideCanvas9x16({
@@ -87,6 +131,8 @@ export default function SlideCanvas9x16({
   const fontSize = slide.fontSize ?? 24;
   const showMobileEditorFrame = isMobile && isTextEditing;
   const showMobileMediaEditor = isMobile && isMediaEditing && Boolean(mediaUrl);
+  const isIntroSlideLocked = slide.introLayout === "book-meta";
+  const showMobileTextContentEditor = showMobileEditorFrame && !isIntroSlideLocked;
   const canvasAspectRatio = 9 / 16;
   const [canvasScale, setCanvasScale] = useState(1);
   const effectiveScale = isMobile ? canvasScale : 1;
@@ -149,14 +195,14 @@ export default function SlideCanvas9x16({
 
   useEffect(() => {
     const node = editableTextRef.current;
-    if (!node || !showMobileEditorFrame) return;
+    if (!node || !showMobileTextContentEditor) return;
     if (document.activeElement === node) return;
 
     const nextText = slide.text ?? "";
     if (node.textContent !== nextText) {
       node.textContent = nextText;
     }
-  }, [slide.text, showMobileEditorFrame]);
+  }, [showMobileTextContentEditor, slide.text]);
 
   function hexToRgba(hex: string, alpha: number) {
     const cleaned = hex.replace("#", "");
@@ -197,14 +243,29 @@ export default function SlideCanvas9x16({
       ...slide,
       textOffsetX: Math.round(nextPosition.x),
       textOffsetY: Math.round(nextPosition.y),
-    });
+    }, { commitHistory: false });
   }
 
   function handleTextTouchEnd() {
+    if (showMobileEditorFrame && onUpdateSlide) {
+      onUpdateSlide({
+        ...slide,
+        textOffsetX: Math.round(position.x),
+        textOffsetY: Math.round(position.y),
+      });
+    }
     dragStateRef.current = null;
   }
 
   function handleMediaTouchEnd() {
+    if (showMobileMediaEditor && onUpdateSlide) {
+      onUpdateSlide({
+        ...slide,
+        mediaOffsetX: Math.round(mediaTransform.x),
+        mediaOffsetY: Math.round(mediaTransform.y),
+        mediaScale: Number(mediaTransform.scale.toFixed(3)),
+      });
+    }
     mediaDragStateRef.current = null;
     mediaResizeStateRef.current = null;
   }
@@ -237,7 +298,17 @@ export default function SlideCanvas9x16({
     onUpdateSlide({
       ...slide,
       fontSize: Math.round(nextFontSize),
-    });
+    }, { commitHistory: false });
+  }
+
+  function handleResizeEnd() {
+    if (showMobileEditorFrame && onUpdateSlide) {
+      onUpdateSlide({
+        ...slide,
+        fontSize,
+      });
+    }
+    resizeStateRef.current = null;
   }
 
   function handleMediaTouchStart(e: React.TouchEvent<HTMLDivElement>) {
@@ -272,7 +343,7 @@ export default function SlideCanvas9x16({
       mediaOffsetX: Math.round(nextTransform.x),
       mediaOffsetY: Math.round(nextTransform.y),
       mediaScale: nextTransform.scale,
-    });
+    }, { commitHistory: false });
   }
 
   function handleMediaResizeStart(e: React.TouchEvent<HTMLDivElement>) {
@@ -308,11 +379,11 @@ export default function SlideCanvas9x16({
       mediaOffsetX: mediaTransform.x,
       mediaOffsetY: mediaTransform.y,
       mediaScale: Number(nextScale.toFixed(3)),
-    });
+    }, { commitHistory: false });
   }
 
   function handleTextInput(e: React.FormEvent<HTMLDivElement>) {
-    if (!showMobileEditorFrame || !onUpdateSlide) return;
+    if (!showMobileTextContentEditor || !onUpdateSlide) return;
 
     onUpdateSlide({
       ...slide,
@@ -535,7 +606,7 @@ export default function SlideCanvas9x16({
             color: slide.textColor,
           }}
         >
-          {showMobileEditorFrame ? (
+          {showMobileTextContentEditor ? (
             <div
               ref={editableTextRef}
               contentEditable
@@ -558,44 +629,50 @@ export default function SlideCanvas9x16({
                 color: slide.textColor,
               }}
             >
-              {slide.text || t.textPlaceholder}
+              {renderStudioText(slide) || t.textPlaceholder}
             </div>
           )}
         </div>
         {showMobileEditorFrame ? (
           <>
-            <button
-              type="button"
-              onClick={() => onUpdateSlide?.({ ...slide, text: "" })}
-              style={{
-                position: "absolute",
-                top: "-10px",
-                right: "-10px",
-                width: "20px",
-                height: "20px",
-                borderRadius: "50%",
-                background: "#ffb3d1",
-                color: "#000",
-                border: "none",
-                zIndex: 2,
-              }}
-            >
-              ×
-            </button>
-            <div
-              style={{
-                position: "absolute",
-                right: "-8px",
-                bottom: "-8px",
-                width: "16px",
-                height: "16px",
-                background: "#ffb3d1",
-                borderRadius: "50%",
-                zIndex: 2,
-              }}
-              onTouchStart={handleResizeStart}
-              onTouchMove={handleResizeMove}
-            />
+            {showMobileTextContentEditor ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onUpdateSlide?.({ ...slide, text: "" })}
+                  style={{
+                    position: "absolute",
+                    top: "-10px",
+                    right: "-10px",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    background: "#ffb3d1",
+                    color: "#000",
+                    border: "none",
+                    zIndex: 2,
+                  }}
+                >
+                  ×
+                </button>
+                <div
+                  style={{
+                    position: "absolute",
+                    right: "-8px",
+                    bottom: "-8px",
+                    width: "16px",
+                    height: "16px",
+                    background: "#ffb3d1",
+                    borderRadius: "50%",
+                    zIndex: 2,
+                  }}
+                  onTouchStart={handleResizeStart}
+                  onTouchMove={handleResizeMove}
+                  onTouchEnd={handleResizeEnd}
+                  onTouchCancel={handleResizeEnd}
+                />
+              </>
+            ) : null}
           </>
         ) : null}
       </div>

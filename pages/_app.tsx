@@ -240,7 +240,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         </>
       )}
 
-      <div className="app-layout">
+      <div className={`app-layout${isCapybaraPage ? " app-layout-capybara" : ""}`}>
         {!isExportPage && <TopBar lang={lang} />}
         <Component {...pageProps} lang={lang} />
 

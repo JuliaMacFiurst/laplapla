@@ -23,6 +23,7 @@ type ImportedSlide = {
   textBgEnabled?: boolean;
   textBgColor?: string;
   textBgOpacity?: number;
+  introLayout?: "book-meta";
 };
 
 type ParrotImportPayload = {

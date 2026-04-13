@@ -82,6 +82,7 @@ interface StudioRootProps {
     textBgEnabled?: boolean;
     textBgColor?: string;
     textBgOpacity?: number;
+    introLayout?: "book-meta";
   }>;
   initialTracks?: Track[];
 }
@@ -112,7 +113,10 @@ interface StudioLayoutProps {
   enhanceVoiceRecording: () => Promise<void>;
   makeVoiceLouder: () => Promise<void>;
   makeChildVoice: () => Promise<void>;
-  updateSlide: (updatedSlide: StudioSlide) => void;
+  updateSlide: (
+    updatedSlide: StudioSlide,
+    options?: { commitHistory?: boolean },
+  ) => void;
   deleteAll: () => void;
   undo: () => void;
   redo: () => void;
@@ -2790,6 +2794,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
   const projectRef = useRef(project);
   const lastSavedSnapshotRef = useRef<string>(JSON.stringify(project));
   const isSavingRef = useRef(false);
+  const pendingHistorySnapshotRef = useRef<StudioProject | null>(null);
 
   const t = dictionaries[lang].cats.studio
   const router = useRouter();
@@ -3503,6 +3508,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
         textBgEnabled: s.textBgEnabled ?? true,
         textBgColor: s.textBgColor ?? "#ffffff",
         textBgOpacity: s.textBgOpacity ?? 1,
+        introLayout: s.introLayout,
         bgColor: "#ffffff",
         textColor: "#000000",
       })},
@@ -3525,19 +3531,53 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
   }, [initialSlides, initialTracks]);
 
   function pushHistory(current: StudioProject) {
+    pendingHistorySnapshotRef.current = null;
     setHistory((prev) => [...prev, current]);
     setFuture([]);
   }
 
-  function updateSlide(updatedSlide: StudioSlide) {
-    pushHistory(project);
-    const updatedSlides = [...project.slides];
-    updatedSlides[activeSlideIndex] = updatedSlide;
+  function updateSlide(
+    updatedSlide: StudioSlide,
+    options?: { commitHistory?: boolean },
+  ) {
+    setProject((currentProject) => {
+      const currentSlide = currentProject.slides[activeSlideIndex];
+      if (!currentSlide) {
+        return currentProject;
+      }
 
-    setProject({
-      ...project,
-      slides: updatedSlides,
-      updatedAt: Date.now(),
+      const normalizedSlide = currentSlide.introLayout === "book-meta"
+        ? {
+            ...updatedSlide,
+            text: currentSlide.text,
+          }
+        : updatedSlide;
+
+      const hasPendingHistorySnapshot = pendingHistorySnapshotRef.current !== null;
+
+      if (options?.commitHistory === false && !hasPendingHistorySnapshot) {
+        pendingHistorySnapshotRef.current = currentProject;
+      }
+
+      if (JSON.stringify(currentSlide) === JSON.stringify(normalizedSlide)) {
+        if (options?.commitHistory !== false && hasPendingHistorySnapshot) {
+          pushHistory(pendingHistorySnapshotRef.current ?? currentProject);
+        }
+        return currentProject;
+      }
+
+      if (options?.commitHistory !== false) {
+        pushHistory(pendingHistorySnapshotRef.current ?? currentProject);
+      }
+
+      const updatedSlides = [...currentProject.slides];
+      updatedSlides[activeSlideIndex] = normalizedSlide;
+
+      return {
+        ...currentProject,
+        slides: updatedSlides,
+        updatedAt: Date.now(),
+      };
     });
   }
 
@@ -3546,14 +3586,26 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     slideIndex = activeSlideIndex,
   ) {
     setProject((currentProject) => {
-      pushHistory(currentProject);
       const updatedSlides = [...currentProject.slides];
       const currentSlide = updatedSlides[slideIndex];
       if (!currentSlide) {
         return currentProject;
       }
 
-      updatedSlides[slideIndex] = updater(currentSlide);
+      const updatedSlide = updater(currentSlide);
+      updatedSlides[slideIndex] = currentSlide.introLayout === "book-meta"
+        ? {
+            ...updatedSlide,
+            text: currentSlide.text,
+          }
+        : updatedSlide;
+
+      if (JSON.stringify(currentSlide) === JSON.stringify(updatedSlides[slideIndex])) {
+        return currentProject;
+      }
+
+      pendingHistorySnapshotRef.current = null;
+      pushHistory(currentProject);
 
       return {
         ...currentProject,
@@ -3612,6 +3664,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
 
     const previous = history[history.length - 1];
 
+    pendingHistorySnapshotRef.current = null;
     setFuture((f) => [project, ...f]);
     setHistory((h) => h.slice(0, -1));
     setProject(previous);
@@ -3622,6 +3675,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
 
     const next = future[0];
 
+    pendingHistorySnapshotRef.current = null;
     setHistory((h) => [...h, project]);
     setFuture((f) => f.slice(1));
     setProject(next);

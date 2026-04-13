@@ -14,11 +14,19 @@ export type ImportedStudioSlide = {
   mediaType?: "image" | "video";
   mediaFit: "contain";
   mediaPosition: "center";
-  textPosition: "bottom";
+  textPosition: "bottom" | "center";
   textAlign: "center";
   textBgEnabled?: boolean;
   textBgColor?: string;
   textBgOpacity?: number;
+  introLayout?: "book-meta";
+};
+
+export type StudioBookIntro = {
+  title: string;
+  author?: string | null;
+  year?: string | number | null;
+  ageGroup?: string | number | null;
 };
 
 function resolveSlideMediaUrl(
@@ -56,8 +64,34 @@ function resolveSlideMediaUrl(
 export function buildStudioSlidesFromCapybaraSlides(
   slides: Slide[],
   mediaCache?: ReadonlyMap<number, SlideMedia>,
+  intro?: StudioBookIntro,
 ): ImportedStudioSlide[] {
-  return slides.map((slide, index) => {
+  const introParts = intro
+    ? [
+        intro.title?.trim(),
+        intro.author ? String(intro.author).trim() : "",
+        intro.year !== null && intro.year !== undefined
+          ? String(intro.year).trim()
+          : "",
+        intro.ageGroup !== null && intro.ageGroup !== undefined
+          ? String(intro.ageGroup).trim()
+          : "",
+      ].filter(Boolean)
+    : [];
+
+  const introSlide: ImportedStudioSlide[] = introParts.length
+    ? [{
+        text: introParts.join("\n"),
+        mediaFit: "contain" as const,
+        mediaPosition: "center" as const,
+        textPosition: "center" as const,
+        textAlign: "center" as const,
+        textBgEnabled: false,
+        introLayout: "book-meta",
+      }]
+    : [];
+
+  const storySlides: ImportedStudioSlide[] = slides.map((slide, index) => {
     const { mediaUrl, mediaType } = resolveSlideMediaUrl(
       slide,
       mediaCache?.get(index),
@@ -76,4 +110,6 @@ export function buildStudioSlidesFromCapybaraSlides(
       textBgOpacity: 1,
     };
   });
+
+  return [...introSlide, ...storySlides];
 }

@@ -3,6 +3,7 @@ import StoryCarousel from "@/components/StoryCarousel";
 import BookQuiz from "@/components/BookQuiz";
 import ModeButtons from "@/components/ModeButtons";
 import TranslationWarning from "@/components/TranslationWarning";
+import MobileBookScreen from "@/components/capybara/mobile/MobileBookScreen";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries, Lang } from "@/i18n";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -39,6 +40,7 @@ interface BookScreenProps {
   isFindingNewImage?: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
+  showEmptyError?: boolean;
   t: CapybaraPageDict;
 }
 
@@ -63,6 +65,7 @@ export default function BookScreen({
   isFindingNewImage,
   mediaCache,
   onPreloadNextSlide,
+  showEmptyError,
   t,
 }: BookScreenProps) {
   const isMobile = useIsMobile();
@@ -146,6 +149,31 @@ export default function BookScreen({
       undefined,
     [modes, selectedModeId],
   );
+
+  if (isMobile) {
+    return (
+      <MobileBookScreen
+        book={book}
+        lang={lang}
+        slides={slides}
+        tests={tests}
+        modes={modes}
+        selectedModeId={selectedModeId}
+        currentSlideIndex={currentSlideIndex}
+        loading={loading}
+        showTests={showTests}
+        onTakeTest={onTakeTest}
+        onCreateStory={onExplainMeaning}
+        onOpenStudio={onCreateVideo}
+        onModeSelect={onModeSelect}
+        onSlideIndexChange={onSlideIndexChange}
+        mediaCache={mediaCache}
+        onPreloadNextSlide={onPreloadNextSlide}
+        showEmptyError={showEmptyError}
+        t={t}
+      />
+    );
+  }
 
   return (
     <>
