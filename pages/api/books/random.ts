@@ -5,11 +5,28 @@ import { translateBookForLang } from "@/lib/books";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const lang = getRequestLang(req);
+  const rawExcludedIds = Array.isArray(req.query.exclude_ids)
+    ? req.query.exclude_ids.join(",")
+    : typeof req.query.exclude_ids === "string"
+      ? req.query.exclude_ids
+      : "";
+  const excludedIds = Array.from(new Set(
+    rawExcludedIds
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ));
 
   try {
-    const { count, error: countError } = await supabase
+    let countQuery = supabase
       .from("books")
       .select("*", { count: "exact", head: true });
+
+    if (excludedIds.length > 0) {
+      countQuery = countQuery.not("id", "in", `(${excludedIds.join(",")})`);
+    }
+
+    const { count, error: countError } = await countQuery;
 
     if (countError) {
       throw countError;
@@ -20,9 +37,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const randomIndex = Math.floor(Math.random() * count);
-    const { data, error } = await supabase
+    let dataQuery = supabase
       .from("books")
-      .select("*")
+      .select("*");
+
+    if (excludedIds.length > 0) {
+      dataQuery = dataQuery.not("id", "in", `(${excludedIds.join(",")})`);
+    }
+
+    const { data, error } = await dataQuery
       .range(randomIndex, randomIndex)
       .single();
 

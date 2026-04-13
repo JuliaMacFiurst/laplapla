@@ -525,6 +525,7 @@ const resetBookMediaState = () => {
 };
 
 const FIRST_SLIDE_MEMORY_LIMIT = 10;
+const RANDOM_BOOK_EXCLUDE_LIMIT = 10;
 
 const getPrimaryMediaUrl = (media: ResolvedSlideMedia | null | undefined) =>
   media?.videoUrl || media?.gifUrl || media?.imageUrl || media?.capybaraImage || "";
@@ -707,6 +708,18 @@ const clampSlideIndex = (slideIndex: number, slides: Slide[]) => {
   return Math.max(0, Math.min(slideIndex, slides.length - 1));
 };
 
+const rememberRecentBookIds = (
+  current: string[],
+  bookId: string | number,
+  limit = RANDOM_BOOK_EXCLUDE_LIMIT,
+) => {
+  const nextBookId = String(bookId);
+  return [
+    ...current.filter((id) => id !== nextBookId),
+    nextBookId,
+  ].slice(-limit);
+};
+
 export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOptions) {
   const requestRef = useRef(0);
   const didInitialLoadRef = useRef(false);
@@ -720,6 +733,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
   const testsRequestRef = useRef<Map<string, Promise<BookTest[]>>>(new Map());
   const slideMediaInFlightRef = useRef<Set<number>>(new Set());
   const recentFirstSlideMediaUrlsRef = useRef<string[]>([]);
+  const recentViewedBookIdsRef = useRef<string[]>([]);
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [mediaCache, setMediaCache] = useState<ReadonlyMap<number, ResolvedSlideMedia>>(new Map());
@@ -1283,6 +1297,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
           modeId: prev.modeId ?? hydrated.resolvedModeId,
           slideIndex: clampSlideIndex(prev.slideIndex, hydrated.nextSlides),
         }));
+        recentViewedBookIdsRef.current = rememberRecentBookIds(recentViewedBookIdsRef.current, book.id);
         rememberFirstSlideMedia(nextMediaCache);
         if (previousEntry) {
           setBookHistory((prev) => [...prev, previousEntry]);
@@ -1317,13 +1332,31 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       setError(null);
 
       try {
-        const bookResponse = await fetch(`/api/books/random?lang=${lang}`);
+        const excludedBookIds = Array.from(new Set(recentViewedBookIdsRef.current));
+        const searchParams = new URLSearchParams({ lang });
+
+        if (excludedBookIds.length > 0) {
+          searchParams.set("exclude_ids", excludedBookIds.join(","));
+        }
+
+        const bookResponse = await fetch(`/api/books/random?${searchParams.toString()}`);
 
         if (!bookResponse.ok) {
           throw new Error(t.errors.randomBookLoad);
         }
 
-        const book = (await bookResponse.json()) as Book;
+        let book = (await bookResponse.json()) as Book;
+
+        if (excludedBookIds.includes(String(book.id))) {
+          const retryResponse = await fetch(`/api/books/random?${searchParams.toString()}`);
+          if (retryResponse.ok) {
+            const retriedBook = (await retryResponse.json()) as Book;
+            if (!excludedBookIds.includes(String(retriedBook.id))) {
+              book = retriedBook;
+            }
+          }
+        }
+
         await loadBook(book, preferredModeId);
       } catch (loadError) {
         if (loadError instanceof Error && loadError.message === t.errors.randomBookLoad) {
@@ -1356,6 +1389,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     setMediaCache(nextMediaCache);
     lastLoadedBookRef.current = String(previousEntry.book.id);
     lastTestsBookRef.current = String(previousEntry.book.id);
+    recentViewedBookIdsRef.current = rememberRecentBookIds(recentViewedBookIdsRef.current, previousEntry.book.id);
     setBookHistory((prev) => prev.slice(0, -1));
   }, [bookHistory, bookUiStateById, clearMediaCache, preloadInitialSlideMedia]);
 

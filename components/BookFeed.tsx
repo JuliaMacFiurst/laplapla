@@ -338,15 +338,15 @@ export default function BookFeed({
               className={`book-panel ${activeMobilePanelId === panel.panelId ? "book-panel-active" : "book-panel-inactive"}`}
             >
               <BookCard
-                book={isInteractivePanel ? (book || panel.book) : panel.book}
+                book={panel.book}
                 lang={lang}
-                slides={isInteractivePanel ? slides : panel.slides}
-                tests={isInteractivePanel ? tests : panel.tests}
+                slides={panel.slides}
+                tests={panel.tests}
                 modes={modes}
-                selectedModeId={isInteractivePanel ? selectedModeId : panel.selectedModeId}
-                currentSlideIndex={isInteractivePanel ? currentSlideIndex : panel.currentSlideIndex}
+                selectedModeId={panel.selectedModeId}
+                currentSlideIndex={panel.currentSlideIndex}
                 loading={isInteractivePanel ? loading : true}
-                showTests={isInteractivePanel ? showTests : false}
+                showTests={isInteractivePanel ? showTests : panel.showTests}
                 showRandomBookAction={isInteractivePanel ? showRandomBookAction : false}
                 onRandomBook={isInteractivePanel ? onNextBook : () => {}}
                 onExplainMeaning={isInteractivePanel ? onExplainMeaning : () => {}}
@@ -356,7 +356,7 @@ export default function BookFeed({
                 onSlideIndexChange={isInteractivePanel ? onSlideIndexChange : () => {}}
                 onFindNewImage={isInteractivePanel ? onFindNewImage : async () => {}}
                 isFindingNewImage={isInteractivePanel ? isFindingNewImage : false}
-                mediaCache={isInteractivePanel ? mediaCache : panel.mediaCache}
+                mediaCache={panel.mediaCache}
                 onPreloadNextSlide={isInteractivePanel ? onPreloadNextSlide : () => {}}
                 showEmptyError={isInteractivePanel ? Boolean(error && !loading && slides.length === 0) : false}
                 t={dict}

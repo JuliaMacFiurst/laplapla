@@ -897,17 +897,25 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -55%);
+    transform: translate(-50%, -50%);
     max-width: 80%;
     max-height: 70%;
     width: auto;
     height: auto;
     object-fit: contain;
     pointer-events: none;
+    transition: transform 0.18s ease;
   }
 
-  .home-wrapper-mobile .card:hover img {
-    transform: translateX(50%) translateY(10px);
+  @media (hover: hover) and (pointer: fine) {
+    .home-wrapper-mobile .card:hover img {
+      transform: translate(-50%, -50%) scale(1.04);
+    }
+  }
+
+  .home-wrapper-mobile .card:active img,
+  .home-wrapper-mobile .card:focus-visible img {
+    transform: translate(-50%, -50%) scale(1.07);
   }
 
   .home-wrapper-mobile .label {
