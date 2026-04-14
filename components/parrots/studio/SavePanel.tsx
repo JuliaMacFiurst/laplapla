@@ -2,14 +2,15 @@ type Props = {
   title: string;
   subtitle: string;
   isRendering: boolean;
+  isSaved: boolean;
   exportUrl: string | null;
+  loadingLabel: string;
   exportLabel: string;
+  savedLabel: string;
   listenLabel: string;
-  saveLabel: string;
   clearLabel: string;
   onRender: () => void;
   onListen: () => void;
-  onSaveToDevice: () => void;
   onClearAll: () => void;
 };
 
@@ -17,14 +18,15 @@ export default function SavePanel({
   title,
   subtitle,
   isRendering,
+  isSaved,
   exportUrl,
+  loadingLabel,
   exportLabel,
+  savedLabel,
   listenLabel,
-  saveLabel,
   clearLabel,
   onRender,
   onListen,
-  onSaveToDevice,
   onClearAll,
 }: Props) {
   return (
@@ -34,16 +36,12 @@ export default function SavePanel({
         <p>{subtitle}</p>
       </div>
 
-      <button type="button" className="save-panel__primary" onClick={onRender} disabled={isRendering}>
-        {isRendering ? "Готовим микс..." : exportLabel}
+      <button type="button" className="save-panel__primary" onClick={onRender} disabled={isRendering || isSaved}>
+        {isRendering ? loadingLabel : isSaved ? savedLabel : exportLabel}
       </button>
 
       <button type="button" className="save-panel__secondary" onClick={onListen} disabled={!exportUrl || isRendering}>
         {listenLabel}
-      </button>
-
-      <button type="button" className="save-panel__secondary" onClick={onSaveToDevice} disabled={!exportUrl || isRendering}>
-        {saveLabel}
       </button>
 
       <div className="save-panel__danger">

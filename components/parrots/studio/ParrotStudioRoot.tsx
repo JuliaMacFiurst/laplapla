@@ -13,13 +13,33 @@ type Mode = "loops" | "voice" | "effects" | "mix" | "save";
 
 type VoiceState = {
   audioUrl: string | null;
-  isChildVoice: boolean;
+};
+
+type VoiceEffectsState = {
+  child: boolean;
+  echo: boolean;
+  reverb: boolean;
+  robot: boolean;
+  whisper: boolean;
+  mega: boolean;
+  radio: boolean;
+};
+
+type LoopEffectState = {
+  echo: boolean;
+  reverb: boolean;
+  boost: boolean;
+  soft: boolean;
 };
 
 type EffectsState = {
-  echo: boolean;
-  reverb: boolean;
-  speed: boolean;
+  activeCategory: "voice" | "loops";
+  voice: VoiceEffectsState;
+  loops: {
+    speed: boolean;
+    targetLoopId: string | null;
+    byLoop: Record<string, LoopEffectState>;
+  };
 };
 
 type CompositionState = {
@@ -81,13 +101,24 @@ export default function ParrotStudioRoot({
     activeLoops: [],
     loopSelections: {},
     effects: {
-      echo: false,
-      reverb: false,
-      speed: false,
+      activeCategory: "voice",
+      voice: {
+        child: false,
+        echo: false,
+        reverb: false,
+        robot: false,
+        whisper: false,
+        mega: false,
+        radio: false,
+      },
+      loops: {
+        speed: false,
+        targetLoopId: null,
+        byLoop: {},
+      },
     },
     voice: {
       audioUrl: null,
-      isChildVoice: false,
     },
     mix: {
       loopsVolume: 0.8,
@@ -96,7 +127,9 @@ export default function ParrotStudioRoot({
   });
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [isRenderingSave, setIsRenderingSave] = useState(false);
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
   const [renderedMixUrl, setRenderedMixUrl] = useState<string | null>(null);
+  const [savedCompositionSnapshot, setSavedCompositionSnapshot] = useState<string | null>(null);
   const renderedMixAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const audioMapRef = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -108,12 +141,35 @@ export default function ParrotStudioRoot({
     () => getMusicStyle(lang, selectedStyleSlug),
     [lang, selectedStyleSlug],
   );
+  const compositionSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        styleSlug: selectedStyleSlug,
+        activeLoops: composition.activeLoops,
+        loopSelections: composition.loopSelections,
+        effects: composition.effects,
+        voice: composition.voice,
+        mix: composition.mix,
+      }),
+    [composition, selectedStyleSlug],
+  );
+  const isSaved = Boolean(savedCompositionSnapshot && savedCompositionSnapshot === compositionSnapshot);
 
   useEffect(() => {
     setSelectedStyleSlug(initialStyleSlug);
   }, [initialStyleSlug]);
 
   useEffect(() => {
+    const initialLoopEffects = preset.loops.reduce<Record<string, LoopEffectState>>((acc, loop) => {
+      acc[loop.id] = {
+        echo: false,
+        reverb: false,
+        boost: false,
+        soft: false,
+      };
+      return acc;
+    }, {});
+
     const loopSelections = preset.loops.reduce<Record<string, number | null>>((acc, loop) => {
       acc[loop.id] = loop.defaultOn ? (loop.defaultIndex ?? 0) : null;
       return acc;
@@ -126,7 +182,16 @@ export default function ParrotStudioRoot({
       ...current,
       activeLoops: defaultLoops,
       loopSelections,
+      effects: {
+        ...current.effects,
+        loops: {
+          ...current.effects.loops,
+          targetLoopId: defaultLoops[0] ?? preset.loops[0]?.id ?? null,
+          byLoop: initialLoopEffects,
+        },
+      },
     }));
+    setSavedCompositionSnapshot(null);
   }, [preset]);
 
   useEffect(() => {
@@ -163,9 +228,17 @@ export default function ParrotStudioRoot({
 
   useEffect(() => {
     audioMapRef.current.forEach((audio, loopId) => {
+      if (isVoiceRecording) {
+        audio.pause();
+        audio.currentTime = 0;
+        return;
+      }
+
       const isActive = composition.activeLoops.includes(loopId);
-      audio.volume = composition.mix.loopsVolume;
-      audio.playbackRate = composition.effects.speed ? 1.12 : 1;
+      const loopFx = composition.effects.loops.byLoop[loopId];
+      const loopVolumeMultiplier = loopFx?.boost ? 1.2 : loopFx?.soft ? 0.72 : 1;
+      audio.volume = Math.min(1, composition.mix.loopsVolume * loopVolumeMultiplier);
+      audio.playbackRate = composition.effects.loops.speed ? 1.12 : 1;
 
       if (!isActive) {
         audio.pause();
@@ -177,7 +250,7 @@ export default function ParrotStudioRoot({
         // The mobile browser may require a direct gesture before playback.
       });
     });
-  }, [composition.activeLoops, composition.effects.speed, composition.mix.loopsVolume]);
+  }, [composition.activeLoops, composition.effects.loops, composition.mix.loopsVolume, isVoiceRecording]);
 
   useEffect(() => {
     return () => {
@@ -277,6 +350,59 @@ export default function ParrotStudioRoot({
     console.log("parrot-studio-save", payload);
   };
 
+  const toggleVoiceEffect = (effect: keyof VoiceEffectsState) => {
+    setComposition((current) => ({
+      ...current,
+      effects: {
+        ...current.effects,
+        activeCategory: "voice",
+        voice: {
+          ...current.effects.voice,
+          [effect]: !current.effects.voice[effect],
+        },
+      },
+    }));
+  };
+
+  const toggleLoopEffect = (effect: keyof LoopEffectState | "speed") => {
+    setComposition((current) => {
+      if (effect === "speed") {
+        return {
+          ...current,
+          effects: {
+            ...current.effects,
+            activeCategory: "loops",
+            loops: {
+              ...current.effects.loops,
+              speed: !current.effects.loops.speed,
+            },
+          },
+        };
+      }
+
+      const targetLoopId = current.effects.loops.targetLoopId;
+      if (!targetLoopId) return current;
+
+      return {
+        ...current,
+        effects: {
+          ...current.effects,
+          activeCategory: "loops",
+          loops: {
+            ...current.effects.loops,
+            byLoop: {
+              ...current.effects.loops.byLoop,
+              [targetLoopId]: {
+                ...current.effects.loops.byLoop[targetLoopId],
+                [effect]: !current.effects.loops.byLoop[targetLoopId]?.[effect],
+              },
+            },
+          },
+        },
+      };
+    });
+  };
+
   const bufferToWavBlob = (buffer: AudioBuffer) => {
     const channels = buffer.numberOfChannels;
     const length = buffer.length * channels * 2 + 44;
@@ -345,7 +471,7 @@ export default function ParrotStudioRoot({
     context: BaseAudioContext,
     input: AudioNode,
     destination: AudioNode,
-    effects: EffectsState,
+    effects: { echo: boolean; reverb: boolean },
   ) => {
     let tail: AudioNode = input;
 
@@ -371,6 +497,80 @@ export default function ParrotStudioRoot({
       tail.connect(convolver);
       convolver.connect(wetGain);
       wetGain.connect(destination);
+    }
+
+    tail.connect(destination);
+  };
+
+  const connectVoiceEffects = (
+    context: BaseAudioContext,
+    input: AudioNode,
+    destination: AudioNode,
+    effects: VoiceEffectsState,
+  ) => {
+    let tail: AudioNode = input;
+
+    if (effects.radio || effects.whisper) {
+      const highpass = context.createBiquadFilter();
+      highpass.type = "highpass";
+      highpass.frequency.value = effects.radio ? 480 : 240;
+      tail.connect(highpass);
+      tail = highpass;
+    }
+
+    if (effects.radio) {
+      const lowpass = context.createBiquadFilter();
+      lowpass.type = "lowpass";
+      lowpass.frequency.value = 2200;
+      tail.connect(lowpass);
+      tail = lowpass;
+    }
+
+    if (effects.robot) {
+      const shaper = context.createWaveShaper();
+      const curve = new Float32Array(256);
+      for (let i = 0; i < curve.length; i += 1) {
+        const x = (i / (curve.length - 1)) * 2 - 1;
+        curve[i] = Math.tanh(x * 4);
+      }
+      shaper.curve = curve;
+      tail.connect(shaper);
+      tail = shaper;
+    }
+
+    if (effects.echo || effects.reverb) {
+      connectEffects(context, tail, destination, {
+        echo: effects.echo,
+        reverb: effects.reverb,
+      });
+      return;
+    }
+
+    tail.connect(destination);
+  };
+
+  const connectLoopEffects = (
+    context: BaseAudioContext,
+    input: AudioNode,
+    destination: AudioNode,
+    effects: LoopEffectState,
+  ) => {
+    let tail: AudioNode = input;
+
+    if (effects.soft) {
+      const lowpass = context.createBiquadFilter();
+      lowpass.type = "lowpass";
+      lowpass.frequency.value = 1800;
+      tail.connect(lowpass);
+      tail = lowpass;
+    }
+
+    if (effects.echo || effects.reverb) {
+      connectEffects(context, tail, destination, {
+        echo: effects.echo,
+        reverb: effects.reverb,
+      });
+      return;
     }
 
     tail.connect(destination);
@@ -405,13 +605,24 @@ export default function ParrotStudioRoot({
         const source = offlineContext.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
-        source.playbackRate.value = composition.effects.speed ? 1.12 : 1;
+        const loopFx = composition.effects.loops.byLoop[loop.id] ?? {
+          echo: false,
+          reverb: false,
+          boost: false,
+          soft: false,
+        };
+        source.playbackRate.value = composition.effects.loops.speed ? 1.12 : 1;
 
         const gain = offlineContext.createGain();
-        gain.gain.value = composition.mix.loopsVolume / Math.max(activeLoopDefs.length, 1);
+        gain.gain.value =
+          Math.min(
+            1,
+            (composition.mix.loopsVolume / Math.max(activeLoopDefs.length, 1)) *
+              (loopFx.boost ? 1.35 : loopFx.soft ? 0.72 : 1),
+          );
 
         source.connect(gain);
-        connectEffects(offlineContext, gain, outputGain, composition.effects);
+        connectLoopEffects(offlineContext, gain, outputGain, loopFx);
         source.start(0);
       }));
 
@@ -421,13 +632,19 @@ export default function ParrotStudioRoot({
         const voiceArrayBuffer = await voiceResponse.arrayBuffer();
         const voiceBuffer = await offlineContext.decodeAudioData(voiceArrayBuffer.slice(0));
         voiceBufferSource.buffer = voiceBuffer;
-        voiceBufferSource.playbackRate.value = composition.voice.isChildVoice ? 1.2 : 1;
+        let voicePlaybackRate = 1;
+        if (composition.effects.voice.child) voicePlaybackRate *= 1.2;
+        if (composition.effects.voice.robot) voicePlaybackRate *= 1.08;
+        if (composition.effects.voice.mega) voicePlaybackRate *= 0.86;
+        if (composition.effects.voice.whisper) voicePlaybackRate *= 1.03;
+        voiceBufferSource.playbackRate.value = voicePlaybackRate;
 
         const voiceGain = offlineContext.createGain();
-        voiceGain.gain.value = composition.mix.voiceVolume;
+        const voiceGainMultiplier = composition.effects.voice.whisper ? 0.72 : composition.effects.voice.mega ? 1.22 : 1;
+        voiceGain.gain.value = Math.min(1.5, composition.mix.voiceVolume * voiceGainMultiplier);
 
         voiceBufferSource.connect(voiceGain);
-        connectEffects(offlineContext, voiceGain, outputGain, composition.effects);
+        connectVoiceEffects(offlineContext, voiceGain, outputGain, composition.effects.voice);
         voiceBufferSource.start(0);
       }
 
@@ -441,6 +658,13 @@ export default function ParrotStudioRoot({
 
       setRenderedMixUrl(nextUrl);
       handleSave();
+      const anchor = document.createElement("a");
+      anchor.href = nextUrl;
+      anchor.download = `parrot-mix-${selectedStyleSlug}-30s.wav`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setSavedCompositionSnapshot(compositionSnapshot);
     } catch (error) {
       console.error("Failed to render parrot studio mix", error);
     } finally {
@@ -460,17 +684,6 @@ export default function ParrotStudioRoot({
     void renderedMixAudioRef.current.play().catch((error) => {
       console.error("Failed to play rendered mix", error);
     });
-  };
-
-  const handleSaveRenderedMix = () => {
-    if (!renderedMixUrl) return;
-
-    const anchor = document.createElement("a");
-    anchor.href = renderedMixUrl;
-    anchor.download = `parrot-mix-${selectedStyleSlug}-30s.wav`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
   };
 
   const handleClearAll = () => {
@@ -493,18 +706,38 @@ export default function ParrotStudioRoot({
     }, {});
 
     setRenderedMixUrl(null);
+    setSavedCompositionSnapshot(null);
     setComposition({
       activeMode: "save",
       activeLoops: [],
       loopSelections,
       effects: {
-        echo: false,
-        reverb: false,
-        speed: false,
+        activeCategory: "voice",
+        voice: {
+          child: false,
+          echo: false,
+          reverb: false,
+          robot: false,
+          whisper: false,
+          mega: false,
+          radio: false,
+        },
+        loops: {
+          speed: false,
+          targetLoopId: preset.loops[0]?.id ?? null,
+          byLoop: preset.loops.reduce<Record<string, LoopEffectState>>((acc, loop) => {
+            acc[loop.id] = {
+              echo: false,
+              reverb: false,
+              boost: false,
+              soft: false,
+            };
+            return acc;
+          }, {}),
+        },
       },
       voice: {
         audioUrl: null,
-        isChildVoice: false,
       },
       mix: {
         loopsVolume: 0.8,
@@ -585,24 +818,49 @@ export default function ParrotStudioRoot({
           <VoiceRecorder
             voice={composition.voice}
             voiceVolume={composition.mix.voiceVolume}
+            isChildVoice={composition.effects.voice.child}
+            onRecordingStateChange={setIsVoiceRecording}
             onChange={(voice) =>
               setComposition((current) => ({
                 ...current,
                 voice,
               }))
             }
+            onToggleChildVoice={() => toggleVoiceEffect("child")}
           />
         ) : null}
 
         {composition.activeMode === "effects" ? (
           <EffectsPanel
-            effects={composition.effects}
-            onToggle={(effect) =>
+            activeCategory={composition.effects.activeCategory}
+            voiceEffects={composition.effects.voice}
+            loopEffects={composition.effects.loops}
+            loopOptions={loopPads.map((loop) => ({
+              id: loop.id,
+              label: loop.label,
+              isActive: loop.isActive,
+            }))}
+            onCategoryChange={(category) =>
               setComposition((current) => ({
                 ...current,
                 effects: {
                   ...current.effects,
-                  [effect]: !current.effects[effect],
+                  activeCategory: category,
+                },
+              }))
+            }
+            onToggleVoiceEffect={toggleVoiceEffect}
+            onToggleLoopEffect={toggleLoopEffect}
+            onSelectLoop={(loopId) =>
+              setComposition((current) => ({
+                ...current,
+                effects: {
+                  ...current.effects,
+                  activeCategory: "loops",
+                  loops: {
+                    ...current.effects.loops,
+                    targetLoopId: loopId,
+                  },
                 },
               }))
             }
@@ -639,14 +897,15 @@ export default function ParrotStudioRoot({
             title="Сохранение микса"
             subtitle="Соберём 30 секунд твоей музыки: активные лупы, эффекты, громкость и голос."
             isRendering={isRenderingSave}
+            isSaved={isSaved}
             exportUrl={renderedMixUrl}
+            loadingLabel="Сохранение..."
             exportLabel="Сохранить 30 секунд"
+            savedLabel="Сохранено"
             listenLabel="Прослушать"
-            saveLabel="Сохранить на телефон"
             clearLabel="очистить все"
             onRender={() => void renderThirtySecondMix()}
             onListen={handleListenRenderedMix}
-            onSaveToDevice={handleSaveRenderedMix}
             onClearAll={handleClearAll}
           />
         ) : null}

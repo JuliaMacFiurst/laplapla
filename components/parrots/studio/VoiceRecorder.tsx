@@ -2,16 +2,25 @@ import { useEffect, useRef, useState } from "react";
 
 type VoiceState = {
   audioUrl: string | null;
-  isChildVoice: boolean;
 };
 
 type Props = {
   voice: VoiceState;
   voiceVolume: number;
+  isChildVoice: boolean;
   onChange: (nextVoice: VoiceState) => void;
+  onToggleChildVoice: () => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
 };
 
-export default function VoiceRecorder({ voice, voiceVolume, onChange }: Props) {
+export default function VoiceRecorder({
+  voice,
+  voiceVolume,
+  isChildVoice,
+  onChange,
+  onToggleChildVoice,
+  onRecordingStateChange,
+}: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -36,13 +45,13 @@ export default function VoiceRecorder({ voice, voiceVolume, onChange }: Props) {
     if (!audio) return;
 
     audio.volume = voiceVolume;
-    audio.playbackRate = voice.isChildVoice ? 1.2 : 1;
+    audio.playbackRate = isChildVoice ? 1.2 : 1;
     if ("preservesPitch" in audio) {
       try {
         (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
       } catch {}
     }
-  }, [voice.isChildVoice, voiceVolume, voice.audioUrl]);
+  }, [isChildVoice, voiceVolume, voice.audioUrl]);
 
   useEffect(() => {
     return () => {
@@ -84,24 +93,29 @@ export default function VoiceRecorder({ voice, voiceVolume, onChange }: Props) {
         }
         onChange({
           audioUrl,
-          isChildVoice: voice.isChildVoice,
         });
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         mediaRecorderRef.current = null;
         setIsRecording(false);
+        onRecordingStateChange?.(false);
       };
 
       recorder.onerror = () => {
         setErrorText("Не удалось записать голос.");
+        setIsRecording(false);
+        onRecordingStateChange?.(false);
       };
 
       recorder.start(250);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
+      onRecordingStateChange?.(true);
     } catch (error) {
       console.error("Voice recording failed", error);
       setErrorText("Не удалось открыть микрофон.");
+      setIsRecording(false);
+      onRecordingStateChange?.(false);
     }
   };
 
@@ -122,13 +136,8 @@ export default function VoiceRecorder({ voice, voiceVolume, onChange }: Props) {
 
       <button
         type="button"
-        className={`voice-recorder__toggle ${voice.isChildVoice ? "is-active" : ""}`}
-        onClick={() =>
-          onChange({
-            ...voice,
-            isChildVoice: !voice.isChildVoice,
-          })
-        }
+        className={`voice-recorder__toggle ${isChildVoice ? "is-active" : ""}`}
+        onClick={onToggleChildVoice}
       >
         Child Voice
       </button>

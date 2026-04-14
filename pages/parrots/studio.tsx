@@ -360,12 +360,31 @@ export default function ParrotsStudioPage() {
     activeLoops: string[];
     voice: {
       audioUrl: string | null;
-      isChildVoice: boolean;
     };
     effects: {
-      echo: boolean;
-      reverb: boolean;
-      speed: boolean;
+      activeCategory: "voice" | "loops";
+      voice: {
+        child: boolean;
+        echo: boolean;
+        reverb: boolean;
+        robot: boolean;
+        whisper: boolean;
+        mega: boolean;
+        radio: boolean;
+      };
+      loops: {
+        speed: boolean;
+        targetLoopId: string | null;
+        byLoop: Record<
+          string,
+          {
+            echo: boolean;
+            reverb: boolean;
+            boost: boolean;
+            soft: boolean;
+          }
+        >;
+      };
     };
     loopsVolume: number;
     voiceVolume: number;
@@ -392,7 +411,7 @@ export default function ParrotsStudioPage() {
       voiceDuration: slide.voiceDuration,
       voiceBaseUrl: slide.voiceBaseUrl,
       voiceBaseDuration: slide.voiceBaseDuration,
-      activeVoiceEffects: index === 0 && composition.voice.isChildVoice
+      activeVoiceEffects: index === 0 && composition.effects.voice.child
         ? {
             ...(slide.activeVoiceEffects ?? {}),
             child: true,
