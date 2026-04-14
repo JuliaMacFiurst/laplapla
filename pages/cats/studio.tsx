@@ -24,11 +24,17 @@ type ImportedSlide = {
   textBgColor?: string;
   textBgOpacity?: number;
   introLayout?: "book-meta";
+  voiceUrl?: string;
+  voiceDuration?: number;
+  voiceBaseUrl?: string;
+  voiceBaseDuration?: number;
+  activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
 };
 
 type ParrotImportPayload = {
   type: "parrot_import";
   styleSlug: string;
+  tracks?: Track[];
   musicConfig?: {
     styleSlug?: string;
     layers?: Record<
@@ -46,6 +52,11 @@ type ParrotImportPayload = {
     text: string;
     mediaUrl: string;
     mediaType: "gif" | "image" | "video";
+    voiceUrl?: string;
+    voiceDuration?: number;
+    voiceBaseUrl?: string;
+    voiceBaseDuration?: number;
+    activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
   }>;
 };
 
@@ -141,7 +152,7 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
 
           if (parsed?.type === "parrot_import") {
             nextSlides = Array.isArray(parsed.slides)
-              ? parsed.slides.map((slide) => ({
+                ? parsed.slides.map((slide) => ({
                   text: slide.text,
                   image: slide.mediaUrl,
                   mediaType: slide.mediaType === "gif" ? "image" : slide.mediaType,
@@ -149,9 +160,14 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
                   mediaPosition: "center",
                   textPosition: "bottom",
                   textAlign: "center",
+                  voiceUrl: slide.voiceUrl,
+                  voiceDuration: slide.voiceDuration,
+                  voiceBaseUrl: slide.voiceBaseUrl,
+                  voiceBaseDuration: slide.voiceBaseDuration,
+                  activeVoiceEffects: slide.activeVoiceEffects,
                 }))
               : [];
-            nextTracks = buildTracksFromParrotImport(parsed);
+            nextTracks = parsed.tracks ?? buildTracksFromParrotImport(parsed);
             shouldConsumeParrot = true;
           }
         }

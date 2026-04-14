@@ -18,7 +18,7 @@ import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import { PARROT_PRESETS } from "@/utils/parrot-presets";
 
-const PROJECT_ID = "current-studio-project";
+const DEFAULT_PROJECT_ID = "current-studio-project";
 
 function createStudioId() {
   if (typeof globalThis !== "undefined" && typeof globalThis.crypto?.randomUUID === "function") {
@@ -40,9 +40,9 @@ function createEmptySlide(): StudioSlide {
   };
 }
 
-function createInitialProject(): StudioProject {
+function createInitialProject(projectId: string): StudioProject {
   return {
-    id: PROJECT_ID,
+    id: projectId,
     slides: [createEmptySlide()],
     musicTracks: [],
     updatedAt: Date.now(),
@@ -70,6 +70,7 @@ function getImportedSlideFontSize(text: string) {
 
 interface StudioRootProps {
   lang: Lang;
+  projectId?: string;
   initialSlides?: Array<{
     text: string;
     image?: string;
@@ -83,6 +84,11 @@ interface StudioRootProps {
     textBgColor?: string;
     textBgOpacity?: number;
     introLayout?: "book-meta";
+    voiceUrl?: string;
+    voiceDuration?: number;
+    voiceBaseUrl?: string;
+    voiceBaseDuration?: number;
+    activeVoiceEffects?: Partial<Record<VoiceActionKey, boolean>>;
   }>;
   initialTracks?: Track[];
 }
@@ -2773,8 +2779,13 @@ function StudioMobileLayout({
   );
 }
 
-export default function StudioRoot({ lang, initialSlides, initialTracks }: StudioRootProps) {
-  const [project, setProject] = useState<StudioProject>(createInitialProject);
+export default function StudioRoot({
+  lang,
+  projectId = DEFAULT_PROJECT_ID,
+  initialSlides,
+  initialTracks,
+}: StudioRootProps) {
+  const [project, setProject] = useState<StudioProject>(() => createInitialProject(projectId));
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [history, setHistory] = useState<StudioProject[]>([]);
   const [future, setFuture] = useState<StudioProject[]>([]);
@@ -3417,7 +3428,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
       // If external import was provided, do not restore old project
       if ((initialSlides && initialSlides.length > 0) || (initialTracks && initialTracks.length > 0)) return;
 
-      const saved = await loadProject(PROJECT_ID);
+      const saved = await loadProject(projectId);
       if (saved) {
         const normalizedSaved = {
           ...saved,
@@ -3438,7 +3449,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [initialSlides, initialTracks]);
+  }, [initialSlides, initialTracks, projectId]);
 
   // Autosave every 4 seconds
   useEffect(() => {
@@ -3509,13 +3520,18 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
         textBgColor: s.textBgColor ?? "#ffffff",
         textBgOpacity: s.textBgOpacity ?? 1,
         introLayout: s.introLayout,
+        voiceUrl: s.voiceUrl,
+        voiceDuration: s.voiceDuration,
+        voiceBaseUrl: s.voiceBaseUrl,
+        voiceBaseDuration: s.voiceBaseDuration,
+        activeVoiceEffects: s.activeVoiceEffects,
         bgColor: "#ffffff",
         textColor: "#000000",
       })},
     );
 
     const newProject: StudioProject = {
-      id: PROJECT_ID,
+      id: projectId,
       slides: mappedSlides.length > 0 ? mappedSlides : [createEmptySlide()],
       musicTracks: initialTracks ?? [],
       updatedAt: Date.now(),
@@ -3528,7 +3544,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
     void saveProject(newProject).then(() => {
       markProjectSaved(newProject);
     });
-  }, [initialSlides, initialTracks]);
+  }, [initialSlides, initialTracks, projectId]);
 
   function pushHistory(current: StudioProject) {
     pendingHistorySnapshotRef.current = null;
@@ -3655,7 +3671,7 @@ export default function StudioRoot({ lang, initialSlides, initialTracks }: Studi
 
   function deleteAll() {
     pushHistory(project);
-    setProject(createInitialProject());
+    setProject(createInitialProject(projectId));
     setActiveSlideIndex(0);
   }
 

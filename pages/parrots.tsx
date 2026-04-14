@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
 import ParrotMixer, { type MusicConfig } from "../components/ParrotMixer";
 import ParrotStoryCard, { type Slide as ParrotSlide } from "../components/ParrotStoryCard";
+import ParrotMobileExperience from "@/components/parrots/mobile/ParrotMobileExperience";
 import { PARROT_PRESETS } from "../utils/parrot-presets";
 import { dictionaries } from "../i18n";
 import { getMusicStyle } from "../content/parrots/musicStyles";
@@ -135,11 +136,117 @@ export default function ParrotsPage() {
     const exportPayload = buildParrotExport();
     sessionStorage.setItem("parrot_import", JSON.stringify(exportPayload));
     router.push(
-      { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+      { pathname: "/parrots/studio", query: buildLocalizedQuery(lang) },
       undefined,
       { locale: lang },
     );
   }, [buildParrotExport, lang, router]);
+
+  const handleOpenPresetStudio = useCallback((styleId: string) => {
+    const styleSlides = getMusicStyle(lang, styleId)?.slides ?? [{ text: t.story.fallbackSilent }];
+    const exportPayload: ParrotImportPayload = {
+      type: "parrot_import",
+      musicConfig: {
+        styleSlug: styleId,
+        layers: {},
+        volumes: {},
+        masterVolume: 0.9,
+      },
+      slides: [],
+      styleSlug: styleId,
+    };
+
+    sessionStorage.setItem("parrot_import", JSON.stringify(exportPayload));
+    router.push(
+      {
+        pathname: "/parrots/studio",
+        query: {
+          ...buildLocalizedQuery(lang),
+          style: styleId,
+          slides: String(styleSlides.length),
+        },
+      },
+      undefined,
+      { locale: lang },
+    );
+  }, [lang, router, t.story.fallbackSilent]);
+
+  if (isMobile) {
+    return (
+      <>
+        <SEO title={seo.title} description={seo.description} path={seoPath} />
+        <main className={`home-wrapper parrots-page force-ltr-layout ${lang === "he" ? "parrots-page-he" : ""}`}>
+          <ParrotMobileExperience
+            lang={lang}
+            title={t.page.title}
+            subtitle={t.page.subtitle}
+            presets={localizedPresets}
+            onOpenPreset={handleOpenPresetStudio}
+            imageForPreset={imageForPreset}
+          />
+          <style jsx global>{`
+            .parrots-page {
+              padding-left: 0;
+              padding-right: 0;
+              width: 100%;
+              max-width: 100%;
+              overflow-x: clip;
+            }
+
+            .style-presets-row {
+              width: 100%;
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 0.75rem;
+              padding: 0;
+              margin-left: 0;
+              margin-right: 0;
+              box-sizing: border-box;
+            }
+
+            .style-preset-btn {
+              width: 100%;
+              height: auto;
+              min-height: 124px;
+              border-radius: 16px;
+              margin: 0;
+              aspect-ratio: 1 / 1;
+              box-sizing: border-box;
+              border: 1px solid rgba(0,0,0,0.12);
+              background: #fff center/cover no-repeat;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+              display: inline-flex;
+              align-items: flex-end;
+              justify-content: center;
+              padding: 10px;
+              position: relative;
+              overflow: hidden;
+              cursor: pointer;
+              transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+              font-family: var(--font-amatic-sc), cursive;
+            }
+
+            .style-preset-btn.is-active {
+              border: 3px solid #b388ff;
+              box-shadow: 0 0 0 6px rgba(179,136,255,0.18), 0 10px 24px rgba(179,136,255,0.25);
+            }
+
+            .style-preset-label {
+              font-size: 16px;
+              padding: 4px 8px;
+              font-weight: 700;
+              letter-spacing: 1px;
+              text-transform: uppercase;
+              color: #111;
+              background: rgba(255,255,255,0.45);
+              border-radius: 12px;
+              backdrop-filter: blur(4px);
+            }
+          `}</style>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

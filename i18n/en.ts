@@ -702,7 +702,7 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
     page: {
       headTitle: "Parrots Sing — capybara_tales",
       title: "Parrots Sing",
-      subtitle: "Build your chirp-mix, hear stories about music styles, and view media for each slide.",
+      subtitle: "Choose a music style and create your own chirp mix. The parrots will tell you about the style.",
     },
     story: {
       fallbackSilent: "The parrots are quiet for now 🦜",
