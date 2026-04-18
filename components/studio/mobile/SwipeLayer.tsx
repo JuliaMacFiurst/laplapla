@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import { useRef, useState } from "react";
 
 interface SwipeLayerProps {
@@ -25,6 +25,9 @@ export default function SwipeLayer({
 }: SwipeLayerProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const slideNodes = Children.toArray(children);
+  const renderedChildren = isRtl ? [...slideNodes].reverse() : slideNodes;
+  const visualIndex = isRtl ? Math.max(0, totalSlides - 1 - currentIndex) : currentIndex;
 
   const startXRef = useRef(0);
   const startYRef = useRef(0);
@@ -48,7 +51,7 @@ export default function SwipeLayer({
     const touch = event.touches[0];
     const deltaX = touch.clientX - startXRef.current;
     const deltaY = touch.clientY - startYRef.current;
-    const effectiveDeltaX = isRtl ? -deltaX : deltaX;
+    const effectiveDeltaX = deltaX;
 
     if (!isHorizontalRef.current) {
       if (Math.abs(deltaY) > Math.abs(effectiveDeltaX)) {
@@ -67,8 +70,8 @@ export default function SwipeLayer({
 
     event.preventDefault();
 
-    const isAtStart = currentIndex === 0 && effectiveDeltaX > 0;
-    const isAtEnd = currentIndex === totalSlides - 1 && effectiveDeltaX < 0;
+    const isAtStart = currentIndex === 0 && (isRtl ? effectiveDeltaX < 0 : effectiveDeltaX > 0);
+    const isAtEnd = currentIndex === totalSlides - 1 && (isRtl ? effectiveDeltaX > 0 : effectiveDeltaX < 0);
     const dampenedDelta = isAtStart || isAtEnd ? effectiveDeltaX * 0.25 : effectiveDeltaX;
     setDragOffset(dampenedDelta);
   };
@@ -87,7 +90,7 @@ export default function SwipeLayer({
       velocity > SWIPE_VELOCITY_THRESHOLD;
 
     if (shouldNavigate && totalSlides > 1) {
-      const direction = dragOffset < 0 ? 1 : -1;
+      const direction = isRtl ? (dragOffset > 0 ? 1 : -1) : (dragOffset < 0 ? 1 : -1);
       const nextIndex = Math.min(Math.max(currentIndex + direction, 0), totalSlides - 1);
 
       if (nextIndex !== currentIndex) {
@@ -121,12 +124,12 @@ export default function SwipeLayer({
           flexDirection: "row",
           width: "100%",
           height: "100%",
-          transform: `translateX(calc(${-currentIndex * 100}% + ${dragOffset}px))`,
+          transform: `translateX(calc(${-visualIndex * 100}% + ${dragOffset}px))`,
           transition: isDragging ? "none" : "transform 300ms ease-out",
           direction: "ltr",
         }}
       >
-        {children}
+        {renderedChildren}
       </div>
     </div>
   );
