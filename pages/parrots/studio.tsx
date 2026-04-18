@@ -449,14 +449,9 @@ export function ParrotsStudioPageContent() {
 
   const handleSwitchMobileLanguage = (nextLang: "ru" | "en" | "he") => {
     void router.push(
-      {
-        pathname: "/studio",
-        query: {
-          ...router.query,
-          type: "parrot",
-          style: styleSlug,
-        },
-      },
+      buildStudioRoute("parrot", nextLang, {
+        style: styleSlug,
+      }),
       undefined,
       { locale: nextLang },
     );

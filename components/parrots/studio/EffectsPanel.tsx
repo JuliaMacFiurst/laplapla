@@ -22,7 +22,11 @@ type LoopOption = {
 };
 
 type Props = {
+  lang: "ru" | "en" | "he";
   activeCategory: "voice" | "loops";
+  voiceLabel: string;
+  loopsLabel: string;
+  recordVoiceFirstLabel: string;
   voiceEffects: VoiceEffects;
   hasVoice: boolean;
   loopEffects: {
@@ -40,26 +44,12 @@ type Props = {
   activePreviewKey: string | null;
 };
 
-const VOICE_EFFECTS: Array<{ key: keyof VoiceEffects; label: string; hint: string }> = [
-  { key: "child", label: "Child", hint: "Higher playful pitch" },
-  { key: "echo", label: "Echo", hint: "A roomy bounce" },
-  { key: "reverb", label: "Reverb", hint: "Soft hall shine" },
-  { key: "robot", label: "Robot", hint: "Sharper synthetic tone" },
-  { key: "whisper", label: "Whisper", hint: "Quiet airy voice" },
-  { key: "mega", label: "Mega", hint: "Bigger deeper voice" },
-  { key: "radio", label: "Radio", hint: "Small speaker color" },
-];
-
-const LOOP_EFFECTS: Array<{ key: keyof LoopFx | "speed"; label: string; hint: string }> = [
-  { key: "speed", label: "Speed", hint: "A faster playful take" },
-  { key: "echo", label: "Echo", hint: "Adds trailing repeats" },
-  { key: "reverb", label: "Reverb", hint: "More room and glow" },
-  { key: "boost", label: "Boost", hint: "Push this loop forward" },
-  { key: "soft", label: "Soft", hint: "A gentler rounded tone" },
-];
-
 export default function EffectsPanel({
+  lang,
   activeCategory,
+  voiceLabel,
+  loopsLabel,
+  recordVoiceFirstLabel,
   voiceEffects,
   hasVoice,
   loopEffects,
@@ -72,6 +62,72 @@ export default function EffectsPanel({
   onPreviewLoopEffect,
   activePreviewKey,
 }: Props) {
+  const VOICE_EFFECTS: Array<{ key: keyof VoiceEffects; label: string; hint: string }> = [
+    {
+      key: "child",
+      label: lang === "ru" ? "Детский" : lang === "he" ? "ילדי" : "Child",
+      hint: lang === "ru" ? "Более высокий игривый голос" : lang === "he" ? "קול גבוה ושובב יותר" : "Higher playful pitch",
+    },
+    {
+      key: "echo",
+      label: "Echo",
+      hint: lang === "ru" ? "Лёгкое эхо комнаты" : lang === "he" ? "הד עדין של חלל" : "A roomy bounce",
+    },
+    {
+      key: "reverb",
+      label: "Reverb",
+      hint: lang === "ru" ? "Мягкий зал и объём" : lang === "he" ? "חלל רך ועומק" : "Soft hall shine",
+    },
+    {
+      key: "robot",
+      label: lang === "ru" ? "Робот" : lang === "he" ? "רובוט" : "Robot",
+      hint: lang === "ru" ? "Более синтетический тембр" : lang === "he" ? "גוון סינתטי חד יותר" : "Sharper synthetic tone",
+    },
+    {
+      key: "whisper",
+      label: lang === "ru" ? "Шёпот" : lang === "he" ? "לחישה" : "Whisper",
+      hint: lang === "ru" ? "Тихий воздушный голос" : lang === "he" ? "קול שקט ואוורירי" : "Quiet airy voice",
+    },
+    {
+      key: "mega",
+      label: "Mega",
+      hint: lang === "ru" ? "Крупнее и глубже" : lang === "he" ? "גדול ועמוק יותר" : "Bigger deeper voice",
+    },
+    {
+      key: "radio",
+      label: lang === "ru" ? "Радио" : lang === "he" ? "רדיו" : "Radio",
+      hint: lang === "ru" ? "Звук маленькой колонки" : lang === "he" ? "צבע של רמקול קטן" : "Small speaker color",
+    },
+  ];
+
+  const LOOP_EFFECTS: Array<{ key: keyof LoopFx | "speed"; label: string; hint: string }> = [
+    {
+      key: "speed",
+      label: lang === "ru" ? "Скорость" : lang === "he" ? "מהירות" : "Speed",
+      hint: lang === "ru" ? "Более быстрый вариант" : lang === "he" ? "גרסה מהירה יותר" : "A faster playful take",
+    },
+    {
+      key: "echo",
+      label: "Echo",
+      hint: lang === "ru" ? "Добавляет хвосты эха" : lang === "he" ? "מוסיף זנבות של הד" : "Adds trailing repeats",
+    },
+    {
+      key: "reverb",
+      label: "Reverb",
+      hint: lang === "ru" ? "Больше воздуха и объёма" : lang === "he" ? "יותר חלל וזוהר" : "More room and glow",
+    },
+    {
+      key: "boost",
+      label: lang === "ru" ? "Усилить" : lang === "he" ? "חיזוק" : "Boost",
+      hint: lang === "ru" ? "Выдвинуть этот луп вперёд" : lang === "he" ? "להבליט את הלופ הזה" : "Push this loop forward",
+    },
+    {
+      key: "soft",
+      label: lang === "ru" ? "Мягко" : lang === "he" ? "רך" : "Soft",
+      hint: lang === "ru" ? "Более мягкий округлый звук" : lang === "he" ? "צליל רך ומעוגל יותר" : "A gentler rounded tone",
+    },
+  ];
+
   const activeLoopFx = loopEffects.targetLoopId
     ? loopEffects.byLoop[loopEffects.targetLoopId]
     : null;
@@ -84,20 +140,20 @@ export default function EffectsPanel({
           className={activeCategory === "voice" ? "is-active" : ""}
           onClick={() => onCategoryChange("voice")}
         >
-          Voice
+          {voiceLabel}
         </button>
         <button
           type="button"
           className={activeCategory === "loops" ? "is-active" : ""}
           onClick={() => onCategoryChange("loops")}
         >
-          Loops
+          {loopsLabel}
         </button>
       </div>
 
       {activeCategory === "voice" ? (
         <>
-          {!hasVoice ? <p className="effects-panel__hint">Record a voice first</p> : null}
+          {!hasVoice ? <p className="effects-panel__hint">{recordVoiceFirstLabel}</p> : null}
           <div className="effects-panel__grid">
             {VOICE_EFFECTS.map((effect) => (
               <div

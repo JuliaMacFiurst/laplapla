@@ -1,6 +1,8 @@
 type Props = {
   loopsVolume: number;
   voiceVolume: number;
+  loopsVolumeLabel: string;
+  voiceVolumeLabel: string;
   onLoopsVolumeChange: (value: number) => void;
   onVoiceVolumeChange: (value: number) => void;
 };
@@ -8,13 +10,15 @@ type Props = {
 export default function MixPanel({
   loopsVolume,
   voiceVolume,
+  loopsVolumeLabel,
+  voiceVolumeLabel,
   onLoopsVolumeChange,
   onVoiceVolumeChange,
 }: Props) {
   return (
     <div className="mix-panel">
       <label className="mix-panel__row">
-        <span>Loops Volume</span>
+        <span>{loopsVolumeLabel}</span>
         <input
           type="range"
           min={0}
@@ -26,7 +30,7 @@ export default function MixPanel({
       </label>
 
       <label className="mix-panel__row">
-        <span>Voice Volume</span>
+        <span>{voiceVolumeLabel}</span>
         <input
           type="range"
           min={0}

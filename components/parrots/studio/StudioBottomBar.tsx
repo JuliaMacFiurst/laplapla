@@ -2,18 +2,19 @@ type Mode = "loops" | "voice" | "effects" | "mix" | "save";
 
 type Props = {
   activeMode: Mode;
+  labels: Record<Mode, string>;
   onModeChange: (mode: Mode) => void;
 };
 
-const ITEMS: Array<{ key: Mode; label: string }> = [
-  { key: "loops", label: "Loops" },
-  { key: "voice", label: "Voice" },
-  { key: "effects", label: "Effects" },
-  { key: "mix", label: "Mix" },
-  { key: "save", label: "Save" },
+const ITEMS: Array<{ key: Mode }> = [
+  { key: "loops" },
+  { key: "voice" },
+  { key: "effects" },
+  { key: "mix" },
+  { key: "save" },
 ];
 
-export default function StudioBottomBar({ activeMode, onModeChange }: Props) {
+export default function StudioBottomBar({ activeMode, labels, onModeChange }: Props) {
   return (
     <nav className="studio-bottom-bar" aria-label="Studio navigation">
       {ITEMS.map((item) => (
@@ -23,7 +24,7 @@ export default function StudioBottomBar({ activeMode, onModeChange }: Props) {
           className={item.key === activeMode ? "is-active" : ""}
           onClick={() => onModeChange(item.key)}
         >
-          {item.label}
+          {labels[item.key]}
         </button>
       ))}
 

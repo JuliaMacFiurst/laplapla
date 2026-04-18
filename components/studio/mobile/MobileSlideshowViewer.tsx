@@ -65,8 +65,9 @@ export default function MobileSlideshowViewer({
   }
 
   const isLastSlide = slides.length > 0 && currentSlideIndex === slides.length - 1;
+  const isRtl = lang === "he";
   const captionClassName =
-    lang === "he"
+    isRtl
       ? "mobile-slideshow-caption mobile-slideshow-caption-he"
       : "mobile-slideshow-caption mobile-slideshow-caption-latin";
 
@@ -101,6 +102,7 @@ export default function MobileSlideshowViewer({
               <SwipeLayer
                 currentIndex={currentSlideIndex}
                 totalSlides={slides.length}
+                isRtl={isRtl}
                 onIndexChange={onIndexChange}
                 onInteract={onInteract}
               >
@@ -119,6 +121,7 @@ export default function MobileSlideshowViewer({
                     </div>
                     <div
                       className={captionClassName}
+                      dir={isRtl ? "rtl" : "ltr"}
                       dangerouslySetInnerHTML={{ __html: slide.text }}
                     />
                   </div>
@@ -128,7 +131,7 @@ export default function MobileSlideshowViewer({
               {showSwipeHint ? (
                 <div className="mobile-slideshow-hint" aria-hidden="true">
                   <span className="mobile-slideshow-hint-text">{swipeHintLabel}</span>
-                  <span className="mobile-slideshow-hint-arrow">→</span>
+                  <span className="mobile-slideshow-hint-arrow">{isRtl ? "←" : "→"}</span>
                 </div>
               ) : null}
             </div>

@@ -4,6 +4,9 @@ import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 type Props = {
   title: string;
   text: string;
+  youtubeLabel: string;
+  googleLabel: string;
+  storyLabel: string;
   onOpenYouTube: () => void;
   onOpenGoogle: () => void;
   onOpenStory: () => void;
@@ -12,6 +15,9 @@ type Props = {
 export default function ParrotGuide({
   title,
   text,
+  youtubeLabel,
+  googleLabel,
+  storyLabel,
   onOpenYouTube,
   onOpenGoogle,
   onOpenStory,
@@ -76,9 +82,9 @@ export default function ParrotGuide({
       </div>
 
       <div className="parrot-guide__actions">
-        <button type="button" onClick={onOpenYouTube}>YouTube</button>
-        <button type="button" onClick={onOpenGoogle}>Google</button>
-        <button type="button" onClick={onOpenStory}>Story</button>
+        <button type="button" onClick={onOpenYouTube}>{youtubeLabel}</button>
+        <button type="button" onClick={onOpenGoogle}>{googleLabel}</button>
+        <button type="button" onClick={onOpenStory}>{storyLabel}</button>
       </div>
 
       <style jsx>{`

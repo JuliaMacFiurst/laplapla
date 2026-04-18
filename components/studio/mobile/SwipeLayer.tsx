@@ -7,6 +7,7 @@ interface SwipeLayerProps {
   children: ReactNode;
   currentIndex: number;
   totalSlides: number;
+  isRtl?: boolean;
   onIndexChange: (nextIndex: number) => void;
   onInteract?: () => void;
 }
@@ -18,6 +19,7 @@ export default function SwipeLayer({
   children,
   currentIndex,
   totalSlides,
+  isRtl = false,
   onIndexChange,
   onInteract,
 }: SwipeLayerProps) {
@@ -46,15 +48,16 @@ export default function SwipeLayer({
     const touch = event.touches[0];
     const deltaX = touch.clientX - startXRef.current;
     const deltaY = touch.clientY - startYRef.current;
+    const effectiveDeltaX = isRtl ? -deltaX : deltaX;
 
     if (!isHorizontalRef.current) {
-      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      if (Math.abs(deltaY) > Math.abs(effectiveDeltaX)) {
         setIsDragging(false);
         setDragOffset(0);
         return;
       }
 
-      if (Math.abs(deltaX) < 6) {
+      if (Math.abs(effectiveDeltaX) < 6) {
         return;
       }
 
@@ -64,9 +67,9 @@ export default function SwipeLayer({
 
     event.preventDefault();
 
-    const isAtStart = currentIndex === 0 && deltaX > 0;
-    const isAtEnd = currentIndex === totalSlides - 1 && deltaX < 0;
-    const dampenedDelta = isAtStart || isAtEnd ? deltaX * 0.25 : deltaX;
+    const isAtStart = currentIndex === 0 && effectiveDeltaX > 0;
+    const isAtEnd = currentIndex === totalSlides - 1 && effectiveDeltaX < 0;
+    const dampenedDelta = isAtStart || isAtEnd ? effectiveDeltaX * 0.25 : effectiveDeltaX;
     setDragOffset(dampenedDelta);
   };
 
@@ -78,8 +81,10 @@ export default function SwipeLayer({
 
     const elapsed = Math.max(performance.now() - startTimeRef.current, 1);
     const velocity = Math.abs(dragOffset) / elapsed;
+
     const shouldNavigate =
-      Math.abs(dragOffset) > SWIPE_DISTANCE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
+      Math.abs(dragOffset) > SWIPE_DISTANCE_THRESHOLD ||
+      velocity > SWIPE_VELOCITY_THRESHOLD;
 
     if (shouldNavigate && totalSlides > 1) {
       const direction = dragOffset < 0 ? 1 : -1;
@@ -106,16 +111,19 @@ export default function SwipeLayer({
         height: "100%",
         overflow: "hidden",
         touchAction: "pan-y",
+        direction: "ltr",
       }}
     >
       <div
         className="mobile-slideshow-track"
         style={{
           display: "flex",
+          flexDirection: "row",
           width: "100%",
           height: "100%",
           transform: `translateX(calc(${-currentIndex * 100}% + ${dragOffset}px))`,
           transition: isDragging ? "none" : "transform 300ms ease-out",
+          direction: "ltr",
         }}
       >
         {children}

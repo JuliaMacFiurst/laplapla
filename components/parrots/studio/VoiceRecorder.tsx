@@ -8,6 +8,13 @@ type Props = {
   voice: VoiceState;
   voiceVolume: number;
   isChildVoice: boolean;
+  recordLabel: string;
+  stopLabel: string;
+  childVoiceLabel: string;
+  hintLabel: string;
+  micUnavailableLabel: string;
+  recordingFailedLabel: string;
+  openMicFailedLabel: string;
   onChange: (nextVoice: VoiceState) => void;
   onRecordBlobReady?: (blob: Blob, audioUrl: string) => void;
   onToggleChildVoice: () => void;
@@ -18,6 +25,13 @@ export default function VoiceRecorder({
   voice,
   voiceVolume,
   isChildVoice,
+  recordLabel,
+  stopLabel,
+  childVoiceLabel,
+  hintLabel,
+  micUnavailableLabel,
+  recordingFailedLabel,
+  openMicFailedLabel,
   onChange,
   onRecordBlobReady,
   onToggleChildVoice,
@@ -67,7 +81,7 @@ export default function VoiceRecorder({
 
     try {
       if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-        setErrorText("Микрофон недоступен в этом браузере.");
+        setErrorText(micUnavailableLabel);
         return;
       }
 
@@ -100,7 +114,7 @@ export default function VoiceRecorder({
       };
 
       recorder.onerror = () => {
-        setErrorText("Не удалось записать голос.");
+        setErrorText(recordingFailedLabel);
         setIsRecording(false);
         onRecordingStateChange?.(false);
       };
@@ -111,7 +125,7 @@ export default function VoiceRecorder({
       onRecordingStateChange?.(true);
     } catch (error) {
       console.error("Voice recording failed", error);
-      setErrorText("Не удалось открыть микрофон.");
+      setErrorText(openMicFailedLabel);
       setIsRecording(false);
       onRecordingStateChange?.(false);
     }
@@ -129,7 +143,7 @@ export default function VoiceRecorder({
         className={`voice-recorder__record ${isRecording ? "is-recording" : ""}`}
         onClick={isRecording ? stopRecording : () => void startRecording()}
       >
-        {isRecording ? "Stop" : "Rec"}
+        {isRecording ? stopLabel : recordLabel}
       </button>
 
       <button
@@ -137,13 +151,13 @@ export default function VoiceRecorder({
         className={`voice-recorder__toggle ${isChildVoice ? "is-active" : ""}`}
         onClick={onToggleChildVoice}
       >
-        Child Voice
+        {childVoiceLabel}
       </button>
 
       {voice.audioUrl ? (
         <audio ref={audioRef} src={voice.audioUrl} controls className="voice-recorder__audio" />
       ) : (
-        <p className="voice-recorder__hint">Record a voice line and it will appear here.</p>
+        <p className="voice-recorder__hint">{hintLabel}</p>
       )}
 
       {errorText ? <p className="voice-recorder__error">{errorText}</p> : null}

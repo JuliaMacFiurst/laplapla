@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 type Props = {
   title: string;
   subtitle: string;
@@ -9,6 +11,11 @@ type Props = {
   savedLabel: string;
   listenLabel: string;
   clearLabel: string;
+  dangerousZoneLabel: string;
+  confirmClearTitle: string;
+  confirmClearBody: string;
+  confirmClearConfirmLabel: string;
+  confirmClearCancelLabel: string;
   onRender: () => void;
   onListen: () => void;
   onClearAll: () => void;
@@ -25,10 +32,17 @@ export default function SavePanel({
   savedLabel,
   listenLabel,
   clearLabel,
+  dangerousZoneLabel,
+  confirmClearTitle,
+  confirmClearBody,
+  confirmClearConfirmLabel,
+  confirmClearCancelLabel,
   onRender,
   onListen,
   onClearAll,
 }: Props) {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
   return (
     <div className="save-panel">
       <div className="save-panel__copy">
@@ -45,16 +59,45 @@ export default function SavePanel({
       </button>
 
       <div className="save-panel__danger">
-        <span>Dangerous zone</span>
-        <button type="button" className="save-panel__danger-button" onClick={onClearAll}>
+        <span>{dangerousZoneLabel}</span>
+        <button type="button" className="save-panel__danger-button" onClick={() => setIsConfirmOpen(true)}>
           {clearLabel}
         </button>
       </div>
+
+      {isConfirmOpen ? (
+        <div className="save-panel__confirm-overlay" role="dialog" aria-modal="true">
+          <div className="save-panel__confirm-card">
+            <strong>{confirmClearTitle}</strong>
+            <p>{confirmClearBody}</p>
+            <div className="save-panel__confirm-actions">
+              <button
+                type="button"
+                className="save-panel__confirm-button save-panel__confirm-button--danger"
+                onClick={() => {
+                  setIsConfirmOpen(false);
+                  onClearAll();
+                }}
+              >
+                {confirmClearConfirmLabel}
+              </button>
+              <button
+                type="button"
+                className="save-panel__confirm-button"
+                onClick={() => setIsConfirmOpen(false)}
+              >
+                {confirmClearCancelLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <style jsx>{`
         .save-panel {
           display: grid;
           gap: 0.9rem;
+          position: relative;
         }
 
         .save-panel__copy {
@@ -130,6 +173,57 @@ export default function SavePanel({
         .save-panel__danger-button {
           background: linear-gradient(180deg, #ffd5d5 0%, #ffabab 100%);
           color: #4f1212;
+        }
+
+        .save-panel__confirm-overlay {
+          position: absolute;
+          inset: 0;
+          border-radius: 24px;
+          background: rgba(10, 10, 16, 0.86);
+          display: grid;
+          place-items: center;
+          padding: 1rem;
+          z-index: 2;
+        }
+
+        .save-panel__confirm-card {
+          width: 100%;
+          border-radius: 22px;
+          background: linear-gradient(180deg, #fff5ec 0%, #ffe3eb 100%);
+          color: #2b1e18;
+          padding: 1rem;
+          box-shadow: 0 18px 30px rgba(0, 0, 0, 0.24);
+          display: grid;
+          gap: 0.8rem;
+        }
+
+        .save-panel__confirm-card strong {
+          font-size: 1rem;
+        }
+
+        .save-panel__confirm-card p {
+          margin: 0;
+          line-height: 1.45;
+          font-size: 0.92rem;
+        }
+
+        .save-panel__confirm-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.6rem;
+        }
+
+        .save-panel__confirm-button {
+          min-height: 46px;
+          border: none;
+          border-radius: 16px;
+          background: rgba(43, 30, 24, 0.1);
+          color: #2b1e18;
+        }
+
+        .save-panel__confirm-button--danger {
+          background: linear-gradient(180deg, #ffcdcd 0%, #ff9c9c 100%);
+          color: #5a1515;
         }
       `}</style>
     </div>

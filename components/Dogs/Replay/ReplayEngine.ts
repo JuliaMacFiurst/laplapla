@@ -42,7 +42,6 @@ type GifOptions = {
 const TARGET_DURATION_SECONDS = 20;
 const TARGET_FPS = 30;
 const MAX_TARGET_FRAMES = TARGET_DURATION_SECONDS * TARGET_FPS;
-const STROKE_POINT_KEEP_EVERY = 3;
 
 function getSupportedReplayVideoMimeType(preferred?: string): string {
   const candidates = [
@@ -925,53 +924,8 @@ export class ReplayEngine {
   private buildProcessedActionGroups(groups: ReplayActionGroup[]) {
     return groups.map((group) => ({
       id: group.id,
-      actions: this.decimateStrokePoints(group.actions),
+      actions: [...group.actions],
     }));
-  }
-
-  private decimateStrokePoints(actions: ReplayAction[]) {
-    const result: ReplayAction[] = [];
-    let strokePointBuffer: ReplayAction[] = [];
-    let inStroke = false;
-
-    const flushStrokeBuffer = () => {
-      if (strokePointBuffer.length === 0) return;
-      strokePointBuffer.forEach((action, index) => {
-        const isNth = index % STROKE_POINT_KEEP_EVERY === 0;
-        const isLast = index === strokePointBuffer.length - 1;
-        if (isNth || isLast) {
-          result.push(action);
-        }
-      });
-      strokePointBuffer = [];
-    };
-
-    for (const action of actions) {
-      if (action.type === "strokeStart") {
-        flushStrokeBuffer();
-        inStroke = true;
-        result.push(action);
-        continue;
-      }
-
-      if (action.type === "strokePoint" && inStroke) {
-        strokePointBuffer.push(action);
-        continue;
-      }
-
-      if (action.type === "strokeEnd" && inStroke) {
-        flushStrokeBuffer();
-        result.push(action);
-        inStroke = false;
-        continue;
-      }
-
-      flushStrokeBuffer();
-      result.push(action);
-    }
-
-    flushStrokeBuffer();
-    return result;
   }
 
   private shouldCaptureGifFrame(action: ReplayAction) {

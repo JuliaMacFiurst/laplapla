@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { dictionaries } from "@/i18n";
 import { getMusicStyle } from "@/content/parrots/musicStyles";
 import { PARROT_PRESETS, iconForInstrument, iconForMusicStyle, type ParrotLoop } from "@/utils/parrot-presets";
 import type { ParrotStorySlide } from "@/lib/parrotStoryMedia";
@@ -186,6 +187,108 @@ export default function ParrotStudioRoot({
     () => getMusicStyle(lang, selectedStyleSlug),
     [lang, selectedStyleSlug],
   );
+  const languageCopySource = (dictionaries as unknown as Record<string, { language?: { title?: string; preview?: string } }>)[lang];
+  const languageCopy = {
+    title: languageCopySource?.language?.title ?? (lang === "ru" ? "Язык" : lang === "he" ? "שפה" : "Language"),
+    preview: languageCopySource?.language?.preview ?? (
+      lang === "ru"
+        ? "Язык интерфейса можно сменить в любой момент."
+        : lang === "he"
+          ? "ניתן לשנות את שפת הממשק בכל עת."
+          : "You can change the interface language at any time."
+    ),
+  };
+  const uiCopy = {
+    close: lang === "ru" ? "Закрыть" : lang === "he" ? "לסגור" : "Close",
+    style: lang === "ru" ? "Стиль" : lang === "he" ? "סגנון" : "Style",
+    play: lang === "ru" ? "Играть" : lang === "he" ? "נגן" : "Play",
+    pause: lang === "ru" ? "Пауза" : lang === "he" ? "השהה" : "Pause",
+    languages: lang === "ru" ? "Языки" : lang === "he" ? "שפות" : "Languages",
+    youtube: "YouTube",
+    google: "Google",
+    story: lang === "ru" ? "История" : lang === "he" ? "סיפור" : "Story",
+    bottomBar: {
+      loops: lang === "ru" ? "Лупы" : lang === "he" ? "לופים" : "Loops",
+      voice: lang === "ru" ? "Голос" : lang === "he" ? "קול" : "Voice",
+      effects: lang === "ru" ? "Эффекты" : lang === "he" ? "אפקטים" : "Effects",
+      mix: lang === "ru" ? "Микс" : lang === "he" ? "מיקס" : "Mix",
+      save: lang === "ru" ? "Сохранить" : lang === "he" ? "שמור" : "Save",
+    },
+    voiceRecorder: {
+      record: lang === "ru" ? "Запись" : lang === "he" ? "הקלט" : "Rec",
+      stop: lang === "ru" ? "Стоп" : lang === "he" ? "עצור" : "Stop",
+      childVoice: lang === "ru" ? "Детский голос" : lang === "he" ? "קול ילדי" : "Child Voice",
+      hint: lang === "ru"
+        ? "Запиши голос, и он появится здесь."
+        : lang === "he"
+          ? "הקליטו קול והוא יופיע כאן."
+          : "Record a voice line and it will appear here.",
+      micUnavailable: lang === "ru"
+        ? "Микрофон недоступен в этом браузере."
+        : lang === "he"
+          ? "המיקרופון לא זמין בדפדפן הזה."
+          : "Microphone is unavailable in this browser.",
+      recordingFailed: lang === "ru"
+        ? "Не удалось записать голос."
+        : lang === "he"
+          ? "לא הצלחנו להקליט את הקול."
+          : "Could not record voice.",
+      openMicFailed: lang === "ru"
+        ? "Не удалось открыть микрофон."
+        : lang === "he"
+          ? "לא הצלחנו לפתוח את המיקרופון."
+          : "Could not open the microphone.",
+    },
+    mix: {
+      loopsVolume: lang === "ru" ? "Громкость лупов" : lang === "he" ? "עוצמת הלופים" : "Loops Volume",
+      voiceVolume: lang === "ru" ? "Громкость голоса" : lang === "he" ? "עוצמת הקול" : "Voice Volume",
+    },
+    loopGrid: {
+      typeLabels: {
+        beat: lang === "ru" ? "Бит" : lang === "he" ? "ביט" : "Beat",
+        melody: lang === "ru" ? "Мелодия" : lang === "he" ? "מלודיה" : "Melody",
+        fx: "FX",
+        vocal: lang === "ru" ? "Вокал" : lang === "he" ? "שירה" : "Vocal",
+      } as Record<"beat" | "melody" | "fx" | "vocal", string>,
+      disabled: lang === "ru" ? "Выключено" : lang === "he" ? "כבוי" : "Disabled",
+      enable: lang === "ru" ? "Включить" : lang === "he" ? "הפעל" : "Enable",
+      off: lang === "ru" ? "Выкл" : lang === "he" ? "כבוי" : "Off",
+      changed: lang === "ru" ? "Луп изменён" : lang === "he" ? "הלופ הוחלף" : "Loop changed",
+      current: lang === "ru" ? "Сейчас" : lang === "he" ? "עכשיו" : "Now",
+      next: lang === "ru" ? "Дальше" : lang === "he" ? "הבא" : "Next",
+    },
+    effects: {
+      voice: lang === "ru" ? "Голос" : lang === "he" ? "קול" : "Voice",
+      loops: lang === "ru" ? "Лупы" : lang === "he" ? "לופים" : "Loops",
+      recordVoiceFirst: lang === "ru"
+        ? "Сначала запиши голос"
+        : lang === "he"
+          ? "קודם הקליטו קול"
+          : "Record a voice first",
+    },
+    save: {
+      title: lang === "ru" ? "Сохранение микса" : lang === "he" ? "שמירת המיקס" : "Save mix",
+      subtitle: lang === "ru"
+        ? "Соберём 30 секунд твоей музыки: активные лупы, эффекты, громкость и голос."
+        : lang === "he"
+          ? "נרכיב 30 שניות של המוזיקה שלך: לופים פעילים, אפקטים, עוצמה וקול."
+          : "We will render 30 seconds of your music: active loops, effects, volume, and voice.",
+      loading: lang === "ru" ? "Сохранение..." : lang === "he" ? "שומר..." : "Saving...",
+      export: lang === "ru" ? "Сохранить 30 секунд" : lang === "he" ? "שמור 30 שניות" : "Save 30 seconds",
+      saved: lang === "ru" ? "Сохранено" : lang === "he" ? "נשמר" : "Saved",
+      listen: lang === "ru" ? "Прослушать" : lang === "he" ? "להאזין" : "Listen",
+      clear: lang === "ru" ? "очистить все" : lang === "he" ? "לנקות הכול" : "clear all",
+      danger: lang === "ru" ? "Опасная зона" : lang === "he" ? "אזור מסוכן" : "Dangerous zone",
+      confirmTitle: lang === "ru" ? "Очистить всю студию?" : lang === "he" ? "לנקות את כל האולפן?" : "Clear the whole studio?",
+      confirmBody: lang === "ru"
+        ? "Будут удалены все лупы, голос, эффекты и сохранённый микс."
+        : lang === "he"
+          ? "כל הלופים, הקול, האפקטים והמיקס השמור יימחקו."
+          : "This will remove all loops, voice, effects, and the saved mix.",
+      confirm: lang === "ru" ? "Подтвердить" : lang === "he" ? "לאשר" : "Confirm",
+      cancel: lang === "ru" ? "Отмена" : lang === "he" ? "ביטול" : "Cancel",
+    },
+  };
   const guideSlides = useMemo(
     () => (musicStyle?.slides?.length ? musicStyle.slides : storySlides ?? []),
     [musicStyle?.slides, storySlides],
@@ -412,6 +515,10 @@ export default function ParrotStudioRoot({
         const variant = typeof variantIndex === "number"
           ? loop.variants[variantIndex] ?? loop.variants[0]
           : null;
+        const nextVariantIndex = typeof variantIndex === "number"
+          ? (variantIndex + 1) % loop.variants.length
+          : (loop.defaultIndex ?? 0);
+        const nextVariant = loop.variants[nextVariantIndex] ?? loop.variants[0];
 
         return {
           id: loop.id,
@@ -420,6 +527,7 @@ export default function ParrotStudioRoot({
           type: resolveLoopType(loop),
           isActive: typeof variantIndex === "number",
           variantLabel: variant?.label ?? "Loop",
+          nextVariantLabel: nextVariant?.label ?? "Loop",
           variantIndex,
           variantCount: loop.variants.length,
         };
@@ -1185,7 +1293,7 @@ export default function ParrotStudioRoot({
           type="button"
           className="parrot-studio-root__topbar-button parrot-studio-root__topbar-close"
           onClick={requestClose}
-          aria-label="Close"
+            aria-label={uiCopy.close}
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -1197,9 +1305,9 @@ export default function ParrotStudioRoot({
               setIsLanguageMenuOpen(false);
               setIsStyleMenuOpen((current) => !current);
             }}
-            aria-label="Style"
+            aria-label={uiCopy.style}
           >
-            Style
+            {uiCopy.style}
           </button>
           {isStyleMenuOpen ? (
             <div className="parrot-studio-root__style-menu" ref={styleMenuRef}>
@@ -1224,9 +1332,9 @@ export default function ParrotStudioRoot({
           type="button"
           className={`parrot-studio-root__topbar-button parrot-studio-root__topbar-play ${isCompositionPlaying ? "is-active" : ""}`}
           onClick={() => void handleToggleCompositionPlayback()}
-          aria-label={isCompositionPlaying ? "Pause" : "Play"}
+          aria-label={isCompositionPlaying ? uiCopy.pause : uiCopy.play}
         >
-          {isCompositionPlaying ? "Pause" : "Play"}
+          {isCompositionPlaying ? uiCopy.pause : uiCopy.play}
         </button>
         <div className="parrot-studio-root__topbar-menu">
           <button
@@ -1236,12 +1344,16 @@ export default function ParrotStudioRoot({
               setIsStyleMenuOpen(false);
               setIsLanguageMenuOpen((current) => !current);
             }}
-            aria-label="Languages"
+            aria-label={uiCopy.languages}
           >
             <span aria-hidden="true">•••</span>
           </button>
           {isLanguageMenuOpen ? (
             <div className="parrot-studio-root__language-menu" ref={languageMenuRef}>
+              <div className="parrot-studio-root__language-head">
+                <strong>{languageCopy.title}</strong>
+                <span>{languageCopy.preview}</span>
+              </div>
               {(["ru", "en", "he"] as const).map((item) => (
                 <button
                   key={item}
@@ -1261,12 +1373,15 @@ export default function ParrotStudioRoot({
       </header>
 
       <div className="parrot-studio-root__top">
-        <ParrotGuide
-          title={musicStyle?.title ?? preset.title}
-          text={musicStyle?.description ?? preset.description}
-          onOpenYouTube={() => openGoogle(`${preset.searchArtist} site:youtube.com`)}
-          onOpenGoogle={() => openGoogle(preset.searchGenre)}
-          onOpenStory={() => setIsStoryOpen(true)}
+          <ParrotGuide
+            title={musicStyle?.title ?? preset.title}
+            text={musicStyle?.description ?? preset.description}
+            youtubeLabel={uiCopy.youtube}
+            googleLabel={uiCopy.google}
+            storyLabel={uiCopy.story}
+            onOpenYouTube={() => openGoogle(`${preset.searchArtist} site:youtube.com`)}
+            onOpenGoogle={() => openGoogle(preset.searchGenre)}
+            onOpenStory={() => setIsStoryOpen(true)}
         />
       </div>
 
@@ -1276,6 +1391,13 @@ export default function ParrotStudioRoot({
             loops={loopPads}
             onCycleVariant={handleCycleLoopVariant}
             onDisable={handleDisableLoop}
+            typeLabels={uiCopy.loopGrid.typeLabels}
+            disabledLabel={uiCopy.loopGrid.disabled}
+            enableLabel={uiCopy.loopGrid.enable}
+            offLabel={uiCopy.loopGrid.off}
+            loopChangedLabel={uiCopy.loopGrid.changed}
+            currentLoopLabel={uiCopy.loopGrid.current}
+            nextLoopLabel={uiCopy.loopGrid.next}
           />
         ) : null}
 
@@ -1284,6 +1406,13 @@ export default function ParrotStudioRoot({
             voice={composition.voice}
             voiceVolume={composition.mix.voiceVolume}
             isChildVoice={composition.effects.voice.child}
+            recordLabel={uiCopy.voiceRecorder.record}
+            stopLabel={uiCopy.voiceRecorder.stop}
+            childVoiceLabel={uiCopy.voiceRecorder.childVoice}
+            hintLabel={uiCopy.voiceRecorder.hint}
+            micUnavailableLabel={uiCopy.voiceRecorder.micUnavailable}
+            recordingFailedLabel={uiCopy.voiceRecorder.recordingFailed}
+            openMicFailedLabel={uiCopy.voiceRecorder.openMicFailed}
             onRecordingStateChange={setIsVoiceRecording}
             onRecordBlobReady={(blob) => {
               recordedVoiceBlobRef.current = blob;
@@ -1300,7 +1429,11 @@ export default function ParrotStudioRoot({
 
         {composition.activeMode === "effects" ? (
           <EffectsPanel
+            lang={lang}
             activeCategory={composition.effects.activeCategory}
+            voiceLabel={uiCopy.effects.voice}
+            loopsLabel={uiCopy.effects.loops}
+            recordVoiceFirstLabel={uiCopy.effects.recordVoiceFirst}
             voiceEffects={composition.effects.voice}
             hasVoice={Boolean(composition.voice.audioUrl)}
             loopEffects={composition.effects.loops}
@@ -1343,6 +1476,8 @@ export default function ParrotStudioRoot({
           <MixPanel
             loopsVolume={composition.mix.loopsVolume}
             voiceVolume={composition.mix.voiceVolume}
+            loopsVolumeLabel={uiCopy.mix.loopsVolume}
+            voiceVolumeLabel={uiCopy.mix.voiceVolume}
             onLoopsVolumeChange={(value) =>
               setComposition((current) => ({
                 ...current,
@@ -1366,16 +1501,21 @@ export default function ParrotStudioRoot({
 
         {composition.activeMode === "save" ? (
           <SavePanel
-            title="Сохранение микса"
-            subtitle="Соберём 30 секунд твоей музыки: активные лупы, эффекты, громкость и голос."
+            title={uiCopy.save.title}
+            subtitle={uiCopy.save.subtitle}
             isRendering={isRenderingSave}
             isSaved={isSaved}
             exportUrl={renderedMixUrl}
-            loadingLabel="Сохранение..."
-            exportLabel="Сохранить 30 секунд"
-            savedLabel="Сохранено"
-            listenLabel="Прослушать"
-            clearLabel="очистить все"
+            loadingLabel={uiCopy.save.loading}
+            exportLabel={uiCopy.save.export}
+            savedLabel={uiCopy.save.saved}
+            listenLabel={uiCopy.save.listen}
+            clearLabel={uiCopy.save.clear}
+            dangerousZoneLabel={uiCopy.save.danger}
+            confirmClearTitle={uiCopy.save.confirmTitle}
+            confirmClearBody={uiCopy.save.confirmBody}
+            confirmClearConfirmLabel={uiCopy.save.confirm}
+            confirmClearCancelLabel={uiCopy.save.cancel}
             onRender={() => void renderThirtySecondMix()}
             onListen={handleListenRenderedMix}
             onClearAll={handleClearAll}
@@ -1389,6 +1529,7 @@ export default function ParrotStudioRoot({
 
       <StudioBottomBar
         activeMode={composition.activeMode}
+        labels={uiCopy.bottomBar}
         onModeChange={(mode) =>
           setComposition((current) => ({
             ...current,
@@ -1399,6 +1540,7 @@ export default function ParrotStudioRoot({
 
       {isStoryOpen ? (
         <ParrotStoryOverlay
+          key={`${lang}:${selectedStyleSlug}`}
           title={musicStyle?.title ?? preset.title}
           lang={lang}
           styleSlug={selectedStyleSlug}
@@ -1472,6 +1614,24 @@ export default function ParrotStudioRoot({
           border: 1px solid rgba(255, 255, 255, 0.08);
           box-shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
           z-index: 5;
+        }
+
+        .parrot-studio-root__language-head {
+          padding: 0.8rem 0.9rem 0.55rem;
+          display: grid;
+          gap: 0.24rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .parrot-studio-root__language-head strong {
+          color: #fff4e8;
+          font-size: 0.94rem;
+        }
+
+        .parrot-studio-root__language-head span {
+          color: rgba(255, 244, 232, 0.66);
+          font-size: 0.74rem;
+          line-height: 1.35;
         }
 
         .parrot-studio-root__style-menu {
