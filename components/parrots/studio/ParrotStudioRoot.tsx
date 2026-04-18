@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getMusicStyle } from "@/content/parrots/musicStyles";
 import { PARROT_PRESETS, iconForInstrument, iconForMusicStyle, type ParrotLoop } from "@/utils/parrot-presets";
+import type { ParrotStorySlide } from "@/lib/parrotStoryMedia";
 import LoopPadGrid from "./LoopPadGrid";
 import VoiceRecorder from "./VoiceRecorder";
 import EffectsPanel from "./EffectsPanel";
@@ -159,6 +160,7 @@ export default function ParrotStudioRoot({
   const compositionVoiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const compositionVoiceTimerRef = useRef<number | null>(null);
   const ownedVoiceBlobUrlRef = useRef<string | null>(null);
+  const recordedVoiceBlobRef = useRef<Blob | null>(null);
   const preset = useMemo(
     () => PARROT_PRESETS.find((item) => item.id === selectedStyleSlug) ?? PARROT_PRESETS[0],
     [selectedStyleSlug],
@@ -168,7 +170,7 @@ export default function ParrotStudioRoot({
     [lang, selectedStyleSlug],
   );
   const guideSlides = useMemo(
-    () => (storySlides?.length ? storySlides : musicStyle?.slides ?? []),
+    () => (musicStyle?.slides?.length ? musicStyle.slides : storySlides ?? []),
     [musicStyle?.slides, storySlides],
   );
   const compositionSnapshot = useMemo(
@@ -198,6 +200,9 @@ export default function ParrotStudioRoot({
     }
 
     ownedVoiceBlobUrlRef.current = nextVoiceUrl?.startsWith("blob:") ? nextVoiceUrl : null;
+    if (!nextVoiceUrl?.startsWith("blob:")) {
+      recordedVoiceBlobRef.current = null;
+    }
   }, [composition.voice.audioUrl]);
 
   useEffect(() => {
@@ -324,6 +329,7 @@ export default function ParrotStudioRoot({
         URL.revokeObjectURL(ownedVoiceBlobUrlRef.current);
         ownedVoiceBlobUrlRef.current = null;
       }
+      recordedVoiceBlobRef.current = null;
       if (renderedMixUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(renderedMixUrl);
       }
@@ -929,10 +935,21 @@ export default function ParrotStudioRoot({
         source.start(0);
       }));
 
+      const loadAudioArrayBuffer = async (src: string) => {
+        if (src.startsWith("blob:")) {
+          if (!recordedVoiceBlobRef.current) {
+            throw new Error("Recorded voice blob is missing for offline render");
+          }
+          return recordedVoiceBlobRef.current.arrayBuffer();
+        }
+
+        const response = await fetch(src);
+        return response.arrayBuffer();
+      };
+
       if (composition.voice.audioUrl) {
-        const voiceResponse = await fetch(composition.voice.audioUrl);
         const voiceBufferSource = offlineContext.createBufferSource();
-        const voiceArrayBuffer = await voiceResponse.arrayBuffer();
+        const voiceArrayBuffer = await loadAudioArrayBuffer(composition.voice.audioUrl);
         const voiceBuffer = await offlineContext.decodeAudioData(voiceArrayBuffer.slice(0));
         voiceBufferSource.buffer = voiceBuffer;
         let voicePlaybackRate = 1;
@@ -1003,6 +1020,7 @@ export default function ParrotStudioRoot({
       URL.revokeObjectURL(ownedVoiceBlobUrlRef.current);
       ownedVoiceBlobUrlRef.current = null;
     }
+    recordedVoiceBlobRef.current = null;
 
     if (renderedMixUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(renderedMixUrl);
@@ -1153,6 +1171,9 @@ export default function ParrotStudioRoot({
             voiceVolume={composition.mix.voiceVolume}
             isChildVoice={composition.effects.voice.child}
             onRecordingStateChange={setIsVoiceRecording}
+            onRecordBlobReady={(blob) => {
+              recordedVoiceBlobRef.current = blob;
+            }}
             onChange={(voice) =>
               setComposition((current) => ({
                 ...current,
@@ -1266,7 +1287,8 @@ export default function ParrotStudioRoot({
         <ParrotStoryOverlay
           title={musicStyle?.title ?? preset.title}
           lang={lang}
-          slides={guideSlides}
+          styleSlug={selectedStyleSlug}
+          slides={guideSlides as ParrotStorySlide[]}
           onClose={() => setIsStoryOpen(false)}
         />
       ) : null}

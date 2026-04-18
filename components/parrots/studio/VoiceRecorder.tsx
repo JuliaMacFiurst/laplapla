@@ -9,6 +9,7 @@ type Props = {
   voiceVolume: number;
   isChildVoice: boolean;
   onChange: (nextVoice: VoiceState) => void;
+  onRecordBlobReady?: (blob: Blob, audioUrl: string) => void;
   onToggleChildVoice: () => void;
   onRecordingStateChange?: (isRecording: boolean) => void;
 };
@@ -18,6 +19,7 @@ export default function VoiceRecorder({
   voiceVolume,
   isChildVoice,
   onChange,
+  onRecordBlobReady,
   onToggleChildVoice,
   onRecordingStateChange,
 }: Props) {
@@ -89,6 +91,7 @@ export default function VoiceRecorder({
         onChange({
           audioUrl,
         });
+        onRecordBlobReady?.(blob, audioUrl);
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         mediaRecorderRef.current = null;
