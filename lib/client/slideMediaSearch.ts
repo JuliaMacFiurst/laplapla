@@ -9,7 +9,7 @@ type SearchResponse = {
   items?: SlideMediaCandidate[];
 };
 
-const MAX_MEDIA_QUERY_LENGTH = 120;
+const MAX_MEDIA_QUERY_LENGTH = 200;
 const MAX_GIPHY_QUERY_ENCODED_LENGTH = 72;
 const MAX_PEXELS_QUERY_ENCODED_LENGTH = 120;
 
@@ -96,7 +96,7 @@ const fetchSourceItems = async (
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      q: safeQuery,
+      query: safeQuery,
       limit,
     }),
   });

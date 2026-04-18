@@ -7,6 +7,7 @@ import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useBook } from "@/hooks/useBook";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
+import { buildStudioHref } from "@/lib/studioRouting";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book } from "@/types/types";
 
@@ -66,7 +67,7 @@ export default function StandaloneBookScreen({
     const studioSlides = await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    void router.push(`/cats/studio?lang=${lang}`);
+    void router.push(buildStudioHref("cats", lang));
   };
 
   const handleFindNewImage = async (

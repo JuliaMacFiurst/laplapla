@@ -66,6 +66,7 @@ type StorySlide = {
 type Props = {
   lang: "ru" | "en" | "he";
   initialStyleSlug: string;
+  expectedStudioType?: "parrot";
   storySlides?: StorySlide[];
   onClose: () => void;
   onSwitchLanguage: (lang: "ru" | "en" | "he") => void;
@@ -101,14 +102,27 @@ const createEmptyLoopEffects = (loops: ParrotLoop[]) =>
     return acc;
   }, {});
 
+const SESSION_STORAGE_KEY = "parrot-studio-mobile-v1";
+
+const getVoiceGainMultiplier = (effects: VoiceEffectsState) =>
+  effects.whisper ? 0.72 : effects.mega ? 1.22 : 1;
+
 export default function ParrotStudioRoot({
   lang,
   initialStyleSlug,
+  expectedStudioType,
   storySlides,
   onClose,
   onSwitchLanguage,
   onOpenStory: _onOpenStory,
 }: Props) {
+  if (typeof window !== "undefined" && expectedStudioType) {
+    const routeType = new URLSearchParams(window.location.search).get("type");
+    if (routeType !== expectedStudioType) {
+      return null;
+    }
+  }
+
   const [selectedStyleSlug, setSelectedStyleSlug] = useState(initialStyleSlug);
   const [composition, setComposition] = useState<CompositionState>({
     activeMode: "loops",
@@ -158,9 +172,12 @@ export default function ParrotStudioRoot({
   const previewTimerRef = useRef<number | null>(null);
   const compositionVoiceContextRef = useRef<AudioContext | null>(null);
   const compositionVoiceAudioRef = useRef<HTMLAudioElement | null>(null);
+  const compositionVoiceGainRef = useRef<GainNode | null>(null);
   const compositionVoiceTimerRef = useRef<number | null>(null);
   const ownedVoiceBlobUrlRef = useRef<string | null>(null);
   const recordedVoiceBlobRef = useRef<Blob | null>(null);
+  const hasRestoredSessionRef = useRef(false);
+  const shouldSkipNextPresetInitRef = useRef(false);
   const preset = useMemo(
     () => PARROT_PRESETS.find((item) => item.id === selectedStyleSlug) ?? PARROT_PRESETS[0],
     [selectedStyleSlug],
@@ -186,10 +203,57 @@ export default function ParrotStudioRoot({
     [composition, selectedStyleSlug],
   );
   const isSaved = Boolean(savedCompositionSnapshot && savedCompositionSnapshot === compositionSnapshot);
+  const confirmExitMessage = lang === "ru"
+    ? "Изменения не сохранятся. Выйти?"
+    : lang === "he"
+      ? "השינויים לא יישמרו. לצאת?"
+      : "Changes will not be saved. Exit?";
 
   useEffect(() => {
     setSelectedStyleSlug(initialStyleSlug);
   }, [initialStyleSlug]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || hasRestoredSessionRef.current) return;
+
+    hasRestoredSessionRef.current = true;
+
+    try {
+      const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as {
+        selectedStyleSlug?: string;
+        composition?: CompositionState;
+        savedCompositionSnapshot?: string | null;
+      };
+
+      if (!parsed?.composition) return;
+
+      shouldSkipNextPresetInitRef.current = true;
+      if (parsed.selectedStyleSlug) {
+        setSelectedStyleSlug(parsed.selectedStyleSlug);
+      }
+      setComposition(parsed.composition);
+      setSavedCompositionSnapshot(parsed.savedCompositionSnapshot ?? null);
+      setIsCompositionPlaying(false);
+    } catch (error) {
+      console.error("Failed to restore parrot studio session", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.sessionStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({
+        selectedStyleSlug,
+        composition,
+        savedCompositionSnapshot,
+      }),
+    );
+  }, [composition, savedCompositionSnapshot, selectedStyleSlug]);
 
   useEffect(() => {
     const nextVoiceUrl = composition.voice.audioUrl;
@@ -226,6 +290,11 @@ export default function ParrotStudioRoot({
   }, [isLanguageMenuOpen, isStyleMenuOpen]);
 
   useEffect(() => {
+    if (shouldSkipNextPresetInitRef.current) {
+      shouldSkipNextPresetInitRef.current = false;
+      return;
+    }
+
     const initialLoopEffects = createEmptyLoopEffects(preset.loops);
 
     const loopSelections = preset.loops.reduce<Record<string, number | null>>((acc, loop) => {
@@ -481,7 +550,11 @@ export default function ParrotStudioRoot({
       previewTimerRef.current = null;
     }
 
-    previewAudioRef.current?.pause();
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current.currentTime = 0;
+      previewAudioRef.current.onended = null;
+    }
     previewAudioRef.current = null;
 
     const activeContext = previewContextRef.current;
@@ -499,14 +572,13 @@ export default function ParrotStudioRoot({
       compositionVoiceTimerRef.current = null;
     }
 
-    compositionVoiceAudioRef.current?.pause();
-    compositionVoiceAudioRef.current = null;
-
-    const activeContext = compositionVoiceContextRef.current;
-    compositionVoiceContextRef.current = null;
-    if (activeContext) {
-      void activeContext.close().catch(() => {});
+    if (compositionVoiceAudioRef.current) {
+      compositionVoiceAudioRef.current.pause();
+      compositionVoiceAudioRef.current.currentTime = 0;
+      compositionVoiceAudioRef.current.onended = null;
     }
+    compositionVoiceAudioRef.current = null;
+    compositionVoiceGainRef.current = null;
   };
 
   const bufferToWavBlob = (buffer: AudioBuffer) => {
@@ -690,7 +762,11 @@ export default function ParrotStudioRoot({
       return;
     }
 
-    const context = new AudioContext();
+    let context = compositionVoiceContextRef.current;
+    if (!context || context.state === "closed") {
+      context = new AudioContext();
+      compositionVoiceContextRef.current = context;
+    }
     const audio = new Audio(composition.voice.audioUrl);
     audio.preload = "auto";
     audio.currentTime = 0;
@@ -698,8 +774,7 @@ export default function ParrotStudioRoot({
 
     const source = context.createMediaElementSource(audio);
     const gain = context.createGain();
-    const gainMultiplier = composition.effects.voice.whisper ? 0.72 : composition.effects.voice.mega ? 1.22 : 1;
-    gain.gain.value = Math.min(1.5, composition.mix.voiceVolume * gainMultiplier);
+    gain.gain.value = Math.min(1.5, composition.mix.voiceVolume * getVoiceGainMultiplier(composition.effects.voice));
 
     let playbackRate = 1;
     if (composition.effects.voice.child) playbackRate *= 1.2;
@@ -715,11 +790,13 @@ export default function ParrotStudioRoot({
 
     source.connect(gain);
     connectVoiceEffects(context, gain, context.destination, composition.effects.voice);
-    await context.resume();
+    if (context.state !== "running") {
+      await context.resume();
+    }
     await audio.play();
 
-    compositionVoiceContextRef.current = context;
     compositionVoiceAudioRef.current = audio;
+    compositionVoiceGainRef.current = gain;
     compositionVoiceTimerRef.current = window.setTimeout(() => {
       stopCompositionVoice();
     }, 30000);
@@ -868,6 +945,13 @@ export default function ParrotStudioRoot({
   };
 
   useEffect(() => {
+    const activeGain = compositionVoiceGainRef.current;
+    if (!activeGain) return;
+
+    activeGain.gain.value = Math.min(1.5, composition.mix.voiceVolume * getVoiceGainMultiplier(composition.effects.voice));
+  }, [composition.mix.voiceVolume, composition.effects.voice]);
+
+  useEffect(() => {
     if (!isCompositionPlaying || isVoiceRecording) {
       stopCompositionVoice();
       return;
@@ -879,11 +963,41 @@ export default function ParrotStudioRoot({
     });
   }, [
     composition.effects.voice,
-    composition.mix.voiceVolume,
     composition.voice.audioUrl,
     isCompositionPlaying,
     isVoiceRecording,
   ]);
+
+  const requestClose = () => {
+    if (!isSaved && typeof window !== "undefined") {
+      const shouldLeave = window.confirm(confirmExitMessage);
+      if (!shouldLeave) return;
+    }
+    onClose();
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.history.pushState({ parrotStudio: true }, "", window.location.href);
+
+    const handlePopState = () => {
+      if (!isSaved) {
+        const shouldLeave = window.confirm(confirmExitMessage);
+        if (!shouldLeave) {
+          window.history.pushState({ parrotStudio: true }, "", window.location.href);
+          return;
+        }
+      }
+
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [confirmExitMessage, isSaved, onClose]);
 
   const renderThirtySecondMix = async () => {
     setIsRenderingSave(true);
@@ -1070,7 +1184,7 @@ export default function ParrotStudioRoot({
         <button
           type="button"
           className="parrot-studio-root__topbar-button parrot-studio-root__topbar-close"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Close"
         >
           <span aria-hidden="true">×</span>

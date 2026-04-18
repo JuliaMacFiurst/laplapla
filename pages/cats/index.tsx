@@ -11,7 +11,8 @@ import {
   buildAnimalSlideMediaQueries,
   findAlternativeSlideMedia,
 } from "@/lib/client/slideMediaSearch";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioRoute } from "@/lib/studioRouting";
 import type { StudioSlide } from "@/types/studio";
 
 type CatRuntimeSlide = {
@@ -284,7 +285,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const handleEditInStudio = (sourceSlides: CatRuntimeSlide[]) => {
     sessionStorage.setItem("catsSlides", JSON.stringify(sourceSlides));
     void router.push(
-      { pathname: "/cats/studio", query: buildLocalizedQuery(currentLang) },
+      buildStudioRoute("cats", currentLang),
       undefined,
       { locale: currentLang }
     );

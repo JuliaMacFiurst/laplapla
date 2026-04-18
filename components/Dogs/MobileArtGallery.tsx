@@ -7,6 +7,7 @@ import {
   findAlternativeSlideMedia,
 } from "@/lib/client/slideMediaSearch";
 import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioHref } from "@/lib/studioRouting";
 import { Lang } from "../../i18n";
 import type { StudioSlide } from "@/types/studio";
 
@@ -231,7 +232,7 @@ export default function MobileArtGallery({
         })),
       ),
     );
-    void router.push("/cats/studio", undefined, { locale: lang });
+    void router.push(buildStudioHref("cats", lang), undefined, { locale: lang });
   };
 
   const handleClose = () => {

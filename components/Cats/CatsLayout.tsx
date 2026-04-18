@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import { dictionaries, Lang } from "@/i18n";
 import React from "react";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioRoute } from "@/lib/studioRouting";
 
 interface CatsLayoutProps {
   children: React.ReactNode;
@@ -42,7 +43,7 @@ export default function CatsLayout({ children, active, lang }: CatsLayoutProps) 
           className={`mode-tab-button ${active === "studio" ? "active" : ""}`}
           onClick={() =>
             router.push(
-              { pathname: "/cats/studio", query: buildLocalizedQuery(currentLang) },
+              buildStudioRoute("cats", currentLang),
               undefined,
               { locale: currentLang },
             )

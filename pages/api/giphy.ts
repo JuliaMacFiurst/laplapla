@@ -4,7 +4,7 @@ import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
 
 const TTL_MS = 60 * 60 * 1000;
-const MAX_GIPHY_QUERY_LENGTH = 120;
+const MAX_GIPHY_QUERY_LENGTH = 200;
 const MAX_GIPHY_QUERY_ENCODED_LENGTH = 72;
 
 function clampQueryByEncodedLength(value: string, maxEncodedLength: number) {
@@ -99,7 +99,10 @@ async function handler(
   }
 
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
-  const rawQuery = Array.isArray(payload.q) ? payload.q[0] : payload.q;
+  const rawQueryValue =
+    (payload as Record<string, unknown>).query ??
+    (payload as Record<string, unknown>).q;
+  const rawQuery = Array.isArray(rawQueryValue) ? rawQueryValue[0] : rawQueryValue;
   const rawLimit = Array.isArray(payload.limit) ? payload.limit[0] : payload.limit;
   const query = typeof rawQuery === "string"
     ? clampQueryByEncodedLength(rawQuery.trim().slice(0, MAX_GIPHY_QUERY_LENGTH).trim(), MAX_GIPHY_QUERY_ENCODED_LENGTH)

@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioRoute } from "@/lib/studioRouting";
 import { loadProject } from "@/lib/studioStorage";
 import type { StudioProject } from "@/types/studio";
 import type { Track } from "@/components/studio/MusicPanel";
@@ -211,7 +212,7 @@ const COPY = {
   },
 } as const;
 
-export default function ParrotsStudioPage() {
+export function ParrotsStudioPageContent() {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const isMobile = useIsMobile();
@@ -350,7 +351,7 @@ export default function ParrotsStudioPage() {
 
     sessionStorage.setItem("parrot_import", JSON.stringify(payload));
     await router.push(
-      { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+      buildStudioRoute("cats", lang),
       undefined,
       { locale: lang },
     );
@@ -432,7 +433,7 @@ export default function ParrotsStudioPage() {
     }));
 
     await router.push(
-      { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+      buildStudioRoute("cats", lang),
       undefined,
       { locale: lang },
     );
@@ -449,9 +450,10 @@ export default function ParrotsStudioPage() {
   const handleSwitchMobileLanguage = (nextLang: "ru" | "en" | "he") => {
     void router.push(
       {
-        pathname: "/parrots/studio",
+        pathname: "/studio",
         query: {
           ...router.query,
+          type: "parrot",
           style: styleSlug,
         },
       },
@@ -487,6 +489,7 @@ export default function ParrotsStudioPage() {
           <ParrotStudioRoot
             lang={lang}
             initialStyleSlug={styleSlug}
+            expectedStudioType={router.pathname === "/studio" ? "parrot" : undefined}
             storySlides={(initialSlides ?? []).map((slide) => ({
               text: slide.text,
               mediaUrl: slide.image ?? slide.mediaUrl,
@@ -639,4 +642,24 @@ export default function ParrotsStudioPage() {
       `}</style>
     </>
   );
+}
+
+export default function LegacyParrotsStudioPage() {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    void router.replace(
+      buildStudioRoute("parrot", lang, {
+        style: typeof router.query.style === "string" ? router.query.style : undefined,
+        slides: typeof router.query.slides === "string" ? router.query.slides : undefined,
+      }),
+      undefined,
+      { locale: lang },
+    );
+  }, [lang, router]);
+
+  return null;
 }

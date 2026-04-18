@@ -8,6 +8,7 @@ import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBook
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioRoute } from "@/lib/studioRouting";
 
 export default function CapybaraPage({ lang }: { lang: Lang }) {
   const router = useRouter();
@@ -377,7 +378,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
     await router.push(
-      { pathname: "/cats/studio", query: buildLocalizedQuery(currentLang) },
+      buildStudioRoute("cats", currentLang),
       undefined,
       { locale: currentLang },
     );

@@ -71,6 +71,7 @@ function getImportedSlideFontSize(text: string) {
 interface StudioRootProps {
   lang: Lang;
   projectId?: string;
+  expectedStudioType?: "cats";
   initialSlides?: Array<{
     text: string;
     image?: string;
@@ -102,7 +103,10 @@ interface StudioLayoutProps {
   isPreviewOpen: boolean;
   isRecording: boolean;
   isSaving: boolean;
+  isSaved: boolean;
+  hasUnsavedChanges: boolean;
   lastSavedAt: number | null;
+  confirmExitMessage: string;
   t: (typeof dictionaries)[Lang]["cats"]["studio"];
   audioEngineRef: RefObject<AudioEngineHandle | null>;
   previewRef: RefObject<HTMLDivElement | null>;
@@ -683,6 +687,8 @@ function StudioMobileLayout({
   activeSlideIndex,
   isRecording,
   isMediaOpen,
+  hasUnsavedChanges,
+  confirmExitMessage,
   previewRef,
   setActiveSlideIndex,
   setProject,
@@ -703,6 +709,24 @@ function StudioMobileLayout({
   router,
   audioEngineRef,
 }: StudioLayoutProps) {
+  const onClose = () => {
+    void router.push(
+      {
+        pathname: "/cats",
+        query: buildLocalizedQuery(lang),
+      },
+      undefined,
+      { locale: lang },
+    );
+  };
+  const requestClose = () => {
+    if (hasUnsavedChanges) {
+      const shouldLeave = window.confirm(confirmExitMessage);
+      if (!shouldLeave) return;
+    }
+
+    onClose();
+  };
   const [mode, setMode] = useState<"slides" | "text" | "media" | "audio" | "settings" | null>("slides");
   const [activePicker, setActivePicker] = useState<MobilePickerTarget>(null);
   const [activeAudioSheet, setActiveAudioSheet] = useState<"music" | "voice" | null>(null);
@@ -866,18 +890,31 @@ function StudioMobileLayout({
   }
 
   function handleCloseStudio() {
-    const shouldLeave = window.confirm("Close studio and return to cats? Recent changes may not be saved.");
-    if (!shouldLeave) return;
-
-    void router.push(
-      {
-        pathname: "/cats",
-        query: buildLocalizedQuery(lang),
-      },
-      undefined,
-      { locale: lang },
-    );
+    requestClose();
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.history.pushState({ catStudio: true }, "", window.location.href);
+
+    const handlePopState = () => {
+      if (hasUnsavedChanges) {
+        const shouldLeave = window.confirm(confirmExitMessage);
+        if (!shouldLeave) {
+          window.history.pushState({ catStudio: true }, "", window.location.href);
+          return;
+        }
+      }
+
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [confirmExitMessage, hasUnsavedChanges, onClose]);
 
   useEffect(() => {
     if (!isExportSheetOpen || exportState !== "idle") return;
@@ -2782,9 +2819,17 @@ function StudioMobileLayout({
 export default function StudioRoot({
   lang,
   projectId = DEFAULT_PROJECT_ID,
+  expectedStudioType,
   initialSlides,
   initialTracks,
 }: StudioRootProps) {
+  if (typeof window !== "undefined" && expectedStudioType) {
+    const routeType = new URLSearchParams(window.location.search).get("type");
+    if (routeType !== expectedStudioType) {
+      return null;
+    }
+  }
+
   const [project, setProject] = useState<StudioProject>(() => createInitialProject(projectId));
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [history, setHistory] = useState<StudioProject[]>([]);
@@ -2804,6 +2849,7 @@ export default function StudioRoot({
   const [isSaving, setIsSaving] = useState(false);
   const projectRef = useRef(project);
   const lastSavedSnapshotRef = useRef<string>(JSON.stringify(project));
+  const mobileExitBaselineSnapshotRef = useRef<string | null>(null);
   const isSavingRef = useRef(false);
   const pendingHistorySnapshotRef = useRef<StudioProject | null>(null);
 
@@ -2811,6 +2857,17 @@ export default function StudioRoot({
   const router = useRouter();
 
   const previewRef = useRef<HTMLDivElement>(null);
+  const projectSnapshot = JSON.stringify(project);
+  const isSaved = projectSnapshot === lastSavedSnapshotRef.current;
+  const hasUnsavedChanges = Boolean(
+    mobileExitBaselineSnapshotRef.current &&
+    mobileExitBaselineSnapshotRef.current !== projectSnapshot,
+  );
+  const confirmExitMessage = lang === "ru"
+    ? "Изменения не сохранятся. Выйти?"
+    : lang === "he"
+      ? "השינויים לא יישמרו. לצאת?"
+      : "Changes will not be saved. Exit?";
 
   function markProjectSaved(savedProject: StudioProject) {
     projectRef.current = savedProject;
@@ -3441,7 +3498,10 @@ export default function StudioRoot({
 
         projectRef.current = normalizedSaved;
         lastSavedSnapshotRef.current = JSON.stringify(normalizedSaved);
+        mobileExitBaselineSnapshotRef.current = JSON.stringify(normalizedSaved);
         setProject(normalizedSaved);
+      } else {
+        mobileExitBaselineSnapshotRef.current = JSON.stringify(projectRef.current);
       }
     }, 200);
 
@@ -3538,6 +3598,7 @@ export default function StudioRoot({
     };
 
     setProject(newProject);
+    mobileExitBaselineSnapshotRef.current = JSON.stringify(newProject);
     setActiveSlideIndex(0);
 
     // Immediately overwrite saved project with external slides
@@ -3721,7 +3782,10 @@ export default function StudioRoot({
     isPreviewOpen,
     isRecording,
     isSaving,
+    isSaved,
+    hasUnsavedChanges,
     lastSavedAt,
+    confirmExitMessage,
     t,
     audioEngineRef,
     previewRef,

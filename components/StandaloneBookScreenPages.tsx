@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useBook } from "@/hooks/useBook";
 import { buildBookHref, buildBookModeHref, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import { buildLocalizedHref, buildLocalizedQuery } from "@/lib/i18n/routing";
+import { buildStudioHref } from "@/lib/studioRouting";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book } from "@/types/types";
 
@@ -172,7 +173,7 @@ export default function StandaloneBookScreenPages({
     const studioSlides = await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    void router.push(buildLocalizedHref("/cats/studio", lang), undefined, { locale: lang });
+    void router.push(buildStudioHref("cats", lang), undefined, { locale: lang });
   };
 
   const handleFindNewImage = async (

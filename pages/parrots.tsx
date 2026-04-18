@@ -7,7 +7,8 @@ import ParrotMobileExperience from "@/components/parrots/mobile/ParrotMobileExpe
 import { PARROT_PRESETS } from "../utils/parrot-presets";
 import { dictionaries } from "../i18n";
 import { getMusicStyle } from "../content/parrots/musicStyles";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioRoute } from "@/lib/studioRouting";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ExportSlide = {
@@ -136,7 +137,7 @@ export default function ParrotsPage() {
     const exportPayload = buildParrotExport();
     sessionStorage.setItem("parrot_import", JSON.stringify(exportPayload));
     router.push(
-      { pathname: "/parrots/studio", query: buildLocalizedQuery(lang) },
+      buildStudioRoute("parrot", lang),
       undefined,
       { locale: lang },
     );
@@ -158,14 +159,10 @@ export default function ParrotsPage() {
 
     sessionStorage.setItem("parrot_import", JSON.stringify(exportPayload));
     router.push(
-      {
-        pathname: "/parrots/studio",
-        query: {
-          ...buildLocalizedQuery(lang),
-          style: styleId,
-          slides: String(styleSlides.length),
-        },
-      },
+      buildStudioRoute("parrot", lang, {
+        style: styleId,
+        slides: String(styleSlides.length),
+      }),
       undefined,
       { locale: lang },
     );

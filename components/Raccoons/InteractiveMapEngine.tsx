@@ -2,7 +2,8 @@ import { useRef, useEffect, useLayoutEffect, useState, type Dispatch, type SetSt
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioRoute } from "@/lib/studioRouting";
 import { normalizeSlug } from "@/lib/mapEntityRouting";
 import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
@@ -714,7 +715,7 @@ useEffect(() => {
     }
 
     void router.push(
-      { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+      buildStudioRoute("cats", lang),
       undefined,
       { locale: lang },
     );

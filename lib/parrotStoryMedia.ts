@@ -73,6 +73,9 @@ const buildMediaQueries = (styleSlug: string, slideText: string) => {
   );
 };
 
+export const buildParrotMediaQueries = (styleSlug: string, slideText: string) =>
+  buildMediaQueries(styleSlug, slideText);
+
 const getMediaTypeFromUrl = (url: string) =>
   /\.mp4(\?|$)|\.webm(\?|$)/i.test(url)
     ? "video"
@@ -116,4 +119,21 @@ export async function resolveParrotStorySlidesWithMedia(
   }
 
   return resolvedSlides;
+}
+
+export async function findAlternativeParrotStoryMedia(
+  styleSlug: string,
+  slide: ParrotStorySlide,
+  slideIndex: number,
+  slideCount: number,
+  excludedUrls: string[] = [],
+) {
+  const specialParrotQuery = getSpecialParrotQuery(slideIndex, slideCount);
+  const queries = specialParrotQuery ? [specialParrotQuery] : buildMediaQueries(styleSlug, slide.text);
+
+  return findAlternativeSlideMedia({
+    queries,
+    excludedUrls,
+    preferredSources: specialParrotQuery ? ["giphy", "pexels"] : slideIndex % 2 === 0 ? ["giphy", "pexels"] : ["pexels", "giphy"],
+  });
 }

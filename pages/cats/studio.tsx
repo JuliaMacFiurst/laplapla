@@ -5,11 +5,13 @@ import SEO from "@/components/SEO";
 import { Lang, dictionaries } from "@/i18n";
 import { useEffect, useState } from "react";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioRoute } from "@/lib/studioRouting";
 import type { Track } from "@/components/studio/MusicPanel";
 import { PARROT_PRESETS } from "@/utils/parrot-presets";
 import { loadProject } from "@/lib/studioStorage";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import type { StudioProject } from "@/types/studio";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ImportedSlide = {
   text: string;
@@ -121,12 +123,15 @@ function getOverwriteMessage(lang: Lang) {
   return "В студии уже есть сохранённое редактируемое слайдшоу. Заменить его новым?";
 }
 
-export default function CatsStudioPage({ lang }: { lang: Lang }) {
-  const t = dictionaries[lang].cats;
-  const seo = dictionaries[lang].seo.cats.studio;
+export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router);
+  const lang = providedLang ?? currentLang;
+  const isMobile = useIsMobile();
+  const t = dictionaries[lang].cats;
+  const seo = dictionaries[lang].seo.cats.studio;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/studio";
+  const isUnifiedMobileStudioRoute = router.pathname === "/studio" && isMobile;
 
   const [initialSlides, setInitialSlides] = useState<
     ImportedSlide[] | undefined
@@ -233,39 +238,70 @@ export default function CatsStudioPage({ lang }: { lang: Lang }) {
   return (
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
-      <CatsLayout active="studio" lang={lang}>
-        <div style={{ marginBottom: 24 }}>
-          
-        </div>
-        {isImportReady ? (
+      {isUnifiedMobileStudioRoute ? (
+        isImportReady ? (
           <StudioRoot
             lang={lang}
+            expectedStudioType="cats"
             initialSlides={initialSlides}
             initialTracks={initialTracks}
           />
-        ) : null}
+        ) : null
+      ) : (
+        <CatsLayout active="studio" lang={lang}>
+          <div style={{ marginBottom: 24 }}>
+            
+          </div>
+          {isImportReady ? (
+            <StudioRoot
+              lang={lang}
+              expectedStudioType={router.pathname === "/studio" ? "cats" : undefined}
+              initialSlides={initialSlides}
+              initialTracks={initialTracks}
+            />
+          ) : null}
 
-        <button
-            className="back-to-cats-button"
-            onClick={() =>
-              router.push(
-                { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
-                undefined,
-                { locale: currentLang },
-              )
-            }
-          >
-            ← {t.backButton}
-          </button>
-        <video
-          className="cat-paw-video"
-          src={buildSupabaseStorageUrl("characters/cats/cap-paw.webm")}
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-      </CatsLayout>
+          <button
+              className="back-to-cats-button"
+              onClick={() =>
+                router.push(
+                  { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
+                  undefined,
+                  { locale: currentLang },
+                )
+              }
+            >
+              ← {t.backButton}
+            </button>
+          <video
+            className="cat-paw-video"
+            src={buildSupabaseStorageUrl("characters/cats/cap-paw.webm")}
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+        </CatsLayout>
+      )}
     </>
   );
+}
+
+export default function LegacyCatsStudioPage() {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    void router.replace(
+      buildStudioRoute("cats", lang, {
+        data: typeof router.query.data === "string" ? router.query.data : undefined,
+      }),
+      undefined,
+      { locale: lang },
+    );
+  }, [lang, router]);
+
+  return null;
 }

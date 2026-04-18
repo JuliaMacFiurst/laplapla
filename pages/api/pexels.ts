@@ -100,7 +100,10 @@ async function handler(
   }
 
   const payload = req.method === "POST" && req.body && typeof req.body === "object" ? req.body : req.query;
-  const rawQuery = Array.isArray(payload.q) ? payload.q[0] : payload.q;
+  const rawQueryValue =
+    (payload as Record<string, unknown>).query ??
+    (payload as Record<string, unknown>).q;
+  const rawQuery = Array.isArray(rawQueryValue) ? rawQueryValue[0] : rawQueryValue;
   const rawLimit = Array.isArray(payload.limit) ? payload.limit[0] : payload.limit;
   const query = typeof rawQuery === "string"
     ? clampQueryByEncodedLength(rawQuery.trim().slice(0, MAX_PEXELS_QUERY_LENGTH).trim(), MAX_PEXELS_QUERY_ENCODED_LENGTH)

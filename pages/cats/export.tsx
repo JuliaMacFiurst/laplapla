@@ -11,10 +11,11 @@ import { useRouter } from "next/router";
 import { recordPreviewDom } from "@/lib/recordPreviewDom";
 import { cropAndConvert, preloadFFmpeg } from "@/lib/cropAndConvert";
 import { dictionaries, type Lang } from "@/i18n";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { buildStudioRoute } from "@/lib/studioRouting";
 
 export default function StudioExportPage() {
   const [slides, setSlides] = useState<StudioSlide[]>([]);
@@ -139,7 +140,7 @@ export default function StudioExportPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         router.push(
-          { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+          buildStudioRoute("cats", lang),
           undefined,
           { locale: lang },
         );
@@ -289,7 +290,7 @@ export default function StudioExportPage() {
             className="studio-button btn-mint"
             onClick={() =>
               router.push(
-                { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+                buildStudioRoute("cats", lang),
                 undefined,
                 { locale: lang },
               )
@@ -337,7 +338,7 @@ export default function StudioExportPage() {
         className="export-back-button"
         onClick={() =>
           router.push(
-            { pathname: "/cats/studio", query: buildLocalizedQuery(lang) },
+            buildStudioRoute("cats", lang),
             undefined,
             { locale: lang },
           )
