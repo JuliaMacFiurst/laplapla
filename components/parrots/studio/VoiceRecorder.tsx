@@ -44,6 +44,7 @@ export default function VoiceRecorder({
     const audio = audioRef.current;
     if (!audio) return;
 
+    audio.load();
     audio.volume = voiceVolume;
     audio.playbackRate = isChildVoice ? 1.2 : 1;
     if ("preservesPitch" in audio) {
@@ -56,11 +57,8 @@ export default function VoiceRecorder({
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop());
-      if (voice.audioUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(voice.audioUrl);
-      }
     };
-  }, [voice.audioUrl]);
+  }, []);
 
   const startRecording = async () => {
     if (isRecording) return;
@@ -88,9 +86,6 @@ export default function VoiceRecorder({
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType || "audio/webm" });
         const audioUrl = URL.createObjectURL(blob);
-        if (voice.audioUrl?.startsWith("blob:")) {
-          URL.revokeObjectURL(voice.audioUrl);
-        }
         onChange({
           audioUrl,
         });

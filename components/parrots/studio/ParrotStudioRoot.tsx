@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getMusicStyle } from "@/content/parrots/musicStyles";
-import { PARROT_PRESETS, iconForInstrument, type ParrotLoop } from "@/utils/parrot-presets";
+import { PARROT_PRESETS, iconForInstrument, iconForMusicStyle, type ParrotLoop } from "@/utils/parrot-presets";
 import LoopPadGrid from "./LoopPadGrid";
 import VoiceRecorder from "./VoiceRecorder";
 import EffectsPanel from "./EffectsPanel";
@@ -8,8 +8,10 @@ import MixPanel from "./MixPanel";
 import StudioBottomBar from "./StudioBottomBar";
 import ParrotGuide from "./ParrotGuide";
 import SavePanel from "./SavePanel";
+import ParrotStoryOverlay from "./ParrotStoryOverlay";
 
 type Mode = "loops" | "voice" | "effects" | "mix" | "save";
+type PreviewKey = keyof VoiceEffectsState | keyof LoopEffectState | "speed";
 
 type VoiceState = {
   audioUrl: string | null;
@@ -87,13 +89,24 @@ const openGoogle = (query: string) => {
   window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank");
 };
 
+const createEmptyLoopEffects = (loops: ParrotLoop[]) =>
+  loops.reduce<Record<string, LoopEffectState>>((acc, loop) => {
+    acc[loop.id] = {
+      echo: false,
+      reverb: false,
+      boost: false,
+      soft: false,
+    };
+    return acc;
+  }, {});
+
 export default function ParrotStudioRoot({
   lang,
   initialStyleSlug,
   storySlides,
   onClose,
   onSwitchLanguage,
-  onOpenStory,
+  onOpenStory: _onOpenStory,
 }: Props) {
   const [selectedStyleSlug, setSelectedStyleSlug] = useState(initialStyleSlug);
   const [composition, setComposition] = useState<CompositionState>({
@@ -126,13 +139,26 @@ export default function ParrotStudioRoot({
     },
   });
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
+  const [isCompositionPlaying, setIsCompositionPlaying] = useState(true);
   const [isRenderingSave, setIsRenderingSave] = useState(false);
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const [renderedMixUrl, setRenderedMixUrl] = useState<string | null>(null);
   const [savedCompositionSnapshot, setSavedCompositionSnapshot] = useState<string | null>(null);
   const renderedMixAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const audioMapRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const styleMenuRef = useRef<HTMLDivElement | null>(null);
+  const languageMenuRef = useRef<HTMLDivElement | null>(null);
+  const previewContextRef = useRef<AudioContext | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const previewTimerRef = useRef<number | null>(null);
+  const compositionVoiceContextRef = useRef<AudioContext | null>(null);
+  const compositionVoiceAudioRef = useRef<HTMLAudioElement | null>(null);
+  const compositionVoiceTimerRef = useRef<number | null>(null);
+  const ownedVoiceBlobUrlRef = useRef<string | null>(null);
   const preset = useMemo(
     () => PARROT_PRESETS.find((item) => item.id === selectedStyleSlug) ?? PARROT_PRESETS[0],
     [selectedStyleSlug],
@@ -140,6 +166,10 @@ export default function ParrotStudioRoot({
   const musicStyle = useMemo(
     () => getMusicStyle(lang, selectedStyleSlug),
     [lang, selectedStyleSlug],
+  );
+  const guideSlides = useMemo(
+    () => (storySlides?.length ? storySlides : musicStyle?.slides ?? []),
+    [musicStyle?.slides, storySlides],
   );
   const compositionSnapshot = useMemo(
     () =>
@@ -160,15 +190,38 @@ export default function ParrotStudioRoot({
   }, [initialStyleSlug]);
 
   useEffect(() => {
-    const initialLoopEffects = preset.loops.reduce<Record<string, LoopEffectState>>((acc, loop) => {
-      acc[loop.id] = {
-        echo: false,
-        reverb: false,
-        boost: false,
-        soft: false,
-      };
-      return acc;
-    }, {});
+    const nextVoiceUrl = composition.voice.audioUrl;
+    const previousVoiceUrl = ownedVoiceBlobUrlRef.current;
+
+    if (previousVoiceUrl && previousVoiceUrl !== nextVoiceUrl && previousVoiceUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previousVoiceUrl);
+    }
+
+    ownedVoiceBlobUrlRef.current = nextVoiceUrl?.startsWith("blob:") ? nextVoiceUrl : null;
+  }, [composition.voice.audioUrl]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (isStyleMenuOpen && styleMenuRef.current && !styleMenuRef.current.contains(target)) {
+        setIsStyleMenuOpen(false);
+      }
+
+      if (isLanguageMenuOpen && languageMenuRef.current && !languageMenuRef.current.contains(target)) {
+        setIsLanguageMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isLanguageMenuOpen, isStyleMenuOpen]);
+
+  useEffect(() => {
+    const initialLoopEffects = createEmptyLoopEffects(preset.loops);
 
     const loopSelections = preset.loops.reduce<Record<string, number | null>>((acc, loop) => {
       acc[loop.id] = loop.defaultOn ? (loop.defaultIndex ?? 0) : null;
@@ -228,7 +281,7 @@ export default function ParrotStudioRoot({
 
   useEffect(() => {
     audioMapRef.current.forEach((audio, loopId) => {
-      if (isVoiceRecording) {
+      if (isVoiceRecording || !isCompositionPlaying) {
         audio.pause();
         audio.currentTime = 0;
         return;
@@ -250,7 +303,7 @@ export default function ParrotStudioRoot({
         // The mobile browser may require a direct gesture before playback.
       });
     });
-  }, [composition.activeLoops, composition.effects.loops, composition.mix.loopsVolume, isVoiceRecording]);
+  }, [composition.activeLoops, composition.effects.loops, composition.mix.loopsVolume, isCompositionPlaying, isVoiceRecording]);
 
   useEffect(() => {
     return () => {
@@ -258,6 +311,19 @@ export default function ParrotStudioRoot({
         audio.pause();
         audio.currentTime = 0;
       });
+      if (previewTimerRef.current) {
+        window.clearTimeout(previewTimerRef.current);
+      }
+      if (compositionVoiceTimerRef.current) {
+        window.clearTimeout(compositionVoiceTimerRef.current);
+      }
+      compositionVoiceAudioRef.current?.pause();
+      void previewContextRef.current?.close().catch(() => {});
+      void compositionVoiceContextRef.current?.close().catch(() => {});
+      if (ownedVoiceBlobUrlRef.current?.startsWith("blob:")) {
+        URL.revokeObjectURL(ownedVoiceBlobUrlRef.current);
+        ownedVoiceBlobUrlRef.current = null;
+      }
       if (renderedMixUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(renderedMixUrl);
       }
@@ -401,6 +467,40 @@ export default function ParrotStudioRoot({
         },
       };
     });
+  };
+
+  const stopEffectPreview = () => {
+    if (previewTimerRef.current) {
+      window.clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+
+    previewAudioRef.current?.pause();
+    previewAudioRef.current = null;
+
+    const activeContext = previewContextRef.current;
+    previewContextRef.current = null;
+    setActivePreviewKey(null);
+
+    if (activeContext) {
+      void activeContext.close().catch(() => {});
+    }
+  };
+
+  const stopCompositionVoice = () => {
+    if (compositionVoiceTimerRef.current) {
+      window.clearTimeout(compositionVoiceTimerRef.current);
+      compositionVoiceTimerRef.current = null;
+    }
+
+    compositionVoiceAudioRef.current?.pause();
+    compositionVoiceAudioRef.current = null;
+
+    const activeContext = compositionVoiceContextRef.current;
+    compositionVoiceContextRef.current = null;
+    if (activeContext) {
+      void activeContext.close().catch(() => {});
+    }
   };
 
   const bufferToWavBlob = (buffer: AudioBuffer) => {
@@ -576,6 +676,209 @@ export default function ParrotStudioRoot({
     tail.connect(destination);
   };
 
+  const playVoiceWithCurrentEffects = async () => {
+    stopCompositionVoice();
+
+    if (!composition.voice.audioUrl) {
+      console.info("Parrot studio: no recorded voice for composition playback");
+      return;
+    }
+
+    const context = new AudioContext();
+    const audio = new Audio(composition.voice.audioUrl);
+    audio.preload = "auto";
+    audio.currentTime = 0;
+    audio.setAttribute("playsinline", "true");
+
+    const source = context.createMediaElementSource(audio);
+    const gain = context.createGain();
+    const gainMultiplier = composition.effects.voice.whisper ? 0.72 : composition.effects.voice.mega ? 1.22 : 1;
+    gain.gain.value = Math.min(1.5, composition.mix.voiceVolume * gainMultiplier);
+
+    let playbackRate = 1;
+    if (composition.effects.voice.child) playbackRate *= 1.2;
+    if (composition.effects.voice.robot) playbackRate *= 1.08;
+    if (composition.effects.voice.mega) playbackRate *= 0.86;
+    if (composition.effects.voice.whisper) playbackRate *= 1.03;
+    audio.playbackRate = playbackRate;
+    if ("preservesPitch" in audio) {
+      try {
+        (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
+      } catch {}
+    }
+
+    source.connect(gain);
+    connectVoiceEffects(context, gain, context.destination, composition.effects.voice);
+    await context.resume();
+    await audio.play();
+
+    compositionVoiceContextRef.current = context;
+    compositionVoiceAudioRef.current = audio;
+    compositionVoiceTimerRef.current = window.setTimeout(() => {
+      stopCompositionVoice();
+    }, 30000);
+    audio.onended = () => {
+      stopCompositionVoice();
+    };
+  };
+
+  const handlePreviewVoiceEffect = async (effect: keyof VoiceEffectsState) => {
+    if (!composition.voice.audioUrl) {
+      console.info("Parrot studio: no recorded voice for voice preview");
+      return;
+    }
+
+    stopCompositionVoice();
+    stopEffectPreview();
+    setIsCompositionPlaying(false);
+
+    try {
+      const context = new AudioContext();
+      const audio = new Audio(composition.voice.audioUrl);
+      audio.preload = "auto";
+      audio.currentTime = 0;
+      audio.setAttribute("playsinline", "true");
+
+      const source = context.createMediaElementSource(audio);
+
+      const previewEffects: VoiceEffectsState = {
+        child: false,
+        echo: false,
+        reverb: false,
+        robot: false,
+        whisper: false,
+        mega: false,
+        radio: false,
+      };
+      previewEffects[effect] = true;
+
+      let playbackRate = 1;
+      if (previewEffects.child) playbackRate *= 1.2;
+      if (previewEffects.robot) playbackRate *= 1.08;
+      if (previewEffects.mega) playbackRate *= 0.86;
+      if (previewEffects.whisper) playbackRate *= 1.03;
+      audio.playbackRate = playbackRate;
+      if ("preservesPitch" in audio) {
+        try {
+          (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
+        } catch {}
+      }
+
+      const gain = context.createGain();
+      const gainMultiplier = previewEffects.whisper ? 0.72 : previewEffects.mega ? 1.22 : 1;
+      gain.gain.value = Math.min(1.5, composition.mix.voiceVolume * gainMultiplier);
+
+      source.connect(gain);
+      connectVoiceEffects(context, gain, context.destination, previewEffects);
+      previewContextRef.current = context;
+      previewAudioRef.current = audio;
+      setActivePreviewKey(`voice:${effect}`);
+      await context.resume();
+      await audio.play();
+
+      previewTimerRef.current = window.setTimeout(() => {
+        stopEffectPreview();
+      }, 2850);
+      audio.onended = () => {
+        stopEffectPreview();
+      };
+    } catch (error) {
+      console.error("Failed to preview voice effect", error);
+      stopEffectPreview();
+    }
+  };
+
+  const handlePreviewLoopEffect = async (effect: PreviewKey) => {
+    const targetLoopId = composition.effects.loops.targetLoopId;
+    if (!targetLoopId) return;
+
+    const loop = preset.loops.find((item) => item.id === targetLoopId);
+    const selectedIndex = loop ? composition.loopSelections[targetLoopId] : null;
+    if (!loop || typeof selectedIndex !== "number") return;
+
+    const variant = loop.variants[selectedIndex] ?? loop.variants[0];
+    if (!variant?.src) return;
+
+    stopCompositionVoice();
+    stopEffectPreview();
+    setIsCompositionPlaying(false);
+
+    try {
+      const response = await fetch(variant.src);
+      const arrayBuffer = await response.arrayBuffer();
+      const context = new AudioContext();
+      const buffer = await context.decodeAudioData(arrayBuffer.slice(0));
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+
+      const loopEffects: LoopEffectState = {
+        echo: false,
+        reverb: false,
+        boost: false,
+        soft: false,
+      };
+      if (effect !== "speed") {
+        loopEffects[effect as keyof LoopEffectState] = true;
+      }
+      source.playbackRate.value = effect === "speed" ? 1.12 : 1;
+
+      const gain = context.createGain();
+      const gainMultiplier = loopEffects.boost ? 1.35 : loopEffects.soft ? 0.72 : 1;
+      gain.gain.value = Math.min(1, composition.mix.loopsVolume * gainMultiplier);
+
+      source.connect(gain);
+      connectLoopEffects(context, gain, context.destination, loopEffects);
+      previewContextRef.current = context;
+      setActivePreviewKey(`loop:${effect}`);
+      await context.resume();
+      source.start(0, 0, 2.7);
+      source.stop(2.7);
+
+      previewTimerRef.current = window.setTimeout(() => {
+        stopEffectPreview();
+      }, 2850);
+    } catch (error) {
+      console.error("Failed to preview loop effect", error);
+      stopEffectPreview();
+    }
+  };
+
+  const handleToggleCompositionPlayback = async () => {
+    stopEffectPreview();
+
+    if (isCompositionPlaying) {
+      setIsCompositionPlaying(false);
+      stopCompositionVoice();
+      return;
+    }
+
+    setIsCompositionPlaying(true);
+    try {
+      await playVoiceWithCurrentEffects();
+    } catch (error) {
+      console.error("Failed to play composition", error);
+      stopCompositionVoice();
+    }
+  };
+
+  useEffect(() => {
+    if (!isCompositionPlaying || isVoiceRecording) {
+      stopCompositionVoice();
+      return;
+    }
+
+    void playVoiceWithCurrentEffects().catch((error) => {
+      console.error("Failed to sync voice playback", error);
+      stopCompositionVoice();
+    });
+  }, [
+    composition.effects.voice,
+    composition.mix.voiceVolume,
+    composition.voice.audioUrl,
+    isCompositionPlaying,
+    isVoiceRecording,
+  ]);
+
   const renderThirtySecondMix = async () => {
     setIsRenderingSave(true);
 
@@ -687,13 +990,18 @@ export default function ParrotStudioRoot({
   };
 
   const handleClearAll = () => {
+    stopEffectPreview();
+    stopCompositionVoice();
+    setIsCompositionPlaying(false);
+
     audioMapRef.current.forEach((audio) => {
       audio.pause();
       audio.currentTime = 0;
     });
 
-    if (composition.voice.audioUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(composition.voice.audioUrl);
+    if (ownedVoiceBlobUrlRef.current?.startsWith("blob:")) {
+      URL.revokeObjectURL(ownedVoiceBlobUrlRef.current);
+      ownedVoiceBlobUrlRef.current = null;
     }
 
     if (renderedMixUrl?.startsWith("blob:")) {
@@ -725,15 +1033,7 @@ export default function ParrotStudioRoot({
         loops: {
           speed: false,
           targetLoopId: preset.loops[0]?.id ?? null,
-          byLoop: preset.loops.reduce<Record<string, LoopEffectState>>((acc, loop) => {
-            acc[loop.id] = {
-              echo: false,
-              reverb: false,
-              boost: false,
-              soft: false,
-            };
-            return acc;
-          }, {}),
+          byLoop: createEmptyLoopEffects(preset.loops),
         },
       },
       voice: {
@@ -757,18 +1057,59 @@ export default function ParrotStudioRoot({
         >
           <span aria-hidden="true">×</span>
         </button>
-        <div className="parrot-studio-root__topbar-spacer" />
+        <div className="parrot-studio-root__topbar-menu parrot-studio-root__topbar-menu--style">
+          <button
+            type="button"
+            className="parrot-studio-root__topbar-button parrot-studio-root__topbar-style"
+            onClick={() => {
+              setIsLanguageMenuOpen(false);
+              setIsStyleMenuOpen((current) => !current);
+            }}
+            aria-label="Style"
+          >
+            Style
+          </button>
+          {isStyleMenuOpen ? (
+            <div className="parrot-studio-root__style-menu" ref={styleMenuRef}>
+              {PARROT_PRESETS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`parrot-studio-root__style-item ${item.id === selectedStyleSlug ? "is-active" : ""}`}
+                  onClick={() => {
+                    setSelectedStyleSlug(item.id);
+                    setIsStyleMenuOpen(false);
+                  }}
+                >
+                  <img src={iconForMusicStyle(item.id)} alt="" />
+                  <span>{item.title}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className={`parrot-studio-root__topbar-button parrot-studio-root__topbar-play ${isCompositionPlaying ? "is-active" : ""}`}
+          onClick={() => void handleToggleCompositionPlayback()}
+          aria-label={isCompositionPlaying ? "Pause" : "Play"}
+        >
+          {isCompositionPlaying ? "Pause" : "Play"}
+        </button>
         <div className="parrot-studio-root__topbar-menu">
           <button
             type="button"
             className="parrot-studio-root__topbar-button parrot-studio-root__topbar-settings"
-            onClick={() => setIsLanguageMenuOpen((current) => !current)}
+            onClick={() => {
+              setIsStyleMenuOpen(false);
+              setIsLanguageMenuOpen((current) => !current);
+            }}
             aria-label="Languages"
           >
             <span aria-hidden="true">•••</span>
           </button>
           {isLanguageMenuOpen ? (
-            <div className="parrot-studio-root__language-menu">
+            <div className="parrot-studio-root__language-menu" ref={languageMenuRef}>
               {(["ru", "en", "he"] as const).map((item) => (
                 <button
                   key={item}
@@ -793,15 +1134,7 @@ export default function ParrotStudioRoot({
           text={musicStyle?.description ?? preset.description}
           onOpenYouTube={() => openGoogle(`${preset.searchArtist} site:youtube.com`)}
           onOpenGoogle={() => openGoogle(preset.searchGenre)}
-          onOpenStory={() =>
-            onOpenStory({
-              activeLoops: composition.activeLoops,
-              voice: composition.voice,
-              effects: composition.effects,
-              loopsVolume: composition.mix.loopsVolume,
-              voiceVolume: composition.mix.voiceVolume,
-            })
-          }
+          onOpenStory={() => setIsStoryOpen(true)}
         />
       </div>
 
@@ -834,6 +1167,7 @@ export default function ParrotStudioRoot({
           <EffectsPanel
             activeCategory={composition.effects.activeCategory}
             voiceEffects={composition.effects.voice}
+            hasVoice={Boolean(composition.voice.audioUrl)}
             loopEffects={composition.effects.loops}
             loopOptions={loopPads.map((loop) => ({
               id: loop.id,
@@ -851,6 +1185,9 @@ export default function ParrotStudioRoot({
             }
             onToggleVoiceEffect={toggleVoiceEffect}
             onToggleLoopEffect={toggleLoopEffect}
+            onPreviewVoiceEffect={handlePreviewVoiceEffect}
+            onPreviewLoopEffect={handlePreviewLoopEffect}
+            activePreviewKey={activePreviewKey}
             onSelectLoop={(loopId) =>
               setComposition((current) => ({
                 ...current,
@@ -925,8 +1262,18 @@ export default function ParrotStudioRoot({
         }
       />
 
+      {isStoryOpen ? (
+        <ParrotStoryOverlay
+          title={musicStyle?.title ?? preset.title}
+          lang={lang}
+          slides={guideSlides}
+          onClose={() => setIsStoryOpen(false)}
+        />
+      ) : null}
+
       <style jsx>{`
         .parrot-studio-root {
+          position: relative;
           height: 100dvh;
           display: grid;
           grid-template-rows: auto auto minmax(0, 1fr) auto auto;
@@ -938,7 +1285,7 @@ export default function ParrotStudioRoot({
 
         .parrot-studio-root__topbar {
           display: grid;
-          grid-template-columns: auto 1fr auto;
+          grid-template-columns: auto minmax(0, 1fr) auto auto;
           align-items: center;
           gap: 0.5rem;
           padding: 0.8rem 0.75rem 0.2rem;
@@ -954,12 +1301,28 @@ export default function ParrotStudioRoot({
           font-size: 1.4rem;
         }
 
-        .parrot-studio-root__topbar-spacer {
-          min-width: 0;
-        }
-
         .parrot-studio-root__topbar-menu {
           position: relative;
+        }
+
+        .parrot-studio-root__topbar-style {
+          width: auto;
+          min-width: 68px;
+          padding: 0 0.85rem;
+          font-size: 0.95rem;
+        }
+
+        .parrot-studio-root__topbar-play {
+          width: auto;
+          min-width: 72px;
+          padding: 0 0.9rem;
+          font-size: 0.9rem;
+        }
+
+        .parrot-studio-root__topbar-play.is-active {
+          background: linear-gradient(180deg, #fff0b4 0%, #ffcce8 58%, #ddd2ff 100%);
+          color: #26180f;
+          box-shadow: 0 0 0 2px rgba(255, 186, 110, 0.32);
         }
 
         .parrot-studio-root__language-menu {
@@ -973,6 +1336,55 @@ export default function ParrotStudioRoot({
           border: 1px solid rgba(255, 255, 255, 0.08);
           box-shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
           z-index: 5;
+        }
+
+        .parrot-studio-root__style-menu {
+          position: absolute;
+          top: calc(100% + 0.4rem);
+          left: 0;
+          width: min(78vw, 260px);
+          max-height: min(60dvh, 420px);
+          padding: 0.35rem;
+          border-radius: 20px;
+          background: rgba(27, 29, 35, 0.98);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
+          z-index: 5;
+          display: grid;
+          gap: 0.3rem;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .parrot-studio-root__style-item {
+          width: 100%;
+          min-height: 48px;
+          border: none;
+          border-radius: 14px;
+          background: transparent;
+          color: rgba(255, 245, 236, 0.84);
+          display: grid;
+          grid-template-columns: 28px minmax(0, 1fr);
+          align-items: center;
+          gap: 0.65rem;
+          padding: 0.45rem 0.65rem;
+          text-align: left;
+        }
+
+        .parrot-studio-root__style-item img {
+          width: 28px;
+          height: 28px;
+          object-fit: contain;
+        }
+
+        .parrot-studio-root__style-item span {
+          font-size: 0.86rem;
+          line-height: 1.2;
+        }
+
+        .parrot-studio-root__style-item.is-active {
+          background: rgba(255, 255, 255, 0.08);
+          color: #fff9ef;
         }
 
         .parrot-studio-root__language-item {
@@ -1003,6 +1415,7 @@ export default function ParrotStudioRoot({
 
         .parrot-studio-root__panel :global(> *) {
           width: 100%;
+          min-height: 0;
         }
 
         .parrot-studio-root__footer {

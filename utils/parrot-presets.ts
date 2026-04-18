@@ -61,6 +61,33 @@ export const iconForInstrument = (labelOrId: string): string => {
   return "/icons/instruments-icons/loop.webp";
 };
 
+/** Music style icon resolver for studio style switcher */
+export const iconForMusicStyle = (styleId: string): string => {
+  const normalized = (styleId || "").toLowerCase();
+  const styleMap: Record<string, string> = {
+    lofi: "/icons/music-styles-icons/lo-fi.webp",
+    bossa: "/icons/music-styles-icons/bosa-nova.webp",
+    synthwave: "/icons/music-styles-icons/synthwave.webp",
+    funk: "/icons/music-styles-icons/funk.webp",
+    house: "/icons/music-styles-icons/house.webp",
+    reggae: "/icons/music-styles-icons/reggae.webp",
+    ambient: "/icons/music-styles-icons/ambient.webp",
+    jazzhop: "/icons/music-styles-icons/jazzhop.webp",
+    chiptune: "/icons/music-styles-icons/chiptune.webp",
+    kpop: "/icons/music-styles-icons/kpop.webp",
+    afroperc: "/icons/music-styles-icons/afroperc.webp",
+    celtic: "/icons/music-styles-icons/celtic.webp",
+    latin: "/icons/music-styles-icons/latin.webp",
+    cartoon: "/icons/music-styles-icons/cartoon.webp",
+    classic: "/icons/music-styles-icons/classic.webp",
+    dance: "/icons/music-styles-icons/dance.webp",
+    rock: "/icons/music-styles-icons/rock.webp",
+    spiritual: "/icons/music-styles-icons/spiritual.webp",
+  };
+
+  return styleMap[normalized] ?? "/icons/music-styles-icons/lo-fi.webp";
+};
+
 export const PARROT_PRESETS: ParrotPreset[] = [
   {
     id: "lofi",
