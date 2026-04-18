@@ -179,6 +179,7 @@ export default function ParrotStudioRoot({
   const recordedVoiceBlobRef = useRef<Blob | null>(null);
   const hasRestoredSessionRef = useRef(false);
   const shouldSkipNextPresetInitRef = useRef(false);
+  const hasPushedHistoryRef = useRef(false);
   const preset = useMemo(
     () => PARROT_PRESETS.find((item) => item.id === selectedStyleSlug) ?? PARROT_PRESETS[0],
     [selectedStyleSlug],
@@ -362,7 +363,12 @@ export default function ParrotStudioRoot({
     const nextVoiceUrl = composition.voice.audioUrl;
     const previousVoiceUrl = ownedVoiceBlobUrlRef.current;
 
-    if (previousVoiceUrl && previousVoiceUrl !== nextVoiceUrl && previousVoiceUrl.startsWith("blob:")) {
+    if (
+      previousVoiceUrl &&
+      previousVoiceUrl.startsWith("blob:") &&
+      nextVoiceUrl?.startsWith("blob:") &&
+      previousVoiceUrl !== nextVoiceUrl
+    ) {
       URL.revokeObjectURL(previousVoiceUrl);
     }
 
@@ -1087,13 +1093,18 @@ export default function ParrotStudioRoot({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    window.history.pushState({ parrotStudio: true }, "", window.location.href);
+    if (!hasPushedHistoryRef.current) {
+      window.history.pushState({ parrotStudio: true }, "", window.location.href);
+      hasPushedHistoryRef.current = true;
+    }
 
     const handlePopState = () => {
       if (!isSaved) {
         const shouldLeave = window.confirm(confirmExitMessage);
         if (!shouldLeave) {
-          window.history.pushState({ parrotStudio: true }, "", window.location.href);
+          try {
+            window.history.forward();
+          } catch {}
           return;
         }
       }
@@ -1238,10 +1249,7 @@ export default function ParrotStudioRoot({
       audio.currentTime = 0;
     });
 
-    if (ownedVoiceBlobUrlRef.current?.startsWith("blob:")) {
-      URL.revokeObjectURL(ownedVoiceBlobUrlRef.current);
-      ownedVoiceBlobUrlRef.current = null;
-    }
+    ownedVoiceBlobUrlRef.current = null;
     recordedVoiceBlobRef.current = null;
 
     if (renderedMixUrl?.startsWith("blob:")) {

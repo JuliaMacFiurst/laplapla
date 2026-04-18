@@ -709,6 +709,7 @@ function StudioMobileLayout({
   router,
   audioEngineRef,
 }: StudioLayoutProps) {
+  const hasPushedHistoryRef = useRef(false);
   const onClose = () => {
     void router.push(
       {
@@ -896,13 +897,18 @@ function StudioMobileLayout({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    window.history.pushState({ catStudio: true }, "", window.location.href);
+    if (!hasPushedHistoryRef.current) {
+      window.history.pushState({ catStudio: true }, "", window.location.href);
+      hasPushedHistoryRef.current = true;
+    }
 
     const handlePopState = () => {
       if (hasUnsavedChanges) {
         const shouldLeave = window.confirm(confirmExitMessage);
         if (!shouldLeave) {
-          window.history.pushState({ catStudio: true }, "", window.location.href);
+          try {
+            window.history.forward();
+          } catch {}
           return;
         }
       }
@@ -3091,6 +3097,10 @@ export default function StudioRoot({
   }
 
   async function readVoiceUrlToArrayBuffer(voiceUrl: string) {
+    if (!voiceUrl) {
+      throw new Error("Missing voice URL");
+    }
+
     if (voiceUrl.startsWith("data:")) {
       const commaIndex = voiceUrl.indexOf(",");
       if (commaIndex === -1) {
@@ -3111,6 +3121,18 @@ export default function StudioRoot({
 
       const decoded = decodeURIComponent(payload);
       return new TextEncoder().encode(decoded).buffer;
+    }
+
+    if (voiceUrl.startsWith("blob:")) {
+      await new Promise<void>((resolve, reject) => {
+        const audio = new Audio();
+        audio.preload = "auto";
+        audio.src = voiceUrl;
+        audio.onloadedmetadata = () => resolve();
+        audio.onerror = () => reject(new Error("Failed to load blob voice URL"));
+      });
+
+      throw new Error("Blob voice URL is not supported for voice processing");
     }
 
     const response = await fetch(voiceUrl);
@@ -3455,10 +3477,6 @@ export default function StudioRoot({
   }
 
   function removeVoiceFromSlide() {
-    if (activeSlide.voiceUrl && activeSlide.voiceUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(activeSlide.voiceUrl);
-    }
-
     updateSlide({
       ...activeSlide,
       voiceUrl: undefined,
