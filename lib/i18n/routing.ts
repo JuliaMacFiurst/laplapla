@@ -3,6 +3,7 @@ import type { NextRouter } from "next/router";
 import type { Lang } from "@/i18n";
 
 const LANGS: Lang[] = ["ru", "en", "he"];
+export const DEFAULT_LANG: Lang = "ru";
 
 export const isLang = (value: unknown): value is Lang => {
   return typeof value === "string" && LANGS.includes(value as Lang);
@@ -54,7 +55,7 @@ export const getCurrentLang = (router: Pick<NextRouter, "query" | "locale">): La
     normalizeLang(router.locale) ??
     getLangFromCookie() ??
     getLangFromStorage() ??
-    "ru"
+    DEFAULT_LANG
   );
 };
 
@@ -66,7 +67,7 @@ export const getRequestLang = (
     normalizeLang(req.cookies?.laplapla_lang) ??
     normalizeLang(req.headers["x-laplapla-lang"]) ??
     normalizeAcceptLanguage(req.headers["accept-language"]) ??
-    "ru"
+    DEFAULT_LANG
   );
 };
 
@@ -89,4 +90,19 @@ export const buildLocalizedHref = (href: string, lang: Lang): string => {
   const nextQuery = params.toString();
   const nextHash = hash ? `#${hash}` : "";
   return nextQuery ? `${path}?${nextQuery}${nextHash}` : `${path}${nextHash}`;
+};
+
+export const buildLocalizedPublicPath = (path: string, lang?: Lang): string => {
+  const cleanPath = path.split("#")[0]?.split("?")[0] || "/";
+  const normalizedPath = cleanPath === "/"
+    ? "/"
+    : `/${cleanPath.replace(/^\/+/, "").replace(/\/+$/, "")}`;
+  const segments = normalizedPath.split("/").filter(Boolean);
+  const baseSegments = normalizeLang(segments[0]) ? segments.slice(1) : segments;
+  const resolvedLang = lang ?? DEFAULT_LANG;
+  const localizedSegments = resolvedLang === DEFAULT_LANG
+    ? baseSegments
+    : [resolvedLang, ...baseSegments];
+
+  return localizedSegments.length ? `/${localizedSegments.join("/")}` : "/";
 };

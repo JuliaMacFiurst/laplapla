@@ -29,11 +29,12 @@ interface BookScreenProps {
   currentSlideIndex: number;
   loading?: boolean;
   showTests?: boolean;
+  onStorySwipeStateChange?: (isSwiping: boolean) => void;
   showRandomBookAction?: boolean;
   onRandomBook: () => void;
   onExplainMeaning: () => void;
   onTakeTest: () => void;
-  onCreateVideo: () => void;
+  onCreateVideo: (book: Book, slides: Slide[], mediaCache: ReadonlyMap<number, SlideMedia>) => void | Promise<void>;
   onModeSelect: (modeId: string | number) => void;
   onSlideIndexChange: (slideIndex: number) => void;
   onFindNewImage: (slideIndex: number, context: { bookTitle: string; modeLabel?: string }) => void | Promise<void>;
@@ -54,6 +55,7 @@ export default function BookScreen({
   currentSlideIndex,
   loading,
   showTests,
+  onStorySwipeStateChange,
   showRandomBookAction = true,
   onRandomBook,
   onExplainMeaning,
@@ -162,9 +164,10 @@ export default function BookScreen({
         currentSlideIndex={currentSlideIndex}
         loading={loading}
         showTests={showTests}
+        onSwipeStateChange={onStorySwipeStateChange}
         onTakeTest={onTakeTest}
         onCreateStory={onExplainMeaning}
-        onOpenStudio={onCreateVideo}
+        onOpenStudio={() => void onCreateVideo(book, slides, mediaCache)}
         onModeSelect={onModeSelect}
         onSlideIndexChange={onSlideIndexChange}
         mediaCache={mediaCache}
@@ -232,7 +235,12 @@ export default function BookScreen({
           {t.actions.takeTest}
         </button>
         {!isMobile ? (
-          <button type="button" className="feed-action-button" disabled={loading || slides.length === 0} onClick={onCreateVideo}>
+          <button
+            type="button"
+            className="feed-action-button"
+            disabled={loading || slides.length === 0}
+            onClick={() => void onCreateVideo(book, slides, mediaCache)}
+          >
             {t.actions.createVideo}
           </button>
         ) : null}

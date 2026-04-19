@@ -22,11 +22,12 @@ interface BookCardProps {
   currentSlideIndex: number;
   loading?: boolean;
   showTests?: boolean;
+  onStorySwipeStateChange?: (isSwiping: boolean) => void;
   showRandomBookAction?: boolean;
   onRandomBook: () => void;
   onExplainMeaning: () => void;
   onTakeTest: () => void;
-  onCreateVideo: () => void;
+  onCreateVideo: (book: Book, slides: Slide[], mediaCache: ReadonlyMap<number, SlideMedia>) => void | Promise<void>;
   onModeSelect: (modeId: string | number) => void;
   onSlideIndexChange: (slideIndex: number) => void;
   onFindNewImage: (slideIndex: number, context: { bookTitle: string; modeLabel?: string }) => void | Promise<void>;
@@ -47,6 +48,7 @@ export default function BookCard({
   currentSlideIndex,
   loading,
   showTests,
+  onStorySwipeStateChange,
   showRandomBookAction = true,
   onRandomBook,
   onExplainMeaning,
@@ -73,6 +75,7 @@ export default function BookCard({
         currentSlideIndex={currentSlideIndex}
         loading={loading}
         showTests={showTests}
+        onStorySwipeStateChange={onStorySwipeStateChange}
         showRandomBookAction={showRandomBookAction}
         onRandomBook={onRandomBook}
         onExplainMeaning={onExplainMeaning}

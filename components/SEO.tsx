@@ -1,5 +1,7 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 import { BASE_URL } from "@/lib/config";
+import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 
 export type SEOProps = {
   title: string;
@@ -24,7 +26,8 @@ export default function SEO({
   path,
   type = "website",
 }: SEOProps) {
-  const normalizedPath = normalizePath(path);
+  const router = useRouter();
+  const normalizedPath = buildLocalizedPublicPath(normalizePath(path), getCurrentLang(router));
   const canonical = `${BASE_URL}${normalizedPath === "/" ? "" : normalizedPath}`;
 
   return (

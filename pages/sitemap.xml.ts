@@ -2,8 +2,9 @@ import type { GetServerSideProps } from "next";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { loadSeoRouteSlugs, normalizeEntitySlug } from "@/lib/server/seoEntityPage";
 import { buildCanonicalMapEntityPath } from "@/lib/mapEntityRouting";
-
-const DEFAULT_SITE_URL = "https://laplapla.com";
+import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import type { Lang } from "@/i18n";
+import { normalizeSiteUrl } from "@/lib/config";
 
 const STATIC_PATHS = [
   "/",
@@ -12,9 +13,7 @@ const STATIC_PATHS = [
   "/parrots",
   "/books",
 ];
-
-const normalizeBaseUrl = (value: string | undefined) =>
-  (value || DEFAULT_SITE_URL).trim().replace(/\/+$/, "") || DEFAULT_SITE_URL;
+const INDEXABLE_LANGS: Lang[] = ["ru", "en", "he"];
 
 const escapeXml = (value: string) =>
   value
@@ -53,8 +52,14 @@ function buildSitemapXml(urls: string[]) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>`;
 }
 
+function localizePaths(paths: string[]) {
+  return INDEXABLE_LANGS.flatMap((lang) =>
+    paths.map((path) => buildLocalizedPublicPath(path, lang)),
+  );
+}
+
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  const baseUrl = normalizeBaseUrl(process.env["NEXT_PUBLIC_SITE_URL"]);
+  const baseUrl = normalizeSiteUrl(process.env["NEXT_PUBLIC_SITE_URL"]);
   const [bookPaths, seoRouteSlugs] = await Promise.all([
     loadBookPaths(),
     loadSeoRouteSlugs().catch(() => ({
@@ -66,16 +71,18 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     })),
   ]);
 
+  const canonicalPaths = [
+    ...STATIC_PATHS,
+    ...bookPaths,
+    ...seoRouteSlugs.country.map((slug) => buildCanonicalMapEntityPath("country", slug)),
+    ...seoRouteSlugs.animal.map((slug) => buildCanonicalMapEntityPath("animal", slug)),
+    ...seoRouteSlugs.river.map((slug) => buildCanonicalMapEntityPath("river", slug)),
+    ...seoRouteSlugs.sea.map((slug) => buildCanonicalMapEntityPath("sea", slug)),
+    ...seoRouteSlugs.biome.map((slug) => buildCanonicalMapEntityPath("biome", slug)),
+  ];
+
   const urls = Array.from(
-    new Set([
-      ...STATIC_PATHS,
-      ...bookPaths,
-      ...seoRouteSlugs.country.map((slug) => buildCanonicalMapEntityPath("country", slug)),
-      ...seoRouteSlugs.animal.map((slug) => buildCanonicalMapEntityPath("animal", slug)),
-      ...seoRouteSlugs.river.map((slug) => buildCanonicalMapEntityPath("river", slug)),
-      ...seoRouteSlugs.sea.map((slug) => buildCanonicalMapEntityPath("sea", slug)),
-      ...seoRouteSlugs.biome.map((slug) => buildCanonicalMapEntityPath("biome", slug)),
-    ]),
+    new Set(localizePaths(canonicalPaths)),
   ).map((routePath) => `${baseUrl}${routePath === "/" ? "" : routePath}`);
 
   res.setHeader("Content-Type", "application/xml");

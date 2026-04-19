@@ -6,7 +6,7 @@ import {
   normalizeMapEntityType,
   normalizeSlug,
 } from "@/lib/mapEntityRouting";
-import { isLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { loadSeoEntityPageData, resolveCanonicalEntityRouteBySlug } from "@/lib/server/seoEntityPage";
 import type { Lang } from "@/i18n";
 
@@ -25,7 +25,7 @@ function readFirstQueryValue(value: string | string[] | undefined) {
 }
 
 function buildCanonicalDestination(path: string, lang: Lang) {
-  return `${path}?lang=${lang}`;
+  return buildLocalizedPublicPath(path, lang);
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {

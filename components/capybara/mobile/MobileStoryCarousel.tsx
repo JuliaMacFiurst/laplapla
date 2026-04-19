@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { fallbackImages } from "@/constants";
 import { dictionaries, type Lang } from "@/i18n";
 import type { CarouselStory } from "@/types/types";
@@ -20,6 +20,7 @@ interface MobileStoryCarouselProps {
   t?: CapybaraPageDict;
   currentSlideIndex: number;
   onSlideIndexChange: (slideIndex: number) => void;
+  onSwipeStateChange?: (isSwiping: boolean) => void;
   isFindingNewImage?: boolean;
   emptyMessage?: string;
   mediaCache?: ReadonlyMap<number, SlideMedia>;
@@ -36,22 +37,22 @@ export default function MobileStoryCarousel({
   t,
   currentSlideIndex,
   onSlideIndexChange,
+  onSwipeStateChange,
   emptyMessage,
   mediaCache,
   onPreloadNextSlide,
   showEmptyError,
 }: MobileStoryCarouselProps) {
   const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
-  const [flipDirection, setFlipDirection] = useState<"forward" | "backward">("forward");
-  const [isAnimating, setIsAnimating] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const previousSlideIndexRef = useRef(currentSlideIndex);
-  const animationTimerRef = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const startTimeRef = useRef(0);
   const isHorizontalRef = useRef(false);
+  const dragOffsetRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const activePointerIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (currentSlideIndex >= story.slides.length && story.slides.length > 0) {
@@ -62,32 +63,6 @@ export default function MobileStoryCarousel({
   useEffect(() => {
     onPreloadNextSlide?.(currentSlideIndex);
   }, [currentSlideIndex, onPreloadNextSlide, story.id]);
-
-  useEffect(() => {
-    if (previousSlideIndexRef.current === currentSlideIndex) {
-      return;
-    }
-
-    setFlipDirection(currentSlideIndex > previousSlideIndexRef.current ? "forward" : "backward");
-    previousSlideIndexRef.current = currentSlideIndex;
-    setIsAnimating(true);
-
-    if (animationTimerRef.current) {
-      window.clearTimeout(animationTimerRef.current);
-    }
-
-    animationTimerRef.current = window.setTimeout(() => {
-      setIsAnimating(false);
-      animationTimerRef.current = null;
-    }, 320);
-
-    return () => {
-      if (animationTimerRef.current) {
-        window.clearTimeout(animationTimerRef.current);
-        animationTimerRef.current = null;
-      }
-    };
-  }, [currentSlideIndex]);
 
   const previousSlideLabel = dict.navigation?.previousSlide || "Previous slide";
   const nextSlideLabel = dict.navigation?.nextSlide || "Next slide";
@@ -104,26 +79,39 @@ export default function MobileStoryCarousel({
     [story.id],
   );
 
-  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0];
-    startXRef.current = touch.clientX;
-    startYRef.current = touch.clientY;
-    startTimeRef.current = performance.now();
-    isHorizontalRef.current = false;
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
-    if (!isDragging) {
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
 
-    const touch = event.touches[0];
-    const deltaX = touch.clientX - startXRef.current;
-    const deltaY = touch.clientY - startYRef.current;
+    activePointerIdRef.current = event.pointerId;
+    startXRef.current = event.clientX;
+    startYRef.current = event.clientY;
+    startTimeRef.current = performance.now();
+    isHorizontalRef.current = false;
+    dragOffsetRef.current = 0;
+    isDraggingRef.current = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== event.pointerId || !isDraggingRef.current) {
+      return;
+    }
+
+    const deltaX = event.clientX - startXRef.current;
+    const deltaY = event.clientY - startYRef.current;
 
     if (!isHorizontalRef.current) {
       if (Math.abs(deltaY) > Math.abs(deltaX) * 1.25) {
+        isDraggingRef.current = false;
+        dragOffsetRef.current = 0;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+        activePointerIdRef.current = null;
+        onSwipeStateChange?.(false);
         setIsDragging(false);
         setDragOffset(0);
         return;
@@ -134,28 +122,49 @@ export default function MobileStoryCarousel({
       }
 
       isHorizontalRef.current = true;
+      onSwipeStateChange?.(true);
     }
 
     event.preventDefault();
 
     const isAtStart = currentSlideIndex === 0 && deltaX > 0;
     const isAtEnd = currentSlideIndex === story.slides.length - 1 && deltaX < 0;
-    setDragOffset(isAtStart || isAtEnd ? deltaX * 0.25 : deltaX);
+    const nextDragOffset = isAtStart || isAtEnd ? deltaX * 0.25 : deltaX;
+    dragOffsetRef.current = nextDragOffset;
+    setDragOffset(nextDragOffset);
   };
 
-  const finishSwipe = () => {
-    if (!isDragging) {
+  const finishSwipe = (event?: ReactPointerEvent<HTMLDivElement>) => {
+    if (event && activePointerIdRef.current !== event.pointerId) {
+      return;
+    }
+
+    if (event && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    activePointerIdRef.current = null;
+    if (isHorizontalRef.current) {
+      onSwipeStateChange?.(false);
+    }
+    isHorizontalRef.current = false;
+
+    if (!isDraggingRef.current) {
+      dragOffsetRef.current = 0;
+      setIsDragging(false);
       setDragOffset(0);
       return;
     }
 
+    isDraggingRef.current = false;
     const elapsed = Math.max(performance.now() - startTimeRef.current, 1);
-    const velocity = Math.abs(dragOffset) / elapsed;
+    const finalDragOffset = dragOffsetRef.current;
+    const velocity = Math.abs(finalDragOffset) / elapsed;
     const shouldNavigate =
-      Math.abs(dragOffset) > SWIPE_DISTANCE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
+      Math.abs(finalDragOffset) > SWIPE_DISTANCE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
 
     if (shouldNavigate && story.slides.length > 1) {
-      const direction = dragOffset < 0 ? 1 : -1;
+      const direction = finalDragOffset < 0 ? 1 : -1;
       const nextIndex = Math.min(Math.max(currentSlideIndex + direction, 0), story.slides.length - 1);
 
       if (nextIndex !== currentSlideIndex) {
@@ -164,6 +173,7 @@ export default function MobileStoryCarousel({
     }
 
     setIsDragging(false);
+    dragOffsetRef.current = 0;
     setDragOffset(0);
   };
 
@@ -187,17 +197,18 @@ export default function MobileStoryCarousel({
     <div className="mobile-story-carousel">
       <div
         className="mobile-story-swipe-surface"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={finishSwipe}
-        onTouchCancel={finishSwipe}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishSwipe}
+        onPointerCancel={finishSwipe}
+        onLostPointerCapture={finishSwipe}
       >
-        <div className={`mobile-story-slide-shell ${isAnimating ? `mobile-story-slide-shell-${flipDirection}` : ""}`}>
+        <div className="mobile-story-slide-shell">
           <div
             className="mobile-story-track"
             style={{
-              transform: `translateX(calc(${-currentSlideIndex * 100}% + ${dragOffset}px))`,
-              transition: isDragging ? "none" : "transform 300ms ease-out",
+              transform: `translate3d(calc(${-currentSlideIndex * 100}% + ${dragOffset}px), 0, 0)`,
+              transition: isDragging ? "none" : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
             {story.slides.map((slide, slideIndex) => {

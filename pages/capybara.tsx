@@ -8,6 +8,7 @@ import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBook
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import { buildStudioRoute } from "@/lib/studioRouting";
 
 export default function CapybaraPage({ lang }: { lang: Lang }) {
@@ -373,8 +374,19 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     );
   };
 
-  const handleCreateVideo = async () => {
-    const studioSlides = await buildStudioSlides();
+  const handleCreateVideo = async (
+    bookOverride?: Book,
+    slidesOverride?: typeof slides,
+    mediaCacheOverride?: typeof mediaCache,
+  ) => {
+    const studioSlides = bookOverride && slidesOverride
+      ? buildStudioSlidesFromCapybaraSlides(slidesOverride, mediaCacheOverride, {
+          title: bookOverride.title,
+          author: bookOverride.author,
+          year: bookOverride.year,
+          ageGroup: bookOverride.age_group,
+        })
+      : await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
     await router.push(

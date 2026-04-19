@@ -45,7 +45,7 @@ interface BookFeedProps {
   onNextBook: () => void;
   onExplainMeaning: () => void;
   onTakeTest: () => void;
-  onCreateVideo: () => void;
+  onCreateVideo: (book: Book, slides: Slide[], mediaCache: ReadonlyMap<number, SlideMedia>) => void | Promise<void>;
   onModeSelect: (modeId: string | number) => void;
   onSlideIndexChange: (slideIndex: number) => void;
   onFindNewImage: (slideIndex: number, context: { bookTitle: string; modeLabel?: string }) => void | Promise<void>;
@@ -89,11 +89,41 @@ export default function BookFeed({
   const wheelLocked = useRef(false);
   const mobilePanelCounterRef = useRef(0);
   const mobileLoadQueuedRef = useRef(false);
+  const mobileSnapRestoreTimerRef = useRef<number | null>(null);
   const [isMobileFeed, setIsMobileFeed] = useState(false);
   const [mobilePanels, setMobilePanels] = useState<MobileBookPanel[]>([]);
   const [activeMobilePanelId, setActiveMobilePanelId] = useState<string | null>(null);
   const previousBookLabel = dict.navigation?.previousBook || "Previous book";
   const nextBookLabel = dict.navigation?.nextBook || "Next book";
+
+  const setFeedSnapEnabled = useCallback((enabled: boolean) => {
+    if (!feedRef.current || !isMobileFeed) {
+      return;
+    }
+
+    if (mobileSnapRestoreTimerRef.current !== null) {
+      window.clearTimeout(mobileSnapRestoreTimerRef.current);
+      mobileSnapRestoreTimerRef.current = null;
+    }
+
+    feedRef.current.style.scrollSnapType = enabled ? "y mandatory" : "none";
+  }, [isMobileFeed]);
+
+  const handleStorySwipeStateChange = useCallback((isSwiping: boolean) => {
+    if (!isMobileFeed) {
+      return;
+    }
+
+    if (isSwiping) {
+      setFeedSnapEnabled(false);
+      return;
+    }
+
+    mobileSnapRestoreTimerRef.current = window.setTimeout(() => {
+      setFeedSnapEnabled(true);
+      mobileSnapRestoreTimerRef.current = null;
+    }, 240);
+  }, [isMobileFeed, setFeedSnapEnabled]);
 
   const maybeLoadPreviousBook = useCallback(() => {
     if (loading || wheelLocked.current || !hasPreviousBook) {
@@ -140,10 +170,22 @@ export default function BookFeed({
       return;
     }
 
+    if (mobileSnapRestoreTimerRef.current !== null) {
+      window.clearTimeout(mobileSnapRestoreTimerRef.current);
+      mobileSnapRestoreTimerRef.current = null;
+    }
     setMobilePanels([]);
     setActiveMobilePanelId(null);
     mobileLoadQueuedRef.current = false;
   }, [isMobileFeed]);
+
+  useEffect(() => {
+    return () => {
+      if (mobileSnapRestoreTimerRef.current !== null) {
+        window.clearTimeout(mobileSnapRestoreTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isMobileFeed || !book) {
@@ -347,11 +389,12 @@ export default function BookFeed({
                 currentSlideIndex={panel.currentSlideIndex}
                 loading={isInteractivePanel ? loading : true}
                 showTests={isInteractivePanel ? showTests : panel.showTests}
+                onStorySwipeStateChange={isInteractivePanel ? handleStorySwipeStateChange : undefined}
                 showRandomBookAction={isInteractivePanel ? showRandomBookAction : false}
                 onRandomBook={isInteractivePanel ? onNextBook : () => {}}
                 onExplainMeaning={isInteractivePanel ? onExplainMeaning : () => {}}
                 onTakeTest={isInteractivePanel ? onTakeTest : () => {}}
-                onCreateVideo={isInteractivePanel ? onCreateVideo : () => {}}
+                onCreateVideo={isInteractivePanel ? onCreateVideo : async () => {}}
                 onModeSelect={isInteractivePanel ? onModeSelect : () => {}}
                 onSlideIndexChange={isInteractivePanel ? onSlideIndexChange : () => {}}
                 onFindNewImage={isInteractivePanel ? onFindNewImage : async () => {}}
@@ -392,6 +435,7 @@ export default function BookFeed({
               currentSlideIndex={currentSlideIndex}
               loading={loading}
               showTests={showTests}
+              onStorySwipeStateChange={handleStorySwipeStateChange}
               showRandomBookAction={showRandomBookAction}
               onRandomBook={onNextBook}
               onExplainMeaning={onExplainMeaning}

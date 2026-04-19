@@ -26,6 +26,7 @@ interface MobileBookScreenProps {
   currentSlideIndex: number;
   loading?: boolean;
   showTests?: boolean;
+  onSwipeStateChange?: (isSwiping: boolean) => void;
   onTakeTest: () => void;
   onCreateStory: () => void;
   onOpenStudio: () => void;
@@ -47,6 +48,7 @@ export default function MobileBookScreen({
   currentSlideIndex,
   loading,
   showTests,
+  onSwipeStateChange,
   onTakeTest,
   onCreateStory,
   onOpenStudio,
@@ -121,21 +123,6 @@ export default function MobileBookScreen({
   const ageGroup = typeof book.age_group === "string" || typeof book.age_group === "number"
     ? String(book.age_group).trim()
     : "";
-  const studioLabel = lang === "ru"
-    ? "Открыть в Студии котиков"
-    : lang === "he"
-      ? "לפתוח בסטודיו החתולים"
-      : "Open in Cat Studio";
-  const testCaption = lang === "ru"
-    ? "Тест по книге"
-    : lang === "he"
-      ? "חידון על הספר"
-      : "Book quiz";
-  const closeTestLabel = lang === "ru"
-    ? "Закрыть тест"
-    : lang === "he"
-      ? "לסגור את החידון"
-      : "Close quiz";
   return (
     <div className="mobile-book-screen">
       <div className="mobile-book-header">
@@ -164,6 +151,7 @@ export default function MobileBookScreen({
           t={t}
           currentSlideIndex={currentSlideIndex}
           onSlideIndexChange={onSlideIndexChange}
+          onSwipeStateChange={onSwipeStateChange}
           emptyMessage={t.storyError}
           mediaCache={mediaCache}
           onPreloadNextSlide={onPreloadNextSlide}
@@ -189,7 +177,7 @@ export default function MobileBookScreen({
           disabled={slides.length === 0}
           onClick={onOpenStudio}
         >
-          {studioLabel}
+          {t.actions.openCatsStudio}
         </button>
       </div>
 
@@ -197,10 +185,10 @@ export default function MobileBookScreen({
         <div className="mobile-quiz-sheet" role="dialog" aria-modal="true">
           <div className="mobile-quiz-sheet-header">
             <div>
-              <p className="mobile-quiz-sheet-caption">{testCaption}</p>
+              <p className="mobile-quiz-sheet-caption">{t.testTitle}</p>
               <h3 className="mobile-quiz-sheet-title">{activeTest?.title || t.testTitle}</h3>
             </div>
-            <button type="button" className="mobile-quiz-sheet-close" onClick={onTakeTest} aria-label={closeTestLabel}>
+            <button type="button" className="mobile-quiz-sheet-close" onClick={onTakeTest} aria-label={t.quiz.close}>
               <span aria-hidden="true">×</span>
             </button>
           </div>
@@ -208,7 +196,7 @@ export default function MobileBookScreen({
           {activeTest ? (
             <BookQuiz bookId={book.id} test={activeTest} t={t} variant="mobile-fullscreen" />
           ) : (
-            <p className="book-tests-empty">Тест пока недоступен</p>
+            <p className="book-tests-empty">{t.noTests}</p>
           )}
         </div>
       ) : null}

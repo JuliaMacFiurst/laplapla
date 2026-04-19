@@ -1,5 +1,5 @@
 import type { GetServerSideProps } from "next";
-import { isLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { buildCanonicalMapEntityPath, normalizeSlug } from "@/lib/mapEntityRouting";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -11,7 +11,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return { notFound: true };
   }
 
-  const destination = `${buildCanonicalMapEntityPath("animal", slug)}?lang=${lang}`;
+  const destination = buildLocalizedPublicPath(buildCanonicalMapEntityPath("animal", slug), lang);
 
   return {
     redirect: {

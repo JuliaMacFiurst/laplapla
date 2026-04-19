@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { buildCanonicalMapEntityPathFromUnknown, normalizeMapEntityType, normalizeSlug } from "@/lib/mapEntityRouting";
+import { buildLocalizedPublicPath, DEFAULT_LANG, isLang } from "@/lib/i18n/routing";
 
 const LEGACY_ENTITY_PREFIXES = new Set(["country", "animal", "river", "sea", "biome", "physic"]);
 const QUERY_TYPE_KEYS = ["type", "mapType", "target_type", "entityType"];
@@ -18,7 +19,8 @@ function logDevRedirect(fromPath: string, toPath: string) {
 
 function redirectToCanonical(request: NextRequest, pathname: string, queryKeysToRemove: string[] = []) {
   const target = new URL(request.url);
-  target.pathname = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
+  const locale = isLang(request.nextUrl.locale) ? request.nextUrl.locale : DEFAULT_LANG;
+  target.pathname = buildLocalizedPublicPath(pathname, locale);
 
   queryKeysToRemove.forEach((key) => {
     target.searchParams.delete(key);

@@ -61,6 +61,7 @@ const nextConfig = {
   i18n: {
     locales: ["ru", "en", "he"],
     defaultLocale: "ru",
+    localeDetection: false,
   },
   skipTrailingSlashRedirect: true,
   logging: {

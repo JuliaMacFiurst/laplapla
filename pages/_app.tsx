@@ -86,22 +86,22 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     !isProduction || router.query.debug === "true";
   const isBrowserCaptureEnabled =
     !isProduction && process.env.NEXT_PUBLIC_ENABLE_BROWSER_CAPTURE === "true";
-  const [lang, setLang] = useState<Lang | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const initialLang = (() => {
+    const pageLang = (pageProps as { lang?: unknown } | undefined)?.lang;
+    if (pageLang === "ru" || pageLang === "en" || pageLang === "he") {
+      return pageLang as Lang;
+    }
+
+    return getCurrentLang(router);
+  })();
+  const [lang, setLang] = useState<Lang>(initialLang);
 
   useEffect(() => {
     let active = true;
     let handoffTimeoutId: number | null = null;
 
-    const finishAuthReady = () => {
-      if (active) {
-        setAuthReady(true);
-      }
-    };
-
     const initializeSessionTransfer = async () => {
       if (typeof window === "undefined") {
-        finishAuthReady();
         return;
       }
 
@@ -120,7 +120,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           window.history.replaceState(null, "", cleanUrl);
         }
 
-        finishAuthReady();
         return;
       }
 
@@ -158,16 +157,12 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           handoffTimeoutId = null;
         }
 
-        finishAuthReady();
       };
 
       window.addEventListener("message", handleMessage);
 
-      if (!shouldAwaitAdminMessage) {
-        finishAuthReady();
-      } else {
+      if (shouldAwaitAdminMessage) {
         handoffTimeoutId = window.setTimeout(() => {
-          finishAuthReady();
         }, 1500);
       }
 
@@ -206,8 +201,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     document.documentElement.dir = detected === "he" ? "rtl" : "ltr";
   }, [router.query.lang, router.locale]);
 
-  // Prevent hydration mismatch
-  if (!lang || !authReady) return null;
   const t = dictionaries[lang];
 
   const handleHiddenAdminLogout = async () => {

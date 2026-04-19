@@ -3,7 +3,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import SEO from "@/components/SEO";
 import StandaloneBookScreenPages from "@/components/StandaloneBookScreenPages";
 import { buildBookPageDescription, getBookPathSlug } from "@/lib/books/shared";
-import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Book } from "@/types/types";
@@ -108,12 +108,12 @@ export default function BookPage({
         <StandaloneBookScreenPages book={book} lang={lang} t={t} />
         <div className="book-seo-navigation">
           {previousBook ? (
-            <Link href={buildLocalizedHref(`/books/${getBookPathSlug(previousBook)}`, lang)}>
+            <Link href={buildLocalizedPublicPath(`/books/${getBookPathSlug(previousBook)}`, lang)}>
               <span dir="ltr" style={{ unicodeBidi: "isolate" }}>{previousArrow}</span> {previousBook.title}
             </Link>
           ) : null}
           {nextBook ? (
-            <Link href={buildLocalizedHref(`/books/${getBookPathSlug(nextBook)}`, lang)}>
+            <Link href={buildLocalizedPublicPath(`/books/${getBookPathSlug(nextBook)}`, lang)}>
               {nextBook.title} <span dir="ltr" style={{ unicodeBidi: "isolate" }}>{nextArrow}</span>
             </Link>
           ) : null}

@@ -547,6 +547,7 @@ type DictionaryShape = {
         questionCounter: string;
         correct: string;
         incorrect: string;
+        close: string;
         nextQuestion: string;
         showResults: string;
         tryAgain: string;
@@ -564,6 +565,7 @@ type DictionaryShape = {
         createVideo: string;
         createStory: string;
         findNewImage: string;
+        openCatsStudio: string;
       };
       errors: {
         invalidParams: string;
