@@ -4,12 +4,11 @@ import BookFeed from "@/components/BookFeed";
 import SEO from "@/components/SEO";
 import { useBook } from "@/hooks/useBook";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBookPathSlug } from "@/lib/books/shared";
+import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
-import { buildStudioRoute } from "@/lib/studioRouting";
 
 export default function CapybaraPage({ lang }: { lang: Lang }) {
   const router = useRouter();
@@ -135,7 +134,6 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
 
     const routeBook = Array.isArray(router.query.book) ? router.query.book[0] : router.query.book;
     const routeMode = Array.isArray(router.query.mode) ? router.query.mode[0] : router.query.mode;
-
     if (!routeBook) {
       didResolveRouteBookRef.current = true;
       return;
@@ -367,11 +365,17 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
 
   const handleExplainMeaning = async () => {
     closeCurrentBookQuiz();
-    await router.push(
-      { pathname: "/caps/stories/create", query: buildLocalizedQuery(currentLang) },
-      undefined,
-      { locale: currentLang },
-    );
+    const nextQuery = new URLSearchParams();
+    nextQuery.set("lang", currentLang);
+    if (currentBook) {
+      nextQuery.set("book", getBookPathSlug(currentBook));
+      const selectedMode = explanationModes.find((item) => String(item.id) === String(selectedModeId));
+      if (selectedMode) {
+        nextQuery.set("mode", getExplanationModeSegment(selectedMode));
+      }
+    }
+
+    window.location.assign(`/caps/stories/create?${nextQuery.toString()}`);
   };
 
   const handleCreateVideo = async (
@@ -389,11 +393,24 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
       : await buildStudioSlides();
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    await router.push(
-      buildStudioRoute("cats", currentLang),
-      undefined,
-      { locale: currentLang },
-    );
+    const targetBook = bookOverride || currentBook;
+    const selectedMode = explanationModes.find((item) => String(item.id) === String(selectedModeId));
+    const studioQuery: Record<string, string> = {
+      source: "capybara",
+    };
+
+    if (targetBook) {
+      studioQuery.book = getBookPathSlug(targetBook);
+    }
+
+    if (selectedMode) {
+      studioQuery.mode = getExplanationModeSegment(selectedMode);
+    }
+
+    window.location.assign(buildLocalizedHref(`/studio?type=cats&${new URLSearchParams({
+      lang: currentLang,
+      ...studioQuery,
+    }).toString()}`, currentLang));
   };
 
   const handlePreloadNextSlide = useCallback((slideIndex: number) => {

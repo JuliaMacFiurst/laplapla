@@ -41,6 +41,9 @@ interface BookScreenProps {
   isFindingNewImage?: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
+  onOpenStandaloneBook?: (modeId?: string | number | null) => void;
+  mobileVariant?: "feed" | "reader";
+  isOpeningStudio?: boolean;
   showEmptyError?: boolean;
   t: CapybaraPageDict;
 }
@@ -67,6 +70,9 @@ export default function BookScreen({
   isFindingNewImage,
   mediaCache,
   onPreloadNextSlide,
+  onOpenStandaloneBook,
+  mobileVariant = "reader",
+  isOpeningStudio = false,
   showEmptyError,
   t,
 }: BookScreenProps) {
@@ -172,6 +178,9 @@ export default function BookScreen({
         onSlideIndexChange={onSlideIndexChange}
         mediaCache={mediaCache}
         onPreloadNextSlide={onPreloadNextSlide}
+        onOpenStandaloneBook={onOpenStandaloneBook}
+        variant={mobileVariant}
+        isOpeningStudio={isOpeningStudio}
         showEmptyError={showEmptyError}
         t={t}
       />

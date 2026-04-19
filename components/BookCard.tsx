@@ -34,6 +34,8 @@ interface BookCardProps {
   isFindingNewImage?: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
+  onOpenStandaloneBook?: (modeId?: string | number | null) => void;
+  mobileVariant?: "feed" | "reader";
   showEmptyError?: boolean;
   t: CapybaraPageDict;
 }
@@ -60,6 +62,8 @@ export default function BookCard({
   isFindingNewImage,
   mediaCache,
   onPreloadNextSlide,
+  onOpenStandaloneBook,
+  mobileVariant,
   showEmptyError,
   t,
 }: BookCardProps) {
@@ -87,6 +91,8 @@ export default function BookCard({
         isFindingNewImage={isFindingNewImage}
         mediaCache={mediaCache}
         onPreloadNextSlide={onPreloadNextSlide}
+        onOpenStandaloneBook={onOpenStandaloneBook}
+        mobileVariant={mobileVariant}
         showEmptyError={showEmptyError}
         t={t}
       />

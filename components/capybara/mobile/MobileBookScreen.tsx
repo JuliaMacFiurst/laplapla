@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { fallbackImages } from "@/constants";
 import BookQuiz from "@/components/BookQuiz";
 import MobileModeTabs from "@/components/capybara/mobile/MobileModeTabs";
 import MobileStoryCarousel from "@/components/capybara/mobile/MobileStoryCarousel";
@@ -34,6 +35,9 @@ interface MobileBookScreenProps {
   onSlideIndexChange: (slideIndex: number) => void;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
+  onOpenStandaloneBook?: (modeId?: string | number | null) => void;
+  variant?: "feed" | "reader";
+  isOpeningStudio?: boolean;
   showEmptyError?: boolean;
   t: CapybaraPageDict;
 }
@@ -56,6 +60,9 @@ export default function MobileBookScreen({
   onSlideIndexChange,
   mediaCache,
   onPreloadNextSlide,
+  onOpenStandaloneBook,
+  variant = "reader",
+  isOpeningStudio = false,
   showEmptyError,
   t,
 }: MobileBookScreenProps) {
@@ -123,8 +130,28 @@ export default function MobileBookScreen({
   const ageGroup = typeof book.age_group === "string" || typeof book.age_group === "number"
     ? String(book.age_group).trim()
     : "";
+  const isReader = variant === "reader";
+  const feedModeSelect = (modeId: string | number) => {
+    if (onOpenStandaloneBook) {
+      onOpenStandaloneBook(modeId);
+      return;
+    }
+
+    onModeSelect(modeId);
+  };
+  const firstSlide = slides[0] || null;
+  const firstSlideMedia = mediaCache.get(0) || null;
+  const previewSeed = `${String(book.id)}-${String(selectedModeId ?? "default")}`;
+  const fallbackIndex = Math.abs(
+    Array.from(previewSeed).reduce((acc, char) => acc + char.charCodeAt(0), 0),
+  ) % fallbackImages.length;
+  const previewMediaUrl = firstSlideMedia?.capybaraImage ||
+    firstSlideMedia?.gifUrl ||
+    firstSlideMedia?.imageUrl ||
+    `/images/capybaras/${fallbackImages[fallbackIndex]}`;
+
   return (
-    <div className="mobile-book-screen">
+    <div className={`mobile-book-screen ${isReader ? "mobile-book-screen-reader" : "mobile-book-screen-feed"}`}>
       <div className="mobile-book-header">
         <div className="mobile-book-header-copy">
           <h2 className="mobile-book-title">{book.title}</h2>
@@ -140,46 +167,80 @@ export default function MobileBookScreen({
           modes={modes}
           selectedModeId={selectedModeId}
           disabled={loading}
-          onSelect={onModeSelect}
+          onSelect={isReader ? onModeSelect : feedModeSelect}
         />
       </div>
 
       <div className="mobile-book-stage">
-        <MobileStoryCarousel
-          story={story}
-          lang={lang}
-          t={t}
-          currentSlideIndex={currentSlideIndex}
-          onSlideIndexChange={onSlideIndexChange}
-          onSwipeStateChange={onSwipeStateChange}
-          emptyMessage={t.storyError}
-          mediaCache={mediaCache}
-          onPreloadNextSlide={onPreloadNextSlide}
-          showEmptyError={showEmptyError}
-        />
+        {isReader ? (
+          <MobileStoryCarousel
+            story={story}
+            lang={lang}
+            t={t}
+            initialSlideIndex={currentSlideIndex}
+            onSlideIndexChange={onSlideIndexChange}
+            onSwipeStateChange={onSwipeStateChange}
+            emptyMessage={t.storyError}
+            mediaCache={mediaCache}
+            onPreloadNextSlide={onPreloadNextSlide}
+            showEmptyError={showEmptyError}
+          />
+        ) : (
+          <button
+            type="button"
+            className="mobile-book-preview-button"
+            onClick={() => onOpenStandaloneBook?.(selectedModeId)}
+          >
+            <div className="mobile-story-media">
+              {firstSlideMedia?.type === "video" && firstSlideMedia.videoUrl ? (
+                <video
+                  src={firstSlideMedia.videoUrl}
+                  className="mobile-story-media-asset"
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  src={previewMediaUrl}
+                  alt={firstSlideMedia?.capybaraImageAlt || firstSlide?.text?.trim() || book.title || "illustration"}
+                  className="mobile-story-media-asset"
+                  draggable={false}
+                />
+              )}
+              <div className="mobile-story-text">
+                <p className="mobile-story-text-copy">{firstSlide?.text || t.storyError}</p>
+                <span className="mobile-book-preview-hint">Открыть слайды</span>
+              </div>
+            </div>
+          </button>
+        )}
       </div>
 
-      <div className="mobile-book-actions">
-        <button type="button" className="mobile-action-pill mobile-action-pill-primary" onClick={onCreateStory}>
-          {t.actions.createStory}
-        </button>
-        <button
-          type="button"
-          className="mobile-action-pill mobile-action-pill-secondary"
-          disabled={!activeTest}
-          onClick={onTakeTest}
-        >
-          {t.actions.takeTest}
-        </button>
-        <button
-          type="button"
-          className="mobile-action-pill mobile-action-pill-accent"
-          disabled={slides.length === 0}
-          onClick={onOpenStudio}
-        >
-          {t.actions.openCatsStudio}
-        </button>
-      </div>
+      {isReader ? (
+        <div className="mobile-book-actions">
+          <button type="button" className="mobile-action-pill mobile-action-pill-primary" onClick={onCreateStory}>
+            <span className="mobile-action-pill-label">{t.actions.createStory}</span>
+          </button>
+          <button
+            type="button"
+            className="mobile-action-pill mobile-action-pill-secondary"
+            disabled={!activeTest}
+            onClick={onTakeTest}
+          >
+            <span className="mobile-action-pill-label">{t.actions.takeTest}</span>
+          </button>
+          <button
+            type="button"
+            className={`mobile-action-pill mobile-action-pill-accent ${isOpeningStudio ? "mobile-action-pill-loading" : ""}`}
+            disabled={slides.length === 0 || isOpeningStudio}
+            onClick={onOpenStudio}
+            aria-busy={isOpeningStudio}
+          >
+            <span className="mobile-action-pill-label">{t.actions.openCatsStudio}</span>
+          </button>
+        </div>
+      ) : null}
 
       {showTests ? (
         <div className="mobile-quiz-sheet" role="dialog" aria-modal="true">

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import BookCard from "@/components/BookCard";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { dictionaries, type Lang } from "@/i18n";
+import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
@@ -19,10 +21,7 @@ interface MobileBookPanel {
   panelId: string;
   book: Book;
   slides: Slide[];
-  tests: BookTest[];
   selectedModeId: string | number | null;
-  currentSlideIndex: number;
-  showTests: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
 }
 
@@ -83,47 +82,26 @@ export default function BookFeed({
   onPreloadNextSlide,
   t,
 }: BookFeedProps) {
+  const router = useRouter();
   const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
   const feedRef = useRef<HTMLElement | null>(null);
   const lastPanelRef = useRef<HTMLDivElement | null>(null);
   const wheelLocked = useRef(false);
   const mobilePanelCounterRef = useRef(0);
   const mobileLoadQueuedRef = useRef(false);
-  const mobileSnapRestoreTimerRef = useRef<number | null>(null);
   const [isMobileFeed, setIsMobileFeed] = useState(false);
   const [mobilePanels, setMobilePanels] = useState<MobileBookPanel[]>([]);
-  const [activeMobilePanelId, setActiveMobilePanelId] = useState<string | null>(null);
   const previousBookLabel = dict.navigation?.previousBook || "Previous book";
   const nextBookLabel = dict.navigation?.nextBook || "Next book";
 
-  const setFeedSnapEnabled = useCallback((enabled: boolean) => {
-    if (!feedRef.current || !isMobileFeed) {
-      return;
-    }
-
-    if (mobileSnapRestoreTimerRef.current !== null) {
-      window.clearTimeout(mobileSnapRestoreTimerRef.current);
-      mobileSnapRestoreTimerRef.current = null;
-    }
-
-    feedRef.current.style.scrollSnapType = enabled ? "y mandatory" : "none";
-  }, [isMobileFeed]);
-
-  const handleStorySwipeStateChange = useCallback((isSwiping: boolean) => {
-    if (!isMobileFeed) {
-      return;
-    }
-
-    if (isSwiping) {
-      setFeedSnapEnabled(false);
-      return;
-    }
-
-    mobileSnapRestoreTimerRef.current = window.setTimeout(() => {
-      setFeedSnapEnabled(true);
-      mobileSnapRestoreTimerRef.current = null;
-    }, 240);
-  }, [isMobileFeed, setFeedSnapEnabled]);
+  const openStandaloneBook = useCallback(async (
+    targetBook: Book,
+    targetModeId?: string | number | null,
+  ) => {
+    const targetMode = modes.find((mode) => String(mode.id) === String(targetModeId));
+    const href = targetMode ? buildBookModeHref(targetBook, targetMode) : buildBookHref(targetBook);
+    await router.push(href, undefined, { locale: lang });
+  }, [lang, modes, router]);
 
   const maybeLoadPreviousBook = useCallback(() => {
     if (loading || wheelLocked.current || !hasPreviousBook) {
@@ -170,35 +148,23 @@ export default function BookFeed({
       return;
     }
 
-    if (mobileSnapRestoreTimerRef.current !== null) {
-      window.clearTimeout(mobileSnapRestoreTimerRef.current);
-      mobileSnapRestoreTimerRef.current = null;
-    }
     setMobilePanels([]);
-    setActiveMobilePanelId(null);
     mobileLoadQueuedRef.current = false;
   }, [isMobileFeed]);
-
-  useEffect(() => {
-    return () => {
-      if (mobileSnapRestoreTimerRef.current !== null) {
-        window.clearTimeout(mobileSnapRestoreTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!isMobileFeed || !book) {
       return;
     }
 
+    if (loading && slides.length === 0) {
+      return;
+    }
+
     const nextPanelSnapshot: Omit<MobileBookPanel, "panelId"> = {
       book,
       slides,
-      tests,
       selectedModeId,
-      currentSlideIndex,
-      showTests,
       mediaCache: new Map(mediaCache),
     };
 
@@ -234,23 +200,12 @@ export default function BookFeed({
     }
   }, [
     book,
-    currentSlideIndex,
     isMobileFeed,
     loading,
     mediaCache,
     selectedModeId,
-    showTests,
     slides,
-    tests,
   ]);
-
-  useEffect(() => {
-    if (!isMobileFeed) {
-      return;
-    }
-
-    setActiveMobilePanelId((current) => current ?? mobilePanels[mobilePanels.length - 1]?.panelId ?? null);
-  }, [isMobileFeed, mobilePanels]);
 
   useEffect(() => {
     if (!isMobileFeed || !feedRef.current || !lastPanelRef.current) {
@@ -269,44 +224,13 @@ export default function BookFeed({
       },
       {
         root: feedRef.current,
-        threshold: 0.65,
+        threshold: 0.92,
       },
     );
 
     observer.observe(lastPanelRef.current);
     return () => observer.disconnect();
   }, [isMobileFeed, loading, mobilePanels, onNextBook]);
-
-  useEffect(() => {
-    if (!isMobileFeed || !feedRef.current) {
-      return;
-    }
-
-    const panels = Array.from(feedRef.current.querySelectorAll<HTMLDivElement>(".book-panel[data-panel-id]"));
-    if (!panels.length) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visiblePanel = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        const panelId = visiblePanel?.target.getAttribute("data-panel-id");
-        if (panelId) {
-          setActiveMobilePanelId(panelId);
-        }
-      },
-      {
-        root: feedRef.current,
-        threshold: [0.45, 0.65, 0.85],
-      },
-    );
-
-    panels.forEach((panel) => observer.observe(panel));
-    return () => observer.disconnect();
-  }, [isMobileFeed, mobilePanels]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -368,40 +292,39 @@ export default function BookFeed({
       {book && isMobileFeed ? (
         mobilePanels.map((panel, index) => {
           const isLatestPanel = index === mobilePanels.length - 1;
-          const isInteractivePanel = activeMobilePanelId
-            ? activeMobilePanelId === panel.panelId
-            : isLatestPanel;
 
           return (
             <div
               key={panel.panelId}
               ref={isLatestPanel ? lastPanelRef : null}
               data-panel-id={panel.panelId}
-              className={`book-panel ${activeMobilePanelId === panel.panelId ? "book-panel-active" : "book-panel-inactive"}`}
+              className="book-panel"
             >
               <BookCard
                 book={panel.book}
                 lang={lang}
                 slides={panel.slides}
-                tests={panel.tests}
+                tests={[]}
                 modes={modes}
                 selectedModeId={panel.selectedModeId}
-                currentSlideIndex={panel.currentSlideIndex}
-                loading={isInteractivePanel ? loading : true}
-                showTests={isInteractivePanel ? showTests : panel.showTests}
-                onStorySwipeStateChange={isInteractivePanel ? handleStorySwipeStateChange : undefined}
-                showRandomBookAction={isInteractivePanel ? showRandomBookAction : false}
-                onRandomBook={isInteractivePanel ? onNextBook : () => {}}
-                onExplainMeaning={isInteractivePanel ? onExplainMeaning : () => {}}
-                onTakeTest={isInteractivePanel ? onTakeTest : () => {}}
-                onCreateVideo={isInteractivePanel ? onCreateVideo : async () => {}}
-                onModeSelect={isInteractivePanel ? onModeSelect : () => {}}
-                onSlideIndexChange={isInteractivePanel ? onSlideIndexChange : () => {}}
-                onFindNewImage={isInteractivePanel ? onFindNewImage : async () => {}}
-                isFindingNewImage={isInteractivePanel ? isFindingNewImage : false}
+                currentSlideIndex={0}
+                loading={false}
+                showTests={false}
+                onStorySwipeStateChange={undefined}
+                showRandomBookAction={false}
+                onRandomBook={() => {}}
+                onExplainMeaning={() => {}}
+                onTakeTest={() => {}}
+                onCreateVideo={async () => {}}
+                onModeSelect={() => {}}
+                onSlideIndexChange={() => {}}
+                onFindNewImage={async () => {}}
+                isFindingNewImage={false}
                 mediaCache={panel.mediaCache}
-                onPreloadNextSlide={isInteractivePanel ? onPreloadNextSlide : () => {}}
-                showEmptyError={isInteractivePanel ? Boolean(error && !loading && slides.length === 0) : false}
+                onPreloadNextSlide={() => {}}
+                onOpenStandaloneBook={(modeId) => void openStandaloneBook(panel.book, modeId ?? panel.selectedModeId)}
+                mobileVariant="feed"
+                showEmptyError={false}
                 t={dict}
               />
             </div>
@@ -435,7 +358,7 @@ export default function BookFeed({
               currentSlideIndex={currentSlideIndex}
               loading={loading}
               showTests={showTests}
-              onStorySwipeStateChange={handleStorySwipeStateChange}
+              onStorySwipeStateChange={undefined}
               showRandomBookAction={showRandomBookAction}
               onRandomBook={onNextBook}
               onExplainMeaning={onExplainMeaning}
@@ -447,6 +370,7 @@ export default function BookFeed({
               isFindingNewImage={isFindingNewImage}
               mediaCache={mediaCache}
               onPreloadNextSlide={onPreloadNextSlide}
+              onOpenStandaloneBook={(modeId) => void openStandaloneBook(book, modeId ?? selectedModeId)}
               showEmptyError={Boolean(error && !loading && slides.length === 0)}
               t={dict}
             />

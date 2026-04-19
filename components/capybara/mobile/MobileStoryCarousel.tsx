@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import { fallbackImages } from "@/constants";
 import { dictionaries, type Lang } from "@/i18n";
 import type { CarouselStory } from "@/types/types";
@@ -18,8 +25,8 @@ interface MobileStoryCarouselProps {
   story: CarouselStory;
   lang: Lang;
   t?: CapybaraPageDict;
-  currentSlideIndex: number;
-  onSlideIndexChange: (slideIndex: number) => void;
+  initialSlideIndex?: number;
+  onSlideIndexChange?: (slideIndex: number) => void;
   onSwipeStateChange?: (isSwiping: boolean) => void;
   isFindingNewImage?: boolean;
   emptyMessage?: string;
@@ -28,14 +35,17 @@ interface MobileStoryCarouselProps {
   showEmptyError?: boolean;
 }
 
-const SWIPE_DISTANCE_THRESHOLD = 34;
+const SWIPE_DISTANCE_THRESHOLD = 28;
 const SWIPE_VELOCITY_THRESHOLD = 0.18;
+const SWIPE_LOCK_THRESHOLD = 6;
+const VERTICAL_CANCEL_THRESHOLD = 12;
+const HORIZONTAL_CONFIRM_THRESHOLD = 14;
 
 export default function MobileStoryCarousel({
   story,
   lang,
   t,
-  currentSlideIndex,
+  initialSlideIndex = 0,
   onSlideIndexChange,
   onSwipeStateChange,
   emptyMessage,
@@ -44,34 +54,70 @@ export default function MobileStoryCarousel({
   showEmptyError,
 }: MobileStoryCarouselProps) {
   const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
+  const slideCount = story.slides.length;
+  const clampSlideIndex = (value: number) => {
+    if (slideCount <= 0) {
+      return 0;
+    }
+
+    return Math.min(Math.max(value, 0), slideCount - 1);
+  };
+
+  const [slideIndex, setSlideIndex] = useState(() => clampSlideIndex(initialSlideIndex));
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const startTimeRef = useRef(0);
-  const isHorizontalRef = useRef(false);
+  const gestureAxisRef = useRef<"pending" | "horizontal" | "vertical">("pending");
   const dragOffsetRef = useRef(0);
   const isDraggingRef = useRef(false);
-  const activePointerIdRef = useRef<number | null>(null);
+  const activeTouchIdRef = useRef<number | null>(null);
+  const slideIndexRef = useRef(clampSlideIndex(initialSlideIndex));
+  const onSlideIndexChangeRef = useRef(onSlideIndexChange);
+  const onSwipeStateChangeRef = useRef(onSwipeStateChange);
+  const removeWindowListenersRef = useRef<(() => void) | null>(null);
+  const suppressClickRef = useRef(false);
 
   useEffect(() => {
-    if (currentSlideIndex >= story.slides.length && story.slides.length > 0) {
-      onSlideIndexChange(0);
-    }
-  }, [currentSlideIndex, onSlideIndexChange, story.slides.length]);
+    onSlideIndexChangeRef.current = onSlideIndexChange;
+  }, [onSlideIndexChange]);
 
   useEffect(() => {
-    onPreloadNextSlide?.(currentSlideIndex);
-  }, [currentSlideIndex, onPreloadNextSlide, story.id]);
+    onSwipeStateChangeRef.current = onSwipeStateChange;
+  }, [onSwipeStateChange]);
+
+  useEffect(() => {
+    const nextIndex = clampSlideIndex(initialSlideIndex);
+    slideIndexRef.current = nextIndex;
+    setSlideIndex(nextIndex);
+    dragOffsetRef.current = 0;
+    setDragOffset(0);
+    setIsDragging(false);
+    isDraggingRef.current = false;
+    activeTouchIdRef.current = null;
+    gestureAxisRef.current = "pending";
+  }, [initialSlideIndex, story.id, slideCount]);
+
+  useEffect(() => {
+    slideIndexRef.current = slideIndex;
+    onSlideIndexChangeRef.current?.(slideIndex);
+    onPreloadNextSlide?.(slideIndex);
+  }, [onPreloadNextSlide, slideIndex]);
+
+  useEffect(() => () => {
+    removeWindowListenersRef.current?.();
+  }, []);
 
   const previousSlideLabel = dict.navigation?.previousSlide || "Previous slide";
   const nextSlideLabel = dict.navigation?.nextSlide || "Next slide";
   const slideCounterTemplate = dict.slideCounter || "Slide {current} of {total}";
 
   const getFallbackForSlide = useMemo(
-    () => (slideIndex: number) => {
+    () => (targetSlideIndex: number) => {
+      const seed = `${story.id}-${targetSlideIndex}`;
       const index = Math.abs(
-        Array.from(`${story.id}-${slideIndex}`).reduce((acc, char) => acc + char.charCodeAt(0), 0),
+        Array.from(seed).reduce((acc, char) => acc + char.charCodeAt(0), 0),
       ) % fallbackImages.length;
 
       return `/images/capybaras/${fallbackImages[index]}`;
@@ -79,102 +125,171 @@ export default function MobileStoryCarousel({
     [story.id],
   );
 
-  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse" && event.button !== 0) {
-      return;
-    }
-
-    activePointerIdRef.current = event.pointerId;
-    startXRef.current = event.clientX;
-    startYRef.current = event.clientY;
-    startTimeRef.current = performance.now();
-    isHorizontalRef.current = false;
-    dragOffsetRef.current = 0;
-    isDraggingRef.current = true;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setIsDragging(true);
+  const detachWindowListeners = () => {
+    removeWindowListenersRef.current?.();
+    removeWindowListenersRef.current = null;
   };
 
-  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (activePointerIdRef.current !== event.pointerId || !isDraggingRef.current) {
+  const clearGesture = () => {
+    activeTouchIdRef.current = null;
+    gestureAxisRef.current = "pending";
+    isDraggingRef.current = false;
+    dragOffsetRef.current = 0;
+    setIsDragging(false);
+    setDragOffset(0);
+  };
+
+  const commitSlideChange = (nextIndex: number) => {
+    const clampedIndex = clampSlideIndex(nextIndex);
+    if (clampedIndex === slideIndexRef.current) {
       return;
     }
 
-    const deltaX = event.clientX - startXRef.current;
-    const deltaY = event.clientY - startYRef.current;
+    setSlideIndex(clampedIndex);
+  };
 
-    if (!isHorizontalRef.current) {
-      if (Math.abs(deltaY) > Math.abs(deltaX) * 1.25) {
-        isDraggingRef.current = false;
-        dragOffsetRef.current = 0;
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-        activePointerIdRef.current = null;
-        onSwipeStateChange?.(false);
-        setIsDragging(false);
-        setDragOffset(0);
+  const finishSwipe = () => {
+    detachWindowListeners();
+    const wasHorizontal = gestureAxisRef.current === "horizontal";
+    const wasDragging = isDraggingRef.current;
+    const finalDragOffset = dragOffsetRef.current;
+
+    if (wasHorizontal) {
+      onSwipeStateChangeRef.current?.(false);
+    }
+
+    clearGesture();
+
+    if (!wasDragging) {
+      return;
+    }
+
+    const elapsed = Math.max(performance.now() - startTimeRef.current, 1);
+    const velocity = Math.abs(finalDragOffset) / elapsed;
+    const shouldNavigate =
+      Math.abs(finalDragOffset) > SWIPE_DISTANCE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
+
+    if (!shouldNavigate || slideCount <= 1) {
+      return;
+    }
+
+    const direction = finalDragOffset < 0 ? 1 : -1;
+    commitSlideChange(slideIndexRef.current + direction);
+  };
+
+  const findTrackedTouch = (touches: TouchList) => {
+    const activeTouchId = activeTouchIdRef.current;
+    if (activeTouchId === null) {
+      return null;
+    }
+
+    for (let index = 0; index < touches.length; index += 1) {
+      const touch = touches.item(index);
+      if (touch?.identifier === activeTouchId) {
+        return touch;
+      }
+    }
+
+    return null;
+  };
+
+  const handleTouchMove = (event: TouchEvent) => {
+    if (!isDraggingRef.current) {
+      return;
+    }
+
+    const touch = findTrackedTouch(event.touches);
+    if (!touch) {
+      return;
+    }
+
+    const deltaX = touch.clientX - startXRef.current;
+    const deltaY = touch.clientY - startYRef.current;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (gestureAxisRef.current === "pending") {
+      if (absDeltaX < SWIPE_LOCK_THRESHOLD && absDeltaY < SWIPE_LOCK_THRESHOLD) {
         return;
       }
 
-      if (Math.abs(deltaX) < 6) {
+      if (absDeltaY > VERTICAL_CANCEL_THRESHOLD && absDeltaY > absDeltaX * 1.5) {
+        gestureAxisRef.current = "vertical";
+        finishSwipe();
         return;
       }
 
-      isHorizontalRef.current = true;
-      onSwipeStateChange?.(true);
+      if (absDeltaX < HORIZONTAL_CONFIRM_THRESHOLD || absDeltaX <= absDeltaY) {
+        return;
+      }
+
+      gestureAxisRef.current = "horizontal";
+      suppressClickRef.current = true;
+      setIsDragging(true);
+      onSwipeStateChangeRef.current?.(true);
+    }
+
+    if (gestureAxisRef.current !== "horizontal") {
+      return;
     }
 
     event.preventDefault();
 
-    const isAtStart = currentSlideIndex === 0 && deltaX > 0;
-    const isAtEnd = currentSlideIndex === story.slides.length - 1 && deltaX < 0;
+    const isAtStart = slideIndexRef.current === 0 && deltaX > 0;
+    const isAtEnd = slideIndexRef.current === slideCount - 1 && deltaX < 0;
     const nextDragOffset = isAtStart || isAtEnd ? deltaX * 0.25 : deltaX;
     dragOffsetRef.current = nextDragOffset;
     setDragOffset(nextDragOffset);
   };
 
-  const finishSwipe = (event?: ReactPointerEvent<HTMLDivElement>) => {
-    if (event && activePointerIdRef.current !== event.pointerId) {
+  const handleTouchEnd = (event: TouchEvent) => {
+    const touch = findTrackedTouch(event.changedTouches);
+    if (!touch && activeTouchIdRef.current !== null) {
       return;
     }
 
-    if (event && event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
+    finishSwipe();
+  };
 
-    activePointerIdRef.current = null;
-    if (isHorizontalRef.current) {
-      onSwipeStateChange?.(false);
-    }
-    isHorizontalRef.current = false;
+  const attachTouchListeners = () => {
+    detachWindowListeners();
 
-    if (!isDraggingRef.current) {
-      dragOffsetRef.current = 0;
-      setIsDragging(false);
-      setDragOffset(0);
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd);
+    window.addEventListener("touchcancel", handleTouchEnd);
+
+    removeWindowListenersRef.current = () => {
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  };
+
+  const handleTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 1) {
       return;
     }
 
-    isDraggingRef.current = false;
-    const elapsed = Math.max(performance.now() - startTimeRef.current, 1);
-    const finalDragOffset = dragOffsetRef.current;
-    const velocity = Math.abs(finalDragOffset) / elapsed;
-    const shouldNavigate =
-      Math.abs(finalDragOffset) > SWIPE_DISTANCE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
-
-    if (shouldNavigate && story.slides.length > 1) {
-      const direction = finalDragOffset < 0 ? 1 : -1;
-      const nextIndex = Math.min(Math.max(currentSlideIndex + direction, 0), story.slides.length - 1);
-
-      if (nextIndex !== currentSlideIndex) {
-        onSlideIndexChange(nextIndex);
-      }
-    }
-
-    setIsDragging(false);
+    const touch = event.touches[0];
+    activeTouchIdRef.current = touch.identifier;
+    startXRef.current = touch.clientX;
+    startYRef.current = touch.clientY;
+    startTimeRef.current = performance.now();
+    gestureAxisRef.current = "pending";
     dragOffsetRef.current = 0;
-    setDragOffset(0);
+    isDraggingRef.current = true;
+    suppressClickRef.current = false;
+    attachTouchListeners();
+  };
+
+  const handleClickCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (!suppressClickRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClickRef.current = false;
   };
 
   if (!story || !story.slides || story.slides.length === 0) {
@@ -197,31 +312,31 @@ export default function MobileStoryCarousel({
     <div className="mobile-story-carousel">
       <div
         className="mobile-story-swipe-surface"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishSwipe}
-        onPointerCancel={finishSwipe}
-        onLostPointerCapture={finishSwipe}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={finishSwipe}
+        onTouchCancel={finishSwipe}
+        onClickCapture={handleClickCapture}
       >
         <div className="mobile-story-slide-shell">
           <div
             className="mobile-story-track"
             style={{
-              transform: `translate3d(calc(${-currentSlideIndex * 100}% + ${dragOffset}px), 0, 0)`,
+              transform: `translate3d(calc(${-slideIndex * 100}% + ${dragOffset}px), 0, 0)`,
               transition: isDragging ? "none" : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
-            {story.slides.map((slide, slideIndex) => {
-              const media = mediaCache?.get(slideIndex) || null;
-              const mediaUrl = media?.capybaraImage || media?.gifUrl || media?.imageUrl || getFallbackForSlide(slideIndex);
+            {story.slides.map((slide, targetSlideIndex) => {
+              const media = mediaCache?.get(targetSlideIndex) || null;
+              const mediaUrl = media?.capybaraImage || media?.gifUrl || media?.imageUrl || getFallbackForSlide(targetSlideIndex);
 
               return (
-                <div key={`${story.id}-${slideIndex}`} className="mobile-story-slide">
+                <div key={`${story.id}-${targetSlideIndex}`} className="mobile-story-slide">
                   <div className="mobile-story-media">
                     {media?.type === "video" && media.videoUrl ? (
                       <video
                         src={media.videoUrl}
                         className="mobile-story-media-asset"
+                        draggable={false}
                         autoPlay
                         muted
                         loop
@@ -232,6 +347,7 @@ export default function MobileStoryCarousel({
                         src={mediaUrl}
                         alt={media?.capybaraImageAlt || slide.text?.trim() || story.title || "illustration"}
                         className="mobile-story-media-asset"
+                        draggable={false}
                       />
                     )}
                     <div className="mobile-story-text">
@@ -250,22 +366,22 @@ export default function MobileStoryCarousel({
           <button
             type="button"
             className="mobile-story-nav-button"
-            onClick={() => onSlideIndexChange(Math.max(currentSlideIndex - 1, 0))}
-            disabled={currentSlideIndex === 0}
+            onClick={() => commitSlideChange(slideIndex - 1)}
+            disabled={slideIndex === 0}
             aria-label={previousSlideLabel}
           >
             <span aria-hidden="true">←</span>
           </button>
           <p className="mobile-story-counter" dir={lang === "he" ? "rtl" : "ltr"}>
             {slideCounterTemplate
-              .replace("{current}", String(currentSlideIndex + 1))
+              .replace("{current}", String(slideIndex + 1))
               .replace("{total}", String(story.slides.length))}
           </p>
           <button
             type="button"
             className="mobile-story-nav-button"
-            onClick={() => onSlideIndexChange(Math.min(currentSlideIndex + 1, story.slides.length - 1))}
-            disabled={currentSlideIndex === story.slides.length - 1}
+            onClick={() => commitSlideChange(slideIndex + 1)}
+            disabled={slideIndex === story.slides.length - 1}
             aria-label={nextSlideLabel}
           >
             <span aria-hidden="true">→</span>

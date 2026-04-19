@@ -34,6 +34,7 @@ export default function StandaloneBookScreenPages({
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isOpeningStudio, setIsOpeningStudio] = useState(false);
   const searchRequestRef = useRef(0);
   const searchControllerRef = useRef<AbortController | null>(null);
   const searchOverlayRef = useRef<HTMLDivElement | null>(null);
@@ -62,11 +63,7 @@ export default function StandaloneBookScreenPages({
   });
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
   const selectedMode = explanationModes.find((item) => String(item.id) === String(selectedModeId));
-  const returnToFeedQuery = {
-    ...buildLocalizedQuery(lang),
-    book: getBookPathSlug(book),
-    ...(selectedMode ? { mode: getExplanationModeSegment(selectedMode) } : {}),
-  };
+  const activeBook = currentBook || book;
 
   const abortSearchPipeline = useCallback(() => {
     searchControllerRef.current?.abort();
@@ -160,20 +157,41 @@ export default function StandaloneBookScreenPages({
   const handleModeSelect = (modeId: string | number) => {
     closeCurrentBookQuiz();
     const mode = explanationModes.find((item) => String(item.id) === String(modeId));
-    const nextHref = mode ? buildBookModeHref(book, mode) : buildBookHref(book);
-    void router.push(buildLocalizedHref(nextHref, lang), undefined, { locale: lang });
+    const nextHref = mode ? buildBookModeHref(activeBook, mode) : buildBookHref(activeBook);
+    window.location.assign(buildLocalizedHref(nextHref, lang));
   };
 
   const handleExplainMeaning = () => {
     closeCurrentBookQuiz();
-    void router.push(buildLocalizedHref("/caps/stories/create", lang), undefined, { locale: lang });
+    const nextQuery = new URLSearchParams();
+    nextQuery.set("lang", lang);
+    nextQuery.set("book", getBookPathSlug(activeBook));
+    if (selectedMode) {
+      nextQuery.set("mode", getExplanationModeSegment(selectedMode));
+    }
+
+    window.location.assign(`/caps/stories/create?${nextQuery.toString()}`);
   };
 
   const handleCreateVideo = async () => {
-    const studioSlides = await buildStudioSlides();
+    setIsOpeningStudio(true);
+    try {
+      const studioSlides = await buildStudioSlides();
+      const studioQuery: Record<string, string> = {
+        source: "capybara",
+        book: getBookPathSlug(activeBook),
+      };
 
-    sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    void router.push(buildStudioHref("cats", lang), undefined, { locale: lang });
+      if (selectedMode) {
+        studioQuery.mode = getExplanationModeSegment(selectedMode);
+      }
+
+      sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
+      window.location.assign(buildStudioHref("cats", lang, studioQuery));
+    } catch (error) {
+      setIsOpeningStudio(false);
+      throw error;
+    }
   };
 
   const handleFindNewImage = async (
@@ -242,6 +260,17 @@ export default function StandaloneBookScreenPages({
     return null;
   }
 
+  const handleCloseReader = () => {
+    const nextQuery = new URLSearchParams();
+    nextQuery.set("lang", lang);
+    nextQuery.set("book", getBookPathSlug(activeBook));
+    if (selectedMode) {
+      nextQuery.set("mode", getExplanationModeSegment(selectedMode));
+    }
+
+    window.location.assign(`/capybara?${nextQuery.toString()}`);
+  };
+
   const bookContent = (
     <BookScreen
       book={currentBook}
@@ -266,6 +295,7 @@ export default function StandaloneBookScreenPages({
       onPreloadNextSlide={(slideIndex) => {
         void preloadNextSlideMedia(slideIndex);
       }}
+      isOpeningStudio={isOpeningStudio}
       t={t}
     />
   );
@@ -278,7 +308,7 @@ export default function StandaloneBookScreenPages({
             <button
               type="button"
               className="capybara-mobile-topbar-button capybara-mobile-topbar-close"
-              onClick={() => void router.push({ pathname: "/capybara", query: returnToFeedQuery }, undefined, { locale: lang })}
+              onClick={handleCloseReader}
               aria-label="Close"
             >
               <span aria-hidden="true">×</span>

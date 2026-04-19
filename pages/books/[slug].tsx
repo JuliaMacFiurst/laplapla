@@ -3,7 +3,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import SEO from "@/components/SEO";
 import StandaloneBookScreenPages from "@/components/StandaloneBookScreenPages";
 import { buildBookPageDescription, getBookPathSlug } from "@/lib/books/shared";
-import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
+import { buildLocalizedHref, buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Book } from "@/types/types";
@@ -86,22 +86,14 @@ export default function BookPage({
   const seoPath = `/books/${getBookPathSlug(book)}`;
   const previousArrow = lang === "he" ? "→" : "←";
   const nextArrow = lang === "he" ? "←" : "→";
+  const feedHref = buildLocalizedHref(`/capybara?book=${encodeURIComponent(getBookPathSlug(book))}`, lang);
 
   return (
     <>
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <main className="capybara-page-container">
         <nav aria-label="breadcrumb">
-          <Link
-            href={{
-              pathname: "/capybara",
-              query: {
-                lang,
-                book: getBookPathSlug(book),
-              },
-            }}
-            locale={lang}
-          >
+          <Link href={feedHref} locale={lang}>
             {BACK_TO_FEED_LABEL[lang]}
           </Link>
         </nav>

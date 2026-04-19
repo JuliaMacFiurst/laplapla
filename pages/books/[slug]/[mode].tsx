@@ -7,7 +7,7 @@ import {
   getBookPathSlug,
   getLocalizedExplanationModeLabel,
 } from "@/lib/books/shared";
-import { isLang } from "@/lib/i18n/routing";
+import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
 import type { Book, ExplanationMode } from "@/types/types";
 
@@ -78,23 +78,14 @@ export default function BookModePage({
   const seoTitle = `${book.title} — ${currentModeLabel}`;
   const seoDescription = book.description?.trim() || `${currentModeLabel} — ${seo.modeDescription}`;
   const seoPath = `/books/${getBookPathSlug(book)}/${modeSegment}`;
+  const feedHref = buildLocalizedHref(`/capybara?book=${encodeURIComponent(getBookPathSlug(book))}&mode=${encodeURIComponent(modeSegment)}`, lang);
 
   return (
     <>
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <main className="capybara-page-container">
         <nav aria-label="breadcrumb">
-          <Link
-            href={{
-              pathname: "/capybara",
-              query: {
-                lang,
-                book: getBookPathSlug(book),
-                mode: modeSegment,
-              },
-            }}
-            locale={lang}
-          >
+          <Link href={feedHref} locale={lang}>
             {BACK_TO_FEED_LABEL[lang]}
           </Link>
         </nav>
