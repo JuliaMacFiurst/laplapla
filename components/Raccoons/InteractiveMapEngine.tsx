@@ -1,4 +1,11 @@
-import { useRef, useEffect, useLayoutEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
@@ -19,7 +26,16 @@ import MapPopup from "@/components/Raccoons/MapPopup";
 
 interface InteractiveMapProps {
   svgPath: string;
-  type: 'country' | 'river' | 'sea' | 'physic' | 'flag' | 'animal' | 'culture' | 'weather' | 'food';
+  type:
+    | "country"
+    | "river"
+    | "sea"
+    | "physic"
+    | "flag"
+    | "animal"
+    | "culture"
+    | "weather"
+    | "food";
   popupFormatter: (id: string) => string;
   styleClass: string;
   previewSelectedId?: string | null;
@@ -89,7 +105,8 @@ function buildMediaSearchParams(
   });
 
   for (const candidateUrl of excludedUrls) {
-    const normalizedUrl = typeof candidateUrl === "string" ? candidateUrl.trim() : "";
+    const normalizedUrl =
+      typeof candidateUrl === "string" ? candidateUrl.trim() : "";
     if (normalizedUrl) {
       searchParams.append("exclude_url", normalizedUrl);
     }
@@ -102,7 +119,10 @@ const MEDIA_SEARCH_TIMEOUT_MS = 15000;
 
 async function requestMapPopupMedia(searchParams: URLSearchParams) {
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), MEDIA_SEARCH_TIMEOUT_MS);
+  const timeoutId = window.setTimeout(
+    () => controller.abort(),
+    MEDIA_SEARCH_TIMEOUT_MS,
+  );
 
   try {
     const response = await fetch("/api/map-popup-media/search", {
@@ -155,13 +175,18 @@ async function persistResolvedSlideMedia(params: {
 
   const actionHeader = response.headers.get("X-Map-Popup-Media-Action");
   const isAdminHeader = response.headers.get("X-Map-Popup-Media-Is-Admin");
-  const writeStateHeader = response.headers.get("X-Map-Popup-Media-Write-State");
+  const writeStateHeader = response.headers.get(
+    "X-Map-Popup-Media-Write-State",
+  );
   const status: MediaPersistenceStatus = {
-    action: actionHeader === "success" || actionHeader === "skipped" || actionHeader === "error"
-      ? actionHeader
-      : response.ok
-        ? "success"
-        : "error",
+    action:
+      actionHeader === "success" ||
+      actionHeader === "skipped" ||
+      actionHeader === "error"
+        ? actionHeader
+        : response.ok
+          ? "success"
+          : "error",
     isAdmin: isAdminHeader === "1",
     writeState:
       writeStateHeader === "saved" ||
@@ -216,15 +241,46 @@ function getSeedValue(seedSource: string) {
     .reduce((total, char) => total + char.charCodeAt(0), 0);
 }
 
-function prefersMotionFallback(type: InteractiveMapProps["type"], slideText: string) {
+function prefersMotionFallback(
+  type: InteractiveMapProps["type"],
+  slideText: string,
+) {
   const normalized = slideText.toLowerCase();
   const actionHints = [
-    "dance", "dancing", "jump", "jumping", "run", "running", "fly", "flying", "swim", "swimming",
-    "storm", "wind", "rain", "snow", "wave", "flow", "moving", "motion",
-    "танц", "беж", "лет", "прыг", "плав", "ветер", "дожд", "снег", "бур", "волна", "теч",
+    "dance",
+    "dancing",
+    "jump",
+    "jumping",
+    "run",
+    "running",
+    "fly",
+    "flying",
+    "swim",
+    "swimming",
+    "storm",
+    "wind",
+    "rain",
+    "snow",
+    "wave",
+    "flow",
+    "moving",
+    "motion",
+    "танц",
+    "беж",
+    "лет",
+    "прыг",
+    "плав",
+    "ветер",
+    "дожд",
+    "снег",
+    "бур",
+    "волна",
+    "теч",
   ];
 
-  return type === "weather" || actionHints.some((term) => normalized.includes(term));
+  return (
+    type === "weather" || actionHints.some((term) => normalized.includes(term))
+  );
 }
 
 function buildClientRaccoonFallback(
@@ -235,9 +291,15 @@ function buildClientRaccoonFallback(
   const seedSource = `${type}:${targetId}:${slideText}`;
   const seed = getSeedValue(seedSource);
   const preferGif = prefersMotionFallback(type, slideText);
-  const primaryPool = preferGif ? RACCOON_WITH_MAP_FILES.gifs : RACCOON_WITH_MAP_FILES.pngs;
-  const selectedFile = primaryPool[seed % primaryPool.length] ?? RACCOON_WITH_MAP_FILES.pngs[0];
-  const url = buildSupabasePublicUrl("characters", `raccoons/raccoon_with_map/${selectedFile}`);
+  const primaryPool = preferGif
+    ? RACCOON_WITH_MAP_FILES.gifs
+    : RACCOON_WITH_MAP_FILES.pngs;
+  const selectedFile =
+    primaryPool[seed % primaryPool.length] ?? RACCOON_WITH_MAP_FILES.pngs[0];
+  const url = buildSupabasePublicUrl(
+    "characters",
+    `raccoons/raccoon_with_map/${selectedFile}`,
+  );
 
   return {
     url,
@@ -263,7 +325,9 @@ function applyResolvedSlideMedia(
   imageUrl: string,
   imageCreditLine: string | null | undefined,
   setPopupContent: Dispatch<SetStateAction<MapPopupContent | null>>,
-  setMediaStatusBySlideId: Dispatch<SetStateAction<Record<string, "loading" | "missing" | "ready">>>,
+  setMediaStatusBySlideId: Dispatch<
+    SetStateAction<Record<string, "loading" | "missing" | "ready">>
+  >,
 ) {
   setMediaStatusBySlideId((current) => ({ ...current, [slideId]: "ready" }));
   setPopupContent((current) => {
@@ -293,15 +357,27 @@ async function resolveSlideMedia(
   excludedUrls: Iterable<string>,
 ) {
   try {
-    const searchParams = buildMediaSearchParams(type, slideText, targetId, excludedUrls);
+    const searchParams = buildMediaSearchParams(
+      type,
+      slideText,
+      targetId,
+      excludedUrls,
+    );
     const mediaPayload = await requestMapPopupMedia(searchParams);
-    return mediaPayload.item ?? buildClientRaccoonFallback(type, targetId, slideText);
+    return (
+      mediaPayload.item ?? buildClientRaccoonFallback(type, targetId, slideText)
+    );
   } catch {
     return buildClientRaccoonFallback(type, targetId, slideText);
   }
 }
 
-export default function InteractiveMap({ svgPath, type, previewSelectedId, onUserSelect }: InteractiveMapProps) {
+export default function InteractiveMap({
+  svgPath,
+  type,
+  previewSelectedId,
+  onUserSelect,
+}: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const isMobile = useIsMobile();
@@ -311,14 +387,22 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
   const [isVisible, setIsVisible] = useState(false);
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [popupContent, setPopupContent] = useState<MapPopupContent | null>(null);
+  const [popupContent, setPopupContent] = useState<MapPopupContent | null>(
+    null,
+  );
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [viewMode, setViewMode] = useState<"slides" | "video">("slides");
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [mediaStatusBySlideId, setMediaStatusBySlideId] = useState<Record<string, "loading" | "missing" | "ready">>({});
-  const [manualRefreshSlideId, setManualRefreshSlideId] = useState<string | null>(null);
-  const [dbWriteStatusBySlideId, setDbWriteStatusBySlideId] = useState<Record<string, "saved" | "updated" | "error">>({});
+  const [mediaStatusBySlideId, setMediaStatusBySlideId] = useState<
+    Record<string, "loading" | "missing" | "ready">
+  >({});
+  const [manualRefreshSlideId, setManualRefreshSlideId] = useState<
+    string | null
+  >(null);
+  const [dbWriteStatusBySlideId, setDbWriteStatusBySlideId] = useState<
+    Record<string, "saved" | "updated" | "error">
+  >({});
   const [showAdminDbStatus, setShowAdminDbStatus] = useState(false);
   const lastClickTimeRef = useRef(0);
   const fetchIdRef = useRef(0);
@@ -335,9 +419,13 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
 
   const [, setZoom] = useState(1);
   const zoomRef = useRef(1);
-  const safeViewRef = useRef<{ x: number; y: number; zoom: number } | null>(null);
+  const safeViewRef = useRef<{ x: number; y: number; zoom: number } | null>(
+    null,
+  );
   const isManualResetRef = useRef(false);
-  const mobileMinZoomRef = useRef(type === "animal" ? 1 : type === "weather" ? 0.55 : 0.8);
+  const mobileMinZoomRef = useRef(
+    type === "animal" ? 1 : type === "weather" ? 0.55 : 0.8,
+  );
   const animalContentBoundsRef = useRef<{
     left: number;
     right: number;
@@ -365,9 +453,10 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
   const isPinchingRef = useRef(false);
 
   const popupSlides = popupContent?.slides ?? [];
-  const safeCurrentSlideIndex = popupSlides.length === 0
-    ? 0
-    : Math.min(currentSlideIndex, Math.max(0, popupSlides.length - 1));
+  const safeCurrentSlideIndex =
+    popupSlides.length === 0
+      ? 0
+      : Math.min(currentSlideIndex, Math.max(0, popupSlides.length - 1));
   const currentPopupSlide = popupSlides[safeCurrentSlideIndex] ?? null;
 
   const getHoverFill = () => {
@@ -387,7 +476,10 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
   const isLatestMediaRequest = (slideId: string, requestVersion: number) =>
     (mediaRequestVersionRef.current.get(slideId) ?? 0) === requestVersion;
 
-  const applyDbWriteStatus = (slideId: string, status: MediaPersistenceStatus) => {
+  const applyDbWriteStatus = (
+    slideId: string,
+    status: MediaPersistenceStatus,
+  ) => {
     if (!status.isAdmin) {
       return;
     }
@@ -395,7 +487,9 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     setShowAdminDbStatus(true);
 
     const nextStatus =
-      status.writeState === "saved" || status.writeState === "updated" || status.writeState === "error"
+      status.writeState === "saved" ||
+      status.writeState === "updated" ||
+      status.writeState === "error"
         ? status.writeState
         : null;
 
@@ -441,12 +535,18 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     clone.setAttribute("pointer-events", "none");
 
     if (type === "river") {
-      const baseStrokeWidth = Number.parseFloat(path.getAttribute("stroke-width") || "1");
+      const baseStrokeWidth = Number.parseFloat(
+        path.getAttribute("stroke-width") || "1",
+      );
       clone.style.setProperty("fill", "none", "important");
       clone.style.setProperty("stroke", color, "important");
       clone.style.setProperty(
         "stroke-width",
-        String(Number.isFinite(baseStrokeWidth) ? Math.max(baseStrokeWidth + 1.5, 2.5) : 2.5),
+        String(
+          Number.isFinite(baseStrokeWidth)
+            ? Math.max(baseStrokeWidth + 1.5, 2.5)
+            : 2.5,
+        ),
         "important",
       );
       clone.style.setProperty(
@@ -459,7 +559,11 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
         path.getAttribute("stroke-linejoin") || "round",
         "important",
       );
-      clone.style.setProperty("opacity", overlayType === "hover" ? "1" : "1", "important");
+      clone.style.setProperty(
+        "opacity",
+        overlayType === "hover" ? "1" : "1",
+        "important",
+      );
       return clone;
     }
 
@@ -474,7 +578,11 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
       overlayType === "hover" ? "1.5" : "2",
       "important",
     );
-    clone.style.setProperty("opacity", overlayType === "hover" ? "0.95" : "1", "important");
+    clone.style.setProperty(
+      "opacity",
+      overlayType === "hover" ? "0.95" : "1",
+      "important",
+    );
     return clone;
   };
 
@@ -488,7 +596,11 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     let currentNode: SVGElement = styledPathClone;
     let parent: Element | null = path.parentElement;
 
-    while (parent && parent instanceof SVGElement && parent !== (sourceSvg as Element)) {
+    while (
+      parent &&
+      parent instanceof SVGElement &&
+      parent !== (sourceSvg as Element)
+    ) {
       const parentClone = parent.cloneNode(false) as SVGElement;
       parentClone.removeAttribute("id");
       parentClone.removeAttribute("style");
@@ -506,7 +618,9 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     selectedPath: SVGPathElement | null = lastSelectedPath.current,
     previewPaths: SVGPathElement[] = previewSelectedPathsRef.current,
   ) => {
-    const sourceSvg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
+    const sourceSvg = svgHostRef.current?.querySelector(
+      "svg",
+    ) as SVGSVGElement | null;
     if (!sourceSvg) {
       return;
     }
@@ -529,7 +643,9 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     previewPaths = previewPaths.filter((path) => sourceSvg.contains(path));
     previewSelectedPathsRef.current = previewPaths;
 
-    const existingOverlay = sourceSvg.querySelector('[data-interaction-overlay="true"]');
+    const existingOverlay = sourceSvg.querySelector(
+      '[data-interaction-overlay="true"]',
+    );
     if (existingOverlay) {
       existingOverlay.remove();
     }
@@ -538,26 +654,44 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
       return;
     }
 
-    const overlayGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const overlayGroup = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g",
+    );
     overlayGroup.setAttribute("data-interaction-overlay", "true");
     overlayGroup.setAttribute("pointer-events", "none");
 
     if (hoveredPath && hoveredPath !== selectedPath) {
       overlayGroup.appendChild(
-        buildOverlayBranchClone(sourceSvg, hoveredPath, getHoverFill(), "hover"),
+        buildOverlayBranchClone(
+          sourceSvg,
+          hoveredPath,
+          getHoverFill(),
+          "hover",
+        ),
       );
     }
 
     if (selectedPath) {
       overlayGroup.appendChild(
-        buildOverlayBranchClone(sourceSvg, selectedPath, getSelectedFill(), "selected"),
+        buildOverlayBranchClone(
+          sourceSvg,
+          selectedPath,
+          getSelectedFill(),
+          "selected",
+        ),
       );
     }
 
     if (!selectedPath && previewPaths.length > 0) {
       previewPaths.forEach((previewPath) => {
         overlayGroup.appendChild(
-          buildOverlayBranchClone(sourceSvg, previewPath, getSelectedFill(), "selected"),
+          buildOverlayBranchClone(
+            sourceSvg,
+            previewPath,
+            getSelectedFill(),
+            "selected",
+          ),
         );
       });
     }
@@ -566,19 +700,27 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
   };
 
   const resolvePathsById = (sourceSvg: SVGSVGElement, id: string) => {
-    const escapedId = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-      ? CSS.escape(id)
-      : id.replace(/["\\]/g, "\\$&");
-    const exactMatches = Array.from(sourceSvg.querySelectorAll(`path[id="${escapedId}"]`)) as SVGPathElement[];
+    const escapedId =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? CSS.escape(id)
+        : id.replace(/["\\]/g, "\\$&");
+    const exactMatches = Array.from(
+      sourceSvg.querySelectorAll(`path[id="${escapedId}"]`),
+    ) as SVGPathElement[];
     if (exactMatches.length > 0) {
       return exactMatches;
     }
 
     const normalizedTargetId = normalizeSlug(id);
-    const paths = Array.from(sourceSvg.querySelectorAll("path[id]")) as SVGPathElement[];
+    const paths = Array.from(
+      sourceSvg.querySelectorAll("path[id]"),
+    ) as SVGPathElement[];
     return paths.filter((path) => {
       const pathId = path.getAttribute("id") || "";
-      return pathId.toLowerCase() === id.toLowerCase() || normalizeSlug(pathId) === normalizedTargetId;
+      return (
+        pathId.toLowerCase() === id.toLowerCase() ||
+        normalizeSlug(pathId) === normalizedTargetId
+      );
     });
   };
 
@@ -617,8 +759,14 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     syncInteractionOverlay();
   };
 
-  const closeSelection = (_reason: "outside" | "button" | "toggle" | "map-switch") => {
-    if (!selectedElementRef.current && !lastSelectedPath.current && !isPopupOpen) {
+  const closeSelection = (
+    _reason: "outside" | "button" | "toggle" | "map-switch",
+  ) => {
+    if (
+      !selectedElementRef.current &&
+      !lastSelectedPath.current &&
+      !isPopupOpen
+    ) {
       return;
     }
 
@@ -652,7 +800,10 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
       }
     }
 
-    if (selectedElementRef.current === id && lastSelectedPath.current === path) {
+    if (
+      selectedElementRef.current === id &&
+      lastSelectedPath.current === path
+    ) {
       if (!isPopupOpen) {
         setIsPopupOpen(true);
       }
@@ -688,7 +839,7 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
       : null;
   };
 
-useEffect(() => {
+  useEffect(() => {
     setIsMapLoading(true);
     getMapSvg(svgPath).then((text) => {
       if (!text) {
@@ -714,21 +865,21 @@ useEffect(() => {
     });
   }, [svgPath, type]);
 
-useLayoutEffect(() => {
-  // Disable special animal-content bounds logic on mobile.
-  // It over-constrains panning and traps the map around America.
-  animalContentBoundsRef.current = null;
-}, [isMobile, svgContent, type]);
+  useLayoutEffect(() => {
+    // Disable special animal-content bounds logic on mobile.
+    // It over-constrains panning and traps the map around America.
+    animalContentBoundsRef.current = null;
+  }, [isMobile, svgContent, type]);
 
-useEffect(() => {
-  isLoadingRef.current = isLoading;
-}, [isLoading]);
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
-useEffect(() => {
-  setCurrentSlideIndex(0);
-  setViewMode("slides");
-  setMediaStatusBySlideId({});
-}, [selectedElement]);
+  useEffect(() => {
+    setCurrentSlideIndex(0);
+    setViewMode("slides");
+    setMediaStatusBySlideId({});
+  }, [selectedElement]);
 
   const handleOpenCatsEditor = () => {
     if (!popupContent || popupSlides.length === 0) {
@@ -740,20 +891,25 @@ useEffect(() => {
     const importedSlides = buildStudioSlidesFromCapybaraSlides(
       popupSlides.map((slide) => ({
         text: slide.text || "",
-        imageUrl: isVideoMediaUrl(slide.imageUrl) ? undefined : slide.imageUrl || undefined,
-        videoUrl: isVideoMediaUrl(slide.imageUrl) ? slide.imageUrl || undefined : undefined,
+        imageUrl: isVideoMediaUrl(slide.imageUrl)
+          ? undefined
+          : slide.imageUrl || undefined,
+        videoUrl: isVideoMediaUrl(slide.imageUrl)
+          ? slide.imageUrl || undefined
+          : undefined,
       })),
     );
 
     if (typeof window !== "undefined") {
-      window.sessionStorage.setItem("catsSlides", JSON.stringify(importedSlides));
+      window.sessionStorage.setItem(
+        "catsSlides",
+        JSON.stringify(importedSlides),
+      );
     }
 
-    void router.push(
-      buildStudioRoute("cats", lang),
-      undefined,
-      { locale: lang },
-    );
+    void router.push(buildStudioRoute("cats", lang), undefined, {
+      locale: lang,
+    });
   };
 
   const handleOpenVideo = () => {
@@ -771,7 +927,9 @@ useEffect(() => {
   const handleWatchYoutube = () => {
     const youtubeUrl = popupContent?.video?.youtubeUrl?.trim();
     const youtubeId = popupContent?.video?.youtubeId?.trim();
-    const targetUrl = youtubeUrl || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : "");
+    const targetUrl =
+      youtubeUrl ||
+      (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : "");
 
     if (!targetUrl) {
       setToast(t.noVideo);
@@ -785,7 +943,12 @@ useEffect(() => {
   };
 
   const handleOpenTextPage = () => {
-    const targetId = (popupContent?.targetId || selectedElementRef.current || selectedElement || "").trim();
+    const targetId = (
+      popupContent?.targetId ||
+      selectedElementRef.current ||
+      selectedElement ||
+      ""
+    ).trim();
     if (!targetId) {
       setToast(t.contentNotReady);
       setTimeout(() => setToast(null), 2500);
@@ -815,7 +978,12 @@ useEffect(() => {
   const handleRefreshSlideMedia = async (slideIndex?: number) => {
     const slide =
       typeof slideIndex === "number"
-        ? popupSlides[Math.min(Math.max(slideIndex, 0), Math.max(0, popupSlides.length - 1))]
+        ? popupSlides[
+            Math.min(
+              Math.max(slideIndex, 0),
+              Math.max(0, popupSlides.length - 1),
+            )
+          ]
         : currentPopupSlide;
 
     if (!popupContent || !slide) {
@@ -829,15 +997,25 @@ useEffect(() => {
     }
 
     setManualRefreshSlideId(slide.id);
-    setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "loading" }));
+    setMediaStatusBySlideId((current) => ({
+      ...current,
+      [slide.id]: "loading",
+    }));
     const requestVersion = beginMediaRequest(slide.id);
 
     try {
       const usedMediaUrls = popupContent.slides
-        .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
+        .map((slide) =>
+          typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "",
+        )
         .filter((url) => url && !isLocalMapFallbackUrl(url))
         .filter(Boolean);
-      const resolvedItem = await resolveSlideMedia(type, targetId, slide.text, usedMediaUrls);
+      const resolvedItem = await resolveSlideMedia(
+        type,
+        targetId,
+        slide.text,
+        usedMediaUrls,
+      );
       if (!isLatestMediaRequest(slide.id, requestVersion)) {
         return;
       }
@@ -881,11 +1059,20 @@ useEffect(() => {
           });
       }
 
-      setToast(lang === "ru" ? "Загружена новая картинка." : lang === "he" ? "נטענה תמונה חדשה." : "Loaded a new image.");
+      setToast(
+        lang === "ru"
+          ? "Загружена новая картинка."
+          : lang === "he"
+            ? "נטענה תמונה חדשה."
+            : "Loaded a new image.",
+      );
       setTimeout(() => setToast(null), 2500);
     } catch (error) {
       console.error("Failed to refresh slide media", error);
-      setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
+      setMediaStatusBySlideId((current) => ({
+        ...current,
+        [slide.id]: "missing",
+      }));
     } finally {
       setManualRefreshSlideId(null);
     }
@@ -915,21 +1102,15 @@ useEffect(() => {
 
     const containerRect = container.getBoundingClientRect();
 
-    let svgWidth = 0;
-    let svgHeight = 0;
-
-    try {
-      const box = svg.getBBox();
-      svgWidth = box.width * nextZoom;
-      svgHeight = box.height * nextZoom;
-    } catch {
+    const viewBox = svg.viewBox.baseVal;
+    if (!viewBox || viewBox.width <= 0 || viewBox.height <= 0) {
       return null;
     }
+    const svgWidth = viewBox.width * nextZoom;
+    const svgHeight = viewBox.height * nextZoom;
 
-    const extraOffset = type === "animal" ? containerRect.width * 0.25 : 0;
-
-    let minX = containerRect.width - svgWidth - extraOffset;
-    let maxX = extraOffset;
+    let minX = containerRect.width - svgWidth;
+    let maxX = 0;
     let minY = containerRect.height - svgHeight;
     let maxY = 0;
 
@@ -950,26 +1131,23 @@ useEffect(() => {
 
   const applyHardClamp = (nextZoom = zoomRef.current) => {
     const bounds = getPanBounds(nextZoom);
-    if (!bounds) {
-      return;
-    }
+    if (!bounds) return;
 
-    const nextX = Math.min(bounds.maxX, Math.max(bounds.minX, currentXRef.current));
-    const nextY = Math.min(bounds.maxY, Math.max(bounds.minY, currentYRef.current));
+    currentXRef.current = Math.min(
+      bounds.maxX,
+      Math.max(bounds.minX, currentXRef.current),
+    );
+    currentYRef.current = Math.min(
+      bounds.maxY,
+      Math.max(bounds.minY, currentYRef.current),
+    );
 
-    currentXRef.current = nextX;
-    currentYRef.current = nextY;
-    applyMapTransform(nextX, nextY, nextZoom);
+    applyMapTransform(currentXRef.current, currentYRef.current, nextZoom);
   };
 
   const clampMobilePosition = (x: number, y: number, nextZoom: number) => {
     const bounds = getPanBounds(nextZoom);
     if (!bounds) {
-      return { x, y };
-    }
-
-    const isDragging = isDraggingRef.current;
-    if (isDragging) {
       return { x, y };
     }
 
@@ -979,7 +1157,11 @@ useEffect(() => {
     };
   };
 
-  const applyMapTransform = (nextX = currentXRef.current, nextY = currentYRef.current, nextZoom = zoomRef.current) => {
+  const applyMapTransform = (
+    nextX = currentXRef.current,
+    nextY = currentYRef.current,
+    nextZoom = zoomRef.current,
+  ) => {
     const mapContent = mapContentRef.current;
     if (!mapContent) {
       return;
@@ -991,124 +1173,131 @@ useEffect(() => {
 
   // --- Helper to reset the map view to the safe initial view ---
   const resetMapView = () => {
-    const safe = safeViewRef.current;
-    if (!safe) return;
+    const mapContent = mapContentRef.current;
+    const container = mapContent?.parentElement;
+    const svg = svgHostRef.current?.querySelector("svg");
 
-    isManualResetRef.current = true;
+    if (!mapContent || !container || !svg) return;
 
-    // keep current zoom, only recenter position
-    const currentZoom = zoomRef.current;
-    const scaleRatio = currentZoom / safe.zoom;
+    const viewBox = svg.viewBox.baseVal;
+    if (!viewBox || viewBox.width <= 0 || viewBox.height <= 0) return;
 
-    const nextX = safe.x * scaleRatio;
-    const nextY = safe.y * scaleRatio;
+    const zoom = zoomRef.current;
 
-    currentXRef.current = nextX;
-    currentYRef.current = nextY;
-
-    applyMapTransform(nextX, nextY, currentZoom);
-
-    setTimeout(() => {
-      isManualResetRef.current = false;
-    }, 300);
-  };
-
-useEffect(() => {
-  const mapContent = svgHostRef.current;
-  const container = mapContentRef.current?.parentElement;
-  if (!mapContent || !container) return;
-
-  const svg = mapContent.querySelector("svg");
-  if (!svg) return;
-
-  if (isMobile) {
-    let initialMobileZoom =
-      type === "weather" ? 0.72 :
-      1;
-
-    if (type === "animal") {
-      try {
-        const box = svg.getBBox();
-        if (Number.isFinite(box.width) && Number.isFinite(box.height) && box.width > 0 && box.height > 0) {
-          const fitX = container.getBoundingClientRect().width / box.width;
-          const fitY = container.getBoundingClientRect().height / box.height;
-          const fitZoom = Math.min(fitX, fitY);
-          initialMobileZoom = Math.min(1, Math.max(0.35, fitZoom));
-        } else {
-          initialMobileZoom = 0.6;
-        }
-      } catch {
-        initialMobileZoom = 0.6;
-      }
-
-      // Allow zooming back out to the full-world fitted view.
-      mobileMinZoomRef.current = initialMobileZoom;
-    } else {
-      mobileMinZoomRef.current =
-        type === "weather" ? 0.55 :
-        0.8;
-    }
-
+    // raw center (may be out of bounds)
     const containerRect = container.getBoundingClientRect();
-    let offsetX = 0;
-    let offsetY = 0;
+    let nextX =
+      containerRect.width / 2 - (viewBox.width / 2) * zoom;
+    let nextY =
+      containerRect.height / 2 - (viewBox.height / 2) * zoom;
 
-    if (type === "animal") {
-  try {
-    const box = svg.getBBox()
-    offsetX = (containerRect.width - box.width * initialMobileZoom) / 2
-    offsetY = (containerRect.height - box.height * initialMobileZoom) / 2
-  } catch {
-    offsetX = 0
-    offsetY = 0
-  }
-}
+    // IMPORTANT: clamp to valid bounds so map never disappears
+    const clamped = clampMobilePosition(nextX, nextY, zoom);
 
-    const clamped = clampMobilePosition(offsetX, offsetY, initialMobileZoom);
-    zoomRef.current = initialMobileZoom;
-    setZoom(initialMobileZoom);
     currentXRef.current = clamped.x;
     currentYRef.current = clamped.y;
 
-    // save safe initial view
-    safeViewRef.current = {
-      x: clamped.x,
-      y: clamped.y,
-      zoom: initialMobileZoom,
+    // smooth animation
+    mapContent.style.transition = "transform 0.25s ease-out";
+    applyMapTransform(clamped.x, clamped.y, zoom);
+
+    setTimeout(() => {
+      if (mapContent) {
+        mapContent.style.transition = "";
+      }
+    }, 250);
+  };
+  void resetMapView;
+  void isManualResetRef;
+
+  useEffect(() => {
+    const mapContent = svgHostRef.current;
+    const container = mapContentRef.current?.parentElement;
+    if (!mapContent || !container) return;
+
+    const svg = mapContent.querySelector("svg");
+    if (!svg) return;
+    const viewBox = svg.viewBox.baseVal;
+    if (!viewBox || viewBox.width <= 0 || viewBox.height <= 0) return;
+
+    if (isMobile) {
+      let initialMobileZoom = type === "weather" ? 0.72 : 1;
+
+      if (type === "animal") {
+        const fitX = container.getBoundingClientRect().width / viewBox.width;
+        const fitY = container.getBoundingClientRect().height / viewBox.height;
+        const fitZoom = Math.min(fitX, fitY);
+        initialMobileZoom = Math.min(1, Math.max(0.35, fitZoom));
+
+        // Allow zooming back out to the full-world fitted view.
+        mobileMinZoomRef.current = initialMobileZoom;
+      } else {
+        mobileMinZoomRef.current = type === "weather" ? 0.55 : 0.8;
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (type === "animal") {
+        const centerX = viewBox.width / 2;
+        const centerY = viewBox.height / 2;
+        offsetX = containerRect.width / 2 - centerX * initialMobileZoom;
+        offsetY = containerRect.height / 2 - centerY * initialMobileZoom;
+      }
+
+      const clamped = clampMobilePosition(offsetX, offsetY, initialMobileZoom);
+      zoomRef.current = initialMobileZoom;
+      setZoom(initialMobileZoom);
+      currentXRef.current = clamped.x;
+      currentYRef.current = clamped.y;
+
+      // save safe initial view
+      safeViewRef.current = {
+        x: clamped.x,
+        y: clamped.y,
+        zoom: initialMobileZoom,
+      };
+
+      applyMapTransform(clamped.x, clamped.y, initialMobileZoom);
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const svgRect = {
+      width: viewBox.width,
+      height: viewBox.height,
     };
 
-    applyMapTransform(clamped.x, clamped.y, initialMobileZoom);
-    return;
-  }
+    let optimalZoom = 1;
+    if (type !== "river") {
+      const zoomX = containerRect.width / svgRect.width;
+      const zoomY = containerRect.height / svgRect.height;
+      optimalZoom = Math.min(zoomX, zoomY);
+    }
 
-  const containerRect = container.getBoundingClientRect();
-  const svgRect = svg.getBBox();
+    let offsetX = 0;
+    let offsetY = 0;
 
-  let optimalZoom = 1;
-  if (type !== "river") {
-    const zoomX = containerRect.width / svgRect.width;
-    const zoomY = containerRect.height / svgRect.height;
-    optimalZoom = Math.min(zoomX, zoomY);
-  }
+    if (
+      type === "country" ||
+      type === "flag" ||
+      type === "culture" ||
+      type === "food"
+    ) {
+      offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 110;
+      offsetY = -120;
+    } else if (type === "animal") {
+      offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 60;
+      offsetY = -40;
+    }
 
-  let offsetX = 0;
-  let offsetY = 0;
-
-  if (type === "country" || type === "flag" || type === "culture" || type === "food") {
-    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 110;
-    offsetY = -120;
-  } else if (type === "animal") {
-    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 60;
-    offsetY = -40;
-  }
-
-  setZoom(optimalZoom);
-  zoomRef.current = optimalZoom;
-  currentXRef.current = offsetX;
-  currentYRef.current = offsetY;
-  applyMapTransform(offsetX, offsetY, optimalZoom);
-}, [isMobile, svgContent, type]);
-
+    setZoom(optimalZoom);
+    zoomRef.current = optimalZoom;
+    currentXRef.current = offsetX;
+    currentYRef.current = offsetY;
+    applyMapTransform(offsetX, offsetY, optimalZoom);
+  }, [isMobile, svgContent, type]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     isDraggingRef.current = true;
@@ -1119,14 +1308,17 @@ useEffect(() => {
     startXRef.current = e.clientX - currentXRef.current;
     startYRef.current = e.clientY - currentYRef.current;
     if (mapContentRef.current) {
-      mapContentRef.current.style.cursor = 'grabbing';
+      mapContentRef.current.style.cursor = "grabbing";
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
     e.preventDefault();
-    if (Math.abs(e.clientX - pointerStartClientXRef.current) > 3 || Math.abs(e.clientY - pointerStartClientYRef.current) > 3) {
+    if (
+      Math.abs(e.clientX - pointerStartClientXRef.current) > 3 ||
+      Math.abs(e.clientY - pointerStartClientYRef.current) > 3
+    ) {
       movedDuringDragRef.current = true;
       didDragRef.current = true;
     }
@@ -1141,7 +1333,7 @@ useEffect(() => {
   const handleMouseUp = () => {
     isDraggingRef.current = false;
     if (mapContentRef.current) {
-      mapContentRef.current.style.cursor = 'grab';
+      mapContentRef.current.style.cursor = "grab";
     }
   };
 
@@ -1192,18 +1384,22 @@ useEffect(() => {
         return;
       }
 
-      const rawZoom = pinchZoomRef.current * (distance / pinchDistanceRef.current);
-      const nextZoom = Math.min(4, Math.max(mobileMinZoomRef.current, rawZoom));
+      const rawZoom =
+        pinchZoomRef.current * (distance / pinchDistanceRef.current);
+      const maxZoom = type === "river" ? 6 : 4;
+
+      const nextZoom = Math.min(
+        maxZoom,
+        Math.max(mobileMinZoomRef.current, rawZoom),
+      );
       const scaleRatio = nextZoom / pinchZoomRef.current;
 
       const originX = pinchCenterRef.current.x;
       const originY = pinchCenterRef.current.y;
 
-      const nextX =
-        originX - (originX - pinchXRef.current) * scaleRatio;
+      const nextX = originX - (originX - pinchXRef.current) * scaleRatio;
 
-      const nextY =
-        originY - (originY - pinchYRef.current) * scaleRatio;
+      const nextY = originY - (originY - pinchYRef.current) * scaleRatio;
       const clamped = clampMobilePosition(nextX, nextY, nextZoom);
 
       zoomRef.current = nextZoom;
@@ -1217,7 +1413,10 @@ useEffect(() => {
 
     if (!isDraggingRef.current) return;
     e.preventDefault();
-    if (Math.abs(e.touches[0].clientX - pointerStartClientXRef.current) > 3 || Math.abs(e.touches[0].clientY - pointerStartClientYRef.current) > 3) {
+    if (
+      Math.abs(e.touches[0].clientX - pointerStartClientXRef.current) > 3 ||
+      Math.abs(e.touches[0].clientY - pointerStartClientYRef.current) > 3
+    ) {
       movedDuringDragRef.current = true;
       didDragRef.current = true;
     }
@@ -1247,11 +1446,17 @@ useEffect(() => {
     if (isMobile && !movedDuringDragRef.current) {
       const now = Date.now();
       if (now - lastTapTsRef.current < 280) {
+        const maxZoom = type === "river" ? 6 : 4;
+
         const nextZoom =
           zoomRef.current >= 2
             ? mobileMinZoomRef.current
-            : Math.min(4, zoomRef.current * 1.6);
-        const clamped = clampMobilePosition(currentXRef.current, currentYRef.current, nextZoom);
+            : Math.min(maxZoom, zoomRef.current * 1.6);
+        const clamped = clampMobilePosition(
+          currentXRef.current,
+          currentYRef.current,
+          nextZoom,
+        );
         zoomRef.current = nextZoom;
         setZoom(nextZoom);
         currentXRef.current = clamped.x;
@@ -1260,529 +1465,534 @@ useEffect(() => {
       }
       lastTapTsRef.current = now;
     }
-
-    // safety: auto-reset if map is lost off-screen
-    const container = mapContentRef.current?.parentElement;
-    const svg = svgHostRef.current?.querySelector("svg");
-
-    if (container && svg && safeViewRef.current) {
-      const rect = svg.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-
-      // ignore tiny jitter after gestures
-      if (didDragRef.current === false && !isPinchingRef.current) {
-        return;
-      }
-
-      const intersectionWidth = Math.max(
-        0,
-        Math.min(rect.right, containerRect.right) - Math.max(rect.left, containerRect.left),
-      );
-      const intersectionHeight = Math.max(
-        0,
-        Math.min(rect.bottom, containerRect.bottom) - Math.max(rect.top, containerRect.top),
-      );
-
-      const visibleArea = intersectionWidth * intersectionHeight;
-      const totalArea = rect.width * rect.height;
-
-      // disable aggressive auto-reset (causes jumps)
-      if (!isManualResetRef.current && totalArea > 0 && visibleArea / totalArea < 0.02) {
-        resetMapView();
-      }
-    }
   };
 
+  // Read-only загрузка готового popup-контента по выбранному элементу
+  useEffect(() => {
+    if (!selectedElement || !isPopupOpen) {
+      setPopupContent(null);
+      setIsLoading(false);
+      setMediaStatusBySlideId({});
+      setManualRefreshSlideId(null);
+      mediaHydrationRef.current.clear();
+      mediaAttemptedRef.current.clear();
+      return;
+    }
 
-// Read-only загрузка готового popup-контента по выбранному элементу
-useEffect(() => {
-  if (!selectedElement || !isPopupOpen) {
-    setPopupContent(null);
-    setIsLoading(false);
-    setMediaStatusBySlideId({});
-    setManualRefreshSlideId(null);
+    let isCancelled = false;
+    const currentFetchId = ++fetchIdRef.current;
     mediaHydrationRef.current.clear();
     mediaAttemptedRef.current.clear();
-    return;
-  }
+    setMediaStatusBySlideId({});
+    setManualRefreshSlideId(null);
+    setPopupContent(null);
+    setIsLoading(true);
 
-  let isCancelled = false;
-  const currentFetchId = ++fetchIdRef.current;
-  mediaHydrationRef.current.clear();
-  mediaAttemptedRef.current.clear();
-  setMediaStatusBySlideId({});
-  setManualRefreshSlideId(null);
-  setPopupContent(null);
-  setIsLoading(true);
-
-  const fetchAndHandleStory = async () => {
-    try {
-      const response = await fetch(
-        `/api/map-popup-content?type=${encodeURIComponent(type)}&target_id=${encodeURIComponent(selectedElement)}&lang=${encodeURIComponent(lang)}`,
-      );
-
-      if (isCancelled || currentFetchId !== fetchIdRef.current) {
-        return;
-      }
-
-      if (response.status === 404) {
-        setPopupContent(null);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to load popup content: ${response.status}`);
-      }
-
-      const nextPopupContent = (await response.json()) as MapPopupContent;
-
-      if (isCancelled || currentFetchId !== fetchIdRef.current) {
-        return;
-      }
-
-      setPopupContent(nextPopupContent);
-    } catch (err) {
-      if (!isCancelled) {
-        console.error("❌ Ошибка при загрузке popup-контента:", err);
-        setPopupContent(null);
-      }
-    } finally {
-      if (!isCancelled && currentFetchId === fetchIdRef.current) {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  void fetchAndHandleStory();
-
-  return () => {
-    isCancelled = true;
-  };
-}, [isPopupOpen, lang, selectedElement, type]);
-
-useEffect(() => {
-  const storyId = popupContent?.storyId;
-  const rawContent = popupContent?.rawContent?.trim() || "";
-  const slides = popupContent?.slides ?? [];
-
-  if (!storyId || slides.length > 0 || !rawContent) {
-    return;
-  }
-
-  const requestKey = String(storyId);
-  if (slideParseHydrationRef.current.has(requestKey)) {
-    return;
-  }
-
-  slideParseHydrationRef.current.add(requestKey);
-  let cancelled = false;
-
-  const parseAndPersistSlides = async () => {
-    try {
-      const parsedSlides = parseMapStoryContentToSlides(rawContent).map((slide, index) => ({
-        id: `parsed:${requestKey}:${index}`,
-        index: typeof slide.slideOrder === "number" ? slide.slideOrder : index,
-        text: slide.text,
-        imageUrl: null,
-        imageCreditLine: null,
-        imageAuthor: null,
-        imageSourceUrl: null,
-      }));
-      if (parsedSlides.length === 0) {
-        slideParseHydrationRef.current.delete(requestKey);
-        return;
-      }
-      if (cancelled) {
-        slideParseHydrationRef.current.delete(requestKey);
-        return;
-      }
-
-      setPopupContent((current) => {
-        if (!current || current.storyId !== storyId) {
-          return current;
-        }
-
-        return {
-          ...current,
-          slides: parsedSlides,
-        };
-      });
-
-      void persistParsedSlidesToServer(storyId);
-    } catch (error) {
-      slideParseHydrationRef.current.delete(requestKey);
-      console.error("Failed to parse and persist popup slides", error);
-    }
-  };
-
-  void parseAndPersistSlides();
-
-  return () => {
-    cancelled = true;
-  };
-}, [popupContent]);
-
-useEffect(() => {
-  const storyId = popupContent?.storyId;
-  const targetId = popupContent?.targetId;
-  const slides = popupContent?.slides ?? [];
-
-  if (!storyId || !targetId || slides.length === 0) {
-    return;
-  }
-
-  let cancelled = false;
-  const usedMediaUrls = new Set(
-    slides
-      .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
-      .filter((url) => url && !isLocalMapFallbackUrl(url))
-      .filter(Boolean),
-  );
-  const readySlideIds = slides
-    .filter((slide) => {
-      const imageUrl = typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
-      return imageUrl && !isLocalMapFallbackUrl(imageUrl);
-    })
-    .map((slide) => slide.id);
-
-  if (readySlideIds.length > 0) {
-    setMediaStatusBySlideId((current) => {
-      const next = { ...current };
-      let changed = false;
-
-      for (const slideId of readySlideIds) {
-        if (next[slideId] !== "ready") {
-          next[slideId] = "ready";
-          changed = true;
-        }
-      }
-
-      return changed ? next : current;
-    });
-  }
-
-  const markSlideMissing = (slideId: string) => {
-    setMediaStatusBySlideId((current) => ({ ...current, [slideId]: "missing" }));
-  };
-
-  const slidesToHydrate = slides.filter((slide) => {
-    const imageUrl = typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
-    const hasImage = Boolean(imageUrl) && !isLocalMapFallbackUrl(imageUrl);
-    if (hasImage) {
-      return false;
-    }
-
-    if (!slide.text.trim()) {
-      return false;
-    }
-
-    const requestKey = `${storyId}:${slide.id}`;
-    return !mediaHydrationRef.current.has(requestKey) && !mediaAttemptedRef.current.has(requestKey);
-  });
-
-  if (slidesToHydrate.length === 0) {
-    return;
-  }
-
-  const hydrateMissingMedia = async () => {
-    let nextSlideIndex = 0;
-    const workerCount = Math.min(3, slidesToHydrate.length);
-
-    const processSlide = async (slide: typeof slides[number]) => {
-      const requestKey = `${storyId}:${slide.id}`;
-      mediaHydrationRef.current.add(requestKey);
-      mediaAttemptedRef.current.add(requestKey);
-      setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "loading" }));
-      const requestVersion = beginMediaRequest(slide.id);
-
+    const fetchAndHandleStory = async () => {
       try {
-        const resolvedItem = await resolveSlideMedia(type, targetId, slide.text, usedMediaUrls);
-        if (cancelled || !resolvedItem.url) {
-          markSlideMissing(slide.id);
-          return;
-        }
-
-        if (!isLatestMediaRequest(slide.id, requestVersion)) {
-          return;
-        }
-
-        usedMediaUrls.add(resolvedItem.url);
-
-        applyResolvedSlideMedia(
-          storyId,
-          slide.id,
-          resolvedItem.url,
-          resolvedItem.creditLine,
-          setPopupContent,
-          setMediaStatusBySlideId,
+        const response = await fetch(
+          `/api/map-popup-content?type=${encodeURIComponent(type)}&target_id=${encodeURIComponent(selectedElement)}&lang=${encodeURIComponent(lang)}`,
         );
 
-        if (resolvedItem.source !== "fallback") {
-          void persistResolvedSlideMedia({
-            storyId,
-            slideId: slide.id,
-            slideOrder: slide.index,
-            slideText: slide.text,
-            imageUrl: resolvedItem.url,
-            imageCreditLine: resolvedItem.creditLine,
-          })
-            .then((status) => {
-              applyDbWriteStatus(slide.id, status);
-            })
-            .catch((error) => {
-              console.error("Failed to persist hydrated slide media", error);
-              setDbWriteStatusBySlideId((current) => ({
-                ...current,
-                [slide.id]: "error",
-              }));
-            });
+        if (isCancelled || currentFetchId !== fetchIdRef.current) {
+          return;
         }
-      } catch (error) {
-        console.error("Failed to hydrate popup slide media", error);
-        markSlideMissing(slide.id);
+
+        if (response.status === 404) {
+          setPopupContent(null);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Failed to load popup content: ${response.status}`);
+        }
+
+        const nextPopupContent = (await response.json()) as MapPopupContent;
+
+        if (isCancelled || currentFetchId !== fetchIdRef.current) {
+          return;
+        }
+
+        setPopupContent(nextPopupContent);
+      } catch (err) {
+        if (!isCancelled) {
+          console.error("❌ Ошибка при загрузке popup-контента:", err);
+          setPopupContent(null);
+        }
       } finally {
-        mediaHydrationRef.current.delete(requestKey);
+        if (!isCancelled && currentFetchId === fetchIdRef.current) {
+          setIsLoading(false);
+        }
       }
     };
 
-    await Promise.all(
-      Array.from({ length: workerCount }, async () => {
-        while (!cancelled) {
-          const slide = slidesToHydrate[nextSlideIndex];
-          nextSlideIndex += 1;
-          if (!slide) {
+    void fetchAndHandleStory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isPopupOpen, lang, selectedElement, type]);
+
+  useEffect(() => {
+    const storyId = popupContent?.storyId;
+    const rawContent = popupContent?.rawContent?.trim() || "";
+    const slides = popupContent?.slides ?? [];
+
+    if (!storyId || slides.length > 0 || !rawContent) {
+      return;
+    }
+
+    const requestKey = String(storyId);
+    if (slideParseHydrationRef.current.has(requestKey)) {
+      return;
+    }
+
+    slideParseHydrationRef.current.add(requestKey);
+    let cancelled = false;
+
+    const parseAndPersistSlides = async () => {
+      try {
+        const parsedSlides = parseMapStoryContentToSlides(rawContent).map(
+          (slide, index) => ({
+            id: `parsed:${requestKey}:${index}`,
+            index:
+              typeof slide.slideOrder === "number" ? slide.slideOrder : index,
+            text: slide.text,
+            imageUrl: null,
+            imageCreditLine: null,
+            imageAuthor: null,
+            imageSourceUrl: null,
+          }),
+        );
+        if (parsedSlides.length === 0) {
+          slideParseHydrationRef.current.delete(requestKey);
+          return;
+        }
+        if (cancelled) {
+          slideParseHydrationRef.current.delete(requestKey);
+          return;
+        }
+
+        setPopupContent((current) => {
+          if (!current || current.storyId !== storyId) {
+            return current;
+          }
+
+          return {
+            ...current,
+            slides: parsedSlides,
+          };
+        });
+
+        void persistParsedSlidesToServer(storyId);
+      } catch (error) {
+        slideParseHydrationRef.current.delete(requestKey);
+        console.error("Failed to parse and persist popup slides", error);
+      }
+    };
+
+    void parseAndPersistSlides();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [popupContent]);
+
+  useEffect(() => {
+    const storyId = popupContent?.storyId;
+    const targetId = popupContent?.targetId;
+    const slides = popupContent?.slides ?? [];
+
+    if (!storyId || !targetId || slides.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    const usedMediaUrls = new Set(
+      slides
+        .map((slide) =>
+          typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "",
+        )
+        .filter((url) => url && !isLocalMapFallbackUrl(url))
+        .filter(Boolean),
+    );
+    const readySlideIds = slides
+      .filter((slide) => {
+        const imageUrl =
+          typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
+        return imageUrl && !isLocalMapFallbackUrl(imageUrl);
+      })
+      .map((slide) => slide.id);
+
+    if (readySlideIds.length > 0) {
+      setMediaStatusBySlideId((current) => {
+        const next = { ...current };
+        let changed = false;
+
+        for (const slideId of readySlideIds) {
+          if (next[slideId] !== "ready") {
+            next[slideId] = "ready";
+            changed = true;
+          }
+        }
+
+        return changed ? next : current;
+      });
+    }
+
+    const markSlideMissing = (slideId: string) => {
+      setMediaStatusBySlideId((current) => ({
+        ...current,
+        [slideId]: "missing",
+      }));
+    };
+
+    const slidesToHydrate = slides.filter((slide) => {
+      const imageUrl =
+        typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
+      const hasImage = Boolean(imageUrl) && !isLocalMapFallbackUrl(imageUrl);
+      if (hasImage) {
+        return false;
+      }
+
+      if (!slide.text.trim()) {
+        return false;
+      }
+
+      const requestKey = `${storyId}:${slide.id}`;
+      return (
+        !mediaHydrationRef.current.has(requestKey) &&
+        !mediaAttemptedRef.current.has(requestKey)
+      );
+    });
+
+    if (slidesToHydrate.length === 0) {
+      return;
+    }
+
+    const hydrateMissingMedia = async () => {
+      let nextSlideIndex = 0;
+      const workerCount = Math.min(3, slidesToHydrate.length);
+
+      const processSlide = async (slide: (typeof slides)[number]) => {
+        const requestKey = `${storyId}:${slide.id}`;
+        mediaHydrationRef.current.add(requestKey);
+        mediaAttemptedRef.current.add(requestKey);
+        setMediaStatusBySlideId((current) => ({
+          ...current,
+          [slide.id]: "loading",
+        }));
+        const requestVersion = beginMediaRequest(slide.id);
+
+        try {
+          const resolvedItem = await resolveSlideMedia(
+            type,
+            targetId,
+            slide.text,
+            usedMediaUrls,
+          );
+          if (cancelled || !resolvedItem.url) {
+            markSlideMissing(slide.id);
             return;
           }
 
-          await processSlide(slide);
+          if (!isLatestMediaRequest(slide.id, requestVersion)) {
+            return;
+          }
+
+          usedMediaUrls.add(resolvedItem.url);
+
+          applyResolvedSlideMedia(
+            storyId,
+            slide.id,
+            resolvedItem.url,
+            resolvedItem.creditLine,
+            setPopupContent,
+            setMediaStatusBySlideId,
+          );
+
+          if (resolvedItem.source !== "fallback") {
+            void persistResolvedSlideMedia({
+              storyId,
+              slideId: slide.id,
+              slideOrder: slide.index,
+              slideText: slide.text,
+              imageUrl: resolvedItem.url,
+              imageCreditLine: resolvedItem.creditLine,
+            })
+              .then((status) => {
+                applyDbWriteStatus(slide.id, status);
+              })
+              .catch((error) => {
+                console.error("Failed to persist hydrated slide media", error);
+                setDbWriteStatusBySlideId((current) => ({
+                  ...current,
+                  [slide.id]: "error",
+                }));
+              });
+          }
+        } catch (error) {
+          console.error("Failed to hydrate popup slide media", error);
+          markSlideMissing(slide.id);
+        } finally {
+          mediaHydrationRef.current.delete(requestKey);
         }
-      }),
-    );
-  };
+      };
 
-  void hydrateMissingMedia();
+      await Promise.all(
+        Array.from({ length: workerCount }, async () => {
+          while (!cancelled) {
+            const slide = slidesToHydrate[nextSlideIndex];
+            nextSlideIndex += 1;
+            if (!slide) {
+              return;
+            }
 
-  return () => {
-    cancelled = true;
-  };
-}, [popupContent?.storyId, popupContent?.targetId, type]);
+            await processSlide(slide);
+          }
+        }),
+      );
+    };
+
+    void hydrateMissingMedia();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [popupContent?.storyId, popupContent?.targetId, type]);
 
   useLayoutEffect(() => {
-  const mapContent = mapContentRef.current;
-  const svgHost = svgHostRef.current;
-  if (!mapContent || !svgHost) return;
+    const mapContent = mapContentRef.current;
+    const svgHost = svgHostRef.current;
+    if (!mapContent || !svgHost) return;
 
-  const svg = svgHost.querySelector("svg");
-  if (!svg) return;
+    const svg = svgHost.querySelector("svg");
+    if (!svg) return;
 
-  if (!['country', 'flag', 'physic', 'animal', 'culture', 'weather', 'food', 'sea', 'river'].includes(type)) {
-    return;
-  }
-
-  const paths = Array.from(svg.querySelectorAll("path[id]")).filter((path) =>
-    isInteractivePath(path as SVGPathElement),
-  ) as SVGPathElement[];
-  paths.forEach((path) => {
-    path.style.cursor = "pointer";
-    path.style.pointerEvents = "visibleStroke";
-    if (type !== "river") {
-      path.style.stroke = "rgba(0, 0, 0, 0)";
-      path.style.strokeWidth = "10";
-    }
-    path.setAttribute("data-map-bound", "1");
-  });
-
-  const getPathFromNode = (node: EventTarget | null) => {
-    if (!(node instanceof Element)) {
-      return null;
-    }
-
-    const path = node.closest("path[id]") as SVGPathElement | null;
-    if (!path || !isInteractivePath(path)) {
-      return null;
-    }
-
-    return path;
-  };
-
-  const getSvgPointFromEvent = (event: MouseEvent) => {
-    const ctm = svg.getScreenCTM();
-    if (!ctm) {
-      return null;
-    }
-
-    const point = new DOMPoint(event.clientX, event.clientY);
-    return point.matrixTransform(ctm.inverse());
-  };
-
-  const getBiomePathFromPointerEvent = (event: MouseEvent) => {
-    const svgPoint = getSvgPointFromEvent(event);
-    if (!svgPoint) {
-      return getPathFromNode(event.target);
+    if (
+      ![
+        "country",
+        "flag",
+        "physic",
+        "animal",
+        "culture",
+        "weather",
+        "food",
+        "sea",
+        "river",
+      ].includes(type)
+    ) {
+      return;
     }
 
     const paths = Array.from(svg.querySelectorAll("path[id]")).filter((path) =>
       isInteractivePath(path as SVGPathElement),
     ) as SVGPathElement[];
-    const hits = paths.filter((path) => {
-      try {
-        return path.isPointInFill(svgPoint) || path.isPointInStroke(svgPoint);
-      } catch {
-        return false;
+    paths.forEach((path) => {
+      path.style.cursor = "pointer";
+      path.style.pointerEvents = "visibleStroke";
+      if (type !== "river") {
+        path.style.stroke = "rgba(0, 0, 0, 0)";
+        path.style.strokeWidth = "10";
       }
+      path.setAttribute("data-map-bound", "1");
     });
 
-    if (hits.length === 0) {
-      return getPathFromNode(event.target);
-    }
-
-    return hits
-      .slice()
-      .sort((a, b) => {
-        const aBox = a.getBBox();
-        const bBox = b.getBBox();
-        return aBox.width * aBox.height - bBox.width * bBox.height;
-      })[0] ?? null;
-  };
-
-  const getPathFromPointerEvent = (event: MouseEvent) => {
-    if (type === "animal" || type === "weather") {
-      return getBiomePathFromPointerEvent(event);
-    }
-
-    if (typeof document.elementsFromPoint !== "function") {
-      return getPathFromNode(event.target);
-    }
-
-    const elements = document.elementsFromPoint(event.clientX, event.clientY);
-    const candidates: SVGPathElement[] = [];
-    const seen = new Set<SVGPathElement>();
-
-    for (const element of elements) {
-      const path = element.closest("path[id]") as SVGPathElement | null;
-      if (!path || seen.has(path)) {
-        continue;
+    const getPathFromNode = (node: EventTarget | null) => {
+      if (!(node instanceof Element)) {
+        return null;
       }
 
-      if (!isInteractivePath(path)) {
-        continue;
+      const path = node.closest("path[id]") as SVGPathElement | null;
+      if (!path || !isInteractivePath(path)) {
+        return null;
       }
 
-      if (!mapContent.contains(path)) {
-        continue;
+      return path;
+    };
+
+    const getSvgPointFromEvent = (event: MouseEvent) => {
+      const ctm = svg.getScreenCTM();
+      if (!ctm) {
+        return null;
       }
 
-      if (path.closest('[data-interaction-overlay="true"]')) {
-        continue;
+      const point = new DOMPoint(event.clientX, event.clientY);
+      return point.matrixTransform(ctm.inverse());
+    };
+
+    const getBiomePathFromPointerEvent = (event: MouseEvent) => {
+      const svgPoint = getSvgPointFromEvent(event);
+      if (!svgPoint) {
+        return getPathFromNode(event.target);
       }
 
-      seen.add(path);
-      candidates.push(path);
-    }
+      const paths = Array.from(svg.querySelectorAll("path[id]")).filter(
+        (path) => isInteractivePath(path as SVGPathElement),
+      ) as SVGPathElement[];
+      const hits = paths.filter((path) => {
+        try {
+          return path.isPointInFill(svgPoint) || path.isPointInStroke(svgPoint);
+        } catch {
+          return false;
+        }
+      });
 
-    if (candidates.length === 0) {
-      return getPathFromNode(event.target);
-    }
+      if (hits.length === 0) {
+        return getPathFromNode(event.target);
+      }
 
-    return candidates[0] ?? null;
-  };
+      return (
+        hits.slice().sort((a, b) => {
+          const aBox = a.getBBox();
+          const bBox = b.getBBox();
+          return aBox.width * aBox.height - bBox.width * bBox.height;
+        })[0] ?? null
+      );
+    };
 
-  const handleContainerMouseOver = (event: MouseEvent) => {
-    const path = getPathFromNode(event.target);
-    if (!path || !mapContent.contains(path)) {
-      return;
-    }
+    const getPathFromPointerEvent = (event: MouseEvent) => {
+      if (type === "animal" || type === "weather") {
+        return getBiomePathFromPointerEvent(event);
+      }
 
-    const relatedPath = getPathFromNode(event.relatedTarget);
-    if (relatedPath === path) {
-      return;
-    }
+      if (typeof document.elementsFromPoint !== "function") {
+        return getPathFromNode(event.target);
+      }
 
-    applyHoverStyle(path);
-  };
+      const elements = document.elementsFromPoint(event.clientX, event.clientY);
+      const candidates: SVGPathElement[] = [];
+      const seen = new Set<SVGPathElement>();
 
-  const handleContainerMouseOut = (event: MouseEvent) => {
-    const path = getPathFromNode(event.target);
-    if (!path || !mapContent.contains(path)) {
-      return;
-    }
+      for (const element of elements) {
+        const path = element.closest("path[id]") as SVGPathElement | null;
+        if (!path || seen.has(path)) {
+          continue;
+        }
 
-    const relatedPath = getPathFromNode(event.relatedTarget);
-    if (relatedPath === path) {
-      return;
-    }
+        if (!isInteractivePath(path)) {
+          continue;
+        }
 
-    clearHoverStyle(path);
-  };
+        if (!mapContent.contains(path)) {
+          continue;
+        }
 
-  const handleContainerMouseMove = (event: MouseEvent) => {
-    if (type !== "animal" && type !== "weather") {
-      return;
-    }
+        if (path.closest('[data-interaction-overlay="true"]')) {
+          continue;
+        }
 
-    const path = getPathFromPointerEvent(event);
+        seen.add(path);
+        candidates.push(path);
+      }
 
-    if (!path || !mapContent.contains(path)) {
+      if (candidates.length === 0) {
+        return getPathFromNode(event.target);
+      }
+
+      return candidates[0] ?? null;
+    };
+
+    const handleContainerMouseOver = (event: MouseEvent) => {
+      const path = getPathFromNode(event.target);
+      if (!path || !mapContent.contains(path)) {
+        return;
+      }
+
+      const relatedPath = getPathFromNode(event.relatedTarget);
+      if (relatedPath === path) {
+        return;
+      }
+
+      applyHoverStyle(path);
+    };
+
+    const handleContainerMouseOut = (event: MouseEvent) => {
+      const path = getPathFromNode(event.target);
+      if (!path || !mapContent.contains(path)) {
+        return;
+      }
+
+      const relatedPath = getPathFromNode(event.relatedTarget);
+      if (relatedPath === path) {
+        return;
+      }
+
+      clearHoverStyle(path);
+    };
+
+    const handleContainerMouseMove = (event: MouseEvent) => {
+      if (type !== "animal" && type !== "weather") {
+        return;
+      }
+
+      const path = getPathFromPointerEvent(event);
+
+      if (!path || !mapContent.contains(path)) {
+        if (hoveredPathRef.current) {
+          clearHoverStyle(hoveredPathRef.current);
+        }
+        return;
+      }
+
+      if (hoveredPathRef.current && hoveredPathRef.current !== path) {
+        clearHoverStyle(hoveredPathRef.current);
+      }
+
+      applyHoverStyle(path);
+    };
+
+    const handleContainerMouseLeave = () => {
       if (hoveredPathRef.current) {
         clearHoverStyle(hoveredPathRef.current);
       }
-      return;
+    };
+
+    const handleContainerClick = (event: MouseEvent) => {
+      const path = getPathFromPointerEvent(event);
+      if (!path || !mapContent.contains(path)) {
+        return;
+      }
+
+      if (didDragRef.current) {
+        didDragRef.current = false;
+        return;
+      }
+
+      onUserSelect?.(path.id);
+      openSelection(path, path.id);
+    };
+
+    mapContent.addEventListener("mouseover", handleContainerMouseOver);
+    mapContent.addEventListener("mouseout", handleContainerMouseOut);
+    mapContent.addEventListener("mousemove", handleContainerMouseMove);
+    mapContent.addEventListener("mouseleave", handleContainerMouseLeave);
+    mapContent.addEventListener("click", handleContainerClick);
+
+    syncInteractionOverlay();
+
+    if (selectedElementRef.current) {
+      const selectedPath = svg.querySelector(
+        `path[id='${selectedElementRef.current}']`,
+      ) as SVGPathElement | null;
+      if (selectedPath) {
+        applySelectedStyle(selectedPath);
+      }
     }
 
-    if (hoveredPathRef.current && hoveredPathRef.current !== path) {
-      clearHoverStyle(hoveredPathRef.current);
-    }
-
-    applyHoverStyle(path);
-  };
-
-  const handleContainerMouseLeave = () => {
-    if (hoveredPathRef.current) {
-      clearHoverStyle(hoveredPathRef.current);
-    }
-  };
-
-  const handleContainerClick = (event: MouseEvent) => {
-    const path = getPathFromPointerEvent(event);
-    if (!path || !mapContent.contains(path)) {
-      return;
-    }
-
-    if (didDragRef.current) {
-      didDragRef.current = false;
-      return;
-    }
-
-    onUserSelect?.(path.id);
-    openSelection(path, path.id);
-  };
-
-  mapContent.addEventListener("mouseover", handleContainerMouseOver);
-  mapContent.addEventListener("mouseout", handleContainerMouseOut);
-  mapContent.addEventListener("mousemove", handleContainerMouseMove);
-  mapContent.addEventListener("mouseleave", handleContainerMouseLeave);
-  mapContent.addEventListener("click", handleContainerClick);
-
-  syncInteractionOverlay();
-
-  if (selectedElementRef.current) {
-    const selectedPath = svg.querySelector(`path[id='${selectedElementRef.current}']`) as SVGPathElement | null;
-    if (selectedPath) {
-      applySelectedStyle(selectedPath);
-    }
-  }
-
-  return () => {
-    mapContent.removeEventListener("mouseover", handleContainerMouseOver);
-    mapContent.removeEventListener("mouseout", handleContainerMouseOut);
-    mapContent.removeEventListener("mousemove", handleContainerMouseMove);
-    mapContent.removeEventListener("mouseleave", handleContainerMouseLeave);
-    mapContent.removeEventListener("click", handleContainerClick);
-  };
-}, [svgContent, type]);
+    return () => {
+      mapContent.removeEventListener("mouseover", handleContainerMouseOver);
+      mapContent.removeEventListener("mouseout", handleContainerMouseOut);
+      mapContent.removeEventListener("mousemove", handleContainerMouseMove);
+      mapContent.removeEventListener("mouseleave", handleContainerMouseLeave);
+      mapContent.removeEventListener("click", handleContainerClick);
+    };
+  }, [svgContent, type]);
 
   useEffect(() => {
-    const sourceSvg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
+    const sourceSvg = svgHostRef.current?.querySelector(
+      "svg",
+    ) as SVGSVGElement | null;
     if (!sourceSvg) {
       previewSelectedPathsRef.current = [];
       return;
@@ -1800,20 +2010,20 @@ useEffect(() => {
       return;
     }
 
-    const previewPaths = resolvePathsById(sourceSvg, previewSelectedId)
-      .filter((path) => isInteractivePath(path));
+    const previewPaths = resolvePathsById(sourceSvg, previewSelectedId).filter(
+      (path) => isInteractivePath(path),
+    );
     previewSelectedPathsRef.current = previewPaths;
     syncInteractionOverlay();
   }, [previewSelectedId, svgContent, type]);
 
   // --- Добавляем refs и состояние для перетаскивания попапа ---
- const popupRef = useRef<HTMLDivElement | null>(null);
+  const popupRef = useRef<HTMLDivElement | null>(null);
   const isPopupDraggingRef = useRef(false);
   const [popupPos, setPopupPos] = useState({ x: 60, y: 60 });
 
   // Обработчик для перетаскивания попапа
   const handlePopupMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-
     isPopupDraggingRef.current = true;
     const startX = e.clientX;
     const startY = e.clientY;
@@ -1824,7 +2034,6 @@ useEffect(() => {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
       setPopupPos({ x: startLeft + dx, y: startTop + dy });
-      
     };
 
     const handleMouseUp = () => {
@@ -1858,7 +2067,8 @@ useEffect(() => {
         return;
       }
 
-      const eventPath = typeof e.composedPath === "function" ? e.composedPath() : [];
+      const eventPath =
+        typeof e.composedPath === "function" ? e.composedPath() : [];
 
       if (popupRef.current && eventPath.includes(popupRef.current)) {
         return;
@@ -1903,8 +2113,13 @@ useEffect(() => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextZoom = Math.min(zoomRef.current * 1.2, 4);
-                  const clamped = clampMobilePosition(currentXRef.current, currentYRef.current, nextZoom);
+                  const maxZoom = type === "river" ? 6 : 4;
+                  const nextZoom = Math.min(zoomRef.current * 1.2, maxZoom);
+                  const clamped = clampMobilePosition(
+                    currentXRef.current,
+                    currentYRef.current,
+                    nextZoom,
+                  );
                   zoomRef.current = nextZoom;
                   setZoom(nextZoom);
                   currentXRef.current = clamped.x;
@@ -1922,7 +2137,11 @@ useEffect(() => {
                     zoomRef.current / 1.2,
                     isMobile ? mobileMinZoomRef.current : 1,
                   );
-                  const clamped = clampMobilePosition(currentXRef.current, currentYRef.current, nextZoom);
+                  const clamped = clampMobilePosition(
+                    currentXRef.current,
+                    currentYRef.current,
+                    nextZoom,
+                  );
                   zoomRef.current = nextZoom;
                   setZoom(nextZoom);
                   currentXRef.current = clamped.x;
@@ -1933,66 +2152,65 @@ useEffect(() => {
                 －
               </button>
 
-              <button
-                type="button"
-                onClick={resetMapView}
-                title="Center map"
-              >
-                ◎
-              </button>
             </div>
           ) : null
         }
       />
 
       {!isMobile && isPopupOpen && (
-          <div
-            ref={popupRef}
-            onMouseDown={handlePopupMouseDown}
-            className={`country-popup ${viewMode === "video" ? "country-popup-video-mode" : ""}`}
-            style={{
-              left: popupPos.x,
-              top: popupPos.y,
-              position: "absolute",
-            }}
-          >
-            <div className="country-popup-header">
-              <button
-                type="button"
-                onClick={() => {
-                  closeSelection("button");
-                }}
-                className="country-close-button studio-button btn-pink"
-                aria-label={t.close}
-              >
-                ×
-              </button>
-            </div>
-            <div className="country-popup-body">
-              {type === "flag" && getFlagUrl(selectedElement || "") && (
-                <div style={{ textAlign: "center", marginBottom: "12px" }}>
-                  <img
-                    src={getFlagUrl(selectedElement!)!}
-                    alt={`${t.flagAlt} ${selectedElement}`}
-                    style={{
-                      width: "280px",
-                      height: "auto",
-                      borderRadius: "6px",
-                      border: "1px solid #ddd",
-                      marginBottom: "10px"
-                    }}
-                  />
-                  <div style={{ fontSize: "20px", fontWeight: "600", marginBottom: "10px" }}>
-                    {selectedElement?.toUpperCase()}
-                  </div>
+        <div
+          ref={popupRef}
+          onMouseDown={handlePopupMouseDown}
+          className={`country-popup ${viewMode === "video" ? "country-popup-video-mode" : ""}`}
+          style={{
+            left: popupPos.x,
+            top: popupPos.y,
+            position: "absolute",
+          }}
+        >
+          <div className="country-popup-header">
+            <button
+              type="button"
+              onClick={() => {
+                closeSelection("button");
+              }}
+              className="country-close-button studio-button btn-pink"
+              aria-label={t.close}
+            >
+              ×
+            </button>
+          </div>
+          <div className="country-popup-body">
+            {type === "flag" && getFlagUrl(selectedElement || "") && (
+              <div style={{ textAlign: "center", marginBottom: "12px" }}>
+                <img
+                  src={getFlagUrl(selectedElement!)!}
+                  alt={`${t.flagAlt} ${selectedElement}`}
+                  style={{
+                    width: "280px",
+                    height: "auto",
+                    borderRadius: "6px",
+                    border: "1px solid #ddd",
+                    marginBottom: "10px",
+                  }}
+                />
+                <div
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "600",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {selectedElement?.toUpperCase()}
                 </div>
-              )}
+              </div>
+            )}
 
-              <div className="map-text">
-                {popupContent ? (
-                  <>
-                    {viewMode === "video" ? (
-                      (() => {
+            <div className="map-text">
+              {popupContent ? (
+                <>
+                  {viewMode === "video"
+                    ? (() => {
                         const youtubeId =
                           popupContent.video?.youtubeId?.trim() || "";
                         return youtubeId ? (
@@ -2010,7 +2228,12 @@ useEffect(() => {
                             <div className="map-popup-video-frame">
                               <iframe
                                 src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0`}
-                                title={popupContent.video?.title || popupContent.title || selectedElement || t.videoFrameTitle}
+                                title={
+                                  popupContent.video?.title ||
+                                  popupContent.title ||
+                                  selectedElement ||
+                                  t.videoFrameTitle
+                                }
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                 allowFullScreen
                                 style={{
@@ -2026,33 +2249,58 @@ useEffect(() => {
                             </div>
 
                             {popupContent.video?.title ? (
-                              <p style={{ marginTop: 0 }}>{popupContent.video.title}</p>
+                              <p style={{ marginTop: 0 }}>
+                                {popupContent.video.title}
+                              </p>
                             ) : null}
                           </>
                         ) : (
                           <p>{t.noVideo}</p>
                         );
                       })()
-                    ) : (
-                      (() => {
+                    : (() => {
                         const resolvedFallbackMedia =
                           popupContent?.targetId && currentPopupSlide?.text
-                            ? buildClientRaccoonFallback(type, popupContent.targetId, currentPopupSlide.text)
+                            ? buildClientRaccoonFallback(
+                                type,
+                                popupContent.targetId,
+                                currentPopupSlide.text,
+                              )
                             : null;
                         const persistedImageUrl =
-                          typeof currentPopupSlide?.imageUrl === "string" ? currentPopupSlide.imageUrl.trim() : "";
-                        const hasResolvedPersistedImage = Boolean(persistedImageUrl) && !isLocalMapFallbackUrl(persistedImageUrl);
-                        const imageUrl = (hasResolvedPersistedImage ? persistedImageUrl : "") || resolvedFallbackMedia?.url || "";
-                        const displayMediaUrl = toStudioMediaUrl(imageUrl) || "";
-                        const isUsingFallbackMedia = !hasResolvedPersistedImage && Boolean(resolvedFallbackMedia?.url);
+                          typeof currentPopupSlide?.imageUrl === "string"
+                            ? currentPopupSlide.imageUrl.trim()
+                            : "";
+                        const hasResolvedPersistedImage =
+                          Boolean(persistedImageUrl) &&
+                          !isLocalMapFallbackUrl(persistedImageUrl);
+                        const imageUrl =
+                          (hasResolvedPersistedImage
+                            ? persistedImageUrl
+                            : "") ||
+                          resolvedFallbackMedia?.url ||
+                          "";
+                        const displayMediaUrl =
+                          toStudioMediaUrl(imageUrl) || "";
+                        const isUsingFallbackMedia =
+                          !hasResolvedPersistedImage &&
+                          Boolean(resolvedFallbackMedia?.url);
                         const isVideoSlide = isVideoMediaUrl(imageUrl);
-                        const paragraphs = splitTextToParagraphs(currentPopupSlide?.text || "");
+                        const paragraphs = splitTextToParagraphs(
+                          currentPopupSlide?.text || "",
+                        );
                         const creditLine =
-                          (hasResolvedPersistedImage ? currentPopupSlide?.imageCreditLine?.trim() : "") ||
+                          (hasResolvedPersistedImage
+                            ? currentPopupSlide?.imageCreditLine?.trim()
+                            : "") ||
                           resolvedFallbackMedia?.creditLine ||
                           "";
-                        const mediaStatus = currentPopupSlide ? mediaStatusBySlideId[currentPopupSlide.id] : undefined;
-                        const dbWriteStatus = currentPopupSlide ? dbWriteStatusBySlideId[currentPopupSlide.id] : undefined;
+                        const mediaStatus = currentPopupSlide
+                          ? mediaStatusBySlideId[currentPopupSlide.id]
+                          : undefined;
+                        const dbWriteStatus = currentPopupSlide
+                          ? dbWriteStatusBySlideId[currentPopupSlide.id]
+                          : undefined;
                         const mediaStatusLabel =
                           mediaStatus === "loading"
                             ? isUsingFallbackMedia
@@ -2088,7 +2336,9 @@ useEffect(() => {
                                     : "Not saved to database"
                                 : "";
                         const databaseLabel =
-                          showAdminDbStatus && hasResolvedPersistedImage && !dbWriteStatusLabel
+                          showAdminDbStatus &&
+                          hasResolvedPersistedImage &&
+                          !dbWriteStatusLabel
                             ? lang === "ru"
                               ? "Взята из базы"
                               : lang === "he"
@@ -2109,7 +2359,12 @@ useEffect(() => {
                             {popupSlides.length > 0 ? (
                               <>
                                 {displayMediaUrl ? (
-                                  <div style={{ marginBottom: "12px", textAlign: "center" }}>
+                                  <div
+                                    style={{
+                                      marginBottom: "12px",
+                                      textAlign: "center",
+                                    }}
+                                  >
                                     {isVideoSlide ? (
                                       <video
                                         src={displayMediaUrl}
@@ -2119,30 +2374,48 @@ useEffect(() => {
                                         controls
                                         playsInline
                                         onError={() => {
-                                          console.error("[popup-media/render-error]", {
-                                            kind: "video",
-                                            rawUrl: imageUrl,
-                                            displayMediaUrl,
-                                            slideId: currentPopupSlide?.id,
-                                            targetId: popupContent?.targetId,
-                                          });
+                                          console.error(
+                                            "[popup-media/render-error]",
+                                            {
+                                              kind: "video",
+                                              rawUrl: imageUrl,
+                                              displayMediaUrl,
+                                              slideId: currentPopupSlide?.id,
+                                              targetId: popupContent?.targetId,
+                                            },
+                                          );
                                         }}
-                                        style={{ width: "100%", maxWidth: "320px", borderRadius: "8px" }}
+                                        style={{
+                                          width: "100%",
+                                          maxWidth: "320px",
+                                          borderRadius: "8px",
+                                        }}
                                       />
                                     ) : (
                                       <img
                                         src={displayMediaUrl}
                                         onError={() => {
-                                          console.error("[popup-media/render-error]", {
-                                            kind: "image",
-                                            rawUrl: imageUrl,
-                                            displayMediaUrl,
-                                            slideId: currentPopupSlide?.id,
-                                            targetId: popupContent?.targetId,
-                                          });
+                                          console.error(
+                                            "[popup-media/render-error]",
+                                            {
+                                              kind: "image",
+                                              rawUrl: imageUrl,
+                                              displayMediaUrl,
+                                              slideId: currentPopupSlide?.id,
+                                              targetId: popupContent?.targetId,
+                                            },
+                                          );
                                         }}
-                                        style={{ width: "100%", maxWidth: "320px", borderRadius: "8px" }}
-                                        alt={popupContent.title || selectedElement || t.slideMediaAlt}
+                                        style={{
+                                          width: "100%",
+                                          maxWidth: "320px",
+                                          borderRadius: "8px",
+                                        }}
+                                        alt={
+                                          popupContent.title ||
+                                          selectedElement ||
+                                          t.slideMediaAlt
+                                        }
                                       />
                                     )}
                                     {creditLine ? (
@@ -2161,14 +2434,31 @@ useEffect(() => {
                                     <div style={{ marginTop: "8px" }}>
                                       <button
                                         type="button"
-                                        onClick={() => void handleRefreshSlideMedia()}
-                                        disabled={manualRefreshSlideId === currentPopupSlide?.id}
+                                        onClick={() =>
+                                          void handleRefreshSlideMedia()
+                                        }
+                                        disabled={
+                                          manualRefreshSlideId ===
+                                          currentPopupSlide?.id
+                                        }
                                         className="studio-button btn-mint map-popup-action-button"
-                                        style={{ fontSize: "12px", padding: "6px 10px" }}
+                                        style={{
+                                          fontSize: "12px",
+                                          padding: "6px 10px",
+                                        }}
                                       >
-                                        {manualRefreshSlideId === currentPopupSlide?.id
-                                          ? (lang === "ru" ? "Ищем..." : lang === "he" ? "מחפשים..." : "Searching...")
-                                          : (lang === "ru" ? "Найти новую картинку" : lang === "he" ? "למצוא תמונה חדשה" : "Find a new image")}
+                                        {manualRefreshSlideId ===
+                                        currentPopupSlide?.id
+                                          ? lang === "ru"
+                                            ? "Ищем..."
+                                            : lang === "he"
+                                              ? "מחפשים..."
+                                              : "Searching..."
+                                          : lang === "ru"
+                                            ? "Найти новую картинку"
+                                            : lang === "he"
+                                              ? "למצוא תמונה חדשה"
+                                              : "Find a new image"}
                                       </button>
                                     </div>
                                     {showAdminDbStatus && dbWriteStatusLabel ? (
@@ -2212,14 +2502,31 @@ useEffect(() => {
                                     <div style={{ marginTop: "8px" }}>
                                       <button
                                         type="button"
-                                        onClick={() => void handleRefreshSlideMedia()}
-                                        disabled={manualRefreshSlideId === currentPopupSlide?.id}
+                                        onClick={() =>
+                                          void handleRefreshSlideMedia()
+                                        }
+                                        disabled={
+                                          manualRefreshSlideId ===
+                                          currentPopupSlide?.id
+                                        }
                                         className="studio-button btn-mint map-popup-action-button"
-                                        style={{ fontSize: "12px", padding: "6px 10px" }}
+                                        style={{
+                                          fontSize: "12px",
+                                          padding: "6px 10px",
+                                        }}
                                       >
-                                        {manualRefreshSlideId === currentPopupSlide?.id
-                                          ? (lang === "ru" ? "Ищем..." : lang === "he" ? "מחפשים..." : "Searching...")
-                                          : (lang === "ru" ? "Найти новую картинку" : lang === "he" ? "למצוא תמונה חדשה" : "Find a new image")}
+                                        {manualRefreshSlideId ===
+                                        currentPopupSlide?.id
+                                          ? lang === "ru"
+                                            ? "Ищем..."
+                                            : lang === "he"
+                                              ? "מחפשים..."
+                                              : "Searching..."
+                                          : lang === "ru"
+                                            ? "Найти новую картинку"
+                                            : lang === "he"
+                                              ? "למצוא תמונה חדשה"
+                                              : "Find a new image"}
                                       </button>
                                     </div>
                                   </div>
@@ -2228,19 +2535,34 @@ useEffect(() => {
                                 <div className="map-popup-toolbar">
                                   <button
                                     type="button"
-                                    onClick={() => setCurrentSlideIndex((prev) => Math.max(0, prev - 1))}
+                                    onClick={() =>
+                                      setCurrentSlideIndex((prev) =>
+                                        Math.max(0, prev - 1),
+                                      )
+                                    }
                                     disabled={safeCurrentSlideIndex === 0}
                                     className="studio-button btn-blue map-popup-nav-button"
                                   >
                                     ←
                                   </button>
                                   <div className="map-popup-toolbar-label">
-                                    {safeCurrentSlideIndex + 1} / {popupSlides.length}
+                                    {safeCurrentSlideIndex + 1} /{" "}
+                                    {popupSlides.length}
                                   </div>
                                   <button
                                     type="button"
-                                    onClick={() => setCurrentSlideIndex((prev) => Math.min(popupSlides.length - 1, prev + 1))}
-                                    disabled={safeCurrentSlideIndex === popupSlides.length - 1}
+                                    onClick={() =>
+                                      setCurrentSlideIndex((prev) =>
+                                        Math.min(
+                                          popupSlides.length - 1,
+                                          prev + 1,
+                                        ),
+                                      )
+                                    }
+                                    disabled={
+                                      safeCurrentSlideIndex ===
+                                      popupSlides.length - 1
+                                    }
                                     className="studio-button btn-yellow map-popup-nav-button"
                                   >
                                     →
@@ -2249,7 +2571,11 @@ useEffect(() => {
 
                                 {paragraphs.length > 0 ? (
                                   paragraphs.map((paragraph, index) => (
-                                    <p key={`${selectedElement}-slide-${safeCurrentSlideIndex}-paragraph-${index}`}>{paragraph}</p>
+                                    <p
+                                      key={`${selectedElement}-slide-${safeCurrentSlideIndex}-paragraph-${index}`}
+                                    >
+                                      {paragraph}
+                                    </p>
                                   ))
                                 ) : (
                                   <p>{t.slideEmpty}</p>
@@ -2284,22 +2610,21 @@ useEffect(() => {
                             )}
                           </>
                         );
-                      })()
-                    )}
-                  </>
-                ) : isPopupOpen ? (
-                  isLoading ? (
-                    <p>{t.loading}</p>
-                  ) : (
-                    <p>{t.contentNotReady}</p>
-                  )
+                      })()}
+                </>
+              ) : isPopupOpen ? (
+                isLoading ? (
+                  <p>{t.loading}</p>
                 ) : (
-                  <p>{t.initialPrompt}</p>
-                )}
-              </div>
+                  <p>{t.contentNotReady}</p>
+                )
+              ) : (
+                <p>{t.initialPrompt}</p>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
       {isMobile ? (
         <MapPopup
           isOpen={isPopupOpen}
@@ -2309,13 +2634,29 @@ useEffect(() => {
           currentSlideIndex={safeCurrentSlideIndex}
           loadingLabel={t.loading}
           closeLabel={t.close}
-          swipeHintLabel={lang === "ru" ? "Свайпни, чтобы листать" : lang === "he" ? "החליקו כדי להמשיך" : "Swipe to continue"}
-          findNewImageLabel={manualRefreshSlideId === currentPopupSlide?.id ? "..." : (lang === "ru" ? "Найти новую картинку" : lang === "he" ? "למצוא תמונה חדשה" : "Find a new image")}
+          swipeHintLabel={
+            lang === "ru"
+              ? "Свайпни, чтобы листать"
+              : lang === "he"
+                ? "החליקו כדי להמשיך"
+                : "Swipe to continue"
+          }
+          findNewImageLabel={
+            manualRefreshSlideId === currentPopupSlide?.id
+              ? "..."
+              : lang === "ru"
+                ? "Найти новую картинку"
+                : lang === "he"
+                  ? "למצוא תמונה חדשה"
+                  : "Find a new image"
+          }
           editInStudioLabel={t.openCatsEditor}
           showOnMapLabel={t.showOnMap}
           watchYoutubeLabel={t.watchOnYoutube}
           openTextPageLabel={t.openTextPage}
-          canWatchYoutube={Boolean(popupContent?.video?.youtubeUrl || popupContent?.video?.youtubeId)}
+          canWatchYoutube={Boolean(
+            popupContent?.video?.youtubeUrl || popupContent?.video?.youtubeId,
+          )}
           onClose={() => closeSelection("button")}
           onIndexChange={setCurrentSlideIndex}
           onFindNewImage={(index) => {
@@ -2328,24 +2669,24 @@ useEffect(() => {
           onOpenTextPage={handleOpenTextPage}
         />
       ) : null}
-    {toast && (
-      <div
-        className="toast fixed bottom-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow"
-        style={{
-          position: "fixed",
-          bottom: "24px",
-          right: "24px",
-          zIndex: 9999,
-          backgroundColor: "black",
-          color: "white",
-          padding: "10px 16px",
-          borderRadius: "6px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
-        }}
-      >
-        {toast}
-      </div>
-    )}
+      {toast && (
+        <div
+          className="toast fixed bottom-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow"
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            zIndex: 9999,
+            backgroundColor: "black",
+            color: "white",
+            padding: "10px 16px",
+            borderRadius: "6px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+          }}
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
