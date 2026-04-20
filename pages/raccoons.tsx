@@ -10,8 +10,8 @@ import type { Quest } from "@/components/Raccoons/QuestSection";
 import { quests } from "@/utils/quests.config";
 import { dictionaries } from "@/i18n";
 import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
-import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
 
 type EntitySearchResult = {
   route: "country" | "animal" | "river" | "sea" | "biome";
@@ -206,8 +206,35 @@ export default function RaccoonsPage() {
   const visibleResults = results.slice(0, visibleResultsCount);
   const hasMoreResults = results.length > visibleResults.length;
 
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    if (isMobile) {
+      document.body.classList.add("raccoons-mobile-page");
+      return () => {
+        document.body.classList.remove("raccoons-mobile-page");
+      };
+    }
+
+    document.body.classList.remove("raccoons-mobile-page");
+    return undefined;
+  }, [isMobile]);
+
   if (isMobile) {
-    return <MobileDesktopNotice lang={lang} />;
+    return (
+      <>
+        <SEO title={seo.title} description={seo.description} path={seoPath} />
+        <MobileMapScreen
+          lang={lang}
+          activeTab={activeTab}
+          onTabChange={handleMapTabChange}
+          previewSelectedId={previewSelectedId}
+          onMapUserSelect={handleMapUserSelect}
+        />
+      </>
+    );
   }
 
   return (

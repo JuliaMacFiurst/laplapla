@@ -633,6 +633,9 @@ type DictionaryShape = {
       slideMediaAlt: string;
       slideEmpty: string;
       watchVideo: string;
+      showOnMap: string;
+      watchOnYoutube: string;
+      openTextPage: string;
       openCatsEditor: string;
       openGoogleMaps: string;
       contentNotReady: string;

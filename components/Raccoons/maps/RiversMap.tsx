@@ -8,7 +8,6 @@ export default function RiversMap({
   onUserSelect?: (selectedId: string) => void;
 }) {
   return (
-    <div className="rivers-map-container">
       <InteractiveMapEngine
         svgPath="rivers/rivers-with-id-bg-updated.svg"
         type="river"
@@ -17,6 +16,5 @@ export default function RiversMap({
         previewSelectedId={previewSelectedId}
         onUserSelect={onUserSelect}
       />
-    </div>
   );
 }

@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useState, type Dispatch, type SetSt
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import { normalizeSlug } from "@/lib/mapEntityRouting";
 import type { MapPopupContent } from "@/types/mapPopup";
@@ -13,6 +13,9 @@ import { supabase } from "@/lib/supabase";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import MapViewport from "@/components/Raccoons/MapViewport";
+import MapPopup from "@/components/Raccoons/MapPopup";
 
 interface InteractiveMapProps {
   svgPath: string;
@@ -301,10 +304,13 @@ async function resolveSlideMedia(
 export default function InteractiveMap({ svgPath, type, previewSelectedId, onUserSelect }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
+  const isMobile = useIsMobile();
   const t = dictionaries[lang].raccoons.popup;
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMapLoading, setIsMapLoading] = useState(true);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupContent, setPopupContent] = useState<MapPopupContent | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [viewMode, setViewMode] = useState<"slides" | "video">("slides");
@@ -327,7 +333,17 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
   const hoveredPathRef = useRef<SVGPathElement | null>(null);
   const selectedElementRef = useRef<string | null>(null);
 
-  const [zoom, setZoom] = useState(1);
+  const [, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  const safeViewRef = useRef<{ x: number; y: number; zoom: number } | null>(null);
+  const isManualResetRef = useRef(false);
+  const mobileMinZoomRef = useRef(type === "animal" ? 1 : type === "weather" ? 0.55 : 0.8);
+  const animalContentBoundsRef = useRef<{
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  } | null>(null);
   const mapContentRef = useRef<HTMLDivElement | null>(null);
   const svgHostRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
@@ -340,10 +356,15 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
   const pointerStartClientXRef = useRef(0);
   const pointerStartClientYRef = useRef(0);
   const ignoreNextOutsideClickRef = useRef(false);
+  const lastTapTsRef = useRef(0);
+  const pinchDistanceRef = useRef(0);
+  const pinchZoomRef = useRef(1);
+  const pinchXRef = useRef(0);
+  const pinchYRef = useRef(0);
+  const pinchCenterRef = useRef({ x: 0, y: 0 });
+  const isPinchingRef = useRef(false);
 
-  const [position, setPosition] = useState({ x: 0, y: 0 });
   const popupSlides = popupContent?.slides ?? [];
-  const isPopupOpen = selectedElement !== null;
   const safeCurrentSlideIndex = popupSlides.length === 0
     ? 0
     : Math.min(currentSlideIndex, Math.max(0, popupSlides.length - 1));
@@ -597,15 +618,12 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
   };
 
   const closeSelection = (_reason: "outside" | "button" | "toggle" | "map-switch") => {
-    if (!selectedElementRef.current && !lastSelectedPath.current && !selectedElement) {
+    if (!selectedElementRef.current && !lastSelectedPath.current && !isPopupOpen) {
       return;
     }
 
-    clearSelectedStyle();
-    selectedElementRef.current = null;
     hoveredPathRef.current = null;
-    setSelectedElement(null);
-    setPopupContent(null);
+    setIsPopupOpen(false);
     setCurrentSlideIndex(0);
     setViewMode("slides");
   };
@@ -635,6 +653,9 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     }
 
     if (selectedElementRef.current === id && lastSelectedPath.current === path) {
+      if (!isPopupOpen) {
+        setIsPopupOpen(true);
+      }
       return;
     }
 
@@ -644,6 +665,7 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
     ignoreNextOutsideClickRef.current = true;
     flushSync(() => {
       setSelectedElement(id);
+      setIsPopupOpen(true);
     });
   };
 
@@ -666,9 +688,13 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
       : null;
   };
 
-  useEffect(() => {
+useEffect(() => {
+    setIsMapLoading(true);
     getMapSvg(svgPath).then((text) => {
-      if (!text) return;
+      if (!text) {
+        setIsMapLoading(false);
+        return;
+      }
 
       const parser = new DOMParser();
       const doc = parser.parseFromString(text, "image/svg+xml");
@@ -676,14 +702,23 @@ export default function InteractiveMap({ svgPath, type, previewSelectedId, onUse
 
       if (svgElement) {
         svgElement.classList.add(`${type}-map`);
+        svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        svgElement.style.overflow = "visible";
         setSvgContent(svgElement.outerHTML);
       } else {
         setSvgContent(text);
       }
 
       setTimeout(() => setIsVisible(true), 0);
+      setIsMapLoading(false);
     });
   }, [svgPath, type]);
+
+useLayoutEffect(() => {
+  // Disable special animal-content bounds logic on mobile.
+  // It over-constrains panning and traps the map around America.
+  animalContentBoundsRef.current = null;
+}, [isMobile, svgContent, type]);
 
 useEffect(() => {
   isLoadingRef.current = isLoading;
@@ -733,6 +768,37 @@ useEffect(() => {
     setViewMode("video");
   };
 
+  const handleWatchYoutube = () => {
+    const youtubeUrl = popupContent?.video?.youtubeUrl?.trim();
+    const youtubeId = popupContent?.video?.youtubeId?.trim();
+    const targetUrl = youtubeUrl || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : "");
+
+    if (!targetUrl) {
+      setToast(t.noVideo);
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleOpenTextPage = () => {
+    const targetId = (popupContent?.targetId || selectedElementRef.current || selectedElement || "").trim();
+    if (!targetId) {
+      setToast(t.contentNotReady);
+      setTimeout(() => setToast(null), 2500);
+      return;
+    }
+
+    void router.push(
+      buildLocalizedHref(`/map/${type}/${normalizeSlug(targetId)}`, lang),
+      undefined,
+      { locale: lang },
+    );
+  };
+
   const handleOpenGoogleMaps = () => {
     const googleMapsUrl = popupContent?.googleMapsUrl;
     if (!googleMapsUrl) {
@@ -746,34 +812,39 @@ useEffect(() => {
     }
   };
 
-  const handleRefreshSlideMedia = async () => {
-    if (!popupContent || !currentPopupSlide) {
+  const handleRefreshSlideMedia = async (slideIndex?: number) => {
+    const slide =
+      typeof slideIndex === "number"
+        ? popupSlides[Math.min(Math.max(slideIndex, 0), Math.max(0, popupSlides.length - 1))]
+        : currentPopupSlide;
+
+    if (!popupContent || !slide) {
       return;
     }
 
     const storyId = popupContent.storyId;
     const targetId = popupContent.targetId;
-    if (!storyId || !targetId || !currentPopupSlide.text.trim()) {
+    if (!storyId || !targetId || !slide.text.trim()) {
       return;
     }
 
-    setManualRefreshSlideId(currentPopupSlide.id);
-    setMediaStatusBySlideId((current) => ({ ...current, [currentPopupSlide.id]: "loading" }));
-    const requestVersion = beginMediaRequest(currentPopupSlide.id);
+    setManualRefreshSlideId(slide.id);
+    setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "loading" }));
+    const requestVersion = beginMediaRequest(slide.id);
 
     try {
       const usedMediaUrls = popupContent.slides
         .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
         .filter((url) => url && !isLocalMapFallbackUrl(url))
         .filter(Boolean);
-      const resolvedItem = await resolveSlideMedia(type, targetId, currentPopupSlide.text, usedMediaUrls);
-      if (!isLatestMediaRequest(currentPopupSlide.id, requestVersion)) {
+      const resolvedItem = await resolveSlideMedia(type, targetId, slide.text, usedMediaUrls);
+      if (!isLatestMediaRequest(slide.id, requestVersion)) {
         return;
       }
 
       applyResolvedSlideMedia(
         storyId,
-        currentPopupSlide.id,
+        slide.id,
         resolvedItem.url,
         resolvedItem.creditLine,
         setPopupContent,
@@ -784,28 +855,28 @@ useEffect(() => {
         if (isDebugLogging) {
           console.info("[popup-media] manual refresh persist", {
             storyId,
-            slideId: currentPopupSlide.id,
-            slideOrder: currentPopupSlide.index,
+            slideId: slide.id,
+            slideOrder: slide.index,
             imageUrl: resolvedItem.url,
           });
         }
 
         void persistResolvedSlideMedia({
           storyId,
-          slideId: currentPopupSlide.id,
-          slideOrder: currentPopupSlide.index,
-          slideText: currentPopupSlide.text,
+          slideId: slide.id,
+          slideOrder: slide.index,
+          slideText: slide.text,
           imageUrl: resolvedItem.url,
           imageCreditLine: resolvedItem.creditLine,
         })
           .then((status) => {
-            applyDbWriteStatus(currentPopupSlide.id, status);
+            applyDbWriteStatus(slide.id, status);
           })
           .catch((error) => {
             console.error("Failed to persist refreshed slide media", error);
             setDbWriteStatusBySlideId((current) => ({
               ...current,
-              [currentPopupSlide.id]: "error",
+              [slide.id]: "error",
             }));
           });
       }
@@ -814,54 +885,229 @@ useEffect(() => {
       setTimeout(() => setToast(null), 2500);
     } catch (error) {
       console.error("Failed to refresh slide media", error);
-      setMediaStatusBySlideId((current) => ({ ...current, [currentPopupSlide.id]: "missing" }));
+      setMediaStatusBySlideId((current) => ({ ...current, [slide.id]: "missing" }));
     } finally {
       setManualRefreshSlideId(null);
     }
   };
 
+  const softClamp = (value: number, min: number, max: number) => {
+    if (value < min) {
+      return min + (value - min) * 0.3;
+    }
+    if (value > max) {
+      return max + (value - max) * 0.3;
+    }
+    return value;
+  };
+
+  const getPanBounds = (nextZoom: number) => {
+    if (!isMobile || !mapContentRef.current) {
+      return null;
+    }
+
+    const container = mapContentRef.current.parentElement;
+    const svg = svgHostRef.current?.querySelector("svg");
+
+    if (!container || !svg) {
+      return null;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+
+    let svgWidth = 0;
+    let svgHeight = 0;
+
+    try {
+      const box = svg.getBBox();
+      svgWidth = box.width * nextZoom;
+      svgHeight = box.height * nextZoom;
+    } catch {
+      return null;
+    }
+
+    const extraOffset = type === "animal" ? containerRect.width * 0.25 : 0;
+
+    let minX = containerRect.width - svgWidth - extraOffset;
+    let maxX = extraOffset;
+    let minY = containerRect.height - svgHeight;
+    let maxY = 0;
+
+    if (minX > maxX) {
+      const centerX = (minX + maxX) / 2;
+      minX = centerX;
+      maxX = centerX;
+    }
+
+    if (minY > maxY) {
+      const centerY = (minY + maxY) / 2;
+      minY = centerY;
+      maxY = centerY;
+    }
+
+    return { minX, maxX, minY, maxY };
+  };
+
+  const applyHardClamp = (nextZoom = zoomRef.current) => {
+    const bounds = getPanBounds(nextZoom);
+    if (!bounds) {
+      return;
+    }
+
+    const nextX = Math.min(bounds.maxX, Math.max(bounds.minX, currentXRef.current));
+    const nextY = Math.min(bounds.maxY, Math.max(bounds.minY, currentYRef.current));
+
+    currentXRef.current = nextX;
+    currentYRef.current = nextY;
+    applyMapTransform(nextX, nextY, nextZoom);
+  };
+
+  const clampMobilePosition = (x: number, y: number, nextZoom: number) => {
+    const bounds = getPanBounds(nextZoom);
+    if (!bounds) {
+      return { x, y };
+    }
+
+    const isDragging = isDraggingRef.current;
+    if (isDragging) {
+      return { x, y };
+    }
+
+    return {
+      x: softClamp(x, bounds.minX, bounds.maxX),
+      y: softClamp(y, bounds.minY, bounds.maxY),
+    };
+  };
+
+  const applyMapTransform = (nextX = currentXRef.current, nextY = currentYRef.current, nextZoom = zoomRef.current) => {
+    const mapContent = mapContentRef.current;
+    if (!mapContent) {
+      return;
+    }
+
+    mapContent.style.transformOrigin = "0 0";
+    mapContent.style.transform = `translate(${nextX}px, ${nextY}px) scale(${nextZoom})`;
+  };
+
+  // --- Helper to reset the map view to the safe initial view ---
+  const resetMapView = () => {
+    const safe = safeViewRef.current;
+    if (!safe) return;
+
+    isManualResetRef.current = true;
+
+    // keep current zoom, only recenter position
+    const currentZoom = zoomRef.current;
+    const scaleRatio = currentZoom / safe.zoom;
+
+    const nextX = safe.x * scaleRatio;
+    const nextY = safe.y * scaleRatio;
+
+    currentXRef.current = nextX;
+    currentYRef.current = nextY;
+
+    applyMapTransform(nextX, nextY, currentZoom);
+
+    setTimeout(() => {
+      isManualResetRef.current = false;
+    }, 300);
+  };
+
 useEffect(() => {
   const mapContent = svgHostRef.current;
-  const container = document.querySelector(".map-container") as HTMLElement | null;
+  const container = mapContentRef.current?.parentElement;
   if (!mapContent || !container) return;
 
   const svg = mapContent.querySelector("svg");
   if (!svg) return;
 
+  if (isMobile) {
+    let initialMobileZoom =
+      type === "weather" ? 0.72 :
+      1;
+
+    if (type === "animal") {
+      try {
+        const box = svg.getBBox();
+        if (Number.isFinite(box.width) && Number.isFinite(box.height) && box.width > 0 && box.height > 0) {
+          const fitX = container.getBoundingClientRect().width / box.width;
+          const fitY = container.getBoundingClientRect().height / box.height;
+          const fitZoom = Math.min(fitX, fitY);
+          initialMobileZoom = Math.min(1, Math.max(0.35, fitZoom));
+        } else {
+          initialMobileZoom = 0.6;
+        }
+      } catch {
+        initialMobileZoom = 0.6;
+      }
+
+      // Allow zooming back out to the full-world fitted view.
+      mobileMinZoomRef.current = initialMobileZoom;
+    } else {
+      mobileMinZoomRef.current =
+        type === "weather" ? 0.55 :
+        0.8;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (type === "animal") {
+  try {
+    const box = svg.getBBox()
+    offsetX = (containerRect.width - box.width * initialMobileZoom) / 2
+    offsetY = (containerRect.height - box.height * initialMobileZoom) / 2
+  } catch {
+    offsetX = 0
+    offsetY = 0
+  }
+}
+
+    const clamped = clampMobilePosition(offsetX, offsetY, initialMobileZoom);
+    zoomRef.current = initialMobileZoom;
+    setZoom(initialMobileZoom);
+    currentXRef.current = clamped.x;
+    currentYRef.current = clamped.y;
+
+    // save safe initial view
+    safeViewRef.current = {
+      x: clamped.x,
+      y: clamped.y,
+      zoom: initialMobileZoom,
+    };
+
+    applyMapTransform(clamped.x, clamped.y, initialMobileZoom);
+    return;
+  }
+
   const containerRect = container.getBoundingClientRect();
   const svgRect = svg.getBBox();
 
-  // Новый расчёт масштабирования
   let optimalZoom = 1;
-  if (type === 'river') {
-    optimalZoom = 1; // без масштабирования
-  } else {
+  if (type !== "river") {
     const zoomX = containerRect.width / svgRect.width;
     const zoomY = containerRect.height / svgRect.height;
-    optimalZoom = Math.min(zoomX, zoomY); // масштабируем, чтобы влезло
+    optimalZoom = Math.min(zoomX, zoomY);
+  }
+
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (type === "country" || type === "flag" || type === "culture" || type === "food") {
+    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 110;
+    offsetY = -120;
+  } else if (type === "animal") {
+    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 60;
+    offsetY = -40;
   }
 
   setZoom(optimalZoom);
-
-  let offsetX: number = 0;
-  let offsetY: number = 0;
-
-  if (type === 'country' || type === 'flag' || type === 'culture' || type === 'food') {
-    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 110;
-    offsetY = -120;
-  } else if (type === 'river') {
-    offsetX = 0;
-    offsetY = 0;
-  } else if (type === 'animal') {
-    offsetX = (containerRect.width - svgRect.width * optimalZoom) / 2 - 60;
-    offsetY = -40;
-  } 
-
+  zoomRef.current = optimalZoom;
   currentXRef.current = offsetX;
   currentYRef.current = offsetY;
-  setPosition({ x: offsetX, y: offsetY });
-
-}, [svgContent]);
+  applyMapTransform(offsetX, offsetY, optimalZoom);
+}, [isMobile, svgContent, type]);
 
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -884,11 +1130,12 @@ useEffect(() => {
       movedDuringDragRef.current = true;
       didDragRef.current = true;
     }
-    currentXRef.current = e.clientX - startXRef.current;
-    currentYRef.current = e.clientY - startYRef.current;
-    if (mapContentRef.current) {
-      mapContentRef.current.style.transform = `translate(${currentXRef.current}px, ${currentYRef.current}px) scale(${zoom})`;
-    }
+    const nextX = e.clientX - startXRef.current;
+    const nextY = e.clientY - startYRef.current;
+    const clamped = clampMobilePosition(nextX, nextY, zoomRef.current);
+    currentXRef.current = clamped.x;
+    currentYRef.current = clamped.y;
+    applyMapTransform(clamped.x, clamped.y, zoomRef.current);
   };
 
   const handleMouseUp = () => {
@@ -899,6 +1146,32 @@ useEffect(() => {
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2) {
+      const [touchA, touchB] = [e.touches[0], e.touches[1]];
+      const dx = touchA.clientX - touchB.clientX;
+      const dy = touchA.clientY - touchB.clientY;
+      pinchDistanceRef.current = Math.hypot(dx, dy);
+      pinchZoomRef.current = zoomRef.current;
+      pinchXRef.current = currentXRef.current;
+      pinchYRef.current = currentYRef.current;
+      isPinchingRef.current = true;
+
+      const centerX = (touchA.clientX + touchB.clientX) / 2;
+      const centerY = (touchA.clientY + touchB.clientY) / 2;
+      const rect = mapContentRef.current?.getBoundingClientRect();
+      pinchCenterRef.current = rect
+        ? {
+            x: centerX - rect.left,
+            y: centerY - rect.top,
+          }
+        : {
+            x: centerX,
+            y: centerY,
+          };
+      isDraggingRef.current = false;
+      return;
+    }
+
     isDraggingRef.current = true;
     movedDuringDragRef.current = false;
     didDragRef.current = false;
@@ -909,38 +1182,121 @@ useEffect(() => {
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const [touchA, touchB] = [e.touches[0], e.touches[1]];
+      const dx = touchA.clientX - touchB.clientX;
+      const dy = touchA.clientY - touchB.clientY;
+      const distance = Math.hypot(dx, dy);
+      if (pinchDistanceRef.current <= 0) {
+        return;
+      }
+
+      const rawZoom = pinchZoomRef.current * (distance / pinchDistanceRef.current);
+      const nextZoom = Math.min(4, Math.max(mobileMinZoomRef.current, rawZoom));
+      const scaleRatio = nextZoom / pinchZoomRef.current;
+
+      const originX = pinchCenterRef.current.x;
+      const originY = pinchCenterRef.current.y;
+
+      const nextX =
+        originX - (originX - pinchXRef.current) * scaleRatio;
+
+      const nextY =
+        originY - (originY - pinchYRef.current) * scaleRatio;
+      const clamped = clampMobilePosition(nextX, nextY, nextZoom);
+
+      zoomRef.current = nextZoom;
+      currentXRef.current = clamped.x;
+      currentYRef.current = clamped.y;
+      applyMapTransform(clamped.x, clamped.y, nextZoom);
+      movedDuringDragRef.current = true;
+      didDragRef.current = true;
+      return;
+    }
+
     if (!isDraggingRef.current) return;
+    e.preventDefault();
     if (Math.abs(e.touches[0].clientX - pointerStartClientXRef.current) > 3 || Math.abs(e.touches[0].clientY - pointerStartClientYRef.current) > 3) {
       movedDuringDragRef.current = true;
       didDragRef.current = true;
     }
-    currentXRef.current = e.touches[0].clientX - startXRef.current;
-    currentYRef.current = e.touches[0].clientY - startYRef.current;
-    if (mapContentRef.current) {
-      mapContentRef.current.style.transform = `translate(${currentXRef.current}px, ${currentYRef.current}px) scale(${zoom})`;
+    const nextX = e.touches[0].clientX - startXRef.current;
+    const nextY = e.touches[0].clientY - startYRef.current;
+    const clamped = clampMobilePosition(nextX, nextY, zoomRef.current);
+    currentXRef.current = clamped.x;
+    currentYRef.current = clamped.y;
+    applyMapTransform(clamped.x, clamped.y, zoomRef.current);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length >= 2) {
+      return;
+    }
+
+    if (isPinchingRef.current && e.touches.length < 2) {
+      isPinchingRef.current = false;
+      applyHardClamp(zoomRef.current);
+      setZoom(zoomRef.current);
+      return;
+    }
+
+    isDraggingRef.current = false;
+    applyHardClamp(zoomRef.current);
+
+    if (isMobile && !movedDuringDragRef.current) {
+      const now = Date.now();
+      if (now - lastTapTsRef.current < 280) {
+        const nextZoom =
+          zoomRef.current >= 2
+            ? mobileMinZoomRef.current
+            : Math.min(4, zoomRef.current * 1.6);
+        const clamped = clampMobilePosition(currentXRef.current, currentYRef.current, nextZoom);
+        zoomRef.current = nextZoom;
+        setZoom(nextZoom);
+        currentXRef.current = clamped.x;
+        currentYRef.current = clamped.y;
+        applyMapTransform(clamped.x, clamped.y, nextZoom);
+      }
+      lastTapTsRef.current = now;
+    }
+
+    // safety: auto-reset if map is lost off-screen
+    const container = mapContentRef.current?.parentElement;
+    const svg = svgHostRef.current?.querySelector("svg");
+
+    if (container && svg && safeViewRef.current) {
+      const rect = svg.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+
+      // ignore tiny jitter after gestures
+      if (didDragRef.current === false && !isPinchingRef.current) {
+        return;
+      }
+
+      const intersectionWidth = Math.max(
+        0,
+        Math.min(rect.right, containerRect.right) - Math.max(rect.left, containerRect.left),
+      );
+      const intersectionHeight = Math.max(
+        0,
+        Math.min(rect.bottom, containerRect.bottom) - Math.max(rect.top, containerRect.top),
+      );
+
+      const visibleArea = intersectionWidth * intersectionHeight;
+      const totalArea = rect.width * rect.height;
+
+      // disable aggressive auto-reset (causes jumps)
+      if (!isManualResetRef.current && totalArea > 0 && visibleArea / totalArea < 0.02) {
+        resetMapView();
+      }
     }
   };
-
-  const handleTouchEnd = () => {
-    isDraggingRef.current = false;
-  };
-  
-//обновление положения и масштаба SVG-карты на экране, когда изменяется позиция или зум.
-useEffect(() => {
-  
-  const mapContent = mapContentRef.current;
-  if (!mapContent) return;
-  // Центрировать при первоначальной установке позиции
-  const offsetX = currentXRef.current;
-  const offsetY = currentYRef.current;
-
-  mapContent.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
-}, [position, zoom, svgContent, svgPath, type]);
 
 
 // Read-only загрузка готового popup-контента по выбранному элементу
 useEffect(() => {
-  if (!selectedElement) {
+  if (!selectedElement || !isPopupOpen) {
     setPopupContent(null);
     setIsLoading(false);
     setMediaStatusBySlideId({});
@@ -1002,7 +1358,7 @@ useEffect(() => {
   return () => {
     isCancelled = true;
   };
-}, [lang, selectedElement, type]);
+}, [isPopupOpen, lang, selectedElement, type]);
 
 useEffect(() => {
   const storyId = popupContent?.storyId;
@@ -1228,6 +1584,11 @@ useEffect(() => {
   ) as SVGPathElement[];
   paths.forEach((path) => {
     path.style.cursor = "pointer";
+    path.style.pointerEvents = "visibleStroke";
+    if (type !== "river") {
+      path.style.stroke = "rgba(0, 0, 0, 0)";
+      path.style.strokeWidth = "10";
+    }
     path.setAttribute("data-map-bound", "1");
   });
 
@@ -1523,39 +1884,68 @@ useEffect(() => {
   }, [isPopupOpen, type]);
 
   return (
-    <div className="world-map-wrapper">
-      <div className="map-container">
-        <div
-          ref={mapContentRef}
-          className={`map-content transition-opacity duration-700 ease-in-out ${
-            isVisible ? "opacity-100" : "opacity-0"
-          }`}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div
-            ref={svgHostRef}
-            className="map-svg-host"
-            dangerouslySetInnerHTML={{ __html: svgContent || "" }}
-          />
-        </div>
+    <div className="world-map-wrapper" style={{ touchAction: "none" }}>
+      <MapViewport
+        svgContent={svgContent}
+        isVisible={isVisible}
+        isMapLoading={isMapLoading}
+        mapContentRef={mapContentRef}
+        svgHostRef={svgHostRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        controls={
+          !isMobile || !isPopupOpen ? (
+            <div className="zoom-buttons">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextZoom = Math.min(zoomRef.current * 1.2, 4);
+                  const clamped = clampMobilePosition(currentXRef.current, currentYRef.current, nextZoom);
+                  zoomRef.current = nextZoom;
+                  setZoom(nextZoom);
+                  currentXRef.current = clamped.x;
+                  currentYRef.current = clamped.y;
+                  applyMapTransform(clamped.x, clamped.y, nextZoom);
+                }}
+              >
+                ＋
+              </button>
 
-        {/* --- SVG Path Bind Effect --- */}
-        {/*
-          After SVG content changes, rebind path click handlers (for explicit diagnostic and robustness).
-        */}
-        {(() => { return null; })()}
-        {/* EFFECT: Bind svg paths after svgContent changes */}
-        {null}
-        {/* The effect is below */}
-        {/* (see end of file for useEffect) */}
+              <button
+                type="button"
+                onClick={() => {
+                  const nextZoom = Math.max(
+                    zoomRef.current / 1.2,
+                    isMobile ? mobileMinZoomRef.current : 1,
+                  );
+                  const clamped = clampMobilePosition(currentXRef.current, currentYRef.current, nextZoom);
+                  zoomRef.current = nextZoom;
+                  setZoom(nextZoom);
+                  currentXRef.current = clamped.x;
+                  currentYRef.current = clamped.y;
+                  applyMapTransform(clamped.x, clamped.y, nextZoom);
+                }}
+              >
+                －
+              </button>
 
-        {isPopupOpen && (
+              <button
+                type="button"
+                onClick={resetMapView}
+                title="Center map"
+              >
+                ◎
+              </button>
+            </div>
+          ) : null
+        }
+      />
+
+      {!isMobile && isPopupOpen && (
           <div
             ref={popupRef}
             onMouseDown={handlePopupMouseDown}
@@ -1910,37 +2300,34 @@ useEffect(() => {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Переместили сюда */}
-      <div className="zoom-buttons">
-        <button
-          onClick={() => {
-            setZoom((prev) => {
-              const newZoom = Math.min(prev * 1.2, 3);
-              currentXRef.current = 0;
-              currentYRef.current = 0;
-              setPosition({ x: 0, y: 0 });
-              return newZoom;
-            });
+      {isMobile ? (
+        <MapPopup
+          isOpen={isPopupOpen}
+          loading={isLoading}
+          lang={lang}
+          slides={popupSlides}
+          currentSlideIndex={safeCurrentSlideIndex}
+          loadingLabel={t.loading}
+          closeLabel={t.close}
+          swipeHintLabel={lang === "ru" ? "Свайпни, чтобы листать" : lang === "he" ? "החליקו כדי להמשיך" : "Swipe to continue"}
+          findNewImageLabel={manualRefreshSlideId === currentPopupSlide?.id ? "..." : (lang === "ru" ? "Найти новую картинку" : lang === "he" ? "למצוא תמונה חדשה" : "Find a new image")}
+          editInStudioLabel={t.openCatsEditor}
+          showOnMapLabel={t.showOnMap}
+          watchYoutubeLabel={t.watchOnYoutube}
+          openTextPageLabel={t.openTextPage}
+          canWatchYoutube={Boolean(popupContent?.video?.youtubeUrl || popupContent?.video?.youtubeId)}
+          onClose={() => closeSelection("button")}
+          onIndexChange={setCurrentSlideIndex}
+          onFindNewImage={(index) => {
+            setCurrentSlideIndex(index);
+            return handleRefreshSlideMedia(index);
           }}
-        >
-          ＋
-        </button>
-        <button
-          onClick={() => {
-            setZoom((prev) => {
-              const newZoom = Math.max(prev / 1.2, 0.5);
-              currentXRef.current = 0;
-              currentYRef.current = 0;
-              setPosition({ x: 0, y: 0 });
-              return newZoom;
-            });
-          }}
-        >
-          －
-        </button>
-      </div>
+          onEditInStudio={handleOpenCatsEditor}
+          onShowOnMap={handleOpenGoogleMaps}
+          onWatchYoutube={handleWatchYoutube}
+          onOpenTextPage={handleOpenTextPage}
+        />
+      ) : null}
     {toast && (
       <div
         className="toast fixed bottom-6 right-6 z-50 bg-black text-white px-4 py-2 rounded shadow"

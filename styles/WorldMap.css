@@ -80,10 +80,22 @@
   transform-origin: center center;
   cursor: grab;
   transition: transform 0.1s ease;
+  touch-action: none;
 }
 
 .map-svg-host {
   position: relative;
+}
+
+.map-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.75);
+  z-index: 25;
+  pointer-events: none;
 }
 
 
@@ -364,6 +376,116 @@ svg path[data-selected="true"] {
   justify-content: center;
   transform: translateX(-50%);
   z-index: 7931;
+}
+
+body.raccoons-mobile-page .top-bar,
+body.raccoons-mobile-page .footer-stack {
+  display: none !important;
+}
+
+.raccoons-mobile-screen {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  background: #fff;
+  z-index: 120;
+  overflow: hidden;
+}
+
+.raccoons-mobile-map-area {
+  position: absolute;
+  inset: 0;
+  padding-top: 56px;
+  padding-bottom: 78px;
+}
+
+.raccoons-mobile-map-area .world-map-wrapper {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.raccoons-mobile-map-area .map-container,
+.raccoons-mobile-map-area .map-content,
+.raccoons-mobile-map-area .map-svg-host,
+.raccoons-mobile-map-area .map-svg-host svg {
+  width: 100%;
+  height: 100%;
+}
+
+.raccoons-mobile-map-area .map-content {
+  transform-origin: 0 0;
+}
+
+.raccoons-mobile-floating-controls {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 130;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.raccoons-mobile-floating-controls .lang-switcher {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 2px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+.raccoons-mobile-quest-button {
+  border: none;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 14px;
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  color: #fff;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+
+.raccoons-mobile-bottom-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0));
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.75));
+  z-index: 130;
+}
+
+.raccoons-mobile-tab-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.raccoons-mobile-tab-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.raccoons-mobile-tab {
+  border: none;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  font-size: 1.15rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #5a4a5f;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.raccoons-mobile-tab.is-active {
+  background: #d6b2ff;
+  color: #fff;
 }
 
 .zoom-buttons button {

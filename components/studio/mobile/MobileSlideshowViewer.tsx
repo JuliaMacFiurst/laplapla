@@ -16,15 +16,19 @@ interface MobileSlideshowViewerProps {
   loadingLabel: string;
   swipeHintLabel: string;
   randomQuestionLabel: string;
+  lastSlideSecondaryLabel?: string;
   findNewImageLabel: string;
   editInStudioLabel: string;
   closeLabel: string;
+  topLeftActionLabel?: string;
   onClose: () => void;
   onIndexChange: (nextIndex: number) => void;
   onInteract: () => void;
   onFindNewImage: (slideIndex: number) => Promise<void> | void;
   onEditInStudio: () => void;
   onRandomQuestion: () => Promise<void> | void;
+  onLastSlideSecondary?: () => Promise<void> | void;
+  onTopLeftAction?: () => Promise<void> | void;
 }
 
 export default function MobileSlideshowViewer({
@@ -37,15 +41,19 @@ export default function MobileSlideshowViewer({
   loadingLabel,
   swipeHintLabel,
   randomQuestionLabel,
+  lastSlideSecondaryLabel,
   findNewImageLabel,
   editInStudioLabel,
   closeLabel,
+  topLeftActionLabel,
   onClose,
   onIndexChange,
   onInteract,
   onFindNewImage,
   onEditInStudio,
   onRandomQuestion,
+  onLastSlideSecondary,
+  onTopLeftAction,
 }: MobileSlideshowViewerProps) {
   useEffect(() => {
     if (!isOpen) {
@@ -74,6 +82,20 @@ export default function MobileSlideshowViewer({
   return (
     <div className="mobile-slideshow-viewer" role="dialog" aria-modal="true" aria-label={closeLabel}>
       <div className="mobile-slideshow-topbar">
+        {topLeftActionLabel ? (
+          <button
+            type="button"
+            className="mobile-slideshow-top-left-action"
+            onClick={() => {
+              onInteract();
+              void onTopLeftAction?.();
+            }}
+          >
+            {topLeftActionLabel}
+          </button>
+        ) : (
+          <span aria-hidden="true" />
+        )}
         <button
           type="button"
           className="mobile-slideshow-close"
@@ -147,6 +169,18 @@ export default function MobileSlideshowViewer({
                   }}
                 >
                   {randomQuestionLabel}
+                </button>
+              ) : null}
+              {isLastSlide && lastSlideSecondaryLabel ? (
+                <button
+                  type="button"
+                  className="mobile-slideshow-random mobile-slideshow-random-secondary"
+                  onClick={() => {
+                    onInteract();
+                    void onLastSlideSecondary?.();
+                  }}
+                >
+                  {lastSlideSecondaryLabel}
                 </button>
               ) : null}
 
