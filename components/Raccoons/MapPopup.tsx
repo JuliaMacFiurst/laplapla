@@ -4,6 +4,20 @@ import type { Lang } from "@/i18n";
 import type { MapPopupSlide } from "@/types/mapPopup";
 import type { StudioSlide } from "@/types/studio";
 
+function getEmptyStateText(lang: Lang): string {
+  switch (lang) {
+    case "ru":
+      return "Енотики ещё не изучили это место на карте, но уже изучают его.";
+    case "he":
+      return "הראקונים עדיין לא חקרו את המקום הזה במפה, אבל כבר עובדים על זה.";
+    default:
+      return "Raccoons have not explored this place on the map yet, but they are already working on it.";
+  }
+}
+
+const EMPTY_STATE_GIF_URL =
+  "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/characters/raccoons/raccoon_with_map/raccoon-with-map.gif";
+
 type MapPopupProps = {
   isOpen: boolean;
   loading: boolean;
@@ -69,7 +83,26 @@ export default function MapPopup({
   onOpenTextPage,
 }: MapPopupProps) {
   const [hasInteracted, setHasInteracted] = useState(false);
-  const viewerSlides = useMemo(() => toViewerSlides(slides), [slides]);
+
+  const effectiveSlides = useMemo<MapPopupSlide[]>(() => {
+    if (loading || slides.length > 0) {
+      return slides;
+    }
+
+    return [
+      {
+        id: "empty-state-slide",
+        index: 0,
+        text: getEmptyStateText(lang),
+        imageUrl: EMPTY_STATE_GIF_URL,
+        imageCreditLine: null,
+        imageAuthor: null,
+        imageSourceUrl: null,
+      },
+    ];
+  }, [lang, loading, slides]);
+
+  const viewerSlides = useMemo(() => toViewerSlides(effectiveSlides), [effectiveSlides]);
 
   useEffect(() => {
     if (isOpen) {

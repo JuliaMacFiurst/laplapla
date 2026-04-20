@@ -453,11 +453,47 @@ export default function InteractiveMap({
   const isPinchingRef = useRef(false);
 
   const popupSlides = popupContent?.slides ?? [];
+  const emptyStateSlideText =
+    (t as { noSlidesYet?: string }).noSlidesYet ||
+    (lang === "ru"
+      ? "Енотики ещё не изучили это место на карте, но уже изучают его."
+      : lang === "he"
+        ? "הראקונים עדיין לא חקרו את המקום הזה במפה, אבל כבר עובדים על זה."
+        : "Raccoons have not explored this place on the map yet, but they are already working on it.");
+
+  const getMeaningfulSlideText = (value: string | null | undefined) =>
+    (value ?? "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;|&#160;/gi, " ")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const hasMeaningfulPopupSlides = popupSlides.some((slide) => {
+    const hasText = getMeaningfulSlideText(slide.text).length > 0;
+    const hasMedia = typeof slide.imageUrl === "string" && slide.imageUrl.trim().length > 0;
+    return hasText || hasMedia;
+  });
+
+  const effectivePopupSlides =
+    !isLoading && popupContent && !hasMeaningfulPopupSlides
+      ? [
+          {
+            id: "empty-state-slide",
+            index: 0,
+            text: emptyStateSlideText,
+            imageUrl: null,
+            imageCreditLine: null,
+            imageAuthor: null,
+            imageSourceUrl: null,
+          },
+        ]
+      : popupSlides;
   const safeCurrentSlideIndex =
-    popupSlides.length === 0
+    effectivePopupSlides.length === 0
       ? 0
-      : Math.min(currentSlideIndex, Math.max(0, popupSlides.length - 1));
-  const currentPopupSlide = popupSlides[safeCurrentSlideIndex] ?? null;
+      : Math.min(currentSlideIndex, Math.max(0, effectivePopupSlides.length - 1));
+  const currentPopupSlide = effectivePopupSlides[safeCurrentSlideIndex] ?? null;
 
   const getHoverFill = () => {
     if (type === "sea") return "#99dbf5";
@@ -882,14 +918,14 @@ export default function InteractiveMap({
   }, [selectedElement]);
 
   const handleOpenCatsEditor = () => {
-    if (!popupContent || popupSlides.length === 0) {
+    if (!popupContent || effectivePopupSlides.length === 0) {
       setToast(t.noSlidesForEditor);
       setTimeout(() => setToast(null), 3000);
       return;
     }
 
     const importedSlides = buildStudioSlidesFromCapybaraSlides(
-      popupSlides.map((slide) => ({
+      effectivePopupSlides.map((slide) => ({
         text: slide.text || "",
         imageUrl: isVideoMediaUrl(slide.imageUrl)
           ? undefined
@@ -978,10 +1014,10 @@ export default function InteractiveMap({
   const handleRefreshSlideMedia = async (slideIndex?: number) => {
     const slide =
       typeof slideIndex === "number"
-        ? popupSlides[
+        ? effectivePopupSlides[
             Math.min(
               Math.max(slideIndex, 0),
-              Math.max(0, popupSlides.length - 1),
+              Math.max(0, effectivePopupSlides.length - 1),
             )
           ]
         : currentPopupSlide;
@@ -2019,8 +2055,31 @@ export default function InteractiveMap({
 
   // --- Добавляем refs и состояние для перетаскивания попапа ---
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const desktopPopupAnchorRef = useRef<HTMLDivElement | null>(null);
   const isPopupDraggingRef = useRef(false);
   const [popupPos, setPopupPos] = useState({ x: 60, y: 60 });
+
+  const clampDesktopPopupPosition = (x: number, y: number) => {
+    const anchor = desktopPopupAnchorRef.current;
+    const popup = popupRef.current;
+
+    if (!anchor || !popup) {
+      return {
+        x: Math.max(16, x),
+        y: Math.max(16, y),
+      };
+    }
+
+    const anchorRect = anchor.getBoundingClientRect();
+    const popupRect = popup.getBoundingClientRect();
+    const maxX = Math.max(16, anchorRect.width - popupRect.width - 16);
+    const maxY = Math.max(16, anchorRect.height - popupRect.height - 16);
+
+    return {
+      x: Math.min(Math.max(16, x), maxX),
+      y: Math.min(Math.max(16, y), maxY),
+    };
+  };
 
   // Обработчик для перетаскивания попапа
   const handlePopupMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -2033,7 +2092,7 @@ export default function InteractiveMap({
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
-      setPopupPos({ x: startLeft + dx, y: startTop + dy });
+      setPopupPos(clampDesktopPopupPosition(startLeft + dx, startTop + dy));
     };
 
     const handleMouseUp = () => {
@@ -2045,6 +2104,39 @@ export default function InteractiveMap({
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   };
+
+  useLayoutEffect(() => {
+    if (isMobile || !isPopupOpen) {
+      return;
+    }
+
+    const syncPopupIntoView = () => {
+      setPopupPos((current) => {
+        const clamped = clampDesktopPopupPosition(current.x, current.y);
+        if (clamped.x === current.x && clamped.y === current.y) {
+          return current;
+        }
+
+        return clamped;
+      });
+    };
+
+    syncPopupIntoView();
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.addEventListener("resize", syncPopupIntoView);
+    return () => window.removeEventListener("resize", syncPopupIntoView);
+  }, [
+    isMobile,
+    isPopupOpen,
+    viewMode,
+    safeCurrentSlideIndex,
+    hasMeaningfulPopupSlides,
+    currentPopupSlide?.id,
+  ]);
 
   // --- Обработчик клика по фону для закрытия попапа ---
   useEffect(() => {
@@ -2094,7 +2186,11 @@ export default function InteractiveMap({
   }, [isPopupOpen, type]);
 
   return (
-    <div className="world-map-wrapper" style={{ touchAction: "none" }}>
+    <div
+      ref={desktopPopupAnchorRef}
+      className="world-map-wrapper"
+      style={{ touchAction: "none", position: "relative" }}
+    >
       <MapViewport
         svgContent={svgContent}
         isVisible={isVisible}
@@ -2356,7 +2452,7 @@ export default function InteractiveMap({
 
                         return (
                           <>
-                            {popupSlides.length > 0 ? (
+                            {hasMeaningfulPopupSlides ? (
                               <>
                                 {displayMediaUrl ? (
                                   <div
@@ -2547,21 +2643,21 @@ export default function InteractiveMap({
                                   </button>
                                   <div className="map-popup-toolbar-label">
                                     {safeCurrentSlideIndex + 1} /{" "}
-                                    {popupSlides.length}
+                                    {effectivePopupSlides.length}
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() =>
                                       setCurrentSlideIndex((prev) =>
                                         Math.min(
-                                          popupSlides.length - 1,
+                                          effectivePopupSlides.length - 1,
                                           prev + 1,
                                         ),
                                       )
                                     }
                                     disabled={
                                       safeCurrentSlideIndex ===
-                                      popupSlides.length - 1
+                                      effectivePopupSlides.length - 1
                                     }
                                     className="studio-button btn-yellow map-popup-nav-button"
                                   >
@@ -2630,7 +2726,7 @@ export default function InteractiveMap({
           isOpen={isPopupOpen}
           loading={isLoading}
           lang={lang}
-          slides={popupSlides}
+          slides={effectivePopupSlides}
           currentSlideIndex={safeCurrentSlideIndex}
           loadingLabel={t.loading}
           closeLabel={t.close}
