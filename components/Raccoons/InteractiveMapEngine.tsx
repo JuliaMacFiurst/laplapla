@@ -453,6 +453,12 @@ export default function InteractiveMap({
   const isPinchingRef = useRef(false);
 
   const popupSlides = popupContent?.slides ?? [];
+  const selectedFlagUrl =
+    type === "flag" && selectedElement ? getFlagUrl(selectedElement) : null;
+  const selectedFlagLabel =
+    type === "flag" && selectedElement
+      ? `${t.flagAlt} ${selectedElement.toUpperCase()}`
+      : null;
   const emptyStateSlideText =
     (t as { noSlidesYet?: string }).noSlidesYet ||
     (lang === "ru"
@@ -856,7 +862,7 @@ export default function InteractiveMap({
     });
   };
 
-  const getFlagUrl = (id: string): string | null => {
+  function getFlagUrl(id: string): string | null {
     if (!id) return null;
 
     const lower = id.toLowerCase();
@@ -873,7 +879,7 @@ export default function InteractiveMap({
     return code
       ? buildSupabasePublicUrl("flags-svg", `flags-svg/${code}.svg`)
       : null;
-  };
+  }
 
   useEffect(() => {
     setIsMapLoading(true);
@@ -2753,6 +2759,8 @@ export default function InteractiveMap({
           canWatchYoutube={Boolean(
             popupContent?.video?.youtubeUrl || popupContent?.video?.youtubeId,
           )}
+          flagImageUrl={selectedFlagUrl}
+          flagLabel={selectedFlagLabel}
           onClose={() => closeSelection("button")}
           onIndexChange={setCurrentSlideIndex}
           onFindNewImage={(index) => {

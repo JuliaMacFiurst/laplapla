@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { StudioSlideMedia } from "@/components/studio/StudioPreviewPlayer";
 import type { Lang } from "@/i18n";
 import type { StudioSlide } from "@/types/studio";
@@ -29,6 +29,7 @@ interface MobileSlideshowViewerProps {
   onRandomQuestion: () => Promise<void> | void;
   onLastSlideSecondary?: () => Promise<void> | void;
   onTopLeftAction?: () => Promise<void> | void;
+  renderSlideHeader?: (slide: StudioSlide, slideIndex: number) => ReactNode;
 }
 
 export default function MobileSlideshowViewer({
@@ -54,6 +55,7 @@ export default function MobileSlideshowViewer({
   onRandomQuestion,
   onLastSlideSecondary,
   onTopLeftAction,
+  renderSlideHeader,
 }: MobileSlideshowViewerProps) {
   useEffect(() => {
     if (!isOpen) {
@@ -128,8 +130,9 @@ export default function MobileSlideshowViewer({
                 onIndexChange={onIndexChange}
                 onInteract={onInteract}
               >
-                {slides.map((slide) => (
+                {slides.map((slide, slideIndex) => (
                   <div key={slide.id} className="mobile-slideshow-page">
+                    {renderSlideHeader ? renderSlideHeader(slide, slideIndex) : null}
                     <div className="mobile-slideshow-media-shell">
                       <div
                         className="mobile-slideshow-media-frame"

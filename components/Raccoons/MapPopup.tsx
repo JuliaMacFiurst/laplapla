@@ -33,6 +33,8 @@ type MapPopupProps = {
   watchYoutubeLabel: string;
   openTextPageLabel: string;
   canWatchYoutube: boolean;
+  flagImageUrl?: string | null;
+  flagLabel?: string | null;
   onClose: () => void;
   onIndexChange: (nextIndex: number) => void;
   onFindNewImage: (slideIndex: number) => Promise<void> | void;
@@ -74,6 +76,8 @@ export default function MapPopup({
   watchYoutubeLabel,
   openTextPageLabel,
   canWatchYoutube,
+  flagImageUrl,
+  flagLabel,
   onClose,
   onIndexChange,
   onFindNewImage,
@@ -134,6 +138,23 @@ export default function MapPopup({
       onRandomQuestion={onShowOnMap}
       onLastSlideSecondary={onWatchYoutube}
       onTopLeftAction={onOpenTextPage}
+      renderSlideHeader={
+        flagImageUrl
+          ? (_slide, slideIndex) =>
+              slideIndex === 0 ? (
+                <div className="mobile-slideshow-flag-header">
+                  <img
+                    src={flagImageUrl}
+                    alt={flagLabel || ""}
+                    className="mobile-slideshow-flag-image"
+                  />
+                  {flagLabel ? (
+                    <span className="mobile-slideshow-flag-label">{flagLabel}</span>
+                  ) : null}
+                </div>
+              ) : null
+          : undefined
+      }
     />
   );
 }

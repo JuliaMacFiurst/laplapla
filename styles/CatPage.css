@@ -630,6 +630,41 @@ html[dir="rtl"] .cat-slide {
   gap: 10px;
 }
 
+.mobile-slideshow-flag-header {
+  flex: 0 0 auto;
+  min-height: 42px;
+  max-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 0;
+  overflow: hidden;
+}
+
+.mobile-slideshow-flag-image {
+  display: block;
+  width: auto;
+  height: clamp(30px, 7vh, 44px);
+  max-width: min(42vw, 150px);
+  object-fit: contain;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.mobile-slideshow-flag-label {
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(61, 42, 79, 0.78);
+  font-family: var(--font-varela-round), system-ui, sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
 .mobile-slideshow-media-shell {
   flex: 1;
   min-height: 0;

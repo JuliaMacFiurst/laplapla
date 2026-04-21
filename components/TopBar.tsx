@@ -5,6 +5,7 @@ import { Lang } from "../i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import HomeButton from "./HomeButton";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type TopBarProps = {
   lang: Lang;
@@ -14,11 +15,16 @@ export default function TopBar({ lang }: TopBarProps) {
   const router = useRouter();
   const isHome = router.pathname === "/";
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
+  const isMobile = useIsMobile();
 
   const [menuHover, setMenuHover] = useState(false);
   const closeTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const openMenu = () => {
+    if (isMobile) {
+      return;
+    }
+
     if (closeTimeout.current) {
       clearTimeout(closeTimeout.current);
       closeTimeout.current = null;
@@ -27,9 +33,26 @@ export default function TopBar({ lang }: TopBarProps) {
   };
 
   const scheduleCloseMenu = () => {
+    if (isMobile) {
+      setMenuHover(false);
+      return;
+    }
+
     closeTimeout.current = setTimeout(() => {
       setMenuHover(false);
     }, 200);
+  };
+
+  const navigateToAbout = () => {
+    setMenuHover(false);
+    router.push(
+      {
+        pathname: "/about",
+        query: buildLocalizedQuery(lang),
+      },
+      undefined,
+      { locale: lang },
+    );
   };
 
   return (
@@ -43,21 +66,12 @@ export default function TopBar({ lang }: TopBarProps) {
         >
           <div
             className="menu-button"
-            onClick={() =>
-              router.push(
-                {
-                  pathname: "/about",
-                  query: buildLocalizedQuery(lang),
-                },
-                undefined,
-                { locale: lang },
-              )
-            }
+            onClick={navigateToAbout}
           >
             ☰
           </div>
 
-          {menuHover && (
+          {!isMobile && menuHover && (
             <div
               className="menu-preview"
               onMouseEnter={openMenu}
