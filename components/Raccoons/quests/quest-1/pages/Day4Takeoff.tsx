@@ -20,12 +20,10 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
   const takeoffHints = getTakeoffHints(lang);
 
   function handleSwitch(id: string) {
-    // Показываем советы только для switcher-on
     if (id.startsWith("switcher-on")) {
-      const text = (takeoffHints as any)[id];
+      const text = takeoffHints[id];
       if (text) setHint(text);
     } else {
-      // switcher-off → закрываем подсказку
       setHint(null);
     }
 
@@ -47,7 +45,6 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
       "switcher-on-14": ["aurora-1"]
     };
 
-    // Только switcher-on меняют видео
     if (!id.startsWith("switcher-on")) return;
 
     const list = videoMap[id];

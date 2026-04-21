@@ -17,6 +17,10 @@ export default function MobileQuestSelectScreen({
 }: MobileQuestSelectScreenProps) {
   const router = useRouter();
   const t = dictionaries[lang].raccoons.quests;
+  const getMobileQuestImage = (quest: Quest) =>
+    quest.id === "quest-1"
+      ? "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/quest-1-mobile.webp"
+      : quest.image;
 
   const openQuest = (quest: Quest) => {
     if (quest.status !== "active") {
@@ -60,7 +64,7 @@ export default function MobileQuestSelectScreen({
                 disabled={!isActive}
                 aria-label={isActive ? t.playQuest : quest.title}
               >
-                <img src={quest.image} alt={quest.title || ""} />
+                <img src={getMobileQuestImage(quest)} alt={quest.title || ""} />
                 <span className="raccoons-mobile-quest-number">
                   {String(index + 1).padStart(2, "0")}
                 </span>

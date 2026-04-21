@@ -69,7 +69,7 @@ const PlaneWindshield = forwardRef<PlaneWindshieldRef, PlaneWindshieldProps>(
             playsInline
             style={{
               ...styles.video,
-              objectPosition: `${Math.max(25, Math.min(75, 50 + angle * 2))}% ${50 + pushPull * 0.5}%`
+              objectPosition: `${Math.max(8, Math.min(92, 50 + angle * 1.35))}% ${Math.max(18, Math.min(82, 50 + pushPull * 1.25))}%`
             }}
           />
         )}
