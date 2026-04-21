@@ -12,6 +12,7 @@ import { dictionaries } from "@/i18n";
 import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
+import MobileQuestSelectScreen from "@/components/Raccoons/MobileQuestSelectScreen";
 
 type EntitySearchResult = {
   route: "country" | "animal" | "river" | "sea" | "biome";
@@ -205,6 +206,32 @@ export default function RaccoonsPage() {
   const previewSelectedId = hoveredResultTargetId || firstPreviewResult?.targetId || deepLinkedPreviewId || null;
   const visibleResults = results.slice(0, visibleResultsCount);
   const hasMoreResults = results.length > visibleResults.length;
+  const mobileScreen = Array.isArray(router.query.screen) ? router.query.screen[0] : router.query.screen;
+
+  const openMobileQuestSelect = () => {
+    void router.push(
+      {
+        pathname: "/raccoons",
+        query: { ...router.query, screen: "quests" },
+      },
+      undefined,
+      { shallow: true, scroll: false, locale: lang },
+    );
+  };
+
+  const closeMobileQuestSelect = () => {
+    const nextQuery = { ...router.query };
+    delete nextQuery.screen;
+
+    void router.push(
+      {
+        pathname: "/raccoons",
+        query: nextQuery,
+      },
+      undefined,
+      { shallow: true, scroll: false, locale: lang },
+    );
+  };
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -226,13 +253,22 @@ export default function RaccoonsPage() {
     return (
       <>
         <SEO title={seo.title} description={seo.description} path={seoPath} />
-        <MobileMapScreen
-          lang={lang}
-          activeTab={activeTab}
-          onTabChange={handleMapTabChange}
-          previewSelectedId={previewSelectedId}
-          onMapUserSelect={handleMapUserSelect}
-        />
+        {mobileScreen === "quests" ? (
+          <MobileQuestSelectScreen
+            lang={lang}
+            quests={localizedQuests}
+            onBackToMap={closeMobileQuestSelect}
+          />
+        ) : (
+          <MobileMapScreen
+            lang={lang}
+            activeTab={activeTab}
+            onTabChange={handleMapTabChange}
+            previewSelectedId={previewSelectedId}
+            onMapUserSelect={handleMapUserSelect}
+            onOpenQuests={openMobileQuestSelect}
+          />
+        )}
       </>
     );
   }

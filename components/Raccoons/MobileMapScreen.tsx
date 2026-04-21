@@ -1,7 +1,5 @@
-import { useRouter } from "next/router";
 import MapWrapper from "@/components/Raccoons/MapWrapper";
 import { dictionaries, type Lang } from "@/i18n";
-import { buildLocalizedHref } from "@/lib/i18n/routing";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type MapTab = "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food";
@@ -12,6 +10,7 @@ type MobileMapScreenProps = {
   onTabChange: (nextTab: MapTab) => void;
   previewSelectedId: string | null;
   onMapUserSelect: (selectedId: string) => void;
+  onOpenQuests: () => void;
 };
 
 const TAB_ORDER: MapTab[] = [
@@ -32,8 +31,8 @@ export default function MobileMapScreen({
   onTabChange,
   previewSelectedId,
   onMapUserSelect,
+  onOpenQuests,
 }: MobileMapScreenProps) {
-  const router = useRouter();
   const t = dictionaries[lang].raccoons;
 
   return (
@@ -43,9 +42,7 @@ export default function MobileMapScreen({
         <button
           type="button"
           className="raccoons-mobile-quest-button"
-          onClick={() => {
-            void router.push(buildLocalizedHref("/quests/quest-1", lang), undefined, { locale: lang });
-          }}
+          onClick={onOpenQuests}
         >
           {t.quests.playQuest}
         </button>

@@ -1,5 +1,5 @@
 import QuestEngine from "@/components/Raccoons/quests/quest-1/QuestEngine";
-import MobileDesktopNotice from "@/components/MobileDesktopNotice";
+import Quest1MobileEngine from "@/components/Raccoons/quests/quest-1/Quest1MobileEngine";
 import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { dictionaries, type Lang } from "@/i18n";
@@ -13,14 +13,10 @@ export default function Quest1Page() {
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/quests/quest-1";
   const isMobile = useIsMobile();
 
-  if (isMobile) {
-    return <MobileDesktopNotice lang={lang || "ru"} />;
-  }
-
   return (
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
-      <QuestEngine />
+      {isMobile ? <Quest1MobileEngine /> : <QuestEngine />}
     </>
   );
 }
