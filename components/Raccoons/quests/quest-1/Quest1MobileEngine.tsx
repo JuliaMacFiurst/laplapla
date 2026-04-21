@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { useQuest1I18n } from "./i18n";
@@ -27,6 +27,8 @@ import { starInfoList } from "@/utils/starInfo";
 type MobilePageProps = {
   go: (id: PageId) => void;
 };
+
+type MobileStationDoorId = "heat" | "lab" | "garage";
 
 const MOBILE_PAGE_ORDER: PageId[] = [
   "day1",
@@ -375,6 +377,16 @@ const TAKEOFF_VIDEO_MAP: Record<string, string[]> = {
   "switcher-on-13": ["turb-1"],
   "switcher-on-14": ["aurora-1"],
 };
+
+const MOBILE_STATION_DOORS: Array<{
+  id: MobileStationDoorId;
+  page: PageId;
+  accent: string;
+}> = [
+  { id: "heat", page: "day5_heat", accent: "#f97316" },
+  { id: "lab", page: "day5_lab", accent: "#2563eb" },
+  { id: "garage", page: "day5_garage", accent: "#16a34a" },
+];
 
 function Day1Mobile({ go }: MobilePageProps) {
   const { t, lang } = useQuest1I18n();
@@ -1126,6 +1138,118 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
   );
 }
 
+function Day5SpitsbergenMobile({ go }: MobilePageProps) {
+  const { lang, t } = useQuest1I18n();
+  const [openingDoor, setOpeningDoor] = useState<MobileStationDoorId | null>(null);
+  const paragraphs = useMemo(() => flattenBlocks(t.day5Spitsbergen.blocks), [t.day5Spitsbergen.blocks]);
+  const introParagraphs = paragraphs.slice(0, 3);
+  const detailParagraphs = paragraphs.slice(3);
+
+  const getDoorLabel = (id: MobileStationDoorId) => {
+    if (id === "heat") return t.day5Spitsbergen.labels.heat;
+    if (id === "lab") return t.day5Spitsbergen.labels.lab;
+    return t.day5Spitsbergen.labels.garage;
+  };
+
+  const getDoorDescription = (id: MobileStationDoorId) => {
+    if (id === "heat") {
+      return lang === "ru"
+        ? "Одежда, тепло и защита от полярного холода."
+        : lang === "he"
+          ? "לבוש, חום והגנה מהקור הקוטבי."
+          : "Clothing, warmth, and protection from polar cold.";
+    }
+
+    if (id === "lab") {
+      return lang === "ru"
+        ? "Приборы, инструменты и проверка экспедиционного набора."
+        : lang === "he"
+          ? "מכשירים, כלים ובדיקת ציוד המשלחת."
+          : "Instruments, tools, and expedition kit checks.";
+    }
+
+    return lang === "ru"
+      ? "Техника, сани и подготовка к выезду на лёд."
+      : lang === "he"
+        ? "כלי רכב, מזחלות והכנה ליציאה אל הקרח."
+        : "Vehicles, sleds, and preparation for the ice route.";
+  };
+
+  const openDoor = (door: MobileStationDoorId, page: PageId) => {
+    setOpeningDoor(door);
+    window.setTimeout(() => go(page), 320);
+  };
+
+  return (
+    <>
+      <QuestMobileTextReveal
+        paragraphs={introParagraphs}
+        revealCount={introParagraphs.length}
+        onRevealNext={() => {}}
+      />
+
+      <section className="quest-mobile-station" aria-label={t.day5Spitsbergen.title}>
+        <div className="quest-mobile-station-visual">
+          <img
+            src="/supabase-storage/quests/1_quest/images/Spitzbergen-station.webp"
+            alt={t.day5Spitsbergen.stationImageAlt}
+          />
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            src="/supabase-storage/quests/1_quest/images/tourists-group.webm"
+          />
+          {MOBILE_STATION_DOORS.map((door) => (
+            <button
+              key={`visual-${door.id}`}
+              type="button"
+              className={`quest-mobile-station-visual-door quest-mobile-station-visual-door--${door.id} ${
+                openingDoor === door.id ? "is-opening" : ""
+              }`}
+              onClick={() => openDoor(door.id, door.page)}
+              aria-label={getDoorLabel(door.id)}
+            >
+              <span className="quest-mobile-station-visual-door-inner" />
+            </button>
+          ))}
+        </div>
+
+        <div className="quest-mobile-station-doors">
+          {MOBILE_STATION_DOORS.map((door, index) => (
+            <button
+              key={door.id}
+              type="button"
+              className={`quest-mobile-station-door ${openingDoor === door.id ? "is-opening" : ""}`}
+              style={{ "--station-door-accent": door.accent } as CSSProperties}
+              onClick={() => openDoor(door.id, door.page)}
+            >
+              <span className="quest-mobile-station-door-number">{index + 1}</span>
+              <span className="quest-mobile-station-door-copy">
+                <strong>{getDoorLabel(door.id)}</strong>
+                <span>{getDoorDescription(door.id)}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {detailParagraphs.length ? (
+        <QuestMobileTextReveal
+          paragraphs={detailParagraphs}
+          revealCount={detailParagraphs.length}
+          onRevealNext={() => {}}
+        />
+      ) : null}
+
+      <button type="button" className="quest-mobile-primary" onClick={() => go("day6_expedition")}>
+        {t.day5Spitsbergen.nextButton}
+      </button>
+    </>
+  );
+}
+
 function PlaceholderMobile({
   title,
   paragraphs,
@@ -1188,6 +1312,7 @@ export default function Quest1MobileEngine() {
     if (pageId === "day3sail") return <Day3SailMobile go={setPageId} />;
     if (pageId === "day4_takeoff") return <Day4TakeoffMobile go={setPageId} />;
     if (pageId === "day4_sail") return <Day4StarsNavMobile go={setPageId} />;
+    if (pageId === "day5_spitsbergen") return <Day5SpitsbergenMobile go={setPageId} />;
 
     if (pageId === "day6_expedition") {
       return (

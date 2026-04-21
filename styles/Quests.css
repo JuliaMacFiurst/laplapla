@@ -938,6 +938,184 @@
   margin-top: 18px;
 }
 
+.quest-mobile-station {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.quest-mobile-station-visual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #d9ecf4;
+  box-shadow: 0 16px 34px rgba(22, 51, 74, 0.18);
+  isolation: isolate;
+}
+
+.quest-mobile-station-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    linear-gradient(180deg, rgba(6, 18, 30, 0.08), rgba(6, 18, 30, 0.38)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.quest-mobile-station-visual img,
+.quest-mobile-station-visual video {
+  position: absolute;
+  display: block;
+}
+
+.quest-mobile-station-visual img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.quest-mobile-station-visual video {
+  left: 40%;
+  top: 76%;
+  z-index: 7;
+  width: 42%;
+  max-width: 180px;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 10px 18px rgba(9, 30, 46, 0.22));
+  pointer-events: none;
+}
+
+.quest-mobile-station-visual-door {
+  position: absolute;
+  z-index: 4;
+  border: none;
+  padding: 0;
+  background: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 130% 110%;
+  cursor: pointer;
+  overflow: hidden;
+  transform-origin: left center;
+  filter: drop-shadow(0 7px 8px rgba(4, 18, 30, 0.26));
+}
+
+.quest-mobile-station-visual-door::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-image: inherit;
+  background-repeat: inherit;
+  background-position: inherit;
+  background-size: inherit;
+  transform-origin: left center;
+  transition: transform 0.28s ease, filter 0.28s ease;
+}
+
+.quest-mobile-station-visual-door-inner {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(7, 18, 24, 0.92);
+}
+
+.quest-mobile-station-visual-door.is-opening::after {
+  transform: perspective(260px) rotateY(-46deg);
+  filter: brightness(1.08);
+}
+
+.quest-mobile-station-visual-door--heat {
+  width: 6%;
+  height: 19%;
+  top: 58.5%;
+  left: 36%;
+  background-image: url("/supabase-storage/quests/1_quest/images/door--heat.svg");
+}
+
+.quest-mobile-station-visual-door--garage {
+  clip-path: polygon(0% 6%, 90% 0%, 90% 100%, 0% 90%);
+  background-image: url("/supabase-storage/quests/1_quest/images/door--garage.svg");
+  width: 6%;
+  height: 31%;
+  top: 54%;
+  left: 63.8%;
+}
+
+.quest-mobile-station-visual-door--lab {
+  width: 10%;
+  height: 54%;
+  left: 85%;
+  top: 42%;
+  clip-path: polygon(0% 8%, 90% 0%, 90% 100%, 0% 91%);
+  background-image: url("/supabase-storage/quests/1_quest/images/door--lab.svg");
+}
+
+.quest-mobile-station-doors {
+  display: grid;
+  gap: 9px;
+}
+
+.quest-mobile-station-door {
+  --station-door-accent: #2563eb;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid rgba(49, 83, 107, 0.14);
+  border-left: 5px solid var(--station-door-accent);
+  border-radius: 8px;
+  padding: 10px 12px 10px 9px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #21384f;
+  text-align: start;
+  box-shadow: 0 10px 22px rgba(22, 51, 74, 0.1);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.quest-mobile-station-door.is-opening {
+  transform: translateX(6px) scale(0.99);
+  background: rgba(243, 250, 255, 0.98);
+  box-shadow: 0 8px 18px rgba(22, 51, 74, 0.08);
+}
+
+.quest-mobile-station-door-number {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--station-door-accent) 17%, white);
+  color: var(--station-door-accent);
+  font: 900 0.92rem/1 var(--font-varela-round), system-ui, sans-serif;
+}
+
+.quest-mobile-station-door-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.quest-mobile-station-door-copy strong {
+  color: #21384f;
+  font-size: 0.98rem;
+  line-height: 1.16;
+}
+
+.quest-mobile-station-door-copy span {
+  color: rgba(49, 83, 107, 0.8);
+  font-size: 0.82rem;
+  line-height: 1.28;
+}
+
 .quest-mobile-dev-nav {
   position: fixed;
   left: 10px;
