@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { CAT_PRESETS } from "../../content/cats";
 import { fetchVideoFromPexels } from "@/lib/pexelsVideo";
+import { loadCombinedCatPresets } from "@/lib/server/catPresets";
 import { withApiHandler } from "@/utils/apiHandler";
 import { devLog } from "@/utils/devLog";
 
@@ -165,28 +165,36 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   devLog("🐱 /api/cat-slides called");
   devLog("📥 body:", req.body);
 
+  const { presetId } = req.body;
   let { prompt, lang } = req.body;
+  const requestLang =
+    lang === "ru" || lang === "en" || lang === "he" ? lang : "ru";
+  lang = requestLang;
+  const presetsForLang = await loadCombinedCatPresets(requestLang);
 
   if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
     devLog("🎲 No prompt provided, selecting random text preset");
-    const presetsForLang = CAT_PRESETS.filter(
-      (preset) => preset.lang === lang && preset.kind === "text"
-    );
+    const textPresetsForLang = presetsForLang.filter((preset) => preset.kind === "text");
 
-    if (!presetsForLang.length) {
+    if (!textPresetsForLang.length) {
       return res.status(200).json({ slides: [], prompt: "" });
     }
 
     const randomPreset =
-      presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
+      textPresetsForLang[Math.floor(Math.random() * textPresetsForLang.length)];
 
     prompt = randomPreset.prompt;
     devLog("🎯 Random preset chosen:", randomPreset.prompt, randomPreset.lang);
   }
 
-  const preset = CAT_PRESETS.find(
-    (item) => item.prompt === prompt && item.lang === lang
-  );
+  const normalizedPresetId =
+    typeof presetId === "string" && presetId.trim() ? presetId.trim() : null;
+
+  const preset = normalizedPresetId
+    ? presetsForLang.find((item) => item.id === normalizedPresetId)
+    : presetsForLang.find(
+        (item) => item.prompt === prompt && item.lang === lang
+      );
 
   devLog("🔍 preset found:", Boolean(preset));
   devLog("🔍 preset kind:", preset?.kind);

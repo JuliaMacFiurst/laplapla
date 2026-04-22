@@ -5,7 +5,7 @@ import { useMobileSlideshow } from "@/components/studio/mobile/useMobileSlidesho
 import CatsLayout from "@/components/Cats/CatsLayout";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { dictionaries, Lang } from "../../i18n";
-import { CAT_PRESETS } from "../../content/cats";
+import { CAT_PRESETS, type AnyCatPreset } from "../../content/cats";
 import { useRouter } from "next/router";
 import {
   buildAnimalSlideMediaQueries,
@@ -51,9 +51,11 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const isMobile = useIsMobile();
   const mobileSlideshow = useMobileSlideshow();
 
+  const [availablePresets, setAvailablePresets] = useState<AnyCatPreset[]>(CAT_PRESETS);
+
   const presetsForLang = useMemo(
-    () => CAT_PRESETS.filter((preset) => preset.lang === lang),
-    [lang]
+    () => availablePresets.filter((preset) => preset.lang === lang),
+    [availablePresets, lang]
   );
 
   const [activePresetKey, setActivePresetKey] = useState<string | null>(null);
@@ -63,12 +65,54 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
-  const [examplePresets, setExamplePresets] = useState<typeof CAT_PRESETS>([]);
+  const [examplePresets, setExamplePresets] = useState<AnyCatPreset[]>([]);
 
   const activePreset = useMemo(() => {
     if (!activePresetKey) return null;
-    return presetsForLang.find((preset) => preset.id.startsWith(activePresetKey)) || null;
+    return presetsForLang.find((preset) => preset.id === activePresetKey) || null;
   }, [activePresetKey, presetsForLang]);
+
+  useEffect(() => {
+    let active = true;
+    setAvailablePresets(CAT_PRESETS);
+
+    const loadPresets = async () => {
+      try {
+        const response = await fetch(`/api/cat-presets?lang=${encodeURIComponent(lang)}`);
+        if (!response.ok) {
+          throw new Error(`Failed to load cat presets: ${response.status}`);
+        }
+
+        const data = await response.json() as { presets?: unknown };
+        const nextPresets = Array.isArray(data.presets)
+          ? data.presets.filter((preset): preset is AnyCatPreset =>
+              Boolean(
+                preset &&
+                typeof preset === "object" &&
+                "id" in preset &&
+                "kind" in preset &&
+                "prompt" in preset,
+              )
+            )
+          : [];
+
+        if (active && nextPresets.length > 0) {
+          setAvailablePresets(nextPresets);
+        }
+      } catch (error) {
+        console.warn("[cats] failed to load DB cat presets; using hardcoded presets", error);
+        if (active) {
+          setAvailablePresets(CAT_PRESETS);
+        }
+      }
+    };
+
+    void loadPresets();
+
+    return () => {
+      active = false;
+    };
+  }, [lang]);
 
   useEffect(() => {
     if (!activePreset || activePreset.kind !== "full") return;
@@ -95,7 +139,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     : t.thinkingLong;
 
   const getSlidesForPreset = async (
-    preset: typeof CAT_PRESETS[number]
+    preset: AnyCatPreset
   ): Promise<{ prompt: string; slides: CatRuntimeSlide[]; seed: string }> => {
     if (preset.kind === "full") {
       return {
@@ -112,6 +156,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        presetId: preset.id,
         prompt: preset.prompt,
         lang,
       }),
@@ -129,18 +174,17 @@ export default function CatPage({ lang }: { lang: Lang }) {
     };
   };
 
-  const applyPreset = (preset: typeof CAT_PRESETS[number]) => {
+  const applyPreset = (preset: AnyCatPreset) => {
     if (preset.kind === "text") {
       void handleTextPreset(preset);
       return;
     }
 
-    const key = preset.id.split("-")[0];
-    setActivePresetKey(key);
+    setActivePresetKey(preset.id);
   };
 
   const handleTextPreset = async (
-    preset: Extract<typeof CAT_PRESETS[number], { kind: "text" }>
+    preset: Extract<AnyCatPreset, { kind: "text" }>
   ) => {
     setError(null);
     setSlides([]);
@@ -159,7 +203,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     }
   };
 
-  const openMobilePreset = async (preset: typeof CAT_PRESETS[number]) => {
+  const openMobilePreset = async (preset: AnyCatPreset) => {
     setError(null);
     setPendingQuestion(preset.prompt);
     mobileSlideshow.open({ loading: true });

@@ -29,6 +29,8 @@ export type CatPreset = {
   lang: "ru" | "en" | "he";
   prompt: string;     // question shown to the child
   slides: CatPresetSlide[];
+  translated?: boolean;
+  category?: string | null;
 };
 
 export type CatTextPreset = {
@@ -36,6 +38,8 @@ export type CatTextPreset = {
   lang: "ru" | "en" | "he";
   prompt: string;     // вопрос
   texts: string[];    // ТОЛЬКО тексты слайдов
+  translated?: boolean;
+  category?: string | null;
 };
 
 export type AnyCatPreset =
