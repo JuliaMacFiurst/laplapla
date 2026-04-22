@@ -20,6 +20,10 @@ import {
   type StarDialogueStep,
 } from "./i18n/dialogs";
 import MobileSvgDrawMap, { type MobileSvgMapHit, type MobileSvgMapPointerEvent } from "./mobile/MobileSvgDrawMap";
+import CharacterStage from "./logic/dress-up-game/CharacterStage";
+import FinalSummary from "./logic/dress-up-game/FinalSummary";
+import MobileLabGameStage from "./logic/lab-game/MobileLabGameStage";
+import type { CharacterResult } from "@/types/types";
 import countryNames from "@/utils/country_names.json";
 import seaNames from "@/utils/sea_names.json";
 import { starInfoList } from "@/utils/starInfo";
@@ -387,6 +391,56 @@ const MOBILE_STATION_DOORS: Array<{
   { id: "lab", page: "day5_lab", accent: "#2563eb" },
   { id: "garage", page: "day5_garage", accent: "#16a34a" },
 ];
+
+const MOBILE_HEAT_CHARACTERS = [
+  {
+    name: "Stas",
+    img: "/supabase-storage/quests/1_quest/games/dress-up/Stas/Stas.webp",
+  },
+  {
+    name: "Clare",
+    img: "/supabase-storage/quests/1_quest/games/dress-up/Clare/Clare.webp",
+  },
+  {
+    name: "Sam",
+    img: "/supabase-storage/quests/1_quest/games/dress-up/Sam/Sam.webp",
+  },
+  {
+    name: "Matilda",
+    img: "/supabase-storage/quests/1_quest/games/dress-up/Matilda/Matilda.webp",
+  },
+  {
+    name: "Joe",
+    img: "/supabase-storage/quests/1_quest/games/dress-up/Joe/Joe.webp",
+  },
+  {
+    name: "Tamara",
+    img: "/supabase-storage/quests/1_quest/games/dress-up/Tamara/Tamara.webp",
+  },
+];
+
+function useMobileLandscape() {
+  const [isLandscape, setIsLandscape] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const update = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+
+  return isLandscape;
+}
 
 function Day1Mobile({ go }: MobilePageProps) {
   const { t, lang } = useQuest1I18n();
@@ -1250,6 +1304,100 @@ function Day5SpitsbergenMobile({ go }: MobilePageProps) {
   );
 }
 
+function Day5HeatMobile({ go }: MobilePageProps) {
+  const { lang, t } = useQuest1I18n();
+  const isLandscape = useMobileLandscape();
+  const [results, setResults] = useState<CharacterResult[]>([]);
+  const [showFinal, setShowFinal] = useState(false);
+
+  const rotateTitle =
+    lang === "ru"
+      ? "Поверни телефон боком"
+      : lang === "he"
+        ? "סובבו את הטלפון לרוחב"
+        : "Turn your phone sideways";
+
+  const rotateText =
+    lang === "ru"
+      ? "Тепловой модуль работает в альбомном режиме: так видно персонажа, одежду и ленту снаряжения."
+      : lang === "he"
+        ? "מודול החום פועל במצב אופקי: כך רואים את הדמות, הבגדים ומסוע הציוד."
+        : "The thermal module works in landscape mode so the character, clothes, and gear belt fit on screen.";
+
+  return (
+    <div className="quest-mobile-heat-shell">
+      {!isLandscape ? (
+        <div className="quest-mobile-landscape-gate" role="status" aria-live="polite">
+          <div className="quest-mobile-landscape-phone" aria-hidden>
+            <span />
+          </div>
+          <h2>{rotateTitle}</h2>
+          <p>{rotateText}</p>
+          <button type="button" className="quest-mobile-primary" onClick={() => go("day5_spitsbergen")}>
+            {t.day5Heat.backButton}
+          </button>
+        </div>
+      ) : (
+        <div className="quest-mobile-heat-game">
+          <button
+            type="button"
+            className="quest-mobile-heat-back"
+            onClick={() => go("day5_spitsbergen")}
+          >
+            {t.day5Heat.backButton}
+          </button>
+          {!showFinal ? (
+            <CharacterStage
+              characters={MOBILE_HEAT_CHARACTERS}
+              onCharacterSelected={() => {}}
+              onStartGame={() => {}}
+              onCharacterFinished={(result) => {
+                setResults((prev) => {
+                  const next = [...prev, result];
+                  if (next.length === MOBILE_HEAT_CHARACTERS.length) {
+                    setShowFinal(true);
+                  }
+                  return next;
+                });
+              }}
+            />
+          ) : (
+            <FinalSummary
+              results={results}
+              onRestart={() => {
+                setResults([]);
+                setShowFinal(false);
+              }}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Day5LabMobile({ go }: MobilePageProps) {
+  const { t } = useQuest1I18n();
+
+  return (
+    <>
+      <QuestMobileTextReveal
+        paragraphs={[t.day5Lab.subtitle]}
+        revealCount={1}
+        onRevealNext={() => {}}
+      />
+      <MobileLabGameStage />
+      <button
+        type="button"
+        className="quest-mobile-primary"
+        onClick={() => go("day5_spitsbergen")}
+      >
+        {t.day5Lab.backButton}
+      </button>
+    </>
+  );
+}
+
 function PlaceholderMobile({
   title,
   paragraphs,
@@ -1313,6 +1461,8 @@ export default function Quest1MobileEngine() {
     if (pageId === "day4_takeoff") return <Day4TakeoffMobile go={setPageId} />;
     if (pageId === "day4_sail") return <Day4StarsNavMobile go={setPageId} />;
     if (pageId === "day5_spitsbergen") return <Day5SpitsbergenMobile go={setPageId} />;
+    if (pageId === "day5_heat") return <Day5HeatMobile go={setPageId} />;
+    if (pageId === "day5_lab") return <Day5LabMobile go={setPageId} />;
 
     if (pageId === "day6_expedition") {
       return (

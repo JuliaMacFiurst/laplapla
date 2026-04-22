@@ -15,7 +15,14 @@ import {
 } from "./types";
 import labThings from "./lab-things.json";
 
-const GAME_DURATION_MS = 45_000;
+const DEFAULT_GAME_DURATION_MS = 45_000;
+const DEFAULT_FINISH_DELAY_MS = 700;
+
+type UseLabGameStateOptions = {
+  gameDurationMs?: number;
+  finishOnQueueComplete?: boolean;
+  finishDelayMs?: number;
+};
 
 const shuffleArray = <T,>(source: T[]): T[] => {
   const items = [...source];
@@ -75,10 +82,16 @@ const createInitialLanes = (): LaneState[] =>
     status: undefined,
   }));
 
-export function useLabGameState() {
+export function useLabGameState(options: UseLabGameStateOptions = {}) {
+  const {
+    gameDurationMs = DEFAULT_GAME_DURATION_MS,
+    finishOnQueueComplete = false,
+    finishDelayMs = DEFAULT_FINISH_DELAY_MS,
+  } = options;
   const [gameStarted, setGameStarted] = useState(false);
   const gameStartedRef = useRef(false);
   const finishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const orderedQueueRef = useRef<LabThing[]>([]);
   const [queueSize, setQueueSize] = useState(0);
@@ -133,6 +146,11 @@ export function useLabGameState() {
     if (backpackTimerRef.current) {
       clearTimeout(backpackTimerRef.current);
       backpackTimerRef.current = null;
+    }
+
+    if (finishDelayTimerRef.current) {
+      clearTimeout(finishDelayTimerRef.current);
+      finishDelayTimerRef.current = null;
     }
   }, []);
 
@@ -380,7 +398,42 @@ export function useLabGameState() {
     };
   }, [animate, gameStarted, isFinished]);
 
-  // Removed effect that computed finish based on handledCount and lanes per instructions
+  useEffect(() => {
+    if (!gameStarted || isFinished || !finishOnQueueComplete || queueSize === 0) {
+      if (finishDelayTimerRef.current) {
+        clearTimeout(finishDelayTimerRef.current);
+        finishDelayTimerRef.current = null;
+      }
+      return;
+    }
+
+    const allItemsSpawned = nextItemIndexRef.current >= orderedQueueRef.current.length;
+    const lanesAreClear = lanes.every((lane) => lane.item === null);
+    const allItemsHandled = handledCount >= queueSize;
+
+    if (!allItemsSpawned || !lanesAreClear || !allItemsHandled) {
+      if (finishDelayTimerRef.current) {
+        clearTimeout(finishDelayTimerRef.current);
+        finishDelayTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (finishDelayTimerRef.current) return;
+
+    finishDelayTimerRef.current = setTimeout(() => {
+      finishDelayTimerRef.current = null;
+      setFinished(true);
+    }, finishDelayMs);
+  }, [
+    finishDelayMs,
+    finishOnQueueComplete,
+    gameStarted,
+    handledCount,
+    isFinished,
+    lanes,
+    queueSize,
+  ]);
 
   const startGame = useCallback(() => {
     if (gameStartedRef.current) return;
@@ -396,6 +449,11 @@ export function useLabGameState() {
       finishTimerRef.current = null;
     }
 
+    if (finishDelayTimerRef.current) {
+      clearTimeout(finishDelayTimerRef.current);
+      finishDelayTimerRef.current = null;
+    }
+
     gameStartedRef.current = true;
     setGameStarted(true);
 
@@ -409,8 +467,8 @@ export function useLabGameState() {
 
     finishTimerRef.current = setTimeout(() => {
       setFinished(true);
-    }, GAME_DURATION_MS);
-  }, [rebuildQueue, spawnNextItem]);
+    }, gameDurationMs);
+  }, [gameDurationMs, rebuildQueue, spawnNextItem]);
 
   const resetGame = useCallback(() => {
     clearTimers();
@@ -418,6 +476,11 @@ export function useLabGameState() {
     if (finishTimerRef.current) {
       clearTimeout(finishTimerRef.current);
       finishTimerRef.current = null;
+    }
+
+    if (finishDelayTimerRef.current) {
+      clearTimeout(finishDelayTimerRef.current);
+      finishDelayTimerRef.current = null;
     }
 
     laneResetTimersRef.current.forEach((t) => clearTimeout(t));
