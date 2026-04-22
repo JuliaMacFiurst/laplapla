@@ -10,7 +10,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 export default function Home({ lang }: { lang?: Lang }) {
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
-  const isMobile = useIsMobile(768);
+  const isMobile = useIsMobile(767);
 
   const t = useMemo(() => dictionaries[resolvedLang].home, [resolvedLang]);
   const seo = dictionaries[resolvedLang].seo.home;

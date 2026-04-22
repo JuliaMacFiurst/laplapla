@@ -57,6 +57,8 @@ const MOBILE_PAGE_ORDER: PageId[] = [
   "day7_treasure_of_times",
 ];
 
+const QUEST_1_MOBILE_PROGRESS_KEY = "quest-1-mobile-page";
+
 const MOBILE_MAP_BAD_IDS = new Set([
   "__next",
   "map-wrap",
@@ -69,6 +71,29 @@ const MOBILE_MAP_BAD_IDS = new Set([
 
 function flattenBlocks(blocks: string[][]) {
   return blocks.flatMap((block) => block);
+}
+
+function isMobilePageId(value: string | null): value is PageId {
+  return Boolean(value && MOBILE_PAGE_ORDER.includes(value as PageId));
+}
+
+function readStoredMobilePageId(): PageId {
+  if (typeof window === "undefined") return "day1";
+
+  try {
+    const storedPageId = window.sessionStorage.getItem(QUEST_1_MOBILE_PROGRESS_KEY);
+    return isMobilePageId(storedPageId) ? storedPageId : "day1";
+  } catch {
+    return "day1";
+  }
+}
+
+function clearStoredMobilePageId() {
+  try {
+    window.sessionStorage.removeItem(QUEST_1_MOBILE_PROGRESS_KEY);
+  } catch {
+    // Session storage can be unavailable in private or restricted browsing modes.
+  }
 }
 
 function QuestMobileShell({
@@ -1676,6 +1701,7 @@ function Day7TreasureMobile() {
   const paragraphs = useMemo(() => flattenBlocks(t.day7.blocks), [t.day7.blocks]);
 
   const goToMap = useCallback(() => {
+    clearStoredMobilePageId();
     void router.push(
       { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
       undefined,
@@ -1763,10 +1789,18 @@ function Day7TreasureMobile() {
 export default function Quest1MobileEngine() {
   const router = useRouter();
   const { lang, t } = useQuest1I18n();
-  const [pageId, setPageId] = useState<PageId>("day1");
+  const [pageId, setPageId] = useState<PageId>(readStoredMobilePageId);
   const [devMode, setDevMode] = useState(false);
   const pageIndex = MOBILE_PAGE_ORDER.indexOf(pageId);
   const progress = `${Math.max(1, pageIndex + 1)} / ${MOBILE_PAGE_ORDER.length}`;
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(QUEST_1_MOBILE_PROGRESS_KEY, pageId);
+    } catch {
+      // Session storage can be unavailable in private or restricted browsing modes.
+    }
+  }, [pageId]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1775,6 +1809,7 @@ export default function Quest1MobileEngine() {
   }, []);
 
   const exit = () => {
+    clearStoredMobilePageId();
     void router.push(
       { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
       undefined,

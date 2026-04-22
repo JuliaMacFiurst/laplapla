@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
 
-export function useIsMobile(maxWidth = 767) {
-  const [isMobile, setIsMobile] = useState(false);
+export function useIsTabletViewport(maxWidth = 1366) {
+  const [isTablet, setIsTablet] = useState(false);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(`(max-width: ${maxWidth}px)`);
+    const query = [
+      "(pointer: coarse)",
+      "(hover: none)",
+      "(min-width: 900px)",
+      `(max-width: ${maxWidth}px)`,
+    ].join(" and ");
+    const mediaQuery = window.matchMedia(query);
 
     const sync = () => {
-      setIsMobile(mediaQuery.matches);
+      setIsTablet((wasTablet) => wasTablet || mediaQuery.matches);
     };
 
     sync();
@@ -21,5 +27,5 @@ export function useIsMobile(maxWidth = 767) {
     return () => mediaQuery.removeListener(sync);
   }, [maxWidth]);
 
-  return isMobile;
+  return isTablet;
 }

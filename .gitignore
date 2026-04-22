@@ -16,6 +16,7 @@ dist/
 dist-ssr/
 .next/
 out/
+*.tsbuildinfo
 
 # Local environment overrides
 *.local

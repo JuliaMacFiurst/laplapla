@@ -52,7 +52,7 @@ export function VideoSection({
   mobileMode?: MobileMode;
 }) {
   const t = dictionaries[lang].video;
-  const isMobile = useIsMobile(768);
+  const isMobile = useIsMobile(767);
 
   const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);

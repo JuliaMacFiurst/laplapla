@@ -357,6 +357,13 @@ body.processing-mode .export-back-button {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
+@supports (-webkit-touch-callout: none) {
+  .export-tutorial-video {
+    background: transparent !important;
+    mix-blend-mode: multiply;
+  }
+}
+
 /* ===== Text ===== */
 
 .export-tutorial-text {

@@ -11,6 +11,8 @@ if (!isProduction) {
   connectSrc.push("http://127.0.0.1:5050");
 }
 
+const allowedDevOrigins = isProduction ? undefined : ["192.168.*.*"];
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -59,6 +61,7 @@ const supabaseStorageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || process.en
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  allowedDevOrigins,
   i18n: {
     locales: ["ru", "en", "he"],
     defaultLocale: "ru",

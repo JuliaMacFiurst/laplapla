@@ -119,6 +119,14 @@
   border-radius: 18px;
 }
 
+@supports (-webkit-touch-callout: none) {
+  .lab-game-backpack-video,
+  .logan-comment-video {
+    background: transparent !important;
+    mix-blend-mode: multiply;
+  }
+}
+
 .logan-comment {
   max-width: 220px;
   padding: 12px 16px;

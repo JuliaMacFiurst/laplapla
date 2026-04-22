@@ -302,6 +302,13 @@ html, body {
   width: 400px;
 }
 
+@supports (-webkit-touch-callout: none) {
+  .cat-paw-video {
+    background: transparent !important;
+    mix-blend-mode: multiply;
+  }
+}
+
 @keyframes mouse-swing {
   0%   { transform: rotate(5deg); }
   50%  { transform: rotate(-5deg); }

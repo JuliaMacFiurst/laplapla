@@ -128,7 +128,7 @@ export default function BookFeed({
   }, [hasNextBook, loading, onNextBook]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 899px)");
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
     const syncMobileFeed = () => {
       setIsMobileFeed(mediaQuery.matches);
     };

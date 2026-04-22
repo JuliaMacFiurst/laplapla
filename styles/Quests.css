@@ -306,6 +306,23 @@
   object-fit: cover;
 }
 
+@supports (-webkit-touch-callout: none) {
+  video.quest-video,
+  video.quest-vertical-video,
+  .quest-mobile-media video,
+  .quest-mobile-station-visual video,
+  .quest-raccoon-stars-video,
+  .quest-raccoon-video,
+  .quest-buldog-video,
+  .quest-svensen-video,
+  .quest-sialor-video,
+  .station-video-element,
+  .sled-animation-video {
+    background: transparent !important;
+    mix-blend-mode: multiply;
+  }
+}
+
 .quest-mobile-primary,
 .quest-mobile-choice-panel button {
   width: 100%;
