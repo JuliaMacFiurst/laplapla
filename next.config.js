@@ -58,6 +58,7 @@ const supabaseStorageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || process.en
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   i18n: {
     locales: ["ru", "en", "he"],
     defaultLocale: "ru",
