@@ -694,7 +694,7 @@
   position: absolute;
   inset: 0;
   transform-origin: 0 0;
-  will-change: transform;
+  will-change: transform, width, height;
 }
 
 .quest-mobile-svg-map-base,

@@ -123,7 +123,11 @@ export default function MobileSvgDrawMap({
   const viewBox = useMemo(() => parseViewBox(svgContent), [svgContent]);
   const hasRoute = Boolean(routePathD) || routePoints.length > 1;
   const transformStyle = enablePanZoom
-    ? { transform: `matrix(${zoom}, 0, 0, ${zoom}, ${pan.x}, ${pan.y})` }
+    ? {
+        width: `${zoom * 100}%`,
+        height: `${zoom * 100}%`,
+        transform: `translate3d(${pan.x}px, ${pan.y}px, 0)`,
+      }
     : undefined;
 
   useEffect(() => {

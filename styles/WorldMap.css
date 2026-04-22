@@ -848,6 +848,39 @@ body.raccoons-mobile-page .footer-stack {
   vertical-align: middle;
 }
 
+@media (hover: none) and (pointer: coarse) and (min-width: 768px) and (max-width: 1366px) {
+  .map-tabs {
+    width: 100%;
+    padding-inline: 12px;
+    box-sizing: border-box;
+  }
+
+  .map-tab-wrapper {
+    width: min(100%, calc(100vw - 24px));
+    gap: clamp(1px, 0.35vw, 3px);
+  }
+
+  .map-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 140px;
+    padding-inline: clamp(0.25rem, 0.9vw, 1rem);
+    font-size: clamp(0.9rem, 1.45vw, 1.25rem);
+    line-height: clamp(30px, 3.2vw, 37px);
+    white-space: nowrap;
+  }
+
+  .map-tab.active {
+    transform: translateY(-25%) scale(1.03) rotate(-1deg);
+  }
+
+  .map-tab-icon {
+    width: clamp(20px, 2.5vw, 30px);
+    height: clamp(20px, 2.5vw, 30px);
+    margin-right: clamp(3px, 0.55vw, 8px);
+  }
+}
+
 .sea {
   fill: #b2ebf2;
   stroke: #004d40;
