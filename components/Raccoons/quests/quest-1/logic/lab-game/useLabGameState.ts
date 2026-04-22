@@ -16,7 +16,7 @@ import {
 import labThings from "./lab-things.json";
 
 const DEFAULT_GAME_DURATION_MS = 45_000;
-const DEFAULT_FINISH_DELAY_MS = 700;
+const DEFAULT_FINISH_DELAY_MS = 0;
 
 type UseLabGameStateOptions = {
   gameDurationMs?: number;
@@ -85,11 +85,12 @@ const createInitialLanes = (): LaneState[] =>
 export function useLabGameState(options: UseLabGameStateOptions = {}) {
   const {
     gameDurationMs = DEFAULT_GAME_DURATION_MS,
-    finishOnQueueComplete = false,
+    finishOnQueueComplete = true,
     finishDelayMs = DEFAULT_FINISH_DELAY_MS,
   } = options;
   const [gameStarted, setGameStarted] = useState(false);
   const gameStartedRef = useRef(false);
+  const isFinishedRef = useRef(false);
   const finishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finishDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -124,6 +125,7 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
   const [loganComment, setLoganComment] = useState<string | null>(null);
   const [isBackpackActive, setBackpackActive] = useState(false);
   const [handledCount, setHandledCount] = useState(0);
+  const handledCountRef = useRef(0);
   const [isFinished, setFinished] = useState(false);
   const [backpackLane, setBackpackLane] = useState(
     Math.floor(FALLING_LANE_COUNT / 2)
@@ -133,9 +135,9 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
   const backpackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const lastTimestampRef = useRef(0);
-  const randomSpeed = () =>
+  const randomSpeed = useCallback(() =>
     FALLING_SPEED_MIN +
-    Math.random() * (FALLING_SPEED_MAX - FALLING_SPEED_MIN);
+    Math.random() * (FALLING_SPEED_MAX - FALLING_SPEED_MIN), []);
 
   const clearTimers = useCallback(() => {
     if (loganTimerRef.current) {
@@ -155,6 +157,50 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
   }, []);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
+
+  const finishGame = useCallback(() => {
+    if (isFinishedRef.current) return;
+
+    isFinishedRef.current = true;
+
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
+
+    if (finishDelayTimerRef.current) {
+      clearTimeout(finishDelayTimerRef.current);
+      finishDelayTimerRef.current = null;
+    }
+
+    setFinished(true);
+  }, []);
+
+  const finishIfQueueComplete = useCallback(
+    (handledTotal = handledCountRef.current) => {
+      if (!finishOnQueueComplete || !gameStartedRef.current) return;
+      if (orderedQueueRef.current.length === 0) return;
+
+      const allItemsSpawned =
+        nextItemIndexRef.current >= orderedQueueRef.current.length;
+      const allItemsHandled = handledTotal >= orderedQueueRef.current.length;
+
+      if (!allItemsSpawned || !allItemsHandled) return;
+
+      if (finishDelayMs <= 0) {
+        finishGame();
+        return;
+      }
+
+      if (finishDelayTimerRef.current) return;
+
+      finishDelayTimerRef.current = setTimeout(() => {
+        finishDelayTimerRef.current = null;
+        finishGame();
+      }, finishDelayMs);
+    },
+    [finishDelayMs, finishGame, finishOnQueueComplete]
+  );
 
   const triggerLoganComment = useCallback((text?: string) => {
     if (!text) {
@@ -187,29 +233,29 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
     }, 4200);
   }, []);
 
-  const spawnNextItem = useCallback(() => {
-    setLanes(prev => {
-      let pointer = nextItemIndexRef.current;
-      if (pointer >= orderedQueueRef.current.length) return prev;
+  const spawnIntoLanes = useCallback((sourceLanes: LaneState[]) => {
+    let pointer = nextItemIndexRef.current;
+    if (pointer >= orderedQueueRef.current.length) {
+      return sourceLanes;
+    }
 
-      const next = prev.map(lane => {
-        if (lane.item !== null) return lane;
-        if (pointer >= orderedQueueRef.current.length) return lane;
+    const next = sourceLanes.map((lane) => {
+      if (lane.item !== null) return lane;
+      if (pointer >= orderedQueueRef.current.length) return lane;
 
-        const item = orderedQueueRef.current[pointer++];
-        return {
-          ...lane,
-          item,
-          y: FALLING_START_Y,
-          speed: randomSpeed(),
-          status: "falling" as FallingThingStatus,
-        };
-      });
-
-      nextItemIndexRef.current = pointer;
-      return next;
+      const item = orderedQueueRef.current[pointer++];
+      return {
+        ...lane,
+        item,
+        y: FALLING_START_Y,
+        speed: randomSpeed(),
+        status: "falling" as FallingThingStatus,
+      };
     });
-  }, []);
+
+    nextItemIndexRef.current = pointer;
+    return next;
+  }, [randomSpeed]);
 
   const laneResetTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -223,8 +269,8 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
 
         if (!gameStartedRef.current) return;
 
-        setLanes((prev) =>
-          prev.map((lane) => {
+        setLanes((prev) => {
+          const resetLanes = prev.map((lane) => {
             if (lane.laneIndex !== laneIndex) return lane;
             return {
               ...lane,
@@ -233,18 +279,21 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
               y: FALLING_START_Y,
               speed: 0,
             };
-          })
-        );
+          });
 
-        // spawn next if queue not exhausted
-        if (nextItemIndexRef.current < orderedQueueRef.current.length) {
-          spawnNextItem();
-        }
+          const next =
+            nextItemIndexRef.current < orderedQueueRef.current.length
+              ? spawnIntoLanes(resetLanes)
+              : resetLanes;
+
+          lanesRef.current = next;
+          return next;
+        });
       }, delay);
 
       laneResetTimersRef.current.set(laneIndex, timer);
     },
-    [spawnNextItem]
+    [spawnIntoLanes]
   );
 
   const moveBackpackLane = useCallback((delta: number) => {
@@ -265,7 +314,9 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
 
   const handleLaneResult = useCallback(
     (_laneIndex: number, item: LabThing, status: FallingThingStatus) => {
-      setHandledCount((v) => v + 1);
+      const nextHandledCount = handledCountRef.current + 1;
+      handledCountRef.current = nextHandledCount;
+      setHandledCount(nextHandledCount);
 
       if (status === "caught") {
         setScoreTotal((prev) => prev + item.score);
@@ -278,10 +329,11 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
         setCaughtThings((prev) => [...prev, item]);
         triggerLoganComment(item.loganComment);
         triggerBackpackPulse();
-      } else {
       }
+
+      finishIfQueueComplete(nextHandledCount);
     },
-    [triggerBackpackPulse, triggerLoganComment]
+    [finishIfQueueComplete, triggerBackpackPulse, triggerLoganComment]
   );
 
   const animate = useCallback(
@@ -364,15 +416,13 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
       lanesRef.current = nextLanes;
       setLanes(nextLanes);
 
-      // removed finish logic from animate per patch instructions
-
       events.forEach((event) =>
         handleLaneResult(event.laneIndex, event.item, event.status)
       );
 
       animationFrameRef.current = requestAnimationFrame(animate);
     },
-    [backpackLane, handleLaneResult, isFinished, scheduleLaneReset, gameStarted, setFinished]
+    [backpackLane, handleLaneResult, isFinished, scheduleLaneReset]
   );
 
   useEffect(() => {
@@ -398,50 +448,15 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
     };
   }, [animate, gameStarted, isFinished]);
 
-  useEffect(() => {
-    if (!gameStarted || isFinished || !finishOnQueueComplete || queueSize === 0) {
-      if (finishDelayTimerRef.current) {
-        clearTimeout(finishDelayTimerRef.current);
-        finishDelayTimerRef.current = null;
-      }
-      return;
-    }
-
-    const allItemsSpawned = nextItemIndexRef.current >= orderedQueueRef.current.length;
-    const lanesAreClear = lanes.every((lane) => lane.item === null);
-    const allItemsHandled = handledCount >= queueSize;
-
-    if (!allItemsSpawned || !lanesAreClear || !allItemsHandled) {
-      if (finishDelayTimerRef.current) {
-        clearTimeout(finishDelayTimerRef.current);
-        finishDelayTimerRef.current = null;
-      }
-      return;
-    }
-
-    if (finishDelayTimerRef.current) return;
-
-    finishDelayTimerRef.current = setTimeout(() => {
-      finishDelayTimerRef.current = null;
-      setFinished(true);
-    }, finishDelayMs);
-  }, [
-    finishDelayMs,
-    finishOnQueueComplete,
-    gameStarted,
-    handledCount,
-    isFinished,
-    lanes,
-    queueSize,
-  ]);
-
   const startGame = useCallback(() => {
     if (gameStartedRef.current) return;
 
     rebuildQueue();
 
+    handledCountRef.current = 0;
     setHandledCount(0);
 
+    isFinishedRef.current = false;
     setFinished(false);
 
     if (finishTimerRef.current) {
@@ -457,18 +472,17 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
     gameStartedRef.current = true;
     setGameStarted(true);
 
-    // ensure lanes are reset to empty at start
     const freshLanes = createInitialLanes();
-    setLanes(freshLanes);
-    lanesRef.current = freshLanes;
+    const seededLanes = spawnIntoLanes(freshLanes);
+    setLanes(seededLanes);
+    lanesRef.current = seededLanes;
 
-    // spawn immediately so player doesn't wait
-    spawnNextItem();
-
-    finishTimerRef.current = setTimeout(() => {
-      setFinished(true);
-    }, gameDurationMs);
-  }, [gameDurationMs, rebuildQueue, spawnNextItem]);
+    if (!finishOnQueueComplete) {
+      finishTimerRef.current = setTimeout(() => {
+        finishGame();
+      }, gameDurationMs);
+    }
+  }, [finishGame, finishOnQueueComplete, gameDurationMs, rebuildQueue, spawnIntoLanes]);
 
   const resetGame = useCallback(() => {
     clearTimers();
@@ -488,10 +502,12 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
 
     setGameStarted(false);
     gameStartedRef.current = false;
+    isFinishedRef.current = false;
     setFinished(false);
     setScoreTotal(0);
     setScoreLog([]);
     setCaughtThings([]);
+    handledCountRef.current = 0;
     setHandledCount(0);
     setLoganComment(null);
     setBackpackActive(false);

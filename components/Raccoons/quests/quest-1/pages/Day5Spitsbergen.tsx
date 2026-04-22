@@ -57,8 +57,12 @@ return (
             muted
             loop
             playsInline
+            preload="auto"
             className="station-video-element"
             src="/supabase-storage/quests/1_quest/images/tourists-group.webm"
+            onLoadedData={(event) => {
+              void event.currentTarget.play().catch(() => {});
+            }}
           />
         </div>
 

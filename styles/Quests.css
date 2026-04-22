@@ -1107,6 +1107,30 @@
   pointer-events: none;
 }
 
+@supports (-webkit-touch-callout: none) {
+  .station-video-element,
+  .quest-mobile-station-visual video,
+  .quest-mobile-lab-backpack video,
+  .quest-mobile-lab-backpack-video {
+    background: transparent !important;
+    mix-blend-mode: multiply;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  .quest-mobile-lab-logan {
+    background: transparent !important;
+    mix-blend-mode: normal !important;
+    opacity: 1 !important;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  .quest-mobile-station-visual video {
+    transform: translate(-50%, -50%) translateZ(0);
+  }
+}
+
 .quest-mobile-station-visual-door {
   position: absolute;
   z-index: 4;
@@ -1865,7 +1889,7 @@
   pointer-events: none;
   transform: translate(-50%, var(--lab-item-y, 0));
   filter: drop-shadow(0 9px 12px rgba(5, 17, 28, 0.2));
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition: opacity 0.16s ease;
 }
 
 .quest-mobile-lab-item.is-caught {
@@ -1874,7 +1898,7 @@
 }
 
 .quest-mobile-lab-item.is-missed {
-  opacity: 0.16;
+  opacity: 1;
 }
 
 .quest-mobile-lab-backpack {
@@ -1908,13 +1932,16 @@
 
 .quest-mobile-lab-logan {
   position: absolute;
-  right: -8px;
-  bottom: 48px;
+  right: -12px;
+  bottom: 42px;
   z-index: 12;
-  width: min(31vw, 138px);
-  max-height: 190px;
+  width: min(42vw, 190px);
+  max-height: 230px;
   object-fit: contain;
-  filter: drop-shadow(0 14px 18px rgba(5, 17, 28, 0.24));
+  opacity: 1;
+  mix-blend-mode: normal;
+  background: transparent;
+  filter: drop-shadow(0 14px 18px rgba(5, 17, 28, 0.2)) saturate(1.08) brightness(1.06);
   pointer-events: none;
 }
 
@@ -2072,9 +2099,9 @@
   }
 
   .quest-mobile-lab-logan {
-    right: -2px;
-    bottom: 34px;
-    width: min(17vw, 104px);
+    right: -4px;
+    bottom: 28px;
+    width: min(23vw, 150px);
   }
 
   .quest-mobile-lab-comment {

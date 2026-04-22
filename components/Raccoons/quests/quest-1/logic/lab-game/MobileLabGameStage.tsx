@@ -31,7 +31,7 @@ export default function MobileLabGameStage() {
   } = useLabGameState({
     finishOnQueueComplete: true,
     gameDurationMs: 30_000,
-    finishDelayMs: 600,
+    finishDelayMs: 0,
   });
 
   const moveToLane = (nextLane: number) => {
@@ -134,7 +134,18 @@ export default function MobileLabGameStage() {
           style={{ left: backpackLeft }}
         >
           {isBackpackActive ? (
-            <video src={BACKPACK_VIDEO_URL} autoPlay muted playsInline loop />
+            <video
+              className="quest-mobile-lab-backpack-video"
+              src={BACKPACK_VIDEO_URL}
+              autoPlay
+              muted
+              playsInline
+              loop
+              preload="auto"
+              onLoadedData={(event) => {
+                event.currentTarget.play().catch(() => {});
+              }}
+            />
           ) : (
             <img src={BACKPACK_IMAGE_URL} alt="" />
           )}
@@ -148,7 +159,11 @@ export default function MobileLabGameStage() {
             muted
             playsInline
             loop
+            preload="auto"
             aria-hidden
+            onLoadedData={(event) => {
+              event.currentTarget.play().catch(() => {});
+            }}
           />
         ) : null}
 

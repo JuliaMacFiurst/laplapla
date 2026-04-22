@@ -132,11 +132,16 @@ export default function DogSled({
     >
       <video
         ref={videoRef}
+        className="dog-sled-video"
         src={video.src}
         autoPlay
         muted
         loop={video.loop}
         playsInline
+        preload="auto"
+        onLoadedData={(event) => {
+          event.currentTarget.play().catch(() => {});
+        }}
         style={{
           display: "block",
           height: `${SLED_VISUAL_HEIGHT_PX * scale}px`,

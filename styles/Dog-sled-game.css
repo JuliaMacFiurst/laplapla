@@ -60,6 +60,28 @@
   display: block;
 }
 
+@supports (-webkit-touch-callout: none) {
+  .sled-animation-video {
+    background: transparent !important;
+    mix-blend-mode: multiply;
+    -webkit-transform: scale(1.08) translateZ(0);
+    transform: scale(1.08) translateZ(0);
+  }
+
+  .dog-sled-video,
+  .dog-sled video {
+    background: transparent !important;
+    mix-blend-mode: multiply;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  .quest-mobile-garage-scene .sled-animation-video {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
 /* Весь попап поверх сцены */
 .preparation-popup {
   position: absolute;
