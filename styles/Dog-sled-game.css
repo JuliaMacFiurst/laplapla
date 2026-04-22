@@ -978,6 +978,76 @@
   transform: translateY(-2px);
 }
 
+.dog-sled-run-stage--mobile {
+  touch-action: none;
+  user-select: none;
+}
+
+.dog-sled-run-stage--mobile .dog-sled-hud {
+  top: calc(8px + env(safe-area-inset-top, 0));
+  right: calc(8px + env(safe-area-inset-right, 0));
+}
+
+.dog-sled-run-stage--mobile .dog-sled-obstacles > div {
+  width: 158px;
+  height: 158px;
+}
+
+.dog-sled-run-stage--mobile .dog-sled-star {
+  font-size: 22px;
+  filter: drop-shadow(0 4px 10px rgba(255, 203, 63, 0.55));
+}
+
+.dog-sled-run-stage--mobile .dog-sled-star::after {
+  top: -4px;
+  right: -5px;
+  font-size: 26px;
+}
+
+.dog-sled-run-stage--mobile .dog-sled-road {
+  transform-origin: left center;
+}
+
+.dog-sled-mobile-controls {
+  position: absolute;
+  left: calc(10px + env(safe-area-inset-left, 0));
+  right: calc(10px + env(safe-area-inset-right, 0));
+  bottom: calc(10px + env(safe-area-inset-bottom, 0));
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.dog-sled-mobile-pad {
+  display: grid;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.dog-sled-mobile-controls button {
+  width: 54px;
+  height: 46px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  background: rgba(27, 61, 87, 0.86);
+  color: #fff;
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.26);
+  pointer-events: auto;
+}
+
+.dog-sled-mobile-boost {
+  width: 72px !important;
+  height: 56px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #ffef9b, #f7a84f) !important;
+  color: #46220a !important;
+}
+
 .quest-1-hebrew-font .preparation-popup__content,
 .quest-1-hebrew-font .garage-start-ride-btn,
 .quest-1-hebrew-font .garage-warning-popup,

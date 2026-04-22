@@ -13,14 +13,7 @@ import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
 import MobileQuestSelectScreen from "@/components/Raccoons/MobileQuestSelectScreen";
-
-type EntitySearchResult = {
-  route: "country" | "animal" | "river" | "sea" | "biome";
-  slug: string;
-  href: string;
-  title: string;
-  targetId: string;
-};
+import type { EntitySearchResult } from "@/components/Raccoons/types";
 
 type MapTab = "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food";
 
@@ -267,6 +260,22 @@ export default function RaccoonsPage() {
             previewSelectedId={previewSelectedId}
             onMapUserSelect={handleMapUserSelect}
             onOpenQuests={openMobileQuestSelect}
+            query={query}
+            onQueryChange={setQuery}
+            searchUi={searchUi}
+            searchLoading={searchLoading}
+            searchMessage={searchMessage}
+            results={visibleResults}
+            hasMoreResults={hasMoreResults}
+            onSearchSubmit={handleSearchSubmit}
+            onClearSearch={() => {
+              setQuery("");
+              setResults([]);
+              setVisibleResultsCount(SEARCH_RESULTS_PAGE_SIZE);
+              setSearchMessage(null);
+            }}
+            onShowMoreResults={() => setVisibleResultsCount((count) => count + SEARCH_RESULTS_PAGE_SIZE)}
+            onResultOpen={(result) => void handleResultOpen(result.href)}
           />
         )}
       </>

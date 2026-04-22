@@ -92,6 +92,7 @@ const SLED_VISUAL_HEIGHT_PX = 230;
 export default function DogSled({
   y,
   state,
+  scale = 1,
 }: DogSledProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -138,7 +139,7 @@ export default function DogSled({
         playsInline
         style={{
           display: "block",
-          height: `${SLED_VISUAL_HEIGHT_PX}px`,
+          height: `${SLED_VISUAL_HEIGHT_PX * scale}px`,
           width: "auto",
         }}
       />

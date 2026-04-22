@@ -18,10 +18,12 @@ const STAR_COLLECTION_DISTANCE = 220;
 const STAR_LANE_TOLERANCE = 2;
 const FINISH_DELAY_SECONDS = 90;
 const FINISH_SLOW_DURATION_MS = 1800;
+const MOBILE_HIT_ZONE_SCALE = 0.48;
 
 export interface DogSledRunStageProps {
   prep: PreparationResult;
   onExit?: () => void;
+  mobileControls?: boolean;
 }
 
 /**
@@ -38,9 +40,11 @@ export interface DogSledRunStageProps {
 export default function DogSledRunStage({
   prep,
   onExit,
+  mobileControls = false,
 }: DogSledRunStageProps) { 
   const stageRef = useRef<HTMLDivElement>(null);
   const lastTimeRef = useRef<number | null>(null);
+  const mobilePointerActiveRef = useRef(false);
 
   const scrollXRef = useRef(0);
   const stageWidthRef = useRef(1200);
@@ -89,6 +93,7 @@ export default function DogSledRunStage({
 
   const sledConfig = buildSledRunConfig(prep);
   const speed = sledConfig.baseSpeed;
+  const roadEdgeBuffer = mobileControls ? 14 : 20;
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -148,6 +153,7 @@ export default function DogSledRunStage({
   const EASING_ZONE_OFFSET_X = 40;
 
   const EASING_SPEED_MULT = 0.65;
+  const MOBILE_EASING_SPEED_MULT = 0.92;
 
   // ───────── OBSTACLE COLLISION TUNING ─────────
   // const OBSTACLE_WARNING_RADIUS = 120; // removed: no longer used
@@ -217,9 +223,17 @@ export default function DogSledRunStage({
     laneYRef.current.upper = stageHeight * 0.66;
     laneYRef.current.lower = stageHeight * 0.8;
 
+    if (mobileControls) {
+      const roadCenter = stageHeight * 0.73;
+      const roadHalfHeight = Math.max(58, stageHeight * 0.115);
+      setBaseUpperLimit(roadCenter - roadHalfHeight);
+      setBaseLowerLimit(roadCenter + roadHalfHeight);
+      return;
+    }
+
     setBaseUpperLimit(laneYRef.current.upper - 80);
     setBaseLowerLimit(laneYRef.current.lower + 80);
-  }, [stageHeight]);
+  }, [mobileControls, stageHeight]);
 
   useEffect(() => {
     isRunningRef.current = isRunning;
@@ -254,6 +268,33 @@ export default function DogSledRunStage({
     setSledStep(ROAD_STEPS);
   }
 
+  function moveSledByStep(delta: number) {
+    setSledStep((s) => Math.max(0, Math.min(ROAD_STEPS, s + delta)));
+  }
+
+  function moveSledFromClientY(clientY: number) {
+    if (!stageRef.current) return;
+
+    const rect = stageRef.current.getBoundingClientRect();
+    const driveTop = baseUpperLimit + roadEdgeBuffer;
+    const driveBottom = baseLowerLimit - roadEdgeBuffer;
+    const driveHeight = Math.max(1, driveBottom - driveTop);
+    const y = Math.max(driveTop, Math.min(clientY - rect.top, driveBottom));
+    const ratio = (y - driveTop) / driveHeight;
+    const nextStep = Math.round(ratio * ROAD_STEPS);
+
+    setSledStep(Math.max(0, Math.min(ROAD_STEPS, nextStep)));
+  }
+
+  function triggerBoost() {
+    if (!isRunningRef.current) return;
+
+    const now = performance.now();
+    const until = now + BOOST_DURATION_MS;
+    boostUntilTsRef.current = until;
+    setBoostUntilTs(until);
+  }
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
 
@@ -268,11 +309,11 @@ export default function DogSledRunStage({
 
       // ───── Вертикальное управление (ВСЕГДА активно) ─────
       if (e.key === "ArrowUp" || e.key.toLowerCase() === "w") {
-        setSledStep((s) => Math.max(0, s - 1));
+        moveSledByStep(-1);
       }
 
       if (e.key === "ArrowDown" || e.key.toLowerCase() === "s") {
-        setSledStep((s) => Math.min(ROAD_STEPS, s + 1));
+        moveSledByStep(1);
       }
 
       // ───── Остальная логика ТОЛЬКО при запущенной игре ─────
@@ -280,10 +321,7 @@ export default function DogSledRunStage({
 
       // ускорение
       if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
-        const now = performance.now();
-        const until = now + BOOST_DURATION_MS;
-        boostUntilTsRef.current = until;
-        setBoostUntilTs(until);
+        triggerBoost();
       }
 
       // стоп
@@ -371,8 +409,9 @@ export default function DogSledRunStage({
 
         if (nextObstacle) {
           const dx = nextObstacle.x - sledCollisionX;
-          const hitRadius = Number(nextObstacle?.definition?.hitRadius ?? 0);
-          const noseOffset = 300;
+          const hitZoneScale = mobileControls ? MOBILE_HIT_ZONE_SCALE : 1;
+          const hitRadius = Number(nextObstacle?.definition?.hitRadius ?? 0) * hitZoneScale;
+          const noseOffset = 300 * hitZoneScale;
           const hitDistance = hitRadius + noseOffset;
 
           if (Math.abs(dx) <= hitDistance) {
@@ -489,7 +528,7 @@ export default function DogSledRunStage({
           setShowResults(true);
         }
       } else if (inEasingZone) {
-        effectiveSpeed = speed * EASING_SPEED_MULT;
+        effectiveSpeed = speed * (mobileControls ? MOBILE_EASING_SPEED_MULT : EASING_SPEED_MULT);
       } else if (isBoosting) {
         effectiveSpeed = speed * 1.6;
       }
@@ -559,7 +598,43 @@ export default function DogSledRunStage({
   );
 
   return (
-    <div className="dog-sled-run-stage" ref={stageRef}>
+    <div
+      className={`dog-sled-run-stage ${mobileControls ? "dog-sled-run-stage--mobile" : ""}`}
+      ref={stageRef}
+      onPointerDown={
+        mobileControls
+          ? (event) => {
+              if (phaseRef.current !== "running") return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              mobilePointerActiveRef.current = true;
+              moveSledFromClientY(event.clientY);
+            }
+          : undefined
+      }
+      onPointerMove={
+        mobileControls
+          ? (event) => {
+              if (phaseRef.current !== "running" || !mobilePointerActiveRef.current) return;
+              moveSledFromClientY(event.clientY);
+            }
+          : undefined
+      }
+      onPointerUp={
+        mobileControls
+          ? (event) => {
+              mobilePointerActiveRef.current = false;
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          : undefined
+      }
+      onPointerCancel={
+        mobileControls
+          ? () => {
+              mobilePointerActiveRef.current = false;
+            }
+          : undefined
+      }
+    >
       <div
         className="dog-sled-run-scene"
         style={{ position: "relative", width: "100%", height: "100%" }}
@@ -707,7 +782,7 @@ export default function DogSledRunStage({
           <div
             className="road-buffer road-buffer-top"
             style={{
-              height: 20,
+              height: roadEdgeBuffer,
               pointerEvents: "none",
             }}
           />
@@ -717,17 +792,17 @@ export default function DogSledRunStage({
             className="road-drive-band"
             style={{
               position: "relative",
-              height: "calc(100% - 40px)", // 20px top + 20px bottom
+              height: `calc(100% - ${roadEdgeBuffer * 2}px)`,
             }}
           >
-            <DogSled y={targetSledY} state={sledState} />
+            <DogSled y={targetSledY} state={sledState} scale={mobileControls ? 0.72 : 1} />
           </div>
 
           {/* нижний буфер */}
           <div
             className="road-buffer road-buffer-bottom"
             style={{
-              height: 20,
+              height: roadEdgeBuffer,
               pointerEvents: "none",
             }}
           />
@@ -756,6 +831,30 @@ export default function DogSledRunStage({
           </button>
         </div>
       )}
+
+      {mobileControls && phase === "running" ? (
+        <div
+          className="dog-sled-mobile-controls"
+          aria-label="Sled controls"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="dog-sled-mobile-pad">
+            <button type="button" onClick={() => moveSledByStep(-1)}>
+              ↑
+            </button>
+            <button type="button" onClick={() => moveSledByStep(1)}>
+              ↓
+            </button>
+          </div>
+          <button
+            type="button"
+            className="dog-sled-mobile-boost"
+            onClick={triggerBoost}
+          >
+            →
+          </button>
+        </div>
+      ) : null}
 
       {phase === "finish" && showResults && (
         <RunResultsOverlay

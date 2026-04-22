@@ -23,6 +23,12 @@ import MobileSvgDrawMap, { type MobileSvgMapHit, type MobileSvgMapPointerEvent }
 import CharacterStage from "./logic/dress-up-game/CharacterStage";
 import FinalSummary from "./logic/dress-up-game/FinalSummary";
 import MobileLabGameStage from "./logic/lab-game/MobileLabGameStage";
+import DogsSledSVG from "./logic/dog-sled-game/DogsSledSVG";
+import PreparationPopup from "./logic/dog-sled-game/PreparationPopup";
+import StatBar from "./logic/dog-sled-game/StatBar";
+import SledAnimationOverlay from "./logic/dog-sled-game/SledAnimationOverlay";
+import DogSledRunStage from "./logic/dog-sled-game/DogSledRunStage";
+import type { PreparationResult, SledPart } from "./logic/dog-sled-game/PreparationPopup";
 import type { CharacterResult } from "@/types/types";
 import countryNames from "@/utils/country_names.json";
 import seaNames from "@/utils/sea_names.json";
@@ -33,6 +39,8 @@ type MobilePageProps = {
 };
 
 type MobileStationDoorId = "heat" | "lab" | "garage";
+type MobileGaragePhase = "inspect" | "ride";
+type MobileSledAnimation = null | "loads" | "water" | "food" | "dogs" | "skids";
 
 const MOBILE_PAGE_ORDER: PageId[] = [
   "day1",
@@ -418,6 +426,25 @@ const MOBILE_HEAT_CHARACTERS = [
     img: "/supabase-storage/quests/1_quest/games/dress-up/Tamara/Tamara.webp",
   },
 ];
+
+const MOBILE_GARAGE_PARTS: SledPart[] = [
+  "reins",
+  "harness",
+  "water",
+  "food",
+  "brake",
+  "skids",
+  "loads",
+  "dogs",
+];
+
+const QUEST_MOBILE_CONFETTI = Array.from({ length: 42 }, (_, index) => ({
+  id: index,
+  left: `${(index * 23) % 100}%`,
+  delay: `${(index % 9) * 0.11}s`,
+  duration: `${1.7 + (index % 5) * 0.18}s`,
+  drift: `${((index % 7) - 3) * 18}px`,
+}));
 
 function useMobileLandscape() {
   const [isLandscape, setIsLandscape] = useState(false);
@@ -1398,36 +1425,338 @@ function Day5LabMobile({ go }: MobilePageProps) {
   );
 }
 
-function PlaceholderMobile({
-  title,
-  paragraphs,
-  nextLabel,
-  nextPage,
-  go,
-}: {
-  title: string;
-  paragraphs: string[];
-  nextLabel: string;
-  nextPage: PageId;
-  go: (id: PageId) => void;
-}) {
-  const [revealCount, setRevealCount] = useState(1);
-  const isFinished = revealCount >= paragraphs.length;
+function Day5GarageMobile({ go }: MobilePageProps) {
+  const { lang, t } = useQuest1I18n();
+  const isLandscape = useMobileLandscape();
+  const [phase, setPhase] = useState<MobileGaragePhase>("inspect");
+  const [activePart, setActivePart] = useState<SledPart | null>(null);
+  const [partsOpen, setPartsOpen] = useState(false);
+  const [showRideWarning, setShowRideWarning] = useState(false);
+  const [activeAnimation, setActiveAnimation] = useState<MobileSledAnimation>(null);
+  const [prep, setPrep] = useState<PreparationResult>({
+    speedModifier: 0.1,
+    stability: 0.1,
+    stamina: 0.5,
+    risk: 1,
+  });
+
+  function statLevel(value: number) {
+    if (value >= 0.9) return "is-max" as const;
+    if (value < 0.3) return "is-danger" as const;
+    if (value < 0.6) return "is-warning" as const;
+    return "is-ok" as const;
+  }
+
+  function mapPartToAnimation(part: SledPart): MobileSledAnimation {
+    switch (part) {
+      case "loads":
+      case "water":
+      case "food":
+      case "dogs":
+      case "skids":
+        return part;
+      default:
+        return null;
+    }
+  }
+
+  function applyGaragePatch(patch: Partial<PreparationResult>) {
+    setPrep((prev) => {
+      const keys: Array<keyof PreparationResult> = ["speedModifier", "stability", "stamina", "risk"];
+      const next = { ...prev };
+
+      keys.forEach((key) => {
+        next[key] = Math.min(1, Math.max(0, prev[key] + (patch[key] ?? 0)));
+      });
+
+      return next;
+    });
+  }
+
+  function isDangerous(nextPrep: PreparationResult) {
+    return nextPrep.risk > 0.7 || nextPrep.stability < 0.3 || nextPrep.stamina < 0.3;
+  }
+
+  const rotateTitle =
+    lang === "ru"
+      ? "Поверни телефон боком"
+      : lang === "he"
+        ? "סובבו את הטלפון לרוחב"
+        : "Turn your phone sideways";
+
+  const rotateText =
+    lang === "ru"
+      ? "Гараж и заезд работают в альбомном режиме: так помещаются сани, шкалы и управление."
+      : lang === "he"
+        ? "הגרז' והנסיעה פועלים במצב אופקי: כך המזחלת, המדדים והשליטה נכנסים למסך."
+        : "The garage and ride work in landscape mode so the sled, stats, and controls fit on screen.";
+
+  if (!isLandscape) {
+    return (
+      <div className="quest-mobile-landscape-gate" role="status" aria-live="polite">
+        <div className="quest-mobile-landscape-phone" aria-hidden>
+          <span />
+        </div>
+        <h2>{rotateTitle}</h2>
+        <p>{rotateText}</p>
+        <button type="button" className="quest-mobile-primary" onClick={() => go("day5_spitsbergen")}>
+          {t.day5Garage.backButton}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="quest-mobile-garage-game">
+      <button
+        type="button"
+        className="quest-mobile-garage-back"
+        onClick={() => {
+          if (phase === "ride") {
+            setPhase("inspect");
+            return;
+          }
+          go("day5_spitsbergen");
+        }}
+      >
+        {phase === "ride" ? t.engine.prevButton : t.day5Garage.backButton}
+      </button>
+
+      {phase === "inspect" ? (
+        <div className="quest-mobile-garage-inspect">
+          <div className="quest-mobile-garage-scene">
+            <DogsSledSVG
+              activePart={activePart}
+              onSelect={(part) => setActivePart(part)}
+            />
+            <SledAnimationOverlay
+              animation={activeAnimation}
+              onFinished={() => setActiveAnimation(null)}
+            />
+          </div>
+
+          <button
+            type="button"
+            className={`quest-mobile-garage-parts-toggle ${partsOpen ? "is-open" : ""}`}
+            onClick={() => setPartsOpen((value) => !value)}
+            aria-expanded={partsOpen}
+            aria-controls="quest-mobile-garage-parts"
+          >
+            {partsOpen ? "›" : "‹"}
+          </button>
+
+          <aside
+            id="quest-mobile-garage-parts"
+            className={`quest-mobile-garage-parts ${partsOpen ? "is-open" : ""}`}
+            aria-label={t.day5Garage.title}
+          >
+            {MOBILE_GARAGE_PARTS.map((part) => (
+              <button
+                key={part}
+                type="button"
+                className={activePart === part ? "is-active" : ""}
+                onClick={() => {
+                  setActivePart(part);
+                  setPartsOpen(false);
+                }}
+              >
+                {t.day5Garage.popup.parts[part]}
+              </button>
+            ))}
+          </aside>
+
+          <div className="garage-stats-panel quest-mobile-garage-stats">
+            <StatBar
+              values={{
+                stability: prep.stability,
+                stamina: prep.stamina,
+                speed: prep.speedModifier,
+                risk: prep.risk,
+              }}
+              levels={{
+                stability: statLevel(prep.stability),
+                stamina: statLevel(prep.stamina),
+                speed: statLevel(prep.speedModifier),
+                risk: statLevel(prep.risk),
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            className="garage-start-ride-btn quest-mobile-garage-start"
+            onClick={() => {
+              if (isDangerous(prep)) {
+                setShowRideWarning(true);
+                return;
+              }
+              setPhase("ride");
+            }}
+          >
+            {t.day5Garage.startRide}
+          </button>
+
+          {activePart ? (
+            <PreparationPopup
+              activePart={activePart}
+              prep={prep}
+              onApply={applyGaragePatch}
+              onClose={() => setActivePart(null)}
+              onPlayAnimation={(part) => {
+                setActiveAnimation(mapPartToAnimation(part));
+              }}
+            />
+          ) : null}
+
+          {showRideWarning ? (
+            <div className="garage-warning-overlay quest-mobile-garage-warning">
+              <div className="garage-warning-popup">
+                <h2>{t.day5Garage.warningTitle}</h2>
+                <p>{t.day5Garage.warningText}</p>
+                <div className="garage-warning-actions">
+                  <button type="button" onClick={() => setShowRideWarning(false)}>
+                    {t.day5Garage.warningBack}
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => {
+                      setShowRideWarning(false);
+                      setPhase("ride");
+                    }}
+                  >
+                    {t.day5Garage.warningRisk}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="quest-mobile-garage-ride">
+          <DogSledRunStage
+            prep={prep}
+            mobileControls
+            onExit={() => setPhase("inspect")}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Day6ExpeditionMobile({ go }: MobilePageProps) {
+  const { t } = useQuest1I18n();
+  const paragraphs = useMemo(() => flattenBlocks(t.day6.blocks), [t.day6.blocks]);
 
   return (
     <>
-      <div className="quest-mobile-placeholder-visual" aria-hidden />
+      <QuestMobileMedia src="/supabase-storage/quests/1_quest/images/expedition.webm" />
       <QuestMobileTextReveal
         paragraphs={paragraphs}
-        revealCount={revealCount}
-        onRevealNext={() => setRevealCount((count) => Math.min(paragraphs.length, count + 1))}
+        revealCount={paragraphs.length}
+        onRevealNext={() => {}}
       />
-      {isFinished ? (
-        <button type="button" className="quest-mobile-primary" onClick={() => go(nextPage)}>
-          {nextLabel || title}
-        </button>
-      ) : null}
+      <button
+        type="button"
+        className="quest-mobile-primary"
+        onClick={() => go("day7_treasure_of_times")}
+      >
+        {t.day6.nextButton}
+      </button>
     </>
+  );
+}
+
+function Day7TreasureMobile() {
+  const router = useRouter();
+  const { lang, t } = useQuest1I18n();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [celebrating, setCelebrating] = useState(false);
+  const paragraphs = useMemo(() => flattenBlocks(t.day7.blocks), [t.day7.blocks]);
+
+  const goToMap = useCallback(() => {
+    void router.push(
+      { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
+      undefined,
+      { locale: lang },
+    );
+  }, [lang, router]);
+
+  const finishQuest = () => {
+    if (celebrating) return;
+
+    setCelebrating(true);
+    const audio = audioRef.current;
+
+    if (!audio) {
+      window.setTimeout(goToMap, 1800);
+      return;
+    }
+
+    audio.currentTime = 0;
+    const playback = audio.play();
+
+    if (playback) {
+      playback.catch(() => {
+        window.setTimeout(goToMap, 1800);
+      });
+    }
+  };
+
+  return (
+    <div className={`quest-mobile-final ${celebrating ? "is-celebrating" : ""}`}>
+      <div className="quest-mobile-final-video">
+        <iframe
+          src="https://www.youtube.com/embed/sE2jxOVG8kU"
+          title={t.day7.videoTitle}
+          allow="autoplay; encrypted-media; fullscreen"
+          allowFullScreen
+        />
+      </div>
+
+      {lang !== "ru" && t.day7.videoTranslationNotice ? (
+        <p className="quest-mobile-video-note">{t.day7.videoTranslationNotice}</p>
+      ) : null}
+
+      <QuestMobileTextReveal
+        paragraphs={paragraphs}
+        revealCount={paragraphs.length}
+        onRevealNext={() => {}}
+      />
+
+      <button
+        type="button"
+        className="quest-mobile-primary quest-mobile-final-button"
+        onClick={finishQuest}
+        disabled={celebrating}
+      >
+        {t.day7.backButton}
+      </button>
+
+      {celebrating ? (
+        <div className="quest-mobile-confetti" aria-hidden>
+          {QUEST_MOBILE_CONFETTI.map((piece) => (
+            <span
+              key={piece.id}
+              style={{
+                "--confetti-left": piece.left,
+                "--confetti-delay": piece.delay,
+                "--confetti-duration": piece.duration,
+                "--confetti-drift": piece.drift,
+              } as CSSProperties}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <audio
+        ref={audioRef}
+        src="/sounds/finish-quest-sound.ogg"
+        preload="auto"
+        onEnded={goToMap}
+      />
+    </div>
   );
 }
 
@@ -1463,29 +1792,14 @@ export default function Quest1MobileEngine() {
     if (pageId === "day5_spitsbergen") return <Day5SpitsbergenMobile go={setPageId} />;
     if (pageId === "day5_heat") return <Day5HeatMobile go={setPageId} />;
     if (pageId === "day5_lab") return <Day5LabMobile go={setPageId} />;
+    if (pageId === "day5_garage") return <Day5GarageMobile go={setPageId} />;
 
     if (pageId === "day6_expedition") {
-      return (
-        <PlaceholderMobile
-          title={t.day6.title}
-          paragraphs={flattenBlocks(t.day6.blocks)}
-          nextLabel={t.day6.nextButton}
-          nextPage="day7_treasure_of_times"
-          go={setPageId}
-        />
-      );
+      return <Day6ExpeditionMobile go={setPageId} />;
     }
 
     if (pageId === "day7_treasure_of_times") {
-      return (
-        <PlaceholderMobile
-          title={t.day7.title}
-          paragraphs={flattenBlocks(t.day7.blocks)}
-          nextLabel={t.day7.backButton}
-          nextPage="day1"
-          go={() => exit()}
-        />
-      );
+      return <Day7TreasureMobile />;
     }
 
     return (
