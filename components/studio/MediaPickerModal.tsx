@@ -40,7 +40,6 @@ export default function MediaPickerModal({
 
   const [confirmRights, setConfirmRights] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const lastObjectUrlRef = useRef<string | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
   const MAX_IMAGE_MB = 10;
@@ -48,6 +47,15 @@ export default function MediaPickerModal({
   const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
   const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
   const MAX_VIDEO_SECONDS = 20;
+
+  function readFileAsDataUrl(file: File) {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error ?? new Error("Failed to read uploaded file"));
+      reader.readAsDataURL(file);
+    });
+  }
 
   async function searchLibraryMedia(
     source: "giphy" | "pexels",
@@ -188,7 +196,7 @@ export default function MediaPickerModal({
     }
   }
 
-  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     setUploadError(null);
 
     const input = e.target;
@@ -251,7 +259,7 @@ export default function MediaPickerModal({
       video.preload = "metadata";
       video.src = tempUrl;
 
-      video.onloadedmetadata = () => {
+      video.onloadedmetadata = async () => {
         const duration = video.duration;
         URL.revokeObjectURL(tempUrl);
 
@@ -261,18 +269,16 @@ export default function MediaPickerModal({
           return;
         }
 
-        // If duration OK, proceed with normal flow
-        if (lastObjectUrlRef.current) {
-          URL.revokeObjectURL(lastObjectUrlRef.current);
-          lastObjectUrlRef.current = null;
+        try {
+          const finalUrl = await readFileAsDataUrl(file);
+          onSelect({ url: finalUrl, mediaType: "video" });
+          onClose();
+          input.value = "";
+        } catch (error) {
+          console.error("Failed to read uploaded video", error);
+          setUploadError(t.errorVideoMetadata);
+          input.value = "";
         }
-
-        const finalUrl = URL.createObjectURL(file);
-        lastObjectUrlRef.current = finalUrl;
-
-        onSelect({ url: finalUrl, mediaType: "video" });
-        onClose();
-        input.value = "";
       };
 
       video.onerror = () => {
@@ -284,20 +290,16 @@ export default function MediaPickerModal({
       return;
     }
 
-    // For images (videos already handled above)
-    if (lastObjectUrlRef.current) {
-      URL.revokeObjectURL(lastObjectUrlRef.current);
-      lastObjectUrlRef.current = null;
+    try {
+      const url = await readFileAsDataUrl(file);
+      onSelect({ url, mediaType: "image" });
+      onClose();
+      input.value = "";
+    } catch (error) {
+      console.error("Failed to read uploaded image", error);
+      setUploadError(t.errorUnsupported);
+      input.value = "";
     }
-
-    const url = URL.createObjectURL(file);
-    lastObjectUrlRef.current = url;
-
-    onSelect({ url, mediaType: "image" });
-    onClose();
-
-    // Reset input so selecting the same file again triggers onChange
-    input.value = "";
   }
 
   if (!isOpen) return null;
