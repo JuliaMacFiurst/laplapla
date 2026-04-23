@@ -8,12 +8,14 @@ type MobileQuestSelectScreenProps = {
   lang: Lang;
   quests: Quest[];
   onBackToMap: () => void;
+  onGoHome: () => void;
 };
 
 export default function MobileQuestSelectScreen({
   lang,
   quests,
   onBackToMap,
+  onGoHome,
 }: MobileQuestSelectScreenProps) {
   const router = useRouter();
   const t = dictionaries[lang].raccoons.quests;
@@ -35,14 +37,24 @@ export default function MobileQuestSelectScreen({
   return (
     <main className="raccoons-mobile-quests-screen" dir={lang === "he" ? "rtl" : "ltr"}>
       <header className="raccoons-mobile-quests-topbar">
-        <button
-          type="button"
-          className="raccoons-mobile-quests-back"
-          onClick={onBackToMap}
-          aria-label={lang === "ru" ? "Назад к карте" : lang === "he" ? "חזרה למפה" : "Back to map"}
-        >
-          {lang === "he" ? "→" : "←"}
-        </button>
+        <div className="raccoons-mobile-quests-topbar-actions">
+          <button
+            type="button"
+            className="raccoons-mobile-quests-back"
+            onClick={onBackToMap}
+            aria-label={lang === "ru" ? "Назад к карте" : lang === "he" ? "חזרה למפה" : "Back to map"}
+          >
+            {lang === "he" ? "→" : "←"}
+          </button>
+          <button
+            type="button"
+            className="capybara-mobile-topbar-button raccoons-mobile-home-button"
+            onClick={onGoHome}
+            aria-label={lang === "ru" ? "На главную" : lang === "he" ? "חזרה למסך הראשי" : "Go to home screen"}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
         <div>
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>

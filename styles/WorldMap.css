@@ -434,10 +434,17 @@ body.raccoons-mobile-page .footer-stack {
   right: 8px;
   z-index: 130;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 52px minmax(0, 1fr);
+  grid-template-columns: 52px minmax(0, 1fr) 52px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   pointer-events: none;
+}
+
+.raccoons-mobile-home-button {
+  justify-self: start;
+  pointer-events: auto;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .raccoons-mobile-floating-controls .lang-switcher {
@@ -569,10 +576,16 @@ body.raccoons-mobile-page .footer-stack {
 .raccoons-mobile-quests-topbar {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: auto 1fr;
   gap: 12px;
   align-items: center;
   padding: calc(12px + env(safe-area-inset-top, 0)) 16px 10px;
+}
+
+.raccoons-mobile-quests-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .raccoons-mobile-quests-back {

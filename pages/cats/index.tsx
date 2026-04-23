@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
+import TranslationWarning from "@/components/TranslationWarning";
 import MobileSlideshowViewer from "@/components/studio/mobile/MobileSlideshowViewer";
 import { useMobileSlideshow } from "@/components/studio/mobile/useMobileSlideshow";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { dictionaries, Lang } from "../../i18n";
 import { CAT_PRESETS, type AnyCatPreset } from "../../content/cats";
-import { useRouter } from "next/router";
 import {
   buildAnimalSlideMediaQueries,
   findAlternativeSlideMedia,
@@ -19,6 +20,8 @@ type CatRuntimeSlide = {
   text: string;
   image?: string;
 };
+
+const CAT_SEARCH_RESULTS_LIMIT = 8;
 
 function pickRandomItems<T>(items: T[], count: number) {
   const shuffled = [...items];
@@ -45,20 +48,47 @@ function buildStudioSlides(slides: CatRuntimeSlide[], seed: string): StudioSlide
     }));
 }
 
+function normalizeForSearch(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function matchesCatPresetQuery(preset: AnyCatPreset, query: string) {
+  const normalizedPrompt = normalizeForSearch(preset.prompt);
+  if (!normalizedPrompt) {
+    return false;
+  }
+
+  if (normalizedPrompt.includes(query)) {
+    return true;
+  }
+
+  const queryTokens = query.split(" ").filter(Boolean);
+  const promptTokens = normalizedPrompt.split(" ").filter(Boolean);
+
+  return queryTokens.every((queryToken) =>
+    promptTokens.some((promptToken) =>
+      promptToken.startsWith(queryToken) ||
+      queryToken.startsWith(promptToken) ||
+      promptToken.includes(queryToken),
+    ),
+  );
+}
+
 export default function CatPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
   const seo = dictionaries[lang].seo.cats.index;
   const isMobile = useIsMobile();
   const mobileSlideshow = useMobileSlideshow();
+  const router = useRouter();
+  const currentLang = getCurrentLang(router);
+  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats";
 
   const [availablePresets, setAvailablePresets] = useState<AnyCatPreset[]>(CAT_PRESETS);
-
-  const presetsForLang = useMemo(
-    () => availablePresets.filter((preset) => preset.lang === lang),
-    [availablePresets, lang]
-  );
-
-  const [activePresetKey, setActivePresetKey] = useState<string | null>(null);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
   const [pendingQuestion, setPendingQuestion] = useState("");
   const [slides, setSlides] = useState<CatRuntimeSlide[]>([]);
@@ -66,11 +96,31 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [error, setError] = useState<string | null>(null);
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
   const [examplePresets, setExamplePresets] = useState<AnyCatPreset[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDesktopSearchFocused, setIsDesktopSearchFocused] = useState(false);
+  const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false);
+  const lastResolvedTextPresetKeyRef = useRef<string | null>(null);
+
+  const presetsForLang = useMemo(
+    () => availablePresets.filter((preset) => preset.lang === lang),
+    [availablePresets, lang],
+  );
 
   const activePreset = useMemo(() => {
-    if (!activePresetKey) return null;
-    return presetsForLang.find((preset) => preset.id === activePresetKey) || null;
-  }, [activePresetKey, presetsForLang]);
+    if (!activePresetId) return null;
+    return presetsForLang.find((preset) => preset.id === activePresetId) || null;
+  }, [activePresetId, presetsForLang]);
+
+  useEffect(() => {
+    if (!activePresetId || activePreset) {
+      return;
+    }
+
+    setInputText("");
+    setPendingQuestion("");
+    setSlides([]);
+    setLoading(false);
+  }, [activePreset, activePresetId]);
 
   useEffect(() => {
     let active = true;
@@ -92,15 +142,15 @@ export default function CatPage({ lang }: { lang: Lang }) {
                 "id" in preset &&
                 "kind" in preset &&
                 "prompt" in preset,
-              )
+              ),
             )
           : [];
 
         if (active && nextPresets.length > 0) {
           setAvailablePresets(nextPresets);
         }
-      } catch (error) {
-        console.warn("[cats] failed to load DB cat presets; using hardcoded presets", error);
+      } catch (nextError) {
+        console.warn("[cats] failed to load DB cat presets; using hardcoded presets", nextError);
         if (active) {
           setAvailablePresets(CAT_PRESETS);
         }
@@ -115,31 +165,11 @@ export default function CatPage({ lang }: { lang: Lang }) {
   }, [lang]);
 
   useEffect(() => {
-    if (!activePreset || activePreset.kind !== "full") return;
-
-    setInputText(activePreset.prompt);
-    setSlides(
-      activePreset.slides.map((slide) => ({
-        text: slide.text,
-        image: slide.mediaUrl,
-      }))
-    );
-  }, [activePreset]);
-
-  useEffect(() => {
     setExamplePresets(pickRandomItems(presetsForLang, 3));
   }, [presetsForLang]);
 
-  const router = useRouter();
-  const currentLang = getCurrentLang(router);
-  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats";
-  const currentLoadingQuestion = (pendingQuestion || inputText).trim();
-  const mobileLoadingLabel = currentLoadingQuestion
-    ? t.thinkingLongWithQuestion.replace("{question}", currentLoadingQuestion)
-    : t.thinkingLong;
-
-  const getSlidesForPreset = async (
-    preset: AnyCatPreset
+  const getSlidesForPreset = useCallback(async (
+    preset: AnyCatPreset,
   ): Promise<{ prompt: string; slides: CatRuntimeSlide[]; seed: string }> => {
     if (preset.kind === "full") {
       return {
@@ -166,44 +196,125 @@ export default function CatPage({ lang }: { lang: Lang }) {
       throw new Error("Failed to fetch slides");
     }
 
-    const data = await response.json();
+    const data = await response.json() as { slides?: CatRuntimeSlide[] };
     return {
       prompt: preset.prompt,
-      slides: data.slides,
+      slides: Array.isArray(data.slides) ? data.slides : [],
       seed: preset.id,
     };
-  };
+  }, [lang]);
 
-  const applyPreset = (preset: AnyCatPreset) => {
-    if (preset.kind === "text") {
-      void handleTextPreset(preset);
+  useEffect(() => {
+    if (!activePreset) {
       return;
     }
 
-    setActivePresetKey(preset.id);
-  };
+    if (activePreset.kind === "full") {
+      lastResolvedTextPresetKeyRef.current = null;
+      setError(null);
+      setLoading(false);
+      setPendingQuestion("");
+      setInputText(activePreset.prompt);
+      setSlides(
+        activePreset.slides.map((slide) => ({
+          text: slide.text,
+          image: slide.mediaUrl,
+        })),
+      );
+      return;
+    }
 
-  const handleTextPreset = async (
-    preset: Extract<AnyCatPreset, { kind: "text" }>
-  ) => {
+    const presetCacheKey = `${lang}:${activePreset.id}`;
+    if (lastResolvedTextPresetKeyRef.current === presetCacheKey) {
+      return;
+    }
+
+    let active = true;
     setError(null);
     setSlides([]);
     setLoading(true);
-    setPendingQuestion(preset.prompt);
+    setPendingQuestion(activePreset.prompt);
 
-    try {
-      const next = await getSlidesForPreset(preset);
-      setInputText(next.prompt);
-      setSlides(next.slides);
-    } catch {
-      setError(t.errors.generic);
-    } finally {
-      setLoading(false);
-      setPendingQuestion("");
+    void getSlidesForPreset(activePreset)
+      .then((next) => {
+        if (!active) {
+          return;
+        }
+
+        lastResolvedTextPresetKeyRef.current = presetCacheKey;
+        setInputText(next.prompt);
+        setSlides(next.slides);
+
+        if (mobileSlideshow.isOpen) {
+          mobileSlideshow.replaceSlides(buildStudioSlides(next.slides, next.seed));
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setError(t.errors.generic);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+          setPendingQuestion("");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activePreset, getSlidesForPreset, lang, mobileSlideshow.isOpen, mobileSlideshow.replaceSlides, t.errors.generic]);
+
+  const currentLoadingQuestion = (pendingQuestion || inputText).trim();
+  const mobileLoadingLabel = currentLoadingQuestion
+    ? t.thinkingLongWithQuestion.replace("{question}", currentLoadingQuestion)
+    : t.thinkingLong;
+
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const normalizedSearchQuery = useMemo(
+    () => normalizeForSearch(deferredSearchQuery),
+    [deferredSearchQuery],
+  );
+
+  const searchResults = useMemo(() => {
+    if (normalizedSearchQuery.length < 2) {
+      return [] as AnyCatPreset[];
+    }
+
+    return presetsForLang
+      .filter((preset) => matchesCatPresetQuery(preset, normalizedSearchQuery))
+      .slice(0, CAT_SEARCH_RESULTS_LIMIT);
+  }, [normalizedSearchQuery, presetsForLang]);
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setIsDesktopSearchFocused(false);
+    setIsMobileSearchFocused(false);
+  };
+
+  const selectPresetFromSearch = (preset: AnyCatPreset) => {
+    clearSearch();
+
+    if (isMobile) {
+      void openMobilePreset(preset);
+      return;
+    }
+
+    applyPreset(preset);
+  };
+
+  const applyPreset = (preset: AnyCatPreset) => {
+    lastResolvedTextPresetKeyRef.current = preset.kind === "text" ? null : lastResolvedTextPresetKeyRef.current;
+    setActivePresetId(preset.id);
+    if (preset.kind === "full") {
+      setError(null);
     }
   };
 
   const openMobilePreset = async (preset: AnyCatPreset) => {
+    lastResolvedTextPresetKeyRef.current = preset.kind === "text" ? `${lang}:${preset.id}` : null;
+    setActivePresetId(preset.id);
     setError(null);
     setPendingQuestion(preset.prompt);
     mobileSlideshow.open({ loading: true });
@@ -254,8 +365,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
                 ...currentSlide,
                 image: nextImage,
               }
-            : currentSlide
-        )
+            : currentSlide,
+        ),
       );
     } finally {
       setRefreshingSlideIndex((current) => (current === slideIndex ? null : current));
@@ -284,8 +395,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
                 mediaUrl: nextImage,
                 mediaType: nextImage.endsWith(".mp4") ? "video" : "image",
               }
-            : currentSlide
-        )
+            : currentSlide,
+        ),
       );
 
       setSlides((currentSlides) =>
@@ -295,8 +406,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
                 ...currentSlide,
                 image: nextImage,
               }
-            : currentSlide
-        )
+            : currentSlide,
+        ),
       );
     } finally {
       setRefreshingSlideIndex((current) => (current === slideIndex ? null : current));
@@ -309,12 +420,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
     }
 
     const randomPreset = presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
+    lastResolvedTextPresetKeyRef.current = randomPreset.kind === "text" ? `${lang}:${randomPreset.id}` : null;
+    setActivePresetId(randomPreset.id);
     setPendingQuestion(randomPreset.prompt);
     mobileSlideshow.open({ loading: true });
 
     try {
       const next = await getSlidesForPreset(randomPreset);
-
       setInputText(next.prompt);
       setSlides(next.slides);
       mobileSlideshow.replaceSlides(buildStudioSlides(next.slides, next.seed));
@@ -331,13 +443,93 @@ export default function CatPage({ lang }: { lang: Lang }) {
     void router.push(
       buildStudioRoute("cats", currentLang),
       undefined,
-      { locale: currentLang }
+      { locale: currentLang },
+    );
+  };
+
+  const renderSearchBlock = (mode: "desktop" | "mobile") => {
+    const isFocused = mode === "desktop" ? isDesktopSearchFocused : isMobileSearchFocused;
+    const setFocused = mode === "desktop" ? setIsDesktopSearchFocused : setIsMobileSearchFocused;
+
+    return (
+      <div className={`cats-search-block cats-search-block-${mode}`}>
+        <form
+          className={`search-form cats-search-form ${
+            mode === "mobile" ? "cats-search-form-mobile" : "cats-search-form-desktop"
+          }`}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (searchResults[0]) {
+              selectPresetFromSearch(searchResults[0]);
+            }
+          }}
+        >
+          <div className="search-input-wrapper">
+            <input
+              type="text"
+              id={`cats-search-${mode}`}
+              name="cats-search"
+              className="search-input"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => {
+                window.setTimeout(() => {
+                  setFocused(false);
+                }, 120);
+              }}
+              placeholder={t.examplesTitle}
+              aria-label={t.examplesTitle}
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                className="search-clear-button"
+                onMouseDown={(event) => event.preventDefault()}
+              onClick={clearSearch}
+              aria-label="Clear"
+              >
+                ×
+              </button>
+            ) : null}
+            {mode === "mobile" ? (
+              <button
+                type="submit"
+                className="search-button cats-search-submit"
+                aria-label={t.inputPlaceholder}
+                disabled={!searchResults[0]}
+              >
+                <span aria-hidden="true">⌕</span>
+              </button>
+            ) : null}
+          </div>
+        </form>
+
+        {isFocused && searchResults.length > 0 ? (
+          <div className="cats-search-results search-results-panel">
+            <div className="search-results-list">
+              {searchResults.map((preset) => (
+                <button
+                  key={`${preset.kind}:${preset.id}`}
+                  type="button"
+                  className="search-result-card"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectPresetFromSearch(preset)}
+                >
+                  {preset.prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
     );
   };
 
   const mobileTriggerButtons = (
     <div className="cats-mobile-entry">
       {error ? <p className="error-message">{error}</p> : null}
+      {renderSearchBlock("mobile")}
       <div className="cats-mobile-trigger-list">
         {examplePresets.map((item) => (
           <button
@@ -379,6 +571,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
         ) : (
           <>
             <p className="example-title">{t.examplesTitle}</p>
+            {renderSearchBlock("desktop")}
 
             <div className="example-buttons">
               {examplePresets.map((item) => (
@@ -411,6 +604,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
             </button>
 
             <div className="slide-container">
+              {lang !== "ru" && activePreset?.translated === false ? <TranslationWarning lang={lang} /> : null}
               {loading ? (
                 <div className="cat-spinner-wrapper">
                   <img
@@ -467,7 +661,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
               )}
             </div>
 
-            {slides.length > 0 && (
+            {slides.length > 0 ? (
               <div style={{ marginTop: 20, textAlign: "center" }}>
                 <button
                   className="edit-slides-button"
@@ -478,7 +672,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
                   {t.editInStudio}
                 </button>
               </div>
-            )}
+            ) : null}
 
             <img src="/cat/mouse-hanging.webp" alt="" className="hanging-mouse" />
             <img src="/cat/ball.webp" alt="" className="rolling-ball" />
@@ -510,7 +704,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
             mobileSlideshow.slides.map((slide) => ({
               text: slide.text,
               image: slide.mediaUrl,
-            }))
+            })),
           );
         }}
         onRandomQuestion={openRandomMobileSlideshow}

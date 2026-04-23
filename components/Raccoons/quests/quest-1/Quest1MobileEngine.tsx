@@ -1813,14 +1813,46 @@ export default function Quest1MobileEngine() {
     }
   }, []);
 
-  const exit = () => {
+  const exit = useCallback(() => {
+    if (typeof window !== "undefined" && !window.confirm(t.engine.confirmExit)) {
+      return;
+    }
+
     clearStoredMobilePageId();
-    void router.push(
+    void router.replace(
       { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
       undefined,
       { locale: lang },
     );
-  };
+  }, [lang, router, t.engine.confirmExit]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const historyState = { quest1ExitGuard: true };
+    window.history.pushState(historyState, "", window.location.href);
+
+    const handlePopState = () => {
+      if (window.confirm(t.engine.confirmExit)) {
+        clearStoredMobilePageId();
+        void router.replace(
+          { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
+          undefined,
+          { locale: lang },
+        );
+        return;
+      }
+
+      window.history.pushState(historyState, "", window.location.href);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [lang, router, t.engine.confirmExit]);
 
   const renderPage = () => {
     if (pageId === "day1") return <Day1Mobile go={setPageId} />;

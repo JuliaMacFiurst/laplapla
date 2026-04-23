@@ -105,7 +105,9 @@ export default function TopBar({ lang }: TopBarProps) {
       )}
 
       {/* Правая зона — язык */}
-      <LanguageSwitcher />
+      <div className="top-bar-actions">
+        <LanguageSwitcher />
+      </div>
     </div>
   );
 }

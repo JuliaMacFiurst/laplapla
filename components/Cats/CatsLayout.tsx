@@ -8,9 +8,10 @@ interface CatsLayoutProps {
   children: React.ReactNode;
   active: "view" | "studio";
   lang: Lang;
+  topbarAction?: React.ReactNode;
 }
 
-export default function CatsLayout({ children, active, lang }: CatsLayoutProps) {
+export default function CatsLayout({ children, active, lang, topbarAction }: CatsLayoutProps) {
   const router = useRouter();
   const currentLang = getCurrentLang(router);
   const t = dictionaries[lang].cats;
@@ -25,32 +26,36 @@ export default function CatsLayout({ children, active, lang }: CatsLayoutProps) 
      <p className="cat-page-subtitle page-subtitle">{pageSubtitle}</p>
       
 
-      <div className="mode-tabs">
-        <button
-          className={`mode-tab-button ${active === "view" ? "active" : ""}`}
-          onClick={() =>
-            router.push(
-              { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
-              undefined,
-              { locale: currentLang },
-            )
-          }
-        >
-          🐱 {t.title}
-        </button>
+      <div className="cats-topbar">
+        <div className="mode-tabs">
+          <button
+            className={`mode-tab-button ${active === "view" ? "active" : ""}`}
+            onClick={() =>
+              router.push(
+                { pathname: "/cats", query: buildLocalizedQuery(currentLang) },
+                undefined,
+                { locale: currentLang },
+              )
+            }
+          >
+            🐱 {t.title}
+          </button>
 
-        <button
-          className={`mode-tab-button ${active === "studio" ? "active" : ""}`}
-          onClick={() =>
-            router.push(
-              buildStudioRoute("cats", currentLang),
-              undefined,
-              { locale: currentLang },
-            )
-          }
-        >
-          🎬 {t.studioTab}
-        </button>
+          <button
+            className={`mode-tab-button ${active === "studio" ? "active" : ""}`}
+            onClick={() =>
+              router.push(
+                buildStudioRoute("cats", currentLang),
+                undefined,
+                { locale: currentLang },
+              )
+            }
+          >
+            🎬 {t.studioTab}
+          </button>
+        </div>
+
+        {topbarAction ? <div className="cats-topbar-action">{topbarAction}</div> : null}
       </div>
 
       {children}

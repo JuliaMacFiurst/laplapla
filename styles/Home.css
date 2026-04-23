@@ -45,8 +45,16 @@ body {
   flex: 0 0 auto;
 }
 
+.top-bar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 /* LTR (ru/en): lang слева, бургер справа */
-.top-bar > .lang-switcher {
+.top-bar > .lang-switcher,
+.top-bar > .top-bar-actions {
   order: 1;
 }
 
@@ -753,6 +761,10 @@ body {
   .top-bar {
     padding: 10px 12px;
     gap: 8px;
+  }
+
+  .top-bar-actions {
+    gap: 6px;
   }
 
   .menu-preview {

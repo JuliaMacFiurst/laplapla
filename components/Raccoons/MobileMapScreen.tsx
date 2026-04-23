@@ -12,6 +12,7 @@ type MobileMapScreenProps = {
   onTabChange: (nextTab: MapTab) => void;
   previewSelectedId: string | null;
   onMapUserSelect: (selectedId: string) => void;
+  onGoHome: () => void;
   onOpenQuests: () => void;
   query: string;
   onQueryChange: (nextQuery: string) => void;
@@ -49,6 +50,7 @@ export default function MobileMapScreen({
   onTabChange,
   previewSelectedId,
   onMapUserSelect,
+  onGoHome,
   onOpenQuests,
   query,
   onQueryChange,
@@ -68,6 +70,14 @@ export default function MobileMapScreen({
   return (
     <main className="raccoons-mobile-screen" dir={lang === "he" ? "rtl" : "ltr"}>
       <div className="raccoons-mobile-floating-controls">
+        <button
+          type="button"
+          className="capybara-mobile-topbar-button raccoons-mobile-home-button"
+          onClick={onGoHome}
+          aria-label={lang === "ru" ? "На главную" : lang === "he" ? "חזרה למסך הראשי" : "Go to home screen"}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
         <LanguageSwitcher />
         <button
           type="button"

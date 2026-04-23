@@ -77,12 +77,105 @@ html, body {
   margin-bottom: 2rem;
 }
 
+.cats-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.cats-topbar-action {
+  display: inline-flex;
+  align-items: center;
+}
+
 .example-title {
   font-size: 1.5rem;
   font-weight: bold;
   margin-top: 1rem;
   margin-bottom: 0.5rem;
   letter-spacing: 0.05em;
+}
+
+.cats-search-block {
+  position: relative;
+  width: min(100%, 720px);
+  margin: 0 auto 18px;
+}
+
+.cats-search-form {
+  justify-content: center;
+}
+
+.cats-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 12;
+}
+
+.cats-search-block-mobile {
+  margin-bottom: 14px;
+}
+
+.cats-search-block-mobile {
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .cats-topbar {
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .cats-topbar .mode-tabs {
+    margin-bottom: 0;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+
+  .cats-topbar-action {
+    flex: 0 0 auto;
+  }
+
+  .cats-search-block-mobile {
+    position: relative;
+    z-index: 14;
+    margin-top: 6px;
+  }
+
+  .cats-search-block-mobile .cats-search-form-mobile {
+    display: block;
+    position: static;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .cats-search-block-mobile .cats-search-form-mobile .search-input-wrapper {
+    flex-wrap: nowrap;
+    overflow: visible;
+    min-height: 52px;
+  }
+
+  .cats-search-block-mobile .cats-search-form-mobile .search-input {
+    min-width: 0;
+    width: 100%;
+    opacity: 1;
+    padding: 0.75rem 1rem;
+  }
+
+  .cats-search-block-mobile .cats-search-submit {
+    width: auto;
+    min-width: 3rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .cats-search-block-mobile .cats-search-results {
+    position: static;
+    margin-top: 8px;
+  }
 }
 
 .example-buttons {
@@ -464,7 +557,6 @@ html[dir="rtl"] .cat-slide {
 .cats-mobile-entry {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   min-height: calc(100dvh - 170px);
   gap: 16px;
 }

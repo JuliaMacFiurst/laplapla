@@ -200,6 +200,9 @@ export default function RaccoonsPage() {
   const visibleResults = results.slice(0, visibleResultsCount);
   const hasMoreResults = results.length > visibleResults.length;
   const mobileScreen = Array.isArray(router.query.screen) ? router.query.screen[0] : router.query.screen;
+  const goToHomeScreen = () => {
+    void router.push(buildLocalizedHref("/", lang), undefined, { locale: lang });
+  };
 
   const openMobileQuestSelect = () => {
     void router.push(
@@ -251,6 +254,7 @@ export default function RaccoonsPage() {
             lang={lang}
             quests={localizedQuests}
             onBackToMap={closeMobileQuestSelect}
+            onGoHome={goToHomeScreen}
           />
         ) : (
           <MobileMapScreen
@@ -259,6 +263,7 @@ export default function RaccoonsPage() {
             onTabChange={handleMapTabChange}
             previewSelectedId={previewSelectedId}
             onMapUserSelect={handleMapUserSelect}
+            onGoHome={goToHomeScreen}
             onOpenQuests={openMobileQuestSelect}
             query={query}
             onQueryChange={setQuery}
