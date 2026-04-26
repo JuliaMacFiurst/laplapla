@@ -4,12 +4,12 @@ import SEO from "@/components/SEO";
 import ParrotMixer, { type MusicConfig } from "../components/ParrotMixer";
 import ParrotStoryCard, { type Slide as ParrotSlide } from "../components/ParrotStoryCard";
 import ParrotMobileExperience from "@/components/parrots/mobile/ParrotMobileExperience";
-import { PARROT_PRESETS } from "../utils/parrot-presets";
 import { dictionaries } from "../i18n";
-import { getMusicStyle } from "../content/parrots/musicStyles";
 import { getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { fetchParrotMusicStyles } from "@/lib/parrots/client";
+import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/parrots/catalog";
 
 type ExportSlide = {
   text: string;
@@ -22,9 +22,14 @@ type ParrotImportPayload = {
   musicConfig: MusicConfig;
   slides: ExportSlide[];
   styleSlug: string;
+  preset?: ParrotStyleRecord;
 };
 
-const imageForPreset = (id: string) => {
+const imageForPreset = (id: string, iconUrl?: string) => {
+  if (iconUrl) {
+    return iconUrl;
+  }
+
   const k = (id || "").toLowerCase();
   if (k.includes("lo") && k.includes("fi")) return "/icons/music-styles-icons/lo-fi.webp";
   if (k.includes("bosa") || k.includes("bossa")) return "/icons/music-styles-icons/bosa-nova.webp";
@@ -64,21 +69,16 @@ export default function ParrotsPage() {
   const seo = dict.seo.parrots;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/parrots";
   const isMobile = useIsMobile();
-  const [activeId, setActiveId] = useState(PARROT_PRESETS[0].id);
-  const preset = useMemo(() => PARROT_PRESETS.find(p => p.id === activeId)!, [activeId]);
-  const activeStyle = useMemo(
-    () => getMusicStyle(lang, activeId),
-    [activeId, lang],
+  const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
+  const [styleRecords, setStyleRecords] = useState<ParrotStyleRecord[]>(fallbackPresets);
+  const [activeId, setActiveId] = useState(fallbackPresets[0]?.id ?? "lofi");
+  const preset = useMemo(
+    () => styleRecords.find((item) => item.id === activeId) ?? styleRecords[0] ?? null,
+    [activeId, styleRecords],
   );
-  const localizedPresets = useMemo(
-    () =>
-      PARROT_PRESETS.map((presetItem) => ({
-        ...presetItem,
-        localizedTitle: getMusicStyle(lang, presetItem.id)?.title || presetItem.title,
-      })),
-    [lang],
-  );
-  const storySlides = activeStyle?.slides ?? [{ text: t.story.fallbackSilent }];
+  const storySlides = preset?.slides?.length
+    ? preset.slides
+    : [{ text: t.story.fallbackSilent }];
   const [musicConfig, setMusicConfig] = useState<MusicConfig>({
     styleSlug: activeId,
     layers: {},
@@ -86,6 +86,41 @@ export default function ParrotsPage() {
     masterVolume: 0.9,
   });
   const [resolvedSlides, setResolvedSlides] = useState<ParrotSlide[]>(storySlides);
+
+  useEffect(() => {
+    setStyleRecords(fallbackPresets);
+  }, [fallbackPresets]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStyles = async () => {
+      try {
+        const loaded = await fetchParrotMusicStyles(lang);
+        if (!cancelled && loaded.length > 0) {
+          setStyleRecords(loaded);
+        }
+      } catch (error) {
+        console.warn("[parrots] failed to load DB music styles; using fallback", error);
+      }
+    };
+
+    void loadStyles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
+  useEffect(() => {
+    if (styleRecords.length === 0) {
+      return;
+    }
+
+    if (!styleRecords.some((item) => item.id === activeId)) {
+      setActiveId(styleRecords[0].id);
+    }
+  }, [activeId, styleRecords]);
 
   useEffect(() => {
     setMusicConfig({
@@ -125,8 +160,9 @@ export default function ParrotsPage() {
       musicConfig: getCurrentMusicConfig(),
       slides: getCurrentSlides(),
       styleSlug: activeId,
+      preset: preset ?? undefined,
     };
-  }, [activeId, getCurrentMusicConfig, getCurrentSlides]);
+  }, [activeId, getCurrentMusicConfig, getCurrentSlides, preset]);
 
   useEffect(() => {
     const exportPayload = buildParrotExport();
@@ -144,7 +180,8 @@ export default function ParrotsPage() {
   }, [buildParrotExport, lang, router]);
 
   const handleOpenPresetStudio = useCallback((styleId: string) => {
-    const styleSlides = getMusicStyle(lang, styleId)?.slides ?? [{ text: t.story.fallbackSilent }];
+    const selectedPreset = styleRecords.find((item) => item.id === styleId) ?? null;
+    const styleSlides = selectedPreset?.slides ?? [{ text: t.story.fallbackSilent }];
     const exportPayload: ParrotImportPayload = {
       type: "parrot_import",
       musicConfig: {
@@ -155,6 +192,7 @@ export default function ParrotsPage() {
       },
       slides: [],
       styleSlug: styleId,
+      preset: selectedPreset ?? undefined,
     };
 
     sessionStorage.setItem("parrot_import", JSON.stringify(exportPayload));
@@ -166,7 +204,7 @@ export default function ParrotsPage() {
       undefined,
       { locale: lang },
     );
-  }, [lang, router, t.story.fallbackSilent]);
+  }, [lang, router, styleRecords, t.story.fallbackSilent]);
 
   if (isMobile) {
     return (
@@ -177,9 +215,9 @@ export default function ParrotsPage() {
             lang={lang}
             title={t.page.title}
             subtitle={t.page.subtitle}
-            presets={localizedPresets}
+            presets={styleRecords.map((item) => ({ ...item, localizedTitle: item.title }))}
             onOpenPreset={handleOpenPresetStudio}
-            imageForPreset={imageForPreset}
+            imageForPreset={(id) => imageForPreset(id, styleRecords.find((item) => item.id === id)?.iconUrl)}
           />
           <style jsx global>{`
             .parrots-page {
@@ -254,16 +292,16 @@ export default function ParrotsPage() {
           <p className="subtitle">{t.page.subtitle}</p>
 
           <div className="style-presets-row" style={{ marginBottom: "1rem", justifyContent: "center", gap: 12, maxWidth: "100%" }}>
-            {localizedPresets.map(p => (
+            {styleRecords.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setActiveId(p.id)}
                 className={`style-preset-btn ${p.id === activeId ? 'is-active' : ''}`}
-                style={{ backgroundImage: `url(${imageForPreset(p.id)})` }}
+                style={{ backgroundImage: `url(${imageForPreset(p.id, p.iconUrl)})` }}
                 aria-pressed={p.id === activeId}
-                title={p.localizedTitle}
+                title={p.title}
               >
-                <span className="style-preset-label">{p.localizedTitle}</span>
+                <span className="style-preset-label">{p.title}</span>
               </button>
             ))}
           </div>
@@ -283,7 +321,7 @@ export default function ParrotsPage() {
           <div className="parrots-section parrots-mixer-section" style={{ width: "100%" }}>
             <ParrotMixer
               styleSlug={activeId}
-              loops={preset.loops}
+              loops={preset?.loops ?? []}
               lang={lang}
               onConfigChange={setMusicConfig}
               ui={t.mixer}
@@ -293,10 +331,10 @@ export default function ParrotsPage() {
             <ParrotStoryCard
               lang={lang}
               styleSlug={activeId}
-              title={activeStyle?.title ?? preset.title}
-              description={activeStyle?.description ?? preset.description}
-              searchArtist={preset.searchArtist}
-              searchGenre={preset.searchGenre}
+              title={preset?.title ?? ""}
+              description={preset?.description ?? ""}
+              searchArtist={preset?.searchArtist ?? ""}
+              searchGenre={preset?.searchGenre ?? ""}
               slides={storySlides}
               onResolvedSlidesChange={setResolvedSlides}
               onOpenStudio={handleOpenStudio}

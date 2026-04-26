@@ -9,8 +9,8 @@ import { loadProject } from "@/lib/studioStorage";
 import type { StudioProject } from "@/types/studio";
 import type { Track } from "@/components/studio/MusicPanel";
 import ParrotStudioRoot from "@/components/parrots/studio/ParrotStudioRoot";
-import { getMusicStyle } from "@/content/parrots/musicStyles";
-import { PARROT_PRESETS } from "@/utils/parrot-presets";
+import { fetchParrotMusicStyles } from "@/lib/parrots/client";
+import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/parrots/catalog";
 import type { StudioSlide } from "@/types/studio";
 
 const StudioRoot = dynamic(() => import("@/components/studio/StudioRoot"), { ssr: false });
@@ -40,6 +40,7 @@ type ImportedSlide = {
 type ParrotImportPayload = {
   type: "parrot_import";
   styleSlug: string;
+  preset?: ParrotStyleRecord;
   tracks?: Track[];
   musicConfig?: {
     styleSlug?: string;
@@ -66,9 +67,12 @@ type ParrotImportPayload = {
   }>;
 };
 
-function buildTracksFromParrotImport(data: ParrotImportPayload): Track[] {
+function buildTracksFromParrotImport(
+  data: ParrotImportPayload,
+  presets: ParrotStyleRecord[],
+): Track[] {
   const importStyleSlug = data.musicConfig?.styleSlug || data.styleSlug;
-  const preset = PARROT_PRESETS.find((item) => item.id === importStyleSlug);
+  const preset = data.preset ?? presets.find((item) => item.id === importStyleSlug) ?? null;
   if (!preset || !data.musicConfig?.layers) return [];
 
   return Object.entries(data.musicConfig.layers).flatMap(([layerKey, layerConfig]) => {
@@ -219,14 +223,51 @@ export function ParrotsStudioPageContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const copy = COPY[lang] ?? COPY.ru;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/parrots/studio";
+  const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
+  const [styleRecords, setStyleRecords] = useState<ParrotStyleRecord[]>(fallbackPresets);
   const [initialSlides, setInitialSlides] = useState<ImportedSlide[] | undefined>(undefined);
   const [initialTracks, setInitialTracks] = useState<Track[] | undefined>(undefined);
   const [isImportReady, setIsImportReady] = useState(false);
-  const [styleSlug, setStyleSlug] = useState(PARROT_PRESETS[0]?.id ?? "lofi");
+  const [styleSlug, setStyleSlug] = useState(fallbackPresets[0]?.id ?? "lofi");
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  useEffect(() => {
+    setStyleRecords(fallbackPresets);
+  }, [fallbackPresets]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStyles = async () => {
+      try {
+        const loaded = await fetchParrotMusicStyles(lang);
+        if (!cancelled && loaded.length > 0) {
+          setStyleRecords(loaded);
+        }
+      } catch (error) {
+        console.warn("[parrots/studio] failed to load DB music styles; using fallback", error);
+      }
+    };
+
+    void loadStyles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
+  useEffect(() => {
+    if (styleRecords.length === 0) {
+      return;
+    }
+
+    if (!styleRecords.some((item) => item.id === styleSlug)) {
+      setStyleSlug(styleRecords[0].id);
+    }
+  }, [styleRecords, styleSlug]);
 
   useEffect(() => {
     if (!isMobile) return;
@@ -254,7 +295,7 @@ export function ParrotsStudioPageContent() {
         const styleFromQuery = typeof router.query.style === "string" ? router.query.style : null;
         const stored = sessionStorage.getItem("parrot_import");
         if (!stored) {
-          if (styleFromQuery && PARROT_PRESETS.some((preset) => preset.id === styleFromQuery)) {
+          if (styleFromQuery && styleRecords.some((preset) => preset.id === styleFromQuery)) {
             setStyleSlug(styleFromQuery);
           }
           return;
@@ -262,7 +303,7 @@ export function ParrotsStudioPageContent() {
 
         const parsed = JSON.parse(stored) as ParrotImportPayload;
         if (parsed?.type !== "parrot_import") {
-          if (styleFromQuery && PARROT_PRESETS.some((preset) => preset.id === styleFromQuery)) {
+          if (styleFromQuery && styleRecords.some((preset) => preset.id === styleFromQuery)) {
             setStyleSlug(styleFromQuery);
           }
           return;
@@ -293,12 +334,12 @@ export function ParrotsStudioPageContent() {
         if (!shouldOverwrite || cancelled) return;
 
         setInitialSlides(mappedSlides);
-        setInitialTracks(parsed.tracks ?? buildTracksFromParrotImport(parsed));
+        setInitialTracks(parsed.tracks ?? buildTracksFromParrotImport(parsed, styleRecords));
         setStyleSlug(
           styleFromQuery ||
           parsed.musicConfig?.styleSlug ||
           parsed.styleSlug ||
-          PARROT_PRESETS[0]?.id ||
+          styleRecords[0]?.id ||
           "lofi",
         );
         sessionStorage.removeItem("parrot_import");
@@ -316,15 +357,11 @@ export function ParrotsStudioPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [copy.overwrite, router.query.style]);
+  }, [copy.overwrite, router.query.style, styleRecords]);
 
   const activePreset = useMemo(
-    () => PARROT_PRESETS.find((preset) => preset.id === styleSlug) ?? PARROT_PRESETS[0],
-    [styleSlug],
-  );
-  const activeStyle = useMemo(
-    () => getMusicStyle(lang, styleSlug),
-    [lang, styleSlug],
+    () => styleRecords.find((preset) => preset.id === styleSlug) ?? styleRecords[0] ?? null,
+    [styleRecords, styleSlug],
   );
 
   const openCatsStudio = async () => {
@@ -334,6 +371,7 @@ export function ParrotsStudioPageContent() {
     const payload: ParrotImportPayload = {
       type: "parrot_import",
       styleSlug,
+      preset: activePreset ?? undefined,
       tracks: project.musicTracks,
       slides: project.slides
         .filter((slide: StudioSlide) => slide.mediaUrl)
@@ -390,7 +428,10 @@ export function ParrotsStudioPageContent() {
     loopsVolume: number;
     voiceVolume: number;
   }) => {
-    const preset = PARROT_PRESETS.find((item) => item.id === styleSlug) ?? PARROT_PRESETS[0];
+    const preset = activePreset;
+    if (!preset) {
+      return;
+    }
     const tracks: Track[] = composition.activeLoops.flatMap((loopId) => {
       const loop = preset.loops.find((item) => item.id === loopId);
       const variant = loop?.variants[loop?.defaultIndex ?? 0] ?? loop?.variants[0];
@@ -423,6 +464,7 @@ export function ParrotsStudioPageContent() {
     sessionStorage.setItem("parrot_import", JSON.stringify({
       type: "parrot_import",
       styleSlug,
+      preset,
       tracks,
       slides,
       mobileComposition: {
@@ -484,6 +526,7 @@ export function ParrotsStudioPageContent() {
           <ParrotStudioRoot
             lang={lang}
             initialStyleSlug={styleSlug}
+            presets={styleRecords}
             expectedStudioType={router.pathname === "/studio" ? "parrot" : undefined}
             storySlides={(initialSlides ?? []).map((slide) => ({
               text: slide.text,
@@ -532,7 +575,7 @@ export function ParrotsStudioPageContent() {
       <main className={`parrot-studio-page ${lang === "he" ? "is-rtl" : ""}`}>
         <section className="parrot-studio-page__hero">
           <div className="parrot-studio-page__hero-copy">
-            <span className="parrot-studio-page__eyebrow">{activeStyle?.title ?? activePreset.title}</span>
+            <span className="parrot-studio-page__eyebrow">{activePreset?.title ?? styleSlug}</span>
             <h1>{copy.title}</h1>
             <p>{copy.subtitle}</p>
             <button type="button" onClick={() => void openCatsStudio()}>

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dictionaries } from "@/i18n";
-import { getMusicStyle } from "@/content/parrots/musicStyles";
-import { PARROT_PRESETS, iconForInstrument, iconForMusicStyle, type ParrotLoop } from "@/utils/parrot-presets";
 import type { ParrotStorySlide } from "@/lib/parrotStoryMedia";
+import {
+  getHardcodedParrotStyleRecords,
+  type ParrotStyleInstrument,
+  type ParrotStyleRecord,
+} from "@/lib/parrots/catalog";
 import LoopPadGrid from "./LoopPadGrid";
 import VoiceRecorder from "./VoiceRecorder";
 import EffectsPanel from "./EffectsPanel";
@@ -67,6 +70,7 @@ type StorySlide = {
 type Props = {
   lang: "ru" | "en" | "he";
   initialStyleSlug: string;
+  presets?: ParrotStyleRecord[];
   expectedStudioType?: "parrot";
   storySlides?: StorySlide[];
   onClose: () => void;
@@ -80,7 +84,7 @@ type Props = {
   }) => void;
 };
 
-function resolveLoopType(loop: ParrotLoop): "beat" | "melody" | "fx" | "vocal" {
+function resolveLoopType(loop: ParrotStyleInstrument): "beat" | "melody" | "fx" | "vocal" {
   const source = `${loop.id} ${loop.label}`.toLowerCase();
   if (source.includes("beat") || source.includes("drum") || source.includes("perc")) return "beat";
   if (source.includes("fx") || source.includes("шум")) return "fx";
@@ -92,7 +96,7 @@ const openGoogle = (query: string) => {
   window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank");
 };
 
-const createEmptyLoopEffects = (loops: ParrotLoop[]) =>
+const createEmptyLoopEffects = (loops: ParrotStyleInstrument[]) =>
   loops.reduce<Record<string, LoopEffectState>>((acc, loop) => {
     acc[loop.id] = {
       echo: false,
@@ -111,12 +115,15 @@ const getVoiceGainMultiplier = (effects: VoiceEffectsState) =>
 export default function ParrotStudioRoot({
   lang,
   initialStyleSlug,
+  presets,
   expectedStudioType,
   storySlides,
   onClose,
   onSwitchLanguage,
   onOpenStory: _onOpenStory,
 }: Props) {
+  const hardcodedFallbacks = getHardcodedParrotStyleRecords(lang);
+
   if (typeof window !== "undefined" && expectedStudioType) {
     const routeType = new URLSearchParams(window.location.search).get("type");
     if (routeType !== expectedStudioType) {
@@ -125,6 +132,10 @@ export default function ParrotStudioRoot({
   }
 
   const [selectedStyleSlug, setSelectedStyleSlug] = useState(initialStyleSlug);
+  const availablePresets = useMemo(
+    () => (presets && presets.length > 0 ? presets : hardcodedFallbacks),
+    [hardcodedFallbacks, presets],
+  );
   const [composition, setComposition] = useState<CompositionState>({
     activeMode: "loops",
     activeLoops: [],
@@ -181,12 +192,8 @@ export default function ParrotStudioRoot({
   const shouldSkipNextPresetInitRef = useRef(false);
   const hasPushedHistoryRef = useRef(false);
   const preset = useMemo(
-    () => PARROT_PRESETS.find((item) => item.id === selectedStyleSlug) ?? PARROT_PRESETS[0],
-    [selectedStyleSlug],
-  );
-  const musicStyle = useMemo(
-    () => getMusicStyle(lang, selectedStyleSlug),
-    [lang, selectedStyleSlug],
+    () => availablePresets.find((item) => item.id === selectedStyleSlug) ?? availablePresets[0] ?? hardcodedFallbacks[0],
+    [availablePresets, hardcodedFallbacks, selectedStyleSlug],
   );
   const languageCopySource = (dictionaries as unknown as Record<string, { language?: { title?: string; preview?: string } }>)[lang];
   const languageCopy = {
@@ -291,8 +298,8 @@ export default function ParrotStudioRoot({
     },
   };
   const guideSlides = useMemo(
-    () => (musicStyle?.slides?.length ? musicStyle.slides : storySlides ?? []),
-    [musicStyle?.slides, storySlides],
+    () => (preset?.slides?.length ? preset.slides : storySlides ?? []),
+    [preset?.slides, storySlides],
   );
   const compositionSnapshot = useMemo(
     () =>
@@ -529,7 +536,7 @@ export default function ParrotStudioRoot({
         return {
           id: loop.id,
           label: loop.label,
-          iconSrc: iconForInstrument(`${loop.label} ${loop.id}`),
+          iconSrc: loop.iconUrl,
           type: resolveLoopType(loop),
           isActive: typeof variantIndex === "number",
           variantLabel: variant?.label ?? "Loop",
@@ -1319,7 +1326,7 @@ export default function ParrotStudioRoot({
           </button>
           {isStyleMenuOpen ? (
             <div className="parrot-studio-root__style-menu" ref={styleMenuRef}>
-              {PARROT_PRESETS.map((item) => (
+              {availablePresets.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -1329,7 +1336,7 @@ export default function ParrotStudioRoot({
                     setIsStyleMenuOpen(false);
                   }}
                 >
-                  <img src={iconForMusicStyle(item.id)} alt="" />
+                  <img src={item.iconUrl} alt="" />
                   <span>{item.title}</span>
                 </button>
               ))}
@@ -1382,13 +1389,13 @@ export default function ParrotStudioRoot({
 
       <div className="parrot-studio-root__top">
           <ParrotGuide
-            title={musicStyle?.title ?? preset.title}
-            text={musicStyle?.description ?? preset.description}
+            title={preset?.title ?? ""}
+            text={preset?.description ?? ""}
             youtubeLabel={uiCopy.youtube}
             googleLabel={uiCopy.google}
             storyLabel={uiCopy.story}
-            onOpenYouTube={() => openGoogle(`${preset.searchArtist} site:youtube.com`)}
-            onOpenGoogle={() => openGoogle(preset.searchGenre)}
+            onOpenYouTube={() => openGoogle(`${preset?.searchArtist ?? ""} site:youtube.com`)}
+            onOpenGoogle={() => openGoogle(preset?.searchGenre ?? "")}
             onOpenStory={() => setIsStoryOpen(true)}
         />
       </div>
@@ -1549,7 +1556,7 @@ export default function ParrotStudioRoot({
       {isStoryOpen ? (
         <ParrotStoryOverlay
           key={`${lang}:${selectedStyleSlug}`}
-          title={musicStyle?.title ?? preset.title}
+          title={preset?.title ?? ""}
           lang={lang}
           styleSlug={selectedStyleSlug}
           slides={guideSlides as ParrotStorySlide[]}

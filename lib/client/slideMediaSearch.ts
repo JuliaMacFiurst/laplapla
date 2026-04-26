@@ -3,7 +3,7 @@ export type SlideMediaCandidate = {
   mediaType: "gif" | "image" | "video";
 };
 
-type SearchSource = "giphy" | "pexels";
+export type SearchSource = "giphy" | "pexels";
 
 type SearchResponse = {
   items?: SlideMediaCandidate[];
@@ -75,16 +75,21 @@ export const buildAnimalSlideMediaQueries = (
   return Array.from(new Set(queries.filter(Boolean)));
 };
 
+export const sanitizeSlideMediaQuery = (source: SearchSource, query: string) => {
+  const normalized = normalizeQuery(query);
+  return clampQueryByEncodedLength(
+    normalized,
+    source === "giphy" ? MAX_GIPHY_QUERY_ENCODED_LENGTH : MAX_PEXELS_QUERY_ENCODED_LENGTH,
+  );
+};
+
 const fetchSourceItems = async (
   source: SearchSource,
   query: string,
   limit = 8,
 ): Promise<SlideMediaCandidate[]> => {
   const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
-  const safeQuery = clampQueryByEncodedLength(
-    normalizeQuery(query),
-    source === "giphy" ? MAX_GIPHY_QUERY_ENCODED_LENGTH : MAX_PEXELS_QUERY_ENCODED_LENGTH,
-  );
+  const safeQuery = sanitizeSlideMediaQuery(source, query);
 
   if (!safeQuery) {
     return [];

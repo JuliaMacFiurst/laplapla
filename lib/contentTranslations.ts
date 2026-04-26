@@ -7,7 +7,8 @@ export type ContentType =
   | "book"
   | "story_template"
   | "story_submission"
-  | "cat_preset";
+  | "cat_preset"
+  | "parrot_music_style";
 
 type LessonStep = {
   frank?: string;
@@ -69,6 +70,13 @@ type CatPresetContent = {
   [key: string]: unknown;
 };
 
+type ParrotMusicStyleContent = {
+  id: string | number;
+  title?: string;
+  description?: string;
+  [key: string]: unknown;
+};
+
 type ContentByType = {
   lesson: LessonContent;
   map_story: MapStoryContent;
@@ -77,6 +85,7 @@ type ContentByType = {
   story_template: StoryTemplateContent;
   story_submission: StorySubmissionContent;
   cat_preset: CatPresetContent;
+  parrot_music_style: ParrotMusicStyleContent;
 };
 
 export type TranslationPayload = {
@@ -129,6 +138,7 @@ const BASE_TABLES: Record<ContentType, string> = {
   story_template: "story_templates",
   story_submission: "user_story_submissions",
   cat_preset: "cat_presets",
+  parrot_music_style: "parrot_music_styles",
 };
 
 const getTranslationsClient = () => supabase;
@@ -238,6 +248,17 @@ function applyCatPresetTranslation(
   };
 }
 
+function applyParrotMusicStyleTranslation(
+  base: ParrotMusicStyleContent,
+  translation: TranslationPayload,
+): ParrotMusicStyleContent {
+  return {
+    ...base,
+    title: translation.title ?? base.title,
+    description: translation.description ?? base.description,
+  };
+}
+
 function applyTranslation<T extends ContentType>(
   contentType: T,
   base: ContentByType[T],
@@ -258,6 +279,8 @@ function applyTranslation<T extends ContentType>(
       return applyStorySubmissionTranslation(base as StorySubmissionContent, translation) as ContentByType[T];
     case "cat_preset":
       return applyCatPresetTranslation(base as CatPresetContent, translation) as ContentByType[T];
+    case "parrot_music_style":
+      return applyParrotMusicStyleTranslation(base as ParrotMusicStyleContent, translation) as ContentByType[T];
     default:
       return base;
   }

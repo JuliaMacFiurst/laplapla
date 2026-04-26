@@ -1,5 +1,9 @@
 import * as React from "react";
-import { buildAnimalSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
+import {
+  buildAnimalSlideMediaQueries,
+  findAlternativeSlideMedia,
+  sanitizeSlideMediaQuery,
+} from "@/lib/client/slideMediaSearch";
 import { AMATIC_FONT_FAMILY } from "@/lib/fonts";
 import { devDebug } from "@/utils/devLog";
 
@@ -49,7 +53,14 @@ type ClientCacheEntry = {
   timestamp: number;
 };
 
+type MediaItemsResult = {
+  items: MediaItem[];
+  cacheHit: boolean;
+};
+
 const clientMediaCache = new Map<string, ClientCacheEntry>();
+const mediaItemsResponseCache = new Map<string, { expiresAt: number; result: MediaItemsResult }>();
+const mediaItemsInFlight = new Map<string, Promise<MediaItemsResult>>();
 const CLIENT_TTL_MS = 60 * 60 * 1000;
 const SESSION_STORAGE_KEY = "parrot-story-media-cache-v1";
 const PLACEHOLDER_MEDIA: MediaItem = {
@@ -187,36 +198,67 @@ async function loadMediaItems(
   source: "giphy" | "pexels",
   query: string,
 ): Promise<{ items: MediaItem[]; cacheHit: boolean }> {
-  const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      q: query,
-      limit: 8,
-    }),
-  });
-  if (!response.ok) {
+  const safeQuery = sanitizeSlideMediaQuery(source, query);
+  if (!safeQuery) {
     return { items: [], cacheHit: false };
   }
 
-  const json = (await response.json()) as Partial<MediaResponse>;
-  const items = Array.isArray(json.items)
-    ? json.items
-        .map((item) =>
-          item?.url
-            ? {
-                url: item.url,
-                mediaType: item.mediaType ?? getMediaTypeFromUrl(item.url),
-              }
-            : null,
-        )
-        .filter(Boolean) as MediaItem[]
-    : [];
+  const requestKey = `${source}:${safeQuery}`;
+  const cached = mediaItemsResponseCache.get(requestKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result;
+  }
 
-  return { items, cacheHit: Boolean(json.cached) };
+  const inFlight = mediaItemsInFlight.get(requestKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
+  const request = (async (): Promise<MediaItemsResult> => {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: safeQuery,
+        limit: 8,
+      }),
+    });
+    if (!response.ok) {
+      return { items: [], cacheHit: false };
+    }
+
+    const json = (await response.json()) as Partial<MediaResponse>;
+    const items = Array.isArray(json.items)
+      ? json.items
+          .map((item) =>
+            item?.url
+              ? {
+                  url: item.url,
+                  mediaType: item.mediaType ?? getMediaTypeFromUrl(item.url),
+                }
+              : null,
+          )
+          .filter(Boolean) as MediaItem[]
+      : [];
+
+    const result = { items, cacheHit: Boolean(json.cached) };
+    mediaItemsResponseCache.set(requestKey, {
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      result,
+    });
+    return result;
+  })();
+
+  mediaItemsInFlight.set(requestKey, request);
+
+  try {
+    return await request;
+  } finally {
+    mediaItemsInFlight.delete(requestKey);
+  }
 }
 
 async function fetchMedia(

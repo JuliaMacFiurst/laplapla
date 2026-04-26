@@ -89,7 +89,7 @@ async function handler(
   if (
     !applyApiGuard(req, res, {
       methods: ["GET", "POST"],
-      limit: 30,
+      limit: 300,
       windowMs: 60_000,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "giphy",
