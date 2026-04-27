@@ -13,7 +13,7 @@ function isStaticAsset(pathname: string) {
 
 function logDevRedirect(fromPath: string, toPath: string) {
   if (process.env.NODE_ENV !== "production") {
-    console.warn(`[canonical-routes] middleware redirect ${fromPath} -> ${toPath}`);
+    console.warn(`[canonical-routes] proxy redirect ${fromPath} -> ${toPath}`);
   }
 }
 
@@ -36,7 +36,7 @@ function redirectToCanonical(request: NextRequest, pathname: string, queryKeysTo
   return NextResponse.redirect(target, 301);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const normalizedPathname = pathname !== "/" ? pathname.replace(/\/+$/, "") || "/" : pathname;
 
