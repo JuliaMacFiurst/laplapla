@@ -17,6 +17,7 @@ import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import { PARROT_PRESETS } from "@/utils/parrot-presets";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const DEFAULT_PROJECT_ID = "current-studio-project";
 
@@ -118,7 +119,9 @@ interface StudioLayoutProps {
   deleteSlide: (index: number) => void;
   updateMusicTracks: (tracks: StudioProject["musicTracks"]) => void;
   startVoiceRecording: () => Promise<void>;
-  stopVoiceRecording: () => void;
+  stopVoiceRecording: (options?: { releaseAfterStop?: boolean }) => void;
+  prepareVoiceRecording: () => Promise<void>;
+  releaseVoiceRecording: () => void;
   removeVoiceFromSlide: () => void;
   enhanceVoiceRecording: () => Promise<void>;
   makeVoiceLouder: () => Promise<void>;
@@ -702,6 +705,8 @@ function StudioMobileLayout({
   makeChildVoice,
   startVoiceRecording,
   stopVoiceRecording,
+  prepareVoiceRecording,
+  releaseVoiceRecording,
   updateSlide,
   deleteAll,
   undo,
@@ -793,6 +798,12 @@ function StudioMobileLayout({
   const selectedMusicPreset = PARROT_PRESETS.find((preset) => preset.id === selectedMusicPresetId) ?? null;
   const exportCaption = "Made with LapLapLa Cat Studio";
   const exportCredits = "Some media may be sourced from GIPHY and Pexels. Created with LapLapLa Cat Studio.";
+
+  useEffect(() => {
+    if (activeAudioSheet !== "voice") return;
+
+    void prepareVoiceRecording();
+  }, [activeAudioSheet, prepareVoiceRecording]);
 
   useEffect(() => {
     return () => {
@@ -2257,7 +2268,14 @@ function StudioMobileLayout({
       {activeAudioSheet === "voice" ? (
         <MobileAudioSheet
           title="Record Voice"
-          onClose={() => setActiveAudioSheet(null)}
+          onClose={() => {
+            if (isRecording) {
+              stopVoiceRecording({ releaseAfterStop: true });
+            } else {
+              releaseVoiceRecording();
+            }
+            setActiveAudioSheet(null);
+          }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div
@@ -2842,7 +2860,7 @@ export default function StudioRoot({
   const [future, setFuture] = useState<StudioProject[]>([]);
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
 
   // Локальный аудио-движок для музыки всего слайдшоу (до 4 дорожек)
   const audioEngineRef = useRef<AudioEngineHandle | null>(null);
@@ -2858,6 +2876,11 @@ export default function StudioRoot({
   const mobileExitBaselineSnapshotRef = useRef<string | null>(null);
   const isSavingRef = useRef(false);
   const pendingHistorySnapshotRef = useRef<StudioProject | null>(null);
+  const voiceRawStreamRef = useRef<MediaStream | null>(null);
+  const voiceAudioContextRef = useRef<AudioContext | null>(null);
+  const voiceProcessedStreamRef = useRef<MediaStream | null>(null);
+  const voicePreparationPromiseRef = useRef<Promise<MediaStream> | null>(null);
+  const releaseVoiceOnStopRef = useRef(false);
 
   const t = dictionaries[lang].cats.studio
   const router = useRouter();
@@ -2875,16 +2898,59 @@ export default function StudioRoot({
       ? "השינויים לא יישמרו. לצאת?"
       : "Changes will not be saved. Exit?";
 
+  async function flushProjectSave(targetProject = projectRef.current) {
+    const nextSnapshot = JSON.stringify(targetProject);
+    if (isSavingRef.current || nextSnapshot === lastSavedSnapshotRef.current) {
+      return;
+    }
+
+    isSavingRef.current = true;
+    setIsSaving(true);
+
+    try {
+      await saveProject(targetProject);
+      lastSavedSnapshotRef.current = nextSnapshot;
+      setLastSavedAt(Date.now());
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
+  }
+
   function markProjectSaved(savedProject: StudioProject) {
     projectRef.current = savedProject;
     lastSavedSnapshotRef.current = JSON.stringify(savedProject);
     setLastSavedAt(Date.now());
   }
 
-  async function startVoiceRecording() {
-    if (isRecording) return;
+  function releaseVoiceRecording() {
+    releaseVoiceOnStopRef.current = false;
+    mediaRecorderRef.current = null;
 
-    try {
+    voiceProcessedStreamRef.current?.getTracks().forEach((track) => track.stop());
+    voiceRawStreamRef.current?.getTracks().forEach((track) => track.stop());
+
+    if (voiceAudioContextRef.current) {
+      void voiceAudioContextRef.current.close().catch(() => {});
+    }
+
+    voiceProcessedStreamRef.current = null;
+    voiceRawStreamRef.current = null;
+    voiceAudioContextRef.current = null;
+    voicePreparationPromiseRef.current = null;
+  }
+
+  async function prepareVoiceRecording() {
+    if (voiceProcessedStreamRef.current) {
+      return;
+    }
+
+    if (voicePreparationPromiseRef.current) {
+      await voicePreparationPromiseRef.current;
+      return;
+    }
+
+    voicePreparationPromiseRef.current = (async () => {
       const legacyNavigator = navigator as Navigator & {
         getUserMedia?: (
           constraints: MediaStreamConstraints,
@@ -2929,7 +2995,7 @@ export default function StudioRoot({
         if (typeof window !== "undefined") {
           window.alert(message);
         }
-        return;
+        throw new Error(message);
       }
 
       const rawStream = await getUserMedia({
@@ -2942,7 +3008,6 @@ export default function StudioRoot({
         },
       });
 
-      // --- Light audio processing via AudioContext ---
       const audioCtx = new AudioContext({ sampleRate: 48000 });
       const source = audioCtx.createMediaStreamSource(rawStream);
 
@@ -2955,7 +3020,7 @@ export default function StudioRoot({
 
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = "highpass";
-      highpass.frequency.value = 80; // remove low rumble
+      highpass.frequency.value = 80;
 
       const destination = audioCtx.createMediaStreamDestination();
 
@@ -2963,7 +3028,33 @@ export default function StudioRoot({
       highpass.connect(compressor);
       compressor.connect(destination);
 
-      const stream = destination.stream;
+      voiceRawStreamRef.current = rawStream;
+      voiceAudioContextRef.current = audioCtx;
+      voiceProcessedStreamRef.current = destination.stream;
+
+      return destination.stream;
+    })();
+
+    try {
+      await voicePreparationPromiseRef.current;
+    } catch (error) {
+      releaseVoiceRecording();
+      throw error;
+    } finally {
+      voicePreparationPromiseRef.current = null;
+    }
+  }
+
+  async function startVoiceRecording() {
+    if (isRecording) return;
+
+    try {
+      await prepareVoiceRecording();
+      const stream = voiceProcessedStreamRef.current;
+      if (!stream) {
+        throw new Error("Voice recording stream is not ready");
+      }
+      const recordingSlideIndex = activeSlideIndex;
 
       const recorder = new MediaRecorder(stream, {
         mimeType: "audio/webm;codecs=opus",
@@ -2998,7 +3089,7 @@ export default function StudioRoot({
 
         setProject((prev) => {
           const updatedSlides = prev.slides.map((s, i) =>
-            i === activeSlideIndex
+            i === recordingSlideIndex
               ? {
                   ...s,
                   voiceUrl: dataUrl,
@@ -3024,9 +3115,10 @@ export default function StudioRoot({
           return updatedProject;
         });
 
-        rawStream.getTracks().forEach((track) => track.stop());
-        audioCtx.close();
-        stream.getTracks().forEach((track) => track.stop());
+        if (releaseVoiceOnStopRef.current) {
+          releaseVoiceOnStopRef.current = false;
+          releaseVoiceRecording();
+        }
       };
 
       recorder.start();
@@ -3037,8 +3129,15 @@ export default function StudioRoot({
     }
   }
 
-  function stopVoiceRecording() {
-    if (!mediaRecorderRef.current) return;
+  function stopVoiceRecording(options?: { releaseAfterStop?: boolean }) {
+    if (!mediaRecorderRef.current) {
+      if (options?.releaseAfterStop) {
+        releaseVoiceRecording();
+      }
+      return;
+    }
+
+    releaseVoiceOnStopRef.current = Boolean(options?.releaseAfterStop);
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current = null;
     setIsRecording(false);
@@ -3493,6 +3592,12 @@ export default function StudioRoot({
     projectRef.current = project;
   }, [project]);
 
+  useEffect(() => {
+    return () => {
+      releaseVoiceRecording();
+    };
+  }, []);
+
   // Restore saved project on mount (only if no external slides arrive)
   useEffect(() => {
     let cancelled = false;
@@ -3529,48 +3634,51 @@ export default function StudioRoot({
     };
   }, [initialSlides, initialTracks, projectId]);
 
-  // Autosave every 4 seconds
+  // Debounced autosave keeps reload recovery tight without writing on every keystroke.
   useEffect(() => {
-    let cancelled = false;
+    if (projectSnapshot === lastSavedSnapshotRef.current) {
+      return;
+    }
 
-    const interval = setInterval(async () => {
-      if (cancelled || isSavingRef.current) return;
-
-      const nextSnapshot = JSON.stringify(projectRef.current);
-      if (nextSnapshot === lastSavedSnapshotRef.current) return;
-
-      isSavingRef.current = true;
-      setIsSaving(true);
-
-      try {
-        await saveProject(projectRef.current);
-        if (!cancelled) {
-          lastSavedSnapshotRef.current = nextSnapshot;
-          setLastSavedAt(Date.now());
-        }
-      } finally {
-        isSavingRef.current = false;
-        if (!cancelled) {
-          setIsSaving(false);
-        }
-      }
-    }, 4000);
+    const timeoutId = window.setTimeout(() => {
+      void flushProjectSave();
+    }, 800);
 
     return () => {
-      cancelled = true;
-      clearInterval(interval);
+      window.clearTimeout(timeoutId);
     };
-  }, []);
+  }, [projectSnapshot]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
+      void flushProjectSave();
       e.preventDefault();
       e.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, []);
+  }, [projectSnapshot]);
+
+  useEffect(() => {
+    const flush = () => {
+      void flushProjectSave();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flush();
+      }
+    };
+
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [projectSnapshot]);
 
   useEffect(() => {
     if ((!initialSlides || initialSlides.length === 0) && (!initialTracks || initialTracks.length === 0)) {
@@ -3776,21 +3884,6 @@ export default function StudioRoot({
     setProject(next);
   }
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
-
-    const updateIsMobile = (event?: MediaQueryListEvent) => {
-      setIsMobile(event?.matches ?? mediaQuery.matches);
-    };
-
-    updateIsMobile();
-    mediaQuery.addEventListener("change", updateIsMobile);
-
-    return () => {
-      mediaQuery.removeEventListener("change", updateIsMobile);
-    };
-  }, []);
-
   const layoutProps: StudioLayoutProps = {
     lang,
     project,
@@ -3816,6 +3909,8 @@ export default function StudioRoot({
     updateMusicTracks,
     startVoiceRecording,
     stopVoiceRecording,
+    prepareVoiceRecording,
+    releaseVoiceRecording,
     removeVoiceFromSlide,
     enhanceVoiceRecording,
     makeVoiceLouder,

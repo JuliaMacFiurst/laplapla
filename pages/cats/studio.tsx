@@ -12,6 +12,7 @@ import { loadProject } from "@/lib/studioStorage";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import type { StudioProject } from "@/types/studio";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
 
 type ImportedSlide = {
   text: string;
@@ -238,6 +239,7 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
   return (
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <MobilePortraitLock lang={lang} enabled={isMobile} />
       {isUnifiedMobileStudioRoute ? (
         isImportReady ? (
           <StudioRoot

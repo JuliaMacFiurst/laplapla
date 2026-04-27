@@ -24,6 +24,7 @@ import { useRouter } from "next/router";
 import BackButton from "@/components/BackButton";
 import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
 import ReplayCanvas from "@/components/Dogs/Replay/ReplayCanvas";
+import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type {
   ReplayAction,
@@ -41,6 +42,61 @@ type Lesson = {
     image: string;
   }[];
 };
+
+type DogLessonDraft = {
+  version: 1;
+  slug: string;
+  lang: Lang;
+  savedAt: number;
+  currentStepIndex: number;
+  hasStarted: boolean;
+  showColorizer: boolean;
+  hasCompletedFirstColoring: boolean;
+  artworkSaved: boolean;
+  hasUnsavedChanges: boolean;
+  brushSize: number;
+  brushColor: string;
+  brushOpacity: number;
+  brushStyle:
+    | "normal"
+    | "smooth"
+    | "sparkle"
+    | "rainbow"
+    | "chameleon"
+    | "gradient"
+    | "neon"
+    | "watercolor";
+  isEraser: boolean;
+  seeds: ColorSeed[];
+  drawingDataUrl: string;
+  colorDataUrl: string;
+  pawDataUrl: string;
+};
+
+function getDogLessonDraftKey(slug: string, lang: Lang) {
+  return `dog-lesson-draft:${lang}:${slug}`;
+}
+
+async function drawCanvasSnapshot(canvas: HTMLCanvasElement | null, dataUrl: string) {
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!dataUrl) return;
+
+  await new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve();
+    };
+    image.onerror = () => reject(new Error("Failed to restore lesson draft image"));
+    image.src = dataUrl;
+  });
+}
 
 type MobileColorState = {
   hue: number;
@@ -266,6 +322,8 @@ function LessonPlayerDesktop() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [mobileFillTooltip, setMobileFillTooltip] = useState<string | null>(null);
   const [colorSeedCount, setColorSeedCount] = useState(0);
+  const draftSaveTimeoutRef = useRef<number | null>(null);
+  const restoredDraftKeyRef = useRef<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
@@ -285,6 +343,7 @@ function LessonPlayerDesktop() {
   const replayGroupIdRef = useRef(1);
   const regionMapsRef = useRef<Map<number, ReplayRegionData>>(new Map());
   const regionMapIdRef = useRef(1);
+  const draftKey = typeof slug === "string" ? getDogLessonDraftKey(slug, lang) : null;
 
   const debugRenderRegions = () => {
     setHasUnsavedChanges(true);
@@ -620,10 +679,66 @@ function LessonPlayerDesktop() {
     setReplayRevision((prev) => prev + 1);
   };
 
+  const persistLessonDraft = async () => {
+    if (!draftKey || !lesson) return;
+
+    const drawingCanvas = drawingCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
+    const pawCanvas = pawOverlayCanvasRef.current;
+    if (!drawingCanvas || !colorCanvas || !pawCanvas) return;
+
+    const draft: DogLessonDraft = {
+      version: 1,
+      slug: String(slug),
+      lang,
+      savedAt: Date.now(),
+      currentStepIndex: Math.max(0, currentStepIndex),
+      hasStarted,
+      showColorizer,
+      hasCompletedFirstColoring,
+      artworkSaved,
+      hasUnsavedChanges,
+      brushSize,
+      brushColor,
+      brushOpacity,
+      brushStyle,
+      isEraser,
+      seeds: [...seedsRef.current],
+      drawingDataUrl: drawingCanvas.toDataURL("image/png"),
+      colorDataUrl: colorCanvas.toDataURL("image/png"),
+      pawDataUrl: pawCanvas.toDataURL("image/png"),
+    };
+
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch (error) {
+      console.error("Failed to persist dog lesson draft", error);
+    }
+  };
+
+  const scheduleLessonDraftSave = (delay = 250) => {
+    if (!draftKey || !lesson) return;
+
+    if (draftSaveTimeoutRef.current !== null) {
+      window.clearTimeout(draftSaveTimeoutRef.current);
+    }
+
+    draftSaveTimeoutRef.current = window.setTimeout(() => {
+      draftSaveTimeoutRef.current = null;
+      void persistLessonDraft();
+    }, delay);
+  };
+
   useEffect(() => {
     const img = new Image();
     img.src = "/dog/paw.svg";
     pawImgRef.current = img;
+
+    return () => {
+      if (draftSaveTimeoutRef.current !== null) {
+        window.clearTimeout(draftSaveTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -679,6 +794,42 @@ function LessonPlayerDesktop() {
       void originalBeforePopState;
     };
   }, [confirmLessonLeave, leaveWarningMessage, router, shouldWarnBeforeExit]);
+
+  useEffect(() => {
+    const flushDraft = () => {
+      void persistLessonDraft();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushDraft();
+      }
+    };
+
+    window.addEventListener("pagehide", flushDraft);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", flushDraft);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [
+    artworkSaved,
+    brushColor,
+    brushOpacity,
+    brushSize,
+    brushStyle,
+    currentStepIndex,
+    draftKey,
+    hasCompletedFirstColoring,
+    hasStarted,
+    hasUnsavedChanges,
+    isEraser,
+    lang,
+    lesson,
+    showColorizer,
+    slug,
+  ]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -1215,18 +1366,105 @@ function LessonPlayerDesktop() {
       setHasCompletedFirstColoring(false);
       setReplayExportDone({ video: false, gif: false });
       clearReplayHistory();
-      if (translatedLesson.steps.length > 0) {
-        setCurrentStepIndex(0);
-        setTimeout(() => {
-          drawStepOnCanvas(0);
-        }, 0);
-      }
+      restoredDraftKeyRef.current = null;
     };
 
     fetchLesson().catch((error) => {
       console.error("Ошибка загрузки урока:", error);
     });
   }, [lang, slug]);
+
+  useEffect(() => {
+    if (!lesson || !draftKey || restoredDraftKeyRef.current === draftKey) {
+      return;
+    }
+
+    restoredDraftKeyRef.current = draftKey;
+
+    const restoreDraft = async () => {
+      const drawingCanvas = drawingCanvasRef.current;
+      const colorCanvas = colorCanvasRef.current;
+      const pawCanvas = pawOverlayCanvasRef.current;
+      if (!drawingCanvas || !colorCanvas || !pawCanvas) return;
+
+      let draft: DogLessonDraft | null = null;
+      try {
+        const rawDraft = window.localStorage.getItem(draftKey);
+        if (rawDraft) {
+          draft = JSON.parse(rawDraft) as DogLessonDraft;
+        }
+      } catch (error) {
+        console.error("Failed to parse dog lesson draft", error);
+      }
+
+      const safeStepIndex = draft
+        ? Math.min(Math.max(draft.currentStepIndex, 0), Math.max(lesson.steps.length - 1, 0))
+        : 0;
+
+      setCurrentStepIndex(safeStepIndex);
+      drawStepOnCanvas(safeStepIndex);
+
+      if (!draft) {
+        return;
+      }
+
+      setHasStarted(draft.hasStarted);
+      setShowColorizer(draft.showColorizer);
+      setHasCompletedFirstColoring(draft.hasCompletedFirstColoring);
+      setArtworkSaved(draft.artworkSaved);
+      setHasUnsavedChanges(draft.hasUnsavedChanges);
+      setBrushSize(draft.brushSize);
+      setBrushColor(draft.brushColor);
+      setBrushOpacity(draft.brushOpacity);
+      setBrushStyle(draft.brushStyle);
+      setIsEraser(draft.isEraser);
+      seedsRef.current = [...draft.seeds];
+      setColorSeedCount(draft.seeds.length);
+      regionDataRef.current = null;
+
+      try {
+        await Promise.all([
+          drawCanvasSnapshot(drawingCanvas, draft.drawingDataUrl),
+          drawCanvasSnapshot(colorCanvas, draft.colorDataUrl),
+          drawCanvasSnapshot(pawCanvas, draft.pawDataUrl),
+        ]);
+      } catch (error) {
+        console.error("Failed to restore dog lesson draft", error);
+      }
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      void restoreDraft();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [draftKey, lesson]);
+
+  useEffect(() => {
+    if (!lesson || !draftKey || restoredDraftKeyRef.current !== draftKey) {
+      return;
+    }
+
+    scheduleLessonDraftSave();
+  }, [
+    artworkSaved,
+    brushColor,
+    brushOpacity,
+    brushSize,
+    brushStyle,
+    colorSeedCount,
+    currentStepIndex,
+    draftKey,
+    hasCompletedFirstColoring,
+    hasStarted,
+    hasUnsavedChanges,
+    isEraser,
+    lesson,
+    replayRevision,
+    showColorizer,
+  ]);
 
   useEffect(() => {
     const canvas = drawingCanvasRef.current;
@@ -2064,6 +2302,7 @@ function LessonPlayerDesktop() {
   return (
     <>
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
+      <MobilePortraitLock lang={lang} enabled={isMobile} />
       <div className="lesson-container">
         {!isMobile ? (
           <BackButton

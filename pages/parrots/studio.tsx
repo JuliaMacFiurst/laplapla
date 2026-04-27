@@ -12,6 +12,7 @@ import ParrotStudioRoot from "@/components/parrots/studio/ParrotStudioRoot";
 import { fetchParrotMusicStyles } from "@/lib/parrots/client";
 import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/parrots/catalog";
 import type { StudioSlide } from "@/types/studio";
+import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
 
 const StudioRoot = dynamic(() => import("@/components/studio/StudioRoot"), { ssr: false });
 
@@ -511,6 +512,7 @@ export function ParrotsStudioPageContent() {
           description={copy.subtitle}
           path={seoPath}
         />
+        <MobilePortraitLock lang={lang} enabled={isMobile} />
         <style jsx global>{`
           .top-bar,
           .footer-stack,
@@ -572,6 +574,7 @@ export function ParrotsStudioPageContent() {
         description={copy.subtitle}
         path={seoPath}
       />
+      <MobilePortraitLock lang={lang} enabled={isMobile} />
       <main className={`parrot-studio-page ${lang === "he" ? "is-rtl" : ""}`}>
         <section className="parrot-studio-page__hero">
           <div className="parrot-studio-page__hero-copy">
