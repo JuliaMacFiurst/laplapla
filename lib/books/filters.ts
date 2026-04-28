@@ -19,6 +19,12 @@ export type BookGenreOption = {
 };
 
 const AGE_RANGE_PATTERN = /(\d{1,2})(?:\s*[-–—]\s*(\d{1,2}))?/g;
+const FIXED_AGE_BUCKETS: AgeRange[] = [
+  { min: 0, max: 5 },
+  { min: 5, max: 8 },
+  { min: 8, max: 14 },
+  { min: 14, max: 18 },
+];
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
@@ -78,32 +84,8 @@ export function extractAgeRanges(ageGroup: unknown): AgeRange[] {
 }
 
 export function buildBookAgeCategories(books: Book[]): AgeCategoryOption[] {
-  const numericRanges = books.flatMap((book) => extractAgeRanges(book.age_group));
-  const textLabels = uniqueStrings(
-    books
-      .map((book) => normalizeTextLabel(String(book.age_group ?? "")))
-      .filter((label) => label && extractAgeRanges(label).length === 0),
-  );
-
-  const mergedRanges: AgeRange[] = [];
-  const sortedRanges = [...numericRanges].sort((left, right) => left.min - right.min || left.max - right.max);
-
-  for (const range of sortedRanges) {
-    const lastRange = mergedRanges[mergedRanges.length - 1];
-    if (!lastRange) {
-      mergedRanges.push({ ...range });
-      continue;
-    }
-
-    if (range.min <= lastRange.max) {
-      lastRange.max = Math.max(lastRange.max, range.max);
-      continue;
-    }
-
-    mergedRanges.push({ ...range });
-  }
-
-  const rangeOptions: AgeCategoryOption[] = mergedRanges.map((range) => ({
+  const booksWithNumericAge = books.some((book) => extractAgeRanges(book.age_group).length > 0);
+  const rangeOptions: AgeCategoryOption[] = FIXED_AGE_BUCKETS.map((range) => ({
     value: createRangeValue(range),
     label: formatRangeLabel(range),
     kind: "range",
@@ -111,13 +93,21 @@ export function buildBookAgeCategories(books: Book[]): AgeCategoryOption[] {
     max: range.max,
   }));
 
-  const textOptions: AgeCategoryOption[] = textLabels.map((label) => ({
+  if (booksWithNumericAge) {
+    return rangeOptions;
+  }
+
+  const textLabels = uniqueStrings(
+    books
+      .map((book) => normalizeTextLabel(String(book.age_group ?? "")))
+      .filter(Boolean),
+  );
+
+  return textLabels.map((label) => ({
     value: `text:${label.toLowerCase()}`,
     label,
     kind: "text",
   }));
-
-  return [...rangeOptions, ...textOptions];
 }
 
 export function resolveBookAgeCategoryValues(
@@ -148,4 +138,3 @@ export function resolveBookAgeCategoryValues(
 
   return Array.from(matches);
 }
-

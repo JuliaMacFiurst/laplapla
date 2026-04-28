@@ -298,6 +298,19 @@
   margin-bottom: 0.7rem;
 }
 
+.multi-filter-toggle-button {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
 .multi-filter-panel-title,
 .multi-filter-group-label {
   font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
@@ -308,6 +321,17 @@
   color: #7c3aed;
   font-size: 1.5rem;
   font-weight: 800;
+}
+
+.multi-filter-toggle-icon {
+  color: #7c3aed;
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.multi-filter-toggle-icon-expanded {
+  transform: rotate(180deg);
 }
 
 .multi-filter-clear-button {
