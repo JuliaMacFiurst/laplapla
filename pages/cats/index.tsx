@@ -97,6 +97,18 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const seo = dictionaries[lang].seo.cats.index;
   const isMobile = useIsMobile();
   const mobileSlideshow = useMobileSlideshow();
+  const mobileSlideshowIsOpen = mobileSlideshow.isOpen;
+  const mobileSlideshowSlides = mobileSlideshow.slides;
+  const mobileSlideshowCurrentSlideIndex = mobileSlideshow.currentSlideIndex;
+  const mobileSlideshowLoading = mobileSlideshow.loading;
+  const mobileSlideshowShowSwipeHint = mobileSlideshow.showSwipeHint;
+  const mobileSlideshowOpen = mobileSlideshow.open;
+  const mobileSlideshowClose = mobileSlideshow.close;
+  const mobileSlideshowReplaceSlides = mobileSlideshow.replaceSlides;
+  const mobileSlideshowUpdateSlides = mobileSlideshow.updateSlides;
+  const mobileSlideshowGoToSlide = mobileSlideshow.goToSlide;
+  const mobileSlideshowSetLoading = mobileSlideshow.setLoading;
+  const mobileSlideshowMarkInteracted = mobileSlideshow.markInteracted;
   const router = useRouter();
   const currentLang = getCurrentLang(router);
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats";
@@ -287,8 +299,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
         setInputText(next.prompt);
         setSlides(next.slides);
 
-        if (mobileSlideshow.isOpen) {
-          mobileSlideshow.replaceSlides(buildStudioSlides(next.slides, next.seed));
+        if (mobileSlideshowIsOpen) {
+          mobileSlideshowReplaceSlides(buildStudioSlides(next.slides, next.seed));
         }
       })
       .catch(() => {
@@ -306,7 +318,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     return () => {
       active = false;
     };
-  }, [activePreset, getSlidesForPreset, lang, mobileSlideshow, t.errors.generic]);
+  }, [activePreset, getSlidesForPreset, lang, mobileSlideshowIsOpen, mobileSlideshowReplaceSlides, t.errors.generic]);
 
   const currentLoadingQuestion = (pendingQuestion || inputText).trim();
   const mobileLoadingLabel = currentLoadingQuestion
@@ -371,7 +383,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setActivePresetId(preset.id);
     setError(null);
     setPendingQuestion(preset.prompt);
-    mobileSlideshow.open({ loading: true });
+    mobileSlideshowOpen({ loading: true });
 
     try {
       const next = await getSlidesForPreset(preset);
@@ -379,10 +391,10 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
       setInputText(next.prompt);
       setSlides(next.slides);
-      mobileSlideshow.replaceSlides(viewerSlides);
+      mobileSlideshowReplaceSlides(viewerSlides);
     } catch {
       setError(t.errors.generic);
-      mobileSlideshow.close();
+      mobileSlideshowClose();
     } finally {
       setPendingQuestion("");
     }
@@ -428,7 +440,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   const handleMobileFindNewImage = async (slideIndex: number) => {
-    const slide = mobileSlideshow.slides[slideIndex];
+    const slide = mobileSlideshowSlides[slideIndex];
     if (!slide?.mediaUrl) {
       return;
     }
@@ -441,8 +453,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
         return;
       }
 
-      mobileSlideshow.updateSlides(
-        mobileSlideshow.slides.map((currentSlide, index) =>
+      mobileSlideshowUpdateSlides(
+        mobileSlideshowSlides.map((currentSlide, index) =>
           index === slideIndex
             ? {
                 ...currentSlide,
@@ -477,16 +489,16 @@ export default function CatPage({ lang }: { lang: Lang }) {
     lastResolvedTextPresetKeyRef.current = randomPreset.kind === "text" ? `${lang}:${randomPreset.id}` : null;
     setActivePresetId(randomPreset.id);
     setPendingQuestion(randomPreset.prompt);
-    mobileSlideshow.open({ loading: true });
+    mobileSlideshowOpen({ loading: true });
 
     try {
       const next = await getSlidesForPreset(randomPreset);
       setInputText(next.prompt);
       setSlides(next.slides);
-      mobileSlideshow.replaceSlides(buildStudioSlides(next.slides, next.seed));
+      mobileSlideshowReplaceSlides(buildStudioSlides(next.slides, next.seed));
     } catch {
       setError(t.errors.generic);
-      mobileSlideshow.setLoading(false);
+      mobileSlideshowSetLoading(false);
     } finally {
       setPendingQuestion("");
     }
@@ -758,27 +770,27 @@ export default function CatPage({ lang }: { lang: Lang }) {
       </CatsLayout>
 
       <MobileSlideshowViewer
-        isOpen={mobileSlideshow.isOpen}
-        slides={mobileSlideshow.slides}
-        currentSlideIndex={mobileSlideshow.currentSlideIndex}
-        loading={mobileSlideshow.loading}
-        showSwipeHint={mobileSlideshow.showSwipeHint}
+        isOpen={mobileSlideshowIsOpen}
+        slides={mobileSlideshowSlides}
+        currentSlideIndex={mobileSlideshowCurrentSlideIndex}
+        loading={mobileSlideshowLoading}
+        showSwipeHint={mobileSlideshowShowSwipeHint}
         lang={lang}
         loadingLabel={mobileLoadingLabel}
         swipeHintLabel={t.swipeHint}
         randomQuestionLabel={t.randomQuestion}
         findNewImageLabel={
-          refreshingSlideIndex === mobileSlideshow.currentSlideIndex ? "..." : t.findNewImage
+          refreshingSlideIndex === mobileSlideshowCurrentSlideIndex ? "..." : t.findNewImage
         }
         editInStudioLabel={t.editInStudio}
         closeLabel={t.studio.closePreview}
-        onClose={mobileSlideshow.close}
-        onIndexChange={mobileSlideshow.goToSlide}
-        onInteract={mobileSlideshow.markInteracted}
+        onClose={mobileSlideshowClose}
+        onIndexChange={mobileSlideshowGoToSlide}
+        onInteract={mobileSlideshowMarkInteracted}
         onFindNewImage={handleMobileFindNewImage}
         onEditInStudio={() => {
           handleEditInStudio(
-            mobileSlideshow.slides.map((slide) => ({
+            mobileSlideshowSlides.map((slide) => ({
               text: slide.text,
               image: slide.mediaUrl,
             })),
