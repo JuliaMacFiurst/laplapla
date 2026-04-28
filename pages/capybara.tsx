@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
 import BookFeed from "@/components/BookFeed";
+import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
 import SEO from "@/components/SEO";
 import { useBook } from "@/hooks/useBook";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
@@ -47,6 +49,10 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const [searchResults, setSearchResults] = useState<Book[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [ageCategories, setAgeCategories] = useState<AgeCategoryOption[]>([]);
+  const [genreOptions, setGenreOptions] = useState<BookGenreOption[]>([]);
+  const [selectedAgeCategories, setSelectedAgeCategories] = useState<string[]>([]);
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const searchRequestRef = useRef(0);
@@ -70,10 +76,86 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     setSearchMessage(null);
   }, [abortSearchPipeline]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadBookFilters = async () => {
+      try {
+        const response = await fetch("/api/books/filters");
+        if (!response.ok) {
+          throw new Error("Failed to load book filters");
+        }
+
+        const data = await response.json() as {
+          ageCategories?: AgeCategoryOption[];
+          genres?: BookGenreOption[];
+        };
+
+        if (!active) {
+          return;
+        }
+
+        setAgeCategories(Array.isArray(data.ageCategories) ? data.ageCategories : []);
+        setGenreOptions(Array.isArray(data.genres) ? data.genres : []);
+      } catch (error) {
+        console.error("[BOOK] failed to load search filters:", error);
+        if (!active) {
+          return;
+        }
+
+        setAgeCategories([]);
+        setGenreOptions([]);
+      }
+    };
+
+    void loadBookFilters();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const buildSearchUrl = useCallback((query: string) => {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      searchParams.set("q", query);
+    }
+    searchParams.set("lang", currentLang);
+    if (selectedAgeCategories.length > 0) {
+      searchParams.set("age_categories", selectedAgeCategories.join(","));
+    }
+    if (selectedGenreIds.length > 0) {
+      searchParams.set("genre_ids", selectedGenreIds.join(","));
+    }
+
+    return `/api/books/search?${searchParams.toString()}`;
+  }, [currentLang, selectedAgeCategories, selectedGenreIds]);
+
+  const toggleAgeCategory = useCallback((value: string) => {
+    setSelectedAgeCategories((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  }, []);
+
+  const toggleGenreId = useCallback((value: string) => {
+    setSelectedGenreIds((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  }, []);
+
+  const clearSearchFilters = useCallback(() => {
+    setSelectedAgeCategories([]);
+    setSelectedGenreIds([]);
+  }, []);
+
   const handleSearch = useCallback(async () => {
     const nextQuery = inputValue.trim();
 
-    if (!nextQuery) {
+    if (!nextQuery && selectedAgeCategories.length === 0 && selectedGenreIds.length === 0) {
       resetSearchState();
       return;
     }
@@ -89,7 +171,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     setSearchLoading(true);
 
     try {
-      const response = await fetch(`/api/books/search?q=${encodeURIComponent(nextQuery)}&lang=${currentLang}`, {
+      const response = await fetch(buildSearchUrl(nextQuery), {
         signal: searchController.signal,
       });
       if (!response.ok) {
@@ -123,7 +205,17 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
         setSearchLoading(false);
       }
     }
-  }, [abortSearchPipeline, inputValue, resetSearchState, t.search.noResults, t.search.searchError]);
+  }, [
+    abortSearchPipeline,
+    buildSearchUrl,
+    closeCurrentBookQuiz,
+    inputValue,
+    resetSearchState,
+    selectedAgeCategories.length,
+    selectedGenreIds.length,
+    t.search.noResults,
+    t.search.searchError,
+  ]);
 
   useEffect(() => () => abortSearchPipeline(), [abortSearchPipeline]);
 
@@ -345,6 +437,34 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     resetSearchState();
   };
 
+  const renderSearchFilters = () => (
+    <MultiSelectFilterPanel
+      title={t.search.filtersTitle}
+      clearLabel={t.search.clearFilters}
+      onClear={clearSearchFilters}
+      className="book-search-filter-panel"
+      groups={[
+        {
+          id: "book-age",
+          label: t.search.age,
+          options: ageCategories.map((category) => ({
+            value: category.value,
+            label: category.label,
+          })),
+          selectedValues: selectedAgeCategories,
+          onToggle: toggleAgeCategory,
+        },
+        {
+          id: "book-genre",
+          label: t.search.genre,
+          options: genreOptions,
+          selectedValues: selectedGenreIds,
+          onToggle: toggleGenreId,
+        },
+      ]}
+    />
+  );
+
   const handleExitSearch = () => {
     setMode("slideshow");
     resetSearchState();
@@ -519,35 +639,39 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             </button>
           </div>
         </form>
+        {!isMobile ? renderSearchFilters() : null}
       </header>
 
       {isSearchOpen ? (
         <div className="search-overlay">
           <div ref={searchOverlayRef} className="search-overlay-panel">
-            <form className="search-form-expanded" onSubmit={handleSearchSubmit}>
-              <input
-                type="text"
-                className="search-input search-input-expanded"
-                value={inputValue}
-                onChange={(event) => setInputValue(event.target.value)}
-                placeholder={t.search.placeholder}
-                aria-label={t.search.placeholder}
-                autoFocus
-              />
-              {inputValue ? (
-                <button
-                  type="button"
-                  className="search-clear-button"
-                  onClick={handleClearSearch}
-                  aria-label={t.search.clear}
-                >
-                  <span aria-hidden="true">×</span>
+            <div className="search-overlay-card">
+              <form className="search-form-expanded" onSubmit={handleSearchSubmit}>
+                <input
+                  type="text"
+                  className="search-input search-input-expanded"
+                  value={inputValue}
+                  onChange={(event) => setInputValue(event.target.value)}
+                  placeholder={t.search.placeholder}
+                  aria-label={t.search.placeholder}
+                  autoFocus
+                />
+                {inputValue ? (
+                  <button
+                    type="button"
+                    className="search-clear-button"
+                    onClick={handleClearSearch}
+                    aria-label={t.search.clear}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </button>
+                ) : null}
+                <button type="submit" className="search-button" disabled={searchLoading}>
+                  {t.search.button}
                 </button>
-              ) : null}
-              <button type="submit" className="search-button" disabled={searchLoading}>
-                {t.search.button}
-              </button>
-            </form>
+              </form>
+              {renderSearchFilters()}
+            </div>
           </div>
         </div>
       ) : null}

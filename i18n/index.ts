@@ -208,6 +208,8 @@ type DictionaryShape = {
 
     inputPlaceholder: string;
     askButton: string;
+    categoriesTitle: string;
+    clearCategories: string;
     thinkingShort: string;
     thinkingLong: string;
     thinkingLongWithQuestion: string;
@@ -532,6 +534,10 @@ type DictionaryShape = {
         placeholder: string;
         button: string;
         clear: string;
+        filtersTitle: string;
+        clearFilters: string;
+        age: string;
+        genre: string;
         backToFeed: string;
         noResults: string;
         searchError: string;

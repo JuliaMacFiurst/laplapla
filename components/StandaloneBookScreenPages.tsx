@@ -3,8 +3,10 @@ import { useRouter } from "next/router";
 import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useBook } from "@/hooks/useBook";
+import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import { buildLocalizedHref, buildLocalizedQuery } from "@/lib/i18n/routing";
 import { buildStudioHref } from "@/lib/studioRouting";
@@ -33,6 +35,10 @@ export default function StandaloneBookScreenPages({
   const [searchResults, setSearchResults] = useState<Book[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [ageCategories, setAgeCategories] = useState<AgeCategoryOption[]>([]);
+  const [genreOptions, setGenreOptions] = useState<BookGenreOption[]>([]);
+  const [selectedAgeCategories, setSelectedAgeCategories] = useState<string[]>([]);
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isOpeningStudio, setIsOpeningStudio] = useState(false);
   const searchRequestRef = useRef(0);
@@ -78,10 +84,86 @@ export default function StandaloneBookScreenPages({
     setSearchMessage(null);
   }, [abortSearchPipeline]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadBookFilters = async () => {
+      try {
+        const response = await fetch("/api/books/filters");
+        if (!response.ok) {
+          throw new Error("Failed to load book filters");
+        }
+
+        const data = await response.json() as {
+          ageCategories?: AgeCategoryOption[];
+          genres?: BookGenreOption[];
+        };
+
+        if (!active) {
+          return;
+        }
+
+        setAgeCategories(Array.isArray(data.ageCategories) ? data.ageCategories : []);
+        setGenreOptions(Array.isArray(data.genres) ? data.genres : []);
+      } catch (error) {
+        console.error("[BOOK] failed to load standalone search filters:", error);
+        if (!active) {
+          return;
+        }
+
+        setAgeCategories([]);
+        setGenreOptions([]);
+      }
+    };
+
+    void loadBookFilters();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const buildSearchUrl = useCallback((query: string) => {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      searchParams.set("q", query);
+    }
+    searchParams.set("lang", lang);
+    if (selectedAgeCategories.length > 0) {
+      searchParams.set("age_categories", selectedAgeCategories.join(","));
+    }
+    if (selectedGenreIds.length > 0) {
+      searchParams.set("genre_ids", selectedGenreIds.join(","));
+    }
+
+    return `/api/books/search?${searchParams.toString()}`;
+  }, [lang, selectedAgeCategories, selectedGenreIds]);
+
+  const toggleAgeCategory = useCallback((value: string) => {
+    setSelectedAgeCategories((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  }, []);
+
+  const toggleGenreId = useCallback((value: string) => {
+    setSelectedGenreIds((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  }, []);
+
+  const clearSearchFilters = useCallback(() => {
+    setSelectedAgeCategories([]);
+    setSelectedGenreIds([]);
+  }, []);
+
   const handleSearch = useCallback(async () => {
     const nextQuery = inputValue.trim();
 
-    if (!nextQuery) {
+    if (!nextQuery && selectedAgeCategories.length === 0 && selectedGenreIds.length === 0) {
       resetSearchState();
       return;
     }
@@ -95,7 +177,7 @@ export default function StandaloneBookScreenPages({
     setSearchLoading(true);
 
     try {
-      const response = await fetch(`/api/books/search?q=${encodeURIComponent(nextQuery)}&lang=${lang}`, {
+      const response = await fetch(buildSearchUrl(nextQuery), {
         signal: searchController.signal,
       });
       if (!response.ok) {
@@ -129,7 +211,16 @@ export default function StandaloneBookScreenPages({
         setSearchLoading(false);
       }
     }
-  }, [abortSearchPipeline, inputValue, lang, resetSearchState, t.search.noResults, t.search.searchError]);
+  }, [
+    abortSearchPipeline,
+    buildSearchUrl,
+    inputValue,
+    resetSearchState,
+    selectedAgeCategories.length,
+    selectedGenreIds.length,
+    t.search.noResults,
+    t.search.searchError,
+  ]);
 
   useEffect(() => () => abortSearchPipeline(), [abortSearchPipeline]);
 
@@ -215,6 +306,34 @@ export default function StandaloneBookScreenPages({
     setInputValue("");
     resetSearchState();
   };
+
+  const renderSearchFilters = () => (
+    <MultiSelectFilterPanel
+      title={t.search.filtersTitle}
+      clearLabel={t.search.clearFilters}
+      onClear={clearSearchFilters}
+      className="book-search-filter-panel"
+      groups={[
+        {
+          id: "standalone-book-age",
+          label: t.search.age,
+          options: ageCategories.map((category) => ({
+            value: category.value,
+            label: category.label,
+          })),
+          selectedValues: selectedAgeCategories,
+          onToggle: toggleAgeCategory,
+        },
+        {
+          id: "standalone-book-genre",
+          label: t.search.genre,
+          options: genreOptions,
+          selectedValues: selectedGenreIds,
+          onToggle: toggleGenreId,
+        },
+      ]}
+    />
+  );
 
   const handleOpenSearchBook = (nextBook: Book) => {
     setIsSearchOpen(false);
@@ -349,69 +468,140 @@ export default function StandaloneBookScreenPages({
           {isSearchOpen ? (
             <div className="search-overlay standalone-book-search-overlay">
               <div ref={searchOverlayRef} className="search-overlay-panel standalone-book-search-panel">
-                <form className="search-form-expanded" onSubmit={handleSearchSubmit}>
-                  <input
-                    type="text"
-                    className="search-input search-input-expanded"
-                    value={inputValue}
-                    onChange={(event) => setInputValue(event.target.value)}
-                    placeholder={t.search.placeholder}
-                    aria-label={t.search.placeholder}
-                    autoFocus
-                  />
-                  {inputValue ? (
-                    <button
-                      type="button"
-                      className="search-clear-button"
-                      onClick={handleClearSearch}
-                      aria-label={t.search.clear}
-                    >
-                      <span aria-hidden="true">×</span>
-                    </button>
-                  ) : null}
-                  <button type="submit" className="search-button" disabled={searchLoading}>
-                    {t.search.button}
-                  </button>
-                </form>
-
-                {searchLoading ? (
-                  <div className="loading-spinner-container">
-                    <div className="search-results-status">{t.search.title}</div>
-                  </div>
-                ) : null}
-
-                {!searchLoading && searchMessage ? (
-                  <div className="error-message-container">
-                    <p className="search-results-status">{searchMessage}</p>
-                  </div>
-                ) : null}
-
-                {!searchLoading && !searchMessage && searchResults?.length ? (
-                  <div className="search-results-list standalone-book-search-results">
-                    {searchResults.map((resultBook) => (
+                <div className="search-overlay-card">
+                  <form className="search-form-expanded" onSubmit={handleSearchSubmit}>
+                    <input
+                      type="text"
+                      className="search-input search-input-expanded"
+                      value={inputValue}
+                      onChange={(event) => setInputValue(event.target.value)}
+                      placeholder={t.search.placeholder}
+                      aria-label={t.search.placeholder}
+                      autoFocus
+                    />
+                    {inputValue ? (
                       <button
-                        key={String(resultBook.id)}
                         type="button"
-                        className="search-result-card"
-                        onClick={() => handleOpenSearchBook(resultBook)}
+                        className="search-clear-button"
+                        onClick={handleClearSearch}
+                        aria-label={t.search.clear}
                       >
-                        <h2 className="book-card-title">{resultBook.title}</h2>
-                        {resultBook.author ? <p className="book-card-author">{String(resultBook.author)}</p> : null}
-                        {(resultBook.year || resultBook.age_group) ? (
-                          <p className="book-card-meta">
-                            {[resultBook.year, resultBook.age_group].filter(Boolean).map(String).join(" • ")}
-                          </p>
-                        ) : null}
+                        <span aria-hidden="true">×</span>
                       </button>
-                    ))}
-                  </div>
-                ) : null}
+                    ) : null}
+                    <button type="submit" className="search-button" disabled={searchLoading}>
+                      {t.search.button}
+                    </button>
+                  </form>
+
+                  {renderSearchFilters()}
+
+                  {searchLoading ? (
+                    <div className="loading-spinner-container">
+                      <div className="search-results-status">{t.search.title}</div>
+                    </div>
+                  ) : null}
+
+                  {!searchLoading && searchMessage ? (
+                    <div className="error-message-container">
+                      <p className="search-results-status">{searchMessage}</p>
+                    </div>
+                  ) : null}
+
+                  {!searchLoading && !searchMessage && searchResults?.length ? (
+                    <div className="search-results-list standalone-book-search-results">
+                      {searchResults.map((resultBook) => (
+                        <button
+                          key={String(resultBook.id)}
+                          type="button"
+                          className="search-result-card"
+                          onClick={() => handleOpenSearchBook(resultBook)}
+                        >
+                          <h2 className="book-card-title">{resultBook.title}</h2>
+                          {resultBook.author ? <p className="book-card-author">{String(resultBook.author)}</p> : null}
+                          {(resultBook.year || resultBook.age_group) ? (
+                            <p className="book-card-meta">
+                              {[resultBook.year, resultBook.age_group].filter(Boolean).map(String).join(" • ")}
+                            </p>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
           ) : null}
         </>
       ) : null}
-      {isMobile ? <div className="standalone-book-mobile-shell">{bookContent}</div> : <article className="book-card">{bookContent}</article>}
+      {isMobile ? (
+        <div className="standalone-book-mobile-shell">{bookContent}</div>
+      ) : (
+        <section className="standalone-book-desktop-shell">
+          <form className="search-form standalone-book-desktop-search" onSubmit={handleSearchSubmit}>
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                className="search-input"
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                placeholder={t.search.placeholder}
+                aria-label={t.search.placeholder}
+              />
+              {inputValue ? (
+                <button
+                  type="button"
+                  className="search-clear-button"
+                  onClick={handleClearSearch}
+                  aria-label={t.search.clear}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              ) : null}
+              <button type="submit" className="search-button" disabled={searchLoading}>
+                {t.search.button}
+              </button>
+            </div>
+          </form>
+
+          {renderSearchFilters()}
+
+          {searchLoading ? (
+            <div className="loading-spinner-container">
+              <div className="search-results-status">{t.search.title}</div>
+            </div>
+          ) : null}
+
+          {!searchLoading && searchMessage ? (
+            <div className="error-message-container">
+              <p className="search-results-status">{searchMessage}</p>
+            </div>
+          ) : null}
+
+          {!searchLoading && !searchMessage && searchResults?.length ? (
+            <div className="search-results-list standalone-book-search-results standalone-book-search-results-desktop">
+              {searchResults.map((resultBook) => (
+                <button
+                  key={String(resultBook.id)}
+                  type="button"
+                  className="search-result-card"
+                  onClick={() => handleOpenSearchBook(resultBook)}
+                >
+                  <h2 className="book-card-title">{resultBook.title}</h2>
+                  {resultBook.author ? <p className="book-card-author">{String(resultBook.author)}</p> : null}
+                  {(resultBook.year || resultBook.age_group) ? (
+                    <p className="book-card-meta">
+                      {[resultBook.year, resultBook.age_group].filter(Boolean).map(String).join(" • ")}
+                    </p>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <article className="book-card">{bookContent}</article>
+        </section>
+      )}
     </>
   );
 }

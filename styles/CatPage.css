@@ -107,6 +107,10 @@ html, body {
   justify-content: center;
 }
 
+.cats-category-panel {
+  margin-top: 0.8rem;
+}
+
 .cats-search-results {
   position: absolute;
   top: calc(100% + 6px);
@@ -175,6 +179,10 @@ html, body {
   .cats-search-block-mobile .cats-search-results {
     position: static;
     margin-top: 8px;
+  }
+
+  .cats-search-block-mobile .cats-category-panel-mobile {
+    margin-top: 0.7rem;
   }
 }
 

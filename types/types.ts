@@ -36,6 +36,7 @@ export interface Book {
   age_group?: string | number | null;
   description?: string | null;
   cover_url?: string | null;
+  category?: string | null;
   category_id?: string | number | null;
   [key: string]: unknown;
 }

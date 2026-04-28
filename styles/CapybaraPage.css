@@ -180,6 +180,12 @@
   box-sizing: border-box;
 }
 
+.search-overlay-card {
+  width: min(100%, 760px);
+  display: grid;
+  gap: 0.85rem;
+}
+
 .search-form-expanded {
   width: 90%;
   max-width: 500px;
@@ -189,6 +195,11 @@
   border-radius: 9999px;
   padding: 0.5rem;
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.24);
+}
+
+.search-overlay-card .search-form-expanded {
+  width: 100%;
+  max-width: none;
 }
 
 .search-input-expanded {
@@ -262,6 +273,135 @@
   letter-spacing: 0.08em;
   border: none;
   flex: 0 0 auto;
+}
+
+.multi-filter-panel {
+  width: 100%;
+  margin: 0.65rem auto 0;
+  padding: 0.9rem 1rem 1rem;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), rgba(255, 244, 251, 0.88) 52%, rgba(233, 245, 255, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 20px 34px rgba(148, 163, 184, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.multi-filter-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.multi-filter-panel-title,
+.multi-filter-group-label {
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  letter-spacing: 0.08em;
+}
+
+.multi-filter-panel-title {
+  color: #7c3aed;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.multi-filter-clear-button {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: none;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6);
+  color: #be185d;
+  font-size: 1.55rem;
+  line-height: 1;
+  opacity: 0.55;
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(244, 114, 182, 0.18);
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+.multi-filter-clear-button.is-visible {
+  opacity: 1;
+}
+
+.multi-filter-clear-button:disabled {
+  cursor: default;
+}
+
+.multi-filter-clear-button:not(:disabled):hover,
+.multi-filter-clear-button:not(:disabled):focus-visible {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 14px 24px rgba(244, 114, 182, 0.26);
+}
+
+.multi-filter-group + .multi-filter-group {
+  margin-top: 0.9rem;
+}
+
+.multi-filter-group-label {
+  margin-bottom: 0.45rem;
+  color: #475569;
+  font-size: 1.18rem;
+  font-weight: 700;
+}
+
+.multi-filter-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.multi-filter-chip {
+  border: none;
+  border-radius: 9999px;
+  padding: 0.55rem 1rem;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
+  font-size: 0.95rem;
+  color: #5b4767;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(253, 242, 248, 0.9));
+  box-shadow:
+    0 10px 18px rgba(203, 213, 225, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.multi-filter-chip:hover,
+.multi-filter-chip:focus-visible {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 24px rgba(192, 132, 252, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.multi-filter-chip-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #f472b6, #fb923c);
+  box-shadow:
+    0 16px 28px rgba(244, 114, 182, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.book-search-filter-panel {
+  max-width: 48rem;
+}
+
+.standalone-book-desktop-shell {
+  width: min(100%, 64rem);
+  margin: 0 auto;
+}
+
+.standalone-book-desktop-search {
+  max-width: 100%;
+}
+
+.standalone-book-search-results-desktop {
+  margin-bottom: 1rem;
 }
 
 .story-generator-page {
@@ -1048,6 +1188,29 @@
 
   .search-form-expanded .search-input-wrapper {
     flex-wrap: nowrap;
+  }
+
+  .multi-filter-panel {
+    padding: 0.8rem 0.85rem 0.9rem;
+    border-radius: 1.25rem;
+  }
+
+  .multi-filter-panel-title {
+    font-size: 1.35rem;
+  }
+
+  .multi-filter-group-label {
+    font-size: 1.08rem;
+  }
+
+  .multi-filter-chip-grid {
+    gap: 0.45rem;
+  }
+
+  .multi-filter-chip {
+    max-width: 100%;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.92rem;
   }
 }
 
@@ -2458,6 +2621,10 @@
 
   .search-overlay-panel {
     padding: 0 0.9rem;
+  }
+
+  .search-overlay-card {
+    gap: 0.7rem;
   }
 
   .search-form-expanded {

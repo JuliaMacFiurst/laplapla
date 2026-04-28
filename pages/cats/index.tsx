@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import type { GetStaticProps } from "next";
 import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
+import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
 import SEO from "@/components/SEO";
 import TranslationWarning from "@/components/TranslationWarning";
 import MobileSlideshowViewer from "@/components/studio/mobile/MobileSlideshowViewer";
@@ -99,6 +100,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
   const [examplePresets, setExamplePresets] = useState<AnyCatPreset[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isDesktopSearchFocused, setIsDesktopSearchFocused] = useState(false);
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false);
   const lastResolvedTextPresetKeyRef = useRef<string | null>(null);
@@ -107,6 +109,29 @@ export default function CatPage({ lang }: { lang: Lang }) {
     () => availablePresets.filter((preset) => preset.lang === lang),
     [availablePresets, lang],
   );
+
+  const availableCategories = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          presetsForLang
+            .map((preset) => (typeof preset.category === "string" ? preset.category.trim() : ""))
+            .filter(Boolean),
+        ),
+      ).sort((left, right) => left.localeCompare(right, lang, { sensitivity: "base" })),
+    [lang, presetsForLang],
+  );
+
+  const filteredPresetsForLang = useMemo(() => {
+    if (selectedCategories.length === 0) {
+      return presetsForLang;
+    }
+
+    return presetsForLang.filter((preset) => {
+      const category = typeof preset.category === "string" ? preset.category.trim() : "";
+      return category ? selectedCategories.includes(category) : false;
+    });
+  }, [presetsForLang, selectedCategories]);
 
   const activePreset = useMemo(() => {
     if (!activePresetId) return null;
@@ -167,8 +192,12 @@ export default function CatPage({ lang }: { lang: Lang }) {
   }, [lang]);
 
   useEffect(() => {
-    setExamplePresets(pickRandomItems(presetsForLang, 3));
-  }, [presetsForLang]);
+    setExamplePresets(pickRandomItems(filteredPresetsForLang, 3));
+  }, [filteredPresetsForLang]);
+
+  useEffect(() => {
+    setSelectedCategories((current) => current.filter((category) => availableCategories.includes(category)));
+  }, [availableCategories]);
 
   const getSlidesForPreset = useCallback(async (
     preset: AnyCatPreset,
@@ -266,7 +295,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     return () => {
       active = false;
     };
-  }, [activePreset, getSlidesForPreset, lang, mobileSlideshow.isOpen, mobileSlideshow.replaceSlides, t.errors.generic]);
+  }, [activePreset, getSlidesForPreset, lang, mobileSlideshow, t.errors.generic]);
 
   const currentLoadingQuestion = (pendingQuestion || inputText).trim();
   const mobileLoadingLabel = currentLoadingQuestion
@@ -284,15 +313,27 @@ export default function CatPage({ lang }: { lang: Lang }) {
       return [] as AnyCatPreset[];
     }
 
-    return presetsForLang
+    return filteredPresetsForLang
       .filter((preset) => matchesCatPresetQuery(preset, normalizedSearchQuery))
       .slice(0, CAT_SEARCH_RESULTS_LIMIT);
-  }, [normalizedSearchQuery, presetsForLang]);
+  }, [filteredPresetsForLang, normalizedSearchQuery]);
 
   const clearSearch = () => {
     setSearchQuery("");
     setIsDesktopSearchFocused(false);
     setIsMobileSearchFocused(false);
+  };
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category],
+    );
+  };
+
+  const clearCategories = () => {
+    setSelectedCategories([]);
   };
 
   const selectPresetFromSearch = (preset: AnyCatPreset) => {
@@ -417,11 +458,11 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   const openRandomMobileSlideshow = async () => {
-    if (!presetsForLang.length) {
+    if (!filteredPresetsForLang.length) {
       return;
     }
 
-    const randomPreset = presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
+    const randomPreset = filteredPresetsForLang[Math.floor(Math.random() * filteredPresetsForLang.length)];
     lastResolvedTextPresetKeyRef.current = randomPreset.kind === "text" ? `${lang}:${randomPreset.id}` : null;
     setActivePresetId(randomPreset.id);
     setPendingQuestion(randomPreset.prompt);
@@ -506,6 +547,25 @@ export default function CatPage({ lang }: { lang: Lang }) {
             ) : null}
           </div>
         </form>
+
+        <MultiSelectFilterPanel
+          title={t.categoriesTitle}
+          clearLabel={t.clearCategories}
+          onClear={clearCategories}
+          className={`cats-category-panel cats-category-panel-${mode}`}
+          groups={[
+            {
+              id: "cats-categories",
+              label: t.categoriesTitle,
+              options: availableCategories.map((category) => ({
+                value: category,
+                label: category,
+              })),
+              selectedValues: selectedCategories,
+              onToggle: toggleCategory,
+            },
+          ]}
+        />
 
         {isFocused && searchResults.length > 0 ? (
           <div className="cats-search-results search-results-panel">
@@ -598,10 +658,10 @@ export default function CatPage({ lang }: { lang: Lang }) {
             <button
               className="random-question-button random-book-button"
               onClick={() => {
-                if (!presetsForLang.length) return;
+                if (!filteredPresetsForLang.length) return;
 
                 const randomPreset =
-                  presetsForLang[Math.floor(Math.random() * presetsForLang.length)];
+                  filteredPresetsForLang[Math.floor(Math.random() * filteredPresetsForLang.length)];
 
                 applyPreset(randomPreset);
               }}

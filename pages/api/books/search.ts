@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getRequestLang } from "@/lib/i18n/routing";
+import { buildBookAgeCategories, resolveBookAgeCategoryValues } from "@/lib/books/filters";
 import { translateBooksForLang } from "@/lib/books";
 import { supabase } from "@/lib/supabase";
 import type { Book } from "@/types/types";
@@ -26,6 +27,18 @@ const matchesQuery = (book: Record<string, unknown>, query: string) => {
   ];
 
   return searchableValues.some((value) => normalize(value).includes(query));
+};
+
+const parseMultiValueQueryParam = (value: string | string[] | undefined) => {
+  if (Array.isArray(value)) {
+    return Array.from(new Set(value.flatMap((item) => item.split(",")).map((item) => item.trim()).filter(Boolean)));
+  }
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  return Array.from(new Set(value.split(",").map((item) => item.trim()).filter(Boolean)));
 };
 
 function logApi(status: number, startedAt: number) {
@@ -57,8 +70,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       : "ru";
     const rawQuery = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q;
     const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
+    const selectedAgeCategories = parseMultiValueQueryParam(req.query.age_categories);
+    const selectedGenreIds = parseMultiValueQueryParam(req.query.genre_ids);
 
-    if (!query || query.length < 1) {
+    if (!query && selectedAgeCategories.length === 0 && selectedGenreIds.length === 0) {
       res.status(200).json([]);
       logApi(res.statusCode, startedAt);
       return;
@@ -74,8 +89,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const books = Array.isArray(data) ? (data as Book[]) : [];
+    const ageCategories = buildBookAgeCategories(books);
     const filteredBooks = books
-      .filter((book) => matchesQuery(book as Record<string, unknown>, normalize(query)))
+      .filter((book) => {
+        if (query && !matchesQuery(book as Record<string, unknown>, normalize(query))) {
+          return false;
+        }
+
+        if (selectedGenreIds.length > 0 && !selectedGenreIds.includes(String(book.category_id ?? ""))) {
+          return false;
+        }
+
+        if (selectedAgeCategories.length > 0) {
+          const bookAgeCategoryValues = resolveBookAgeCategoryValues(book.age_group, ageCategories);
+          if (!bookAgeCategoryValues.some((value) => selectedAgeCategories.includes(value))) {
+            return false;
+          }
+        }
+
+        return true;
+      })
       .slice(0, MAX_RESULTS);
     let responseBooks = books;
 
