@@ -1,10 +1,12 @@
 import { useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 
+import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "../i18n";
 import { VideoSection } from "../components/video/VideoSection";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BASE_URL } from "@/lib/config";
 
@@ -43,84 +45,59 @@ export default function Home({ lang }: { lang?: Lang }) {
           <section className={isMobile ? "home-mobile-screen home-mobile-screen-menu" : undefined}>
             <header className="site-header">
               <div className="header-text">
-                <h1 className="page-title">{t.title}</h1>
+                <h1 className="page-title">{seo.title}</h1>
                 <p className="page-description">{seo.description}</p>
                 <h2 className="page-subtitle">
                   {isMobile ? t.mobileHelper : t.subtitle}
                 </h2>
+                <CorePageLinks
+                  current="home"
+                  lang={resolvedLang}
+                  related={["cats", "dog", "book", "parrots", "raccoons"]}
+                />
               </div>
             </header>
 
             <div className={`grid ${isMobile ? "grid-mobile-menu" : ""}`}>
-              <div
+              <Link
                 className="card"
-                onClick={() =>
-                  router.push(
-                    { pathname: "/cats", query: buildLocalizedQuery(resolvedLang) },
-                    undefined,
-                    { locale: resolvedLang }
-                  )
-                }
+                href={buildLocalizedPublicPath("/cats", resolvedLang)}
               >
                 <img src="/images/cat.webp" alt={t.sections.cats} />
                 <div className="label">{t.sections.cats}</div>
-              </div>
+              </Link>
 
-              <div
+              <Link
                 className="card"
-                onClick={() =>
-                  router.push(
-                    { pathname: "/dog", query: buildLocalizedQuery(resolvedLang) },
-                    undefined,
-                    { locale: resolvedLang }
-                  )
-                }
+                href={buildLocalizedPublicPath("/dog", resolvedLang)}
               >
                 <img src="/images/dog.webp" alt={t.sections.dogs} />
                 <div className="label">{t.sections.dogs}</div>
-              </div>
+              </Link>
 
-              <div
+              <Link
                 className="card"
-                onClick={() =>
-                  router.push(
-                    { pathname: "/capybara", query: buildLocalizedQuery(resolvedLang) },
-                    undefined,
-                    { locale: resolvedLang }
-                  )
-                }
+                href={buildLocalizedPublicPath("/books/kladbishenskaya-kniga", resolvedLang)}
               >
                 <img src="/images/capybara.webp" alt={t.sections.capybaras} />
                 <div className="label">{t.sections.capybaras}</div>
-              </div>
+              </Link>
 
-              <div
+              <Link
                 className="card"
-                onClick={() =>
-                  router.push(
-                    { pathname: "/parrots", query: buildLocalizedQuery(resolvedLang) },
-                    undefined,
-                    { locale: resolvedLang }
-                  )
-                }
+                href={buildLocalizedPublicPath("/parrots", resolvedLang)}
               >
                 <img src="/images/parrot.webp" alt={t.sections.parrots} />
                 <div className="label">{t.sections.parrots}</div>
-              </div>
+              </Link>
 
-              <div
+              <Link
                 className="card"
-                onClick={() =>
-                  router.push(
-                    { pathname: "/raccoons", query: buildLocalizedQuery(resolvedLang) },
-                    undefined,
-                    { locale: resolvedLang }
-                  )
-                }
+                href={buildLocalizedPublicPath("/raccoons", resolvedLang)}
               >
                 <img src="/images/raccoon.webp" alt={t.sections.raccoons} />
                 <div className="label">{t.sections.raccoons}</div>
-              </div>
+              </Link>
 
               <div className="card mystery-card">
                 <div className="mystery-container">

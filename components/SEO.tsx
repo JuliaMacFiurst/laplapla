@@ -27,6 +27,17 @@ function normalizePath(path: string) {
   return cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
 }
 
+function buildAlternateLinks(path: string) {
+  const normalizedPath = normalizePath(path);
+
+  return [
+    { hrefLang: "ru", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "ru")}` },
+    { hrefLang: "en", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "en")}` },
+    { hrefLang: "he", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "he")}` },
+    { hrefLang: "x-default", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "ru")}` },
+  ];
+}
+
 export default function SEO({
   title,
   description,
@@ -40,13 +51,14 @@ export default function SEO({
   const resolvedLang = lang ?? getCurrentLang(router);
   const normalizedPath = buildLocalizedPublicPath(normalizePath(path), resolvedLang);
   const canonical = canonicalOverride ?? `${BASE_URL}${normalizedPath === "/" ? "" : normalizedPath}`;
+  const alternateLinks = alternates ?? buildAlternateLinks(path);
 
   return (
     <Head>
       <title key="title">{title}</title>
       <meta key="description" name="description" content={description} />
       <link key="canonical" rel="canonical" href={canonical} />
-      {alternates?.map((alternate) => (
+      {alternateLinks.map((alternate) => (
         <link
           key={`alternate-${alternate.hrefLang}`}
           rel="alternate"

@@ -1,7 +1,9 @@
+import type { GetStaticProps } from "next";
 import { useRouter } from "next/router";
+import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import { dictionaries, Lang } from "../i18n";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedQuery, DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 
 // /pages/dog.tsx
 
@@ -45,9 +47,9 @@ const categoryIcons = [
   'city.webp',
 ];
 
-export default function DogPage() {
+export default function DogPage({ lang: providedLang }: { lang?: Lang }) {
   const router = useRouter();
-  const lang = getCurrentLang(router) as Lang;
+  const lang = providedLang ?? (getCurrentLang(router) as Lang);
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogsPage;
   const seo = dict.seo.dogs.index;
@@ -60,7 +62,11 @@ export default function DogPage() {
         <img src="/dog/frank.webp" alt="Фрэнк" className="dog-header-image" />
         <div className="dog-header-wrapper">
           <h1 className="dog-page-title page-title">{t.title}</h1>
+          <p className="page-description" style={{ margin: "0 auto 1rem", maxWidth: 720 }}>
+            {seo.description}
+          </p>
           <h2 className="dog-page-subtitle">{t.subtitle}</h2>
+          <CorePageLinks current="dog" lang={lang} related={["home", "cats", "book"]} />
         </div>
         <img src="/dog/fibi.webp" alt="Фиби" className="dog-header-image" />
       </div>
@@ -90,3 +96,13 @@ export default function DogPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps<{ lang: Lang }> = async ({ locale }) => {
+  const lang = isLang(locale) ? locale : DEFAULT_LANG;
+
+  return {
+    props: {
+      lang,
+    },
+  };
+};

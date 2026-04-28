@@ -6,8 +6,8 @@ export const en = {
     },
     cats: {
       index: {
-        title: "Cats Explain — simple explanations for kids",
-        description: "Little cats help explain tricky ideas with short stories, pictures, and playful slides.",
+        title: "Cats Explain — simple answers to complex questions",
+        description: "Little cats explain complex topics for kids with short stories, pictures, and playful slides.",
       },
       studio: {
         title: "Paw Studio — create your own video",
@@ -20,8 +20,8 @@ export const en = {
     },
     dogs: {
       index: {
-        title: "Dogs Draw — drawing lessons for kids",
-        description: "Choose a topic and open step-by-step drawing lessons with the dogs.",
+        title: "Dogs Draw — step-by-step drawing lessons for kids",
+        description: "Choose a topic, open a lesson, and draw with the dogs step by step.",
       },
       lessons: {
         titleSuffix: "drawing lessons",
@@ -35,8 +35,8 @@ export const en = {
       },
     },
     parrots: {
-      title: "Parrots Sing — music stories for kids",
-      description: "Build your own chirp mix, hear stories about music styles, and open slide-based media.",
+      title: "Parrots Sing — music stories and rhythm games for kids",
+      description: "Build your own chirp mix, hear stories about music styles, and explore rhythm with the parrots.",
     },
     capybaras: {
       index: {
@@ -55,7 +55,7 @@ export const en = {
     },
     raccoons: {
       index: {
-        title: "Raccoons Explore — an interactive map for kids",
+        title: "Raccoons Explore — interactive map and facts for kids",
         description: "Explore countries, animals, rivers, and seas on an interactive map with raccoons.",
       },
       quest1: {

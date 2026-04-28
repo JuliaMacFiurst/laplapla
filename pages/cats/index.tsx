@@ -1,5 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import type { GetStaticProps } from "next";
 import { useRouter } from "next/router";
+import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import TranslationWarning from "@/components/TranslationWarning";
 import MobileSlideshowViewer from "@/components/studio/mobile/MobileSlideshowViewer";
@@ -12,7 +14,7 @@ import {
   buildAnimalSlideMediaQueries,
   findAlternativeSlideMedia,
 } from "@/lib/client/slideMediaSearch";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import type { StudioSlide } from "@/types/studio";
 
@@ -571,6 +573,10 @@ export default function CatPage({ lang }: { lang: Lang }) {
         ) : (
           <>
             <p className="example-title">{t.examplesTitle}</p>
+            <p className="page-description" style={{ textAlign: "center", margin: "0 auto 1rem", maxWidth: 760 }}>
+              {seo.description}
+            </p>
+            <CorePageLinks current="cats" lang={lang} related={["book", "parrots", "raccoons"]} />
             {renderSearchBlock("desktop")}
 
             <div className="example-buttons">
@@ -712,3 +718,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps<{ lang: Lang }> = async ({ locale }) => {
+  const lang = isLang(locale) ? locale : DEFAULT_LANG;
+
+  return {
+    props: {
+      lang,
+    },
+  };
+};

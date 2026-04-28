@@ -1,11 +1,13 @@
 import {useCallback, useEffect, useMemo, useState } from "react";
+import type { GetStaticProps } from "next";
 import { useRouter } from "next/router";
+import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import ParrotMixer, { type MusicConfig } from "../components/ParrotMixer";
 import ParrotStoryCard, { type Slide as ParrotSlide } from "../components/ParrotStoryCard";
 import ParrotMobileExperience from "@/components/parrots/mobile/ParrotMobileExperience";
-import { dictionaries } from "../i18n";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { dictionaries, type Lang } from "../i18n";
+import { DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { fetchParrotMusicStyles } from "@/lib/parrots/client";
@@ -61,9 +63,9 @@ const imageForPreset = (id: string, iconUrl?: string) => {
   return "/icons/music-styles-icons/lo-fi.webp"; // fallback
 };
 
-export default function ParrotsPage() {
+export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   const router = useRouter();
-  const lang = getCurrentLang(router);
+  const lang = providedLang ?? getCurrentLang(router);
   const dict = dictionaries[lang] || dictionaries.ru;
   const t = dict.parrots;
   const seo = dict.seo.parrots;
@@ -289,7 +291,11 @@ export default function ParrotsPage() {
       <main className={`home-wrapper parrots-page force-ltr-layout ${lang === "he" ? "parrots-page-he" : ""}`}>
         <div className="parrots-mobile-hero">
           <h1 className="title page-title">{t.page.title}</h1>
+          <p className="page-description" style={{ maxWidth: 760, margin: "0 auto 1rem" }}>
+            {seo.description}
+          </p>
           <p className="subtitle">{t.page.subtitle}</p>
+          <CorePageLinks current="parrots" lang={lang} related={["home", "cats", "raccoons"]} />
 
           <div className="style-presets-row" style={{ marginBottom: "1rem", justifyContent: "center", gap: 12, maxWidth: "100%" }}>
             {styleRecords.map((p) => (
@@ -484,3 +490,13 @@ export default function ParrotsPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps<{ lang: Lang }> = async ({ locale }) => {
+  const lang = isLang(locale) ? locale : DEFAULT_LANG;
+
+  return {
+    props: {
+      lang,
+    },
+  };
+};

@@ -1,6 +1,8 @@
 // pages/raccoons.tsx
+import type { GetStaticProps } from "next";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
+import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import MapWrapper from "@/components/Raccoons/MapWrapper";
 import MapTabs from "@/components/Raccoons/MapTabs";
@@ -8,8 +10,8 @@ import { RaccoonGuide } from "@/components/Raccoons/RaccoonGuide";
 import { QuestSection } from "@/components/Raccoons/QuestSection";
 import type { Quest } from "@/components/Raccoons/QuestSection";
 import { quests } from "@/utils/quests.config";
-import { dictionaries } from "@/i18n";
-import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
+import { dictionaries, type Lang } from "@/i18n";
+import { buildLocalizedHref, DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
 import MobileQuestSelectScreen from "@/components/Raccoons/MobileQuestSelectScreen";
@@ -46,9 +48,9 @@ const SEARCH_UI = {
 
 const SEARCH_RESULTS_PAGE_SIZE = 12;
 
-export default function RaccoonsPage() {
+export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
   const router = useRouter();
-  const lang = getCurrentLang(router);
+  const lang = providedLang ?? getCurrentLang(router);
   const t = dictionaries[lang].raccoons;
   const seo = dictionaries[lang].seo.raccoons.index;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/raccoons";
@@ -301,7 +303,11 @@ export default function RaccoonsPage() {
 
               <div className="raccoon-text-block">
                 <h1 className="page-title">{t.page.title}</h1>
+                <p className="page-description" style={{ maxWidth: 760 }}>
+                  {seo.description}
+                </p>
                 <p className="page-subtitle">{t.page.subtitle}</p>
+                <CorePageLinks current="raccoons" lang={lang} related={["home", "cats", "book"]} />
               </div>
             </div>
             <MapTabs selectedTab={activeTab} setSelectedTab={handleMapTabChange} />
@@ -392,3 +398,13 @@ export default function RaccoonsPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps<{ lang: Lang }> = async ({ locale }) => {
+  const lang = isLang(locale) ? locale : DEFAULT_LANG;
+
+  return {
+    props: {
+      lang,
+    },
+  };
+};

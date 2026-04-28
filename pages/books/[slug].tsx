@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import StandaloneBookScreenPages from "@/components/StandaloneBookScreenPages";
 import { buildBookPageDescription, getBookPathSlug } from "@/lib/books/shared";
@@ -13,6 +14,7 @@ type Props = {
   previousBook: Book | null;
   nextBook: Book | null;
   lang: Lang;
+  isCoreSeoBook: boolean;
 };
 
 const BACK_TO_FEED_LABEL: Record<Lang, string> = {
@@ -68,6 +70,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
       previousBook,
       nextBook,
       lang,
+      isCoreSeoBook: slug === "kladbishenskaya-kniga",
     },
   };
 };
@@ -77,6 +80,7 @@ export default function BookPage({
   previousBook,
   nextBook,
   lang,
+  isCoreSeoBook,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const dict = dictionaries[lang] || dictionaries.ru;
   const t = dict.capybaras.capybaraPage;
@@ -97,6 +101,17 @@ export default function BookPage({
             {BACK_TO_FEED_LABEL[lang]}
           </Link>
         </nav>
+        {isCoreSeoBook ? (
+          <section style={{ margin: "1rem 0 1.5rem" }}>
+            <h1 className="page-title" style={{ marginBottom: "0.75rem" }}>
+              {seoTitle}
+            </h1>
+            <p className="page-description" style={{ maxWidth: 780 }}>
+              {seoDescription}
+            </p>
+            <CorePageLinks current="book" lang={lang} related={["home", "cats", "raccoons"]} />
+          </section>
+        ) : null}
         <StandaloneBookScreenPages book={book} lang={lang} t={t} />
         <div className="book-seo-navigation">
           {previousBook ? (
