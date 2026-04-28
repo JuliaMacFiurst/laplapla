@@ -61,10 +61,15 @@ export default function CorePageLinks({ current, lang, related }: CorePageLinksP
     <nav
       aria-label={NAV_LABELS[lang]}
       style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "0.75rem",
-        margin: "1rem 0 1.25rem",
+        position: "absolute",
+        width: "1px",
+        height: "1px",
+        padding: 0,
+        margin: "-1px",
+        overflow: "hidden",
+        clip: "rect(0, 0, 0, 0)",
+        whiteSpace: "nowrap",
+        border: 0,
       }}
     >
       {uniqueKeys.map((key) => (

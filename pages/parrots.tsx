@@ -27,6 +27,18 @@ type ParrotImportPayload = {
   preset?: ParrotStyleRecord;
 };
 
+const visuallyHiddenStyle = {
+  position: "absolute" as const,
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap" as const,
+  border: 0,
+};
+
 const imageForPreset = (id: string, iconUrl?: string) => {
   if (iconUrl) {
     return iconUrl;
@@ -291,7 +303,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
       <main className={`home-wrapper parrots-page force-ltr-layout ${lang === "he" ? "parrots-page-he" : ""}`}>
         <div className="parrots-mobile-hero">
           <h1 className="title page-title">{t.page.title}</h1>
-          <p className="page-description" style={{ maxWidth: 760, margin: "0 auto 1rem" }}>
+          <p style={visuallyHiddenStyle}>
             {seo.description}
           </p>
           <p className="subtitle">{t.page.subtitle}</p>

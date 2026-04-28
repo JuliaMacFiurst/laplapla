@@ -23,6 +23,18 @@ const BACK_TO_FEED_LABEL: Record<Lang, string> = {
   he: "↖חזרה לפיד הספרים",
 };
 
+const visuallyHiddenStyle = {
+  position: "absolute" as const,
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap" as const,
+  border: 0,
+};
+
 const getBookSummary = (book: Book) =>
   (typeof book.description === "string" && book.description.trim()) ||
   (typeof book.summary === "string" && book.summary.trim()) ||
@@ -102,11 +114,11 @@ export default function BookPage({
           </Link>
         </nav>
         {isCoreSeoBook ? (
-          <section style={{ margin: "1rem 0 1.5rem" }}>
-            <h1 className="page-title" style={{ marginBottom: "0.75rem" }}>
+          <section style={visuallyHiddenStyle}>
+            <h1>
               {seoTitle}
             </h1>
-            <p className="page-description" style={{ maxWidth: 780 }}>
+            <p>
               {seoDescription}
             </p>
             <CorePageLinks current="book" lang={lang} related={["home", "cats", "raccoons"]} />

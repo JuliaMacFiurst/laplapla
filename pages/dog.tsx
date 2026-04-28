@@ -47,6 +47,18 @@ const categoryIcons = [
   'city.webp',
 ];
 
+const visuallyHiddenStyle = {
+  position: "absolute" as const,
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap" as const,
+  border: 0,
+};
+
 export default function DogPage({ lang: providedLang }: { lang?: Lang }) {
   const router = useRouter();
   const lang = providedLang ?? (getCurrentLang(router) as Lang);
@@ -62,7 +74,7 @@ export default function DogPage({ lang: providedLang }: { lang?: Lang }) {
         <img src="/dog/frank.webp" alt="Фрэнк" className="dog-header-image" />
         <div className="dog-header-wrapper">
           <h1 className="dog-page-title page-title">{t.title}</h1>
-          <p className="page-description" style={{ margin: "0 auto 1rem", maxWidth: 720 }}>
+          <p style={visuallyHiddenStyle}>
             {seo.description}
           </p>
           <h2 className="dog-page-subtitle">{t.subtitle}</h2>

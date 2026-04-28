@@ -47,6 +47,17 @@ const SEARCH_UI = {
 } as const;
 
 const SEARCH_RESULTS_PAGE_SIZE = 12;
+const visuallyHiddenStyle = {
+  position: "absolute" as const,
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap" as const,
+  border: 0,
+};
 
 export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
   const router = useRouter();
@@ -303,7 +314,7 @@ export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
 
               <div className="raccoon-text-block">
                 <h1 className="page-title">{t.page.title}</h1>
-                <p className="page-description" style={{ maxWidth: 760 }}>
+                <p style={visuallyHiddenStyle}>
                   {seo.description}
                 </p>
                 <p className="page-subtitle">{t.page.subtitle}</p>

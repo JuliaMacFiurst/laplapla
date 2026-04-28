@@ -25,6 +25,17 @@ type CatRuntimeSlide = {
 };
 
 const CAT_SEARCH_RESULTS_LIMIT = 8;
+const visuallyHiddenStyle = {
+  position: "absolute" as const,
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap" as const,
+  border: 0,
+};
 
 function pickRandomItems<T>(items: T[], count: number) {
   const shuffled = [...items];
@@ -633,7 +644,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
         ) : (
           <>
             <p className="example-title">{t.examplesTitle}</p>
-            <p className="page-description" style={{ textAlign: "center", margin: "0 auto 1rem", maxWidth: 760 }}>
+            <p style={visuallyHiddenStyle}>
               {seo.description}
             </p>
             <CorePageLinks current="cats" lang={lang} related={["book", "parrots", "raccoons"]} />

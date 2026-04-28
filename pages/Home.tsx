@@ -19,6 +19,18 @@ const HOME_ALTERNATES = [
   { hrefLang: "x-default", href: `${BASE_URL}/` },
 ];
 
+const visuallyHiddenStyle = {
+  position: "absolute" as const,
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap" as const,
+  border: 0,
+};
+
 export default function Home({ lang }: { lang?: Lang }) {
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
@@ -45,8 +57,9 @@ export default function Home({ lang }: { lang?: Lang }) {
           <section className={isMobile ? "home-mobile-screen home-mobile-screen-menu" : undefined}>
             <header className="site-header">
               <div className="header-text">
-                <h1 className="page-title">{seo.title}</h1>
-                <p className="page-description">{seo.description}</p>
+                <h1 style={visuallyHiddenStyle}>{seo.title}</h1>
+                <div className="page-title">{t.title}</div>
+                <p style={visuallyHiddenStyle}>{seo.description}</p>
                 <h2 className="page-subtitle">
                   {isMobile ? t.mobileHelper : t.subtitle}
                 </h2>
@@ -62,6 +75,7 @@ export default function Home({ lang }: { lang?: Lang }) {
               <Link
                 className="card"
                 href={buildLocalizedPublicPath("/cats", resolvedLang)}
+                style={{ textDecoration: "none", color: "inherit" }}
               >
                 <img src="/images/cat.webp" alt={t.sections.cats} />
                 <div className="label">{t.sections.cats}</div>
@@ -70,6 +84,7 @@ export default function Home({ lang }: { lang?: Lang }) {
               <Link
                 className="card"
                 href={buildLocalizedPublicPath("/dog", resolvedLang)}
+                style={{ textDecoration: "none", color: "inherit" }}
               >
                 <img src="/images/dog.webp" alt={t.sections.dogs} />
                 <div className="label">{t.sections.dogs}</div>
@@ -78,6 +93,7 @@ export default function Home({ lang }: { lang?: Lang }) {
               <Link
                 className="card"
                 href={buildLocalizedPublicPath("/books/kladbishenskaya-kniga", resolvedLang)}
+                style={{ textDecoration: "none", color: "inherit" }}
               >
                 <img src="/images/capybara.webp" alt={t.sections.capybaras} />
                 <div className="label">{t.sections.capybaras}</div>
@@ -86,6 +102,7 @@ export default function Home({ lang }: { lang?: Lang }) {
               <Link
                 className="card"
                 href={buildLocalizedPublicPath("/parrots", resolvedLang)}
+                style={{ textDecoration: "none", color: "inherit" }}
               >
                 <img src="/images/parrot.webp" alt={t.sections.parrots} />
                 <div className="label">{t.sections.parrots}</div>
@@ -94,6 +111,7 @@ export default function Home({ lang }: { lang?: Lang }) {
               <Link
                 className="card"
                 href={buildLocalizedPublicPath("/raccoons", resolvedLang)}
+                style={{ textDecoration: "none", color: "inherit" }}
               >
                 <img src="/images/raccoon.webp" alt={t.sections.raccoons} />
                 <div className="label">{t.sections.raccoons}</div>
