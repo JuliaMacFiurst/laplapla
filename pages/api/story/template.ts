@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 import { getRequestLang } from "@/lib/i18n/routing";
 import { loadStoryTemplate } from "@/lib/story/story-service";
 
@@ -16,6 +17,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const template = await loadStoryTemplate(templateId, getRequestLang(req));
     return res.status(200).json(template);
   } catch (error) {
+    await captureAndAlertServerError(error, {
+      route: req.url || "/api/story/template",
+      method: req.method || "GET",
+      runtime: "server",
+      statusCode: 500,
+    });
     console.error("Failed to load story template:", error);
     return res.status(500).json({ error: "Failed to load story template" });
   }

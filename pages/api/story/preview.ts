@@ -5,6 +5,7 @@ import {
   loadStoryTemplate,
   validateStoryPath,
 } from "@/lib/story/story-service";
+import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 import { getRequestLang } from "@/lib/i18n/routing";
 import type { StoryChoiceIndex } from "@/lib/story/story-shared";
 
@@ -38,6 +39,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       errors: validation.errors,
     });
   } catch (error) {
+    await captureAndAlertServerError(error, {
+      route: req.url || "/api/story/preview",
+      method: req.method || "POST",
+      runtime: "server",
+      statusCode: 500,
+    });
     console.error("Failed to preview story:", error);
     return res.status(500).json({ error: "Failed to preview story" });
   }

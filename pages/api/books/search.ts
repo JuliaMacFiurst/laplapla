@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 import { getRequestLang } from "@/lib/i18n/routing";
 import { buildBookAgeCategories, resolveBookAgeCategoryValues } from "@/lib/books/filters";
 import { translateBooksForLang } from "@/lib/books";
@@ -124,6 +125,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json(responseBooks);
     logApi(res.statusCode, startedAt);
   } catch (error) {
+    await captureAndAlertServerError(error, {
+      route: req.url || ROUTE,
+      method: req.method || "GET",
+      runtime: "server",
+      statusCode: 500,
+    });
     logApiError(error);
     console.error("Failed to search books:", error instanceof Error ? error.stack || error.message : error);
     res.status(500).json({ error: "Failed to search books" });

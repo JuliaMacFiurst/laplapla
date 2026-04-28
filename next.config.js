@@ -1,4 +1,7 @@
+const { withSentryConfig } = require("@sentry/nextjs");
+
 const isProduction = process.env.NODE_ENV === "production";
+const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || "";
 
 const connectSrc = [
   "'self'",
@@ -6,6 +9,15 @@ const connectSrc = [
   "https://api.giphy.com",
   "https://api.pexels.com",
 ];
+
+if (sentryDsn) {
+  try {
+    const sentryOrigin = new URL(sentryDsn).origin;
+    connectSrc.push(sentryOrigin);
+  } catch {
+    // Ignore malformed DSN values and keep the current CSP intact.
+  }
+}
 
 if (!isProduction) {
   connectSrc.push("http://127.0.0.1:5050");
@@ -95,4 +107,14 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});

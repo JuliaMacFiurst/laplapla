@@ -76,6 +76,18 @@ npm run build
 - проверка server-side интеграций: `Supabase`, `GIPHY`, `Pexels`, `Google TTS`
 - проверка env: приватные ключи не должны попадать в клиентский bundle
 
+## Monitoring
+
+- План безопасного rollout `Sentry` для этого репозитория описан в [docs/sentry-rollout.md](/Users/julia_mac/AI-Workspace/dev/capybara_tales/docs/sentry-rollout.md).
+- Базовый принцип: до появления DSN в env мониторинг не должен менять текущее поведение приложения.
+- Для проксирования `Sentry -> Discord` используется серверный endpoint [pages/api/alert-discord.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/pages/api/alert-discord.ts).
+- Для прямой server-side отправки Discord-alert без Sentry webhook UI используется helper [lib/monitoring/discordAlert.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/discordAlert.ts).
+- Для fallback coverage в routes вне `withApiHandler` используется helper [lib/monitoring/captureAndAlertServerError.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/captureAndAlertServerError.ts).
+- Нужные env: `DISCORD_WEBHOOK_URL` и опционально `DISCORD_ALERT_SECRET`.
+- В Sentry alert action указывайте URL вида `https://your-domain.com/api/alert-discord`; если используете секрет, передавайте header `x-alert-secret`.
+- Для production server-side alerting без Sentry webhook UI достаточно `DISCORD_WEBHOOK_URL` и `SENTRY_ENVIRONMENT=production`; env-изменения в Vercel применяются только после нового deploy.
+- В production для [pages/api/alert-discord.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/pages/api/alert-discord.ts) `DISCORD_ALERT_SECRET` обязателен.
+
 ## Локальные backup-скрипты
 
 В проекте есть локальные backup-скрипты в папке `scripts/`.
