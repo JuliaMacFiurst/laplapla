@@ -6,6 +6,16 @@ import { dictionaries, type Lang } from "../i18n";
 import { VideoSection } from "../components/video/VideoSection";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { BASE_URL } from "@/lib/config";
+
+const HOME_CANONICAL_URL = `${BASE_URL}/`;
+
+const HOME_ALTERNATES = [
+  { hrefLang: "ru", href: `${BASE_URL}/` },
+  { hrefLang: "en", href: `${BASE_URL}/en` },
+  { hrefLang: "he", href: `${BASE_URL}/he` },
+  { hrefLang: "x-default", href: `${BASE_URL}/` },
+];
 
 export default function Home({ lang }: { lang?: Lang }) {
   const router = useRouter();
@@ -14,20 +24,27 @@ export default function Home({ lang }: { lang?: Lang }) {
 
   const t = useMemo(() => dictionaries[resolvedLang].home, [resolvedLang]);
   const seo = dictionaries[resolvedLang].seo.home;
-  const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/";
 
   // Optional: set RTL for Hebrew without touching global layout yet
   const dir = resolvedLang === "he" ? "rtl" : "ltr";
 
   return (
     <>
-      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <SEO
+        title={seo.title}
+        description={seo.description}
+        path="/"
+        lang={resolvedLang}
+        canonicalOverride={HOME_CANONICAL_URL}
+        alternates={HOME_ALTERNATES}
+      />
       <div className={`home-wrapper ${isMobile ? "home-wrapper-mobile" : ""}`} dir={dir}>
         <div className={isMobile ? "home-mobile-snap-shell" : undefined}>
           <section className={isMobile ? "home-mobile-screen home-mobile-screen-menu" : undefined}>
             <header className="site-header">
               <div className="header-text">
                 <h1 className="page-title">{t.title}</h1>
+                <p className="page-description">{seo.description}</p>
                 <h2 className="page-subtitle">
                   {isMobile ? t.mobileHelper : t.subtitle}
                 </h2>

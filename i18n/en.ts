@@ -1,8 +1,8 @@
 export const en = {
   seo: {
     home: {
-      title: "LapLapLa — interactive stories, maps, and creativity for kids",
-      description: "LapLapLa helps kids explore books, maps, music, and creativity through playful interactive stories.",
+      title: "LapLapLa — learning through stories, games and animation",
+      description: "LapLapLa is an interactive learning platform for kids: cats explain, capybaras tell stories, raccoons explore the world.",
     },
     cats: {
       index: {

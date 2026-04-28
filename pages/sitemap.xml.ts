@@ -9,7 +9,7 @@ import { normalizeSiteUrl } from "@/lib/config";
 const STATIC_PATHS = [
   "/",
   "/raccoons",
-  "/dogs",
+  "/dog",
   "/parrots",
   "/books",
 ];
@@ -44,9 +44,12 @@ async function loadBookPaths() {
   }
 }
 
-function buildSitemapXml(urls: string[]) {
-  const body = urls
-    .map((url) => `  <url>\n    <loc>${escapeXml(url)}</loc>\n  </url>`)
+function buildSitemapXml(entries: Array<{ url: string; priority?: string }>) {
+  const body = entries
+    .map(({ url, priority }) => {
+      const priorityTag = priority ? `\n    <priority>${priority}</priority>` : "";
+      return `  <url>\n    <loc>${escapeXml(url)}</loc>${priorityTag}\n  </url>`;
+    })
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>`;
@@ -84,9 +87,13 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const urls = Array.from(
     new Set(localizePaths(canonicalPaths)),
   ).map((routePath) => `${baseUrl}${routePath === "/" ? "" : routePath}`);
+  const entries = urls.map((url) => ({
+    url,
+    priority: url === baseUrl ? "1.0" : undefined,
+  }));
 
   res.setHeader("Content-Type", "application/xml");
-  res.write(buildSitemapXml(urls));
+  res.write(buildSitemapXml(entries));
   res.end();
 
   return {
