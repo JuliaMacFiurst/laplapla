@@ -92,7 +92,7 @@ export default function Home({ lang }: { lang?: Lang }) {
 
               <Link
                 className="card"
-                href={buildLocalizedPublicPath("/books/kladbishenskaya-kniga", resolvedLang)}
+                href={buildLocalizedPublicPath("/capybara", resolvedLang)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
                 <img src="/images/capybara.webp" alt={t.sections.capybaras} />

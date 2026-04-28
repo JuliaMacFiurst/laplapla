@@ -9,7 +9,7 @@ const CORE_PAGE_PATHS: Record<CorePageKey, string> = {
   home: "/",
   cats: "/cats",
   dog: "/dog",
-  book: "/books/kladbishenskaya-kniga",
+  book: "/capybara",
   parrots: "/parrots",
   raccoons: "/raccoons",
 };
