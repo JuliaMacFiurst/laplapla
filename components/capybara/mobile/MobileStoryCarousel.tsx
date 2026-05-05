@@ -102,6 +102,9 @@ export default function MobileStoryCarousel({
   useEffect(() => {
     slideIndexRef.current = slideIndex;
     onSlideIndexChangeRef.current?.(slideIndex);
+  }, [slideIndex]);
+
+  useEffect(() => {
     onPreloadNextSlide?.(slideIndex);
   }, [onPreloadNextSlide, slideIndex]);
 

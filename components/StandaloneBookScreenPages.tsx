@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/router";
 import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
@@ -20,6 +20,7 @@ interface StandaloneBookScreenPagesProps {
   lang: Lang;
   t: CapybaraPageDict;
   initialModeId?: string | number | null;
+  bottomNavigation?: ReactNode;
 }
 
 export default function StandaloneBookScreenPages({
@@ -27,6 +28,7 @@ export default function StandaloneBookScreenPages({
   lang,
   t,
   initialModeId = null,
+  bottomNavigation,
 }: StandaloneBookScreenPagesProps) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -415,6 +417,7 @@ export default function StandaloneBookScreenPages({
         void preloadNextSlideMedia(slideIndex);
       }}
       isOpeningStudio={isOpeningStudio}
+      bottomNavigation={bottomNavigation}
       t={t}
     />
   );
@@ -535,7 +538,14 @@ export default function StandaloneBookScreenPages({
         </>
       ) : null}
       {isMobile ? (
-        <div className="standalone-book-mobile-shell">{bookContent}</div>
+        <>
+          <div className="standalone-book-mobile-shell">{bookContent}</div>
+          {bottomNavigation ? (
+            <div className="mobile-book-bottom-nav">
+              <div className="book-reader-bottom-nav">{bottomNavigation}</div>
+            </div>
+          ) : null}
+        </>
       ) : (
         <section className="standalone-book-desktop-shell">
           <form className="search-form standalone-book-desktop-search" onSubmit={handleSearchSubmit}>
@@ -598,7 +608,6 @@ export default function StandaloneBookScreenPages({
               ))}
             </div>
           ) : null}
-
           <article className="book-card">{bookContent}</article>
         </section>
       )}

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import StoryCarousel from "@/components/StoryCarousel";
 import BookQuiz from "@/components/BookQuiz";
 import ModeButtons from "@/components/ModeButtons";
@@ -45,6 +45,7 @@ interface BookScreenProps {
   mobileVariant?: "feed" | "reader";
   isOpeningStudio?: boolean;
   showEmptyError?: boolean;
+  bottomNavigation?: ReactNode;
   t: CapybaraPageDict;
 }
 
@@ -74,6 +75,7 @@ export default function BookScreen({
   mobileVariant = "reader",
   isOpeningStudio = false,
   showEmptyError,
+  bottomNavigation,
   t,
 }: BookScreenProps) {
   const isMobile = useIsMobile();
@@ -265,6 +267,8 @@ export default function BookScreen({
           )}
         </div>
       ) : null}
+
+      {bottomNavigation ? <div className="book-reader-bottom-nav">{bottomNavigation}</div> : null}
     </>
   );
 }

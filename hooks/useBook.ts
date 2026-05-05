@@ -762,10 +762,23 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     updater: (prev: BookUiState) => BookUiState,
   ) => {
     const bookKey = String(bookId);
-    setBookUiStateById((prev) => ({
-      ...prev,
-      [bookKey]: updater(prev[bookKey] || createDefaultBookUiState()),
-    }));
+    setBookUiStateById((prev) => {
+      const previousState = prev[bookKey] || createDefaultBookUiState();
+      const nextState = updater(previousState);
+
+      if (
+        previousState.modeId === nextState.modeId &&
+        previousState.slideIndex === nextState.slideIndex &&
+        previousState.showQuiz === nextState.showQuiz
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [bookKey]: nextState,
+      };
+    });
   }, []);
 
   const currentBookKey = currentBook ? String(currentBook.id) : null;
@@ -1398,10 +1411,10 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       return;
     }
 
-    updateBookUiState(currentBook.id, (prev) => ({
-      ...prev,
-      slideIndex,
-    }));
+    updateBookUiState(
+      currentBook.id,
+      (prev) => (prev.slideIndex === slideIndex ? prev : { ...prev, slideIndex }),
+    );
   }, [currentBook, updateBookUiState]);
 
   const toggleCurrentBookQuiz = useCallback(() => {

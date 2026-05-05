@@ -53,6 +53,60 @@ function ReaderNavIcon({ direction }: { direction: "back" | "prev" | "next" }) {
   );
 }
 
+function BookReaderBottomNavigation({
+  lang,
+  previousBook,
+  nextBook,
+}: {
+  lang: Lang;
+  previousBook: Book | null;
+  nextBook: Book | null;
+}) {
+  const previousDirection = lang === "he" ? "next" : "prev";
+  const nextDirection = lang === "he" ? "prev" : "next";
+
+  if (!previousBook && !nextBook) {
+    return null;
+  }
+
+  return (
+    <nav className="book-seo-navigation" aria-label="Book navigation">
+      {previousBook ? (
+        <Link
+          href={buildLocalizedPublicPath(`/books/${getBookPathSlug(previousBook)}`, lang)}
+          className="book-reader-nav-button book-reader-nav-button-secondary book-reader-nav-button-prev"
+        >
+          <span className="book-reader-nav-icon-badge">
+            <ReaderNavIcon direction={previousDirection} />
+          </span>
+          <span className="book-reader-nav-text-group">
+            <span className="book-reader-nav-caption">{lang === "he" ? "הספר הבא" : "Previous book"}</span>
+            <span className="book-reader-nav-title">{previousBook.title}</span>
+          </span>
+        </Link>
+      ) : (
+        <span aria-hidden="true" className="book-reader-nav-spacer" />
+      )}
+      {nextBook ? (
+        <Link
+          href={buildLocalizedPublicPath(`/books/${getBookPathSlug(nextBook)}`, lang)}
+          className="book-reader-nav-button book-reader-nav-button-secondary book-reader-nav-button-next"
+        >
+          <span className="book-reader-nav-text-group">
+            <span className="book-reader-nav-caption">{lang === "he" ? "הספר הקודם" : "Next book"}</span>
+            <span className="book-reader-nav-title">{nextBook.title}</span>
+          </span>
+          <span className="book-reader-nav-icon-badge">
+            <ReaderNavIcon direction={nextDirection} />
+          </span>
+        </Link>
+      ) : (
+        <span aria-hidden="true" className="book-reader-nav-spacer" />
+      )}
+    </nav>
+  );
+}
+
 const visuallyHiddenStyle = {
   position: "absolute" as const,
   width: "1px",
@@ -131,8 +185,6 @@ export default function BookPage({
   const seoDescription = getBookSummary(book) || seo.defaultDescription;
   const seoPath = `/books/${getBookPathSlug(book)}`;
   const feedHref = buildLocalizedHref(`/capybara?book=${encodeURIComponent(getBookPathSlug(book))}`, lang);
-  const previousDirection = lang === "he" ? "next" : "prev";
-  const nextDirection = lang === "he" ? "prev" : "next";
 
   return (
     <>
@@ -157,41 +209,18 @@ export default function BookPage({
             <CorePageLinks current="book" lang={lang} related={["home", "cats", "raccoons"]} />
           </section>
         ) : null}
-        <StandaloneBookScreenPages book={book} lang={lang} t={t} />
-        <nav className="book-seo-navigation" aria-label="Book navigation">
-          {previousBook ? (
-            <Link
-              href={buildLocalizedPublicPath(`/books/${getBookPathSlug(previousBook)}`, lang)}
-              className="book-reader-nav-button book-reader-nav-button-secondary book-reader-nav-button-prev"
-            >
-              <span className="book-reader-nav-icon-badge">
-                <ReaderNavIcon direction={previousDirection} />
-              </span>
-              <span className="book-reader-nav-text-group">
-                <span className="book-reader-nav-caption">{lang === "he" ? "הספר הבא" : "Previous book"}</span>
-                <span className="book-reader-nav-title">{previousBook.title}</span>
-              </span>
-            </Link>
-          ) : (
-            <span aria-hidden="true" className="book-reader-nav-spacer" />
+        <StandaloneBookScreenPages
+          book={book}
+          lang={lang}
+          t={t}
+          bottomNavigation={(
+            <BookReaderBottomNavigation
+              lang={lang}
+              previousBook={previousBook}
+              nextBook={nextBook}
+            />
           )}
-          {nextBook ? (
-            <Link
-              href={buildLocalizedPublicPath(`/books/${getBookPathSlug(nextBook)}`, lang)}
-              className="book-reader-nav-button book-reader-nav-button-secondary book-reader-nav-button-next"
-            >
-              <span className="book-reader-nav-text-group">
-                <span className="book-reader-nav-caption">{lang === "he" ? "הספר הקודם" : "Next book"}</span>
-                <span className="book-reader-nav-title">{nextBook.title}</span>
-              </span>
-              <span className="book-reader-nav-icon-badge">
-                <ReaderNavIcon direction={nextDirection} />
-              </span>
-            </Link>
-          ) : (
-            <span aria-hidden="true" className="book-reader-nav-spacer" />
-          )}
-        </nav>
+        />
       </main>
     </>
   );

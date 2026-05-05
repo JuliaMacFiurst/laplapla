@@ -7,12 +7,15 @@ import {
   getBookPathSlug,
   getLocalizedExplanationModeLabel,
 } from "@/lib/books/shared";
-import { buildLocalizedHref, isLang } from "@/lib/i18n/routing";
+import { buildLocalizedHref, buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
+import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Book, ExplanationMode } from "@/types/types";
 
 type Props = {
   book: Book;
+  previousBook: Book | null;
+  nextBook: Book | null;
   lang: Lang;
   initialModeId: string | number | null;
   currentModeLabel: string;
@@ -50,7 +53,100 @@ function ReaderNavIcon() {
   );
 }
 
+function ReaderPagerIcon({ direction }: { direction: "prev" | "next" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d={direction === "prev" ? "M14.5 5.5L8 12l6.5 6.5" : "M9.5 5.5L16 12l-6.5 6.5"}
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.4"
+      />
+    </svg>
+  );
+}
+
+function BookReaderBottomNavigation({
+  lang,
+  previousBook,
+  nextBook,
+}: {
+  lang: Lang;
+  previousBook: Book | null;
+  nextBook: Book | null;
+}) {
+  const previousDirection = lang === "he" ? "next" : "prev";
+  const nextDirection = lang === "he" ? "prev" : "next";
+
+  if (!previousBook && !nextBook) {
+    return null;
+  }
+
+  return (
+    <nav className="book-seo-navigation" aria-label="Book navigation">
+      {previousBook ? (
+        <Link
+          href={buildLocalizedPublicPath(`/books/${getBookPathSlug(previousBook)}`, lang)}
+          className="book-reader-nav-button book-reader-nav-button-secondary book-reader-nav-button-prev"
+        >
+          <span className="book-reader-nav-icon-badge">
+            <ReaderPagerIcon direction={previousDirection} />
+          </span>
+          <span className="book-reader-nav-text-group">
+            <span className="book-reader-nav-caption">{lang === "he" ? "הספר הבא" : "Previous book"}</span>
+            <span className="book-reader-nav-title">{previousBook.title}</span>
+          </span>
+        </Link>
+      ) : (
+        <span aria-hidden="true" className="book-reader-nav-spacer" />
+      )}
+      {nextBook ? (
+        <Link
+          href={buildLocalizedPublicPath(`/books/${getBookPathSlug(nextBook)}`, lang)}
+          className="book-reader-nav-button book-reader-nav-button-secondary book-reader-nav-button-next"
+        >
+          <span className="book-reader-nav-text-group">
+            <span className="book-reader-nav-caption">{lang === "he" ? "הספר הקודם" : "Next book"}</span>
+            <span className="book-reader-nav-title">{nextBook.title}</span>
+          </span>
+          <span className="book-reader-nav-icon-badge">
+            <ReaderPagerIcon direction={nextDirection} />
+          </span>
+        </Link>
+      ) : (
+        <span aria-hidden="true" className="book-reader-nav-spacer" />
+      )}
+    </nav>
+  );
+}
+
 const getModeLabel = (modeSegment: string, lang: Lang) => MODE_FALLBACK_LABELS[modeSegment]?.[lang] || modeSegment;
+
+const loadBookNeighbors = async (book: Book, lang: Lang) => {
+  const { translateBooksForLang } = await import("@/lib/books");
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("books")
+    .select("*")
+    .order("title", { ascending: true });
+
+  if (error) {
+    return {
+      previousBook: null as Book | null,
+      nextBook: null as Book | null,
+    };
+  }
+
+  const books = await translateBooksForLang((data || []) as Book[], lang);
+  const currentIndex = books.findIndex((item) => String(item.id) === String(book.id));
+
+  return {
+    previousBook: currentIndex > 0 ? books[currentIndex - 1] : null,
+    nextBook: currentIndex >= 0 && currentIndex < books.length - 1 ? books[currentIndex + 1] : null,
+  };
+};
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
   const { findBookBySlug, loadExplanationModes } = await import("@/lib/books");
@@ -66,12 +162,15 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
     return { notFound: true };
   }
 
+  const { previousBook, nextBook } = await loadBookNeighbors(book, lang);
   const resolvedMode = findExplanationModeBySegment(modes, mode);
   const currentModeLabel = resolvedMode ? getLocalizedExplanationModeLabel(resolvedMode, lang) : getModeLabel(mode, lang);
 
   return {
     props: {
       book,
+      previousBook,
+      nextBook,
       lang,
       initialModeId: resolvedMode?.id ?? null,
       currentModeLabel,
@@ -82,6 +181,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
 
 export default function BookModePage({
   book,
+  previousBook,
+  nextBook,
   lang,
   initialModeId,
   currentModeLabel,
@@ -112,6 +213,13 @@ export default function BookModePage({
           lang={lang}
           t={t}
           initialModeId={initialModeId}
+          bottomNavigation={(
+            <BookReaderBottomNavigation
+              lang={lang}
+              previousBook={previousBook}
+              nextBook={nextBook}
+            />
+          )}
         />
       </main>
     </>
