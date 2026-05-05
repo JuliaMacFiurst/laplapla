@@ -15,6 +15,22 @@ const normalize = (value: unknown) =>
     .toLowerCase()
     .trim();
 
+const collectCategoryAliasTokens = (row: Record<string, unknown>) =>
+  Array.from(
+    new Set(
+      [
+        row.id,
+        row.slug,
+        row.category,
+        row.label,
+        row.name,
+        row.title,
+      ]
+        .map((value) => normalize(value))
+        .filter(Boolean),
+    ),
+  );
+
 const matchesQuery = (book: Record<string, unknown>, query: string) => {
   const searchableValues = [
     book.title,
@@ -23,8 +39,6 @@ const matchesQuery = (book: Record<string, unknown>, query: string) => {
     book.description,
     Array.isArray(book.keywords) ? book.keywords.join(" ") : book.keywords,
     book.year,
-    book.category,
-    book.category_id,
   ];
 
   return searchableValues.some((value) => normalize(value).includes(query));
@@ -80,24 +94,85 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
-    const { data, error } = await supabase
-      .from("books")
-      .select("*")
-      .limit(500);
+    let books: Book[] = [];
 
-    if (error) {
-      throw error;
+    if (selectedGenreIds.length > 0) {
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from("categories")
+        .select("*");
+
+      if (categoriesError) {
+        throw categoriesError;
+      }
+
+      const categoryRows = Array.isArray(categoriesData) ? categoriesData as Record<string, unknown>[] : [];
+      const matchedCategoryRows = categoryRows.filter((row) => {
+        const aliasTokens = collectCategoryAliasTokens(row);
+        return selectedGenreIds.some((selectedGenreId) => aliasTokens.includes(normalize(selectedGenreId)));
+      });
+
+      const categoryIds = Array.from(
+        new Set(
+          matchedCategoryRows
+            .map((row) => row.id)
+            .filter((value): value is string | number => typeof value === "string" || typeof value === "number")
+            .map(String),
+        ),
+      );
+
+      if (categoryIds.length === 0) {
+        books = [];
+      } else {
+        const { data: bookCategoryRows, error: bookCategoriesError } = await supabase
+          .from("book_categories")
+          .select("book_id, category_id")
+          .in("category_id", categoryIds);
+
+        if (bookCategoriesError) {
+          throw bookCategoriesError;
+        }
+
+        const bookIds = Array.from(
+          new Set(
+            (Array.isArray(bookCategoryRows) ? bookCategoryRows : [])
+              .map((row) => row.book_id)
+              .filter((value): value is string | number => typeof value === "string" || typeof value === "number")
+              .map(String),
+          ),
+        );
+
+        if (bookIds.length === 0) {
+          books = [];
+        } else {
+          const { data: booksData, error: booksError } = await supabase
+            .from("books")
+            .select("*")
+            .in("id", bookIds);
+
+          if (booksError) {
+            throw booksError;
+          }
+
+          books = Array.isArray(booksData) ? (booksData as Book[]) : [];
+        }
+      }
+    } else {
+      const { data: booksData, error: booksError } = await supabase
+        .from("books")
+        .select("*")
+        .limit(500);
+
+      if (booksError) {
+        throw booksError;
+      }
+
+      books = Array.isArray(booksData) ? (booksData as Book[]) : [];
     }
 
-    const books = Array.isArray(data) ? (data as Book[]) : [];
     const ageCategories = buildBookAgeCategories(books);
     const filteredBooks = books
       .filter((book) => {
         if (query && !matchesQuery(book as Record<string, unknown>, normalize(query))) {
-          return false;
-        }
-
-        if (selectedGenreIds.length > 0 && !selectedGenreIds.includes(String(book.category_id ?? ""))) {
           return false;
         }
 

@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Lang } from "../i18n";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedAsPath, getCurrentLang } from "@/lib/i18n/routing";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "ru", label: "RU" },
@@ -15,23 +15,30 @@ export default function LanguageSwitcher() {
 
   useEffect(() => {
     setCurrent(getCurrentLang(router));
-  }, [router.query.lang, router.locale]);
+  }, [router]);
 
-  const switchLang = (lang: Lang) => {
+  const switchLang = async (lang: Lang) => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("laplapla_lang", lang);
       window.localStorage.setItem("lang", lang);
       document.cookie = `laplapla_lang=${lang}; path=/; max-age=31536000`;
     }
 
-    router.push(
+    const isCapybaraPage = router.pathname === "/capybara";
+    const localizedAsPath = buildLocalizedAsPath(router.asPath, lang);
+
+    await router.replace(
       {
         pathname: router.pathname,
         query: { ...router.query, lang },
       },
-      undefined,
+      isCapybaraPage ? localizedAsPath : undefined,
       { locale: lang },
     );
+
+    if (isCapybaraPage && typeof window !== "undefined") {
+      window.location.reload();
+    }
   };
 
   return (

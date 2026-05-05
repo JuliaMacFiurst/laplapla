@@ -1130,7 +1130,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     } finally {
       testsRequestRef.current.delete(cacheKey);
     }
-  }, [t.errors.testsLoad]);
+  }, [lang, t.errors.testsLoad]);
 
   const loadTests = useCallback(async (bookId: string | number) => {
     const nextTests = await fetchTests(bookId);
@@ -1431,15 +1431,18 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       return;
     }
 
-    const nextInitialBookKey = `${String(options.initialBook.id)}:${String(options.initialModeId ?? "")}`;
+    const nextInitialBookKey = `${lang}:${String(options.initialBook.id)}:${String(options.initialModeId ?? "")}`;
     if (appliedInitialBookKeyRef.current === nextInitialBookKey) {
       return;
     }
 
     appliedInitialBookKeyRef.current = nextInitialBookKey;
     didInitialLoadRef.current = true;
-    void loadBook(options.initialBook, options.initialModeId, { pushHistory: false });
-  }, [loadBook, options?.initialBook, options?.initialModeId]);
+    void loadBook(options.initialBook, options.initialModeId, {
+      pushHistory: false,
+      forceReload: true,
+    });
+  }, [lang, loadBook, options?.initialBook, options?.initialModeId]);
 
   useEffect(() => {
     if (didInitialLoadRef.current || options?.initialBook) {

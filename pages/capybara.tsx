@@ -9,7 +9,7 @@ import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
-import { buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedAsPath, buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 
 export default function CapybaraPage({ lang }: { lang: Lang }) {
@@ -540,14 +540,18 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const handleSwitchLanguage = useCallback(async (nextLang: Lang) => {
     setIsSettingsOpen(false);
     setIsSearchOpen(false);
-    await router.push(
+    await router.replace(
       {
         pathname: router.pathname,
         query: buildLocalizedQuery(nextLang),
       },
-      undefined,
+      buildLocalizedAsPath(router.asPath, nextLang),
       { locale: nextLang },
     );
+
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
   }, [router]);
 
   const shouldHideHeaderCopyOnMobile = isMobile && !loading && Boolean(currentBook);

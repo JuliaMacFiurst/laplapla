@@ -89,7 +89,7 @@ export default function StandaloneBookScreenPages({
 
     const loadBookFilters = async () => {
       try {
-        const response = await fetch("/api/books/filters");
+        const response = await fetch(`/api/books/filters?lang=${encodeURIComponent(lang)}`);
         if (!response.ok) {
           throw new Error("Failed to load book filters");
         }
@@ -121,7 +121,7 @@ export default function StandaloneBookScreenPages({
     return () => {
       active = false;
     };
-  }, []);
+  }, [lang]);
 
   const buildSearchUrl = useCallback((query: string) => {
     const searchParams = new URLSearchParams();

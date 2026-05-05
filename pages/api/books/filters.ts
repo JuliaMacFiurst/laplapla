@@ -143,12 +143,22 @@ function getCategoryLabel(row: RawCategoryRow, lang: Lang) {
 }
 
 function getCategoryValue(row: RawCategoryRow) {
+  const slug = getTrimmedString(row.slug);
+  if (slug) {
+    return slug;
+  }
+
+  const category = getTrimmedString(row.category);
+  if (category) {
+    return category;
+  }
+
   const id = row.id;
   if (typeof id === "string" || typeof id === "number") {
     return String(id);
   }
 
-  return getTrimmedString(row.slug) || getTrimmedString(row.category) || getTrimmedString(row.label);
+  return getTrimmedString(row.label);
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<BooksFiltersResponse | { error: string }>) {

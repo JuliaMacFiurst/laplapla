@@ -92,6 +92,18 @@ export const buildLocalizedHref = (href: string, lang: Lang): string => {
   return nextQuery ? `${path}?${nextQuery}${nextHash}` : `${path}${nextHash}`;
 };
 
+export const buildLocalizedAsPath = (asPath: string, lang: Lang): string => {
+  const [pathWithQuery, hash = ""] = asPath.split("#");
+  const [path, queryString = ""] = pathWithQuery.split("?");
+  const localizedPath = buildLocalizedPublicPath(path || "/", lang);
+  const params = new URLSearchParams(queryString);
+  params.set("lang", lang);
+
+  const nextQuery = params.toString();
+  const nextHash = hash ? `#${hash}` : "";
+  return nextQuery ? `${localizedPath}?${nextQuery}${nextHash}` : `${localizedPath}${nextHash}`;
+};
+
 export const buildLocalizedPublicPath = (path: string, lang?: Lang): string => {
   const cleanPath = path.split("#")[0]?.split("?")[0] || "/";
   const normalizedPath = cleanPath === "/"
