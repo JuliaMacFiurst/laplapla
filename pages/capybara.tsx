@@ -81,7 +81,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
 
     const loadBookFilters = async () => {
       try {
-        const response = await fetch("/api/books/filters");
+        const response = await fetch(`/api/books/filters?lang=${encodeURIComponent(currentLang)}`);
         if (!response.ok) {
           throw new Error("Failed to load book filters");
         }
@@ -113,7 +113,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [currentLang]);
 
   const buildSearchUrl = useCallback((query: string) => {
     const searchParams = new URLSearchParams();

@@ -18,6 +18,7 @@ import {
 import { DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import type { StudioSlide } from "@/types/studio";
+import { resolveCatCategory } from "@/lib/catCategories";
 
 type CatRuntimeSlide = {
   text: string;
@@ -136,12 +137,18 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const availableCategories = useMemo(
     () =>
       Array.from(
-        new Set(
-          presetsForLang
-            .map((preset) => (typeof preset.category === "string" ? preset.category.trim() : ""))
-            .filter(Boolean),
-        ),
-      ).sort((left, right) => left.localeCompare(right, lang, { sensitivity: "base" })),
+        presetsForLang.reduce((categories, preset) => {
+          const resolvedCategory = resolveCatCategory(preset);
+          if (!resolvedCategory || categories.has(resolvedCategory.key)) {
+            return categories;
+          }
+
+          categories.set(resolvedCategory.key, resolvedCategory.label);
+          return categories;
+        }, new Map<string, string>()),
+      )
+        .map(([value, label]) => ({ value, label }))
+        .sort((left, right) => left.label.localeCompare(right.label, lang, { sensitivity: "base" })),
     [lang, presetsForLang],
   );
 
@@ -151,8 +158,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
     }
 
     return presetsForLang.filter((preset) => {
-      const category = typeof preset.category === "string" ? preset.category.trim() : "";
-      return category ? selectedCategories.includes(category) : false;
+      const category = resolveCatCategory(preset);
+      return category ? selectedCategories.includes(category.key) : false;
     });
   }, [presetsForLang, selectedCategories]);
 
@@ -219,7 +226,9 @@ export default function CatPage({ lang }: { lang: Lang }) {
   }, [filteredPresetsForLang]);
 
   useEffect(() => {
-    setSelectedCategories((current) => current.filter((category) => availableCategories.includes(category)));
+    setSelectedCategories((current) =>
+      current.filter((category) => availableCategories.some((option) => option.value === category)),
+    );
   }, [availableCategories]);
 
   const getSlidesForPreset = useCallback(async (
@@ -580,10 +589,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
             {
               id: "cats-categories",
               label: t.categoriesTitle,
-              options: availableCategories.map((category) => ({
-                value: category,
-                label: category,
-              })),
+              options: availableCategories,
               selectedValues: selectedCategories,
               onToggle: toggleCategory,
             },

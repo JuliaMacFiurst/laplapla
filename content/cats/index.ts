@@ -31,6 +31,8 @@ export type CatPreset = {
   slides: CatPresetSlide[];
   translated?: boolean;
   category?: string | null;
+  categoryKey?: string | null;
+  categoryLabel?: string | null;
 };
 
 export type CatTextPreset = {
@@ -40,6 +42,8 @@ export type CatTextPreset = {
   texts: string[];    // ТОЛЬКО тексты слайдов
   translated?: boolean;
   category?: string | null;
+  categoryKey?: string | null;
+  categoryLabel?: string | null;
 };
 
 export type AnyCatPreset =

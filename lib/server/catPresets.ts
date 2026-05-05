@@ -1,6 +1,7 @@
 import { CAT_PRESETS, type AnyCatPreset, type CatPresetMediaType } from "@/content/cats";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Lang } from "@/i18n";
+import { normalizeCatCategoryKey } from "@/lib/catCategories";
 
 type CatPresetKind = "full" | "text";
 
@@ -32,6 +33,7 @@ type CatPresetTranslationRow = {
 
 type CatPresetTranslation = {
   prompt?: unknown;
+  category?: unknown;
   slides?: unknown;
 };
 
@@ -119,12 +121,18 @@ function mapDbPresetToRuntimePreset(
   }
 
   const translated = lang === "ru" || Boolean(translation);
+  const fallbackCategory = normalizeText(preset.category);
+  const translatedCategory = lang === "ru" ? fallbackCategory : normalizeText(translation?.category);
+  const categoryKey = normalizeCatCategoryKey(fallbackCategory);
+  const categoryLabel = translatedCategory || fallbackCategory;
   const common = {
     id: `db:${preset.id}`,
     lang,
     prompt,
     translated,
-    category: preset.category,
+    category: fallbackCategory || null,
+    categoryKey: categoryKey || null,
+    categoryLabel: categoryLabel || null,
   };
 
   if (preset.kind === "text") {
@@ -164,7 +172,16 @@ function mapDbPresetToRuntimePreset(
 function getHardcodedCatPresetsForLang(lang: Lang) {
   return CAT_PRESETS
     .filter((preset) => preset.lang === lang)
-    .map((preset) => ({ ...preset, translated: true }));
+    .map((preset) => {
+      const fallbackCategory = normalizeText(preset.category);
+      return {
+        ...preset,
+        translated: true,
+        category: fallbackCategory || null,
+        categoryKey: normalizeCatCategoryKey(fallbackCategory) || null,
+        categoryLabel: fallbackCategory || null,
+      };
+    });
 }
 
 export async function loadCatPresetsFromDb(langInput: string | undefined): Promise<AnyCatPreset[]> {
@@ -247,8 +264,10 @@ export async function loadCatPresetsFromDb(langInput: string | undefined): Promi
 export async function loadCombinedCatPresets(langInput: string | undefined): Promise<AnyCatPreset[]> {
   const lang = normalizeLang(langInput);
   const dbPresets = await loadCatPresetsFromDb(lang);
-  return [
-    ...dbPresets,
-    ...getHardcodedCatPresetsForLang(lang),
-  ];
+
+  if (dbPresets.length > 0) {
+    return dbPresets;
+  }
+
+  return getHardcodedCatPresetsForLang(lang);
 }
