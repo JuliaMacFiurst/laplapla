@@ -30,10 +30,25 @@ const MODE_FALLBACK_LABELS: Record<string, Record<Lang, string>> = {
 };
 
 const BACK_TO_FEED_LABEL: Record<Lang, string> = {
-  ru: "↖Назад к ленте книг",
-  en: "↖Back to books feed",
-  he: "↖חזרה לפיד הספרים",
+  ru: "Назад к ленте книг",
+  en: "Back to books feed",
+  he: "חזרה לפיד הספרים",
 };
+
+function ReaderNavIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M8 16V8h8M8 8l8 8"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.2"
+      />
+    </svg>
+  );
+}
 
 const getModeLabel = (modeSegment: string, lang: Lang) => MODE_FALLBACK_LABELS[modeSegment]?.[lang] || modeSegment;
 
@@ -84,9 +99,12 @@ export default function BookModePage({
     <>
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
       <main className="capybara-page-container">
-        <nav aria-label="breadcrumb">
-          <Link href={feedHref} locale={lang}>
-            {BACK_TO_FEED_LABEL[lang]}
+        <nav aria-label="breadcrumb" className="book-reader-top-nav">
+          <Link href={feedHref} locale={lang} className="book-reader-nav-button book-reader-nav-button-back">
+            <span className="book-reader-nav-icon-badge">
+              <ReaderNavIcon />
+            </span>
+            <span>{BACK_TO_FEED_LABEL[lang]}</span>
           </Link>
         </nav>
         <StandaloneBookScreenPages

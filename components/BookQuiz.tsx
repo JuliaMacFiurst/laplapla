@@ -11,6 +11,15 @@ interface BookQuizProps {
   variant?: "default" | "mobile-fullscreen";
 }
 
+const REDUNDANT_QUIZ_DESCRIPTIONS = new Set([
+  "понял ли ты, о чём эта история?",
+  "понял ли ты, о чем эта история?",
+  "did you understand what this story is about?",
+  "did you get what this story is about?",
+  "האם הבנת על מה הסיפור הזה?",
+  "הבנת על מה הסיפור הזה?",
+]);
+
 interface AnswerResponse {
   correct: boolean;
   correctAnswerIndex?: number;
@@ -87,6 +96,11 @@ export default function BookQuiz({ bookId, test, t, variant = "default" }: BookQ
 
   const currentQuestion = questions[currentQuestionIndex];
   const hasAnswered = selectedOptionIndex !== null;
+  const quizDescription = normalizedQuiz?.description?.trim();
+  const shouldShowQuizDescription = Boolean(
+    quizDescription &&
+    !REDUNDANT_QUIZ_DESCRIPTIONS.has(quizDescription.toLocaleLowerCase()),
+  );
 
   const handleSelectOption = async (optionIndex: number) => {
     if (!currentQuestion || hasAnswered || isCheckingAnswer || !normalizedQuiz) {
@@ -271,7 +285,7 @@ export default function BookQuiz({ bookId, test, t, variant = "default" }: BookQ
 
   return (
     <div className={`quiz-container${variant === "mobile-fullscreen" ? " quiz-container-mobile-fullscreen" : ""}`}>
-      {normalizedQuiz.description ? <p className="quiz-description">{normalizedQuiz.description}</p> : null}
+      {shouldShowQuizDescription ? <p className="quiz-description">{quizDescription}</p> : null}
       {!showQuizResult && currentQuestion ? (
         <>
           <p className="quiz-progress">
