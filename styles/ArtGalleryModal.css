@@ -1,158 +1,213 @@
-.art-gallery-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0,0,0,0.4);
-  z-index: 999;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .art-gallery-modal {
-  background: white;
-  padding: 20px;
-  max-width: 90%;
-  max-height: 90%;
-  overflow-y: auto;
-  border-radius: 12px;
-  z-index: 1000;
+  background: linear-gradient(180deg, #fffdf9 0%, #fff6eb 100%);
+  padding: 28px;
+  width: min(1180px, 92vw);
+  max-height: 90vh;
+  overflow: hidden;
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(26, 18, 8, 0.28);
   position: relative;
+  border: 1px solid rgba(145, 92, 32, 0.12);
 }
 
 .art-gallery-close {
   position: absolute;
-  top: 16px;
+  top: 14px;
   right: 16px;
   background: none;
   border: none;
   font-size: 36px;
   cursor: pointer;
+  color: #7d4f18;
 }
 
 .art-gallery-title {
-  margin-bottom: 20px;
+  margin: 0 0 18px;
   text-align: center;
   font-size: 30px;
   font-weight: bold;
+  color: #5f3207;
 }
 
-.art-gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
+.art-gallery-empty {
+  margin: 32px 0 8px;
+  text-align: center;
+  font-size: 22px;
+  color: #7a5a34;
 }
 
-.art-gallery-card {
+.art-gallery-slideshow {
+  height: calc(90vh - 120px);
+  min-height: 540px;
+}
+
+.art-gallery-stage {
   display: flex;
-  flex-direction: row;
-  gap: 24px;
-  align-items: flex-start;
-  text-align: left;
+  align-items: center;
+  gap: 18px;
+  height: 100%;
 }
 
-.art-gallery-images {
+.art-gallery-nav {
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  font-size: 34px;
+  line-height: 1;
+  color: #7d4f18;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.art-gallery-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.art-gallery-slide {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+  gap: 22px;
+  align-items: stretch;
+  height: 100%;
+}
+
+.art-gallery-media-card,
+.art-gallery-text-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 24px;
+  border: 1px solid rgba(145, 92, 32, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.art-gallery-media-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.art-gallery-media {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.art-gallery-media-empty {
+  min-height: 320px;
+}
+
+.art-gallery-text-card {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 24px 22px;
+  overflow: auto;
+}
+
+.art-gallery-slide-counter {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ab6a1b;
+}
+
+.art-gallery-text-card h3 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+  color: #5f3207;
+}
+
+.art-gallery-text-card p {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.55;
+  color: #402814;
+  white-space: pre-wrap;
+}
+
+.art-gallery-actions {
+  display: flex;
   gap: 12px;
-  max-width: 400px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
-.art-gallery-card img {
-  max-width: 100%;
-  max-height: 200px;
-  height: auto;
-  border-radius: 8px;
-  object-fit: contain;
+.art-gallery-action {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #ffb55c;
+  color: #402814;
 }
 
-.art-gallery-text {
-  flex-grow: 1;
-  font-size: 20px;
-  letter-spacing: 1px;
-  line-height: 1.6;
-}
-
-.art-gallery-arrow {
-  position: absolute;
-  right: 140px;
-  bottom: 170px;
-  font-size: 32px;
-  color: #ff1493;
-  animation: blink-arrow 1s infinite;
-  z-index: 11;
-}
-
-@keyframes blink-arrow {
-  0% { opacity: 0; transform: translateY(0); }
-  50% { opacity: 1; transform: translateY(-5px); }
-  100% { opacity: 0; transform: translateY(0); }
+.art-gallery-action-secondary {
+  background: #f4e6d1;
+  color: #6b4317;
 }
 
 .art-gallery-open-button {
   padding: 14px 24px;
-  border: 5px double #ff1493; /* ярко-розовая двойная рамка */
-  background: linear-gradient(145deg, #ffe4e1, #fffacd); /* мягкий градиент */
-  border-radius: 16px;
-  font-size: 28px;
-  font-weight: bold;
-  color: #8b0000;
+  border: 3px solid #d97b1d;
+  background: linear-gradient(145deg, #fff0db, #ffd59f);
+  border-radius: 18px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #7a3e00;
   cursor: pointer;
-  box-shadow: 0 0 15px 5px rgba(255, 105, 180, 0.6);
-  animation: pulse-highlight 1.5s infinite, wiggle 2s infinite;
-  transition: transform 0.2s ease;
+  box-shadow: 0 10px 26px rgba(217, 123, 29, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
   font-family: var(--font-amatic-sc), cursive;
 }
 
 .art-gallery-open-button:hover {
-  transform: scale(1.1);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 14px 30px rgba(217, 123, 29, 0.34);
 }
 
-@keyframes pulse-highlight {
-  0% {
-    box-shadow: 0 0 0px rgba(255, 105, 180, 0.4);
+@media (max-width: 980px) {
+  .art-gallery-modal {
+    width: min(96vw, 96vw);
+    padding: 22px 18px 18px;
   }
-  50% {
-    box-shadow: 0 0 15px 8px rgba(255, 105, 180, 0.7);
+
+  .art-gallery-slideshow {
+    height: auto;
+    min-height: 0;
   }
-  100% {
-    box-shadow: 0 0 0px rgba(255, 105, 180, 0.4);
+
+  .art-gallery-stage {
+    gap: 10px;
   }
-}
 
-@keyframes wiggle {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(1deg); }
-  50% { transform: rotate(-1.5deg); }
-  75% { transform: rotate(1deg); }
-  100% { transform: rotate(0deg); }
-}
+  .art-gallery-slide {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
 
-.art-gallery-columns {
-  display: flex;
-  flex-direction: row;
-  gap: 24px;
-  align-items: flex-start;
-}
+  .art-gallery-media-card {
+    min-height: 320px;
+  }
 
-.art-gallery-images {
-  flex: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 400px;
-  flex-shrink: 0;
-}
+  .art-gallery-text-card h3 {
+    font-size: 28px;
+  }
 
-.art-gallery-caption {
-  flex: 1;
-  font-size: 24px;
-  font-weight: bold;
-  max-width: 500px;
-  margin-top: 100px;
-  letter-spacing: 1px;
-  line-height: 1.6;
+  .art-gallery-text-card p {
+    font-size: 18px;
+  }
 }

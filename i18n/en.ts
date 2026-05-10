@@ -302,7 +302,7 @@ export const en = {
 
       stepOf: "step of",
 
-      colorizeSketch: "Color the sketch",
+      colorizeSketch: "Color with paws",
       autoColorize: "Automatic coloring",
       animatePicture: "Animate the picture",
 

@@ -443,6 +443,12 @@ type DictionaryShape = {
     };
     artGalleryModal: {
       artGalleryTitle: string;
+      loadingGallery: string;
+      swipeHint: string;
+      findNewImage: string;
+      editInCats: string;
+      closeGallery: string;
+      moreArtists: string;
     };
   };
 

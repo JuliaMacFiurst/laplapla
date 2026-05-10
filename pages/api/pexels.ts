@@ -66,6 +66,22 @@ const BLOCKED_MEDIA_TERMS = [
   "wine",
   "vodka",
   "drunk",
+  "blood",
+  "weapon",
+  "gun",
+  "violence",
+  "violent",
+  "fight",
+  "attack",
+  "horror",
+  "monster",
+  "zombie",
+  "corpse",
+  "dead",
+  "death",
+  "skull",
+  "scary",
+  "war",
 ];
 
 const isSafeMediaText = (...values: Array<string | undefined | null>) => {
@@ -75,6 +91,30 @@ const isSafeMediaText = (...values: Array<string | undefined | null>) => {
     .toLowerCase();
 
   return !BLOCKED_MEDIA_TERMS.some((term) => haystack.includes(term));
+};
+
+const DOG_RELEVANCE_TERMS = ["dog", "puppy", "canine", "pet", "terrier"];
+const YORKIE_RELEVANCE_TERMS = ["yorkie", "yorkshire", "yorkshire terrier"];
+
+const countMatchingTerms = (haystack: string, terms: string[]) =>
+  terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+
+const getRelevanceScore = (item: PexelsItem, query: string) => {
+  const haystack = [item.description, item.photographer, query]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  let score = 0;
+
+  if (query.toLowerCase().includes("york")) {
+    score += countMatchingTerms(haystack, YORKIE_RELEVANCE_TERMS) * 10;
+    score += countMatchingTerms(haystack, DOG_RELEVANCE_TERMS) * 3;
+  } else if (query.toLowerCase().includes("dog") || query.toLowerCase().includes("puppy")) {
+    score += countMatchingTerms(haystack, DOG_RELEVANCE_TERMS) * 5;
+  }
+
+  return score;
 };
 
 type PexelsResponse = {
@@ -171,6 +211,9 @@ async function handler(
         }))
         ?.filter((item: PexelsItem) =>
           Boolean(item.url) && isSafeMediaText(item.description, item.photographer, query),
+        )
+        ?.sort((left: PexelsItem, right: PexelsItem) =>
+          getRelevanceScore(right, query) - getRelevanceScore(left, query),
         ) ?? [];
 
     const videos: PexelsItem[] =
@@ -190,6 +233,9 @@ async function handler(
         }))
         ?.filter((item: PexelsItem) =>
           Boolean(item.url) && isSafeMediaText(item.description, item.photographer, query),
+        )
+        ?.sort((left: PexelsItem, right: PexelsItem) =>
+          getRelevanceScore(right, query) - getRelevanceScore(left, query),
         ) ?? [];
 
     const items: PexelsItem[] = [];

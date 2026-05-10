@@ -375,6 +375,7 @@ function LessonPlayerDesktop() {
 
   const debugRenderRegions = () => {
     setHasUnsavedChanges(true);
+    setShowColorizer(true);
     setHasCompletedFirstColoring(true);
     const colorCanvas = colorCanvasRef.current;
     // On tablets / touch devices we clear seed history to prevent slowdown

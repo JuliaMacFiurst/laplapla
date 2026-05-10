@@ -2,47 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import MobileSlideshowViewer from "@/components/studio/mobile/MobileSlideshowViewer";
 import { useMobileSlideshow } from "@/components/studio/mobile/useMobileSlideshow";
-import {
-  buildAnimalSlideMediaQueries,
-  findAlternativeSlideMedia,
-} from "@/lib/client/slideMediaSearch";
 import { getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioHref } from "@/lib/studioRouting";
+import {
+  buildArtworkSlides,
+  findArtworkSlideAlternativeMedia,
+  type Artwork,
+  stripHtml,
+} from "@/lib/dogs/artGallerySlides";
 import { Lang } from "../../i18n";
-import type { StudioSlide } from "@/types/studio";
-
-type Artwork = {
-  id: string;
-  title: string;
-  description: string;
-  image_url: string[];
-};
 
 type MobileArtGalleryProps = {
   categorySlug: string;
   isOpen: boolean;
   onClose: () => void;
 };
-
-function stripHtml(value: string) {
-  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function splitIntoSentences(value: string) {
-  return stripHtml(value)
-    .split(/(?<=[.!?…。！？])\s+/u)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
-}
 
 export default function MobileArtGallery({
   categorySlug,
@@ -93,48 +67,6 @@ export default function MobileArtGallery({
     usedArtworkIdsRef.current = usedArtworkIds;
   }, [usedArtworkIds]);
 
-  const buildSlidesForArtwork = useCallback(async (nextArtwork: Artwork) => {
-    const sentences = splitIntoSentences(nextArtwork.description);
-    const imageQueue = nextArtwork.image_url.filter(Boolean);
-    const usedUrls = new Set(imageQueue);
-    const nextSlides: StudioSlide[] = [];
-
-    for (let index = 0; index < sentences.length; index += 1) {
-      const sentence = sentences[index];
-      let mediaUrl = imageQueue[index];
-
-      if (!mediaUrl) {
-        const alternative = await findAlternativeSlideMedia({
-          queries: buildAnimalSlideMediaQueries(
-            fallbackHints,
-            nextArtwork.title,
-            sentence,
-          ),
-          excludedUrls: Array.from(usedUrls),
-          preferredSources: ["giphy", "pexels"],
-        });
-
-        mediaUrl = alternative?.url || imageQueue[imageQueue.length - 1] || "/dog/fibi.webp";
-      }
-
-      if (mediaUrl) {
-        usedUrls.add(mediaUrl);
-      }
-
-      nextSlides.push({
-        id: `${nextArtwork.id}-${index}`,
-        text: escapeHtml(sentence),
-        mediaUrl,
-        mediaType: mediaUrl?.endsWith(".mp4") ? "video" : "image",
-        mediaFit: "contain",
-        bgColor: "#ffffff",
-        textColor: "#111111",
-      });
-    }
-
-    return nextSlides;
-  }, [fallbackHints]);
-
   const loadArtwork = useCallback(async () => {
     setLoading(true);
     mobileSlideshow.open({ loading: true });
@@ -158,7 +90,7 @@ export default function MobileArtGallery({
           ? current
           : [...current, payload.artwork!.id],
       );
-      const slides = await buildSlidesForArtwork(payload.artwork);
+      const slides = await buildArtworkSlides(payload.artwork, fallbackHints);
       mobileSlideshow.replaceSlides(slides);
     } catch (error) {
       console.error("Failed to load mobile art gallery", error);
@@ -167,7 +99,7 @@ export default function MobileArtGallery({
     } finally {
       setLoading(false);
     }
-  }, [buildSlidesForArtwork, categorySlug, lang, mobileSlideshow, onClose]);
+  }, [categorySlug, fallbackHints, lang, mobileSlideshow, onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -187,14 +119,12 @@ export default function MobileArtGallery({
     setRefreshingSlideIndex(slideIndex);
 
     try {
-      const alternative = await findAlternativeSlideMedia({
-        queries: buildAnimalSlideMediaQueries(
-          fallbackHints,
-          artwork?.title || "",
-          stripHtml(slide.text),
-        ),
+      const alternative = await findArtworkSlideAlternativeMedia({
+        fallbackHints,
+        artworkTitle: artwork?.title || "",
+        slideText: stripHtml(slide.text),
         excludedUrls: slide.mediaUrl ? [slide.mediaUrl] : [],
-        preferredSources: ["giphy", "pexels"],
+        preferYorkie: slideIndex % 2 === 0,
       });
 
       if (!alternative?.url) {

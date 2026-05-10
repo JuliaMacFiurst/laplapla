@@ -336,7 +336,7 @@ export const ru = {
 
       stepOf: "шаг из",
 
-      colorizeSketch: "Раскрасить скетч",
+      colorizeSketch: "Раскрасить лапками",
       autoColorize: "Автоматическое раскрашивание",
       animatePicture: "Оживить картинку",
 

@@ -121,19 +121,28 @@ export async function findAlternativeSlideMedia({
   queries,
   excludedUrls = [],
   preferredSources = ["giphy", "pexels"],
+  allowedMediaTypes,
 }: {
   queries: string[];
   excludedUrls?: string[];
   preferredSources?: SearchSource[];
+  allowedMediaTypes?: SlideMediaCandidate["mediaType"][];
 }): Promise<SlideMediaCandidate | null> {
   const uniqueQueries = Array.from(new Set(queries.map(normalizeQuery).filter(Boolean)));
   const excluded = new Set(excludedUrls.filter(Boolean));
   const sources = Array.from(new Set(preferredSources));
+  const allowedTypes = allowedMediaTypes?.length
+    ? new Set(allowedMediaTypes)
+    : null;
 
   for (const query of uniqueQueries) {
     for (const source of sources) {
       const items = await fetchSourceItems(source, query);
-      const alternative = items.find((item) => !excluded.has(item.url));
+      const alternative = items.find(
+        (item) =>
+          !excluded.has(item.url) &&
+          (!allowedTypes || allowedTypes.has(item.mediaType)),
+      );
       if (alternative) {
         return alternative;
       }
