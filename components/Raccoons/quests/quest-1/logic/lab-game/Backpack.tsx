@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef } from "react";
 
 import {
@@ -75,7 +76,14 @@ export default function Backpack({
           preload="auto"
         />
       ) : (
-        <img key="backpack-still" src={BACKPACK_IMAGE_URL} alt="Рюкзак" />
+        <Image
+          key="backpack-still"
+          src={BACKPACK_IMAGE_URL}
+          alt="Рюкзак"
+          width={320}
+          height={220}
+          unoptimized
+        />
       )}
     </div>
   );

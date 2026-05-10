@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 
 const VIDEO_SOURCES = [
@@ -102,7 +103,7 @@ export default function CapybaraTypingAnimation() {
         onEnded={handleEnded}
       />
 
-      <img
+      <Image
         src={FALLBACK_IMAGE}
         alt="Capybara typing"
         className={`story-capybara-layer story-capybara-image ${showVideo ? "" : "is-visible"}`}
@@ -110,6 +111,9 @@ export default function CapybaraTypingAnimation() {
           zIndex: 2,
           opacity: showVideo ? 0 : 1,
         }}
+        width={512}
+        height={512}
+        unoptimized
         draggable={false}
       />
     </div>

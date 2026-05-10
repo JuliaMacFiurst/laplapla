@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { resolveFontFamily } from "@/lib/fonts";
 import type { StudioSlide } from "@/types/studio";
@@ -155,7 +156,15 @@ export default function SlideCanvas9x16({
     resizeStateRef.current = null;
     mediaDragStateRef.current = null;
     mediaResizeStateRef.current = null;
-  }, [slide.id, slide.mediaUrl]);
+  }, [
+    slide.id,
+    slide.mediaUrl,
+    slide.mediaOffsetX,
+    slide.mediaOffsetY,
+    slide.mediaScale,
+    slide.textOffsetX,
+    slide.textOffsetY,
+  ]);
 
   useEffect(() => {
     if (dragStateRef.current || resizeStateRef.current) return;
@@ -500,10 +509,13 @@ export default function SlideCanvas9x16({
               loop
             />
           ) : (
-            <img
+            <Image
               key={`${slide.id}:${mediaUrl}`}
               src={mediaUrl}
               alt={mediaAlt}
+              fill
+              unoptimized
+              sizes="100vw"
               style={mediaStyle}
               onLoad={(event) => {
                 const element = event.currentTarget;

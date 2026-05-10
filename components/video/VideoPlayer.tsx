@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { VideoItem } from "../../content/videos";
 
 type LanguageKey = "en" | "ru" | "he";
@@ -64,6 +64,21 @@ export function VideoPlayer({
     }
   };
 
+  const markCurrentAsUnplayableAndAdvance = useCallback(() => {
+    const item = playableItems[currentIndex];
+    if (!item?.youtubeId) return;
+
+    mobileUnplayableIdsRef.current.add(item.youtubeId);
+
+    setCurrentIndex((i) => {
+      const next = Math.min(
+        playableItems.length - 2,
+        Math.max(0, i)
+      );
+      return next;
+    });
+  }, [currentIndex, playableItems]);
+
   useEffect(() => {
     clearStartTimeout();
     userInteractedRef.current = false;
@@ -94,22 +109,7 @@ export function VideoPlayer({
     return () => {
       clearStartTimeout();
     };
-  }, [currentIndex, isTouchDevice]);
-
-  const markCurrentAsUnplayableAndAdvance = () => {
-    const item = playableItems[currentIndex];
-    if (!item?.youtubeId) return;
-
-    mobileUnplayableIdsRef.current.add(item.youtubeId);
-
-    setCurrentIndex((i) => {
-      const next = Math.min(
-        playableItems.length - 2,
-        Math.max(0, i)
-      );
-      return next;
-    });
-  };
+  }, [currentIndex, isTouchDevice, markCurrentAsUnplayableAndAdvance, onClose]);
 
   const handlePrev = () => {
     autoSkipCountRef.current = 0;

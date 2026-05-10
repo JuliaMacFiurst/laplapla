@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect } from "react";
 import { useQuest1I18n } from "../../i18n";
 
@@ -108,10 +109,13 @@ export default function LabGameStage() {
 
                 <div className="final-caught-things">
                   {caughtThings.map((item) => (
-                    <img
+                    <Image
                       key={item.id}
                       src={`/supabase-storage/quests/1_quest/games/lab-game/lab-things/${item.id}.webp`}
                       alt={item.label}
+                      width={76}
+                      height={76}
+                      unoptimized
                       className="final-caught-thing"
                     />
                   ))}

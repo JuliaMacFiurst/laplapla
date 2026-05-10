@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import type { PageId } from "../../QuestEngine";
 import CharacterStage from "../../logic/dress-up-game/CharacterStage";
@@ -17,10 +18,13 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
     <div className="quest-page-bg">
       {/* Заголовок страницы */}
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
         <h1 className="quest-title-text">{t.day5Heat.title}</h1>
       </div>
@@ -91,20 +95,26 @@ export default function Day5Heat({ go }: { go: (id: PageId) => void }) {
           >
             <div className="ice-button" onClick={() => go("day5_spitsbergen")}>
               {/* льдина */}
-              <img
+              <Image
                 className="ice"
                 src="/quests/assets/buttons/ice-button-bg.svg"
                 alt=""
+                width={720}
+                height={180}
+                unoptimized
               />
 
               {/* текст */}
               <div className="ice-text">{t.day5Heat.backButton}</div>
 
               {/* пингвин */}
-              <img
+              <Image
                 className="penguin"
                 src="/supabase-storage/characters/other/penguin.gif"
                 alt=""
+                width={92}
+                height={92}
+                unoptimized
               />
             </div>
           </div>

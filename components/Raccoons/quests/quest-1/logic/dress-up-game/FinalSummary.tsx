@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { CharacterResult, DressedItem } from "@/types/types";
 
 export default function FinalSummary({
@@ -29,9 +30,12 @@ export default function FinalSummary({
           >
             <div className="final-summary-avatar">
               {/* БАЗОВЫЙ ПЕРСОНАЖ */}
-              <img
+              <Image
                 src={result.character.img}
                 alt={result.character.name}
+                width={800}
+                height={1200}
+                unoptimized
                 className="final-summary-base"
               />
 
@@ -40,10 +44,13 @@ export default function FinalSummary({
                 const src = `/supabase-storage/quests/1_quest/games/dress-up/${result.character.name}/${item.season}/${item.id}-dressed.webp`;
 
                 return (
-                  <img
+                  <Image
                     key={item.id}
                     src={src}
                     alt=""
+                    width={800}
+                    height={1200}
+                    unoptimized
                     className="final-summary-dressed-layer"
                   />
                 );

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
+import Image from "next/image";
 import SEO from "@/components/SEO";
 import { buildRegionMap } from "@/utils/buildRegionMap";
 import { autoColorRegions } from "@/utils/autoColorRegions";
@@ -77,6 +78,30 @@ function getDogLessonDraftKey(slug: string, lang: Lang) {
   return `dog-lesson-draft:${lang}:${slug}`;
 }
 
+const FRANK_POSES = [
+  "chew-brush",
+  "chew-pen",
+  "draw",
+  "eat-brush",
+  "lie",
+  "looks-left",
+  "paint",
+  "run",
+  "welcome-bye",
+] as const;
+
+const FIBI_POSES = [
+  "chewing-eraser",
+  "draw",
+  "excited",
+  "lie",
+  "looks-right",
+  "shows-drawing",
+  "siting",
+  "watch",
+  "welcome",
+] as const;
+
 async function drawCanvasSnapshot(canvas: HTMLCanvasElement | null, dataUrl: string) {
   if (!canvas) return;
 
@@ -87,7 +112,7 @@ async function drawCanvasSnapshot(canvas: HTMLCanvasElement | null, dataUrl: str
   if (!dataUrl) return;
 
   await new Promise<void>((resolve, reject) => {
-    const image = new Image();
+    const image = new window.Image();
     image.onload = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -203,6 +228,7 @@ function DogImage({
   const pngSrc = `${base}/${pose}-poster.png`;
 
   const animList: string[] = [`${base}/${pose}.gif`];
+  const animCount = animList.length;
 
   // Alternate only if there is any animation for this pose
   useEffect(() => {
@@ -212,9 +238,9 @@ function DogImage({
       setShowAnim(false);
       t = window.setTimeout(() => {
         if (!running) return;
-        if (animList.length > 0) {
+        if (animCount > 0) {
           setShowAnim(true);
-          setAnimIdx((prev) => (prev + 1) % animList.length);
+          setAnimIdx((prev) => (prev + 1) % animCount);
         }
         t = window.setTimeout(() => running && loop(), 5000);
       }, 10000);
@@ -224,25 +250,27 @@ function DogImage({
       running = false;
       if (t) window.clearTimeout(t);
     };
-  }, [pose, name]);
+  }, [animCount, name, pose]);
 
   return (
     <div className="dog-image-wrap" style={{ width: size }}>
       {!showAnim ? (
-        <img
+        <Image
           className="dog-image-img"
           src={pngSrc}
           alt={`${name} ${pose}`}
           width={size}
           height={size}
+          unoptimized
         />
       ) : (
-        <img
+        <Image
           className="dog-image-img"
           src={animList[animIdx]}
           alt={`${name} ${pose} anim`}
           width={size}
           height={size}
+          unoptimized
         />
       )}
       {speech ? (
@@ -318,7 +346,7 @@ function LessonPlayerDesktop() {
     video: boolean;
     gif: boolean;
   }>({ video: false, gif: false });
-  const [replayRevision, setReplayRevision] = useState(0);
+  const [, setReplayRevision] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [mobileFillTooltip, setMobileFillTooltip] = useState<string | null>(null);
   const [colorSeedCount, setColorSeedCount] = useState(0);
@@ -507,7 +535,7 @@ function LessonPlayerDesktop() {
     ? Boolean(lesson) && currentStepIndex >= 0
     : hasUnsavedChanges;
 
-  const confirmLessonLeave = () => {
+  const confirmLessonLeave = useCallback(() => {
     if (!shouldWarnBeforeExit) {
       return true;
     }
@@ -518,7 +546,7 @@ function LessonPlayerDesktop() {
     }
 
     return confirmed;
-  };
+  }, [leaveWarningMessage, shouldWarnBeforeExit]);
 
   const getReplayBrushSettings = (): ReplayBrushSettings => ({
     size: brushSizeRef.current,
@@ -528,22 +556,22 @@ function LessonPlayerDesktop() {
     isEraser: isEraserRef.current,
   });
 
-  const beginReplayGroup = () => {
+  const beginReplayGroup = useCallback(() => {
     replayCurrentGroupRef.current = {
       id: replayGroupIdRef.current++,
       actions: [],
     };
-  };
+  }, []);
 
-  const appendReplayAction = (action: ReplayAction) => {
+  const appendReplayAction = useCallback((action: ReplayAction) => {
     if (!replayCurrentGroupRef.current) {
       beginReplayGroup();
     }
 
     replayCurrentGroupRef.current?.actions.push(action);
-  };
+  }, [beginReplayGroup]);
 
-  const commitReplayGroup = () => {
+  const commitReplayGroup = useCallback(() => {
     const group = replayCurrentGroupRef.current;
     replayCurrentGroupRef.current = null;
 
@@ -552,11 +580,11 @@ function LessonPlayerDesktop() {
     replayCommittedGroupsRef.current.push(group);
     replayRedoGroupsRef.current = [];
     setReplayRevision((prev) => prev + 1);
-  };
+  }, []);
 
-  const discardReplayGroup = () => {
+  const discardReplayGroup = useCallback(() => {
     replayCurrentGroupRef.current = null;
-  };
+  }, []);
 
   const undoReplayGroup = () => {
     const last = replayCommittedGroupsRef.current.pop();
@@ -669,7 +697,7 @@ function LessonPlayerDesktop() {
     });
   };
 
-  const clearReplayHistory = () => {
+  const clearReplayHistory = useCallback(() => {
     replayCommittedGroupsRef.current = [];
     replayRedoGroupsRef.current = [];
     replayCurrentGroupRef.current = null;
@@ -677,9 +705,9 @@ function LessonPlayerDesktop() {
     regionMapsRef.current.clear();
     regionMapIdRef.current = 1;
     setReplayRevision((prev) => prev + 1);
-  };
+  }, []);
 
-  const persistLessonDraft = async () => {
+  const persistLessonDraft = useCallback(async () => {
     if (!draftKey || !lesson) return;
 
     const drawingCanvas = drawingCanvasRef.current;
@@ -714,9 +742,25 @@ function LessonPlayerDesktop() {
     } catch (error) {
       console.error("Failed to persist dog lesson draft", error);
     }
-  };
+  }, [
+    artworkSaved,
+    brushColor,
+    brushOpacity,
+    brushSize,
+    brushStyle,
+    currentStepIndex,
+    draftKey,
+    hasCompletedFirstColoring,
+    hasStarted,
+    hasUnsavedChanges,
+    isEraser,
+    lang,
+    lesson,
+    showColorizer,
+    slug,
+  ]);
 
-  const scheduleLessonDraftSave = (delay = 250) => {
+  const scheduleLessonDraftSave = useCallback((delay = 250) => {
     if (!draftKey || !lesson) return;
 
     if (draftSaveTimeoutRef.current !== null) {
@@ -727,10 +771,10 @@ function LessonPlayerDesktop() {
       draftSaveTimeoutRef.current = null;
       void persistLessonDraft();
     }, delay);
-  };
+  }, [draftKey, lesson, persistLessonDraft]);
 
   useEffect(() => {
-    const img = new Image();
+    const img = new window.Image();
     img.src = "/dog/paw.svg";
     pawImgRef.current = img;
 
@@ -813,23 +857,7 @@ function LessonPlayerDesktop() {
       window.removeEventListener("pagehide", flushDraft);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [
-    artworkSaved,
-    brushColor,
-    brushOpacity,
-    brushSize,
-    brushStyle,
-    currentStepIndex,
-    draftKey,
-    hasCompletedFirstColoring,
-    hasStarted,
-    hasUnsavedChanges,
-    isEraser,
-    lang,
-    lesson,
-    showColorizer,
-    slug,
-  ]);
+  }, [persistLessonDraft]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -870,7 +898,7 @@ function LessonPlayerDesktop() {
     return () => window.clearTimeout(timerId);
   }, [currentStepIndex, hasCompletedFirstColoring, isMobile, lesson]);
 
-  const computeRegionMap = () => {
+  const computeRegionMap = useCallback(() => {
     const drawingCanvas = drawingCanvasRef.current;
     if (!drawingCanvas) return;
 
@@ -891,7 +919,7 @@ function LessonPlayerDesktop() {
       regionDataRef.current?.regionCount,
       "regions",
     );
-  };
+  }, []);
 
   const handleColorize = () => {
     setHasUnsavedChanges(true);
@@ -956,7 +984,7 @@ function LessonPlayerDesktop() {
   };
 
   // Helper to draw a paw marker for a color seed
-  const drawSeedPaw = (
+  const drawSeedPaw = useCallback((
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -996,7 +1024,7 @@ function LessonPlayerDesktop() {
     ctx.drawImage(off, -size / 2, -size / 2);
 
     ctx.restore();
-  };
+  }, []);
 
   // if user clicks on a line or anti-aliased border, try to find nearest fillable region
   const findNearestRegion = (
@@ -1031,7 +1059,7 @@ function LessonPlayerDesktop() {
     return null;
   };
 
-  const placeColorSeedAt = (x: number, y: number) => {
+  const placeColorSeedAt = useCallback((x: number, y: number) => {
     // раскраска доступна только после нажатия "Раскрасить"
     // и должна быть полностью отключена в режиме пазла
     if (!showColorizer || animationMode === "puzzle") return;
@@ -1211,19 +1239,31 @@ function LessonPlayerDesktop() {
     }
 
     discardReplayGroup();
-  };
+  }, [
+    animationMode,
+    appendReplayAction,
+    beginReplayGroup,
+    commitReplayGroup,
+    computeRegionMap,
+    discardReplayGroup,
+    drawSeedPaw,
+    showColorizer,
+  ]);
 
   const [randomArtFact, setRandomArtFact] = useState("");
 
   // --- Fibi intro phrase logic ---
-  const introVariants = [
-    t.introVariants.fibiIntroSecret,
-    t.introVariants.fibiIntroListen,
-    t.introVariants.fibiIntroTheySay,
-    t.introVariants.fibiIntroDidYouKnow,
-    t.introVariants.fibiIntroPsst,
-    t.introVariants.fibiIntroGuessWhat,
-  ];
+  const introVariants = useMemo(
+    () => [
+      t.introVariants.fibiIntroSecret,
+      t.introVariants.fibiIntroListen,
+      t.introVariants.fibiIntroTheySay,
+      t.introVariants.fibiIntroDidYouKnow,
+      t.introVariants.fibiIntroPsst,
+      t.introVariants.fibiIntroGuessWhat,
+    ],
+    [t.introVariants],
+  );
   const lastIntroRef = useRef<number | null>(null);
   const [fibiIntro, setFibiIntro] = useState(introVariants[0]);
 
@@ -1239,7 +1279,7 @@ function LessonPlayerDesktop() {
     }
     lastIntroRef.current = nextIndex;
     setFibiIntro(introVariants[nextIndex]);
-  }, [currentStepIndex, lang]);
+  }, [currentStepIndex, introVariants, lang]);
 
   // refs для brushSize, brushColor, brushStyle, isEraser
   const brushSizeRef = useRef(brushSize);
@@ -1302,7 +1342,7 @@ function LessonPlayerDesktop() {
     }
   };
 
-  const drawStepOnCanvas = (stepIndex: number) => {
+  const drawStepOnCanvas = useCallback((stepIndex: number) => {
     if (
       !lesson ||
       !canvasRef.current ||
@@ -1318,7 +1358,7 @@ function LessonPlayerDesktop() {
 
     const drawImage = (src: string, alpha: number): Promise<void> => {
       return new Promise((resolve) => {
-        const img = new Image();
+        const img = new window.Image();
         img.crossOrigin = "anonymous";
         img.src = src;
         img.onload = () => {
@@ -1338,7 +1378,7 @@ function LessonPlayerDesktop() {
     };
 
     drawAllSteps();
-  };
+  }, [lesson]);
 
   useEffect(() => {
     if (!slug || typeof slug !== "string") return;
@@ -1372,7 +1412,7 @@ function LessonPlayerDesktop() {
     fetchLesson().catch((error) => {
       console.error("Ошибка загрузки урока:", error);
     });
-  }, [lang, slug]);
+  }, [clearReplayHistory, lang, slug]);
 
   useEffect(() => {
     if (!lesson || !draftKey || restoredDraftKeyRef.current === draftKey) {
@@ -1440,7 +1480,7 @@ function LessonPlayerDesktop() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [draftKey, lesson]);
+  }, [draftKey, drawStepOnCanvas, lesson]);
 
   useEffect(() => {
     if (!lesson || !draftKey || restoredDraftKeyRef.current !== draftKey) {
@@ -1448,23 +1488,7 @@ function LessonPlayerDesktop() {
     }
 
     scheduleLessonDraftSave();
-  }, [
-    artworkSaved,
-    brushColor,
-    brushOpacity,
-    brushSize,
-    brushStyle,
-    colorSeedCount,
-    currentStepIndex,
-    draftKey,
-    hasCompletedFirstColoring,
-    hasStarted,
-    hasUnsavedChanges,
-    isEraser,
-    lesson,
-    replayRevision,
-    showColorizer,
-  ]);
+  }, [draftKey, lesson, scheduleLessonDraftSave]);
 
   useEffect(() => {
     const canvas = drawingCanvasRef.current;
@@ -1906,42 +1930,29 @@ function LessonPlayerDesktop() {
       canvas.removeEventListener("pointercancel", endDrawing);
       canvas.removeEventListener("pointerleave", endDrawing);
     };
-  }, [hasStarted, showColorizer]);
+  }, [
+    appendReplayAction,
+    beginReplayGroup,
+    commitReplayGroup,
+    discardReplayGroup,
+    hasStarted,
+    isDrawingState,
+    placeColorSeedAt,
+    showColorizer,
+  ]);
 
   // --- Добавляем случайные позы для Фрэнка и Фиби ---
-  const frankPoses = [
-    "chew-brush",
-    "chew-pen",
-    "draw",
-    "eat-brush",
-    "lie",
-    "looks-left",
-    "paint",
-    "run",
-    "welcome-bye",
-  ];
-  const fibiPoses = [
-    "chewing-eraser",
-    "draw",
-    "excited",
-    "lie",
-    "looks-right",
-    "shows-drawing",
-    "siting",
-    "watch",
-    "welcome",
-  ];
   const getRandomPose = (poses: string[]) =>
     poses[Math.floor(Math.random() * poses.length)];
 
   // Новые состояния для поз Фрэнка и Фиби
-  const [frankPose, setFrankPose] = useState(getRandomPose(frankPoses));
-  const [fibiPose, setFibiPose] = useState(getRandomPose(fibiPoses));
+  const [frankPose, setFrankPose] = useState(getRandomPose([...FRANK_POSES]));
+  const [fibiPose, setFibiPose] = useState(getRandomPose([...FIBI_POSES]));
 
   // Обновлять позы при смене шага
   useEffect(() => {
-    setFrankPose(getRandomPose(frankPoses));
-    setFibiPose(getRandomPose(fibiPoses));
+    setFrankPose(getRandomPose([...FRANK_POSES]));
+    setFibiPose(getRandomPose([...FIBI_POSES]));
   }, [currentStepIndex]);
 
   const [frankSpeechOverride, setFrankSpeechOverride] = useState<string | null>(
@@ -2063,14 +2074,10 @@ function LessonPlayerDesktop() {
     setShowRestartConfirm(false);
   };
 
-  const replayActionGroups = useMemo(
-    () =>
-      replayCommittedGroupsRef.current.map((group) => ({
-        id: group.id,
-        actions: [...group.actions],
-      })),
-    [replayRevision],
-  );
+  const replayActionGroups = replayCommittedGroupsRef.current.map((group) => ({
+    id: group.id,
+    actions: [...group.actions],
+  }));
 
   const isLessonComplete = lesson
     ? currentStepIndex === lesson.steps.length - 1
@@ -2231,7 +2238,7 @@ function LessonPlayerDesktop() {
   };
 
   const openPuzzleMode = () => {
-    setFrankPose(getRandomPose(frankPoses));
+    setFrankPose(getRandomPose([...FRANK_POSES]));
 
     const drawing = drawingCanvasRef.current;
     const color = colorCanvasRef.current;
@@ -2260,7 +2267,7 @@ function LessonPlayerDesktop() {
   };
 
   const openReplayMode = (autoExport: "video" | "gif" | null = null) => {
-    setFrankPose(getRandomPose(frankPoses));
+    setFrankPose(getRandomPose([...FRANK_POSES]));
     setReplayAutoExport(autoExport);
     setAnimationMode("replay");
     setAnimationMenuOpen(false);
@@ -2348,17 +2355,25 @@ function LessonPlayerDesktop() {
                     ) : null}
                   </div>
                   <div className="lesson-mobile-frank">
-                    <img src="/dog/frank.webp" alt={t.frankName} className="lesson-mobile-frank-avatar" />
+                    <Image
+                      src="/dog/frank.webp"
+                      alt={t.frankName}
+                      className="lesson-mobile-frank-avatar"
+                      width={84}
+                      height={84}
+                    />
                     <div className="lesson-mobile-frank-bubble">
                       {frankSpeech}
                     </div>
                   </div>
                   {hasCompletedFirstColoring && isLessonComplete ? (
                     <div className="lesson-mobile-fibi">
-                    <img
+                    <Image
                       src="/dog/fibi.webp"
                       alt={t.fibiName}
                       className="lesson-mobile-fibi-avatar"
+                      width={84}
+                      height={84}
                     />
                     <div className="lesson-mobile-fibi-bubble">
                         {mobileFibiAdviceReady ? (
@@ -2505,7 +2520,7 @@ function LessonPlayerDesktop() {
                             disabled={undoStack.length === 0}
                             aria-label={t.undo}
                           >
-                            <img src="/dog/backward.png" alt="" aria-hidden="true" />
+                            <Image src="/dog/backward.png" alt="" aria-hidden="true" width={24} height={24} />
                           </button>
                           <button
                             type="button"
@@ -2514,7 +2529,7 @@ function LessonPlayerDesktop() {
                             disabled={redoStack.length === 0}
                             aria-label={t.redo}
                           >
-                            <img src="/dog/forward.png" alt="" aria-hidden="true" />
+                            <Image src="/dog/forward.png" alt="" aria-hidden="true" width={24} height={24} />
                           </button>
                         </div>
                       ) : (
@@ -2969,7 +2984,7 @@ function LessonPlayerDesktop() {
               <button
                 className="lesson-animation-button btn-blue"
                 onClick={() => {
-                  setFrankPose(getRandomPose(frankPoses));
+                  setFrankPose(getRandomPose([...FRANK_POSES]));
                   setAnimationMenuOpen(false);
                   alert(t.comingSoon);
                 }}
@@ -2980,7 +2995,7 @@ function LessonPlayerDesktop() {
               <button
                 className="lesson-animation-button btn-pink"
                 onClick={() => {
-                  setFrankPose(getRandomPose(frankPoses));
+                  setFrankPose(getRandomPose([...FRANK_POSES]));
                   setAnimationMenuOpen(false);
                   alert(t.comingSoon);
                 }}
@@ -3290,10 +3305,12 @@ function LessonPlayerDesktop() {
                   onClick={() => setIsEraser((prev) => !prev)}
                 >
                   <>
-                    <img
+                    <Image
                       src={isEraser ? "/dog/brush.png" : "/dog/erraser.png"}
                       alt={isEraser ? t.brush : t.eraser}
                       className="lesson-tool-icon"
+                      width={24}
+                      height={24}
                     />
                     {isEraser ? t.brush : t.eraser}
                   </>
@@ -3303,10 +3320,12 @@ function LessonPlayerDesktop() {
                   onClick={handleUndo}
                 >
                   <>
-                    <img
+                    <Image
                       src="/dog/backward.png"
                       alt={t.undo}
                       className="lesson-tool-icon"
+                      width={24}
+                      height={24}
                     />
                     {t.undo}
                   </>
@@ -3316,10 +3335,12 @@ function LessonPlayerDesktop() {
                   onClick={handleRedo}
                 >
                   <>
-                    <img
+                    <Image
                       src="/dog/forward.png"
                       alt={t.redo}
                       className="lesson-tool-icon"
+                      width={24}
+                      height={24}
                     />
                     {t.redo}
                   </>
@@ -3329,10 +3350,12 @@ function LessonPlayerDesktop() {
                   onClick={clearArtwork}
                 >
                   <>
-                    <img
+                    <Image
                       src="/dog/clear.png"
                       alt={t.clear}
                       className="lesson-tool-icon"
+                      width={24}
+                      height={24}
                     />
                     {t.clear}
                   </>
@@ -3344,10 +3367,12 @@ function LessonPlayerDesktop() {
                   }}
                 >
                   <>
-                    <img
+                    <Image
                       src="/dog/save.png"
                       alt={t.save}
                       className="lesson-tool-icon"
+                      width={24}
+                      height={24}
                     />
                     {t.save}
                   </>
@@ -3419,7 +3444,7 @@ function LessonPlayerDesktop() {
                     <> {t.restartConfirm} 🐾</> 
                   </div>
 
-                  <img src="/dog/frank.webp" alt="Frank" />
+                  <Image src="/dog/frank.webp" alt="Frank" width={180} height={180} />
                 </div>
 
                 <div className="lesson-restart-modal-buttons">

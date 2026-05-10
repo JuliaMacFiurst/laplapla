@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import type { PageId } from "../QuestEngine";
 import SeaMap from "../sail/SeaMap";
@@ -19,10 +20,13 @@ export default function Day3Sail({ go }: { go: (id: PageId) => void }) {
       <div className="polar-scenery" aria-hidden />
       {/*ЗАГОЛОВОК */}
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
 
         <h1 className="quest-title-text">{t.day3Sail.title}</h1>

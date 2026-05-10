@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from "react";
+import Image from "next/image";
+import { useState, useEffect, useRef, useCallback, type Dispatch, type RefObject, type SetStateAction } from "react";
 import AudioEngine, { type AudioEngineHandle } from "./AudioEngine";
 import MusicPanel from "./MusicPanel";
 import type { StudioProject, StudioSlide } from "@/types/studio";
@@ -715,7 +716,7 @@ function StudioMobileLayout({
   audioEngineRef,
 }: StudioLayoutProps) {
   const hasPushedHistoryRef = useRef(false);
-  const onClose = () => {
+  const onClose = useCallback(() => {
     void router.push(
       {
         pathname: "/cats",
@@ -724,7 +725,7 @@ function StudioMobileLayout({
       undefined,
       { locale: lang },
     );
-  };
+  }, [lang, router]);
   const requestClose = () => {
     if (hasUnsavedChanges) {
       const shouldLeave = window.confirm(confirmExitMessage);
@@ -969,8 +970,6 @@ function StudioMobileLayout({
   }, [audioEngineRef, project.musicTracks]);
 
   useEffect(() => {
-    setTextColorState(hexToHsl(activeSlide.textColor ?? "#ffffff"));
-    setBgColorState(hexToHsl(activeSlide.textBgColor ?? "#000000"));
     setActivePicker(null);
     setReorderSourceIndex(null);
     setVoiceActionState({
@@ -1641,8 +1640,12 @@ function StudioMobileLayout({
                             }}
                           />
                         ) : (
-                          <img
+                          <Image
                             src={slide.mediaUrl}
+                            alt=""
+                            fill
+                            unoptimized
+                            sizes="90px"
                             style={{
                               width: "100%",
                               height: "100%",

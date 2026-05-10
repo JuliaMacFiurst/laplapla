@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import Image from "next/image";
 import { useRouter } from 'next/router';
 import TranslationWarning from '@/components/TranslationWarning';
 import { getCurrentLang } from '@/lib/i18n/routing';
@@ -68,7 +69,15 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
               <div className="art-gallery-columns">
                 <div className="art-gallery-images">
                   {artwork.image_url.map((url, i) => (
-                    <img key={i} src={url} alt={`${artwork.title} ${i + 1}`} className="art-gallery-image" />
+                    <Image
+                      key={i}
+                      src={url}
+                      alt={`${artwork.title} ${i + 1}`}
+                      className="art-gallery-image"
+                      width={512}
+                      height={512}
+                      unoptimized
+                    />
                   ))}
                 </div>
                 <div className="art-gallery-caption">

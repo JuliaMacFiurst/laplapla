@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dictionaries } from "@/i18n";
 import type { ParrotStorySlide } from "@/lib/parrotStoryMedia";
 import {
@@ -687,7 +688,7 @@ export default function ParrotStudioRoot({
     }
   };
 
-  const stopCompositionVoice = () => {
+  const stopCompositionVoice = useCallback(() => {
     if (compositionVoiceTimerRef.current) {
       window.clearTimeout(compositionVoiceTimerRef.current);
       compositionVoiceTimerRef.current = null;
@@ -700,7 +701,7 @@ export default function ParrotStudioRoot({
     }
     compositionVoiceAudioRef.current = null;
     compositionVoiceGainRef.current = null;
-  };
+  }, []);
 
   const bufferToWavBlob = (buffer: AudioBuffer) => {
     const channels = buffer.numberOfChannels;
@@ -766,7 +767,7 @@ export default function ParrotStudioRoot({
     return impulse;
   };
 
-  const connectEffects = (
+  const connectEffects = useCallback((
     context: BaseAudioContext,
     input: AudioNode,
     destination: AudioNode,
@@ -799,9 +800,9 @@ export default function ParrotStudioRoot({
     }
 
     tail.connect(destination);
-  };
+  }, []);
 
-  const connectVoiceEffects = (
+  const connectVoiceEffects = useCallback((
     context: BaseAudioContext,
     input: AudioNode,
     destination: AudioNode,
@@ -846,9 +847,9 @@ export default function ParrotStudioRoot({
     }
 
     tail.connect(destination);
-  };
+  }, [connectEffects]);
 
-  const connectLoopEffects = (
+  const connectLoopEffects = useCallback((
     context: BaseAudioContext,
     input: AudioNode,
     destination: AudioNode,
@@ -873,9 +874,9 @@ export default function ParrotStudioRoot({
     }
 
     tail.connect(destination);
-  };
+  }, [connectEffects]);
 
-  const playVoiceWithCurrentEffects = async () => {
+  const playVoiceWithCurrentEffects = useCallback(async () => {
     stopCompositionVoice();
 
     if (!composition.voice.audioUrl) {
@@ -924,7 +925,13 @@ export default function ParrotStudioRoot({
     audio.onended = () => {
       stopCompositionVoice();
     };
-  };
+  }, [
+    composition.effects.voice,
+    composition.mix.voiceVolume,
+    composition.voice.audioUrl,
+    connectVoiceEffects,
+    stopCompositionVoice,
+  ]);
 
   const handlePreviewVoiceEffect = async (effect: keyof VoiceEffectsState) => {
     if (!composition.voice.audioUrl) {
@@ -1087,6 +1094,8 @@ export default function ParrotStudioRoot({
     composition.voice.audioUrl,
     isCompositionPlaying,
     isVoiceRecording,
+    playVoiceWithCurrentEffects,
+    stopCompositionVoice,
   ]);
 
   const requestClose = () => {
@@ -1336,7 +1345,7 @@ export default function ParrotStudioRoot({
                     setIsStyleMenuOpen(false);
                   }}
                 >
-                  <img src={item.iconUrl} alt="" />
+                  <Image src={item.iconUrl} alt="" width={48} height={48} unoptimized />
                   <span>{item.title}</span>
                 </button>
               ))}

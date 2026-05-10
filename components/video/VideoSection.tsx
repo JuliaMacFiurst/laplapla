@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { normalizeSearchQuery } from "../../utils/normalizeSearchQuery";
 import { VideoSearch } from "./VideoSearch";
@@ -283,7 +284,7 @@ export function VideoSection({
                         mobileMode === "videos" ? "mobile-video-card-thumb" : "mobile-short-reel-thumb"
                       }
                     >
-                      <img src={thumbnail} alt={titleText} loading="lazy" />
+                      <Image src={thumbnail} alt={titleText} width={320} height={568} loading="lazy" unoptimized />
                       <span
                         className={
                           mobileMode === "videos" ? "mobile-video-card-play" : "mobile-short-reel-play"

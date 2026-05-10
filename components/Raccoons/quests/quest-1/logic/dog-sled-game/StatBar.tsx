@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React from "react";
 import { useQuest1I18n } from "../../i18n";
 
@@ -46,9 +47,11 @@ export default function StatBar({ values, levels }: StatBarProps) {
           <div className="stat-bar-label stat-bar-label-speed">{t.day5Garage.stats.speed}</div>
         </div>
 
-        <img
+        <Image
           src="/supabase-storage/quests/1_quest/games/dog-sled/stats-panel.webp"
           alt="Stats"
+          fill
+          unoptimized
           className="stat-panel-frame"
           draggable={false}
         />

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {useEffect, useMemo, useRef, useState } from "react";
 import { iconForInstrument } from "../utils/parrot-presets";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
@@ -513,7 +514,7 @@ export default function ParrotMixer({
       audioEls.current = {};
       setPreview(null);
     };
-  }, [normLoops]);
+  }, [normLoops, volume]);
 
   // Propagate volume
   useEffect(() => {
@@ -1122,10 +1123,13 @@ export default function ParrotMixer({
                     }`}
                     title={localizedLayerName}
                   >
-                    <img
+                    <Image
                       src={iconForLayer(l.label, l.id)}
                       alt={localizedLayerName}
+                      width={70}
+                      height={70}
                       className="mixer-layer-icon"
+                      unoptimized
                     />
                     {on ? "🔊 " : "🔇 "}
                     {localizedLayerName}
@@ -1243,11 +1247,15 @@ function ParrotImage({
   ui: Props["ui"];
 }) {
   const baseParrot = buildSupabasePublicUrl("characters", "parrots/blue_parrot");
-  const gifs = [
-    `${baseParrot}/blue-parrot1.gif`,
-    `${baseParrot}/blue-parrot2.gif`,
-    `${baseParrot}/blue-parrot3.gif`,
-  ];
+  const gifs = useMemo(
+    () => [
+      `${baseParrot}/blue-parrot1.gif`,
+      `${baseParrot}/blue-parrot2.gif`,
+      `${baseParrot}/blue-parrot3.gif`,
+    ],
+    [baseParrot],
+  );
+  const pngSrc = `${baseParrot}/blue-parrot.png`;
 
   const [showGif, setShowGif] = useState(false);
   const [gifIndex, setGifIndex] = useState(0);
@@ -1278,16 +1286,19 @@ function ParrotImage({
       cancelled = true;
       if (timerRef.current) window.clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [gifs]);
 
-  const src = showGif ? gifs[gifIndex] : `${baseParrot}/blue-parrot.png`;
+  const src = showGif ? gifs[gifIndex] : pngSrc;
 
   return (
     <div className="parrot-container">
-      <img
+      <Image
         src={src}
         alt={ui.imageAlt}
+        width={200}
+        height={200}
         className={`parrot-image ${wiggle ? "is-wiggle" : ""}`}
+        unoptimized
       />
       <div className="subtitle">
         {parrotLine || ui.defaultHint}

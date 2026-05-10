@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 
@@ -73,7 +74,7 @@ export default function ParrotGuide({
     <section className="parrot-guide">
       <div className="parrot-guide__header">
         <div className="parrot-guide__avatar" aria-hidden="true">
-          <img src={mediaSrc} alt="" className="parrot-guide__avatar-media" />
+          <Image src={mediaSrc} alt="" className="parrot-guide__avatar-media" width={180} height={180} unoptimized />
         </div>
         <div>
           <strong>{title}</strong>

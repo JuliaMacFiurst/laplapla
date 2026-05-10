@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import type { PageId } from "../QuestEngine";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
@@ -28,10 +29,13 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
           >
             <div className="ice-button">
               {/* льдина */}
-              <img
+              <Image
                 className="ice"
                 src="/quests/assets/buttons/ice-button-bg.svg"
                 alt=""
+                width={720}
+                height={180}
+                unoptimized
               />
 
               {/* текст */}
@@ -48,10 +52,13 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
             onClick={() => go("day3flight")}
             >
               {/* льдина */}
-              <img
+              <Image
                 className="small-ice"
                 src="/quests/assets/buttons/small-ice-btn.svg"
                 alt=""
+                width={240}
+                height={96}
+                unoptimized
               />
 
               {/* текст */}
@@ -68,10 +75,13 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
             onClick={() => go("day3sail")}
             >
               {/* льдина */}
-              <img
+              <Image
                 className="small-ice"
                 src="/quests/assets/buttons/small-ice-btn.svg"
                 alt=""
+                width={240}
+                height={96}
+                unoptimized
               />
 
               {/* текст */}

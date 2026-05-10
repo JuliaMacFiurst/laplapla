@@ -47,7 +47,7 @@ export function useBonusStars(
         toX: segment.toX,
         blocksLane: segment.blocksLane,
       })),
-    [blockedKey]
+    [blockedSegments]
   );
 
   const [stars, setStars] = useState<BonusStar[]>([]);

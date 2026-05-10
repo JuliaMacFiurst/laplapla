@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { BookTest } from "@/types/types";
 import type { dictionaries } from "@/i18n";
@@ -338,10 +339,13 @@ export default function BookQuiz({ bookId, test, t, variant = "default" }: BookQ
         <div className="quiz-result-modal" role="dialog" aria-modal="false">
           {resultMedia ? (
             <div className="quiz-result-media">
-              <img
+              <Image
                 src={resultMedia.url}
                 alt={resultMedia.alt}
                 className="quiz-result-media-asset"
+                width={512}
+                height={512}
+                unoptimized
               />
             </div>
           ) : isResultMediaLoading ? (

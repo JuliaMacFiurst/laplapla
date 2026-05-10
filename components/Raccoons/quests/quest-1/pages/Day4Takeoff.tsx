@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { PageId } from "../QuestEngine";
 import { useRef } from "react";
 import PlaneWindshield, { PlaneWindshieldRef } from "../flight/PlaneWindshield";
@@ -58,10 +59,13 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
       <div className="polar-scenery" aria-hidden />
 
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
         <h1 className="quest-title-text">{t.day4Takeoff.title}</h1>
       </div>
@@ -156,16 +160,22 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
           >
 
       <div className="ice-button" onClick={() => go("day5_spitsbergen")}>
-        <img
+        <Image
           className="ice"
           src="/quests/assets/buttons/ice-button-bg.svg"
           alt=""
+          width={720}
+          height={180}
+          unoptimized
         />
         <div className="ice-text">{t.day4Takeoff.nextButton}</div>
-        <img
+        <Image
           className="penguin"
           src="/supabase-storage/characters/other/penguin.gif"
           alt=""
+          width={92}
+          height={92}
+          unoptimized
         />
       </div>
 </div>

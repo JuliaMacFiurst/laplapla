@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PageId } from "../QuestEngine";
 import countryNames from "@/utils/country_names.json";
 import DialogBox from "../logic/DialogBox";
@@ -16,12 +17,13 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   >(null);
   const [dialogueQueue, setDialogueQueue] = useState<FlightDialogueStep[]>([]);
   const flightRouteDialogs = getFlightRouteDialogs(lang);
+  const flyingOverText = t.day3Flight.speech.flyingOver;
 
   // --- перевод ID страны в русское название ---
-  function getCountryLabel(id: string): string {
+  const getCountryLabel = useCallback((id: string): string => {
     const entry = (countryNames as Record<string, any>)[id];
     return entry?.[lang] || entry?.ru || id;
-  }
+  }, [lang]);
 
   // --- слушатель для текстов от initRouteLogic ---
   useEffect(() => {
@@ -29,10 +31,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
       const id = ev.detail;
       const countryName = getCountryLabel(id);
       if (racTextRef.current) {
-        racTextRef.current.textContent = t.day3Flight.speech.flyingOver.replace(
-          "{name}",
-          countryName
-        );
+        racTextRef.current.textContent = flyingOverText.replace("{name}", countryName);
       }
     }
 
@@ -47,7 +46,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
         handleCountryEvent as EventListener
       );
     };
-  }, []);
+  }, [flyingOverText, getCountryLabel]);
   // ======================================================
   // ✅ RENDER
   // ======================================================
@@ -56,10 +55,13 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
       <div className="polar-scenery" aria-hidden />
       {/*ЗАГОЛОВОК */}
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
 
         <h1 className="quest-title-text">{t.day3Flight.title}</h1>

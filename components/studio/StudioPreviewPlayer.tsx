@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useRef, useState, forwardRef } from "react";
 import { resolveFontFamily } from "@/lib/fonts";
 import type { StudioSlide } from "@/types/studio";
@@ -174,10 +175,13 @@ export function StudioSlideMedia({
           }}
         />
       ) : (
-        <img
+        <Image
           key={`${slide.id}:${slide.mediaUrl}:${playEpoch}`}
           src={slide.mediaUrl}
           alt={slide.text?.trim() || "illustration"}
+          fill
+          unoptimized
+          sizes="100vw"
           style={{
             position: "absolute",
             inset: 0,
@@ -295,9 +299,10 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
         musicEngineRef.current.playAll();
       }
 
+      const musicEngine = musicEngineRef?.current;
       return () => {
-        if (musicEngineRef?.current?.pauseAll) {
-          musicEngineRef.current.pauseAll();
+        if (musicEngine?.pauseAll) {
+          musicEngine.pauseAll();
         }
       };
     }, [isPlaybackEnabled, musicEngineRef]);
@@ -502,12 +507,15 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
 
           {/* WATERMARK (EXPORT ONLY) */}
           {(isExportMode || showWatermark) && (
-            <img
+            <Image
               src="/icons/watermark.webp"
               alt="watermark"
+              width={1668}
+              height={1668}
               style={{
                 position: "absolute",
                 ...watermarkStyle,
+                height: "auto",
                 opacity: 0.8,
                 pointerEvents: "none",
                 userSelect: "none",

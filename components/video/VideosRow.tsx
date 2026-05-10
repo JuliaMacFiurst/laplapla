@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { dictionaries, type Lang } from "../../i18n";
 import type { VideoItem } from "../../content/videos";
 
@@ -61,7 +62,7 @@ export function VideosRow({ lang, items, onSelectVideo }: VideosRowProps) {
             aria-label={t.openVideo ?? "Открыть видео"}
           >
             <div className="video-thumbnail">
-              <img src={thumbnail} alt={videoTitle || "illustration"} loading="lazy" />
+              <Image src={thumbnail} alt={videoTitle || "illustration"} width={320} height={180} loading="lazy" unoptimized />
               <span className="video-play-icon">▶</span>
             </div>
 

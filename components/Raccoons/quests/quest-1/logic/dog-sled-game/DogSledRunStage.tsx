@@ -94,6 +94,10 @@ export default function DogSledRunStage({
   const sledConfig = buildSledRunConfig(prep);
   const speed = sledConfig.baseSpeed;
   const roadEdgeBuffer = mobileControls ? 14 : 20;
+  const speedRef = useRef(speed);
+  const runStyleRef = useRef(sledConfig.runStyle);
+  const riskBoostChanceRef = useRef(sledConfig.riskBoostChance);
+  const mobileControlsRef = useRef(mobileControls);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -114,6 +118,16 @@ export default function DogSledRunStage({
       setShowResults(false);
     }
   }, [phase, speed]);
+
+  useEffect(() => {
+    speedRef.current = speed;
+    runStyleRef.current = sledConfig.runStyle;
+    riskBoostChanceRef.current = sledConfig.riskBoostChance;
+  }, [sledConfig.riskBoostChance, sledConfig.runStyle, speed]);
+
+  useEffect(() => {
+    mobileControlsRef.current = mobileControls;
+  }, [mobileControls]);
 
   // базовые параметры (позже придут из подготовки)
   const [stageWidth, setStageWidth] = useState(1200);
@@ -187,9 +201,14 @@ export default function DogSledRunStage({
     blockedSegments
   );
   const bonusStarsRef = useRef<BonusStar[]>([]);
+  const collectBonusStarRef = useRef(collectBonusStar);
   useEffect(() => {
     bonusStarsRef.current = bonusStars;
   }, [bonusStars]);
+
+  useEffect(() => {
+    collectBonusStarRef.current = collectBonusStar;
+  }, [collectBonusStar]);
 
   const obstacles = useObstacles(
     sledWorldX + OBSTACLE_SPAWN_OFFSET_X,
@@ -359,7 +378,7 @@ export default function DogSledRunStage({
       let isFinishing = currentPhase === "finish";
 
       let inEasingZone = false;
-      let nextSledState: DogSledState = sledState;
+      let nextSledState: DogSledState = sledStateRef.current;
 
       const sledWorldX = scrollXRef.current + stageWidthRef.current * 0.3;
       const currentSledStep = sledStepRef.current;
@@ -409,7 +428,7 @@ export default function DogSledRunStage({
 
         if (nextObstacle) {
           const dx = nextObstacle.x - sledCollisionX;
-          const hitZoneScale = mobileControls ? MOBILE_HIT_ZONE_SCALE : 1;
+          const hitZoneScale = mobileControlsRef.current ? MOBILE_HIT_ZONE_SCALE : 1;
           const hitRadius = Number(nextObstacle?.definition?.hitRadius ?? 0) * hitZoneScale;
           const noseOffset = 300 * hitZoneScale;
           const hitDistance = hitRadius + noseOffset;
@@ -436,14 +455,14 @@ export default function DogSledRunStage({
           if (Math.abs(currentSledStep - starStep) > STAR_LANE_TOLERANCE) continue;
 
           collectedStarIdsRef.current.add(star.id);
-          collectBonusStar(star.id);
+          collectBonusStarRef.current(star.id);
           setCollectedStars((count) => count + 1);
         }
 
         if (
-          sledConfig.riskBoostChance > 0 &&
+          riskBoostChanceRef.current > 0 &&
           !boostUntilTsRef.current &&
-          Math.random() < sledConfig.riskBoostChance
+          Math.random() < riskBoostChanceRef.current
         ) {
           const nowTs = performance.now();
           const duration = 300 + Math.random() * 300;
@@ -499,7 +518,7 @@ export default function DogSledRunStage({
         } else if (shouldSlow) {
           nextSledState = "slow_down";
         } else {
-          nextSledState = sledConfig.runStyle;
+          nextSledState = runStyleRef.current;
         }
       }
 
@@ -507,7 +526,7 @@ export default function DogSledRunStage({
       const boostUntil = boostUntilTsRef.current;
       const isBoosting = boostUntil !== null && now < boostUntil;
 
-      let effectiveSpeed = speed;
+      let effectiveSpeed = speedRef.current;
       if (isFinishing) {
         if (finishSlowStartRef.current === null) {
           finishSlowStartRef.current = now;
@@ -520,7 +539,7 @@ export default function DogSledRunStage({
         const progress = Math.min(1, elapsed / FINISH_SLOW_DURATION_MS);
         const finishFactor = Math.max(0, 1 - progress);
 
-        effectiveSpeed = speed * finishFactor;
+        effectiveSpeed = speedRef.current * finishFactor;
 
         if (progress >= 1 && !finishSlowCompleteRef.current) {
           finishSlowCompleteRef.current = true;
@@ -528,9 +547,11 @@ export default function DogSledRunStage({
           setShowResults(true);
         }
       } else if (inEasingZone) {
-        effectiveSpeed = speed * (mobileControls ? MOBILE_EASING_SPEED_MULT : EASING_SPEED_MULT);
+        effectiveSpeed =
+          speedRef.current *
+          (mobileControlsRef.current ? MOBILE_EASING_SPEED_MULT : EASING_SPEED_MULT);
       } else if (isBoosting) {
-        effectiveSpeed = speed * 1.6;
+        effectiveSpeed = speedRef.current * 1.6;
       }
 
       if (boostUntil !== null && now >= boostUntil) {
@@ -549,7 +570,7 @@ export default function DogSledRunStage({
       if (isFinishing) {
         nextSledState = "slow_down";
       } else if (!isRunningPhase) {
-        nextSledState = sledConfig.runStyle;
+        nextSledState = runStyleRef.current;
       }
 
       const decisionKey = `${prevState}->${nextSledState}|phase=${currentPhase}`;

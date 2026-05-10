@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import MobileSlideshowViewer from "@/components/studio/mobile/MobileSlideshowViewer";
 import type { Lang } from "@/i18n";
@@ -143,10 +144,13 @@ export default function MapPopup({
           ? (_slide, slideIndex) =>
               slideIndex === 0 ? (
                 <div className="mobile-slideshow-flag-header">
-                  <img
+                  <Image
                     src={flagImageUrl}
                     alt={flagLabel || ""}
+                    width={160}
+                    height={100}
                     className="mobile-slideshow-flag-image"
+                    unoptimized
                   />
                   {flagLabel ? (
                     <span className="mobile-slideshow-flag-label">{flagLabel}</span>

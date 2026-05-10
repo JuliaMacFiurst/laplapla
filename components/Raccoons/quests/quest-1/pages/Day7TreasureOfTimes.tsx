@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
@@ -17,10 +18,13 @@ export default function Day7TreasureOfTimes() {
 
       {/* Заголовок */}
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
         <h1 className="quest-title-text">{t.day7.title}</h1>
       </div>
@@ -60,20 +64,26 @@ export default function Day7TreasureOfTimes() {
             }}
           >
             {/* льдина */}
-            <img
+            <Image
               className="ice"
               src="/quests/assets/buttons/ice-button-bg.svg"
               alt=""
+              width={720}
+              height={180}
+              unoptimized
             />
 
             {/* текст */}
             <div className="ice-text">{t.day7.backButton}</div>
 
             {/* пингвин */}
-            <img
+            <Image
               className="penguin"
               src={buildSupabaseStorageUrl("characters/other/penguin.gif")}
               alt=""
+              width={92}
+              height={92}
+              unoptimized
             />
           </div>
         </div>

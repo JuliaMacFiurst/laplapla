@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
@@ -636,7 +637,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
                         <div className="story-hero-card-media">
                           {previewUrl ? (
                             // Giphy previews are only decorative here; selection still relies on the canonical hero name.
-                            <img src={previewUrl} alt={option.heroName} />
+                            <Image src={previewUrl} alt={option.heroName} width={160} height={160} unoptimized />
                           ) : (
                             <div className="story-hero-card-fallback">{option.heroName.slice(0, 1).toUpperCase()}</div>
                           )}

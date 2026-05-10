@@ -5,6 +5,7 @@ const DEFAULT_MIN_FONT_SIZE_PX = 11;
 
 export function useAutoFontSize<T extends HTMLElement>(deps: readonly unknown[] = []) {
   const ref = useRef<T | null>(null);
+  const depsKey = JSON.stringify(deps);
 
   useLayoutEffect(() => {
     const element = ref.current;
@@ -42,7 +43,7 @@ export function useAutoFontSize<T extends HTMLElement>(deps: readonly unknown[] 
       resizeObserver.observe(parentElement);
     }
     return () => resizeObserver.disconnect();
-  }, deps);
+  }, [depsKey]);
 
   return ref;
 }

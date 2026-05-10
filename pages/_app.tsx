@@ -1,4 +1,5 @@
 // pages/_app.tsx
+import Image from "next/image";
 import TopBar from "../components/TopBar";
 import '../styles/Home.css'; // глобальный стиль
 import '../styles/CapybaraPage.css';
@@ -21,7 +22,7 @@ import '../styles/Puzzle.css';
 import '../styles/Replay.css'
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
 import { dictionaries, Lang } from "../i18n";
@@ -86,6 +87,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     !isProduction || router.query.debug === "true";
   const isBrowserCaptureEnabled =
     !isProduction && process.env.NEXT_PUBLIC_ENABLE_BROWSER_CAPTURE === "true";
+  const detectedLang = useMemo(
+    () => getCurrentLang(router),
+    [router],
+  );
   const initialLang = (() => {
     const pageLang = (pageProps as { lang?: unknown } | undefined)?.lang;
     if (pageLang === "ru" || pageLang === "en" || pageLang === "he") {
@@ -187,19 +192,18 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   // Determine language once on client
   useEffect(() => {
-    const detected = getCurrentLang(router);
-    setLang(detected);
+    setLang(detectedLang);
 
     // Persist to cookie
-    document.cookie = `laplapla_lang=${detected}; path=/; max-age=31536000`;
-    window.localStorage.setItem("laplapla_lang", detected);
+    document.cookie = `laplapla_lang=${detectedLang}; path=/; max-age=31536000`;
+    window.localStorage.setItem("laplapla_lang", detectedLang);
     // Backward compatibility with older pages that still read `lang`
-    window.localStorage.setItem("lang", detected);
+    window.localStorage.setItem("lang", detectedLang);
 
     // Set dir globally
-    document.documentElement.lang = detected;
-    document.documentElement.dir = detected === "he" ? "rtl" : "ltr";
-  }, [router.query.lang, router.locale]);
+    document.documentElement.lang = detectedLang;
+    document.documentElement.dir = detectedLang === "he" ? "rtl" : "ltr";
+  }, [detectedLang]);
 
   const t = dictionaries[lang];
 
@@ -222,7 +226,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
       {isBrowserCaptureEnabled && (
         <>
-          <Script id="ai-config" strategy="beforeInteractive">
+          <Script id="ai-config" strategy="afterInteractive">
             {`
               window.__BROWSER_CAPTURE_ENDPOINT__ = "http://127.0.0.1:5050/log/browser";
               window.__PROJECT_NAME__ = "capybara-tales";
@@ -321,10 +325,12 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                       GIPHY
                     </a>
                   </div>
-                  <img
+                  <Image
                     src="/giphy-logo.webp"
                     alt="GIPHY Logo"
                     className="giphy-logo"
+                    width={88}
+                    height={28}
                   />
                   <div>
                     Videos provided by{" "}

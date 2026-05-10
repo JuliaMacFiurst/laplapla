@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { dictionaries, Lang } from "@/i18n";
 import { devLog } from "@/utils/devLog";
@@ -549,10 +550,13 @@ export default function MediaPickerModal({
                     } : undefined}
                   />
                 ) : (
-                  <img
+                  <Image
                     src={url}
                     alt={buildMediaPreviewAlt(url, index)}
                     className={isMobile ? undefined : "media-preview-image"}
+                    width={320}
+                    height={320}
+                    unoptimized
                     style={isMobile ? {
                       width: "100%",
                       height: "100%",

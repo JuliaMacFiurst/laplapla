@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useRef,
   useEffect,
   useLayoutEffect,
@@ -6,6 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
@@ -501,13 +503,13 @@ export default function InteractiveMap({
       : Math.min(currentSlideIndex, Math.max(0, effectivePopupSlides.length - 1));
   const currentPopupSlide = effectivePopupSlides[safeCurrentSlideIndex] ?? null;
 
-  const getHoverFill = () => {
+  const getHoverFill = useCallback(() => {
     if (type === "sea") return "#99dbf5";
     if (type === "river") return "#4cb3ff";
     if (type === "animal") return "#86c232";
     if (type === "weather") return "#f6c453";
     return "#f97316";
-  };
+  }, [type]);
 
   const beginMediaRequest = (slideId: string) => {
     const nextVersion = (mediaRequestVersionRef.current.get(slideId) ?? 0) + 1;
@@ -543,12 +545,12 @@ export default function InteractiveMap({
     }
   };
 
-  const getSelectedFill = () => {
+  const getSelectedFill = useCallback(() => {
     if (type === "river") return "#ff7a00";
     return "#e0d4f7";
-  };
+  }, [type]);
 
-  const isInteractivePath = (path: SVGPathElement) => {
+  const isInteractivePath = useCallback((path: SVGPathElement) => {
     const id = path.id?.trim();
     if (!id) {
       return false;
@@ -563,9 +565,9 @@ export default function InteractiveMap({
     }
 
     return true;
-  };
+  }, [type]);
 
-  const buildOverlayPathClone = (
+  const buildOverlayPathClone = useCallback((
     path: SVGPathElement,
     color: string,
     overlayType: "hover" | "selected",
@@ -626,9 +628,9 @@ export default function InteractiveMap({
       "important",
     );
     return clone;
-  };
+  }, [type]);
 
-  const buildOverlayBranchClone = (
+  const buildOverlayBranchClone = useCallback((
     sourceSvg: SVGSVGElement,
     path: SVGPathElement,
     color: string,
@@ -653,9 +655,9 @@ export default function InteractiveMap({
     }
 
     return currentNode;
-  };
+  }, [buildOverlayPathClone]);
 
-  const syncInteractionOverlay = (
+  const syncInteractionOverlay = useCallback((
     hoveredPath: SVGPathElement | null = hoveredPathRef.current,
     selectedPath: SVGPathElement | null = lastSelectedPath.current,
     previewPaths: SVGPathElement[] = previewSelectedPathsRef.current,
@@ -739,9 +741,9 @@ export default function InteractiveMap({
     }
 
     sourceSvg.appendChild(overlayGroup);
-  };
+  }, [buildOverlayBranchClone, getHoverFill, getSelectedFill]);
 
-  const resolvePathsById = (sourceSvg: SVGSVGElement, id: string) => {
+  const resolvePathsById = useCallback((sourceSvg: SVGSVGElement, id: string) => {
     const escapedId =
       typeof CSS !== "undefined" && typeof CSS.escape === "function"
         ? CSS.escape(id)
@@ -764,15 +766,15 @@ export default function InteractiveMap({
         normalizeSlug(pathId) === normalizedTargetId
       );
     });
-  };
+  }, []);
 
-  const applySelectedStyle = (path: SVGPathElement) => {
+  const applySelectedStyle = useCallback((path: SVGPathElement) => {
     path.setAttribute("data-selected", "true");
     lastSelectedPath.current = path;
     syncInteractionOverlay();
-  };
+  }, [syncInteractionOverlay]);
 
-  const clearSelectedStyle = () => {
+  const clearSelectedStyle = useCallback(() => {
     if (!lastSelectedPath.current) {
       return;
     }
@@ -781,27 +783,27 @@ export default function InteractiveMap({
     previousPath.removeAttribute("data-selected");
     lastSelectedPath.current = null;
     syncInteractionOverlay();
-  };
+  }, [syncInteractionOverlay]);
 
-  const applyHoverStyle = (path: SVGPathElement) => {
+  const applyHoverStyle = useCallback((path: SVGPathElement) => {
     if (path === hoveredPathRef.current) {
       return;
     }
 
     hoveredPathRef.current = path;
     syncInteractionOverlay();
-  };
+  }, [syncInteractionOverlay]);
 
-  const clearHoverStyle = (path: SVGPathElement) => {
+  const clearHoverStyle = useCallback((path: SVGPathElement) => {
     if (hoveredPathRef.current !== path) {
       return;
     }
 
     hoveredPathRef.current = null;
     syncInteractionOverlay();
-  };
+  }, [syncInteractionOverlay]);
 
-  const closeSelection = (
+  const closeSelection = useCallback((
     _reason: "outside" | "button" | "toggle" | "map-switch",
   ) => {
     if (
@@ -816,9 +818,9 @@ export default function InteractiveMap({
     setIsPopupOpen(false);
     setCurrentSlideIndex(0);
     setViewMode("slides");
-  };
+  }, [isPopupOpen]);
 
-  const openSelection = (path: SVGPathElement, id: string) => {
+  const openSelection = useCallback((path: SVGPathElement, id: string) => {
     if (!id) {
       return;
     }
@@ -860,7 +862,13 @@ export default function InteractiveMap({
       setSelectedElement(id);
       setIsPopupOpen(true);
     });
-  };
+  }, [
+    applySelectedStyle,
+    clearSelectedStyle,
+    isPopupOpen,
+    t.previousStoryInProgress,
+    type,
+  ]);
 
   function getFlagUrl(id: string): string | null {
     if (!id) return null;
@@ -1120,7 +1128,7 @@ export default function InteractiveMap({
     }
   };
 
-  const softClamp = (value: number, min: number, max: number) => {
+  const softClamp = useCallback((value: number, min: number, max: number) => {
     if (value < min) {
       return min + (value - min) * 0.3;
     }
@@ -1128,9 +1136,9 @@ export default function InteractiveMap({
       return max + (value - max) * 0.3;
     }
     return value;
-  };
+  }, []);
 
-  const getPanBounds = (nextZoom: number) => {
+  const getPanBounds = useCallback((nextZoom: number) => {
     if (!isMobile || !mapContentRef.current) {
       return null;
     }
@@ -1169,7 +1177,7 @@ export default function InteractiveMap({
     }
 
     return { minX, maxX, minY, maxY };
-  };
+  }, [isMobile]);
 
   const applyHardClamp = (nextZoom = zoomRef.current) => {
     const bounds = getPanBounds(nextZoom);
@@ -1187,7 +1195,7 @@ export default function InteractiveMap({
     applyMapTransform(currentXRef.current, currentYRef.current, nextZoom);
   };
 
-  const clampMobilePosition = (x: number, y: number, nextZoom: number) => {
+  const clampMobilePosition = useCallback((x: number, y: number, nextZoom: number) => {
     const bounds = getPanBounds(nextZoom);
     if (!bounds) {
       return { x, y };
@@ -1197,9 +1205,9 @@ export default function InteractiveMap({
       x: softClamp(x, bounds.minX, bounds.maxX),
       y: softClamp(y, bounds.minY, bounds.maxY),
     };
-  };
+  }, [getPanBounds, softClamp]);
 
-  const applyMapTransform = (
+  const applyMapTransform = useCallback((
     nextX = currentXRef.current,
     nextY = currentYRef.current,
     nextZoom = zoomRef.current,
@@ -1211,7 +1219,7 @@ export default function InteractiveMap({
 
     mapContent.style.transformOrigin = "0 0";
     mapContent.style.transform = `translate(${nextX}px, ${nextY}px) scale(${nextZoom})`;
-  };
+  }, []);
 
   // --- Helper to reset the map view to the safe initial view ---
   const resetMapView = () => {
@@ -1339,7 +1347,7 @@ export default function InteractiveMap({
     currentXRef.current = offsetX;
     currentYRef.current = offsetY;
     applyMapTransform(offsetX, offsetY, optimalZoom);
-  }, [isMobile, svgContent, type]);
+  }, [applyMapTransform, clampMobilePosition, isMobile, svgContent, type]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     isDraggingRef.current = true;
@@ -1801,7 +1809,7 @@ export default function InteractiveMap({
     return () => {
       cancelled = true;
     };
-  }, [popupContent?.storyId, popupContent?.targetId, type]);
+  }, [popupContent?.slides, popupContent?.storyId, popupContent?.targetId, type]);
 
   useLayoutEffect(() => {
     const mapContent = mapContentRef.current;
@@ -2029,7 +2037,17 @@ export default function InteractiveMap({
       mapContent.removeEventListener("mouseleave", handleContainerMouseLeave);
       mapContent.removeEventListener("click", handleContainerClick);
     };
-  }, [svgContent, type]);
+  }, [
+    applyHoverStyle,
+    applySelectedStyle,
+    clearHoverStyle,
+    isInteractivePath,
+    onUserSelect,
+    openSelection,
+    svgContent,
+    syncInteractionOverlay,
+    type,
+  ]);
 
   useEffect(() => {
     const sourceSvg = svgHostRef.current?.querySelector(
@@ -2057,7 +2075,14 @@ export default function InteractiveMap({
     );
     previewSelectedPathsRef.current = previewPaths;
     syncInteractionOverlay();
-  }, [previewSelectedId, svgContent, type]);
+  }, [
+    isInteractivePath,
+    previewSelectedId,
+    resolvePathsById,
+    svgContent,
+    syncInteractionOverlay,
+    type,
+  ]);
 
   // --- Добавляем refs и состояние для перетаскивания попапа ---
   const popupRef = useRef<HTMLDivElement | null>(null);
@@ -2189,7 +2214,7 @@ export default function InteractiveMap({
 
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
-  }, [isPopupOpen, type]);
+  }, [closeSelection, isPopupOpen, type]);
 
   return (
     <div
@@ -2285,9 +2310,12 @@ export default function InteractiveMap({
           <div className="country-popup-body">
             {type === "flag" && getFlagUrl(selectedElement || "") && (
               <div style={{ textAlign: "center", marginBottom: "12px" }}>
-                <img
+                <Image
                   src={getFlagUrl(selectedElement!)!}
                   alt={`${t.flagAlt} ${selectedElement}`}
+                  width={280}
+                  height={180}
+                  unoptimized
                   style={{
                     width: "280px",
                     height: "auto",
@@ -2494,8 +2522,11 @@ export default function InteractiveMap({
                                         }}
                                       />
                                     ) : (
-                                      <img
+                                      <Image
                                         src={displayMediaUrl}
+                                        width={320}
+                                        height={240}
+                                        unoptimized
                                         onError={() => {
                                           console.error(
                                             "[popup-media/render-error]",

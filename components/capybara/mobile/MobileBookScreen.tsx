@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useMemo } from "react";
 import { fallbackImages } from "@/constants";
 import BookQuiz from "@/components/BookQuiz";
@@ -201,10 +202,13 @@ export default function MobileBookScreen({
                   preload="metadata"
                 />
               ) : (
-                <img
+                <Image
                   src={previewMediaUrl}
                   alt={firstSlideMedia?.capybaraImageAlt || firstSlide?.text?.trim() || book.title || "illustration"}
                   className="mobile-story-media-asset"
+                  width={768}
+                  height={768}
+                  unoptimized
                   draggable={false}
                 />
               )}

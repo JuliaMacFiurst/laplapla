@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { MutableRefObject, ReactNode } from "react";
 
 type MapViewportProps = {
@@ -56,12 +57,13 @@ export default function MapViewport({
 
       {isMapLoading ? (
         <div className="map-loading-overlay" role="status" aria-live="polite">
-          <img
+          <Image
             src="/spinners/CatSpinner.svg"
             alt=""
             width={64}
             height={64}
             aria-hidden="true"
+            unoptimized
           />
         </div>
       ) : null}

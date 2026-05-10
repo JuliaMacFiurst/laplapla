@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
 import seaNames from "@/utils/sea_names.json";
 import { useQuest1I18n } from "../i18n";
@@ -8,6 +8,9 @@ function translateSea(id: string, lang: "ru" | "en" | "he") {
   if (!entry) return id;
   return entry[lang] ?? entry.ru ?? id;
 }
+
+const INITIAL_START = { x: 0.15, y: 0.75 };
+const TARGET_POINT = { x: 0.535, y: 0.075 };
 
 export default function SeaMap({
   racTextRef,
@@ -46,8 +49,7 @@ export default function SeaMap({
     const [svgLoaded, setSvgLoaded] = useState(false);
 
       // Стартовые координаты (нормированные)
-  const [start, setStart] = useState({ x: 0.15, y: 0.75 });
-  const [target] = useState({ x: 0.535, y: 0.075 });
+  const [start, setStart] = useState(INITIAL_START);
 
     // Пользовательский маршрут (список точек нормированных)
   const [route, setRoute] = useState<{ x: number; y: number }[]>([]);
@@ -66,7 +68,7 @@ export default function SeaMap({
   // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
   // ===========================
 
-  function pxToNorm(px: number, py: number) {
+  const pxToNorm = useCallback((px: number, py: number) => {
     const wrap = wrapRef.current;
     if (!wrap) return { x: 0, y: 0 };
     const r = wrap.getBoundingClientRect();
@@ -74,51 +76,88 @@ export default function SeaMap({
       x: Math.min(1, Math.max(0, (px - r.left) / r.width)),
       y: Math.min(1, Math.max(0, (py - r.top) / r.height)),
     };
-  }
+  }, []);
 
-  function layoutPins() {
+  const layoutPins = useCallback(() => {
     const wrap = wrapRef.current;
     const s = startPinRef.current;
-    const t = targetPinRef.current;
-    if (!wrap || !s || !t) return;
+    const targetPin = targetPinRef.current;
+    if (!wrap || !s || !targetPin) return;
 
     const r = wrap.getBoundingClientRect();
 
     s.style.left = start.x * r.width + "px";
     s.style.top = start.y * r.height + "px";
 
-    t.style.left = target.x * r.width + "px";
-    t.style.top = target.y * r.height + "px";
-  }
+    targetPin.style.left = TARGET_POINT.x * r.width + "px";
+    targetPin.style.top = TARGET_POINT.y * r.height + "px";
+  }, [start]);
 
   // Добавляем ResizeObserver для wrapRef, чтобы вызывать layoutPins при изменении размера
   useEffect(() => {
-    if (!wrapRef.current) return;
+    const wrapEl = wrapRef.current;
+    if (!wrapEl) return;
 
     const resizeObserver = new ResizeObserver(() => {
       layoutPins();
     });
-    resizeObserver.observe(wrapRef.current);
+    resizeObserver.observe(wrapEl);
 
     return () => {
-      if (wrapRef.current) resizeObserver.unobserve(wrapRef.current);
+      resizeObserver.unobserve(wrapEl);
     };
-  }, []);
+  }, [layoutPins]);
 
   // Проверить, близко ли новая точка к красной (завершение маршрута)
-  function isNearTarget(nx: number, ny: number) {
+  const isNearTarget = useCallback((nx: number, ny: number) => {
     const wrap = wrapRef.current;
     if (!wrap) return false;
 
-    const tpx = target.x * wrap.clientWidth;
-    const tpy = target.y * wrap.clientHeight;
+    const tpx = TARGET_POINT.x * wrap.clientWidth;
+    const tpy = TARGET_POINT.y * wrap.clientHeight;
 
     const px = nx * wrap.clientWidth;
     const py = ny * wrap.clientHeight;
 
     const dist = Math.hypot(px - tpx, py - tpy);
     return dist < 25; // радиус завершения маршрута
-  }
+  }, []);
+
+  const evaluateRoute = useCallback(() => {
+    const wrap = wrapRef.current;
+    const rac = racTextRef.current;
+    if (!wrap || !rac) return;
+
+    if (route.length < 2) {
+      rac.innerHTML = t.day3Sail.mapSpeech.routeTooShort;
+      return;
+    }
+
+    const touchedSeas = new Set<string>();
+
+    const pointsToCheck = route.slice(0, -1);
+    const r = wrap.getBoundingClientRect();
+
+    for (const p of pointsToCheck) {
+      if (isNearTarget(p.x, p.y)) {
+        continue;
+      }
+      const screenX = r.left + p.x * r.width;
+      const screenY = r.top + p.y * r.height;
+
+      const el = document.elementFromPoint(screenX, screenY);
+      if (!el) continue;
+
+      const hit = (el as HTMLElement).closest("[id]") as HTMLElement | null;
+
+      if (hit && hit.id && hit.id !== "__next") {
+        touchedSeas.add(hit.id);
+      }
+    }
+
+    const seas = [...touchedSeas].map(id => translateSea(id, lang)).join(", ");
+    rac.innerHTML = t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas);
+  }, [isNearTarget, lang, racTextRef, route, t.day3Sail.mapSpeech.routeThroughSeas, t.day3Sail.mapSpeech.routeTooShort]);
 
   // Универсальная проверка точки маршрута
   function validatePoint(nx: number, ny: number) {
@@ -242,53 +281,11 @@ export default function SeaMap({
   //   ПРОВЕРКА МАРШРУТА ПО МОРЯМ
   // ===========================
 
-  function evaluateRoute() {
-    const wrap = wrapRef.current;
-    const rac = racTextRef.current;
-    if (!wrap || !rac) return;
-
-    if (route.length < 2) {
-      rac.innerHTML = t.day3Sail.mapSpeech.routeTooShort;
-      return;
-    }
-
-    const touchedSeas = new Set<string>();
-
-    // берём все точки кроме последней
-    const pointsToCheck = route.slice(0, -1);
-
-    const r = wrap.getBoundingClientRect();
-
-    for (const p of pointsToCheck) {
-      // если точка лежит в радиусе красного пина — игнорируем
-      if (isNearTarget(p.x, p.y)) {
-        continue;
-      }
-      const screenX = r.left + p.x * r.width;
-      const screenY = r.top + p.y * r.height;
-
-      const el = document.elementFromPoint(screenX, screenY);
-      if (!el) continue;
-
-      const hit = (el as HTMLElement).closest("[id]") as HTMLElement | null;
-
-      if (hit && hit.id) {
-        if (hit.id !== "__next") {
-          touchedSeas.add(hit.id);
-        }
-      }
-    }
-
-    // Если дошли сюда — маршрут успешный
-    const seas = [...touchedSeas].map(id => translateSea(id, lang)).join(", ");
-    rac.innerHTML = t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas);
-  }
-
   // ===========================
   //   УДАЛИТЬ МАРШРУТ
   // ===========================
 
-  function resetRoute() {
+  const resetRoute = useCallback(() => {
     setRoute([]);
     setRouteFinished(false);
 
@@ -296,7 +293,7 @@ export default function SeaMap({
     if (rac) {
       rac.innerHTML = t.day3Sail.mapSpeech.resetPrompt;
     }
-  }
+  }, [racTextRef, t.day3Sail.mapSpeech.resetPrompt]);
 
   useEffect(() => {
     const rac = racTextRef.current;
@@ -315,28 +312,28 @@ export default function SeaMap({
     return () => {
       rac.removeEventListener("click", handleClick);
     };
-  }, []);
+  }, [racTextRef, resetRoute]);
 
   // ===========================
   // DRAG-логика для точек
   // ===========================
 
-  function makeDraggable(
+  const makeDraggable = useCallback((
     ref: React.RefObject<HTMLDivElement | null>,
     setter: (xy: { x: number; y: number }) => void
-  ) {
+  ) => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) return () => {};
 
     let dragging = false;
 
-    el.addEventListener("pointerdown", (e) => {
+    const handlePointerDown = (e: PointerEvent) => {
       e.stopPropagation();
       dragging = true;
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    });
+    };
 
-    el.addEventListener("pointermove", (e) => {
+    const handlePointerMove = (e: PointerEvent) => {
       e.stopPropagation();
       if (!(e.buttons & 1)) return;
       if (!dragging) return;
@@ -357,11 +354,24 @@ export default function SeaMap({
         setHasStartPoint(true);
         resetRoute();
       }
-    });
+    };
 
-    el.addEventListener("pointerup", () => (dragging = false));
-    el.addEventListener("pointercancel", () => (dragging = false));
-  }
+    const stopDragging = () => {
+      dragging = false;
+    };
+
+    el.addEventListener("pointerdown", handlePointerDown);
+    el.addEventListener("pointermove", handlePointerMove);
+    el.addEventListener("pointerup", stopDragging);
+    el.addEventListener("pointercancel", stopDragging);
+
+    return () => {
+      el.removeEventListener("pointerdown", handlePointerDown);
+      el.removeEventListener("pointermove", handlePointerMove);
+      el.removeEventListener("pointerup", stopDragging);
+      el.removeEventListener("pointercancel", stopDragging);
+    };
+  }, [resetRoute]);
 
   // ===========================
   //   Монтирование SVG-карты
@@ -381,28 +391,27 @@ export default function SeaMap({
   useEffect(() => {
     if (!svgLoaded) return;
 
-    const container = svgContainerRef.current;
-    if (!container) return;
-
-    makeDraggable(startPinRef, setStart);
+    const cleanupDrag = makeDraggable(startPinRef, setStart);
 
     window.addEventListener("resize", layoutPins);
+    layoutPins();
 
     return () => {
+      cleanupDrag();
       window.removeEventListener("resize", layoutPins);
     };
-  }, [svgLoaded]);
+  }, [layoutPins, makeDraggable, svgLoaded]);
 
   // Обновлять позицию пинов при изменении координат
   useEffect(() => {
     layoutPins();
-  }, [start, target]);
+  }, [layoutPins]);
 
   useEffect(() => {
     if (routeFinished) {
       evaluateRoute();
     }
-  }, [routeFinished, route]);
+  }, [evaluateRoute, routeFinished]);
 
   // ===========================
   //    РЕНДЕР

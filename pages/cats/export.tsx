@@ -152,7 +152,7 @@ export default function StudioExportPage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [router]);
+  }, [lang, router]);
 
   async function startRecording() {
     if (isRecording) return;

@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface AboutContentProps {
   mode: "preview" | "section";
   title: string;
@@ -50,10 +52,13 @@ export default function AboutContent({
           <p>{preview}</p>
         </div>
         {icon && (
-          <img
+          <Image
             src={icon}
             alt=""
             className="about-card-sticker"
+            width={140}
+            height={140}
+            unoptimized
           />
         )}
       </div>
@@ -68,7 +73,7 @@ export default function AboutContent({
           <h2>{title}</h2>
           {image && (
             <div className="about-author-image">
-              <img src={image} alt={title} />
+              <Image src={image} alt={title} width={420} height={420} unoptimized />
             </div>
           )}
           {full && (

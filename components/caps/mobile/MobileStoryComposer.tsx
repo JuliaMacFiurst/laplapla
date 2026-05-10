@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
 import TranslationWarning from "@/components/TranslationWarning";
@@ -291,7 +292,7 @@ export default function MobileStoryComposer({
                   >
                     <div className="story-hero-card-media">
                       {previewUrl ? (
-                        <img src={previewUrl} alt={option.heroName} />
+                        <Image src={previewUrl} alt={option.heroName} width={160} height={160} unoptimized />
                       ) : (
                         <div className="story-hero-card-fallback">{option.heroName.slice(0, 1).toUpperCase()}</div>
                       )}

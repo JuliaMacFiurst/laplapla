@@ -666,7 +666,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
 
       return nextDraft;
     });
-  }, [draft.currentStep, heroName, texts.narrationAuto, texts.validationAnswerShort]);
+  }, [draft.currentStep, heroName, texts]);
 
   useEffect(() => {
     if (draft.loading.assembling && draft.mode === "custom" && draft.currentStep === null && draft.accumulatedStory.length === STORY_STEP_KEYS.length) {

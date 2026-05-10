@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useRouter } from "next/router";
 import type { Lang } from "@/i18n";
 import { dictionaries } from "@/i18n";
@@ -22,7 +23,7 @@ export default function MobileQuestSelectScreen({
   const getMobileQuestImage = (quest: Quest) =>
     quest.id === "quest-1"
       ? "https://wazoncnmsxbjzvbjenpw.supabase.co/storage/v1/object/public/quests/1_quest/images/quest-1-mobile.webp"
-      : quest.image;
+      : quest.image || "/images/quest-placeholder.webp";
 
   const openQuest = (quest: Quest) => {
     if (quest.status !== "active") {
@@ -76,7 +77,13 @@ export default function MobileQuestSelectScreen({
                 disabled={!isActive}
                 aria-label={isActive ? t.playQuest : quest.title}
               >
-                <img src={getMobileQuestImage(quest)} alt={quest.title || ""} />
+                <Image
+                  src={getMobileQuestImage(quest)}
+                  alt={quest.title || ""}
+                  fill
+                  unoptimized
+                  className="raccoons-mobile-quest-poster-image"
+                />
                 <span className="raccoons-mobile-quest-number">
                   {String(index + 1).padStart(2, "0")}
                 </span>

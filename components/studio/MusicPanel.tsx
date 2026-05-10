@@ -207,7 +207,7 @@ export default function MusicPanel({
 
   useEffect(() => {
     onTracksChange?.(activeTracks);
-  }, [activeTracks]);
+  }, [activeTracks, onTracksChange]);
 
   useEffect(() => {
     return () => {

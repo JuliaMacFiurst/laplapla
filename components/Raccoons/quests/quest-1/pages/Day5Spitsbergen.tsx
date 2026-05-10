@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { PageId } from "../QuestEngine";
 import { useState } from "react";
 import { useQuest1I18n } from "../i18n";
@@ -32,10 +33,13 @@ return (
     <div className="quest-page-bg">
             <div className="polar-scenery" aria-hidden />
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
         <h1 className="quest-title-text">{t.day5Spitsbergen.title}</h1>
       </div>
@@ -44,10 +48,13 @@ return (
 
       <div className="spitsbergen-station">
         {/* фон станции */}
-        <img
+        <Image
           className="station-bg"
           src="/supabase-storage/quests/1_quest/images/Spitzbergen-station.webp"
           alt={t.day5Spitsbergen.stationImageAlt}
+          width={1616}
+          height={909}
+          unoptimized
         />
 
         {/* центральное видео со снегом / туристами */}
@@ -112,20 +119,26 @@ return (
         >
           <div className="ice-button" onClick={() => go("day6_expedition")}>
             {/* льдина */}
-            <img
+            <Image
               className="ice"
               src="/quests/assets/buttons/ice-button-bg.svg"
               alt=""
+              width={720}
+              height={180}
+              unoptimized
             />
 
             {/* текст */}
             <div className="ice-text">{t.day5Spitsbergen.nextButton}</div>
 
             {/* пингвин */}
-            <img
+            <Image
               className="penguin"
               src="/supabase-storage/characters/other/penguin.gif"
               alt=""
+              width={92}
+              height={92}
+              unoptimized
             />
           </div>
         </div>

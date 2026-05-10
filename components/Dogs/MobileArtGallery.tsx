@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import MobileSlideshowViewer from "@/components/studio/mobile/MobileSlideshowViewer";
 import { useMobileSlideshow } from "@/components/studio/mobile/useMobileSlideshow";
@@ -55,6 +55,7 @@ export default function MobileArtGallery({
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [loading, setLoading] = useState(false);
   const [usedArtworkIds, setUsedArtworkIds] = useState<string[]>([]);
+  const usedArtworkIdsRef = useRef<string[]>([]);
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(
     null,
   );
@@ -88,7 +89,11 @@ export default function MobileArtGallery({
   const moreArtistsLabel =
     lang === "he" ? "עוד על אמנים" : lang === "en" ? "More about artists" : "Еще про художников";
 
-  const buildSlidesForArtwork = async (nextArtwork: Artwork) => {
+  useEffect(() => {
+    usedArtworkIdsRef.current = usedArtworkIds;
+  }, [usedArtworkIds]);
+
+  const buildSlidesForArtwork = useCallback(async (nextArtwork: Artwork) => {
     const sentences = splitIntoSentences(nextArtwork.description);
     const imageQueue = nextArtwork.image_url.filter(Boolean);
     const usedUrls = new Set(imageQueue);
@@ -128,15 +133,15 @@ export default function MobileArtGallery({
     }
 
     return nextSlides;
-  };
+  }, [fallbackHints]);
 
-  const loadArtwork = async () => {
+  const loadArtwork = useCallback(async () => {
     setLoading(true);
     mobileSlideshow.open({ loading: true });
 
     try {
       const response = await fetch(
-        `/api/art-gallery?categorySlug=${encodeURIComponent(categorySlug)}&lang=${lang}&excludeIds=${encodeURIComponent(usedArtworkIds.join(","))}`,
+        `/api/art-gallery?categorySlug=${encodeURIComponent(categorySlug)}&lang=${lang}&excludeIds=${encodeURIComponent(usedArtworkIdsRef.current.join(","))}`,
       );
       const payload = (await response.json()) as {
         artwork: Artwork | null;
@@ -162,17 +167,18 @@ export default function MobileArtGallery({
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildSlidesForArtwork, categorySlug, lang, mobileSlideshow, onClose]);
 
   useEffect(() => {
     if (!isOpen) {
       mobileSlideshow.close();
+      usedArtworkIdsRef.current = [];
       setUsedArtworkIds([]);
       return;
     }
 
     void loadArtwork();
-  }, [isOpen, categorySlug, lang]);
+  }, [isOpen, loadArtwork, mobileSlideshow]);
 
   const handleFindNewImage = async (slideIndex: number) => {
     const slide = mobileSlideshow.slides[slideIndex];

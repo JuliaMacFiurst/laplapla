@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -6,6 +7,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
+import Image from "next/image";
 import { fallbackImages } from "@/constants";
 import { dictionaries, type Lang } from "@/i18n";
 import type { CarouselStory } from "@/types/types";
@@ -55,13 +57,13 @@ export default function MobileStoryCarousel({
 }: MobileStoryCarouselProps) {
   const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
   const slideCount = story.slides.length;
-  const clampSlideIndex = (value: number) => {
+  const clampSlideIndex = useCallback((value: number) => {
     if (slideCount <= 0) {
       return 0;
     }
 
     return Math.min(Math.max(value, 0), slideCount - 1);
-  };
+  }, [slideCount]);
 
   const [slideIndex, setSlideIndex] = useState(() => clampSlideIndex(initialSlideIndex));
   const [dragOffset, setDragOffset] = useState(0);
@@ -97,7 +99,7 @@ export default function MobileStoryCarousel({
     isDraggingRef.current = false;
     activeTouchIdRef.current = null;
     gestureAxisRef.current = "pending";
-  }, [initialSlideIndex, story.id, slideCount]);
+  }, [clampSlideIndex, initialSlideIndex, story.id]);
 
   useEffect(() => {
     slideIndexRef.current = slideIndex;
@@ -299,7 +301,13 @@ export default function MobileStoryCarousel({
     if (!showEmptyError) {
       return (
         <div className="mobile-story-carousel mobile-story-carousel-loading">
-          <img className="capybara-spinner" src="/spinners/capybara-spinner.webp" alt={story?.title || emptyMessage || "illustration"} />
+          <Image
+            className="capybara-spinner"
+            src="/spinners/capybara-spinner.webp"
+            alt={story?.title || emptyMessage || "illustration"}
+            width={120}
+            height={120}
+          />
         </div>
       );
     }
@@ -346,10 +354,13 @@ export default function MobileStoryCarousel({
                         playsInline
                       />
                     ) : (
-                      <img
+                      <Image
                         src={mediaUrl}
                         alt={media?.capybaraImageAlt || slide.text?.trim() || story.title || "illustration"}
                         className="mobile-story-media-asset"
+                        width={768}
+                        height={768}
+                        unoptimized
                         draggable={false}
                       />
                     )}

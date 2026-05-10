@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Image from "next/image";
 import { useRouter } from 'next/router';
 import BackButton from '../../components/BackButton';
 import SEO from "@/components/SEO";
@@ -69,7 +70,14 @@ export default function LessonsPage() {
           {lessons.map((lesson) => (
             <div key={lesson.id} className="lesson-card">
               {lesson.preview ? (
-                <img src={lesson.preview} alt={lesson.title} className="lesson-image" />
+                <Image
+                  src={lesson.preview}
+                  alt={lesson.title}
+                  className="lesson-image"
+                  width={512}
+                  height={512}
+                  unoptimized
+                />
               ) : (
                 <div className="lesson-image lesson-image--placeholder">{t.noPreview}</div>
               )}

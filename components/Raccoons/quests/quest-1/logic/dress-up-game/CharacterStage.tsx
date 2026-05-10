@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { AMATIC_FONT_FAMILY, NUNITO_FONT_FAMILY } from "@/lib/fonts";
 import ClothesConveyor, { ClothesItem } from "./ClothesConveyor";
@@ -206,10 +207,13 @@ export default function CharacterStage({
   return (
     <div className="dressup-stage">
       <div className="dressup-content">
-        <img
+        <Image
           src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Scoreboard.webp"
           alt="scoreboard"
           className="dressup-scoreboard"
+          width={220}
+          height={120}
+          unoptimized
         />
         <div className="dressup-scoreboard-values">
           <div className="good-score">+{goodScore}</div>
@@ -221,15 +225,21 @@ export default function CharacterStage({
             .replace("{total}", String(totalCharacters))}
         </div>
         <div className="dressup-stopwatch">
-          <img
+          <Image
             src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Stopwatch.webp"
             alt=""
             className="stopwatch-bg"
+            width={100}
+            height={100}
+            unoptimized
           />
-          <img
+          <Image
             src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Stopwatch-hand.webp"
             alt=""
             className="stopwatch-hand"
+            width={47}
+            height={47}
+            unoptimized
             style={{ transform: `rotate(${handRotation}deg)` }}
           />
           <div className="stopwatch-digits">{timeLeft}</div>
@@ -242,21 +252,27 @@ export default function CharacterStage({
           data-testid="dressup-dropzone"
         >
           <div className="dressup-character-wrapper">
-            <img
+            <Image
               src={current.img}
               alt={current.name}
               className="dressup-character"
+              width={800}
+              height={1200}
+              unoptimized
             />
             {dressedItems.map(({ id, season }) => {
               const src = `/supabase-storage/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
               devLog("[DressUp][RENDER] dressed item:", id, src);
 
               return (
-                <img
+                <Image
                   key={id}
                   src={src}
                   className={`dressup-clothing dressup-${id}`}
                   alt=""
+                  width={800}
+                  height={1200}
+                  unoptimized
                   onLoad={() => devLog("[DressUp][IMG LOADED]", src)}
                   onError={() => console.error("[DressUp][IMG ERROR]", src)}
                 />
@@ -307,18 +323,24 @@ export default function CharacterStage({
         )}
 
         {/* ЛЕНТА С ОДЕЖДОЙ И КНОПКА СТАРТ */}
-        <img
+        <Image
           src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Clothing-distribution-belt.webp"
           alt="clothes belt"
           className="dressup-belt"
+          width={1600}
+          height={240}
+          unoptimized
         />
         {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
         {!timerRunning &&
           (characterLoading ? (
-            <img
+            <Image
               src="/spinners/game-spinner.webp"
               alt="loading"
               className="dressup-spinner"
+              width={160}
+              height={160}
+              unoptimized
             />
           ) : (
             <button onClick={startGame} className="dressup-start-btn" />
@@ -327,10 +349,13 @@ export default function CharacterStage({
         {!timerRunning &&
           dressedItems.length > 0 &&
           (characterLoading ? (
-            <img
+            <Image
               src="/spinners/game-spinner.webp"
               alt="loading"
               className="dressup-spinner"
+              width={160}
+              height={160}
+              unoptimized
             />
           ) : (
             <button

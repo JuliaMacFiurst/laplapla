@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { dictionaries, type Lang } from "../../i18n";
 import { VideoItem } from "../../content/videos";
 
@@ -64,7 +65,7 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
             aria-label={t.openVideo ?? "Открыть видео"}
           >
             <div className="short-thumbnail">
-              <img src={thumbnail} alt={shortTitle || "illustration"} loading="lazy" />
+              <Image src={thumbnail} alt={shortTitle || "illustration"} width={320} height={568} loading="lazy" unoptimized />
               <span className="short-play-icon">▶</span>
             </div>
 

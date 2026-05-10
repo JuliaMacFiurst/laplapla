@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 type LoopPad = {
@@ -81,10 +82,13 @@ export default function LoopPadGrid({
           className={`loop-pad-grid__pad ${loop.isActive ? "is-active" : "is-disabled"} ${changedLoopId === loop.id ? "is-changed" : ""}`}
         >
           <div className="loop-pad-grid__media-wrap">
-            <img
+            <Image
               src={loop.iconSrc}
               alt=""
               className={`loop-pad-grid__icon ${loop.isActive ? "is-bouncing" : ""}`}
+              width={72}
+              height={72}
+              unoptimized
             />
             <span className="loop-pad-grid__type" style={{ background: TYPE_TINT[loop.type] }}>
               {typeLabels[loop.type] ?? TYPE_LABEL[loop.type]}

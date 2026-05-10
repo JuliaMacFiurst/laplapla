@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReplayEngine } from "./ReplayEngine";
 import type { ReplayActionGroup, ReplayRegionData } from "./types";
 
@@ -132,7 +132,7 @@ export default function ReplayCanvas({
     onClose?.();
   };
 
-  const exportVideo = async () => {
+  const exportVideo = useCallback(async () => {
     const engine = engineRef.current;
     if (!engine) return false;
 
@@ -154,9 +154,9 @@ export default function ReplayCanvas({
     } finally {
       setBusy(false);
     }
-  };
+  }, [onExportComplete]);
 
-  const exportGIF = async () => {
+  const exportGIF = useCallback(async () => {
     const engine = engineRef.current;
     if (!engine) return false;
 
@@ -183,7 +183,7 @@ export default function ReplayCanvas({
     } finally {
       setBusy(false);
     }
-  };
+  }, [onExportComplete]);
 
   useEffect(() => {
     if (!autoExport || !hasActions || busy) return;
@@ -205,7 +205,7 @@ export default function ReplayCanvas({
     }, 200);
 
     return () => window.clearTimeout(timer);
-  }, [autoExport, busy, hasActions]);
+  }, [autoExport, busy, exportGIF, exportVideo, hasActions, onAutoExportDone]);
 
   return (
     <div className="replay-root">

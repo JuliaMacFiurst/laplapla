@@ -167,14 +167,16 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
 
   // При размонтировании компонента останавливаем всё
   useEffect(() => {
+    const audioMap = audioMapRef.current;
+
     return () => {
       stopAll();
-      for (const audio of audioMapRef.current.values()) {
+      for (const audio of audioMap.values()) {
         if (audio.parentElement) {
           audio.parentElement.removeChild(audio);
         }
       }
-      audioMapRef.current.clear();
+      audioMap.clear();
       tracksRef.current = [];
     };
   }, []);

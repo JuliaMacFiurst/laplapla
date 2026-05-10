@@ -35,6 +35,10 @@ interface SpawnedObstacle extends ObstacleInstance {
   yOffset?: number; // процент от высоты сцены, например 0.03
 }
 
+const TRACK_LANES: TrackLane[] = ["upper", "lower"];
+const OBSTACLE_BAG: ObstacleType[] = ["tree", "trees", "log", "ice", "stakes", "snowdrift"];
+const BASE_SPAWN_STEP = 900;
+
 function createObstacle(type: ObstacleType, lane: TrackLane, x: number): SpawnedObstacle {
   const definition = OBSTACLES[type];
   if (!definition) {
@@ -62,28 +66,17 @@ export function useObstacles(
   obstacleRateMultiplier: number = 1,
   blockedSegments: BlockedSegment[] = []
 ): SpawnedObstacle[] {
-  const blockedKey = useMemo(() => {
-    return blockedSegments
-      .map((seg) => `${seg.fromX}:${seg.toX}:${seg.blocksLane}`)
-      .join("|");
-  }, [blockedSegments]);
-
   const stableBlockedSegments = useMemo(() => {
     return blockedSegments.map((seg) => ({
       fromX: seg.fromX,
       toX: seg.toX,
       blocksLane: seg.blocksLane,
     }));
-  }, [blockedKey]);
+  }, [blockedSegments]);
 
   const [spawned, setSpawned] = useState<SpawnedObstacle[]>([]);
   const nextSpawnX = useRef(0);
   const shuffledBag = useRef<ObstacleType[]>([]);
-
-  // базовый шаг спавна препятствий (px)
-  const BASE_SPAWN_STEP = 900;
-  const LANES: TrackLane[] = ["upper", "lower"];
-  const BAG: ObstacleType[] = ["tree", "trees", "log", "ice", "stakes", "snowdrift"];
 
   function shuffleArray<T>(array: T[]): T[] {
     const arr = array.slice();
@@ -102,7 +95,7 @@ export function useObstacles(
     }
 
     if (shuffledBag.current.length === 0) {
-      shuffledBag.current = shuffleArray(BAG);
+      shuffledBag.current = shuffleArray(OBSTACLE_BAG);
     }
 
     let newObstacles = [...spawned];
@@ -110,11 +103,11 @@ export function useObstacles(
 
     while (nextSpawnX.current < spawnAnchorX + stageWidth * 2) {
       if (shuffledBag.current.length === 0) {
-        shuffledBag.current = shuffleArray(BAG);
+        shuffledBag.current = shuffleArray(OBSTACLE_BAG);
       }
 
       const type = shuffledBag.current.pop()!;
-      const lane = LANES[laneIndex % 2];
+      const lane = TRACK_LANES[laneIndex % 2];
 
       const definition = OBSTACLES[type];
       const hitRadius = definition?.hitRadius ?? 0;
@@ -148,7 +141,7 @@ export function useObstacles(
       if (prev.length === newObstacles.length) return prev;
       return newObstacles;
     });
-  }, [spawnAnchorX, stageWidth, stageHeight, obstacleRateMultiplier, stableBlockedSegments]);
+  }, [spawnAnchorX, spawned, stageWidth, stageHeight, obstacleRateMultiplier, stableBlockedSegments]);
 
   return spawned;
 }

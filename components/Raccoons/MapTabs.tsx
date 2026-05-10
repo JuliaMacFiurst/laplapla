@@ -1,19 +1,51 @@
-
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
 
+type MapTabId =
+  | "country"
+  | "river"
+  | "sea"
+  | "physic"
+  | "flag"
+  | "animal"
+  | "culture"
+  | "weather"
+  | "food";
+
 type MapTabsProps = {
-  selectedTab: "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food";
-  setSelectedTab: (
-    tab: "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food"
-  ) => void;
+  selectedTab: MapTabId;
+  setSelectedTab: (tab: MapTabId) => void;
+};
+
+const TAB_ICONS: Record<MapTabId, string> = {
+  country: "/icons/map-icons/countries.webp",
+  river: "/icons/map-icons/rivers.webp",
+  sea: "/icons/map-icons/sea.webp",
+  physic: "/icons/map-icons/mountaines.webp",
+  flag: "/icons/map-icons/flags.webp",
+  animal: "/icons/map-icons/animals.webp",
+  culture: "/icons/map-icons/culture.webp",
+  weather: "/icons/map-icons/weather.webp",
+  food: "/icons/map-icons/food.webp",
 };
 
 const MapTabs = ({ selectedTab, setSelectedTab }: MapTabsProps) => {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const t = dictionaries[lang].raccoons.tabs;
+  const tabs: Array<{ id: MapTabId; label: string }> = [
+    { id: "country", label: t.country },
+    { id: "river", label: t.river },
+    { id: "sea", label: t.sea },
+    { id: "physic", label: t.physic },
+    { id: "flag", label: t.flag },
+    { id: "animal", label: t.animal },
+    { id: "culture", label: t.culture },
+    { id: "weather", label: t.weather },
+    { id: "food", label: t.food },
+  ];
 
   return (
     <div className="map-tabs">
@@ -22,69 +54,23 @@ const MapTabs = ({ selectedTab, setSelectedTab }: MapTabsProps) => {
 
       {/* Вкладки */}
       <div className="map-tab-wrapper">
-        <button
-          onClick={() => setSelectedTab("country")}
-          className={`map-tab ${selectedTab === "country" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/countries.webp" alt={t.country} className="map-tab-icon" />
-          {t.country}
-        </button>
-        <button
-          onClick={() => setSelectedTab("river")}
-          className={`map-tab ${selectedTab === "river" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/rivers.webp" alt={t.river} className="map-tab-icon" />
-          {t.river}
-        </button>
-        <button
-          onClick={() => setSelectedTab("sea")}
-          className={`map-tab ${selectedTab === "sea" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/sea.webp" alt={t.sea} className="map-tab-icon" />
-          {t.sea}
-        </button>
-        <button
-          onClick={() => setSelectedTab("physic")}
-          className={`map-tab ${selectedTab === "physic" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/mountaines.webp" alt={t.physic} className="map-tab-icon" />
-          {t.physic}
-        </button>
-        <button
-          onClick={() => setSelectedTab("flag")}
-          className={`map-tab ${selectedTab === "flag" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/flags.webp" alt={t.flag} className="map-tab-icon" />
-          {t.flag}
-        </button>
-        <button
-          onClick={() => setSelectedTab("animal")}
-          className={`map-tab ${selectedTab === "animal" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/animals.webp" alt={t.animal} className="map-tab-icon" />
-          {t.animal}
-        </button>
-        <button
-          onClick={() => setSelectedTab("culture")}
-          className={`map-tab ${selectedTab === "culture" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/culture.webp" alt={t.culture} className="map-tab-icon" />
-          {t.culture}
-        </button>
-        <button
-          onClick={() => setSelectedTab("weather")}
-          className={`map-tab ${selectedTab === "weather" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/weather.webp" alt={t.weather} className="map-tab-icon" />
-          {t.weather}
-        </button>
-        <button
-          onClick={() => setSelectedTab("food")}
-          className={`map-tab ${selectedTab === "food" ? "active" : ""}`}
-        >
-          <img src="/icons/map-icons/food.webp" alt={t.food} className="map-tab-icon" />
-          {t.food}
-        </button>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id)}
+            className={`map-tab ${selectedTab === tab.id ? "active" : ""}`}
+          >
+            <Image
+              src={TAB_ICONS[tab.id]}
+              alt={tab.label}
+              width={30}
+              height={30}
+              className="map-tab-icon"
+              unoptimized
+            />
+            {tab.label}
+          </button>
+        ))}
       </div>
     </div>
   );

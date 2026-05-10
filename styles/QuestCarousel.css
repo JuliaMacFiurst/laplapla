@@ -21,7 +21,7 @@
   background-color: #eef4f7; /* подложка */
 }
 
-.quest-card.featured .quest-image img {
+.quest-card.featured .quest-image .quest-image-media {
   width: 100%;
   height: 100%;
 

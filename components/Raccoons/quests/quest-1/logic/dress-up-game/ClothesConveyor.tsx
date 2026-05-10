@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 export interface ClothesItem {
@@ -69,10 +70,13 @@ export default function ClothesConveyor({
   <div className="clothes-conveyor">
     <div ref={trackRef} className="clothes-conveyor-track">
       {doubled.map((item, index) => (
-        <img
+        <Image
           key={`${item.id}-${index}`}
           src={item.img}
           alt={getClothingAlt(item.id)}
+          width={140}
+          height={140}
+          unoptimized
           className="conveyor-item"
           onPointerDown={(e) => {
             const cleanId = item.id.replace(/-dressed$/, "");

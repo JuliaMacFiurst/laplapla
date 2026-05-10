@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useAutoFontSize } from "@/hooks/useAutoFontSize";
 import { dictionaries, type Lang } from "@/i18n";
@@ -81,10 +82,12 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     if (!showError) {
       return (
         <div className="story-wrapper story-wrapper-loading" style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <img 
+          <Image
             className="capybara-spinner"
             src="/spinners/capybara-spinner.webp"
             alt={story?.title || emptyMessage || "illustration"}
+            width={120}
+            height={120}
             style={{ width: "120px", height: "120px", objectFit: "contain" }}
           />
         </div>
@@ -133,10 +136,12 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     if (!currentSlide || !hasMedia) {
       return (
         <div className="story-media-placeholder">
-          <img
+          <Image
             className="capybara-spinner"
             src="/spinners/capybara-spinner.webp"
             alt={currentSlideAlt}
+            width={120}
+            height={120}
           />
         </div>
       );
@@ -144,10 +149,13 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
 
     if (currentMedia?.type === "image" && currentMedia.capybaraImage) {
       return (
-        <img
+        <Image
           className={`story-image${classNameSuffix}`}
           src={currentMedia.capybaraImage}
           alt={currentMedia.capybaraImageAlt || currentSlideAlt}
+          width={1200}
+          height={1200}
+          unoptimized
           onLoad={(event) => {
             const image = event.currentTarget;
             setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
@@ -158,10 +166,13 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
 
     if (currentMedia?.type === "gif" && currentMedia.gifUrl) {
       return (
-        <img
+        <Image
           className={`story-image${classNameSuffix}`}
           src={currentMedia.gifUrl}
           alt={currentSlideAlt}
+          width={1200}
+          height={1200}
+          unoptimized
           onLoad={(event) => {
             const image = event.currentTarget;
             setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
@@ -189,10 +200,13 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
 
     if (currentMedia?.imageUrl) {
       return (
-        <img
+        <Image
           src={currentMedia.imageUrl}
           alt={currentSlideAlt}
           className={`story-image${classNameSuffix}`}
+          width={1200}
+          height={1200}
+          unoptimized
           onLoad={(event) => {
             const image = event.currentTarget;
             setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
@@ -202,10 +216,12 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     }
 
     return (
-      <img
+      <Image
         className={`story-image${classNameSuffix}`}
         src={fallback}
         alt={currentSlideAlt}
+        width={1200}
+        height={1200}
         onLoad={(event) => {
           const image = event.currentTarget;
           setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);

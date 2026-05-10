@@ -90,9 +90,14 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
     () => styleRecords.find((item) => item.id === activeId) ?? styleRecords[0] ?? null,
     [activeId, styleRecords],
   );
-  const storySlides = preset?.slides?.length
-    ? preset.slides
-    : [{ text: t.story.fallbackSilent }];
+  const storySlides = useMemo(
+    () => (
+      preset?.slides?.length
+        ? preset.slides
+        : [{ text: t.story.fallbackSilent }]
+    ),
+    [preset?.slides, t.story.fallbackSilent],
+  );
   const [musicConfig, setMusicConfig] = useState<MusicConfig>({
     styleSlug: activeId,
     layers: {},

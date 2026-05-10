@@ -1,5 +1,6 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { GetStaticProps } from "next";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
 import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
@@ -702,7 +703,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
               {lang !== "ru" && activePreset?.translated === false ? <TranslationWarning lang={lang} /> : null}
               {loading ? (
                 <div className="cat-spinner-wrapper">
-                  <img
+                  <Image
                     src="/spinners/CatSpinner.svg"
                     alt="Котик думает..."
                     width={64}
@@ -728,10 +729,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
                             <source src={slide.image} type="video/mp4" />
                           </video>
                         ) : (
-                          <img
+                          <Image
                             src={slide.image}
                             alt={slide.text || "illustration"}
                             className="cat-slide-image"
+                            width={768}
+                            height={768}
+                            unoptimized
                           />
                         )}
 
@@ -769,8 +773,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
               </div>
             ) : null}
 
-            <img src="/cat/mouse-hanging.webp" alt="" className="hanging-mouse" />
-            <img src="/cat/ball.webp" alt="" className="rolling-ball" />
+            <Image src="/cat/mouse-hanging.webp" alt="" className="hanging-mouse" width={140} height={240} />
+            <Image src="/cat/ball.webp" alt="" className="rolling-ball" width={120} height={120} />
           </>
         )}
       </CatsLayout>

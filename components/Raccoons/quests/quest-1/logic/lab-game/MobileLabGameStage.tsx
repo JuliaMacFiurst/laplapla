@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, type CSSProperties } from "react";
 import { useQuest1I18n } from "../../i18n";
 import {
@@ -118,9 +119,12 @@ export default function MobileLabGameStage() {
               aria-label={`Lane ${lane.laneIndex + 1}`}
             >
               {lane.item ? (
-                <img
+                <Image
                   src={`${BASE_URL}/${lane.item.id}.webp`}
                   alt={lane.item.label}
+                  width={92}
+                  height={92}
+                  unoptimized
                   className={`quest-mobile-lab-item ${lane.status ? `is-${lane.status}` : ""}`}
                   style={{ "--lab-item-y": `${lane.y}px` } as CSSProperties}
                 />
@@ -147,7 +151,7 @@ export default function MobileLabGameStage() {
               }}
             />
           ) : (
-            <img src={BACKPACK_IMAGE_URL} alt="" />
+            <Image src={BACKPACK_IMAGE_URL} alt="" width={150} height={104} unoptimized />
           )}
         </div>
 
@@ -182,10 +186,13 @@ export default function MobileLabGameStage() {
             <p>{t.day5Lab.gameFinal.backpackCaption}</p>
             <div className="quest-mobile-lab-caught">
               {caughtThings.map((item) => (
-                <img
+                <Image
                   key={item.id}
                   src={`${BASE_URL}/${item.id}.webp`}
                   alt={item.label}
+                  width={46}
+                  height={46}
+                  unoptimized
                 />
               ))}
             </div>

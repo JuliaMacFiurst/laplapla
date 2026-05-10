@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
@@ -139,7 +140,7 @@ function QuestMobileMedia({
       {type === "video" ? (
         <video src={src} autoPlay muted loop playsInline />
       ) : (
-        <img src={src} alt={alt} />
+        <Image src={src} alt={alt} width={1280} height={800} unoptimized />
       )}
     </div>
   );
@@ -1296,9 +1297,12 @@ function Day5SpitsbergenMobile({ go }: MobilePageProps) {
 
       <section className="quest-mobile-station" aria-label={t.day5Spitsbergen.title}>
         <div className="quest-mobile-station-visual">
-          <img
+          <Image
             src="/supabase-storage/quests/1_quest/images/Spitzbergen-station.webp"
             alt={t.day5Spitsbergen.stationImageAlt}
+            width={1616}
+            height={909}
+            unoptimized
           />
           <video
             autoPlay

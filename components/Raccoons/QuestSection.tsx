@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React from 'react';
 import { useRouter } from 'next/router';
 import { QuestCarousel } from './QuestCarousel';
@@ -62,6 +63,7 @@ export const FeaturedQuestCard: React.FC<QuestCardProps> = ({ quest }) => {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const t = dictionaries[lang].raccoons.quests;
+  const imageSrc = quest.image || '/images/quest-placeholder.webp';
 
   const handlePlayClick = () => {
   if (quest.status !== 'active') return;
@@ -78,12 +80,16 @@ export const FeaturedQuestCard: React.FC<QuestCardProps> = ({ quest }) => {
 
   return (
     <div className="quest-card featured">
-      {/* картинка */}
       <div className="quest-image">
-         <img src={quest.image} alt={quest.title} /> 
+        <Image
+          src={imageSrc}
+          alt={quest.title || ''}
+          fill
+          unoptimized
+          className="quest-image-media"
+        />
       </div>
 
-      {/* текст */}
       <div className="quest-content">
         <h3>{quest.title}</h3>
         <p>{quest.subtitle}</p>

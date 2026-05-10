@@ -1,6 +1,7 @@
 "use client";
 
 import type { PageId } from "../../QuestEngine";
+import Image from "next/image";
 import { useState } from "react";
 import  DogsSledSVG  from "../../logic/dog-sled-game/DogsSledSVG";
 import PreparationPopup from "../../logic/dog-sled-game/PreparationPopup";
@@ -105,10 +106,13 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
   return (
     <div className="quest-page-bg">
       <div className="quest-title-wrapper">
-      <img
+      <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
         <h1 className="quest-title-text">{t.day5Garage.title}</h1>
       </div>
@@ -236,20 +240,26 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
           >
             <div className="ice-button" onClick={() => go("day5_spitsbergen")}>
               {/* льдина */}
-              <img
+              <Image
                 className="ice"
                 src="/quests/assets/buttons/ice-button-bg.svg"
                 alt=""
+                width={720}
+                height={180}
+                unoptimized
               />
 
               {/* текст */}
               <div className="ice-text">{t.day5Garage.backButton}</div>
 
               {/* пингвин */}
-              <img
+              <Image
                 className="penguin"
                 src="/supabase-storage/characters/other/penguin.gif"
                 alt=""
+                width={92}
+                height={92}
+                unoptimized
               />
             </div>
           </div>

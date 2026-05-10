@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useState } from "react";
 import type { PageId } from "../QuestEngine";
 import { useQuest1I18n } from "../i18n";
@@ -52,10 +53,13 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
       <div className="polar-scenery" aria-hidden />
       {/*ЗАГОЛОВОК */}
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
 
         <h1 className="quest-title-text">{t.day1.title}</h1>
@@ -76,10 +80,13 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
         {!started && (
           <div className="boat-wrapper" id="startBtn" onClick={startIntro}>
             <div className="boat-inner boat-button">
-              <img
+              <Image
                 className="boat"
                 src="/quests/assets/buttons/boat-btn.svg"
                 alt=""
+                width={420}
+                height={120}
+                unoptimized
               />
               <div className="boat-text">{t.day1.startButton}</div>
             </div>
@@ -117,20 +124,26 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
           >
             <div className="ice-button" onClick={() => go("day2")}>
               {/* льдина */}
-              <img
+              <Image
                 className="ice"
                 src="/quests/assets/buttons/ice-button-bg.svg"
                 alt=""
+                width={720}
+                height={180}
+                unoptimized
               />
 
               {/* текст */}
               <div className="ice-text">{t.day1.nextButton}</div>
 
               {/* пингвин */}
-              <img
+              <Image
                 className="penguin"
                 src="/supabase-storage/characters/other/penguin.gif"
                 alt=""
+                width={92}
+                height={92}
+                unoptimized
               />
             </div>
           </div>

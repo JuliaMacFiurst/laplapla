@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, type ReactNode } from "react";
 import { StudioSlideMedia } from "@/components/studio/StudioPreviewPlayer";
 import type { Lang } from "@/i18n";
@@ -111,7 +112,7 @@ export default function MobileSlideshowViewer({
       <div className="mobile-slideshow-body">
         {loading ? (
           <div className="mobile-slideshow-loading">
-            <img
+            <Image
               src="/spinners/CatSpinner.svg"
               alt=""
               width={64}

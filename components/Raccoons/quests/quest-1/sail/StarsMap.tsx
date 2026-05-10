@@ -188,7 +188,7 @@ const StarsMap = forwardRef(function StarsMap(
       setRouteLineProgress(0);
       setLinePoints(null);
     }
-  }, [routeStep]);
+  }, [finalLineLocked, routeStep]);
 
   useEffect(() => {
     const root = wrapRef.current;

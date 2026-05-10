@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { initRouteLogic } from "./initRouteLogic";
 import { getMapSvg } from "@/utils/storageMaps";
 import countryNames from "@/utils/country_names.json";
@@ -17,6 +17,9 @@ const BAD_IDS = new Set([
   "svalbard-marker",
   "__next",
 ]);
+
+const INITIAL_START_POINT = { x: 0.15, y: 0.65 };
+const SVAL_POINT = { x: 0.517, y: 0.015 };
 
 function getCountryLabel(id: string, lang: "ru" | "en" | "he"): string {
   const entry = (countryNames as Record<string, any>)[id];
@@ -40,10 +43,9 @@ export default function FlightMap({
   const svalMkRef = useRef<HTMLDivElement>(null);
 
   const [svgLoaded, setSvgLoaded] = useState(false);
-  const [startPoint, setStartPoint] = useState({ x: 0.15, y: 0.65 }); // стартовая точка в состоянии
-  const sval = { x: 0.517, y: 0.015 };      // координаты Шпицбергена по твоему указанию
+  const [startPoint, setStartPoint] = useState(INITIAL_START_POINT);
 
-  function toSvg(px: number, py: number) {
+  const toSvg = useCallback((px: number, py: number) => {
     const svg = routeSvgRef.current;
     const wrap = wrapRef.current;
     if (!svg || !wrap) return { x: 0, y: 0 };
@@ -53,54 +55,9 @@ export default function FlightMap({
       x: vb.x + (px / r.width) * vb.width,
       y: vb.y + (py / r.height) * vb.height,
     };
-  }
+  }, []);
 
-  function drawRoute(type: "straight" | "arc" | "zigzag" | null) {
-    const path = routePathRef.current;
-    const svg = routeSvgRef.current;
-    const wrap = wrapRef.current;
-    if (!path || !svg || !wrap || !type) {
-      if (path) path.setAttribute("d", "");
-      return;
-    }
-
-    const r = wrap.getBoundingClientRect();
-    const A = toSvg(startPoint.x * r.width, startPoint.y * r.height);
-    const B = toSvg(sval.x * r.width, sval.y * r.height);
-
-    const dx = B.x - A.x;
-    const dy = B.y - A.y;
-    const dist = Math.hypot(dx, dy);
-
-    let d = "";
-    if (type === "straight") {
-      d = `M ${A.x} ${A.y} L ${B.x} ${B.y}`;
-    } else if (type === "arc") {
-      const mx = (A.x + B.x) / 2;
-      const my = (A.y + B.y) / 2 - dist * 0.5;
-      d = `M ${A.x} ${A.y} Q ${mx} ${my} ${B.x} ${B.y}`;
-    } else if (type === "zigzag") {
-      const N = 8;
-      const amp = dist * 0.3;
-      const ang = Math.atan2(dy, dx);
-      const nx = -Math.sin(ang);
-      const ny = Math.cos(ang);
-      const seg = [];
-      for (let i = 1; i < N; i++) {
-        const t = i / N;
-        const bx = A.x + dx * t;
-        const by = A.y + dy * t;
-        const s = i % 2 === 0 ? 1 : -1;
-        seg.push(`L ${bx + nx * amp * s} ${by + ny * amp * s}`);
-      }
-      d = `M ${A.x} ${A.y} ${seg.join(" ")} L ${B.x} ${B.y}`;
-    }
-
-    path.setAttribute("d", d);
-    updateRaccoonSpeech(type);
-  }
-
-  function getCountriesOnRoute(): string[] {
+  const getCountriesOnRoute = useCallback((): string[] => {
     const path = routePathRef.current;
     const svg = routeSvgRef.current;
     const wrap = wrapRef.current;
@@ -134,9 +91,9 @@ export default function FlightMap({
     }
 
     return [...out];
-  }
+  }, []);
 
-  function updateRaccoonSpeech(type: "straight" | "arc" | "zigzag" | null) {
+  const updateRaccoonSpeech = useCallback((type: "straight" | "arc" | "zigzag" | null) => {
     const racText = racTextRef.current;
     if (!racText) return;
 
@@ -153,7 +110,52 @@ export default function FlightMap({
 
     const names = ids.map((id) => getCountryLabel(id, lang)).join(", ");
     racText.innerHTML = t.day3Flight.speech.overCountries.replace("{names}", names);
-  }
+  }, [getCountriesOnRoute, lang, racTextRef, t.day3Flight.speech.overCountries, t.day3Flight.speech.overOcean, t.day3Flight.speech.selectType]);
+
+  const drawRoute = useCallback((type: "straight" | "arc" | "zigzag" | null) => {
+    const path = routePathRef.current;
+    const svg = routeSvgRef.current;
+    const wrap = wrapRef.current;
+    if (!path || !svg || !wrap || !type) {
+      if (path) path.setAttribute("d", "");
+      return;
+    }
+
+    const r = wrap.getBoundingClientRect();
+    const A = toSvg(startPoint.x * r.width, startPoint.y * r.height);
+    const B = toSvg(SVAL_POINT.x * r.width, SVAL_POINT.y * r.height);
+
+    const dx = B.x - A.x;
+    const dy = B.y - A.y;
+    const dist = Math.hypot(dx, dy);
+
+    let d = "";
+    if (type === "straight") {
+      d = `M ${A.x} ${A.y} L ${B.x} ${B.y}`;
+    } else if (type === "arc") {
+      const mx = (A.x + B.x) / 2;
+      const my = (A.y + B.y) / 2 - dist * 0.5;
+      d = `M ${A.x} ${A.y} Q ${mx} ${my} ${B.x} ${B.y}`;
+    } else if (type === "zigzag") {
+      const N = 8;
+      const amp = dist * 0.3;
+      const ang = Math.atan2(dy, dx);
+      const nx = -Math.sin(ang);
+      const ny = Math.cos(ang);
+      const seg = [];
+      for (let i = 1; i < N; i++) {
+        const t = i / N;
+        const bx = A.x + dx * t;
+        const by = A.y + dy * t;
+        const s = i % 2 === 0 ? 1 : -1;
+        seg.push(`L ${bx + nx * amp * s} ${by + ny * amp * s}`);
+      }
+      d = `M ${A.x} ${A.y} ${seg.join(" ")} L ${B.x} ${B.y}`;
+    }
+
+    path.setAttribute("d", d);
+    updateRaccoonSpeech(type);
+  }, [startPoint, toSvg, updateRaccoonSpeech]);
 
   useEffect(() => {
     async function loadSvg() {
@@ -167,7 +169,7 @@ export default function FlightMap({
       }
     }
     loadSvg();
-  }, [t.day3Flight.speech.drawRoute]);
+  }, [racTextRef, t.day3Flight.speech.drawRoute]);
 
   useEffect(() => {
     if (!svgLoaded) return;
@@ -181,7 +183,7 @@ export default function FlightMap({
 
     // Создаём отдельный объект стартовой точки для initRouteLogic,
     // чтобы он мог его мутировать, а мы будем синхронизировать состояние через onStartMove.
-    const start = { ...startPoint };
+    const start = { ...INITIAL_START_POINT };
 
     // Ждём появления маркера Шпицбергена, он рендерится чуть позже
     const tryInit = () => {
@@ -206,13 +208,11 @@ export default function FlightMap({
         racText,
         svalMk,
         start,
-        sval,
+        sval: SVAL_POINT,
         onStartMove: () => {
           const wrapEl = wrapRef.current;
           const pinStartEl = pinStartRef.current;
           if (!wrapEl || !pinStartEl) {
-            drawRoute(routeType);
-            updateRaccoonSpeech(routeType);
             return;
           }
 
@@ -224,9 +224,6 @@ export default function FlightMap({
             const nx = left / r.width;
             const ny = top / r.height;
             setStartPoint({ x: nx, y: ny });
-          } else {
-            drawRoute(routeType);
-            updateRaccoonSpeech(routeType);
           }
         },
       });
@@ -240,7 +237,7 @@ export default function FlightMap({
     if (!svgLoaded) return;
     drawRoute(routeType);
     updateRaccoonSpeech(routeType);
-  }, [routeType, startPoint, svgLoaded]);
+  }, [drawRoute, routeType, svgLoaded, updateRaccoonSpeech]);
 
   useEffect(() => {
     if (!svgLoaded) return;
@@ -260,7 +257,7 @@ export default function FlightMap({
     }
 
     requestAnimationFrame(safeDraw);
-  }, [svgLoaded, routeType, startPoint]);
+  }, [drawRoute, routeType, svgLoaded, updateRaccoonSpeech]);
 
   return (
     <div className="map-center">

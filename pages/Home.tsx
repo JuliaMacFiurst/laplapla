@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
@@ -77,7 +78,7 @@ export default function Home({ lang }: { lang?: Lang }) {
                 href={buildLocalizedPublicPath("/cats", resolvedLang)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <img src="/images/cat.webp" alt={t.sections.cats} />
+                <Image src="/images/cat.webp" alt={t.sections.cats} width={320} height={320} />
                 <div className="label">{t.sections.cats}</div>
               </Link>
 
@@ -86,7 +87,7 @@ export default function Home({ lang }: { lang?: Lang }) {
                 href={buildLocalizedPublicPath("/dog", resolvedLang)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <img src="/images/dog.webp" alt={t.sections.dogs} />
+                <Image src="/images/dog.webp" alt={t.sections.dogs} width={320} height={320} />
                 <div className="label">{t.sections.dogs}</div>
               </Link>
 
@@ -95,7 +96,7 @@ export default function Home({ lang }: { lang?: Lang }) {
                 href={buildLocalizedPublicPath("/capybara", resolvedLang)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <img src="/images/capybara.webp" alt={t.sections.capybaras} />
+                <Image src="/images/capybara.webp" alt={t.sections.capybaras} width={320} height={320} />
                 <div className="label">{t.sections.capybaras}</div>
               </Link>
 
@@ -104,7 +105,7 @@ export default function Home({ lang }: { lang?: Lang }) {
                 href={buildLocalizedPublicPath("/parrots", resolvedLang)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <img src="/images/parrot.webp" alt={t.sections.parrots} />
+                <Image src="/images/parrot.webp" alt={t.sections.parrots} width={320} height={320} />
                 <div className="label">{t.sections.parrots}</div>
               </Link>
 
@@ -113,14 +114,14 @@ export default function Home({ lang }: { lang?: Lang }) {
                 href={buildLocalizedPublicPath("/raccoons", resolvedLang)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <img src="/images/raccoon.webp" alt={t.sections.raccoons} />
+                <Image src="/images/raccoon.webp" alt={t.sections.raccoons} width={320} height={320} />
                 <div className="label">{t.sections.raccoons}</div>
               </Link>
 
               <div className="card mystery-card">
                 <div className="mystery-container">
-                  <img src="/images/paw.webp" alt="" className="paw" />
-                  <img src="/images/mystery.webp" alt="" className="curtain" />
+                  <Image src="/images/paw.webp" alt="" className="paw" width={160} height={160} />
+                  <Image src="/images/mystery.webp" alt="" className="curtain" width={320} height={320} />
                 </div>
                 <div className="label">{t.sections.comingSoon}</div>
               </div>

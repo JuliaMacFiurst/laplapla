@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 const PANEL_SVG_PATH = "/quests/assets/decorations/pilot-pannel.svg";
@@ -101,10 +102,11 @@ export default function InstrumentPanel({ onSwitch }: { onSwitch: (id: string) =
   return (
     <div className="instrument-panel">
       <div className="instrument-panel-svg" aria-label="Flight control panel">
-        <img
+        <Image
           src={PANEL_SVG_PATH}
           alt=""
-          aria-hidden="true"
+          fill
+          unoptimized
           className={`instrument-panel-fallback ${isInteractiveReady ? "is-hidden" : ""}`}
         />
         <div

@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 import {
   buildAnimalSlideMediaQueries,
   findAlternativeSlideMedia,
@@ -435,9 +436,12 @@ const ParrotSlider = ({
                   }}
                 />
               ) : (
-                <img
+                <Image
                   src={slide.mediaUrl}
                   alt={slide.text}
+                  width={1200}
+                  height={300}
+                  unoptimized
                   style={{
                     width: "100%",
                     maxHeight: "300px",

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
@@ -327,9 +328,12 @@ export default function SeoEntityPage({
                             margin: imageMargins,
                           }}
                         >
-                          <img
+                          <Image
                             src={block.url}
                             alt={block.alt}
+                            width={220}
+                            height={220}
+                            unoptimized
                             style={{
                               display: "block",
                               width: "100%",

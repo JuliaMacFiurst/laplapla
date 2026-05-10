@@ -1,4 +1,5 @@
 import type { GetStaticProps } from "next";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
@@ -71,7 +72,7 @@ export default function DogPage({ lang: providedLang }: { lang?: Lang }) {
       <SEO title={seo.title} description={seo.description} path={seoPath} />
       <main className="dog-page">
       <div className="dog-header-container">
-        <img src="/dog/frank.webp" alt="Фрэнк" className="dog-header-image" />
+        <Image src="/dog/frank.webp" alt="Фрэнк" className="dog-header-image" width={220} height={220} />
         <div className="dog-header-wrapper">
           <h1 className="dog-page-title page-title">{t.title}</h1>
           <p style={visuallyHiddenStyle}>
@@ -80,7 +81,7 @@ export default function DogPage({ lang: providedLang }: { lang?: Lang }) {
           <h2 className="dog-page-subtitle">{t.subtitle}</h2>
           <CorePageLinks current="dog" lang={lang} related={["home", "cats", "book"]} />
         </div>
-        <img src="/dog/fibi.webp" alt="Фиби" className="dog-header-image" />
+        <Image src="/dog/fibi.webp" alt="Фиби" className="dog-header-image" width={220} height={220} />
       </div>
 
       <div className="dog-category-grid">
@@ -99,7 +100,13 @@ export default function DogPage({ lang: providedLang }: { lang?: Lang }) {
             }
             className={`dog-category-button dog-category-color-${(index % 8) + 1}`}
           >
-            <img src={`/icons/drawing-lessons-icons/${categoryIcons[index]}`} alt={t.categories[slug]} className="dog-category-icon" />
+            <Image
+              src={`/icons/drawing-lessons-icons/${categoryIcons[index]}`}
+              alt={t.categories[slug]}
+              className="dog-category-icon"
+              width={120}
+              height={120}
+            />
             <span>{t.categories[slug]}</span>
           </button>
         ))}

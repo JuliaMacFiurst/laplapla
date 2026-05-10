@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { PageId } from "../QuestEngine";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
@@ -12,10 +13,13 @@ export default function Day6Expedition({ go }: { go: (id: PageId) => void }) {
 
       {/* Заголовок */}
       <div className="quest-title-wrapper">
-        <img
+        <Image
           src="/quests/assets/banners/ribbon.webp"
           alt=""
           className="quest-title-banner"
+          width={650}
+          height={160}
+          unoptimized
         />
         <h1 className="quest-title-text">{t.day6.title}</h1>
       </div>
@@ -45,16 +49,22 @@ export default function Day6Expedition({ go }: { go: (id: PageId) => void }) {
             className="ice-button"
             onClick={() => go("day7_treasure_of_times")}
           >
-            <img
+            <Image
               className="ice"
               src="/quests/assets/buttons/ice-button-bg.svg"
               alt=""
+              width={720}
+              height={180}
+              unoptimized
             />
             <div className="ice-text">{t.day6.nextButton}</div>
-            <img
+            <Image
               className="penguin"
               src="/supabase-storage/characters/other/penguin.gif"
               alt=""
+              width={92}
+              height={92}
+              unoptimized
             />
           </div>
         </div>
