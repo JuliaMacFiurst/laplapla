@@ -176,6 +176,36 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
     setFinished(true);
   }, []);
 
+  const finishIfQueueResolved = useCallback(
+    (currentLanes: LaneState[] = lanesRef.current) => {
+      if (!finishOnQueueComplete || !gameStartedRef.current) return;
+      if (orderedQueueRef.current.length === 0) return;
+
+      const allItemsSpawned =
+        nextItemIndexRef.current >= orderedQueueRef.current.length;
+      const hasActiveFallingItems = currentLanes.some(
+        (lane) => lane.item && lane.status === "falling"
+      );
+
+      if (!allItemsSpawned || hasActiveFallingItems) {
+        return;
+      }
+
+      if (finishDelayMs <= 0) {
+        finishGame();
+        return;
+      }
+
+      if (finishDelayTimerRef.current) return;
+
+      finishDelayTimerRef.current = setTimeout(() => {
+        finishDelayTimerRef.current = null;
+        finishGame();
+      }, finishDelayMs);
+    },
+    [finishDelayMs, finishGame, finishOnQueueComplete]
+  );
+
   const finishIfQueueComplete = useCallback(
     (handledTotal = handledCountRef.current) => {
       if (!finishOnQueueComplete || !gameStartedRef.current) return;
@@ -420,9 +450,13 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
         handleLaneResult(event.laneIndex, event.item, event.status)
       );
 
+      if (events.length > 0) {
+        finishIfQueueResolved(nextLanes);
+      }
+
       animationFrameRef.current = requestAnimationFrame(animate);
     },
-    [backpackLane, handleLaneResult, isFinished, scheduleLaneReset]
+    [backpackLane, finishIfQueueResolved, handleLaneResult, isFinished, scheduleLaneReset]
   );
 
   useEffect(() => {
@@ -447,6 +481,14 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
       }
     };
   }, [animate, gameStarted, isFinished]);
+
+  useEffect(() => {
+    if (!gameStarted || isFinished) {
+      return;
+    }
+
+    finishIfQueueResolved(lanes);
+  }, [finishIfQueueResolved, gameStarted, isFinished, lanes]);
 
   const startGame = useCallback(() => {
     if (gameStartedRef.current) return;

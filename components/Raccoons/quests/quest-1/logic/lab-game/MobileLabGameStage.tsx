@@ -119,12 +119,11 @@ export default function MobileLabGameStage() {
               aria-label={`Lane ${lane.laneIndex + 1}`}
             >
               {lane.item ? (
-                <Image
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`${lane.laneIndex}-${lane.item.id}-${lane.status ?? "falling"}`}
                   src={`${BASE_URL}/${lane.item.id}.webp`}
                   alt={lane.item.label}
-                  width={92}
-                  height={92}
-                  unoptimized
                   className={`quest-mobile-lab-item ${lane.status ? `is-${lane.status}` : ""}`}
                   style={{ "--lab-item-y": `${lane.y}px` } as CSSProperties}
                 />

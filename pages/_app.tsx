@@ -209,7 +209,13 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   const handleHiddenAdminLogout = async () => {
     await supabase.auth.signOut();
-    window.location.reload();
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const loginUrl = new URL("/admin-login", window.location.origin);
+    loginUrl.searchParams.set("next", window.location.href);
+    window.location.assign(loginUrl.toString());
   };
 
   return (

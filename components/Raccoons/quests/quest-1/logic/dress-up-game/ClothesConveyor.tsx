@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 export interface ClothesItem {
@@ -16,7 +15,12 @@ export default function ClothesConveyor({
 }: {
   items: ClothesItem[];
   speed?: number; // px per frame
-  onItemReleased?: (id: string, x: number, y: number) => void;
+  onItemReleased?: (
+    id: string,
+    x: number,
+    y: number,
+    meta?: { wasTap: boolean }
+  ) => void;
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const getClothingAlt = (id: string) => id.replace(/[-_]+/g, " ").trim() || "illustration";
@@ -24,6 +28,9 @@ export default function ClothesConveyor({
   const draggingItemRef = useRef<{
     id: string;
     el: HTMLImageElement;
+    startX: number;
+    startY: number;
+    moved: boolean;
   } | null>(null);
 
   // Анимация движения
@@ -50,7 +57,7 @@ export default function ClothesConveyor({
   const finishDrag = (x?: number, y?: number) => {
     if (!draggingItemRef.current) return;
 
-    const { id, el } = draggingItemRef.current;
+    const { id, el, moved } = draggingItemRef.current;
 
     el.classList.remove("dragging");
     el.style.position = "";
@@ -60,7 +67,7 @@ export default function ClothesConveyor({
     el.style.zIndex = "";
 
     if (typeof x === "number" && typeof y === "number") {
-      onItemReleased?.(id, x, y);
+      onItemReleased?.(id, x, y, { wasTap: !moved });
     }
 
     draggingItemRef.current = null;
@@ -70,13 +77,11 @@ export default function ClothesConveyor({
   <div className="clothes-conveyor">
     <div ref={trackRef} className="clothes-conveyor-track">
       {doubled.map((item, index) => (
-        <Image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           key={`${item.id}-${index}`}
           src={item.img}
           alt={getClothingAlt(item.id)}
-          width={140}
-          height={140}
-          unoptimized
           className="conveyor-item"
           onPointerDown={(e) => {
             const cleanId = item.id.replace(/-dressed$/, "");
@@ -84,6 +89,9 @@ export default function ClothesConveyor({
             draggingItemRef.current = {
               id: cleanId,
               el: e.currentTarget,
+              startX: e.clientX,
+              startY: e.clientY,
+              moved: false,
             };
 
             e.currentTarget.setPointerCapture(e.pointerId);
@@ -92,7 +100,16 @@ export default function ClothesConveyor({
           onPointerMove={(e) => {
             if (!draggingItemRef.current) return;
 
-            const el = draggingItemRef.current.el;
+            const dragState = draggingItemRef.current;
+            const el = dragState.el;
+            const movedDistance = Math.hypot(
+              e.clientX - dragState.startX,
+              e.clientY - dragState.startY,
+            );
+
+            if (movedDistance > 8) {
+              dragState.moved = true;
+            }
 
             el.style.position = "fixed";
             el.style.left = `${e.clientX - el.width / 2}px`;

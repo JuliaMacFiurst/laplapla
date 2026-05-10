@@ -1070,6 +1070,27 @@ export default function InteractiveMap({
         return;
       }
 
+      if (resolvedItem.source === "fallback") {
+        const hasExistingImage =
+          typeof slide.imageUrl === "string" &&
+          slide.imageUrl.trim().length > 0 &&
+          !isLocalMapFallbackUrl(slide.imageUrl);
+
+        setMediaStatusBySlideId((current) => ({
+          ...current,
+          [slide.id]: hasExistingImage ? "ready" : "missing",
+        }));
+        setToast(
+          lang === "ru"
+            ? "Подходящая картинка не найдена."
+            : lang === "he"
+              ? "לא נמצאה תמונה מתאימה."
+              : "No matching image was found.",
+        );
+        setTimeout(() => setToast(null), 2500);
+        return;
+      }
+
       applyResolvedSlideMedia(
         storyId,
         slide.id,
@@ -1079,35 +1100,33 @@ export default function InteractiveMap({
         setMediaStatusBySlideId,
       );
 
-      if (resolvedItem.source !== "fallback") {
-        if (isDebugLogging) {
-          console.info("[popup-media] manual refresh persist", {
-            storyId,
-            slideId: slide.id,
-            slideOrder: slide.index,
-            imageUrl: resolvedItem.url,
-          });
-        }
-
-        void persistResolvedSlideMedia({
+      if (isDebugLogging) {
+        console.info("[popup-media] manual refresh persist", {
           storyId,
           slideId: slide.id,
           slideOrder: slide.index,
-          slideText: slide.text,
           imageUrl: resolvedItem.url,
-          imageCreditLine: resolvedItem.creditLine,
-        })
-          .then((status) => {
-            applyDbWriteStatus(slide.id, status);
-          })
-          .catch((error) => {
-            console.error("Failed to persist refreshed slide media", error);
-            setDbWriteStatusBySlideId((current) => ({
-              ...current,
-              [slide.id]: "error",
-            }));
-          });
+        });
       }
+
+      void persistResolvedSlideMedia({
+        storyId,
+        slideId: slide.id,
+        slideOrder: slide.index,
+        slideText: slide.text,
+        imageUrl: resolvedItem.url,
+        imageCreditLine: resolvedItem.creditLine,
+      })
+        .then((status) => {
+          applyDbWriteStatus(slide.id, status);
+        })
+        .catch((error) => {
+          console.error("Failed to persist refreshed slide media", error);
+          setDbWriteStatusBySlideId((current) => ({
+            ...current,
+            [slide.id]: "error",
+          }));
+        });
 
       setToast(
         lang === "ru"
@@ -1750,6 +1769,11 @@ export default function InteractiveMap({
             return;
           }
 
+          if (resolvedItem.source === "fallback") {
+            markSlideMissing(slide.id);
+            return;
+          }
+
           usedMediaUrls.add(resolvedItem.url);
 
           applyResolvedSlideMedia(
@@ -1761,26 +1785,24 @@ export default function InteractiveMap({
             setMediaStatusBySlideId,
           );
 
-          if (resolvedItem.source !== "fallback") {
-            void persistResolvedSlideMedia({
-              storyId,
-              slideId: slide.id,
-              slideOrder: slide.index,
-              slideText: slide.text,
-              imageUrl: resolvedItem.url,
-              imageCreditLine: resolvedItem.creditLine,
+          void persistResolvedSlideMedia({
+            storyId,
+            slideId: slide.id,
+            slideOrder: slide.index,
+            slideText: slide.text,
+            imageUrl: resolvedItem.url,
+            imageCreditLine: resolvedItem.creditLine,
+          })
+            .then((status) => {
+              applyDbWriteStatus(slide.id, status);
             })
-              .then((status) => {
-                applyDbWriteStatus(slide.id, status);
-              })
-              .catch((error) => {
-                console.error("Failed to persist hydrated slide media", error);
-                setDbWriteStatusBySlideId((current) => ({
-                  ...current,
-                  [slide.id]: "error",
-                }));
-              });
-          }
+            .catch((error) => {
+              console.error("Failed to persist hydrated slide media", error);
+              setDbWriteStatusBySlideId((current) => ({
+                ...current,
+                [slide.id]: "error",
+              }));
+            });
         } catch (error) {
           console.error("Failed to hydrate popup slide media", error);
           markSlideMissing(slide.id);
@@ -2517,6 +2539,7 @@ export default function InteractiveMap({
                                         }}
                                         style={{
                                           width: "100%",
+                                          height: "auto",
                                           maxWidth: "320px",
                                           borderRadius: "8px",
                                         }}
@@ -2541,6 +2564,7 @@ export default function InteractiveMap({
                                         }}
                                         style={{
                                           width: "100%",
+                                          height: "auto",
                                           maxWidth: "320px",
                                           borderRadius: "8px",
                                         }}

@@ -252,27 +252,23 @@ export default function CharacterStage({
           data-testid="dressup-dropzone"
         >
           <div className="dressup-character-wrapper">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={current.img}
               alt={current.name}
               className="dressup-character"
-              width={800}
-              height={1200}
-              unoptimized
             />
             {dressedItems.map(({ id, season }) => {
               const src = `/supabase-storage/quests/1_quest/games/dress-up/${current.name}/${season}/${id}-dressed.webp`;
               devLog("[DressUp][RENDER] dressed item:", id, src);
 
               return (
-                <Image
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   key={id}
                   src={src}
                   className={`dressup-clothing dressup-${id}`}
                   alt=""
-                  width={800}
-                  height={1200}
-                  unoptimized
                   onLoad={() => devLog("[DressUp][IMG LOADED]", src)}
                   onError={() => console.error("[DressUp][IMG ERROR]", src)}
                 />
@@ -323,25 +319,23 @@ export default function CharacterStage({
         )}
 
         {/* ЛЕНТА С ОДЕЖДОЙ И КНОПКА СТАРТ */}
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Clothing-distribution-belt.webp"
           alt="clothes belt"
           className="dressup-belt"
-          width={1600}
-          height={240}
-          unoptimized
         />
         {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
         {!timerRunning &&
           (characterLoading ? (
-            <Image
-              src="/spinners/game-spinner.webp"
-              alt="loading"
-              className="dressup-spinner"
-              width={160}
-              height={160}
-              unoptimized
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/spinners/game-spinner.webp"
+                alt="loading"
+                className="dressup-spinner"
+              />
+            </>
           ) : (
             <button onClick={startGame} className="dressup-start-btn" />
           ))}
@@ -349,14 +343,14 @@ export default function CharacterStage({
         {!timerRunning &&
           dressedItems.length > 0 &&
           (characterLoading ? (
-            <Image
-              src="/spinners/game-spinner.webp"
-              alt="loading"
-              className="dressup-spinner"
-              width={160}
-              height={160}
-              unoptimized
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/spinners/game-spinner.webp"
+                alt="loading"
+                className="dressup-spinner"
+              />
+            </>
           ) : (
             <button
               className="dressup-restart-btn"
@@ -377,7 +371,12 @@ export default function CharacterStage({
           <ClothesConveyor
             items={clothes}
             speed={1.3}
-            onItemReleased={(id, x, y) => {
+            onItemReleased={(id, x, y, meta) => {
+              if (meta?.wasTap) {
+                handleDrop(id);
+                return;
+              }
+
               tryDropFromPointer(id, x, y);
             }}
           />
