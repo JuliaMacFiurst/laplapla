@@ -9,6 +9,7 @@ export type LoopMulti = {
   id: string;
   label: string;
   variants: LoopVariant[];
+  iconUrl?: string;
   defaultIndex?: number; // индекс варианта, который включается при старте, если слой включён
 };
 // Back-compat (если прилетит старый формат с одним src)
@@ -16,6 +17,7 @@ export type LegacyLoop = {
   id: string;
   label: string;
   src: string;
+  iconUrl?: string;
   defaultOn?: boolean;
 };
 
@@ -120,6 +122,7 @@ export default function ParrotMixer({
         id: l.id,
         label: l.label,
         variants: [v],
+        iconUrl: l.iconUrl,
         defaultIndex: l.defaultOn ? 0 : undefined,
       };
       return lm;
@@ -149,8 +152,8 @@ export default function ParrotMixer({
   // Microphone monitoring toggle
   const [micMonitorOn, setMicMonitorOn] = useState(false);
 
-  const iconForLayer = (label: string, id: string) =>
-    iconForInstrument(`${label} ${id}`);
+  const iconForLayer = (loop: LoopMulti) =>
+    loop.iconUrl || iconForInstrument(`${loop.label} ${loop.id}`);
   const [volume, setVolume] = useState(0.9);
   // голос чуть громче музыки (регулируется из UI)
   const [vocalVolume, setVocalVolume] = useState(1.2); // 1.0 = на уровне музыки
@@ -1124,7 +1127,7 @@ export default function ParrotMixer({
                     title={localizedLayerName}
                   >
                     <Image
-                      src={iconForLayer(l.label, l.id)}
+                      src={iconForLayer(l)}
                       alt={localizedLayerName}
                       width={70}
                       height={70}

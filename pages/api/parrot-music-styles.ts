@@ -14,7 +14,8 @@ async function handler(
   res: NextApiResponse<ParrotMusicStylesResponse>,
 ) {
   const lang = typeof req.query.lang === "string" ? req.query.lang : undefined;
-  const presets = await loadCombinedParrotMusicStyles(lang);
+  const rawTitles = req.query.rawTitles === "1";
+  const presets = await loadCombinedParrotMusicStyles(lang, { rawTitles });
   res.status(200).json({ presets });
 }
 

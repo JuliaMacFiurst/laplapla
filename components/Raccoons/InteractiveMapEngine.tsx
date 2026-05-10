@@ -396,6 +396,7 @@ export default function InteractiveMap({
   const [viewMode, setViewMode] = useState<"slides" | "video">("slides");
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreparingSlides, setIsPreparingSlides] = useState(false);
   const [mediaStatusBySlideId, setMediaStatusBySlideId] = useState<
     Record<string, "loading" | "missing" | "ready">
   >({});
@@ -483,8 +484,10 @@ export default function InteractiveMap({
     return hasText || hasMedia;
   });
 
+  const isPopupLoading = isLoading || isPreparingSlides;
+
   const effectivePopupSlides =
-    !isLoading && popupContent && !hasMeaningfulPopupSlides
+    !isPopupLoading && popupContent && !hasMeaningfulPopupSlides
       ? [
           {
             id: "empty-state-slide",
@@ -922,8 +925,8 @@ export default function InteractiveMap({
   }, [isMobile, svgContent, type]);
 
   useEffect(() => {
-    isLoadingRef.current = isLoading;
-  }, [isLoading]);
+    isLoadingRef.current = isPopupLoading;
+  }, [isPopupLoading]);
 
   useEffect(() => {
     setCurrentSlideIndex(0);
@@ -1075,6 +1078,26 @@ export default function InteractiveMap({
           typeof slide.imageUrl === "string" &&
           slide.imageUrl.trim().length > 0 &&
           !isLocalMapFallbackUrl(slide.imageUrl);
+
+        if (!hasExistingImage) {
+          applyResolvedSlideMedia(
+            storyId,
+            slide.id,
+            resolvedItem.url,
+            resolvedItem.creditLine,
+            setPopupContent,
+            setMediaStatusBySlideId,
+          );
+          setToast(
+            lang === "ru"
+              ? "Подходящая картинка не найдена, показываем енота."
+              : lang === "he"
+                ? "לא נמצאה תמונה מתאימה, מציגים דביבון."
+                : "No matching image was found, showing a raccoon instead.",
+          );
+          setTimeout(() => setToast(null), 2500);
+          return;
+        }
 
         setMediaStatusBySlideId((current) => ({
           ...current,
@@ -1541,6 +1564,7 @@ export default function InteractiveMap({
     if (!selectedElement || !isPopupOpen) {
       setPopupContent(null);
       setIsLoading(false);
+      setIsPreparingSlides(false);
       setMediaStatusBySlideId({});
       setManualRefreshSlideId(null);
       mediaHydrationRef.current.clear();
@@ -1556,6 +1580,7 @@ export default function InteractiveMap({
     setManualRefreshSlideId(null);
     setPopupContent(null);
     setIsLoading(true);
+    setIsPreparingSlides(true);
 
     const fetchAndHandleStory = async () => {
       try {
@@ -1569,6 +1594,7 @@ export default function InteractiveMap({
 
         if (response.status === 404) {
           setPopupContent(null);
+          setIsPreparingSlides(false);
           return;
         }
 
@@ -1587,6 +1613,7 @@ export default function InteractiveMap({
         if (!isCancelled) {
           console.error("❌ Ошибка при загрузке popup-контента:", err);
           setPopupContent(null);
+          setIsPreparingSlides(false);
         }
       } finally {
         if (!isCancelled && currentFetchId === fetchIdRef.current) {
@@ -1634,6 +1661,7 @@ export default function InteractiveMap({
           }),
         );
         if (parsedSlides.length === 0) {
+          setIsPreparingSlides(false);
           slideParseHydrationRef.current.delete(requestKey);
           return;
         }
@@ -1673,6 +1701,9 @@ export default function InteractiveMap({
     const slides = popupContent?.slides ?? [];
 
     if (!storyId || !targetId || slides.length === 0) {
+      if (popupContent && !popupContent.rawContent?.trim()) {
+        setIsPreparingSlides(false);
+      }
       return;
     }
 
@@ -1736,12 +1767,14 @@ export default function InteractiveMap({
     });
 
     if (slidesToHydrate.length === 0) {
+      setIsPreparingSlides(false);
       return;
     }
 
     const hydrateMissingMedia = async () => {
+      setIsPreparingSlides(true);
       let nextSlideIndex = 0;
-      const workerCount = Math.min(3, slidesToHydrate.length);
+      const workerCount = Math.min(5, slidesToHydrate.length);
 
       const processSlide = async (slide: (typeof slides)[number]) => {
         const requestKey = `${storyId}:${slide.id}`;
@@ -1770,6 +1803,23 @@ export default function InteractiveMap({
           }
 
           if (resolvedItem.source === "fallback") {
+            const hadExistingNonFallbackImage =
+              typeof slide.imageUrl === "string" &&
+              slide.imageUrl.trim().length > 0 &&
+              !isLocalMapFallbackUrl(slide.imageUrl);
+
+            if (!hadExistingNonFallbackImage) {
+              applyResolvedSlideMedia(
+                storyId,
+                slide.id,
+                resolvedItem.url,
+                resolvedItem.creditLine,
+                setPopupContent,
+                setMediaStatusBySlideId,
+              );
+              return;
+            }
+
             markSlideMissing(slide.id);
             return;
           }
@@ -1824,6 +1874,48 @@ export default function InteractiveMap({
           }
         }),
       );
+
+      if (!cancelled) {
+        setPopupContent((current) => {
+          if (!current || current.storyId !== storyId) {
+            return current;
+          }
+
+          const nextSlides = current.slides.map((slide) => {
+            const imageUrl =
+              typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
+            if (imageUrl) {
+              return slide;
+            }
+
+            const fallbackItem = buildClientRaccoonFallback(
+              type,
+              targetId,
+              slide.text || targetId,
+            );
+
+            return {
+              ...slide,
+              imageUrl: fallbackItem.url,
+              imageCreditLine: fallbackItem.creditLine,
+            };
+          });
+
+          setMediaStatusBySlideId((statuses) => {
+            const nextStatuses = { ...statuses };
+            for (const slide of nextSlides) {
+              nextStatuses[slide.id] = "ready";
+            }
+            return nextStatuses;
+          });
+
+          return {
+            ...current,
+            slides: nextSlides,
+          };
+        });
+        setIsPreparingSlides(false);
+      }
     };
 
     void hydrateMissingMedia();
@@ -1831,7 +1923,7 @@ export default function InteractiveMap({
     return () => {
       cancelled = true;
     };
-  }, [popupContent?.slides, popupContent?.storyId, popupContent?.targetId, type]);
+  }, [popupContent, popupContent?.slides, popupContent?.storyId, popupContent?.targetId, type]);
 
   useLayoutEffect(() => {
     const mapContent = mapContentRef.current;
@@ -2108,6 +2200,7 @@ export default function InteractiveMap({
 
   // --- Добавляем refs и состояние для перетаскивания попапа ---
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const mobilePopupRef = useRef<HTMLDivElement | null>(null);
   const desktopPopupAnchorRef = useRef<HTMLDivElement | null>(null);
   const isPopupDraggingRef = useRef(false);
   const [popupPos, setPopupPos] = useState({ x: 60, y: 60 });
@@ -2219,11 +2312,19 @@ export default function InteractiveMap({
         return;
       }
 
+      if (mobilePopupRef.current && eventPath.includes(mobilePopupRef.current)) {
+        return;
+      }
+
       if (mapContentRef.current && eventPath.includes(mapContentRef.current)) {
         return;
       }
 
       if (popupRef.current?.contains(target)) {
+        return;
+      }
+
+      if (mobilePopupRef.current?.contains(target)) {
         return;
       }
 
@@ -2770,7 +2871,7 @@ export default function InteractiveMap({
                       })()}
                 </>
               ) : isPopupOpen ? (
-                isLoading ? (
+                isPopupLoading ? (
                   <p>{t.loading}</p>
                 ) : (
                   <p>{t.contentNotReady}</p>
@@ -2783,9 +2884,10 @@ export default function InteractiveMap({
         </div>
       )}
       {isMobile ? (
+        <div ref={mobilePopupRef}>
         <MapPopup
           isOpen={isPopupOpen}
-          loading={isLoading}
+          loading={isPopupLoading}
           lang={lang}
           slides={effectivePopupSlides}
           currentSlideIndex={safeCurrentSlideIndex}
@@ -2827,6 +2929,7 @@ export default function InteractiveMap({
           onWatchYoutube={handleWatchYoutube}
           onOpenTextPage={handleOpenTextPage}
         />
+        </div>
       ) : null}
       {toast && (
         <div

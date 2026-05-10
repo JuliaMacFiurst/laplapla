@@ -222,6 +222,9 @@ function mapStyle(
   slides: ParrotMusicStyleSlideRow[],
   lang: Lang,
   translation: ParrotMusicStyleTranslation | null,
+  options?: {
+    rawTitles?: boolean;
+  },
 ): ParrotStyleRecord | null {
   const slug = normalizeText(row.slug);
   const fallbackTitle = normalizeText(row.title);
@@ -265,8 +268,11 @@ function mapStyle(
     })
     .filter((slide): slide is ParrotStyleSlide => Boolean(slide));
 
-  const localizedTitle =
-    lang === "ru" ? fallbackTitle : normalizeText(translation?.title) || fallbackTitle;
+  const localizedTitle = options?.rawTitles
+    ? fallbackTitle
+    : lang === "ru"
+      ? fallbackTitle
+      : normalizeText(translation?.title) || fallbackTitle;
   const localizedDescription =
     lang === "ru" ? fallbackDescription : normalizeText(translation?.description) || fallbackDescription;
 
@@ -284,6 +290,9 @@ function mapStyle(
 
 export async function loadParrotMusicStylesFromDb(
   langInput: string | undefined,
+  options?: {
+    rawTitles?: boolean;
+  },
 ): Promise<ParrotStyleRecord[]> {
   const lang = normalizeLang(langInput);
 
@@ -392,6 +401,7 @@ export async function loadParrotMusicStylesFromDb(
         slidesByStyleId.get(style.id) ?? [],
         lang,
         translationsByContentId.get(style.id) ?? null,
+        options,
       ))
       .filter((style): style is ParrotStyleRecord => Boolean(style));
   } catch (error) {
@@ -402,9 +412,12 @@ export async function loadParrotMusicStylesFromDb(
 
 export async function loadCombinedParrotMusicStyles(
   langInput: string | undefined,
+  options?: {
+    rawTitles?: boolean;
+  },
 ): Promise<ParrotStyleRecord[]> {
   const lang = normalizeLang(langInput);
-  const dbStyles = await loadParrotMusicStylesFromDb(lang);
+  const dbStyles = await loadParrotMusicStylesFromDb(lang, options);
   const fallbackStyles = getHardcodedParrotStyleRecords(lang);
   const byId = new Map<string, ParrotStyleRecord>();
 

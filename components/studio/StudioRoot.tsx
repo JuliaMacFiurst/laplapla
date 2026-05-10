@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useRef, useCallback, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type Dispatch, type RefObject, type SetStateAction } from "react";
 import AudioEngine, { type AudioEngineHandle } from "./AudioEngine";
 import MusicPanel from "./MusicPanel";
 import type { StudioProject, StudioSlide } from "@/types/studio";
@@ -17,8 +17,12 @@ import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
-import { PARROT_PRESETS } from "@/utils/parrot-presets";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
+import {
+  getHardcodedParrotStyleRecords,
+  type ParrotStyleRecord,
+} from "@/lib/parrots/catalog";
 
 const DEFAULT_PROJECT_ID = "current-studio-project";
 
@@ -751,7 +755,9 @@ function StudioMobileLayout({
   const [isExportFallbackPlaybackStarted, setIsExportFallbackPlaybackStarted] = useState(false);
   const [exportCapability, setExportCapability] = useState<MobileExportCapability>("checking");
   const [slideTransitionDirection, setSlideTransitionDirection] = useState<"left" | "right" | null>(null);
-  const [selectedMusicPresetId, setSelectedMusicPresetId] = useState<string | null>(PARROT_PRESETS[0]?.id ?? null);
+  const fallbackMusicPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
+  const [musicPresets, setMusicPresets] = useState<ParrotStyleRecord[]>(fallbackMusicPresets);
+  const [selectedMusicPresetId, setSelectedMusicPresetId] = useState<string | null>(fallbackMusicPresets[0]?.id ?? null);
   const [previewingAudioId, setPreviewingAudioId] = useState<string | null>(null);
   const [areTracksPlaying, setAreTracksPlaying] = useState(false);
   const [voicePreviewVolume, setVoicePreviewVolume] = useState(1);
@@ -796,7 +802,43 @@ function StudioMobileLayout({
     fontSize: "12px",
     lineHeight: 1.45,
   } satisfies React.CSSProperties;
-  const selectedMusicPreset = PARROT_PRESETS.find((preset) => preset.id === selectedMusicPresetId) ?? null;
+  useEffect(() => {
+    setMusicPresets(fallbackMusicPresets);
+  }, [fallbackMusicPresets]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMusicPresets = async () => {
+      try {
+        const loaded = await fetchParrotMusicStylesWithOptions(lang, { rawTitles: true });
+        if (!cancelled && loaded.length > 0) {
+          setMusicPresets(loaded);
+        }
+      } catch (error) {
+        console.warn("[studio/root] failed to load DB music styles; using fallback", error);
+      }
+    };
+
+    void loadMusicPresets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
+  useEffect(() => {
+    if (musicPresets.length === 0) {
+      setSelectedMusicPresetId(null);
+      return;
+    }
+
+    if (!selectedMusicPresetId || !musicPresets.some((preset) => preset.id === selectedMusicPresetId)) {
+      setSelectedMusicPresetId(musicPresets[0].id);
+    }
+  }, [musicPresets, selectedMusicPresetId]);
+
+  const selectedMusicPreset = musicPresets.find((preset) => preset.id === selectedMusicPresetId) ?? null;
   const exportCaption = "Made with LapLapLa Cat Studio";
   const exportCredits = "Some media may be sourced from GIPHY and Pexels. Created with LapLapLa Cat Studio.";
 
@@ -2191,7 +2233,7 @@ function StudioMobileLayout({
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {PARROT_PRESETS.map((preset) => (
+              {musicPresets.map((preset) => (
                 <button
                   key={preset.id}
                   type="button"
@@ -2229,7 +2271,7 @@ function StudioMobileLayout({
                             type="button"
                             onClick={() =>
                               addMusicTrack({
-                                id: variant.id,
+                                id: `${selectedMusicPreset.id}:${loop.id}:${variant.id}`,
                                 label: variant.label || loop.label,
                                 src: variant.src,
                                 volume: 1,

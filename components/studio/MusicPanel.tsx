@@ -16,10 +16,14 @@
 
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { ParrotPreset, PARROT_PRESETS } from "@/utils/parrot-presets";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { AudioEngineHandle } from "./AudioEngine";
 import { dictionaries, Lang } from "@/i18n";
+import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
+import {
+  getHardcodedParrotStyleRecords,
+  type ParrotStyleRecord,
+} from "@/lib/parrots/catalog";
 
 export type Track = {
   id: string;
@@ -160,14 +164,51 @@ export default function MusicPanel({
   onMakeChildVoice,
   activeVoiceEffects,
 }: MusicPanelProps) {
+  const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-  const presets: ParrotPreset[] = PARROT_PRESETS;
+  const [presets, setPresets] = useState<ParrotStyleRecord[]>(fallbackPresets);
   const [activeTracks, setActiveTracks] = useState<Track[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [recordSeconds, setRecordSeconds] = useState(0);
 
   const t = dictionaries[lang].cats.studio
+
+  useEffect(() => {
+    setPresets(fallbackPresets);
+  }, [fallbackPresets]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPresets = async () => {
+      try {
+        const loaded = await fetchParrotMusicStylesWithOptions(lang, { rawTitles: true });
+        if (!cancelled && loaded.length > 0) {
+          setPresets(loaded);
+        }
+      } catch (error) {
+        console.warn("[studio/music-panel] failed to load DB music styles; using fallback", error);
+      }
+    };
+
+    void loadPresets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
+  useEffect(() => {
+    if (presets.length === 0) {
+      setSelectedPresetId(null);
+      return;
+    }
+
+    if (!selectedPresetId || !presets.some((preset) => preset.id === selectedPresetId)) {
+      setSelectedPresetId(presets[0].id);
+    }
+  }, [presets, selectedPresetId]);
 
   // --- Restore tracks from initialTracks on mount or when changed ---
   useEffect(() => {
@@ -238,7 +279,7 @@ export default function MusicPanel({
   const skipNextInitialTracksSyncRef = useRef(false);
 
 
-  const selectedPreset = presets.find((p) => p.id === selectedPresetId);
+  const selectedPreset = presets.find((p) => p.id === selectedPresetId) ?? null;
 
   const handleTrackVolumeChange = useCallback((trackId: string, volume: number) => {
     skipNextInitialTracksSyncRef.current = true;
@@ -581,7 +622,7 @@ export default function MusicPanel({
                                 return;
 
                               const newTrack = {
-                                id: variant.id,
+                                id: `${selectedPreset.id}:${loop.id}:${variant.id}`,
                                 label: variant.label || loop.label,
                                 src: variant.src,
                                 volume: 1,

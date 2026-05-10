@@ -3,16 +3,20 @@ import dynamic from "next/dynamic";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import SEO from "@/components/SEO";
 import { Lang, dictionaries } from "@/i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import type { Track } from "@/components/studio/MusicPanel";
-import { PARROT_PRESETS } from "@/utils/parrot-presets";
 import { loadProject } from "@/lib/studioStorage";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import type { StudioProject } from "@/types/studio";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
+import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
+import {
+  getHardcodedParrotStyleRecords,
+  type ParrotStyleRecord,
+} from "@/lib/parrots/catalog";
 
 type ImportedSlide = {
   text: string;
@@ -63,9 +67,12 @@ type ParrotImportPayload = {
   }>;
 };
 
-function buildTracksFromParrotImport(data: ParrotImportPayload): Track[] {
+function buildTracksFromParrotImport(
+  data: ParrotImportPayload,
+  presets: ParrotStyleRecord[],
+): Track[] {
   const styleSlug = data.musicConfig?.styleSlug || data.styleSlug;
-  const preset = PARROT_PRESETS.find((item) => item.id === styleSlug);
+  const preset = presets.find((item) => item.id === styleSlug);
   if (!preset || !data.musicConfig?.layers) return [];
 
   return Object.entries(data.musicConfig.layers).flatMap(([layerKey, layerConfig]) => {
@@ -133,6 +140,7 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
   const seo = dictionaries[lang].seo.cats.studio;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/studio";
   const isUnifiedMobileStudioRoute = router.pathname === "/studio" && isMobile;
+  const fallbackParrotPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
 
   const [initialSlides, setInitialSlides] = useState<
     ImportedSlide[] | undefined
@@ -173,7 +181,21 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
                   activeVoiceEffects: slide.activeVoiceEffects,
                 }))
               : [];
-            nextTracks = parsed.tracks ?? buildTracksFromParrotImport(parsed);
+            if (parsed.tracks) {
+              nextTracks = parsed.tracks;
+            } else {
+              let presets = fallbackParrotPresets;
+              try {
+                const loaded = await fetchParrotMusicStylesWithOptions(lang, { rawTitles: true });
+                if (loaded.length > 0) {
+                  presets = loaded;
+                }
+              } catch (error) {
+                console.warn("[cats/studio] failed to load DB music styles for import; using fallback", error);
+              }
+
+              nextTracks = buildTracksFromParrotImport(parsed, presets);
+            }
             shouldConsumeParrot = true;
           }
         }
@@ -220,7 +242,7 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
     return () => {
       cancelled = true;
     };
-  }, [lang]);
+  }, [fallbackParrotPresets, lang]);
 
   useEffect(() => {
     if (!router.isReady) return;

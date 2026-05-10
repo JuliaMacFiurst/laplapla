@@ -11,22 +11,34 @@ type CacheEntry = {
 };
 
 const CACHE_TTL_MS = 30_000;
-const responseCache = new Map<Lang, CacheEntry>();
-const inFlightRequests = new Map<Lang, Promise<ParrotStyleRecord[]>>();
+const responseCache = new Map<string, CacheEntry>();
+const inFlightRequests = new Map<string, Promise<ParrotStyleRecord[]>>();
 
 export async function fetchParrotMusicStyles(lang: Lang): Promise<ParrotStyleRecord[]> {
-  const cached = responseCache.get(lang);
+  return fetchParrotMusicStylesWithOptions(lang);
+}
+
+export async function fetchParrotMusicStylesWithOptions(
+  lang: Lang,
+  options?: {
+    rawTitles?: boolean;
+  },
+): Promise<ParrotStyleRecord[]> {
+  const cacheKey = `${lang}:${options?.rawTitles ? "raw" : "localized"}`;
+  const cached = responseCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.presets;
   }
 
-  const existingRequest = inFlightRequests.get(lang);
+  const existingRequest = inFlightRequests.get(cacheKey);
   if (existingRequest) {
     return existingRequest;
   }
 
   const request = (async () => {
-    const response = await fetch(`/api/parrot-music-styles?lang=${encodeURIComponent(lang)}`);
+    const response = await fetch(
+      `/api/parrot-music-styles?lang=${encodeURIComponent(lang)}&rawTitles=${options?.rawTitles ? "1" : "0"}`,
+    );
     if (!response.ok) {
       throw new Error(`Failed to load parrot music styles: ${response.status}`);
     }
@@ -34,7 +46,7 @@ export async function fetchParrotMusicStyles(lang: Lang): Promise<ParrotStyleRec
     const data = await response.json() as ParrotMusicStylesApiResponse;
     const presets = Array.isArray(data.presets) ? data.presets as ParrotStyleRecord[] : [];
 
-    responseCache.set(lang, {
+    responseCache.set(cacheKey, {
       expiresAt: Date.now() + CACHE_TTL_MS,
       presets,
     });
@@ -42,11 +54,11 @@ export async function fetchParrotMusicStyles(lang: Lang): Promise<ParrotStyleRec
     return presets;
   })();
 
-  inFlightRequests.set(lang, request);
+  inFlightRequests.set(cacheKey, request);
 
   try {
     return await request;
   } finally {
-    inFlightRequests.delete(lang);
+    inFlightRequests.delete(cacheKey);
   }
 }

@@ -448,6 +448,51 @@ function buildGiphyCredit(candidate: GiphyCandidate) {
   return author ? `GIF by ${author} on GIPHY` : "GIF from GIPHY";
 }
 
+function prefersVideoCandidate(type: MapPopupType, slideText: string, seedSource: string) {
+  const normalized = normalizeText(slideText).toLowerCase();
+  const motionHints = [
+    "dance",
+    "dancing",
+    "jump",
+    "jumping",
+    "run",
+    "running",
+    "fly",
+    "flying",
+    "swim",
+    "swimming",
+    "storm",
+    "wind",
+    "rain",
+    "snow",
+    "wave",
+    "flow",
+    "moving",
+    "motion",
+    "танц",
+    "беж",
+    "лет",
+    "прыг",
+    "плав",
+    "ветер",
+    "дожд",
+    "снег",
+    "бур",
+    "волна",
+    "теч",
+  ];
+
+  if (type === "weather" || type === "sea" || type === "river") {
+    return true;
+  }
+
+  if (motionHints.some((term) => normalized.includes(term))) {
+    return true;
+  }
+
+  return getSeedValue(seedSource) % 4 === 0;
+}
+
 function rankCandidates(
   pexelsCandidates: PexelsCandidate[],
   giphyCandidates: GiphyCandidate[],
@@ -461,7 +506,7 @@ function rankCandidates(
       const description = [candidate.alt, candidate.photographer].filter(Boolean).join(" ");
       const score =
         scoreCandidateText(description, relevanceTerms) +
-        (candidate.mediaType === "image" ? 14 : 10);
+        (candidate.mediaType === "video" ? 15 : 12);
 
       return {
         url: candidate.url,
@@ -494,13 +539,21 @@ function rankCandidates(
 function chooseRankedCandidate(
   ranked: MapPopupMediaCandidate[],
   seedSource: string,
+  preferVideo = false,
 ) {
   if (ranked.length === 0) {
     return null;
   }
 
-  const shortlist = ranked.slice(0, Math.min(4, ranked.length));
+  const shortlist = ranked.slice(0, Math.min(6, ranked.length));
   const seed = getSeedValue(seedSource);
+
+  if (preferVideo) {
+    const videoCandidates = shortlist.filter((candidate) => candidate.mediaType === "video");
+    if (videoCandidates.length > 0) {
+      return videoCandidates[seed % videoCandidates.length] ?? videoCandidates[0];
+    }
+  }
 
   return shortlist[seed % shortlist.length] ?? shortlist[0];
 }
@@ -586,6 +639,7 @@ function isSearchDeadlineReached(searchStartedAt: number) {
 }
 
 async function searchPexelsFirst(
+  type: MapPopupType,
   pexelsQueries: string[],
   relevanceTerms: string[],
   normalizedExcludedUrls: Set<string>,
@@ -608,7 +662,11 @@ async function searchPexelsFirst(
       "",
     );
 
-    const selected = chooseRankedCandidate(ranked, `${targetId}:${slideText}:${pexelsQuery}`);
+    const selected = chooseRankedCandidate(
+      ranked,
+      `${targetId}:${slideText}:${pexelsQuery}`,
+      prefersVideoCandidate(type, slideText, `${targetId}:${slideText}:${pexelsQuery}`),
+    );
     if (selected) {
       return selected;
     }
@@ -640,7 +698,11 @@ async function searchGenericProviderFallback(
       "",
     );
 
-    const selected = chooseRankedCandidate(ranked, `${type}:generic:${pexelsQuery}`);
+    const selected = chooseRankedCandidate(
+      ranked,
+      `${type}:generic:${pexelsQuery}`,
+      prefersVideoCandidate(type, pexelsQuery, `${type}:generic:${pexelsQuery}`),
+    );
     if (selected) {
       return selected;
     }
@@ -661,7 +723,11 @@ async function searchGenericProviderFallback(
       giphyQuery,
     );
 
-    const selected = chooseRankedCandidate(ranked, `${type}:generic:${giphyQuery}`);
+    const selected = chooseRankedCandidate(
+      ranked,
+      `${type}:generic:${giphyQuery}`,
+      prefersVideoCandidate(type, giphyQuery, `${type}:generic:${giphyQuery}`),
+    );
     if (selected) {
       return selected;
     }
@@ -726,6 +792,7 @@ async function searchRelaxedProviderFallback(
 }
 
 async function searchGiphyFallback(
+  type: MapPopupType,
   giphyQueries: string[],
   relevanceTerms: string[],
   normalizedExcludedUrls: Set<string>,
@@ -748,7 +815,11 @@ async function searchGiphyFallback(
       giphyQuery,
     );
 
-    const selected = chooseRankedCandidate(ranked, `${targetId}:${slideText}:${giphyQuery}`);
+    const selected = chooseRankedCandidate(
+      ranked,
+      `${targetId}:${slideText}:${giphyQuery}`,
+      prefersVideoCandidate(type, slideText, `${targetId}:${slideText}:${giphyQuery}`),
+    );
     if (selected) {
       return selected;
     }
@@ -806,6 +877,7 @@ export async function searchMapPopupMedia({
 
   const searchStartedAt = Date.now();
   const resolvedFromPexels = await searchPexelsFirst(
+    type,
     pexelsQueries,
     relevanceTerms,
     normalizedExcludedUrls,
@@ -822,6 +894,7 @@ export async function searchMapPopupMedia({
 
   // Age safety for GIPHY comes from rating=g and blocked-term filtering.
   const resolvedFromGiphy = await searchGiphyFallback(
+    type,
     giphyQueries,
     relevanceTerms,
     normalizedExcludedUrls,
