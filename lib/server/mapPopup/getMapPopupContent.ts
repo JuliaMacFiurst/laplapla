@@ -202,6 +202,14 @@ function buildSlidesFromRows(story: MapStoryRow, slideRows: MapStorySlideRow[]):
     index: typeof row.slide_order === "number" ? row.slide_order : index,
     text: typeof row.text === "string" ? row.text.trim() : "",
     imageUrl: typeof row.image_url === "string" && row.image_url.trim() ? row.image_url.trim() : null,
+    mediaType:
+      typeof row.image_url === "string" && /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(row.image_url.trim())
+        ? "video"
+        : typeof row.image_url === "string" && /\.gif(\?|#|$)/i.test(row.image_url.trim())
+          ? "gif"
+          : typeof row.image_url === "string" && row.image_url.trim()
+            ? "image"
+            : null,
     imageCreditLine:
       typeof row.image_credit_line === "string" && row.image_credit_line.trim()
         ? row.image_credit_line.trim()
@@ -244,6 +252,7 @@ function buildTranslatedSlides(
         index: fallbackSlide?.index ?? index,
         text,
         imageUrl: fallbackSlide?.imageUrl ?? null,
+        mediaType: fallbackSlide?.mediaType ?? null,
         imageCreditLine: fallbackSlide?.imageCreditLine ?? null,
         imageAuthor: fallbackSlide?.imageAuthor ?? null,
         imageSourceUrl: fallbackSlide?.imageSourceUrl ?? null,
@@ -268,6 +277,7 @@ function buildTranslatedSlides(
         index: typeof fallbackSlide?.index === "number" ? fallbackSlide.index : slide.slideOrder,
         text: slide.text,
         imageUrl: fallbackSlide?.imageUrl ?? null,
+        mediaType: fallbackSlide?.mediaType ?? null,
         imageCreditLine: fallbackSlide?.imageCreditLine ?? null,
         imageAuthor: fallbackSlide?.imageAuthor ?? null,
         imageSourceUrl: fallbackSlide?.imageSourceUrl ?? null,

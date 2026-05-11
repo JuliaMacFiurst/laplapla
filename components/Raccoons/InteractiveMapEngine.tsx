@@ -19,7 +19,6 @@ import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides"
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import { supabase } from "@/lib/supabase";
-import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -63,6 +62,34 @@ function isVideoMediaUrl(url: string | null | undefined): boolean {
   }
 
   return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url);
+}
+
+function inferMediaTypeFromUrl(url: string | null | undefined): "image" | "video" | "gif" {
+  const value = typeof url === "string" ? url.trim() : "";
+  if (isVideoMediaUrl(value)) {
+    return "video";
+  }
+
+  if (/\.gif(\?|#|$)/i.test(value)) {
+    return "gif";
+  }
+
+  return "image";
+}
+
+function getSlideMediaType(slide: Pick<MapPopupContent["slides"][number], "imageUrl" | "mediaType">) {
+  return slide.mediaType || inferMediaTypeFromUrl(slide.imageUrl);
+}
+
+function toPopupMediaUrl(url?: string | null) {
+  if (!url) {
+    return "";
+  }
+
+  // Popup media is displayed directly in <img>/<video>. Avoid the studio proxy here:
+  // streamed image proxy responses can be aborted mid-transfer and trigger
+  // ERR_CONTENT_LENGTH_MISMATCH in Chromium.
+  return url;
 }
 
 type MapPopupSearchResponse = {
@@ -118,6 +145,7 @@ function buildMediaSearchParams(
 }
 
 const MEDIA_SEARCH_TIMEOUT_MS = 15000;
+const MEDIA_PRELOAD_TIMEOUT_MS = 18000;
 
 async function requestMapPopupMedia(searchParams: URLSearchParams) {
   const controller = new AbortController();
@@ -325,6 +353,7 @@ function applyResolvedSlideMedia(
   storyId: string | number,
   slideId: string,
   imageUrl: string,
+  mediaType: "image" | "video" | "gif",
   imageCreditLine: string | null | undefined,
   setPopupContent: Dispatch<SetStateAction<MapPopupContent | null>>,
   setMediaStatusBySlideId: Dispatch<
@@ -342,11 +371,12 @@ function applyResolvedSlideMedia(
       slides: current.slides.map((slide) =>
         slide.id === slideId
           ? {
-              ...slide,
-              imageUrl,
-              imageCreditLine: imageCreditLine?.trim() || null,
-            }
-          : slide,
+            ...slide,
+            imageUrl,
+            mediaType,
+            imageCreditLine: imageCreditLine?.trim() || null,
+          }
+        : slide,
       ),
     };
   });
@@ -372,6 +402,84 @@ async function resolveSlideMedia(
   } catch {
     return buildClientRaccoonFallback(type, targetId, slideText);
   }
+}
+
+function preloadImage(url: string) {
+  return new Promise<void>((resolve, reject) => {
+    const image = new window.Image();
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(`Image preload timed out: ${url}`));
+    }, MEDIA_PRELOAD_TIMEOUT_MS);
+
+    image.onload = () => {
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+    image.onerror = () => {
+      window.clearTimeout(timeoutId);
+      reject(new Error(`Image preload failed: ${url}`));
+    };
+    image.src = url;
+  });
+}
+
+function preloadVideo(url: string) {
+  return new Promise<void>((resolve, reject) => {
+    const video = document.createElement("video");
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error(`Video preload timed out: ${url}`));
+    }, MEDIA_PRELOAD_TIMEOUT_MS);
+
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      video.removeEventListener("canplaythrough", handleReady);
+      video.removeEventListener("canplay", handleReady);
+      video.removeEventListener("loadeddata", handleReady);
+      video.removeEventListener("error", handleError);
+      video.removeAttribute("src");
+      video.load();
+    };
+
+    const handleReady = () => {
+      cleanup();
+      resolve();
+    };
+
+    const handleError = () => {
+      cleanup();
+      reject(new Error(`Video preload failed: ${url}`));
+    };
+
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+    video.addEventListener("canplaythrough", handleReady, { once: true });
+    video.addEventListener("canplay", handleReady, { once: true });
+    video.addEventListener("loadeddata", handleReady, { once: true });
+    video.addEventListener("error", handleError, { once: true });
+    video.src = url;
+    video.load();
+  });
+}
+
+async function preloadPopupMedia(slides: MapPopupContent["slides"]) {
+  await Promise.all(
+    slides.map(async (slide) => {
+      const rawUrl = typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
+      if (!rawUrl) {
+        throw new Error(`Slide ${slide.id} has no media URL`);
+      }
+
+      const displayUrl = toPopupMediaUrl(rawUrl);
+      if (getSlideMediaType(slide) === "video") {
+        await preloadVideo(displayUrl);
+        return;
+      }
+
+      await preloadImage(displayUrl);
+    }),
+  );
 }
 
 export default function InteractiveMap({
@@ -944,10 +1052,10 @@ export default function InteractiveMap({
     const importedSlides = buildStudioSlidesFromCapybaraSlides(
       effectivePopupSlides.map((slide) => ({
         text: slide.text || "",
-        imageUrl: isVideoMediaUrl(slide.imageUrl)
+        imageUrl: getSlideMediaType(slide) === "video"
           ? undefined
           : slide.imageUrl || undefined,
-        videoUrl: isVideoMediaUrl(slide.imageUrl)
+        videoUrl: getSlideMediaType(slide) === "video"
           ? slide.imageUrl || undefined
           : undefined,
       })),
@@ -1080,20 +1188,28 @@ export default function InteractiveMap({
           !isLocalMapFallbackUrl(slide.imageUrl);
 
         if (!hasExistingImage) {
+          await preloadPopupMedia([
+            {
+              ...slide,
+              imageUrl: resolvedItem.url,
+              mediaType: resolvedItem.mediaType,
+            },
+          ]);
           applyResolvedSlideMedia(
             storyId,
             slide.id,
             resolvedItem.url,
+            resolvedItem.mediaType,
             resolvedItem.creditLine,
             setPopupContent,
             setMediaStatusBySlideId,
           );
           setToast(
             lang === "ru"
-              ? "Подходящая картинка не найдена, показываем енота."
+              ? "Подходящее медиа не найдено, показываем fallback."
               : lang === "he"
-                ? "לא נמצאה תמונה מתאימה, מציגים דביבון."
-                : "No matching image was found, showing a raccoon instead.",
+                ? "לא נמצאה מדיה מתאימה, מציגים חלופה."
+                : "No matching media was found, showing fallback media.",
           );
           setTimeout(() => setToast(null), 2500);
           return;
@@ -1105,19 +1221,28 @@ export default function InteractiveMap({
         }));
         setToast(
           lang === "ru"
-            ? "Подходящая картинка не найдена."
+            ? "Подходящее медиа не найдено."
             : lang === "he"
-              ? "לא נמצאה תמונה מתאימה."
-              : "No matching image was found.",
+              ? "לא נמצאה מדיה מתאימה."
+              : "No matching media was found.",
         );
         setTimeout(() => setToast(null), 2500);
         return;
       }
 
+      await preloadPopupMedia([
+        {
+          ...slide,
+          imageUrl: resolvedItem.url,
+          mediaType: resolvedItem.mediaType,
+        },
+      ]);
+
       applyResolvedSlideMedia(
         storyId,
         slide.id,
         resolvedItem.url,
+        resolvedItem.mediaType,
         resolvedItem.creditLine,
         setPopupContent,
         setMediaStatusBySlideId,
@@ -1153,10 +1278,10 @@ export default function InteractiveMap({
 
       setToast(
         lang === "ru"
-          ? "Загружена новая картинка."
+          ? "Загружено новое медиа."
           : lang === "he"
-            ? "נטענה תמונה חדשה."
-            : "Loaded a new image.",
+            ? "נטענה מדיה חדשה."
+            : "Loaded new media.",
       );
       setTimeout(() => setToast(null), 2500);
     } catch (error) {
@@ -1559,7 +1684,7 @@ export default function InteractiveMap({
     }
   };
 
-  // Read-only загрузка готового popup-контента по выбранному элементу
+  // Popup media pipeline: content -> slide normalization -> media resolution -> preload -> ready popup.
   useEffect(() => {
     if (!selectedElement || !isPopupOpen) {
       setPopupContent(null);
@@ -1583,6 +1708,166 @@ export default function InteractiveMap({
     setIsPreparingSlides(true);
 
     const fetchAndHandleStory = async () => {
+      const buildFallbackContent = async (): Promise<MapPopupContent> => {
+        const fallbackItem = buildClientRaccoonFallback(
+          type,
+          selectedElement,
+          emptyStateSlideText,
+        );
+        return {
+          storyId: null,
+          type,
+          targetId: selectedElement,
+          lang,
+          rawContent: null,
+          title: null,
+          googleMapsUrl: null,
+          slides: [
+            {
+              id: `fallback:${type}:${selectedElement}`,
+              index: 0,
+              text: emptyStateSlideText,
+              imageUrl: fallbackItem.url,
+              mediaType: fallbackItem.mediaType,
+              imageCreditLine: fallbackItem.creditLine,
+              imageAuthor: null,
+              imageSourceUrl: null,
+            },
+          ],
+          video: null,
+          source: "legacy_map_stories",
+        };
+      };
+
+      const normalizeSlides = (content: MapPopupContent): MapPopupContent["slides"] => {
+        const baseSlides =
+          content.slides.length > 0
+            ? content.slides
+            : parseMapStoryContentToSlides(content.rawContent || "").map((slide, index) => ({
+                id: `parsed:${content.storyId ?? `${type}:${selectedElement}`}:${index}`,
+                index: typeof slide.slideOrder === "number" ? slide.slideOrder : index,
+                text: slide.text,
+                imageUrl: null,
+                mediaType: null,
+                imageCreditLine: null,
+                imageAuthor: null,
+                imageSourceUrl: null,
+              }));
+
+        const nonEmptySlides = baseSlides.filter((slide) => {
+          const hasText = getMeaningfulSlideText(slide.text).length > 0;
+          const hasMedia = typeof slide.imageUrl === "string" && slide.imageUrl.trim().length > 0;
+          return hasText || hasMedia;
+        });
+
+        return nonEmptySlides.length > 0
+          ? nonEmptySlides
+          : [
+              {
+                id: `fallback:${type}:${selectedElement}`,
+                index: 0,
+                text: emptyStateSlideText,
+                imageUrl: null,
+                mediaType: null,
+                imageCreditLine: null,
+                imageAuthor: null,
+                imageSourceUrl: null,
+              },
+            ];
+      };
+
+      const prepareContent = async (content: MapPopupContent): Promise<MapPopupContent> => {
+        const slides = normalizeSlides(content);
+        const usedMediaUrls = new Set(
+          slides
+            .map((slide) => (typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : ""))
+            .filter((url) => url && !isLocalMapFallbackUrl(url)),
+        );
+        const preparedSlides: MapPopupContent["slides"] = [];
+
+        const prepareSlideWithMedia = async (
+          slide: MapPopupContent["slides"][number],
+          candidate: NonNullable<MapPopupSearchResponse["item"]>,
+        ): Promise<MapPopupContent["slides"][number]> => {
+          const nextSlide = {
+            ...slide,
+            text: slide.text || emptyStateSlideText,
+            imageUrl: candidate.url,
+            mediaType: candidate.mediaType,
+            imageCreditLine: candidate.creditLine,
+          };
+
+          try {
+            await preloadPopupMedia([nextSlide]);
+            return nextSlide;
+          } catch (error) {
+            if (isDebugLogging) {
+              console.warn("[popup-media] candidate preload failed, using fallback", {
+                slideId: slide.id,
+                targetId: content.targetId || selectedElement,
+                url: candidate.url,
+                mediaType: candidate.mediaType,
+                error: error instanceof Error ? error.message : "Unknown error",
+              });
+            }
+
+            const fallbackItem = buildClientRaccoonFallback(
+              type,
+              content.targetId || selectedElement,
+              getMeaningfulSlideText(slide.text) || content.targetId || selectedElement,
+            );
+            const fallbackSlide = {
+              ...nextSlide,
+              imageUrl: fallbackItem.url,
+              mediaType: fallbackItem.mediaType,
+              imageCreditLine: fallbackItem.creditLine,
+            };
+            await preloadPopupMedia([fallbackSlide]);
+            return fallbackSlide;
+          }
+        };
+
+        for (const slide of slides) {
+          const existingUrl = typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
+          if (existingUrl) {
+            const existingSlide = {
+              ...slide,
+              imageUrl: existingUrl,
+              mediaType: slide.mediaType || inferMediaTypeFromUrl(existingUrl),
+            };
+
+            try {
+              await preloadPopupMedia([existingSlide]);
+              preparedSlides.push(existingSlide);
+            } catch {
+              const resolvedItem = await resolveSlideMedia(
+                type,
+                content.targetId || selectedElement,
+                getMeaningfulSlideText(slide.text) || content.targetId || selectedElement,
+                usedMediaUrls,
+              );
+              usedMediaUrls.add(resolvedItem.url);
+              preparedSlides.push(await prepareSlideWithMedia(slide, resolvedItem));
+            }
+            continue;
+          }
+
+          const resolvedItem = await resolveSlideMedia(
+            type,
+            content.targetId || selectedElement,
+            getMeaningfulSlideText(slide.text) || content.targetId || selectedElement,
+            usedMediaUrls,
+          );
+          usedMediaUrls.add(resolvedItem.url);
+          preparedSlides.push(await prepareSlideWithMedia(slide, resolvedItem));
+        }
+
+        return {
+          ...content,
+          slides: preparedSlides,
+        };
+      };
+
       try {
         const response = await fetch(
           `/api/map-popup-content?type=${encodeURIComponent(type)}&target_id=${encodeURIComponent(selectedElement)}&lang=${encodeURIComponent(lang)}`,
@@ -1593,8 +1878,14 @@ export default function InteractiveMap({
         }
 
         if (response.status === 404) {
-          setPopupContent(null);
-          setIsPreparingSlides(false);
+          const fallbackContent = await buildFallbackContent();
+          await preloadPopupMedia(fallbackContent.slides);
+          if (!isCancelled && currentFetchId === fetchIdRef.current) {
+            setPopupContent(fallbackContent);
+            setMediaStatusBySlideId(
+              Object.fromEntries(fallbackContent.slides.map((slide) => [slide.id, "ready"])),
+            );
+          }
           return;
         }
 
@@ -1602,22 +1893,39 @@ export default function InteractiveMap({
           throw new Error(`Failed to load popup content: ${response.status}`);
         }
 
-        const nextPopupContent = (await response.json()) as MapPopupContent;
+        const nextPopupContent = await prepareContent(
+          (await response.json()) as MapPopupContent,
+        );
 
         if (isCancelled || currentFetchId !== fetchIdRef.current) {
           return;
         }
 
         setPopupContent(nextPopupContent);
+        setMediaStatusBySlideId(
+          Object.fromEntries(nextPopupContent.slides.map((slide) => [slide.id, "ready"])),
+        );
       } catch (err) {
         if (!isCancelled) {
           console.error("❌ Ошибка при загрузке popup-контента:", err);
-          setPopupContent(null);
-          setIsPreparingSlides(false);
+          try {
+            const fallbackContent = await buildFallbackContent();
+            await preloadPopupMedia(fallbackContent.slides);
+            if (!isCancelled && currentFetchId === fetchIdRef.current) {
+              setPopupContent(fallbackContent);
+              setMediaStatusBySlideId(
+                Object.fromEntries(fallbackContent.slides.map((slide) => [slide.id, "ready"])),
+              );
+            }
+          } catch (fallbackError) {
+            console.error("Failed to prepare fallback popup media", fallbackError);
+            setPopupContent(null);
+          }
         }
       } finally {
         if (!isCancelled && currentFetchId === fetchIdRef.current) {
           setIsLoading(false);
+          setIsPreparingSlides(false);
         }
       }
     };
@@ -1627,7 +1935,7 @@ export default function InteractiveMap({
     return () => {
       isCancelled = true;
     };
-  }, [isPopupOpen, lang, selectedElement, type]);
+  }, [emptyStateSlideText, isPopupOpen, lang, selectedElement, type]);
 
   useEffect(() => {
     const storyId = popupContent?.storyId;
@@ -1655,6 +1963,7 @@ export default function InteractiveMap({
               typeof slide.slideOrder === "number" ? slide.slideOrder : index,
             text: slide.text,
             imageUrl: null,
+            mediaType: null,
             imageCreditLine: null,
             imageAuthor: null,
             imageSourceUrl: null,
@@ -1813,6 +2122,7 @@ export default function InteractiveMap({
                 storyId,
                 slide.id,
                 resolvedItem.url,
+                resolvedItem.mediaType,
                 resolvedItem.creditLine,
                 setPopupContent,
                 setMediaStatusBySlideId,
@@ -1830,6 +2140,7 @@ export default function InteractiveMap({
             storyId,
             slide.id,
             resolvedItem.url,
+            resolvedItem.mediaType,
             resolvedItem.creditLine,
             setPopupContent,
             setMediaStatusBySlideId,
@@ -1897,6 +2208,7 @@ export default function InteractiveMap({
             return {
               ...slide,
               imageUrl: fallbackItem.url,
+              mediaType: fallbackItem.mediaType,
               imageCreditLine: fallbackItem.creditLine,
             };
           });
@@ -2534,11 +2846,14 @@ export default function InteractiveMap({
                           resolvedFallbackMedia?.url ||
                           "";
                         const displayMediaUrl =
-                          toStudioMediaUrl(imageUrl) || "";
+                          toPopupMediaUrl(imageUrl);
                         const isUsingFallbackMedia =
                           !hasResolvedPersistedImage &&
                           Boolean(resolvedFallbackMedia?.url);
-                        const isVideoSlide = isVideoMediaUrl(imageUrl);
+                        const isVideoSlide =
+                          currentPopupSlide?.mediaType === "video" ||
+                          resolvedFallbackMedia?.mediaType === "video" ||
+                          isVideoMediaUrl(imageUrl);
                         const paragraphs = splitTextToParagraphs(
                           currentPopupSlide?.text || "",
                         );
@@ -2558,15 +2873,15 @@ export default function InteractiveMap({
                           mediaStatus === "loading"
                             ? isUsingFallbackMedia
                               ? lang === "ru"
-                                ? "Енотики ищут подходящую картинку..."
+                                ? "Енотики ищут подходящее медиа..."
                                 : lang === "he"
-                                  ? "הראקונים מחפשים תמונה מתאימה..."
-                                  : "Raccoons are looking for a matching image..."
+                                  ? "הראקונים מחפשים מדיה מתאימה..."
+                                  : "Raccoons are looking for matching media..."
                               : lang === "ru"
-                                ? "Подбираем картинку..."
+                                ? "Подбираем медиа..."
                                 : lang === "he"
-                                  ? "טוענים תמונה..."
-                                  : "Loading image..."
+                                  ? "טוענים מדיה..."
+                                  : "Loading media..."
                             : "";
                         const dbWriteStatusLabel =
                           dbWriteStatus === "saved"
@@ -2626,6 +2941,7 @@ export default function InteractiveMap({
                                         loop
                                         controls
                                         playsInline
+                                        preload="auto"
                                         onError={() => {
                                           console.error(
                                             "[popup-media/render-error]",
@@ -2646,11 +2962,10 @@ export default function InteractiveMap({
                                         }}
                                       />
                                     ) : (
-                                      <Image
+                                      <>
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
                                         src={displayMediaUrl}
-                                        width={320}
-                                        height={240}
-                                        unoptimized
                                         onError={() => {
                                           console.error(
                                             "[popup-media/render-error]",
@@ -2675,6 +2990,7 @@ export default function InteractiveMap({
                                           t.slideMediaAlt
                                         }
                                       />
+                                      </>
                                     )}
                                     {creditLine ? (
                                       <div
@@ -2713,10 +3029,10 @@ export default function InteractiveMap({
                                               ? "מחפשים..."
                                               : "Searching..."
                                           : lang === "ru"
-                                            ? "Найти новую картинку"
+                                            ? "Найти новое медиа"
                                             : lang === "he"
-                                              ? "למצוא תמונה חדשה"
-                                              : "Find a new image"}
+                                              ? "למצוא מדיה חדשה"
+                                              : "Find new media"}
                                       </button>
                                     </div>
                                     {showAdminDbStatus && dbWriteStatusLabel ? (
@@ -2781,10 +3097,10 @@ export default function InteractiveMap({
                                               ? "מחפשים..."
                                               : "Searching..."
                                           : lang === "ru"
-                                            ? "Найти новую картинку"
+                                            ? "Найти новое медиа"
                                             : lang === "he"
-                                              ? "למצוא תמונה חדשה"
-                                              : "Find a new image"}
+                                              ? "למצוא מדיה חדשה"
+                                              : "Find new media"}
                                       </button>
                                     </div>
                                   </div>
@@ -2872,7 +3188,17 @@ export default function InteractiveMap({
                 </>
               ) : isPopupOpen ? (
                 isPopupLoading ? (
-                  <p>{t.loading}</p>
+                  <div className="map-popup-loading-state" role="status" aria-live="polite">
+                    <Image
+                      src="/spinners/CatSpinner.svg"
+                      alt=""
+                      width={56}
+                      height={56}
+                      aria-hidden="true"
+                      className="map-popup-loading-spinner"
+                    />
+                    <p>{t.loading}</p>
+                  </div>
                 ) : (
                   <p>{t.contentNotReady}</p>
                 )
@@ -2904,10 +3230,10 @@ export default function InteractiveMap({
             manualRefreshSlideId === currentPopupSlide?.id
               ? "..."
               : lang === "ru"
-                ? "Найти новую картинку"
+                ? "Найти новое медиа"
                 : lang === "he"
-                  ? "למצוא תמונה חדשה"
-                  : "Find a new image"
+                  ? "למצוא מדיה חדשה"
+                  : "Find new media"
           }
           editInStudioLabel={t.openCatsEditor}
           showOnMapLabel={t.showOnMap}

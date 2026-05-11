@@ -765,6 +765,28 @@ body.raccoons-mobile-page .footer-stack {
   line-height: 1.5;
 }
 
+.map-popup-loading-state {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 12px;
+  text-align: center;
+  color: #5f5170;
+}
+
+.map-popup-loading-state p {
+  margin: 0;
+}
+
+.map-popup-loading-spinner {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+}
+
 .map-tabs {
   display: flex;
   flex-direction: column-reverse; /* изменено с column */

@@ -141,7 +141,7 @@ export default function MobileSlideshowViewer({
                       >
                         <StudioSlideMedia
                           slide={{ ...slide, mediaFit: "contain" }}
-                          autoPlayVideo={false}
+                          autoPlayVideo={slideIndex === currentSlideIndex}
                         />
                       </div>
                     </div>

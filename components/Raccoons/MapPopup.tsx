@@ -48,7 +48,10 @@ type MapPopupProps = {
 function toViewerSlides(slides: MapPopupSlide[]): StudioSlide[] {
   return slides.map((slide) => {
     const mediaUrl = typeof slide.imageUrl === "string" ? slide.imageUrl.trim() : "";
-    const mediaType = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") ? "video" : "image";
+    const mediaType =
+      slide.mediaType === "video" || /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(mediaUrl)
+        ? "video"
+        : "image";
 
     return {
       id: slide.id,

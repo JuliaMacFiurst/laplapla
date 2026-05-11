@@ -14,6 +14,7 @@ export type MapPopupSlide = {
   index: number;
   text: string;
   imageUrl?: string | null;
+  mediaType?: "image" | "video" | "gif" | null;
   imageCreditLine?: string | null;
   imageAuthor?: string | null;
   imageSourceUrl?: string | null;

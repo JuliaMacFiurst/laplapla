@@ -310,13 +310,14 @@ async function searchPexelsCandidates(query: string): Promise<PexelsCandidate[]>
 
   const photoSearchParams = new URLSearchParams({
     query,
-    per_page: "24",
+    per_page: "18",
     orientation: "landscape",
   });
 
   const videoSearchParams = new URLSearchParams({
     query,
-    per_page: "12",
+    per_page: "24",
+    orientation: "landscape",
   });
 
   try {
@@ -352,7 +353,7 @@ async function searchPexelsCandidates(query: string): Promise<PexelsCandidate[]>
         sourceUrl: typeof video?.url === "string" ? video.url : undefined,
       }))?.filter((item: PexelsCandidate) => Boolean(item.url)) ?? [];
 
-    return setMemoryCache(cacheKey, [...photos, ...videos], PEXELS_CACHE_TTL_MS);
+    return setMemoryCache(cacheKey, [...videos, ...photos], PEXELS_CACHE_TTL_MS);
   } catch (error) {
     if ((error as { name?: string } | null)?.name !== "AbortError") {
       console.error("[map-popup-media] Pexels request failed", error);
@@ -490,7 +491,7 @@ function prefersVideoCandidate(type: MapPopupType, slideText: string, seedSource
     return true;
   }
 
-  return getSeedValue(seedSource) % 4 === 0;
+  return getSeedValue(seedSource) % 3 !== 1;
 }
 
 function rankCandidates(
@@ -506,7 +507,7 @@ function rankCandidates(
       const description = [candidate.alt, candidate.photographer].filter(Boolean).join(" ");
       const score =
         scoreCandidateText(description, relevanceTerms) +
-        (candidate.mediaType === "video" ? 15 : 12);
+        (candidate.mediaType === "video" ? 24 : 10);
 
       return {
         url: candidate.url,
@@ -545,7 +546,7 @@ function chooseRankedCandidate(
     return null;
   }
 
-  const shortlist = ranked.slice(0, Math.min(6, ranked.length));
+  const shortlist = ranked.slice(0, Math.min(8, ranked.length));
   const seed = getSeedValue(seedSource);
 
   if (preferVideo) {
@@ -553,6 +554,11 @@ function chooseRankedCandidate(
     if (videoCandidates.length > 0) {
       return videoCandidates[seed % videoCandidates.length] ?? videoCandidates[0];
     }
+  }
+
+  const videoCandidates = shortlist.filter((candidate) => candidate.mediaType === "video");
+  if (videoCandidates.length > 0 && seed % 5 < 3) {
+    return videoCandidates[seed % videoCandidates.length] ?? videoCandidates[0];
   }
 
   return shortlist[seed % shortlist.length] ?? shortlist[0];
