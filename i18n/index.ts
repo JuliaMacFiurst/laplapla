@@ -88,6 +88,10 @@ type DictionaryShape = {
         defaultDescription: string;
       };
     };
+    author: {
+      title: string;
+      description: string;
+    };
     legal: {
       terms: {
         title: string;
@@ -155,6 +159,34 @@ type DictionaryShape = {
       title: string;
       preview: string;
       full: string;
+    };
+  };
+
+  identity: {
+    authorPage: {
+      eyebrow: string;
+      title: string;
+      intro: string;
+      aboutProjectLink: string;
+      whoTitle: string;
+      whoParagraphs: string[];
+      quote: string;
+      platformTitle: string;
+      platformIntro: string;
+      platformItems: string[];
+      platformOutro: string;
+      whyTitle: string;
+      whyIntro: string;
+      whyItems: string[];
+      whyOutro: string;
+      collaborationTitle: string;
+      collaborationParagraphs: string[];
+      profilesTitle: string;
+      github: string;
+      linkedin: string;
+      youtube: string;
+      authorshipTitle: string;
+      authorshipParagraphs: string[];
     };
   };
 
@@ -660,6 +692,9 @@ type DictionaryShape = {
     terms: string;
     privacy: string;
     licenses: string;
+    creatorPrefix: string;
+    authorLink: string;
+    youtubeChannel: string;
   };
 };
 

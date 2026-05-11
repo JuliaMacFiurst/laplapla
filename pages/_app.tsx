@@ -26,9 +26,10 @@ import { useEffect, useMemo, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
 import { dictionaries, Lang } from "../i18n";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedHref, buildLocalizedPublicPath, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { fontVariableClasses } from "@/lib/fonts";
 import { supabase } from "@/lib/supabase";
+import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -223,9 +224,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon_io/favicon-48x48.png" />
         <link rel="icon" type="image/webp" sizes="32x32" href="/favicon_io/favicon-32x32.webp" />
         <link rel="icon" type="image/webp" sizes="16x16" href="/favicon_io/favicon-16x16.webp" />
-        <link rel="apple-touch-icon" type="image/webp" href="/favicon_io/apple-touch-icon.webp" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/favicon_io/site.webmanifest" />
         <link rel="icon" type="image/webp" sizes="192x192" href="/favicon_io/android-chrome-192x192.webp" />
         <link rel="icon" type="image/webp" sizes="512x512" href="/favicon_io/android-chrome-512x512.webp" />
@@ -282,6 +284,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
               <div className="footer-left">
                 <div className="footer-links">
                   <a
+                    href={buildLocalizedHref("/terms", lang)}
                     onClick={() =>
                       router.push(
                         { pathname: "/terms", query: buildLocalizedQuery(lang) },
@@ -293,6 +296,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                     {t.footer.terms}
                   </a>
                   <a
+                    href={buildLocalizedHref("/privacy", lang)}
                     onClick={() =>
                       router.push(
                         { pathname: "/privacy", query: buildLocalizedQuery(lang) },
@@ -304,6 +308,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                     {t.footer.privacy}
                   </a>
                   <a
+                    href={buildLocalizedHref("/licenses", lang)}
                     onClick={() =>
                       router.push(
                         { pathname: "/licenses", query: buildLocalizedQuery(lang) },
@@ -314,9 +319,28 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                   >
                     {t.footer.licenses}
                   </a>
+                  <a
+                    href={buildLocalizedPublicPath("/author", lang)}
+                    onClick={() =>
+                      router.push(
+                        { pathname: "/author", query: buildLocalizedQuery(lang) },
+                        undefined,
+                        { locale: lang },
+                      )
+                    }
+                  >
+                    {t.footer.authorLink}
+                  </a>
                 </div>
                 <div className="footer-copy">
-                  © {new Date().getFullYear()} LapLapLa
+                  © {new Date().getFullYear()} LapLapLa · {t.footer.creatorPrefix}{" "}
+                  <a href={buildLocalizedPublicPath("/author", lang)}>
+                    Julia Noah Makhlin
+                  </a>
+                  <br />
+                  <a href={LAPLAPLA_YOUTUBE_URL} target="_blank" rel="me noopener noreferrer">
+                    {t.footer.youtubeChannel}
+                  </a>
                 </div>
               </div>
 

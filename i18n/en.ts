@@ -81,6 +81,10 @@ export const en = {
         defaultDescription: "A LapLapLa project section about its ideas, format, and learning approach.",
       },
     },
+    author: {
+      title: "Julia Noah Makhlin — creator of LapLapLa",
+      description: "The official author page for Julia Noah Makhlin, creator, developer, and founder of the LapLapLa learning platform.",
+    },
     legal: {
       terms: {
         title: "LapLapLa Terms of Service",
@@ -98,6 +102,60 @@ export const en = {
     adminLogin: {
       title: "LapLapLa Admin Login",
       description: "Administrator sign-in page for protected LapLapLa tools.",
+    },
+  },
+
+  identity: {
+    authorPage: {
+      eyebrow: "Author and platform creator",
+      title: "Julia Noah Makhlin",
+      intro:
+        "I create LapLapLa, a learning platform where complex ideas are explained through stories, memes, illustrations, animation, and a little creative chaos.\n\nI like turning learning into an adventure: maps can tell stories, cats can explain science, capybaras can help people fall in love with books, and knowledge can feel less like a lesson and more like a curious journey.",
+      aboutProjectLink: "Learn more about the project",
+      whoTitle: "Who is behind LapLapLa",
+      whoParagraphs: [
+        "My name is Julia Noah Makhlin. I am the author, founder, and developer of LapLapLa.",
+        "This is an independent author-led project that I build myself: from ideas and scripts to interfaces, animations, texts, and platform architecture.",
+        "LapLapLa grew out of a love for creativity, internet culture, education, and odd questions that usually begin with:",
+      ],
+      quote: "What if we explain this through cats?..",
+      platformTitle: "What LapLapLa is",
+      platformIntro: "LapLapLa is an interactive learning platform for children, teenagers, and adults.",
+      platformItems: [
+        "cats explain complex topics in simple language",
+        "capybaras tell book stories",
+        "raccoons explore countries and maps",
+        "parrots introduce music from around the world",
+        "dogs help people look at art without boring textbooks",
+      ],
+      platformOutro:
+        "I want learning to create curiosity, not stress. I want people to open one more tab not because they have to, but because they genuinely want to know what happens next.",
+      whyTitle: "Why this project exists",
+      whyIntro:
+        "I always felt that the internet explains complex things either too dryly or too superficially. LapLapLa is my attempt to connect:",
+      whyItems: [
+        "education",
+        "visual storytelling",
+        "internet culture",
+        "AI tools",
+        "humor",
+        "a sense of play",
+      ],
+      whyOutro: "It is a project about curiosity, creativity, and the right to ask strange questions about the world.",
+      collaborationTitle: "Collaborations and contact",
+      collaborationParagraphs: [
+        "I am open to creative and educational collaborations, partnerships, media projects, and interesting ideas.",
+        "If learning through stories, visual language, and interactivity feels close to your work, I would be glad to connect.",
+      ],
+      profilesTitle: "Public profiles",
+      github: "GitHub",
+      linkedin: "LinkedIn",
+      youtube: "LapLapLa Studio YouTube channel",
+      authorshipTitle: "About the project and authorship",
+      authorshipParagraphs: [
+        "LapLapLa was created and is developed by Julia Noah Makhlin as an independent author-led project.",
+        "I work on the platform concept, interface development, content creation, and the educational system behind the project.",
+      ],
     },
   },
   home: {
@@ -919,5 +977,8 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
     terms: "Terms of Service",
     privacy: "Privacy Policy",
     licenses: "Licensing & Credits",
+    creatorPrefix: "Created by",
+    authorLink: "Project author",
+    youtubeChannel: "YouTube channel: @LapLapLa-studio",
   },
 } as const;

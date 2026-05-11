@@ -1,8 +1,9 @@
 import { useRouter } from "next/router";
+import Link from "next/link";
 import SEO from "@/components/SEO";
 import { Lang, ABOUT_SECTIONS, dictionaries } from "../../i18n";
 import AboutContent from "../../components/AboutContent";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 const ABOUT_ICONS: Record<string, string> = {
   what: "/icons/about-icons/chicken.webp",
@@ -24,6 +25,13 @@ export default function AboutPage() {
       <SEO title={seo.title} description={seo.description} path={seoPath} />
       <main className="about-page" dir={lang === "he" ? "rtl" : "ltr"}>
         <div className="home-wrapper">
+          <section className="author-identity-section">
+            <h1>{dictionaries[lang].about.title}</h1>
+            <p>{dictionaries[lang].identity.authorPage.authorshipParagraphs[0]}</p>
+            <Link href={buildLocalizedPublicPath("/author", lang)}>
+              {dictionaries[lang].seo.author.title}
+            </Link>
+          </section>
 
           <section className="about-list">
             {ABOUT_SECTIONS.map((section) => (

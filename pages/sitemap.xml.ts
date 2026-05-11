@@ -8,6 +8,8 @@ const CORE_SITEMAP_PAGES = [
   { path: "/books/kladbishenskaya-kniga", priority: "0.9" },
   { path: "/parrots", priority: "0.9" },
   { path: "/raccoons", priority: "0.9" },
+  { path: "/about", priority: "0.8" },
+  { path: "/author", priority: "0.8" },
 ] as const;
 
 const escapeXml = (value: string) =>

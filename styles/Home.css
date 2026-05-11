@@ -188,6 +188,7 @@ body {
 .footer-links a:nth-child(1) { color: #ff7aa2; }
 .footer-links a:nth-child(2) { color: #7c9cff; }
 .footer-links a:nth-child(3) { color: #9b8cff; }
+.footer-links a:nth-child(4) { color: #37a47b; }
 
 .footer-links a:hover {
   transform: translateY(-2px);
@@ -197,6 +198,15 @@ body {
 .footer-copy {
   font-size: 18px;
   opacity: 0.8;
+}
+
+.footer-copy a {
+  color: #37a47b;
+  text-decoration: none;
+}
+
+.footer-copy a:hover {
+  opacity: 0.75;
 }
 
 .footer-right {
