@@ -222,12 +222,13 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     <div className={fontVariableClasses}>
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.webp" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.webp" />
-        <link rel="apple-touch-icon" href="/favicon_io/apple-touch-icon.webp" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/webp" sizes="32x32" href="/favicon_io/favicon-32x32.webp" />
+        <link rel="icon" type="image/webp" sizes="16x16" href="/favicon_io/favicon-16x16.webp" />
+        <link rel="apple-touch-icon" type="image/webp" href="/favicon_io/apple-touch-icon.webp" />
         <link rel="manifest" href="/favicon_io/site.webmanifest" />
-        <link rel="icon" sizes="192x192" href="/favicon_io/android-chrome-192x192.webp" />
-        <link rel="icon" sizes="512x512" href="/favicon_io/android-chrome-512x512.webp" />
+        <link rel="icon" type="image/webp" sizes="192x192" href="/favicon_io/android-chrome-192x192.webp" />
+        <link rel="icon" type="image/webp" sizes="512x512" href="/favicon_io/android-chrome-512x512.webp" />
       </Head>
 
       {isBrowserCaptureEnabled && (
