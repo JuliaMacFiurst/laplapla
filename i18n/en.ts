@@ -170,6 +170,16 @@ export const en = {
       raccoons: "Raccoons Explore",
       comingSoon: "Coming Soon",
     },
+    brand: {
+      eyebrow: "LapLapLa homepage",
+      heading: "LapLapLa — a learning platform for kids and grown-ups",
+      intro:
+        "LapLapLa brings together interactive stories, games, maps, music, drawing, animation, and book-based formats for children and grown-ups.",
+      audience:
+        "The project helps children, parents, teachers, and curious adults explore complex topics through short visual explanations and playful learning scenarios.",
+      sectionsTitle: "LapLapLa core sections",
+      aboutLink: "About LapLapLa",
+    },
     cta: "Explore",
   },
   cats: {
@@ -974,6 +984,8 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
     },
   },
   footer: {
+    home: "LapLapLa Home",
+    about: "About LapLapLa",
     terms: "Terms of Service",
     privacy: "Privacy Policy",
     licenses: "Licensing & Credits",

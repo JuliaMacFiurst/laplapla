@@ -1,24 +1,20 @@
 // components/Navigation/HomeButton.tsx
+import Link from "next/link";
+import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useRouter } from "next/router";
-import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 
 export default function HomeButton() {
   const router = useRouter();
   const lang = getCurrentLang(router);
 
   return (
-    <button
+    <Link
       className="home-button"
-      onClick={() =>
-        router.push(
-          { pathname: "/", query: buildLocalizedQuery(lang) },
-          undefined,
-          { locale: lang },
-        )
-      }
-      aria-label="Home"
+      href={buildLocalizedPublicPath("/", lang)}
+      locale={lang}
+      aria-label="LapLapLa Home"
     >
       🏠
-    </button>
+    </Link>
   );
 }

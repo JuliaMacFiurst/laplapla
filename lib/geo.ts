@@ -1,6 +1,7 @@
 import { BASE_URL } from "@/lib/config";
 import type { Lang } from "@/i18n";
 import { ENTITY_IDS, SITE_NAME, AUTHOR_NAME } from "@/lib/identity";
+import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 
 export type GeoCorePage = {
   name: string;
@@ -224,12 +225,13 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
 
 export function buildHomeGeoJsonLd(lang: Lang) {
   const profile = GEO_PROFILES[lang];
-  const homeUrl = `${BASE_URL}/`;
+  const homePath = buildLocalizedPublicPath("/", lang);
+  const homeUrl = `${BASE_URL}${homePath === "/" ? "" : homePath}`;
   const pageItems = profile.pages.map((page, index) => ({
     "@type": "ListItem",
     position: index + 1,
     name: page.name,
-    url: `${BASE_URL}${page.path}`,
+    url: `${BASE_URL}${buildLocalizedPublicPath(page.path, lang)}`,
     description: page.description,
   }));
 
@@ -244,6 +246,9 @@ export function buildHomeGeoJsonLd(lang: Lang) {
       inLanguage: lang,
       isPartOf: {
         "@id": ENTITY_IDS.website,
+      },
+      publisher: {
+        "@id": ENTITY_IDS.organization,
       },
       about: [
         {
@@ -265,6 +270,10 @@ export function buildHomeGeoJsonLd(lang: Lang) {
       creator: {
         "@id": ENTITY_IDS.author,
         name: AUTHOR_NAME,
+      },
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: `${BASE_URL}/laplapla-logo-letters.webp`,
       },
       mainEntity: {
         "@type": "ItemList",

@@ -10,28 +10,14 @@ import { VideoSection } from "../components/video/VideoSection";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BASE_URL } from "@/lib/config";
-import { buildHomeGeoJsonLd } from "@/lib/geo";
-
-const HOME_CANONICAL_URL = `${BASE_URL}/`;
+import { GEO_PROFILES, buildHomeGeoJsonLd } from "@/lib/geo";
 
 const HOME_ALTERNATES = [
-  { hrefLang: "ru", href: `${BASE_URL}/` },
+  { hrefLang: "ru", href: BASE_URL },
   { hrefLang: "en", href: `${BASE_URL}/en` },
   { hrefLang: "he", href: `${BASE_URL}/he` },
-  { hrefLang: "x-default", href: `${BASE_URL}/` },
+  { hrefLang: "x-default", href: BASE_URL },
 ];
-
-const visuallyHiddenStyle = {
-  position: "absolute" as const,
-  width: "1px",
-  height: "1px",
-  padding: 0,
-  margin: "-1px",
-  overflow: "hidden",
-  clip: "rect(0, 0, 0, 0)",
-  whiteSpace: "nowrap" as const,
-  border: 0,
-};
 
 export default function Home({ lang }: { lang?: Lang }) {
   const router = useRouter();
@@ -41,6 +27,9 @@ export default function Home({ lang }: { lang?: Lang }) {
   const t = useMemo(() => dictionaries[resolvedLang].home, [resolvedLang]);
   const seo = dictionaries[resolvedLang].seo.home;
   const geoJsonLd = useMemo(() => buildHomeGeoJsonLd(resolvedLang), [resolvedLang]);
+  const geoProfile = GEO_PROFILES[resolvedLang];
+  const localizedHomePath = buildLocalizedPublicPath("/", resolvedLang);
+  const homeCanonicalUrl = `${BASE_URL}${localizedHomePath === "/" ? "" : localizedHomePath}`;
 
   // Optional: set RTL for Hebrew without touching global layout yet
   const dir = resolvedLang === "he" ? "rtl" : "ltr";
@@ -52,7 +41,7 @@ export default function Home({ lang }: { lang?: Lang }) {
         description={seo.description}
         path="/"
         lang={resolvedLang}
-        canonicalOverride={HOME_CANONICAL_URL}
+        canonicalOverride={homeCanonicalUrl}
         alternates={HOME_ALTERNATES}
         jsonLd={geoJsonLd}
       />
@@ -61,9 +50,7 @@ export default function Home({ lang }: { lang?: Lang }) {
           <section className={isMobile ? "home-mobile-screen home-mobile-screen-menu" : undefined}>
             <header className="site-header">
               <div className="header-text">
-                <h1 style={visuallyHiddenStyle}>{seo.title}</h1>
-                <div className="page-title">{t.title}</div>
-                <p style={visuallyHiddenStyle}>{seo.description}</p>
+                <h1 className="page-title">{t.title}</h1>
                 <h2 className="page-subtitle">
                   {isMobile ? t.mobileHelper : t.subtitle}
                 </h2>
@@ -128,6 +115,25 @@ export default function Home({ lang }: { lang?: Lang }) {
                 </div>
                 <div className="label">{t.sections.comingSoon}</div>
               </div>
+            </div>
+          </section>
+
+          <section className="home-brand-overview" aria-labelledby="laplapla-brand-heading">
+            <h2 id="laplapla-brand-heading">{t.brand.heading}</h2>
+            <p>{t.brand.intro}</p>
+            <p>{t.brand.audience}</p>
+            <nav className="home-brand-links" aria-label={t.brand.sectionsTitle}>
+              {geoProfile.pages.map((page) => (
+                <Link key={page.path} href={buildLocalizedPublicPath(page.path, resolvedLang)}>
+                  <strong>{page.name}</strong>
+                  <span>{page.description}</span>
+                </Link>
+              ))}
+            </nav>
+            <div className="home-brand-meta-links">
+              <Link href={buildLocalizedPublicPath("/about", resolvedLang)}>
+                {t.brand.aboutLink}
+              </Link>
             </div>
           </section>
 

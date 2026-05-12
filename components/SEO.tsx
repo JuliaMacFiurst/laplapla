@@ -69,7 +69,10 @@ export default function SEO({
     <Head>
       <title key="title">{title}</title>
       <meta key="description" name="description" content={description} />
+      <meta key="robots" name="robots" content="index, follow, max-image-preview:large" />
+      <meta key="application-name" name="application-name" content={SITE_NAME} />
       <link key="canonical" rel="canonical" href={canonical} />
+      <link key="home" rel="home" href={BASE_URL} />
       {alternateLinks.map((alternate) => (
         <link
           key={`alternate-${alternate.hrefLang}`}
@@ -84,6 +87,13 @@ export default function SEO({
       <meta key="og:url" property="og:url" content={canonical} />
       <meta key="og:site_name" property="og:site_name" content={SITE_NAME} />
       <meta key="og:locale" property="og:locale" content={locale} />
+      {["ru_RU", "en_US", "he_IL"].filter((item) => item !== locale).map((alternateLocale) => (
+        <meta
+          key={`og:locale:alternate-${alternateLocale}`}
+          property="og:locale:alternate"
+          content={alternateLocale}
+        />
+      ))}
       <meta key="og:image" property="og:image" content={socialImage} />
       <meta key="twitter:card" name="twitter:card" content="summary_large_image" />
       <meta key="twitter:title" name="twitter:title" content={title} />

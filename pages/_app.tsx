@@ -283,6 +283,21 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             <footer className="unified-footer">
               <div className="footer-left">
                 <div className="footer-links">
+                  <a href={buildLocalizedPublicPath("/", lang)}>
+                    {t.footer.home}
+                  </a>
+                  <a
+                    href={buildLocalizedPublicPath("/about", lang)}
+                    onClick={() =>
+                      router.push(
+                        { pathname: "/about", query: buildLocalizedQuery(lang) },
+                        undefined,
+                        { locale: lang },
+                      )
+                    }
+                  >
+                    {t.footer.about}
+                  </a>
                   <a
                     href={buildLocalizedHref("/terms", lang)}
                     onClick={() =>

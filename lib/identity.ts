@@ -16,6 +16,8 @@ export const ENTITY_IDS = {
   logo: `${BASE_URL}${SITE_LOGO_PATH}#logo`,
 } as const;
 
+const SITE_LANGUAGES = ["ru", "en", "he"] as const;
+
 export const AUTHOR_SAME_AS = [
   AUTHOR_GITHUB_URL,
   AUTHOR_LINKEDIN_URL,
@@ -83,6 +85,7 @@ export function buildCoreIdentityJsonLd(lang: Lang) {
       "@type": "Organization",
       "@id": ENTITY_IDS.organization,
       name: SITE_NAME,
+      alternateName: ["Lap Lap La", "ЛапЛапЛа"],
       legalName: SITE_NAME,
       url: BASE_URL,
       description: organizationDescription,
@@ -90,23 +93,42 @@ export function buildCoreIdentityJsonLd(lang: Lang) {
         "@type": "ImageObject",
         "@id": ENTITY_IDS.logo,
         url: `${BASE_URL}${SITE_LOGO_PATH}`,
+        contentUrl: `${BASE_URL}${SITE_LOGO_PATH}`,
+        caption: `${SITE_NAME} logo`,
       },
+      image: `${BASE_URL}${SITE_SOCIAL_IMAGE_PATH}`,
       sameAs: [LAPLAPLA_YOUTUBE_URL, AUTHOR_GITHUB_URL, AUTHOR_LINKEDIN_URL],
       founder: authorReference,
       creator: authorReference,
       publisher: authorReference,
+      mainEntityOfPage: `${BASE_URL}/`,
+      knowsAbout: [
+        "children's education",
+        "interactive learning",
+        "creative learning",
+        "visual explanations",
+        "stories for children",
+        "geography for children",
+      ],
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "@id": ENTITY_IDS.website,
       name: SITE_NAME,
+      alternateName: ["Lap Lap La", "ЛапЛапЛа"],
       url: BASE_URL,
       inLanguage: lang,
+      availableLanguage: SITE_LANGUAGES,
       publisher: organizationReference,
       creator: authorReference,
       author: authorReference,
       about: organizationReference,
+      isAccessibleForFree: true,
+      potentialAction: {
+        "@type": "ReadAction",
+        target: `${BASE_URL}/`,
+      },
     },
   ];
 }

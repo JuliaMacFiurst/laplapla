@@ -124,6 +124,14 @@ type DictionaryShape = {
       raccoons: string;
       comingSoon: string;
     };
+    brand: {
+      eyebrow: string;
+      heading: string;
+      intro: string;
+      audience: string;
+      sectionsTitle: string;
+      aboutLink: string;
+    };
     cta: string;
   };
 
@@ -689,6 +697,8 @@ type DictionaryShape = {
   };
 
   footer: {
+    home: string;
+    about: string;
     terms: string;
     privacy: string;
     licenses: string;
