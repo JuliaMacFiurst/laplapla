@@ -10,6 +10,7 @@ import { VideoSection } from "../components/video/VideoSection";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BASE_URL } from "@/lib/config";
+import { buildHomeGeoJsonLd } from "@/lib/geo";
 
 const HOME_CANONICAL_URL = `${BASE_URL}/`;
 
@@ -39,6 +40,7 @@ export default function Home({ lang }: { lang?: Lang }) {
 
   const t = useMemo(() => dictionaries[resolvedLang].home, [resolvedLang]);
   const seo = dictionaries[resolvedLang].seo.home;
+  const geoJsonLd = useMemo(() => buildHomeGeoJsonLd(resolvedLang), [resolvedLang]);
 
   // Optional: set RTL for Hebrew without touching global layout yet
   const dir = resolvedLang === "he" ? "rtl" : "ltr";
@@ -52,6 +54,7 @@ export default function Home({ lang }: { lang?: Lang }) {
         lang={resolvedLang}
         canonicalOverride={HOME_CANONICAL_URL}
         alternates={HOME_ALTERNATES}
+        jsonLd={geoJsonLd}
       />
       <div className={`home-wrapper ${isMobile ? "home-wrapper-mobile" : ""}`} dir={dir}>
         <div className={isMobile ? "home-mobile-snap-shell" : undefined}>

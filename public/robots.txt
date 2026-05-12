@@ -1,3 +1,7 @@
 User-agent: *
 Allow: /
 Sitemap: https://www.laplapla.com/sitemap.xml
+
+# Machine-readable project summaries for AI assistants and answer engines.
+LLMs: https://www.laplapla.com/llms.txt
+LLMs-Full: https://www.laplapla.com/llms-full.txt

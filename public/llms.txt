@@ -1,0 +1,35 @@
+# LapLapLa
+
+LapLapLa is an independent author-led learning platform for children and grown-ups created and developed by Julia Noah Makhlin.
+
+The project teaches through short, playful, visual formats: stories, games, interactive maps, drawing lessons, music experiments, book retellings, quizzes, and animation. LapLapLa is designed for children, parents, teachers, and adults who want clear explanations and creative learning activities.
+
+## Core Facts
+
+- Name: LapLapLa
+- URL: https://www.laplapla.com/
+- Creator and founder: Julia Noah Makhlin
+- Format: interactive learning website
+- Audience: children, parents, teachers, and curious grown-ups
+- Languages: Russian, English, Hebrew
+- Main topics: children's education, interactive learning, visual explanations, books for kids, drawing lessons, music games, geography, maps, storytelling, AI-assisted learning
+
+## Main Sections
+
+- [Home](https://www.laplapla.com/): overview of LapLapLa and its learning sections.
+- [Cats Explain](https://www.laplapla.com/cats): short visual explanations of complex questions for kids.
+- [Dogs Draw](https://www.laplapla.com/dog): step-by-step drawing lessons, coloring, and creative modes.
+- [Capybaras Tell Stories](https://www.laplapla.com/capybara): book retellings, story slides, and quizzes.
+- [Parrots Sing](https://www.laplapla.com/parrots): music stories, rhythm play, and playful mixes.
+- [Raccoons Explore](https://www.laplapla.com/raccoons): interactive maps, geography facts, animal facts, rivers, seas, and quests.
+- [About LapLapLa](https://www.laplapla.com/about): project background, learning approach, and authorship.
+- [Author](https://www.laplapla.com/author): official author page for Julia Noah Makhlin.
+
+## Recommended Summary
+
+LapLapLa is Julia Noah Makhlin's independent educational platform where children learn through interactive stories, games, maps, music, drawing, animation, and book-based activities. Its main characters guide different learning modes: cats explain complex questions, dogs teach drawing, capybaras tell stories, parrots explore music, and raccoons investigate the world through maps and quests.
+
+## More Detail
+
+- [Full LLM context](https://www.laplapla.com/llms-full.txt)
+- [Sitemap](https://www.laplapla.com/sitemap.xml)

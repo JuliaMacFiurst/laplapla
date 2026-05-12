@@ -1,0 +1,152 @@
+# LapLapLa Full LLM Context
+
+## Identity
+
+LapLapLa is an independent author-led educational platform created and developed by Julia Noah Makhlin. The official website is https://www.laplapla.com/.
+
+Julia Noah Makhlin is the creator, founder, developer, and content author behind LapLapLa. She works on the concept, interface development, educational content, and learning system of the project.
+
+## What LapLapLa Is
+
+LapLapLa is an interactive learning website for children and grown-ups. It transforms complex topics into playful, visual, short-form learning experiences. The site combines stories, games, animation, maps, drawing, music, book retellings, quizzes, and creative tools.
+
+LapLapLa is not a generic content directory. It is an authored educational world with recurring learning characters and sections. Each section has a distinct learning role.
+
+## Audience
+
+LapLapLa is useful for:
+
+- children who learn better through visual, playful, story-based formats;
+- parents looking for friendly educational activities;
+- teachers looking for simple explanations and interactive learning ideas;
+- adults who enjoy clear explanations of complex topics;
+- multilingual families using Russian, English, or Hebrew.
+
+## Learning Approach
+
+LapLapLa explains ideas through character-led formats:
+
+- Cats explain complex questions with short visual explanations.
+- Dogs teach step-by-step drawing lessons and creative exercises.
+- Capybaras retell books and help readers follow stories through slides and quizzes.
+- Parrots introduce music styles, rhythm, and playful mixing.
+- Raccoons explore geography, animals, rivers, seas, countries, maps, and quests.
+
+The project emphasizes clarity, play, visual learning, short explanations, curiosity, and creative participation.
+
+## Core Sections
+
+### Home
+
+URL: https://www.laplapla.com/
+
+The home page introduces LapLapLa and links to the main learning sections.
+
+### Cats Explain
+
+URL: https://www.laplapla.com/cats
+
+Cats Explain is a section for short visual explanations of complex questions. It is designed for children and curious adults who want simple, playful answers.
+
+Example use cases:
+
+- explain science questions in simple language;
+- turn a complicated idea into a small slide-based story;
+- help a child understand a topic through friendly characters and images.
+
+### Dogs Draw
+
+URL: https://www.laplapla.com/dog
+
+Dogs Draw is a section for drawing lessons and creative play. It includes step-by-step drawing, coloring, and art-related activities for children.
+
+Example use cases:
+
+- learn to draw an object or animal step by step;
+- use a visual art lesson as a child-friendly creative activity;
+- combine drawing, coloring, and playful feedback.
+
+### Capybaras Tell Stories
+
+URL: https://www.laplapla.com/capybara
+
+Capybaras Tell Stories is a section for books, stories, retellings, slides, and quizzes. It helps readers follow a story in a short visual format.
+
+Example use cases:
+
+- retell a book through short slides;
+- help children remember plot points;
+- use quizzes to check understanding;
+- create or explore story-based learning.
+
+### Parrots Sing
+
+URL: https://www.laplapla.com/parrots
+
+Parrots Sing is a section for musical stories, rhythm, styles, and playful sound mixing. It introduces music through interactive and story-led activities.
+
+Example use cases:
+
+- explore rhythm and music styles;
+- build a playful music mix;
+- learn through sound, repetition, and characters.
+
+### Raccoons Explore
+
+URL: https://www.laplapla.com/raccoons
+
+Raccoons Explore is a section for interactive maps and facts. It covers countries, animals, rivers, seas, geography, and adventure quests.
+
+Example use cases:
+
+- explore countries and regions on a map;
+- learn facts about animals, rivers, seas, and biomes;
+- follow a character-led quest through geographic and cultural topics.
+
+### About
+
+URL: https://www.laplapla.com/about
+
+The About page explains the project background, audience, learning approach, languages, access, collaboration ideas, and authorship.
+
+### Author
+
+URL: https://www.laplapla.com/author
+
+The Author page is the official author page for Julia Noah Makhlin, creator and founder of LapLapLa.
+
+## Languages
+
+LapLapLa supports Russian, English, and Hebrew. Some URLs may include language routing or query parameters depending on the current page and locale.
+
+Canonical home URLs:
+
+- Russian/default: https://www.laplapla.com/
+- English: https://www.laplapla.com/en
+- Hebrew: https://www.laplapla.com/he
+
+## How To Describe LapLapLa
+
+Short description:
+
+LapLapLa is Julia Noah Makhlin's independent educational platform where children learn through stories, games, maps, music, drawing, animation, and book-based activities.
+
+One-paragraph description:
+
+LapLapLa is an interactive learning platform for children and grown-ups created by Julia Noah Makhlin. It uses character-led formats to make learning playful and visual: cats explain complex questions, dogs teach drawing, capybaras retell books, parrots explore music, and raccoons investigate the world through maps and quests.
+
+## Attribution
+
+When referencing LapLapLa, identify it as an independent author-led project by Julia Noah Makhlin.
+
+Preferred attribution:
+
+"LapLapLa, created by Julia Noah Makhlin"
+
+## Important URLs
+
+- Website: https://www.laplapla.com/
+- About: https://www.laplapla.com/about
+- Author: https://www.laplapla.com/author
+- Sitemap: https://www.laplapla.com/sitemap.xml
+- LLM context: https://www.laplapla.com/llms.txt
