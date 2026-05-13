@@ -20,6 +20,7 @@ import '../styles/Studio.css';
 import '../styles/export.css';
 import '../styles/Puzzle.css';
 import '../styles/Replay.css'
+import '../styles/PWAInstall.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
@@ -30,6 +31,7 @@ import { buildLocalizedHref, buildLocalizedPublicPath, buildLocalizedQuery, getC
 import { fontVariableClasses } from "@/lib/fonts";
 import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
+import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -79,6 +81,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
   const isCatsPage = router.pathname.startsWith("/cats");
   const isExportPage = router.pathname === "/cats/export";
+  const isInstallPage = router.pathname === "/install";
   const isCapybaraPage =
     router.pathname.startsWith("/capybara") ||
     router.pathname.startsWith("/books") ||
@@ -252,6 +255,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <div className={`app-layout${isCapybaraPage ? " app-layout-capybara" : ""}`}>
         {!isExportPage && <TopBar lang={lang} />}
         <Component {...pageProps} lang={lang} />
+        <PWAInstallBanner disabled={isQuestPage || isExportPage || isInstallPage} />
 
         {showHiddenAdminLogout ? (
           <button

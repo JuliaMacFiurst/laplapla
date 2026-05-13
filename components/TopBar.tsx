@@ -4,8 +4,9 @@ import { ABOUT_SECTIONS, dictionaries } from "../i18n";
 import { Lang } from "../i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import HomeButton from "./HomeButton";
-import { buildLocalizedQuery } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, buildLocalizedQuery } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import Link from "next/link";
 
 type TopBarProps = {
   lang: Lang;
@@ -59,44 +60,55 @@ export default function TopBar({ lang }: TopBarProps) {
     <div className="top-bar">
       {/* Левая/основная зона */}
       {isHome ? (
-        <div
-          className="menu-wrapper"
-          onMouseEnter={openMenu}
-          onMouseLeave={scheduleCloseMenu}
-        >
-          <div
-            className="menu-button"
-            onClick={navigateToAbout}
+        <div className="top-bar-home-menu-cluster">
+          <Link
+            className="top-bar-install-link"
+            href={buildLocalizedPublicPath("/install", lang)}
+            aria-label={dictionaries[lang].home.installBanner}
           >
-            ☰
-          </div>
+            <span className="top-bar-install-emoji" aria-hidden="true">📲</span>
+            <span className="top-bar-install-text">{dictionaries[lang].home.installBanner}</span>
+          </Link>
 
-          {!isMobile && menuHover && (
+          <div
+            className="menu-wrapper"
+            onMouseEnter={openMenu}
+            onMouseLeave={scheduleCloseMenu}
+          >
             <div
-              className="menu-preview"
-              onMouseEnter={openMenu}
-              onMouseLeave={scheduleCloseMenu}
+              className="menu-button"
+              onClick={navigateToAbout}
             >
-              {ABOUT_SECTIONS.map((key) => (
-                <div
-                  key={key}
-                  className="menu-item"
-                  onClick={() =>
-                    router.push(
-                      {
-                        pathname: `/about/${key}`,
-                        query: buildLocalizedQuery(lang),
-                      },
-                      undefined,
-                      { locale: lang },
-                    )
-                  }
-                >
-                  {dictionaries[lang].about[key].title}
-                </div>
-              ))}
+              ☰
             </div>
-          )}
+
+            {!isMobile && menuHover && (
+              <div
+                className="menu-preview"
+                onMouseEnter={openMenu}
+                onMouseLeave={scheduleCloseMenu}
+              >
+                {ABOUT_SECTIONS.map((key) => (
+                  <div
+                    key={key}
+                    className="menu-item"
+                    onClick={() =>
+                      router.push(
+                        {
+                          pathname: `/about/${key}`,
+                          query: buildLocalizedQuery(lang),
+                        },
+                        undefined,
+                        { locale: lang },
+                      )
+                    }
+                  >
+                    {dictionaries[lang].about[key].title}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       ) : !isQuestPage ? (
         <HomeButton />

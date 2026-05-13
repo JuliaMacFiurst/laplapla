@@ -181,6 +181,69 @@ export const he = {
       aboutLink: "על LapLapLa",
     },
     cta: "לגלות",
+    installBanner: "להתקין את אפליקציית LapLapLa",
+  },
+  pwaInstall: {
+    seo: {
+      title: "להתקין את LapLapLa כאפליקציה",
+      description: "הוראות התקנה של LapLapLa ב-Android, iPhone, iPad, Mac ו-Windows.",
+    },
+    banner: {
+      ariaLabel: "התקנת אפליקציית LapLapLa",
+      title: "אפשר להתקין את LapLapLa",
+      text: "פתחו את האתר כאפליקציה נפרדת עם גישה מהירה מהמכשיר.",
+      iosTitle: "הוסיפו את LapLapLa למסך הבית",
+      iosText: "ב-Safari לחצו על שיתוף ואז על הוספה למסך הבית.",
+      installButton: "להתקין אפליקציה",
+      instructionsButton: "איך מתקינים",
+      dismissLabel: "להסתיר את הצעת ההתקנה",
+    },
+    page: {
+      kicker: "אפליקציית PWA",
+      title: "להתקין את LapLapLa",
+      lead: "LapLapLa יכולה להיפתח כמו אפליקציה: בלי לשוניות מיותרות, עם אייקון משלה וגישה נוחה בטלפון, בטאבלט או במחשב.",
+      installButton: "להתקין אפליקציה",
+      unavailableButton: "פתחו את תפריט הדפדפן",
+      installedNote: "LapLapLa כבר פתוחה במצב אפליקציה.",
+      cards: {
+        android: {
+          title: "Android",
+          summary: "Chrome ורוב דפדפני Android מציגים חלון התקנה מובנה.",
+          steps: [
+            "פתחו את LapLapLa ב-Chrome.",
+            "לחצו על התקנת אפליקציה אם הכפתור זמין.",
+            "אם הכפתור לא מופיע, פתחו את תפריט הדפדפן ובחרו התקנת אפליקציה או הוספה למסך הבית.",
+          ],
+        },
+        ios: {
+          title: "iPhone ו-iPad",
+          summary: "Safari ב-iOS לא מציג חלון התקנה מובנה, לכן מוסיפים ידנית.",
+          steps: [
+            "פתחו את LapLapLa ב-Safari.",
+            "לחצו על כפתור השיתוף.",
+            "בחרו הוספה למסך הבית ואשרו.",
+          ],
+        },
+        mac: {
+          title: "Mac",
+          summary: "Chrome, Edge ו-Safari יכולים להוסיף את LapLapLa ל-Dock או ל-Applications.",
+          steps: [
+            "פתחו את LapLapLa בדפדפן נתמך.",
+            "לחצו על התקנת אפליקציה אם הדפדפן מציע התקנה.",
+            "ב-Safari השתמשו ב-File → Add to Dock אם האפשרות זמינה.",
+          ],
+        },
+        windows: {
+          title: "Windows",
+          summary: "Chrome ו-Edge מתקינים את LapLapLa כאפליקציה נפרדת עם קיצור דרך.",
+          steps: [
+            "פתחו את LapLapLa ב-Chrome או ב-Edge.",
+            "לחצו על התקנת אפליקציה או על סמל ההתקנה בשורת הכתובת.",
+            "אשרו את ההתקנה, ואז LapLapLa תופיע בתפריט Start.",
+          ],
+        },
+      },
+    },
   },
   about: {
     title: "על הפרויקט",

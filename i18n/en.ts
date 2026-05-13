@@ -181,6 +181,69 @@ export const en = {
       aboutLink: "About LapLapLa",
     },
     cta: "Explore",
+    installBanner: "Install the LapLapLa app",
+  },
+  pwaInstall: {
+    seo: {
+      title: "Install LapLapLa as an app",
+      description: "How to install LapLapLa on Android, iPhone, iPad, Mac, and Windows.",
+    },
+    banner: {
+      ariaLabel: "LapLapLa app installation",
+      title: "LapLapLa can be installed",
+      text: "Open the site as a separate app with a quick launcher on your device.",
+      iosTitle: "Add LapLapLa to Home Screen",
+      iosText: "In Safari, tap Share, then Add to Home Screen.",
+      installButton: "Install app",
+      instructionsButton: "How to install",
+      dismissLabel: "Hide install suggestion",
+    },
+    page: {
+      kicker: "PWA app",
+      title: "Install LapLapLa",
+      lead: "LapLapLa can open like an app: no extra tabs, with its own icon and a faster way back on phones, tablets, and computers.",
+      installButton: "Install app",
+      unavailableButton: "Open browser menu",
+      installedNote: "LapLapLa is already open in app mode.",
+      cards: {
+        android: {
+          title: "Android",
+          summary: "Chrome and most Android browsers show the native install window.",
+          steps: [
+            "Open LapLapLa in Chrome.",
+            "Tap Install app when the button is available.",
+            "If the button is not available, open the browser menu and choose Install app or Add to Home Screen.",
+          ],
+        },
+        ios: {
+          title: "iPhone and iPad",
+          summary: "Safari on iOS does not show the native install prompt, so installation is manual.",
+          steps: [
+            "Open LapLapLa in Safari.",
+            "Tap the Share button.",
+            "Choose Add to Home Screen and confirm.",
+          ],
+        },
+        mac: {
+          title: "Mac",
+          summary: "Chrome, Edge, and Safari can add LapLapLa to the Dock or Applications.",
+          steps: [
+            "Open LapLapLa in a supported browser.",
+            "Click Install app if the browser offers installation.",
+            "In Safari, use File → Add to Dock when that menu item is available.",
+          ],
+        },
+        windows: {
+          title: "Windows",
+          summary: "Chrome and Edge install LapLapLa as a separate app with its own shortcut.",
+          steps: [
+            "Open LapLapLa in Chrome or Edge.",
+            "Click Install app or the install icon in the address bar.",
+            "Confirm installation, then LapLapLa will appear in the Start menu.",
+          ],
+        },
+      },
+    },
   },
   cats: {
     title: "Cats Explain",

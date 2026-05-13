@@ -133,6 +133,54 @@ type DictionaryShape = {
       aboutLink: string;
     };
     cta: string;
+    installBanner: string;
+  };
+
+  pwaInstall: {
+    seo: {
+      title: string;
+      description: string;
+    };
+    banner: {
+      ariaLabel: string;
+      title: string;
+      text: string;
+      iosTitle: string;
+      iosText: string;
+      installButton: string;
+      instructionsButton: string;
+      dismissLabel: string;
+    };
+    page: {
+      kicker: string;
+      title: string;
+      lead: string;
+      installButton: string;
+      unavailableButton: string;
+      installedNote: string;
+      cards: {
+        android: {
+          title: string;
+          summary: string;
+          steps: string[];
+        };
+        ios: {
+          title: string;
+          summary: string;
+          steps: string[];
+        };
+        mac: {
+          title: string;
+          summary: string;
+          steps: string[];
+        };
+        windows: {
+          title: string;
+          summary: string;
+          steps: string[];
+        };
+      };
+    };
   };
 
   about: {
