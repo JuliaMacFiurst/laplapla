@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { dictionaries, Lang } from "@/i18n";
 import { devLog } from "@/utils/devLog";
 
@@ -10,8 +10,24 @@ interface MediaPickerModalProps {
   isOpen: boolean;
   isMobile?: boolean;
   onClose: () => void;
-  onSelect: (payload: { url: string; mediaType: "image" | "video" }) => void;
+  onSelect: (payload: {
+    url: string;
+    mediaType: "image" | "video" | "sticker";
+    previewUrl?: string;
+    animationType?: "webp" | "apng" | "gif";
+    source?: "giphy" | "laplapla" | "upload" | "custom";
+    tags?: string[];
+  }) => void;
 }
+
+type MediaPickerResult = {
+  url: string;
+  previewUrl?: string;
+  mediaType: "image" | "video" | "sticker";
+  animationType?: "webp" | "apng" | "gif";
+  source?: "giphy" | "laplapla" | "upload" | "custom";
+  tags?: string[];
+};
 
 function buildMediaPreviewAlt(url: string, index: number) {
   const filename = url.split("?")[0]?.split("/").pop()?.replace(/\.[a-z0-9]+$/i, "") || "";
@@ -27,11 +43,11 @@ export default function MediaPickerModal({
   onClose,
   onSelect,
 }: MediaPickerModalProps) {
-  const [activeTab, setActiveTab] = useState<"giphy" | "pexels" | "upload">(
+  const [activeTab, setActiveTab] = useState<"giphy" | "pexels" | "stickers" | "upload">(
     "giphy",
   );
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<string[]>([]);
+  const [results, setResults] = useState<MediaPickerResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -58,30 +74,83 @@ export default function MediaPickerModal({
     });
   }
 
-  async function searchLibraryMedia(
-    source: "giphy" | "pexels",
+  const searchLibraryMedia = useCallback(async (
+    source: "giphy" | "pexels" | "stickers",
     rawQuery: string,
     limit: number,
-  ) {
-    const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
+    requestOffset = 0,
+  ) => {
+    const endpoint = source === "giphy"
+      ? "/api/giphy"
+      : source === "stickers"
+        ? "/api/giphy-stickers"
+        : "/api/pexels";
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: rawQuery, limit }),
+      body: JSON.stringify({ q: rawQuery, limit, offset: requestOffset }),
     });
 
     const data = await res.json().catch(() => null) as
-      | { items?: Array<{ url?: string; mediaType?: string }>; error?: string }
+      | { items?: Array<{ url?: string; previewUrl?: string; mediaType?: string; animationType?: string; source?: string; tags?: string[] }>; error?: string; hasMore?: boolean }
       | null;
 
     if (!res.ok) {
       throw new Error(data?.error || `Media search failed: ${res.status}`);
     }
 
-    return (data?.items || [])
-      .map((item) => item?.url || "")
-      .filter(Boolean);
-  }
+    const items: MediaPickerResult[] = (data?.items || [])
+      .map((item): MediaPickerResult => ({
+        url: item?.url || "",
+        previewUrl: item?.previewUrl,
+        mediaType: source === "stickers" ? "sticker" as const : item?.mediaType === "video" ? "video" as const : "image" as const,
+        animationType: item?.animationType === "apng" || item?.animationType === "gif" || item?.animationType === "webp"
+          ? item.animationType
+          : undefined,
+        source: item?.source === "laplapla" || item?.source === "giphy" ? item.source : undefined,
+        tags: item?.tags,
+      }))
+      .filter((item) => Boolean(item.url));
+
+    return {
+      items,
+      hasMore: Boolean(data?.hasMore ?? items.length >= limit),
+    };
+  }, []);
+
+  const handleSearch = useCallback(async () => {
+    if (!query.trim() && activeTab !== "stickers") return;
+
+    setLoading(true);
+    setOffset(0);
+
+    try {
+      const nextLimit = activeTab === "stickers" ? 24 : 10;
+      if (activeTab === "giphy") {
+        const { items, hasMore: more } = await searchLibraryMedia("giphy", query, nextLimit);
+        setResults(items);
+        setHasMore(more);
+      }
+
+      if (activeTab === "pexels") {
+        const { items, hasMore: more } = await searchLibraryMedia("pexels", query, nextLimit);
+        setResults(items);
+        setHasMore(more);
+      }
+
+      if (activeTab === "stickers") {
+        const { items, hasMore: more } = await searchLibraryMedia("stickers", query, nextLimit, 0);
+        setResults(items);
+        setHasMore(more);
+      }
+    } catch (err) {
+      console.error("Media search error:", err);
+      setResults([]);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, query, searchLibraryMedia]);
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) {
@@ -113,6 +182,19 @@ export default function MediaPickerModal({
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen || activeTab === "upload") return;
+    if (!query.trim() && activeTab !== "stickers") return;
+
+    const timeoutId = window.setTimeout(() => {
+      void handleSearch();
+    }, activeTab === "stickers" ? 280 : 420);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeTab, handleSearch, isOpen, query]);
+
+  useEffect(() => {
     if (!isMobile) return;
 
     const frame = requestAnimationFrame(() => {
@@ -141,54 +223,34 @@ export default function MediaPickerModal({
     });
   }
 
-  async function handleSearch() {
-    if (!query.trim()) return;
-
-    setLoading(true);
-    setOffset(0);
-
-    try {
-      const nextLimit = 10;
-      if (activeTab === "giphy") {
-        const items = await searchLibraryMedia("giphy", query, nextLimit);
-        setResults(items);
-        setHasMore(items.length >= nextLimit);
-      }
-
-      if (activeTab === "pexels") {
-        const items = await searchLibraryMedia("pexels", query, nextLimit);
-        setResults(items);
-        setHasMore(items.length >= nextLimit);
-      }
-    } catch (err) {
-      console.error("Media search error:", err);
-      setResults([]);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleLoadMore() {
-    if (!query.trim()) return;
+    if (!query.trim() && activeTab !== "stickers") return;
 
-    const nextOffset = offset + 10;
-    const nextLimit = nextOffset + 10;
+    const pageSize = activeTab === "stickers" ? 24 : 10;
+    const nextOffset = offset + pageSize;
+    const nextLimit = activeTab === "stickers" ? pageSize : nextOffset + pageSize;
     setLoading(true);
 
     try {
       if (activeTab === "giphy") {
-        const items = await searchLibraryMedia("giphy", query, nextLimit);
+        const { items, hasMore: more } = await searchLibraryMedia("giphy", query, nextLimit);
         setResults(items);
         setOffset(nextOffset);
-        setHasMore(items.length >= nextLimit);
+        setHasMore(more);
       }
 
       if (activeTab === "pexels") {
-        const items = await searchLibraryMedia("pexels", query, nextLimit);
+        const { items, hasMore: more } = await searchLibraryMedia("pexels", query, nextLimit);
         setResults(items);
         setOffset(nextOffset);
-        setHasMore(items.length >= nextLimit);
+        setHasMore(more);
+      }
+
+      if (activeTab === "stickers") {
+        const { items, hasMore: more } = await searchLibraryMedia("stickers", query, nextLimit, nextOffset);
+        setResults((current) => [...current, ...items]);
+        setOffset(nextOffset);
+        setHasMore(more);
       }
     } catch (err) {
       console.error("Load more error:", err);
@@ -381,6 +443,13 @@ export default function MediaPickerModal({
             {t.tabPexels}
           </button>
           <button
+            className={`media-tab-button ${activeTab === "stickers" ? "active" : ""}`}
+            onClick={() => setActiveTab("stickers")}
+            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
+          >
+            {t.tabStickers || "Stickers"}
+          </button>
+          <button
             className={`media-tab-button ${activeTab === "upload" ? "active" : ""}`}
             onClick={() => setActiveTab("upload")}
             style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
@@ -401,7 +470,7 @@ export default function MediaPickerModal({
                   handleSearch();
                 }
               }}
-              placeholder={t.searchPlaceholder}
+              placeholder={activeTab === "stickers" ? (t.stickerSearchPlaceholder || t.searchPlaceholder) : t.searchPlaceholder}
               className="media-search-input"
               style={isMobile ? {
                 minWidth: 0,
@@ -449,6 +518,14 @@ export default function MediaPickerModal({
               <li>{t.pexelsRule2}</li>
               <li>{t.pexelsRule3}</li>
             </ul>
+          </div>
+        )}
+
+        {activeTab === "stickers" && (
+          <div className="media-notice" style={isMobile ? { color: "#000" } : undefined}>
+            <p style={{ margin: 0 }}>
+              {t.stickerNotice || "Animated sticker results prioritize LapLapLa assets first, then GIPHY stickers."}
+            </p>
           </div>
         )}
 
@@ -501,15 +578,22 @@ export default function MediaPickerModal({
           {loading && <p style={isMobile ? { width: "100%", color: "#fff" } : undefined}>{t.loading}</p>}
 
           {!loading &&
-            results.map((url, index) => (
+            results.map((item, index) => (
               <div
-                key={index}
+                key={`${item.mediaType}-${item.url}-${index}`}
                 className={isMobile ? undefined : "media-result-item"}
                 onClick={() => {
-                  const lower = url.toLowerCase();
+                  const lower = item.url.toLowerCase();
                   const isVideo =
                     lower.endsWith(".mp4") || lower.endsWith(".webm");
-                  onSelect({ url, mediaType: isVideo ? "video" : "image" });
+                  onSelect({
+                    url: item.url,
+                    mediaType: item.mediaType === "sticker" ? "sticker" : isVideo ? "video" : "image",
+                    previewUrl: item.previewUrl,
+                    animationType: item.animationType,
+                    source: item.source,
+                    tags: item.tags,
+                  });
                   onClose();
                 }}
                 style={isMobile ? {
@@ -529,9 +613,9 @@ export default function MediaPickerModal({
                   boxSizing: "border-box",
                 } : undefined}
               >
-                {url.endsWith(".mp4") || url.endsWith(".webm") ? (
+                {item.url.endsWith(".mp4") || item.url.endsWith(".webm") ? (
                   <video
-                    src={url}
+                    src={item.url}
                     autoPlay
                     loop
                     muted
@@ -551,11 +635,12 @@ export default function MediaPickerModal({
                   />
                 ) : (
                   <Image
-                    src={url}
-                    alt={buildMediaPreviewAlt(url, index)}
+                    src={item.previewUrl || item.url}
+                    alt={buildMediaPreviewAlt(item.url, index)}
                     className={isMobile ? undefined : "media-preview-image"}
                     width={320}
                     height={320}
+                    loading="lazy"
                     unoptimized
                     style={isMobile ? {
                       width: "100%",

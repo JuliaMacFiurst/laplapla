@@ -332,12 +332,16 @@ export const en = {
       mediaPicker: {
         tabGiphy: "GIPHY",
         tabPexels: "Pexels",
+        tabStickers: "Stickers",
         tabUpload: "Upload",
 
         searchPlaceholder: "Search media...",
+        stickerSearchPlaceholder: "Search animated stickers...",
         searchButton: "Search",
         loading: "Loading...",
         loadMore: "Load more",
+        stickerNotice:
+          "LapLapLa stickers appear first. Empty search shows trending stickers.",
 
         giphyNoticeTitle:
           "GIFs by GIPHY ✨ Please use them kindly and respect creators.",
@@ -366,6 +370,9 @@ export const en = {
         errorVideoTooLong: "Video is too long.",
         errorVideoMetadata: "Could not read video metadata.",
       },
+      stickers: "Stickers",
+      addSticker: "Add sticker",
+      opacity: "Opacity",
     },
 
     export: {

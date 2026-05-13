@@ -1,5 +1,28 @@
 import type { Track } from "@/components/studio/MusicPanel";
 
+export type StudioStickerAnimationType = "webp" | "apng" | "gif";
+
+export type StudioSticker = {
+  id: string;
+  sourceUrl: string;
+  previewUrl?: string;
+  source: "giphy" | "laplapla" | "upload" | "custom";
+  animationType: StudioStickerAnimationType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
+  zIndex: number;
+  visible: boolean;
+  timing?: {
+    startMs: number;
+    endMs?: number;
+  };
+  tags?: string[];
+}
+
 export type StudioSlide = {
   id: string
   text: string
@@ -30,6 +53,7 @@ export type StudioSlide = {
   voiceBaseDuration?: number;
   activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
   introLayout?: "book-meta";
+  stickers?: StudioSticker[];
 }
 
 export type StudioProject = {

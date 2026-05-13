@@ -332,12 +332,16 @@ export const ru = {
       mediaPicker: {
         tabGiphy: "GIPHY",
         tabPexels: "Pexels",
+        tabStickers: "Стикеры",
         tabUpload: "Загрузить",
 
         searchPlaceholder: "Поиск медиа...",
+        stickerSearchPlaceholder: "Поиск animated stickers...",
         searchButton: "Найти",
         loading: "Загрузка...",
         loadMore: "Загрузить ещё",
+        stickerNotice:
+          "Сначала показываются LapLapLa stickers. Пустой поиск открывает trending stickers.",
 
         giphyNoticeTitle:
           "GIF от GIPHY ✨ Используйте их бережно и уважайте авторов.",
@@ -368,6 +372,9 @@ export const ru = {
         errorVideoTooLong: "Видео слишком длинное.",
         errorVideoMetadata: "Не удалось прочитать метаданные видео.",
       },
+      stickers: "Стикеры",
+      addSticker: "Добавить стикер",
+      opacity: "Прозрачность",
     },
 
     export: {

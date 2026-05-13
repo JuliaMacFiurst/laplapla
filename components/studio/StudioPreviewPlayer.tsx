@@ -22,6 +22,51 @@ interface StudioPreviewPlayerProps {
   isPlaybackEnabled?: boolean;
 }
 
+export function StudioStickerLayer({ slide }: { slide: StudioSlide }) {
+  const stickers = [...(slide.stickers ?? [])]
+    .filter((sticker) => sticker.visible !== false)
+    .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+  if (stickers.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-label="Sticker overlay layer"
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 2,
+        pointerEvents: "none",
+      }}
+    >
+      {stickers.map((sticker) => (
+        // eslint-disable-next-line @next/next/no-img-element -- Animated sticker formats must bypass Next image optimization.
+        <img
+          key={sticker.id}
+          src={sticker.sourceUrl}
+          alt="animated sticker"
+          draggable={false}
+          style={{
+            position: "absolute",
+            left: `${sticker.x}%`,
+            top: `${sticker.y}%`,
+            width: `${sticker.width}%`,
+            height: `${sticker.height}%`,
+            transform: `translate(-50%, -50%) rotate(${sticker.rotation ?? 0}deg)`,
+            transformOrigin: "center center",
+            objectFit: "contain",
+            opacity: sticker.opacity ?? 1,
+            zIndex: 10 + (sticker.zIndex ?? 0),
+            userSelect: "none",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 interface StudioSlideMediaProps {
   slide: StudioSlide;
   playEpoch?: number;
@@ -438,6 +483,8 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
             />
           ) : null}
 
+          <StudioStickerLayer slide={currentSlide} />
+
           {/* VOICE */}
           <audio
             ref={voiceRef}
@@ -497,7 +544,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
                 position: "relative",
-                zIndex: 2,
+                zIndex: 20,
                   transform: `translate(${currentSlide.textOffsetX ?? 0}px, ${currentSlide.textOffsetY ?? 0}px)`,
                 }}
               >

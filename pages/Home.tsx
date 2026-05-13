@@ -68,7 +68,14 @@ export default function Home({ lang }: { lang?: Lang }) {
                 href={buildLocalizedPublicPath("/cats", resolvedLang)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <Image src="/images/cat.webp" alt={t.sections.cats} width={320} height={320} />
+                <Image
+                  src="/images/cat.webp"
+                  alt={t.sections.cats}
+                  width={320}
+                  height={320}
+                  priority
+                  loading="eager"
+                />
                 <div className="label">{t.sections.cats}</div>
               </Link>
 

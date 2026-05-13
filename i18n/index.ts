@@ -370,11 +370,14 @@ type DictionaryShape = {
       mediaPicker: {
         tabGiphy: string;
         tabPexels: string;
+        tabStickers?: string;
         tabUpload: string;
         searchPlaceholder: string;
+        stickerSearchPlaceholder?: string;
         searchButton: string;
         loading: string;
         loadMore: string;
+        stickerNotice?: string;
 
         giphyNoticeTitle: string;
         giphyRule1: string;
@@ -397,6 +400,9 @@ type DictionaryShape = {
         errorVideoTooLong: string;
         errorVideoMetadata: string;
       };
+      stickers?: string;
+      addSticker?: string;
+      opacity?: string;
     };
 
     export: {

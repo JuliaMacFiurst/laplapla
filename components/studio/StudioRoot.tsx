@@ -19,6 +19,7 @@ import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
+import { createStudioSticker } from "@/lib/studioStickers";
 import {
   getHardcodedParrotStyleRecords,
   type ParrotStyleRecord,
@@ -143,6 +144,8 @@ interface StudioLayoutProps {
     updater: (slide: StudioSlide) => StudioSlide,
     slideIndex?: number,
   ) => void;
+  activeStickerId: string | null;
+  setActiveStickerId: Dispatch<SetStateAction<string | null>>;
 }
 
 type MobilePickerTarget = "text" | "bg" | null;
@@ -294,6 +297,21 @@ function detectMobileExportCapability(previewNode: HTMLDivElement | null): Mobil
   }
 
   return "guided-record";
+}
+
+function areStudioTracksEqual(a: StudioProject["musicTracks"], b: StudioProject["musicTracks"]) {
+  if (a.length !== b.length) return false;
+
+  return a.every((track, index) => {
+    const other = b[index];
+    return (
+      other &&
+      track.id === other.id &&
+      track.label === other.label &&
+      track.src === other.src &&
+      track.volume === other.volume
+    );
+  });
 }
 
 function MobileAudioSheet({ title, onClose, children }: MobileAudioSheetProps) {
@@ -517,7 +535,11 @@ function StudioDesktopLayout({
   redo,
   router,
   updateActiveSlide,
+  activeStickerId,
+  setActiveStickerId,
 }: StudioLayoutProps) {
+  const activeSticker = activeSlide.stickers?.find((sticker) => sticker.id === activeStickerId) ?? null;
+
   return (
     <div className="studio-root">
       <div className="studio-layout">
@@ -548,7 +570,13 @@ function StudioDesktopLayout({
 
           <div className="studio-canvas-wrapper">
             {!isPreviewOpen && (
-              <SlideCanvas9x16 slide={activeSlide} lang={lang} />
+              <SlideCanvas9x16
+                slide={activeSlide}
+                lang={lang}
+                onUpdateSlide={updateSlide}
+                activeStickerId={activeStickerId}
+                onActiveStickerChange={setActiveStickerId}
+              />
             )}
 
             {isPreviewOpen && (
@@ -665,6 +693,18 @@ function StudioDesktopLayout({
               onDeleteAll={deleteAll}
               onUndo={undo}
               onRedo={redo}
+              activeStickerOpacity={activeSticker?.opacity}
+              onChangeActiveStickerOpacity={(opacity) => {
+                if (!activeSticker) return;
+                updateSlide({
+                  ...activeSlide,
+                  stickers: (activeSlide.stickers ?? []).map((sticker) =>
+                    sticker.id === activeSticker.id
+                      ? { ...sticker, opacity }
+                      : sticker,
+                  ),
+                });
+              }}
             />
           </div>
         </div>
@@ -673,8 +713,30 @@ function StudioDesktopLayout({
         lang={lang}
         isOpen={isMediaOpen}
         onClose={() => setIsMediaOpen(false)}
-        onSelect={({ url, mediaType }) => {
+        onSelect={({ url, mediaType, previewUrl, animationType, source, tags }) => {
           const normalizedUrl = toStudioMediaUrl(url) ?? url;
+          if (mediaType === "sticker") {
+            const nextSticker = createStudioSticker(normalizedUrl, {
+              previewUrl,
+              animationType,
+              source,
+              tags,
+            });
+            updateActiveSlide((slide) => ({
+              ...slide,
+              stickers: [
+                ...(slide.stickers ?? []),
+                {
+                  ...nextSticker,
+                  zIndex: (slide.stickers ?? []).length + 1,
+                },
+              ],
+            }));
+            setActiveStickerId(nextSticker.id);
+            setIsMediaOpen(false);
+            return;
+          }
+
           updateActiveSlide((slide) => ({
             ...slide,
             mediaUrl: normalizedUrl,
@@ -718,6 +780,8 @@ function StudioMobileLayout({
   redo,
   router,
   audioEngineRef,
+  activeStickerId,
+  setActiveStickerId,
 }: StudioLayoutProps) {
   const hasPushedHistoryRef = useRef(false);
   const onClose = useCallback(() => {
@@ -839,6 +903,7 @@ function StudioMobileLayout({
   }, [musicPresets, selectedMusicPresetId]);
 
   const selectedMusicPreset = musicPresets.find((preset) => preset.id === selectedMusicPresetId) ?? null;
+  const activeSticker = activeSlide.stickers?.find((sticker) => sticker.id === activeStickerId) ?? null;
   const exportCaption = "Made with LapLapLa Cat Studio";
   const exportCredits = "Some media may be sourced from GIPHY and Pexels. Created with LapLapLa Cat Studio.";
 
@@ -1518,6 +1583,8 @@ function StudioMobileLayout({
               isTextEditing={mode === "text"}
               isMediaEditing={mode === "media"}
               onUpdateSlide={updateSlide}
+              activeStickerId={activeStickerId}
+              onActiveStickerChange={setActiveStickerId}
             />
           </div>
           <style jsx>{`
@@ -1941,7 +2008,7 @@ function StudioMobileLayout({
           {mode === "media" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ color: "#fff", fontSize: "13px", lineHeight: 1.4 }}>
-                Drag media on the canvas. Use the pink corner handle to resize it or the X button on the frame to remove it.
+                Drag media or stickers on the canvas. Use the pink corner handle to resize, or X to remove the selected frame.
               </div>
 
               <button
@@ -1949,7 +2016,7 @@ function StudioMobileLayout({
                 onClick={() => setIsMediaOpen(true)}
                 style={mobileButtonStyle}
               >
-                {activeSlide.mediaUrl ? "Open library" : "Add media"}
+                {activeSlide.mediaUrl ? "Open library" : "Add media / sticker"}
               </button>
 
               {activeSlide.mediaUrl ? (
@@ -1969,6 +2036,30 @@ function StudioMobileLayout({
                 >
                   {activeSlide.mediaFit === "cover" ? "Заполнить" : "По размеру"}
                 </button>
+              ) : null}
+
+              {activeSticker ? (
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "#fff", fontSize: "12px" }}>
+                  Sticker opacity
+                  <input
+                    type="range"
+                    min={10}
+                    max={100}
+                    value={Math.round((activeSticker.opacity ?? 1) * 100)}
+                    onChange={(event) => {
+                      const opacity = Number(event.target.value) / 100;
+                      updateSlide({
+                        ...activeSlide,
+                        stickers: (activeSlide.stickers ?? []).map((sticker) =>
+                          sticker.id === activeSticker.id
+                            ? { ...sticker, opacity }
+                            : sticker,
+                        ),
+                      });
+                    }}
+                    style={{ width: "100%" }}
+                  />
+                </label>
               ) : null}
             </div>
           )}
@@ -2128,7 +2219,30 @@ function StudioMobileLayout({
         isOpen={isMediaOpen}
         isMobile
         onClose={() => setIsMediaOpen(false)}
-        onSelect={({ url, mediaType }) => {
+        onSelect={({ url, mediaType, previewUrl, animationType, source, tags }) => {
+          if (mediaType === "sticker") {
+            const normalizedUrl = toStudioMediaUrl(url) ?? url;
+            const nextSticker = createStudioSticker(normalizedUrl, {
+              previewUrl,
+              animationType,
+              source,
+              tags,
+            });
+            updateSlide({
+              ...activeSlide,
+              stickers: [
+                ...(activeSlide.stickers ?? []),
+                {
+                  ...nextSticker,
+                  zIndex: (activeSlide.stickers ?? []).length + 1,
+                },
+              ],
+            });
+            setActiveStickerId(nextSticker.id);
+            setIsMediaOpen(false);
+            return;
+          }
+
           updateSlide({
             ...activeSlide,
             mediaUrl: toStudioMediaUrl(url) ?? url,
@@ -2905,6 +3019,7 @@ export default function StudioRoot({
   const [future, setFuture] = useState<StudioProject[]>([]);
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   // Локальный аудио-движок для музыки всего слайдшоу (до 4 дорожек)
@@ -3634,6 +3749,14 @@ export default function StudioRoot({
   const activeSlide = project.slides[activeSlideIndex];
 
   useEffect(() => {
+    if (!activeStickerId) return;
+    const hasSticker = activeSlide?.stickers?.some((sticker) => sticker.id === activeStickerId);
+    if (!hasSticker) {
+      setActiveStickerId(null);
+    }
+  }, [activeSlide?.id, activeSlide?.stickers, activeStickerId]);
+
+  useEffect(() => {
     projectRef.current = project;
   }, [project]);
 
@@ -3864,11 +3987,19 @@ export default function StudioRoot({
   }
 
   function updateMusicTracks(tracks: StudioProject["musicTracks"]) {
-    pushHistory(project);
-    setProject({
-      ...project,
-      musicTracks: tracks,
-      updatedAt: Date.now(),
+    setProject((currentProject) => {
+      if (areStudioTracksEqual(currentProject.musicTracks, tracks)) {
+        return currentProject;
+      }
+
+      pendingHistorySnapshotRef.current = null;
+      pushHistory(currentProject);
+
+      return {
+        ...currentProject,
+        musicTracks: tracks,
+        updatedAt: Date.now(),
+      };
     });
   }
 
@@ -3966,6 +4097,8 @@ export default function StudioRoot({
     redo,
     router,
     updateActiveSlide,
+    activeStickerId,
+    setActiveStickerId,
   };
 
   return isMobile ? (

@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { resolveFontFamily } from "@/lib/fonts";
-import type { StudioSlide } from "@/types/studio";
+import type { StudioSlide, StudioSticker } from "@/types/studio";
 import { dictionaries, type Lang } from "@/i18n";
 
 interface SlideCanvasProps {
@@ -14,6 +14,248 @@ interface SlideCanvasProps {
     updatedSlide: StudioSlide,
     options?: { commitHistory?: boolean },
   ) => void;
+  activeStickerId?: string | null;
+  onActiveStickerChange?: (id: string | null) => void;
+}
+
+interface StickerOverlayProps {
+  sticker: StudioSticker;
+  isActive: boolean;
+  isEditable: boolean;
+  onSelect: (id: string) => void;
+  onUpdate: (sticker: StudioSticker, options?: { commitHistory?: boolean }) => void;
+  onDelete: (id: string) => void;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function StickerOverlay({
+  sticker,
+  isActive,
+  isEditable,
+  onSelect,
+  onUpdate,
+  onDelete,
+}: StickerOverlayProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const gestureRef = useRef<{
+    mode: "drag" | "resize";
+    pointerId: number;
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+    baseWidth: number;
+    baseHeight: number;
+    canvasWidth: number;
+    canvasHeight: number;
+  } | null>(null);
+  const [draft, setDraft] = useState(sticker);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (gestureRef.current) return;
+    setDraft(sticker);
+  }, [sticker]);
+
+  function getCanvasRect() {
+    const node = rootRef.current?.parentElement;
+    return node?.getBoundingClientRect() ?? null;
+  }
+
+  function beginGesture(event: ReactPointerEvent<HTMLDivElement>, mode: "drag" | "resize") {
+    if (!isEditable) return;
+    const rect = getCanvasRect();
+    if (!rect) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    onSelect(sticker.id);
+
+    gestureRef.current = {
+      mode,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      baseX: draft.x,
+      baseY: draft.y,
+      baseWidth: draft.width,
+      baseHeight: draft.height,
+      canvasWidth: rect.width,
+      canvasHeight: rect.height,
+    };
+  }
+
+  function moveGesture(event: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const deltaXPercent = ((event.clientX - gesture.startX) / gesture.canvasWidth) * 100;
+    const deltaYPercent = ((event.clientY - gesture.startY) / gesture.canvasHeight) * 100;
+    const nextSticker = gesture.mode === "drag"
+      ? {
+          ...draft,
+          x: gesture.baseX + deltaXPercent,
+          y: gesture.baseY + deltaYPercent,
+        }
+      : {
+          ...draft,
+          width: clamp(gesture.baseWidth + deltaXPercent, 8, 92),
+          height: clamp(gesture.baseHeight + deltaYPercent, 8, 92),
+        };
+
+    setDraft(nextSticker);
+    onUpdate(nextSticker, { commitHistory: false });
+  }
+
+  function endGesture(event: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    gestureRef.current = null;
+    onUpdate({
+      ...draft,
+      x: Number(draft.x.toFixed(2)),
+      y: Number(draft.y.toFixed(2)),
+      width: Number(draft.width.toFixed(2)),
+      height: Number(draft.height.toFixed(2)),
+    });
+  }
+
+  if (sticker.visible === false) return null;
+
+  return (
+    <div
+      ref={rootRef}
+      data-disable-slide-swipe={isEditable ? "true" : undefined}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onPointerDown={(event) => beginGesture(event, "drag")}
+      onPointerMove={moveGesture}
+      onPointerUp={endGesture}
+      onPointerCancel={endGesture}
+      style={{
+        position: "absolute",
+        left: `${draft.x}%`,
+        top: `${draft.y}%`,
+        width: `${draft.width}%`,
+        height: `${draft.height}%`,
+        transform: `translate(-50%, -50%) rotate(${draft.rotation ?? 0}deg)`,
+        transformOrigin: "center center",
+        opacity: draft.opacity ?? 1,
+        zIndex: 10 + (draft.zIndex ?? 0),
+        touchAction: isEditable ? "none" : "auto",
+        cursor: isEditable ? (isActive ? "move" : "grab") : "default",
+        pointerEvents: isEditable ? "auto" : "none",
+        willChange: gestureRef.current ? "left, top, width, height" : "auto",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- Animated sticker formats must bypass Next image optimization. */}
+      <img
+        src={draft.sourceUrl}
+        alt="animated sticker"
+        draggable={false}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          pointerEvents: "none",
+          userSelect: "none",
+          display: "block",
+        }}
+      />
+
+      {isEditable && (isActive || isHovered) ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: "-4px",
+            border: isActive
+              ? "1px dashed rgba(255, 179, 209, 0.95)"
+              : "1px solid rgba(255, 255, 255, 0.64)",
+            borderRadius: "10px",
+            pointerEvents: "none",
+          }}
+        />
+      ) : null}
+
+      {isEditable && isActive ? (
+        <>
+          <button
+            type="button"
+            aria-label="Remove sticker"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onTouchStart={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              gestureRef.current = null;
+              onDelete(sticker.id);
+            }}
+            style={{
+              position: "absolute",
+              top: "-12px",
+              right: "-12px",
+              width: "24px",
+              height: "24px",
+              borderRadius: "50%",
+              border: "none",
+              background: "#ffb3d1",
+              color: "#000",
+              zIndex: 3,
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+          <div
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              beginGesture(event, "resize");
+            }}
+            onPointerMove={moveGesture}
+            onPointerUp={endGesture}
+            onPointerCancel={endGesture}
+            style={{
+              position: "absolute",
+              right: "-10px",
+              bottom: "-10px",
+              width: "22px",
+              height: "22px",
+              borderRadius: "50%",
+              background: "#ffb3d1",
+              border: "2px solid #fff",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              zIndex: 3,
+              cursor: "nwse-resize",
+              touchAction: "none",
+            }}
+          />
+        </>
+      ) : null}
+
+    </div>
+  );
 }
 
 function renderStudioText(slide: StudioSlide) {
@@ -64,13 +306,11 @@ export default function SlideCanvas9x16({
   isTextEditing = false,
   isMediaEditing = false,
   onUpdateSlide,
+  activeStickerId,
+  onActiveStickerChange,
 }: SlideCanvasProps) {
   const slideRootRef = useRef<HTMLDivElement | null>(null);
   const editableTextRef = useRef<HTMLDivElement | null>(null);
-  function clamp(value: number, min: number, max: number) {
-    return Math.min(max, Math.max(min, value));
-  }
-
   const mediaUrl = slide.mediaUrl;
   const mediaAlt = slide.text?.trim() || "illustration";
   const isVideo = slide.mediaType === "video";
@@ -132,6 +372,7 @@ export default function SlideCanvas9x16({
   const fontSize = slide.fontSize ?? 24;
   const showMobileEditorFrame = isMobile && isTextEditing;
   const showMobileMediaEditor = isMobile && isMediaEditing && Boolean(mediaUrl);
+  const showStickerEditor = Boolean(onUpdateSlide);
   const isIntroSlideLocked = slide.introLayout === "book-meta";
   const showMobileTextContentEditor = showMobileEditorFrame && !isIntroSlideLocked;
   const canvasAspectRatio = 9 / 16;
@@ -449,6 +690,28 @@ export default function SlideCanvas9x16({
     zIndex: 0,
   } as const;
   const mediaFrame = getMediaFrame();
+  const stickers = [...(slide.stickers ?? [])].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+  function updateSticker(nextSticker: StudioSticker, options?: { commitHistory?: boolean }) {
+    if (!onUpdateSlide) return;
+    onUpdateSlide({
+      ...slide,
+      stickers: (slide.stickers ?? []).map((sticker) =>
+        sticker.id === nextSticker.id ? nextSticker : sticker,
+      ),
+    }, options);
+  }
+
+  function deleteSticker(stickerId: string) {
+    if (!onUpdateSlide) return;
+    onUpdateSlide({
+      ...slide,
+      stickers: (slide.stickers ?? []).filter((sticker) => sticker.id !== stickerId),
+    });
+    if (activeStickerId === stickerId) {
+      onActiveStickerChange?.(null);
+    }
+  }
 
   return (
     <div
@@ -573,11 +836,35 @@ export default function SlideCanvas9x16({
         </div>
       ) : null}
 
+      {stickers.length > 0 ? (
+        <div
+          aria-label="Sticker overlay layer"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 2,
+            pointerEvents: "none",
+          }}
+        >
+          {stickers.map((sticker) => (
+            <StickerOverlay
+              key={sticker.id}
+              sticker={sticker}
+              isActive={activeStickerId === sticker.id}
+              isEditable={showStickerEditor}
+              onSelect={(id) => onActiveStickerChange?.(id)}
+              onUpdate={updateSticker}
+              onDelete={deleteSticker}
+            />
+          ))}
+        </div>
+      ) : null}
+
       <div
         data-disable-slide-swipe={showMobileEditorFrame ? "true" : undefined}
         style={{
           position: "relative",
-          zIndex: 2,
+          zIndex: 20,
           fontFamily: resolveFontFamily(slide.fontFamily),
           fontSize: effectiveFontSize,
           textAlign: slide.textAlign ?? "center",

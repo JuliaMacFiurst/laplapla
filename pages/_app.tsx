@@ -76,6 +76,28 @@ function readSessionFromHash(hash: string) {
   };
 }
 
+function getHydrationStableLang(
+  router: ReturnType<typeof useRouter>,
+  pageProps: AppProps["pageProps"],
+): Lang {
+  const pageLang = (pageProps as { lang?: unknown } | undefined)?.lang;
+  if (pageLang === "ru" || pageLang === "en" || pageLang === "he") {
+    return pageLang;
+  }
+
+  const queryLang = router.query.lang;
+  const normalizedQueryLang = Array.isArray(queryLang) ? queryLang[0] : queryLang;
+  if (normalizedQueryLang === "ru" || normalizedQueryLang === "en" || normalizedQueryLang === "he") {
+    return normalizedQueryLang;
+  }
+
+  if (router.locale === "ru" || router.locale === "en" || router.locale === "he") {
+    return router.locale;
+  }
+
+  return "ru";
+}
+
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
@@ -95,14 +117,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     () => getCurrentLang(router),
     [router],
   );
-  const initialLang = (() => {
-    const pageLang = (pageProps as { lang?: unknown } | undefined)?.lang;
-    if (pageLang === "ru" || pageLang === "en" || pageLang === "he") {
-      return pageLang as Lang;
-    }
-
-    return getCurrentLang(router);
-  })();
+  const initialLang = getHydrationStableLang(router, pageProps);
   const [lang, setLang] = useState<Lang>(initialLang);
 
   useEffect(() => {

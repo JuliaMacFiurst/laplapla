@@ -32,6 +32,8 @@ interface StudioSettingsPanelProps {
   onSetAlignCenter?: () => void;
   onSetAlignRight?: () => void;
   onPreview: () => void;
+  activeStickerOpacity?: number;
+  onChangeActiveStickerOpacity?: (opacity: number) => void;
 }
 
 export default function StudioSettingsPanel({
@@ -63,6 +65,8 @@ export default function StudioSettingsPanel({
   onSetAlignCenter,
   onSetAlignRight,
   onPreview,
+  activeStickerOpacity,
+  onChangeActiveStickerOpacity,
 }: StudioSettingsPanelProps) {
   const t = dictionaries[lang].cats.studio
   return (
@@ -101,6 +105,32 @@ export default function StudioSettingsPanel({
           <button className="studio-button btn-mint" onClick={onSetFitContain}>
             {t.fit}
           </button>
+        </div>
+      </div>
+
+      <div
+        className="studio-section"
+        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+      >
+        <strong className="studio-label">{t.stickers || "Stickers"}</strong>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <button className="studio-button btn-lavender" onClick={onAddMedia}>
+            {t.addSticker || "Add sticker"}
+          </button>
+          {activeStickerOpacity !== undefined ? (
+            <label className="studio-label" style={{ flex: "1 1 220px" }}>
+              {t.opacity || "Opacity"}
+              <input
+                type="range"
+                min={0.1}
+                max={1}
+                step={0.05}
+                value={activeStickerOpacity}
+                onChange={(e) => onChangeActiveStickerOpacity?.(Number(e.target.value))}
+                style={{ width: "100%" }}
+              />
+            </label>
+          ) : null}
         </div>
       </div>
 

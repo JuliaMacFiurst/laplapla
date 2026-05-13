@@ -77,6 +77,10 @@ function shouldRegisterServiceWorker() {
     return false;
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    return false;
+  }
+
   const { hostname, protocol } = window.location;
   return protocol === "https:" || hostname === "localhost" || hostname === "127.0.0.1";
 }
@@ -123,6 +127,18 @@ export function usePWAInstall(): PWAInstallState {
     const registerServiceWorker = () => {
       if (shouldRegisterServiceWorker()) {
         void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+        return;
+      }
+
+      if (process.env.NODE_ENV !== "production" && "serviceWorker" in navigator) {
+        void navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) =>
+            Promise.all(
+              registrations.map((registration) => registration.unregister()),
+            ),
+          )
+          .catch(() => undefined);
       }
     };
 
