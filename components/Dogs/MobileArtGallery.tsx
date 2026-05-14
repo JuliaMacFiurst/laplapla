@@ -11,12 +11,43 @@ import {
   stripHtml,
 } from "@/lib/dogs/artGallerySlides";
 import { Lang } from "../../i18n";
+import type { StudioSlide } from "@/types/studio";
 
 type MobileArtGalleryProps = {
   categorySlug: string;
   isOpen: boolean;
   onClose: () => void;
 };
+
+function getFallbackArtwork(lang: Lang, categorySlug: string): Artwork {
+  const description =
+    lang === "he"
+      ? "פיבי מזמינה אותך להסתכל על הציור שלך כמו באוסף קטן. בחרו צבעים, שימו לב לפרטים, ואז נסו לצייר גרסה חדשה."
+      : lang === "en"
+        ? "Fibi invites you to look at your drawing like a tiny gallery piece. Notice the colors, details, and mood, then try a new version."
+        : "Фиби приглашает посмотреть на рисунок как на маленькую галерею. Заметь цвета, детали и настроение, а потом попробуй новую версию.";
+
+  return {
+    id: `fallback-${categorySlug}-${lang}`,
+    title: "Fibi Gallery",
+    description,
+    image_url: ["/dog/fibi.webp"],
+  };
+}
+
+function buildFallbackSlides(artwork: Artwork): StudioSlide[] {
+  return [
+    {
+      id: `${artwork.id}-fibi`,
+      text: stripHtml(artwork.description),
+      mediaUrl: "/dog/fibi.webp",
+      mediaType: "image",
+      mediaFit: "contain",
+      bgColor: "#ffffff",
+      textColor: "#111111",
+    },
+  ];
+}
 
 export default function MobileArtGallery({
   categorySlug,
@@ -26,6 +57,20 @@ export default function MobileArtGallery({
   const router = useRouter();
   const lang = getCurrentLang(router) as Lang;
   const mobileSlideshow = useMobileSlideshow();
+  const {
+    close: closeSlideshow,
+    currentSlideIndex,
+    goToSlide,
+    isOpen: isSlideshowOpen,
+    loading: slideshowLoading,
+    markInteracted,
+    open: openSlideshow,
+    replaceSlides,
+    setLoading: setSlideshowLoading,
+    showSwipeHint,
+    slides,
+    updateSlides,
+  } = mobileSlideshow;
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [loading, setLoading] = useState(false);
   const [usedArtworkIds, setUsedArtworkIds] = useState<string[]>([]);
@@ -69,7 +114,7 @@ export default function MobileArtGallery({
 
   const loadArtwork = useCallback(async () => {
     setLoading(true);
-    mobileSlideshow.open({ loading: true });
+    openSlideshow({ loading: true });
 
     try {
       const response = await fetch(
@@ -81,7 +126,11 @@ export default function MobileArtGallery({
       };
 
       if (!response.ok || !payload.artwork) {
-        throw new Error(payload.error || "Failed to load gallery");
+        const fallbackArtwork = getFallbackArtwork(lang, categorySlug);
+        setArtwork(fallbackArtwork);
+        const fallbackSlides = buildFallbackSlides(fallbackArtwork);
+        replaceSlides(fallbackSlides);
+        return;
       }
 
       setArtwork(payload.artwork);
@@ -91,29 +140,36 @@ export default function MobileArtGallery({
           : [...current, payload.artwork!.id],
       );
       const slides = await buildArtworkSlides(payload.artwork, fallbackHints);
-      mobileSlideshow.replaceSlides(slides);
+      replaceSlides(slides.length > 0 ? slides : buildFallbackSlides(payload.artwork));
     } catch (error) {
-      console.error("Failed to load mobile art gallery", error);
-      mobileSlideshow.close();
-      onClose();
+      console.warn("Using fallback mobile art gallery", error);
+      const fallbackArtwork = getFallbackArtwork(lang, categorySlug);
+      setArtwork(fallbackArtwork);
+      setUsedArtworkIds((current) =>
+        current.includes(fallbackArtwork.id)
+          ? current
+          : [...current, fallbackArtwork.id],
+      );
+      replaceSlides(buildFallbackSlides(fallbackArtwork));
     } finally {
       setLoading(false);
+      setSlideshowLoading(false);
     }
-  }, [categorySlug, fallbackHints, lang, mobileSlideshow, onClose]);
+  }, [categorySlug, fallbackHints, lang, openSlideshow, replaceSlides, setSlideshowLoading]);
 
   useEffect(() => {
     if (!isOpen) {
-      mobileSlideshow.close();
+      closeSlideshow();
       usedArtworkIdsRef.current = [];
       setUsedArtworkIds([]);
       return;
     }
 
     void loadArtwork();
-  }, [isOpen, loadArtwork, mobileSlideshow]);
+  }, [closeSlideshow, isOpen, loadArtwork]);
 
   const handleFindNewImage = async (slideIndex: number) => {
-    const slide = mobileSlideshow.slides[slideIndex];
+    const slide = slides[slideIndex];
     if (!slide) return;
 
     setRefreshingSlideIndex(slideIndex);
@@ -131,8 +187,8 @@ export default function MobileArtGallery({
         return;
       }
 
-      mobileSlideshow.updateSlides(
-        mobileSlideshow.slides.map((currentSlide, index) =>
+      updateSlides(
+        slides.map((currentSlide, index) =>
           index === slideIndex
             ? {
                 ...currentSlide,
@@ -153,7 +209,7 @@ export default function MobileArtGallery({
     sessionStorage.setItem(
       "catsSlides",
       JSON.stringify(
-        mobileSlideshow.slides.map((slide) => ({
+        slides.map((slide) => ({
           text: slide.text,
           image: slide.mediaUrl,
           mediaUrl: slide.mediaUrl,
@@ -172,31 +228,31 @@ export default function MobileArtGallery({
   };
 
   const handleClose = () => {
-    mobileSlideshow.close();
+    closeSlideshow();
     onClose();
   };
 
   return (
     <MobileSlideshowViewer
-      isOpen={isOpen && mobileSlideshow.isOpen}
-      slides={mobileSlideshow.slides}
-      currentSlideIndex={mobileSlideshow.currentSlideIndex}
-      loading={loading || mobileSlideshow.loading}
-      showSwipeHint={mobileSlideshow.showSwipeHint}
+      isOpen={isOpen && isSlideshowOpen}
+      slides={slides}
+      currentSlideIndex={currentSlideIndex}
+      loading={loading || slideshowLoading}
+      showSwipeHint={showSwipeHint}
       lang={lang}
       loadingLabel={loadingLabel}
       swipeHintLabel={swipeHintLabel}
       randomQuestionLabel={moreArtistsLabel}
       findNewImageLabel={
-        refreshingSlideIndex === mobileSlideshow.currentSlideIndex
+        refreshingSlideIndex === currentSlideIndex
           ? "..."
           : findNewImageLabel
       }
       editInStudioLabel={editInCatsLabel}
       closeLabel={closeGalleryLabel}
       onClose={handleClose}
-      onIndexChange={mobileSlideshow.goToSlide}
-      onInteract={mobileSlideshow.markInteracted}
+      onIndexChange={goToSlide}
+      onInteract={markInteracted}
       onFindNewImage={handleFindNewImage}
       onEditInStudio={handleEditInCats}
       onRandomQuestion={loadArtwork}

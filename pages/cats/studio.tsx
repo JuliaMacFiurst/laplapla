@@ -12,6 +12,7 @@ import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import type { StudioProject } from "@/types/studio";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
+import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
 import {
   getHardcodedParrotStyleRecords,
@@ -136,10 +137,12 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
   const currentLang = getCurrentLang(router);
   const lang = providedLang ?? currentLang;
   const isMobile = useIsMobile();
+  const studioViewport = useStudioViewportMode();
+  const usesTouchStudioLayout = studioViewport.usesTouchStudioLayout;
   const t = dictionaries[lang].cats;
   const seo = dictionaries[lang].seo.cats.studio;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/studio";
-  const isUnifiedMobileStudioRoute = router.pathname === "/studio" && isMobile;
+  const isUnifiedMobileStudioRoute = router.pathname === "/studio" && usesTouchStudioLayout;
   const fallbackParrotPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
 
   const [initialSlides, setInitialSlides] = useState<
@@ -261,8 +264,8 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
   return (
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
-      <MobilePortraitLock lang={lang} enabled={isMobile} />
-      {isUnifiedMobileStudioRoute ? (
+      <MobilePortraitLock lang={lang} enabled={studioViewport.usesPhonePortraitLock && isMobile} />
+      {usesTouchStudioLayout || isUnifiedMobileStudioRoute ? (
         isImportReady ? (
           <StudioRoot
             lang={lang}

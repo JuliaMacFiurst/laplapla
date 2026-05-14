@@ -18,6 +18,39 @@
   box-shadow: 0 20px 60px #4c164d70;
 }
 
+.studio-mobile-root,
+.studio-mobile-root * {
+  box-sizing: border-box;
+}
+
+.studio-mobile-root {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  padding:
+    env(safe-area-inset-top, 0)
+    env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0)
+    env(safe-area-inset-left, 0);
+}
+
+.studio-mobile-root--tablet .studio-mobile-nav button {
+  min-height: 54px !important;
+  border-radius: 14px !important;
+  font-size: 13px !important;
+}
+
+.studio-mobile-root--tablet .studio-mobile-panel {
+  scrollbar-width: thin;
+}
+
+.studio-mobile-root--tablet-landscape .studio-mobile-canvas {
+  min-width: 0;
+}
+
+.studio-mobile-root--tablet-landscape .studio-mobile-panel {
+  border-left: 1px solid rgba(255,255,255,0.1);
+}
+
 .studio-layout {
   display: flex;
   gap: 48px;

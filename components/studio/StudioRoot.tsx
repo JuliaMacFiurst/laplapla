@@ -17,7 +17,7 @@ import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
 import { createStudioSticker } from "@/lib/studioStickers";
 import {
@@ -783,6 +783,9 @@ function StudioMobileLayout({
   activeStickerId,
   setActiveStickerId,
 }: StudioLayoutProps) {
+  const studioViewport = useStudioViewportMode();
+  const isTabletStudio = studioViewport.isTablet;
+  const isTabletLandscape = studioViewport.isTablet && studioViewport.orientation === "landscape";
   const hasPushedHistoryRef = useRef(false);
   const onClose = useCallback(() => {
     void router.push(
@@ -1503,13 +1506,18 @@ function StudioMobileLayout({
 
   return (
     <div
+      className={[
+        "studio-mobile-root",
+        isTabletStudio ? "studio-mobile-root--tablet" : "",
+        isTabletLandscape ? "studio-mobile-root--tablet-landscape" : "",
+      ].filter(Boolean).join(" ")}
       style={{
         position: "fixed",
         inset: 0,
-        height: "100dvh",
+        height: "var(--app-viewport-height, 100dvh)",
         width: "100%",
         display: "flex",
-        flexDirection: "column",
+        flexDirection: isTabletLandscape ? "row" : "column",
         background: "#000",
         overflow: "hidden",
         overflowX: "hidden",
@@ -1549,7 +1557,7 @@ function StudioMobileLayout({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "8px",
+          padding: isTabletStudio ? "18px" : "8px",
           minHeight: 0,
           minWidth: 0,
           overflow: "hidden",
@@ -1560,6 +1568,7 @@ function StudioMobileLayout({
             height: "100%",
             aspectRatio: "9 / 16",
             maxWidth: "100%",
+            maxHeight: isTabletLandscape ? "calc(var(--app-viewport-height, 100dvh) - 36px)" : "100%",
             position: "relative",
             zIndex: 1,
             overflow: "hidden",
@@ -1615,12 +1624,14 @@ function StudioMobileLayout({
       <div
         className="studio-mobile-panel"
         style={{
-          flex: "0 0 auto",
-          maxHeight: "40vh",
+          flex: isTabletLandscape ? "0 0 min(40vw, 420px)" : "0 0 auto",
+          width: isTabletLandscape ? "min(40vw, 420px)" : undefined,
+          maxHeight: isTabletLandscape ? "none" : isTabletStudio ? "36vh" : "40vh",
+          height: isTabletLandscape ? "100%" : undefined,
           overflowY: "auto",
           overflowX: "hidden",
           background: "#1a1a1a",
-          padding: "10px",
+          padding: isTabletLandscape ? "14px 14px 88px" : isTabletStudio ? "14px" : "10px",
           zIndex: 5,
           minWidth: 0,
         }}
@@ -2178,9 +2189,10 @@ function StudioMobileLayout({
         className="studio-mobile-nav"
         aria-label="Studio mobile navigation"
         style={{
-          position: "sticky",
+          position: isTabletLandscape ? "fixed" : "sticky",
+          right: isTabletLandscape ? 0 : undefined,
           bottom: 0,
-          width: "100%",
+          width: isTabletLandscape ? "min(40vw, 420px)" : "100%",
           zIndex: 10,
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
@@ -3020,7 +3032,8 @@ export default function StudioRoot({
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
-  const isMobile = useIsMobile();
+  const studioViewport = useStudioViewportMode();
+  const usesTouchStudioLayout = studioViewport.usesTouchStudioLayout;
 
   // Локальный аудио-движок для музыки всего слайдшоу (до 4 дорожек)
   const audioEngineRef = useRef<AudioEngineHandle | null>(null);
@@ -4101,7 +4114,7 @@ export default function StudioRoot({
     setActiveStickerId,
   };
 
-  return isMobile ? (
+  return usesTouchStudioLayout ? (
     <StudioMobileLayout {...layoutProps} />
   ) : (
     <StudioDesktopLayout {...layoutProps} />

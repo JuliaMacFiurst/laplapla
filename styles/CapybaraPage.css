@@ -1767,7 +1767,7 @@
   }
 }
 
-@media (max-width: 899px) {
+@media (max-width: 1199px) {
   .standalone-book-mobile-shell {
     --capybara-mobile-topbar-space: calc(max(70px, env(safe-area-inset-top)) + 0.15rem);
     width: 100%;
@@ -2818,7 +2818,7 @@
   }
 }
 
-@media (max-width: 899px) {
+@media (max-width: 1199px) {
   .app-layout.app-layout-capybara > .top-bar {
     display: none;
   }

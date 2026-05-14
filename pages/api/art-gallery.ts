@@ -72,7 +72,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET"],
-      limit: 30,
+      limit: 180,
+      windowMs: 60_000,
       keyPrefix: "art-gallery",
     },
     cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",

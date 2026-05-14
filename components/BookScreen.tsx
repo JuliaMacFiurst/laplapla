@@ -6,7 +6,7 @@ import TranslationWarning from "@/components/TranslationWarning";
 import MobileBookScreen from "@/components/capybara/mobile/MobileBookScreen";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries, Lang } from "@/i18n";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -78,7 +78,8 @@ export default function BookScreen({
   bottomNavigation,
   t,
 }: BookScreenProps) {
-  const isMobile = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const usesTouchBookLayout = responsiveViewport.deviceClass !== "desktop";
   const normalizeQuizTest = (test: BookTest) => {
     if (Array.isArray(test.questions)) {
       return test;
@@ -160,7 +161,7 @@ export default function BookScreen({
     [modes, selectedModeId],
   );
 
-  if (isMobile) {
+  if (usesTouchBookLayout) {
     return (
       <MobileBookScreen
         book={book}
@@ -245,7 +246,7 @@ export default function BookScreen({
         >
           {t.actions.takeTest}
         </button>
-        {!isMobile ? (
+        {!usesTouchBookLayout ? (
           <button
             type="button"
             className="feed-action-button"

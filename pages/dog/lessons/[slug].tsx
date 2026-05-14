@@ -26,6 +26,7 @@ import BackButton from "@/components/BackButton";
 import PuzzleCanvas from "@/components/Dogs/Puzzle/PuzzleCanvas";
 import ReplayCanvas from "@/components/Dogs/Replay/ReplayCanvas";
 import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
+import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type {
   ReplayAction,
@@ -285,6 +286,8 @@ function DogImage({
 function LessonPlayerDesktop() {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const studioViewport = useStudioViewportMode();
+  const usesTouchLessonLayout = studioViewport.usesTouchStudioLayout;
   const lang = getCurrentLang(router) as Lang;
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogLesson;
@@ -532,7 +535,7 @@ function LessonPlayerDesktop() {
       : lang === "en"
         ? "Saving..."
         : "Сохранение...";
-  const shouldWarnBeforeExit = isMobile
+  const shouldWarnBeforeExit = usesTouchLessonLayout
     ? Boolean(lesson) && currentStepIndex >= 0
     : hasUnsavedChanges;
 
@@ -863,12 +866,12 @@ function LessonPlayerDesktop() {
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    document.body.classList.toggle("dog-lesson-mobile-page", isMobile);
+    document.body.classList.toggle("dog-lesson-mobile-page", usesTouchLessonLayout);
 
     return () => {
       document.body.classList.remove("dog-lesson-mobile-page");
     };
-  }, [isMobile]);
+  }, [usesTouchLessonLayout]);
 
   useEffect(() => {
     if (!mobileFillTooltip) return;
@@ -884,7 +887,7 @@ function LessonPlayerDesktop() {
     const lessonFinished = lesson
       ? currentStepIndex === lesson.steps.length - 1
       : false;
-    const shouldShowMobileFibi = isMobile && hasCompletedFirstColoring && lessonFinished;
+    const shouldShowMobileFibi = usesTouchLessonLayout && lessonFinished;
     if (!shouldShowMobileFibi) {
       setMobileFibiAdviceReady(false);
       setMobileFibiFact("");
@@ -894,10 +897,10 @@ function LessonPlayerDesktop() {
     setMobileFibiFact("");
     const timerId = window.setTimeout(() => {
       setMobileFibiAdviceReady(true);
-    }, 60_000);
+    }, 900);
 
     return () => window.clearTimeout(timerId);
-  }, [currentStepIndex, hasCompletedFirstColoring, isMobile, lesson]);
+  }, [currentStepIndex, usesTouchLessonLayout, lesson]);
 
   const computeRegionMap = useCallback(() => {
     const drawingCanvas = drawingCanvasRef.current;
@@ -2264,7 +2267,7 @@ function LessonPlayerDesktop() {
     puzzleSourceCanvasRef.current = combined;
     setAnimationMode("puzzle");
     setAnimationMenuOpen(false);
-    setMobilePanel(isMobile ? null : "animate");
+    setMobilePanel(usesTouchLessonLayout ? null : "animate");
   };
 
   const openReplayMode = (autoExport: "video" | "gif" | null = null) => {
@@ -2310,9 +2313,9 @@ function LessonPlayerDesktop() {
   return (
     <>
       <SEO title={seoTitle} description={seoDescription} path={seoPath} />
-      <MobilePortraitLock lang={lang} enabled={isMobile} />
+      <MobilePortraitLock lang={lang} enabled={studioViewport.usesPhonePortraitLock && isMobile} />
       <div className="lesson-container">
-        {!isMobile ? (
+        {!usesTouchLessonLayout ? (
           <BackButton
             href={`/dog/lessons?category=${lesson?.category_slug ?? ""}`}
           />
@@ -2320,8 +2323,8 @@ function LessonPlayerDesktop() {
         {lesson ? (
           <div>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
-          {!isMobile && !isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
-          {isMobile ? (
+          {!usesTouchLessonLayout && !isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
+          {usesTouchLessonLayout ? (
             <div className="lesson-mobile-shell">
               <div className="lesson-mobile-topbar">
                 <div className="lesson-mobile-topbar-main">
@@ -2367,7 +2370,7 @@ function LessonPlayerDesktop() {
                       {frankSpeech}
                     </div>
                   </div>
-                  {hasCompletedFirstColoring && isLessonComplete ? (
+                  {isLessonComplete ? (
                     <div className="lesson-mobile-fibi">
                     <Image
                       src="/dog/fibi.webp"
@@ -3012,7 +3015,7 @@ function LessonPlayerDesktop() {
               </button>
             </div>
           )}
-          {!isMobile ? (
+          {!usesTouchLessonLayout ? (
           <div className="lesson-main-row">
             <div
               className="lesson-frank"
@@ -3298,7 +3301,7 @@ function LessonPlayerDesktop() {
           </div>
           ) : null}
 
-          {!isMobile && animationMode !== "puzzle" && animationMode !== "replay" && (
+          {!usesTouchLessonLayout && animationMode !== "puzzle" && animationMode !== "replay" && (
             <div className="lesson-tools-panel">
               <div className="lesson-tools-panel-1">
                 <button
@@ -3470,7 +3473,7 @@ function LessonPlayerDesktop() {
           {/* Модалка галереи */}
           {showGallery &&
             lesson &&
-            (isMobile ? (
+            (usesTouchLessonLayout ? (
               <MobileArtGallery
                 categorySlug={lesson.category_slug}
                 isOpen={showGallery}

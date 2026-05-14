@@ -13,6 +13,7 @@ import { fetchParrotMusicStyles } from "@/lib/parrots/client";
 import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/parrots/catalog";
 import type { StudioSlide } from "@/types/studio";
 import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
+import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 
 const StudioRoot = dynamic(() => import("@/components/studio/StudioRoot"), { ssr: false });
 
@@ -221,6 +222,8 @@ export function ParrotsStudioPageContent() {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const isMobile = useIsMobile();
+  const studioViewport = useStudioViewportMode();
+  const usesTouchStudioLayout = studioViewport.usesTouchStudioLayout;
   const [hasMounted, setHasMounted] = useState(false);
   const copy = COPY[lang] ?? COPY.ru;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/parrots/studio";
@@ -271,7 +274,7 @@ export function ParrotsStudioPageContent() {
   }, [styleRecords, styleSlug]);
 
   useEffect(() => {
-    if (!isMobile) return;
+    if (!usesTouchStudioLayout) return;
 
     const previousDocumentOverflow = document.documentElement.style.overflow;
     const previousBodyOverflow = document.body.style.overflow;
@@ -286,7 +289,7 @@ export function ParrotsStudioPageContent() {
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.height = previousBodyHeight;
     };
-  }, [isMobile]);
+  }, [usesTouchStudioLayout]);
 
   useEffect(() => {
     let cancelled = false;
@@ -504,7 +507,7 @@ export function ParrotsStudioPageContent() {
     return null;
   }
 
-  if (isMobile) {
+  if (usesTouchStudioLayout) {
     return (
       <>
         <SEO
@@ -512,7 +515,7 @@ export function ParrotsStudioPageContent() {
           description={copy.subtitle}
           path={seoPath}
         />
-        <MobilePortraitLock lang={lang} enabled={isMobile} />
+        <MobilePortraitLock lang={lang} enabled={studioViewport.usesPhonePortraitLock && isMobile} />
         <style jsx global>{`
           .top-bar,
           .footer-stack,
@@ -574,7 +577,7 @@ export function ParrotsStudioPageContent() {
         description={copy.subtitle}
         path={seoPath}
       />
-      <MobilePortraitLock lang={lang} enabled={isMobile} />
+      <MobilePortraitLock lang={lang} enabled={studioViewport.usesPhonePortraitLock && isMobile} />
       <main className={`parrot-studio-page ${lang === "he" ? "is-rtl" : ""}`}>
         <section className="parrot-studio-page__hero">
           <div className="parrot-studio-page__hero-copy">

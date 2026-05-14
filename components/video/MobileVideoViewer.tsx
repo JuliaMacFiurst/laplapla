@@ -76,12 +76,16 @@ export default function MobileVideoViewer({
 
   useEffect(() => {
     const syncViewportHeight = () => {
-      setViewportHeight(window.innerHeight);
+      setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
     };
 
     syncViewportHeight();
     window.addEventListener("resize", syncViewportHeight);
-    return () => window.removeEventListener("resize", syncViewportHeight);
+    window.visualViewport?.addEventListener("resize", syncViewportHeight);
+    return () => {
+      window.removeEventListener("resize", syncViewportHeight);
+      window.visualViewport?.removeEventListener("resize", syncViewportHeight);
+    };
   }, []);
 
   useEffect(() => {

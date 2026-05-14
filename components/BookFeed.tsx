@@ -6,6 +6,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 type SlideMedia = {
@@ -90,6 +91,8 @@ export default function BookFeed({
   const mobilePanelCounterRef = useRef(0);
   const mobileLoadQueuedRef = useRef(false);
   const [isMobileFeed, setIsMobileFeed] = useState(false);
+  const responsiveViewport = useResponsiveViewport();
+  const usesTouchBookFeed = responsiveViewport.deviceClass !== "desktop";
   const [mobilePanels, setMobilePanels] = useState<MobileBookPanel[]>([]);
   const previousBookLabel = dict.navigation?.previousBook || "Previous book";
   const nextBookLabel = dict.navigation?.nextBook || "Next book";
@@ -128,20 +131,8 @@ export default function BookFeed({
   }, [hasNextBook, loading, onNextBook]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
-    const syncMobileFeed = () => {
-      setIsMobileFeed(mediaQuery.matches);
-    };
-
-    syncMobileFeed();
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", syncMobileFeed);
-      return () => mediaQuery.removeEventListener("change", syncMobileFeed);
-    }
-
-    mediaQuery.addListener(syncMobileFeed);
-    return () => mediaQuery.removeListener(syncMobileFeed);
-  }, []);
+    setIsMobileFeed(usesTouchBookFeed);
+  }, [usesTouchBookFeed]);
 
   useEffect(() => {
     if (isMobileFeed) {

@@ -1575,11 +1575,17 @@ export default function ParrotStudioRoot({
 
       <style jsx>{`
         .parrot-studio-root {
-          position: relative;
-          height: 100dvh;
+          position: fixed;
+          inset: 0;
+          width: 100vw;
+          max-width: 100vw;
+          height: var(--app-viewport-height, 100dvh);
+          max-height: var(--app-viewport-height, 100dvh);
           display: grid;
           grid-template-rows: auto auto minmax(0, 1fr) auto auto;
           overflow: hidden;
+          overscroll-behavior: none;
+          touch-action: manipulation;
           background:
             radial-gradient(circle at top left, rgba(255, 190, 154, 0.08), transparent 24%),
             linear-gradient(180deg, #23252b 0%, #1c1e24 100%);
@@ -1744,6 +1750,103 @@ export default function ParrotStudioRoot({
           font-size: 0.74rem;
           line-height: 1.4;
           color: rgba(255, 244, 232, 0.56);
+        }
+
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .parrot-studio-root {
+            grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+            height: var(--app-viewport-height, 100dvh);
+            max-height: var(--app-viewport-height, 100dvh);
+          }
+
+          .parrot-studio-root__topbar {
+            padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 1.1rem 0.35rem;
+            gap: 0.75rem;
+          }
+
+          .parrot-studio-root__topbar-button {
+            width: 52px;
+            height: 52px;
+            border-radius: 18px;
+          }
+
+          .parrot-studio-root__topbar-style,
+          .parrot-studio-root__topbar-play {
+            min-width: 96px;
+            font-size: 1rem;
+          }
+
+          .parrot-studio-root__top,
+          .parrot-studio-root__panel {
+            padding-left: max(1rem, env(safe-area-inset-left, 0px));
+            padding-right: max(1rem, env(safe-area-inset-right, 0px));
+          }
+
+          .parrot-studio-root__panel {
+            padding-bottom: 0.4rem;
+          }
+
+          .parrot-studio-root__style-menu {
+            width: min(52vw, 420px);
+            max-height: min(52dvh, 460px);
+          }
+
+          .parrot-studio-root__style-item {
+            min-height: 58px;
+            grid-template-columns: 38px minmax(0, 1fr);
+            border-radius: 16px;
+          }
+
+          .parrot-studio-root__style-item img {
+            width: 38px;
+            height: 38px;
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 1199px) and (orientation: landscape) {
+          .parrot-studio-root {
+            grid-template-columns: minmax(280px, 36vw) minmax(0, 1fr);
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+              "topbar topbar"
+              "guide panel"
+              "nav nav";
+          }
+
+          .parrot-studio-root__topbar {
+            grid-area: topbar;
+          }
+
+          .parrot-studio-root__top {
+            grid-area: guide;
+            min-height: 0;
+            overflow-y: auto;
+            padding-top: 0.5rem;
+            padding-bottom: 0.75rem;
+          }
+
+          .parrot-studio-root__panel {
+            grid-area: panel;
+            min-height: 0;
+            padding-top: 0.5rem;
+            padding-bottom: 0.75rem;
+          }
+
+          .parrot-studio-root__footer {
+            display: none;
+          }
+
+          .parrot-studio-root :global(.studio-bottom-bar) {
+            grid-area: nav;
+            padding:
+              0.55rem max(1rem, env(safe-area-inset-right, 0px))
+              calc(0.6rem + env(safe-area-inset-bottom, 0px))
+              max(1rem, env(safe-area-inset-left, 0px));
+          }
+
+          .parrot-studio-root :global(.studio-bottom-bar button) {
+            min-height: 50px;
+          }
         }
       `}</style>
     </section>

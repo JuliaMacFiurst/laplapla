@@ -32,6 +32,7 @@ import { fontVariableClasses } from "@/lib/fonts";
 import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
 import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -74,6 +75,11 @@ function readSessionFromHash(hash: string) {
     access_token: accessToken,
     refresh_token: refreshToken,
   };
+}
+
+function ResponsiveViewportBridge() {
+  useResponsiveViewport();
+  return null;
 }
 
 function getHydrationStableLang(
@@ -239,6 +245,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <div className={fontVariableClasses}>
+      <ResponsiveViewportBridge />
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" sizes="any" />

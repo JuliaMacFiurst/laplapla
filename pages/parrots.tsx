@@ -9,7 +9,7 @@ import ParrotMobileExperience from "@/components/parrots/mobile/ParrotMobileExpe
 import { dictionaries, type Lang } from "../i18n";
 import { DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStyles } from "@/lib/parrots/client";
 import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/parrots/catalog";
 
@@ -82,7 +82,8 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   const t = dict.parrots;
   const seo = dict.seo.parrots;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/parrots";
-  const isMobile = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const usesTouchParrotsLayout = responsiveViewport.deviceClass !== "desktop";
   const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
   const [styleRecords, setStyleRecords] = useState<ParrotStyleRecord[]>(fallbackPresets);
   const [activeId, setActiveId] = useState(fallbackPresets[0]?.id ?? "lofi");
@@ -225,7 +226,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
     );
   }, [lang, router, styleRecords, t.story.fallbackSilent]);
 
-  if (isMobile) {
+  if (usesTouchParrotsLayout) {
     return (
       <>
         <SEO title={seo.title} description={seo.description} path={seoPath} />
@@ -250,8 +251,10 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             .style-presets-row {
               width: 100%;
               display: grid;
-              grid-template-columns: repeat(2, minmax(0, 1fr));
-              gap: 0.75rem;
+              grid-template-columns: repeat(auto-fill, 96px);
+              justify-content: center;
+              align-items: start;
+              gap: 12px;
               padding: 0;
               margin-left: 0;
               margin-right: 0;
@@ -259,12 +262,12 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             }
 
             .style-preset-btn {
-              width: 100%;
-              height: auto;
-              min-height: 124px;
-              border-radius: 16px;
+              width: 96px;
+              height: 96px;
+              min-height: 0;
+              border-radius: 14px;
               margin: 0;
-              aspect-ratio: 1 / 1;
+              aspect-ratio: auto;
               box-sizing: border-box;
               border: 1px solid rgba(0,0,0,0.12);
               background: #fff center/cover no-repeat;
@@ -272,7 +275,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
               display: inline-flex;
               align-items: flex-end;
               justify-content: center;
-              padding: 10px;
+              padding: 6px;
               position: relative;
               overflow: hidden;
               cursor: pointer;
@@ -286,8 +289,10 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             }
 
             .style-preset-label {
-              font-size: 16px;
-              padding: 4px 8px;
+              max-width: 82px;
+              font-size: 13px;
+              line-height: 1;
+              padding: 4px 6px;
               font-weight: 700;
               letter-spacing: 1px;
               text-transform: uppercase;
@@ -295,6 +300,26 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
               background: rgba(255,255,255,0.45);
               border-radius: 12px;
               backdrop-filter: blur(4px);
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+
+            @media (min-width: 768px) {
+              .style-presets-row {
+                grid-template-columns: repeat(auto-fill, 104px);
+                gap: 14px;
+              }
+
+              .style-preset-btn {
+                width: 104px;
+                height: 104px;
+              }
+
+              .style-preset-label {
+                max-width: 90px;
+                font-size: 14px;
+              }
             }
           `}</style>
         </main>
@@ -333,8 +358,8 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
         <div
           className="grid parrots-main-grid"
           style={{
-            gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
-            gap: isMobile ? 24 : 50,
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 50,
             justifyItems: "stretch",
             alignItems: "start",
             maxWidth: "1024px",

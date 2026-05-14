@@ -4,7 +4,7 @@ import BookFeed from "@/components/BookFeed";
 import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
 import SEO from "@/components/SEO";
 import { useBook } from "@/hooks/useBook";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import type { Book } from "@/types/types";
@@ -15,7 +15,8 @@ import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides"
 export default function CapybaraPage({ lang }: { lang: Lang }) {
   const router = useRouter();
   const currentLang = getCurrentLang(router) || lang;
-  const isMobile = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const usesTouchBookLayout = responsiveViewport.deviceClass !== "desktop";
   const dict = dictionaries[currentLang] || dictionaries.ru;
   const t = dict.capybaras.capybaraPage;
   const seo = dict.seo.capybaras.index;
@@ -554,7 +555,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     }
   }, [router]);
 
-  const shouldHideHeaderCopyOnMobile = isMobile && !loading && Boolean(currentBook);
+  const shouldHideHeaderCopyOnMobile = usesTouchBookLayout && !loading && Boolean(currentBook);
 
   return (
     <>
@@ -565,7 +566,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
           <h1 className="page-title">{t.title}</h1>
           <p className="page-subtitle">{t.subtitle}</p>
         </div>
-        {isMobile ? (
+        {usesTouchBookLayout ? (
           <div className="capybara-mobile-topbar">
             <button
               type="button"
@@ -643,7 +644,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             </button>
           </div>
         </form>
-        {!isMobile ? renderSearchFilters() : null}
+        {!usesTouchBookLayout ? renderSearchFilters() : null}
       </header>
 
       {isSearchOpen ? (
