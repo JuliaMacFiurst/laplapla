@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { devLog } from "@/utils/devLog";
 import { PuzzleEngine } from "./PuzzleEngine";
 
@@ -28,9 +28,71 @@ export default function PuzzleCanvas({
   const snapFlashRef = useRef<number>(0);
   const winTriggeredRef = useRef(false);
   const winTimeRef = useRef<number>(0);
+  const audioUnlockedRef = useRef(false);
+  const snapAudioRef = useRef<HTMLAudioElement | null>(null);
+  const winAudioRef = useRef<HTMLAudioElement | null>(null);
+  const returnAudioRef = useRef<HTMLAudioElement | null>(null);
+  const trayScrollGestureRef = useRef<{
+    pointerId: number;
+    startY: number;
+    startScrollTop: number;
+  } | null>(null);
   const starsRef = useRef<
     { x: number; y: number; vx: number; vy: number; size: number }[]
   >([]);
+
+  const getAudio = (
+    ref: MutableRefObject<HTMLAudioElement | null>,
+    src: string,
+    volume: number,
+  ) => {
+    if (!ref.current) {
+      ref.current = new Audio(src);
+      ref.current.preload = "auto";
+      ref.current.volume = volume;
+    }
+
+    return ref.current;
+  };
+
+  const unlockPuzzleAudio = () => {
+    if (audioUnlockedRef.current) return;
+
+    audioUnlockedRef.current = true;
+    const audioItems = [
+      getAudio(snapAudioRef, "/sounds/puzzle-click.mp3", 0.6),
+      getAudio(winAudioRef, "/sounds/you-win.mp3", 0.7),
+      getAudio(returnAudioRef, "/sounds/clap.mp3", 0.5),
+    ];
+
+    audioItems.forEach((audio) => {
+      const previousVolume = audio.volume;
+      audio.volume = 0;
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = previousVolume;
+        })
+        .catch(() => {
+          audio.volume = previousVolume;
+        });
+    });
+  };
+
+  const playPuzzleSound = (
+    ref: MutableRefObject<HTMLAudioElement | null>,
+    src: string,
+    volume: number,
+  ) => {
+    try {
+      const audio = getAudio(ref, src, volume);
+      audio.volume = volume;
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    } catch {}
+  };
 
   const renderPieces = (
     ctx: CanvasRenderingContext2D,
@@ -147,12 +209,7 @@ export default function PuzzleCanvas({
         engine.trySnap(piece);
 
         if (!wasLocked && piece.locked) {
-          // play snap sound
-          try {
-            const audio = new Audio("/sounds/puzzle-click.mp3");
-            audio.volume = 0.6;
-            audio.play().catch(() => {});
-          } catch {}
+          playPuzzleSound(snapAudioRef, "/sounds/puzzle-click.mp3", 0.6);
 
           // trigger flash effect
           snapFlashRef.current = performance.now();
@@ -161,12 +218,7 @@ export default function PuzzleCanvas({
           winTriggeredRef.current = true;
           winTimeRef.current = performance.now();
 
-          // play win sound
-          try {
-            const audio = new Audio("/sounds/you-win.mp3");
-            audio.volume = 0.7;
-            audio.play().catch(() => {});
-          } catch {}
+          playPuzzleSound(winAudioRef, "/sounds/you-win.mp3", 0.7);
 
           // spawn stars
           starsRef.current = Array.from({ length: 120 }).map(() => ({
@@ -248,12 +300,7 @@ export default function PuzzleCanvas({
             });
           }
 
-          // play tray return sound
-          try {
-            const audio = new Audio("/sounds/clap.mp3");
-            audio.volume = 0.5;
-            audio.play().catch(() => {});
-          } catch {}
+          playPuzzleSound(returnAudioRef, "/sounds/clap.mp3", 0.5);
 
           // hide piece from the board
           piece.x = -1000;
@@ -275,6 +322,7 @@ export default function PuzzleCanvas({
       handle.onpointerdown = (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
+        unlockPuzzleAudio();
         activePointerIdRef.current = ev.pointerId;
         draggingPieceRef.current = piece;
         dragSourceRef.current = "tray";
@@ -285,6 +333,10 @@ export default function PuzzleCanvas({
 
     const createTrayPieceElement = (piece: any) => {
       const isMobileTray = traySelector.includes("mobile");
+      const isTabletTray =
+        isMobileTray &&
+        typeof window !== "undefined" &&
+        window.matchMedia("(min-width: 768px)").matches;
       const item = document.createElement("div");
       item.dataset.pieceId = piece.id;
       item.className = "lesson-puzzle-tray-piece";
@@ -292,32 +344,53 @@ export default function PuzzleCanvas({
       item.style.display = "inline-flex";
       item.style.alignItems = "center";
       item.style.justifyContent = "center";
-      item.style.width = isMobileTray ? "84px" : `${piece.canvas.width}px`;
-      item.style.minWidth = isMobileTray ? "84px" : `${piece.canvas.width}px`;
-      item.style.height = isMobileTray ? "64px" : `${piece.canvas.height}px`;
-      item.style.padding = isMobileTray ? "6px" : "0";
+      item.style.width = isTabletTray
+        ? "128px"
+        : isMobileTray
+          ? "84px"
+          : `${piece.canvas.width}px`;
+      item.style.minWidth = isTabletTray
+        ? "128px"
+        : isMobileTray
+          ? "84px"
+          : `${piece.canvas.width}px`;
+      item.style.height = isTabletTray
+        ? "104px"
+        : isMobileTray
+          ? "64px"
+          : `${piece.canvas.height}px`;
+      item.style.padding = isTabletTray ? "8px" : isMobileTray ? "6px" : "0";
       item.style.borderRadius = isMobileTray ? "14px" : "0";
       item.style.background = isMobileTray ? "rgba(255,255,255,0.08)" : "transparent";
       item.style.boxSizing = "border-box";
       item.style.flex = "0 0 auto";
       if (isMobileTray) {
-        item.style.pointerEvents = "none";
-        item.style.touchAction = "pan-x";
+        item.style.pointerEvents = "auto";
+        item.style.touchAction = isTabletTray ? "none" : "pan-x";
+        item.style.cursor = isTabletTray ? "grab" : "default";
       }
 
       const img = document.createElement("img");
       img.src = piece.canvas.toDataURL();
       img.alt = "";
       img.style.width = isMobileTray ? "auto" : `${piece.canvas.width}px`;
-      img.style.height = isMobileTray ? "48px" : `${piece.canvas.height}px`;
-      img.style.maxWidth = isMobileTray ? "60px" : `${piece.canvas.width}px`;
+      img.style.height = isTabletTray
+        ? "86px"
+        : isMobileTray
+          ? "48px"
+          : `${piece.canvas.height}px`;
+      img.style.maxWidth = isTabletTray
+        ? "104px"
+        : isMobileTray
+          ? "60px"
+          : `${piece.canvas.width}px`;
       img.style.objectFit = "contain";
       img.style.pointerEvents = "none";
       img.style.userSelect = "none";
 
       item.appendChild(img);
 
-      if (isMobileTray) {
+      if (isMobileTray && !isTabletTray) {
         const handle = document.createElement("button");
         handle.type = "button";
         handle.textContent = "↗";
@@ -364,8 +437,46 @@ export default function PuzzleCanvas({
         trayRef.current.innerHTML = "";
         const isMobileTray = traySelector.includes("mobile");
         if (isMobileTray) {
-          trayRef.current.style.touchAction = "pan-x";
+          const isTabletLandscape =
+            window.matchMedia("(min-width: 768px)").matches &&
+            window.matchMedia("(orientation: landscape)").matches;
+          trayRef.current.style.touchAction = isTabletLandscape ? "pan-y" : "pan-x";
           trayRef.current.style.pointerEvents = "auto";
+
+          if (isTabletLandscape) {
+            trayRef.current.onpointerdown = (event) => {
+              const target = event.target as HTMLElement | null;
+              if (target?.closest(".lesson-puzzle-tray-piece")) {
+                return;
+              }
+
+              trayScrollGestureRef.current = {
+                pointerId: event.pointerId,
+                startY: event.clientY,
+                startScrollTop: trayRef.current?.scrollTop ?? 0,
+              };
+              trayRef.current?.setPointerCapture(event.pointerId);
+            };
+
+            trayRef.current.onpointermove = (event) => {
+              const gesture = trayScrollGestureRef.current;
+              if (!gesture || gesture.pointerId !== event.pointerId || !trayRef.current) {
+                return;
+              }
+
+              event.preventDefault();
+              trayRef.current.scrollTop =
+                gesture.startScrollTop + (gesture.startY - event.clientY);
+            };
+
+            trayRef.current.onpointerup = (event) => {
+              if (trayScrollGestureRef.current?.pointerId === event.pointerId) {
+                trayScrollGestureRef.current = null;
+              }
+            };
+
+            trayRef.current.onpointercancel = trayRef.current.onpointerup;
+          }
         }
 
         // shuffle pieces so tray order is random
@@ -533,6 +644,7 @@ export default function PuzzleCanvas({
 
   function handlePointerDown(e: React.PointerEvent) {
     e.preventDefault();
+    unlockPuzzleAudio();
 
     const engine = engineRef.current;
     if (!engine) return;
@@ -612,11 +724,7 @@ export default function PuzzleCanvas({
       engine.trySnap(piece);
 
       if (!wasLocked && piece.locked) {
-        try {
-          const audio = new Audio("/sounds/puzzle-click.mp3");
-          audio.volume = 0.6;
-          audio.play().catch(() => {});
-        } catch {}
+        playPuzzleSound(snapAudioRef, "/sounds/puzzle-click.mp3", 0.6);
 
         snapFlashRef.current = performance.now();
       }
@@ -624,12 +732,7 @@ export default function PuzzleCanvas({
         winTriggeredRef.current = true;
         winTimeRef.current = performance.now();
 
-        // play win sound
-        try {
-          const audio = new Audio("/sounds/you-win.mp3");
-          audio.volume = 0.7;
-          audio.play().catch(() => {});
-        } catch {}
+        playPuzzleSound(winAudioRef, "/sounds/you-win.mp3", 0.7);
 
         // spawn stars
         starsRef.current = Array.from({ length: 60 }).map(() => ({
@@ -682,7 +785,7 @@ export default function PuzzleCanvas({
         onPointerCancel={handlePointerUp}
         style={{
           border: "2px solid #d9d9d9",
-          background: "#fff",
+          background: "#d8d8d8",
           display: "block",
           margin: "0 auto",
           cursor: "grab",

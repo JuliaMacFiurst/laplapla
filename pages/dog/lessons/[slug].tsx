@@ -355,6 +355,15 @@ function LessonPlayerDesktop() {
   const [colorSeedCount, setColorSeedCount] = useState(0);
   const draftSaveTimeoutRef = useRef<number | null>(null);
   const restoredDraftKeyRef = useRef<string | null>(null);
+  const puzzleTrayScrollGestureRef = useRef<{
+    pointerId: number;
+    startY: number;
+    startScrollTop: number;
+  } | null>(null);
+  const puzzleTrayTouchScrollRef = useRef<{
+    startY: number;
+    startScrollTop: number;
+  } | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const regionDataRef = useRef<ReturnType<typeof buildRegionMap> | null>(null);
@@ -2896,6 +2905,72 @@ function LessonPlayerDesktop() {
 
               {animationMode === "puzzle" ? (
                 <div className="lesson-mobile-puzzle-dock">
+                  <div
+                    className="lesson-puzzle-scroll-strip"
+                    aria-hidden="true"
+                    onPointerDown={(event) => {
+                      const el = document.querySelector(
+                        ".lesson-puzzle-tray-inner-mobile-active",
+                      ) as HTMLElement | null;
+                      if (!el) return;
+
+                      puzzleTrayScrollGestureRef.current = {
+                        pointerId: event.pointerId,
+                        startY: event.clientY,
+                        startScrollTop: el.scrollTop,
+                      };
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                    }}
+                    onPointerMove={(event) => {
+                      const gesture = puzzleTrayScrollGestureRef.current;
+                      const el = document.querySelector(
+                        ".lesson-puzzle-tray-inner-mobile-active",
+                      ) as HTMLElement | null;
+                      if (!gesture || gesture.pointerId !== event.pointerId || !el) return;
+
+                      event.preventDefault();
+                      el.scrollTop = gesture.startScrollTop + (gesture.startY - event.clientY);
+                    }}
+                    onPointerUp={(event) => {
+                      if (puzzleTrayScrollGestureRef.current?.pointerId === event.pointerId) {
+                        puzzleTrayScrollGestureRef.current = null;
+                      }
+                    }}
+                    onPointerCancel={(event) => {
+                      if (puzzleTrayScrollGestureRef.current?.pointerId === event.pointerId) {
+                        puzzleTrayScrollGestureRef.current = null;
+                      }
+                    }}
+                    onTouchStart={(event) => {
+                      const touch = event.touches[0];
+                      const el = document.querySelector(
+                        ".lesson-puzzle-tray-inner-mobile-active",
+                      ) as HTMLElement | null;
+                      if (!touch || !el) return;
+
+                      puzzleTrayTouchScrollRef.current = {
+                        startY: touch.clientY,
+                        startScrollTop: el.scrollTop,
+                      };
+                    }}
+                    onTouchMove={(event) => {
+                      const touch = event.touches[0];
+                      const gesture = puzzleTrayTouchScrollRef.current;
+                      const el = document.querySelector(
+                        ".lesson-puzzle-tray-inner-mobile-active",
+                      ) as HTMLElement | null;
+                      if (!touch || !gesture || !el) return;
+
+                      event.preventDefault();
+                      el.scrollTop = gesture.startScrollTop + (gesture.startY - touch.clientY);
+                    }}
+                    onTouchEnd={() => {
+                      puzzleTrayTouchScrollRef.current = null;
+                    }}
+                    onTouchCancel={() => {
+                      puzzleTrayTouchScrollRef.current = null;
+                    }}
+                  />
                   <button
                     type="button"
                     className="lesson-puzzle-scroll-left"
@@ -2903,10 +2978,13 @@ function LessonPlayerDesktop() {
                       const el = document.querySelector(
                         ".lesson-puzzle-tray-inner-mobile-active",
                       ) as HTMLElement | null;
-                      el?.scrollBy({ left: -200, behavior: "smooth" });
+                      const isVerticalTray = window.matchMedia("(min-width: 768px) and (orientation: landscape)").matches;
+                      el?.scrollBy(isVerticalTray
+                        ? { top: -220, behavior: "smooth" }
+                        : { left: -200, behavior: "smooth" });
                     }}
                   >
-                    ◀
+                    ▲
                   </button>
                   <div className="lesson-puzzle-tray-inner lesson-puzzle-tray-inner-mobile lesson-puzzle-tray-inner-mobile-active" />
                   <button
@@ -2916,10 +2994,13 @@ function LessonPlayerDesktop() {
                       const el = document.querySelector(
                         ".lesson-puzzle-tray-inner-mobile-active",
                       ) as HTMLElement | null;
-                      el?.scrollBy({ left: 200, behavior: "smooth" });
+                      const isVerticalTray = window.matchMedia("(min-width: 768px) and (orientation: landscape)").matches;
+                      el?.scrollBy(isVerticalTray
+                        ? { top: 220, behavior: "smooth" }
+                        : { left: 200, behavior: "smooth" });
                     }}
                   >
-                    ▶
+                    ▼
                   </button>
                 </div>
               ) : null}

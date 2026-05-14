@@ -2403,18 +2403,66 @@ lesson-dog-name::before,
       width: min(34vw, 420px);
       min-width: 260px;
       max-width: 34vw;
-      grid-template-columns: 1fr;
-      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-columns: 42px minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      gap: 10px;
       padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
       border-top: 0;
       border-right: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .lesson-puzzle-scroll-strip {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+        0 12px 24px rgba(0, 0, 0, 0.18);
+      touch-action: none;
+      cursor: ns-resize;
     }
 
     .lesson-puzzle-tray-inner-mobile-active {
+      height: 100%;
+      max-height: 100%;
       min-height: 0;
       flex-direction: column;
       overflow-x: hidden;
       overflow-y: auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 18px;
+      touch-action: pan-y;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .lesson-puzzle-tray-inner-mobile-active::-webkit-scrollbar {
+      display: none;
+    }
+
+    .lesson-puzzle-scroll-left,
+    .lesson-puzzle-scroll-right {
+      display: none;
+    }
+
+    .lesson-mobile-stage-puzzle .lesson-puzzle-mode-mobile {
+      inset: 10px;
+      width: auto;
+      height: auto;
+    }
+
+    .lesson-mobile-stage-puzzle .lesson-puzzle-board-mobile {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
     }
   }
 }
