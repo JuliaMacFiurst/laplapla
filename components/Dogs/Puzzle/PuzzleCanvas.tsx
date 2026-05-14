@@ -105,13 +105,19 @@ export default function PuzzleCanvas({
     const inactivePieces = engine.pieces.filter(
       (piece) => piece.groupId !== activeGroupId,
     );
+    const lockedPieces = inactivePieces.filter((piece) => piece.locked);
+    const unlockedPieces = inactivePieces.filter((piece) => !piece.locked);
     const activeGroupPieces = activeGroupId === null
       ? []
       : engine.getGroupPieces(activeGroupId);
 
     ctx.clearRect(0, 0, engine.width, engine.height + 300);
 
-    inactivePieces.forEach((piece) => {
+    lockedPieces.forEach((piece) => {
+      ctx.drawImage(piece.canvas, piece.x, piece.y);
+    });
+
+    unlockedPieces.forEach((piece) => {
       ctx.drawImage(piece.canvas, piece.x, piece.y);
     });
 
