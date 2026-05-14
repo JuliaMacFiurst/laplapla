@@ -7,7 +7,6 @@ import { ShortsRow } from "./ShortsRow";
 import { VideosRow } from "./VideosRow";
 import { dictionaries, Lang } from "../../i18n";
 import { devWarn } from "@/utils/devLog";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import MobileVideoViewer, { type VideoItem as MobileViewerVideoItem } from "./MobileVideoViewer";
 
 import type { VideoCategoryKey, VideoItem } from "../../content/videos";
@@ -53,8 +52,6 @@ export function VideoSection({
   mobileMode?: MobileMode;
 }) {
   const t = dictionaries[lang].video;
-  const isMobile = useIsMobile(767);
-
   const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -233,7 +230,7 @@ export function VideoSection({
     return <div className="video-section">{t.mobileSectionTitle ?? "Loading…"}</div>;
   }
 
-  if (isMobile && mobileMode) {
+  if (mobileMode) {
     const title = mobileMode === "videos" ? t.videosTitle : t.shortsTitle;
     const subtitle = mobileMode === "videos" ? t.mobilePopularTitle : t.mobileSectionSubtitle;
 

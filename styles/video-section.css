@@ -135,17 +135,26 @@
 
 .shorts-row {
   display: flex;
+  align-items: flex-start;
   gap: 12px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  overflow-y: hidden;
+  padding: 2px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  contain: layout;
 }
 
 .short-card {
+  width: 180px;
+  min-width: 180px;
   max-width: 180px;
+  flex: 0 0 180px;
   border-radius: 18px;
   padding: 8px;
-  flex-shrink: 0;
   overflow: hidden;
+  align-self: flex-start;
+  box-sizing: border-box;
 
   /* kawaii разноцветные карточки */
   background: var(--short-bg, #f7f4ff);
@@ -176,13 +185,16 @@
 }
 
 .short-thumbnail {
-  height: 260px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
   border-radius: 14px;
   background: #e9e3ff;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  contain: layout paint;
 }
 
 .short-thumbnail img {
@@ -200,9 +212,95 @@
 .short-title {
   font-family: var(--font-amatic-sc), bold;
   font-size: 18px;
+  line-height: 1.05;
   margin-top: 6px;
+  min-height: 38px;
+  max-height: 38px;
   text-align: center;
   opacity: 0.7;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .shorts-row {
+    gap: 14px;
+    padding-bottom: 12px;
+  }
+
+  .short-card {
+    width: 168px;
+    min-width: 168px;
+    max-width: 168px;
+    flex-basis: 168px;
+    transform: translateZ(0);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1366px), (pointer: coarse) and (min-width: 768px) {
+  .shorts-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    height: auto !important;
+    max-height: none !important;
+    contain: layout paint;
+  }
+
+  .shorts-row .short-card {
+    inline-size: 168px !important;
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    block-size: 354px !important;
+    height: 354px !important;
+    min-height: 354px !important;
+    max-height: 354px !important;
+    flex: 0 0 168px !important;
+    align-self: flex-start !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+
+  .shorts-row .short-thumbnail {
+    inline-size: 152px !important;
+    width: 152px !important;
+    block-size: 270px !important;
+    height: 270px !important;
+    min-height: 270px !important;
+    max-height: 270px !important;
+    flex: 0 0 270px !important;
+    aspect-ratio: auto !important;
+  }
+
+  .shorts-row .short-thumbnail img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover !important;
+  }
+
+  .video-player-window.short {
+    width: min(42vw, 420px) !important;
+    height: min(calc(var(--app-viewport-height, 100dvh) - 80px), 720px) !important;
+    max-height: calc(var(--app-viewport-height, 100dvh) - 80px) !important;
+    aspect-ratio: 9 / 16 !important;
+  }
+
+  .video-player-content.short,
+  .video-player-content.short > *,
+  .video-player-content.short iframe {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+  }
 }
 
 /* ────────────── Videos ────────────── */
@@ -330,7 +428,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (pointer: coarse) and (min-width: 768px) and (max-width: 1366px) {
   .video-section-mobile {
     margin-top: 0;
     padding: 0;
@@ -418,19 +516,15 @@
   }
 
   .mobile-video-vertical-list {
-    flex: 1;
+    flex: none;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    overflow-y: auto;
-    padding: 2px 2px 12px;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: y proximity;
-    scroll-padding-block: 2px;
-    overscroll-behavior-y: contain;
-    contain: layout;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    align-items: start;
+    gap: 20px;
+    overflow: visible;
+    padding: 2px 2px 18px;
+    contain: layout paint;
   }
 
   .mobile-short-reel,
@@ -474,18 +568,16 @@
 
   .mobile-video-card {
     width: 100%;
-    height: clamp(132px, calc((var(--app-viewport-height, 100dvh) - 260px) / 3), 178px);
+    height: auto;
     min-width: 0;
     max-width: none;
-    min-height: 132px;
-    max-height: 178px;
-    flex: 0 0 auto;
-    display: grid;
-    grid-template-columns: minmax(132px, 43%) minmax(0, 1fr);
-    align-items: stretch;
+    min-height: 0;
+    max-height: none;
+    flex: none;
+    display: block;
     scroll-snap-align: start;
-    transform: scale(0.988);
-    opacity: 0.94;
+    transform: none;
+    opacity: 1;
     contain: layout paint;
   }
 
@@ -509,9 +601,10 @@
   }
 
   .mobile-video-card-thumb {
-    height: 100%;
+    width: 100%;
+    height: auto;
     min-height: 0;
-    aspect-ratio: auto;
+    aspect-ratio: 16 / 9;
   }
 
   .mobile-short-reel-thumb {
@@ -549,7 +642,7 @@
   }
 
   .mobile-video-card-body {
-    padding: 10px 12px 10px 10px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -560,7 +653,7 @@
   .mobile-short-reel-title,
   .mobile-video-card-title {
     font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     line-height: 1.05;
     color: #4a3c62;
   }
@@ -571,6 +664,12 @@
     font-size: 0.78rem;
     color: rgba(74, 60, 98, 0.7);
     font-family: var(--font-varela-round), system-ui, sans-serif;
+  }
+
+  @media (max-width: 767px) {
+    .mobile-video-vertical-list {
+      grid-template-columns: 1fr;
+    }
   }
 
   .mobile-video-viewer {

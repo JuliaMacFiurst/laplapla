@@ -9,6 +9,7 @@ import { dictionaries, type Lang } from "../i18n";
 import { VideoSection } from "../components/video/VideoSection";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { BASE_URL } from "@/lib/config";
 import { GEO_PROFILES, buildHomeGeoJsonLd } from "@/lib/geo";
 
@@ -23,6 +24,8 @@ export default function Home({ lang }: { lang?: Lang }) {
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
   const isMobile = useIsMobile(767);
+  const responsiveViewport = useResponsiveViewport();
+  const usesTouchHomeLayout = isMobile || responsiveViewport.deviceClass === "tablet";
 
   const t = useMemo(() => dictionaries[resolvedLang].home, [resolvedLang]);
   const seo = dictionaries[resolvedLang].seo.home;
@@ -145,10 +148,10 @@ export default function Home({ lang }: { lang?: Lang }) {
           </section>
 
           <section className={isMobile ? "home-mobile-screen home-mobile-screen-video" : undefined}>
-            <VideoSection lang={resolvedLang} mobileMode={isMobile ? "shorts" : undefined} />
+            <VideoSection lang={resolvedLang} mobileMode={usesTouchHomeLayout ? "shorts" : undefined} />
           </section>
 
-          {isMobile ? (
+          {usesTouchHomeLayout ? (
             <section className="home-mobile-screen home-mobile-screen-video home-mobile-screen-video-gallery">
               <VideoSection lang={resolvedLang} mobileMode="videos" />
             </section>
