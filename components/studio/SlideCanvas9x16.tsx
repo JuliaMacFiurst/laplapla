@@ -310,7 +310,6 @@ export default function SlideCanvas9x16({
   onActiveStickerChange,
 }: SlideCanvasProps) {
   const slideRootRef = useRef<HTMLDivElement | null>(null);
-  const editableTextRef = useRef<HTMLDivElement | null>(null);
   const mediaUrl = slide.mediaUrl;
   const mediaAlt = slide.text?.trim() || "illustration";
   const isVideo = slide.mediaType === "video";
@@ -326,10 +325,26 @@ export default function SlideCanvas9x16({
     scale: slide.mediaScale ?? 1,
   });
   const [mediaAspectRatio, setMediaAspectRatio] = useState(9 / 16);
-  const dragStateRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
-  const resizeStateRef = useRef<{ startY: number; baseFontSize: number } | null>(null);
-  const mediaDragStateRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
-  const mediaResizeStateRef = useRef<{ startY: number; baseScale: number } | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+    latestX: number;
+    latestY: number;
+  } | null>(null);
+  const resizeStateRef = useRef<{ pointerId: number; startY: number; baseFontSize: number; latestFontSize: number } | null>(null);
+  const mediaDragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+    latestX: number;
+    latestY: number;
+  } | null>(null);
+  const mediaResizeStateRef = useRef<{ pointerId: number; startY: number; baseScale: number; latestScale: number } | null>(null);
 
   const positionMap: Record<
     "top" | "center" | "bottom",
@@ -374,7 +389,6 @@ export default function SlideCanvas9x16({
   const showMobileMediaEditor = isMobile && isMediaEditing && Boolean(mediaUrl);
   const showStickerEditor = Boolean(onUpdateSlide);
   const isIntroSlideLocked = slide.introLayout === "book-meta";
-  const showMobileTextContentEditor = showMobileEditorFrame && !isIntroSlideLocked;
   const canvasAspectRatio = 9 / 16;
   const [canvasScale, setCanvasScale] = useState(1);
   const effectiveScale = isMobile ? canvasScale : 1;
@@ -397,15 +411,7 @@ export default function SlideCanvas9x16({
     resizeStateRef.current = null;
     mediaDragStateRef.current = null;
     mediaResizeStateRef.current = null;
-  }, [
-    slide.id,
-    slide.mediaUrl,
-    slide.mediaOffsetX,
-    slide.mediaOffsetY,
-    slide.mediaScale,
-    slide.textOffsetX,
-    slide.textOffsetY,
-  ]);
+  }, [slide.id, slide.mediaUrl]);
 
   useEffect(() => {
     if (dragStateRef.current || resizeStateRef.current) return;
@@ -443,17 +449,6 @@ export default function SlideCanvas9x16({
     return () => observer.disconnect();
   }, [isMobile]);
 
-  useEffect(() => {
-    const node = editableTextRef.current;
-    if (!node || !showMobileTextContentEditor) return;
-    if (document.activeElement === node) return;
-
-    const nextText = slide.text ?? "";
-    if (node.textContent !== nextText) {
-      node.textContent = nextText;
-    }
-  }, [showMobileTextContentEditor, slide.text]);
-
   function hexToRgba(hex: string, alpha: number) {
     const cleaned = hex.replace("#", "");
     const bigint = parseInt(cleaned, 16);
@@ -463,31 +458,36 @@ export default function SlideCanvas9x16({
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
-  function handleTextTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+  function handleTextPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (!showMobileEditorFrame) return;
 
-    const touch = e.touches[0];
-    if (!touch) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
 
     dragStateRef.current = {
-      startX: touch.clientX,
-      startY: touch.clientY,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
       baseX: position.x,
       baseY: position.y,
+      latestX: position.x,
+      latestY: position.y,
     };
   }
 
-  function handleTextTouchMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (!showMobileEditorFrame || !dragStateRef.current || !onUpdateSlide) return;
-
-    const touch = e.touches[0];
-    if (!touch) return;
+  function handleTextPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = dragStateRef.current;
+    if (!showMobileEditorFrame || !gesture || gesture.pointerId !== e.pointerId || !onUpdateSlide) return;
 
     e.preventDefault();
+    e.stopPropagation();
     const nextPosition = {
-      x: dragStateRef.current.baseX + (touch.clientX - dragStateRef.current.startX),
-      y: dragStateRef.current.baseY + (touch.clientY - dragStateRef.current.startY),
+      x: gesture.baseX + (e.clientX - gesture.startX),
+      y: gesture.baseY + (e.clientY - gesture.startY),
     };
+    gesture.latestX = nextPosition.x;
+    gesture.latestY = nextPosition.y;
     setPosition(nextPosition);
     onUpdateSlide({
       ...slide,
@@ -496,54 +496,70 @@ export default function SlideCanvas9x16({
     }, { commitHistory: false });
   }
 
-  function handleTextTouchEnd() {
-    if (showMobileEditorFrame && onUpdateSlide) {
+  function handleTextPointerEnd(e: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = dragStateRef.current;
+    if (gesture && gesture.pointerId !== e.pointerId) return;
+
+    if (showMobileEditorFrame && onUpdateSlide && gesture) {
+      e.preventDefault();
+      e.stopPropagation();
       onUpdateSlide({
         ...slide,
-        textOffsetX: Math.round(position.x),
-        textOffsetY: Math.round(position.y),
+        textOffsetX: Math.round(gesture.latestX),
+        textOffsetY: Math.round(gesture.latestY),
       });
     }
     dragStateRef.current = null;
   }
 
-  function handleMediaTouchEnd() {
+  function commitMediaTransform(pointerId?: number) {
+    const dragGesture = mediaDragStateRef.current;
+    const resizeGesture = mediaResizeStateRef.current;
+    if (pointerId !== undefined && dragGesture && dragGesture.pointerId !== pointerId) return;
+    if (pointerId !== undefined && resizeGesture && resizeGesture.pointerId !== pointerId) return;
+
     if (showMobileMediaEditor && onUpdateSlide) {
+      const nextTransform = {
+        x: dragGesture?.latestX ?? mediaTransform.x,
+        y: dragGesture?.latestY ?? mediaTransform.y,
+        scale: resizeGesture?.latestScale ?? mediaTransform.scale,
+      };
       onUpdateSlide({
         ...slide,
-        mediaOffsetX: Math.round(mediaTransform.x),
-        mediaOffsetY: Math.round(mediaTransform.y),
-        mediaScale: Number(mediaTransform.scale.toFixed(3)),
+        mediaOffsetX: Math.round(nextTransform.x),
+        mediaOffsetY: Math.round(nextTransform.y),
+        mediaScale: Number(nextTransform.scale.toFixed(3)),
       });
     }
     mediaDragStateRef.current = null;
     mediaResizeStateRef.current = null;
   }
 
-  function handleResizeStart(e: React.TouchEvent<HTMLDivElement>) {
+  function handleResizePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (!showMobileEditorFrame) return;
 
+    e.preventDefault();
     e.stopPropagation();
-    const touch = e.touches[0];
-    if (!touch) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
 
     resizeStateRef.current = {
-      startY: touch.clientY,
+      pointerId: e.pointerId,
+      startY: e.clientY,
       baseFontSize: fontSize,
+      latestFontSize: fontSize,
     };
   }
 
-  function handleResizeMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (!showMobileEditorFrame || !resizeStateRef.current || !onUpdateSlide) return;
-
-    const touch = e.touches[0];
-    if (!touch) return;
+  function handleResizePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = resizeStateRef.current;
+    if (!showMobileEditorFrame || !gesture || gesture.pointerId !== e.pointerId || !onUpdateSlide) return;
 
     e.preventDefault();
     e.stopPropagation();
 
-    const deltaY = touch.clientY - resizeStateRef.current.startY;
-    const nextFontSize = Math.max(14, Math.min(72, resizeStateRef.current.baseFontSize + deltaY / 4));
+    const deltaY = e.clientY - gesture.startY;
+    const nextFontSize = Math.max(14, Math.min(72, gesture.baseFontSize + deltaY / 4));
+    gesture.latestFontSize = nextFontSize;
 
     onUpdateSlide({
       ...slide,
@@ -551,42 +567,52 @@ export default function SlideCanvas9x16({
     }, { commitHistory: false });
   }
 
-  function handleResizeEnd() {
-    if (showMobileEditorFrame && onUpdateSlide) {
+  function handleResizePointerEnd(e: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = resizeStateRef.current;
+    if (gesture && gesture.pointerId !== e.pointerId) return;
+
+    if (showMobileEditorFrame && onUpdateSlide && gesture) {
+      e.preventDefault();
+      e.stopPropagation();
       onUpdateSlide({
         ...slide,
-        fontSize,
+        fontSize: Math.round(gesture.latestFontSize),
       });
     }
     resizeStateRef.current = null;
   }
 
-  function handleMediaTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+  function handleMediaPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (!showMobileMediaEditor) return;
 
-    const touch = e.touches[0];
-    if (!touch) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
 
     mediaDragStateRef.current = {
-      startX: touch.clientX,
-      startY: touch.clientY,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
       baseX: mediaTransform.x,
       baseY: mediaTransform.y,
+      latestX: mediaTransform.x,
+      latestY: mediaTransform.y,
     };
   }
 
-  function handleMediaTouchMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (!showMobileMediaEditor || !mediaDragStateRef.current || !onUpdateSlide) return;
-
-    const touch = e.touches[0];
-    if (!touch) return;
+  function handleMediaPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = mediaDragStateRef.current;
+    if (!showMobileMediaEditor || !gesture || gesture.pointerId !== e.pointerId || !onUpdateSlide) return;
 
     e.preventDefault();
+    e.stopPropagation();
     const nextTransform = {
       ...mediaTransform,
-      x: mediaDragStateRef.current.baseX + (touch.clientX - mediaDragStateRef.current.startX),
-      y: mediaDragStateRef.current.baseY + (touch.clientY - mediaDragStateRef.current.startY),
+      x: gesture.baseX + (e.clientX - gesture.startX),
+      y: gesture.baseY + (e.clientY - gesture.startY),
     };
+    gesture.latestX = nextTransform.x;
+    gesture.latestY = nextTransform.y;
     setMediaTransform(nextTransform);
     onUpdateSlide({
       ...slide,
@@ -596,30 +622,31 @@ export default function SlideCanvas9x16({
     }, { commitHistory: false });
   }
 
-  function handleMediaResizeStart(e: React.TouchEvent<HTMLDivElement>) {
+  function handleMediaResizePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (!showMobileMediaEditor) return;
 
+    e.preventDefault();
     e.stopPropagation();
-    const touch = e.touches[0];
-    if (!touch) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
 
     mediaResizeStateRef.current = {
-      startY: touch.clientY,
+      pointerId: e.pointerId,
+      startY: e.clientY,
       baseScale: mediaTransform.scale,
+      latestScale: mediaTransform.scale,
     };
   }
 
-  function handleMediaResizeMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (!showMobileMediaEditor || !mediaResizeStateRef.current || !onUpdateSlide) return;
-
-    const touch = e.touches[0];
-    if (!touch) return;
+  function handleMediaResizePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = mediaResizeStateRef.current;
+    if (!showMobileMediaEditor || !gesture || gesture.pointerId !== e.pointerId || !onUpdateSlide) return;
 
     e.preventDefault();
     e.stopPropagation();
 
-    const deltaY = touch.clientY - mediaResizeStateRef.current.startY;
-    const nextScale = clamp(mediaResizeStateRef.current.baseScale + deltaY / 240, 0.6, 2.2);
+    const deltaY = e.clientY - gesture.startY;
+    const nextScale = clamp(gesture.baseScale + deltaY / 240, 0.6, 2.2);
+    gesture.latestScale = nextScale;
     setMediaTransform((current) => ({
       ...current,
       scale: nextScale,
@@ -630,15 +657,6 @@ export default function SlideCanvas9x16({
       mediaOffsetY: mediaTransform.y,
       mediaScale: Number(nextScale.toFixed(3)),
     }, { commitHistory: false });
-  }
-
-  function handleTextInput(e: React.FormEvent<HTMLDivElement>) {
-    if (!showMobileTextContentEditor || !onUpdateSlide) return;
-
-    onUpdateSlide({
-      ...slide,
-      text: e.currentTarget.textContent ?? "",
-    });
   }
 
   function getMediaFrame() {
@@ -688,6 +706,8 @@ export default function SlideCanvas9x16({
     objectFit: fitMode,
     objectPosition,
     zIndex: 0,
+    pointerEvents: "none",
+    userSelect: "none",
   } as const;
   const mediaFrame = getMediaFrame();
   const stickers = [...(slide.stickers ?? [])].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
@@ -750,10 +770,10 @@ export default function SlideCanvas9x16({
             zIndex: 1,
             touchAction: showMobileMediaEditor ? "none" : "auto",
         }}
-        onTouchStart={handleMediaTouchStart}
-        onTouchMove={handleMediaTouchMove}
-        onTouchEnd={handleMediaTouchEnd}
-        onTouchCancel={handleMediaTouchEnd}
+        onPointerDown={handleMediaPointerDown}
+        onPointerMove={handleMediaPointerMove}
+        onPointerUp={(event) => commitMediaTransform(event.pointerId)}
+        onPointerCancel={(event) => commitMediaTransform(event.pointerId)}
       >
           {isVideo ? (
             <video
@@ -826,10 +846,10 @@ export default function SlideCanvas9x16({
                   borderRadius: "50%",
                   zIndex: 2,
                 }}
-                onTouchStart={handleMediaResizeStart}
-                onTouchMove={handleMediaResizeMove}
-                onTouchEnd={handleMediaTouchEnd}
-                onTouchCancel={handleMediaTouchEnd}
+                onPointerDown={handleMediaResizePointerDown}
+                onPointerMove={handleMediaResizePointerMove}
+                onPointerUp={(event) => commitMediaTransform(event.pointerId)}
+                onPointerCancel={(event) => commitMediaTransform(event.pointerId)}
               />
             </>
           ) : null}
@@ -880,11 +900,13 @@ export default function SlideCanvas9x16({
           transform: isMobile ? `translate(${position.x}px, ${position.y}px)` : undefined,
           border: showMobileEditorFrame ? "1px dashed rgba(255, 179, 209, 0.9)" : "none",
           touchAction: showMobileEditorFrame ? "none" : "auto",
+          pointerEvents: showMobileEditorFrame ? "auto" : "none",
+          userSelect: "none",
         }}
-        onTouchStart={handleTextTouchStart}
-        onTouchMove={handleTextTouchMove}
-        onTouchEnd={handleTextTouchEnd}
-        onTouchCancel={handleTextTouchEnd}
+        onPointerDown={handleTextPointerDown}
+        onPointerMove={handleTextPointerMove}
+        onPointerUp={handleTextPointerEnd}
+        onPointerCancel={handleTextPointerEnd}
       >
         {textBgEnabled ? (
           <div
@@ -905,73 +927,61 @@ export default function SlideCanvas9x16({
             color: slide.textColor,
           }}
         >
-          {showMobileTextContentEditor ? (
-            <div
-              ref={editableTextRef}
-              contentEditable
-              suppressContentEditableWarning
-              onInput={handleTextInput}
-              style={{
-                position: "relative",
-                zIndex: 1,
-                color: slide.textColor,
-                outline: "none",
-                minWidth: `${48 * effectiveScale}px`,
-                minHeight: `${28 * effectiveScale}px`,
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              color: slide.textColor,
+            }}
+          >
+            {renderStudioText(slide) || t.textPlaceholder}
+          </div>
+        </div>
+        {showMobileEditorFrame && !isIntroSlideLocked ? (
+          <>
+            <button
+              type="button"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
               }}
-            />
-          ) : (
-            <div
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onUpdateSlide?.({ ...slide, text: "" });
+              }}
               style={{
-                position: "relative",
-                zIndex: 1,
-                color: slide.textColor,
+                position: "absolute",
+                top: "-10px",
+                right: "-10px",
+                width: "20px",
+                height: "20px",
+                borderRadius: "50%",
+                background: "#ffb3d1",
+                color: "#000",
+                border: "none",
+                zIndex: 2,
               }}
             >
-              {renderStudioText(slide) || t.textPlaceholder}
-            </div>
-          )}
-        </div>
-        {showMobileEditorFrame ? (
-          <>
-            {showMobileTextContentEditor ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onUpdateSlide?.({ ...slide, text: "" })}
-                  style={{
-                    position: "absolute",
-                    top: "-10px",
-                    right: "-10px",
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    background: "#ffb3d1",
-                    color: "#000",
-                    border: "none",
-                    zIndex: 2,
-                  }}
-                >
-                  ×
-                </button>
-                <div
-                  style={{
-                    position: "absolute",
-                    right: "-8px",
-                    bottom: "-8px",
-                    width: "16px",
-                    height: "16px",
-                    background: "#ffb3d1",
-                    borderRadius: "50%",
-                    zIndex: 2,
-                  }}
-                  onTouchStart={handleResizeStart}
-                  onTouchMove={handleResizeMove}
-                  onTouchEnd={handleResizeEnd}
-                  onTouchCancel={handleResizeEnd}
-                />
-              </>
-            ) : null}
+              ×
+            </button>
+            <div
+              style={{
+                position: "absolute",
+                right: "-8px",
+                bottom: "-8px",
+                width: "16px",
+                height: "16px",
+                background: "#ffb3d1",
+                borderRadius: "50%",
+                zIndex: 2,
+                touchAction: "none",
+              }}
+              onPointerDown={handleResizePointerDown}
+              onPointerMove={handleResizePointerMove}
+              onPointerUp={handleResizePointerEnd}
+              onPointerCancel={handleResizePointerEnd}
+            />
           </>
         ) : null}
       </div>

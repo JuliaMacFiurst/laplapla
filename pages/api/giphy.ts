@@ -65,6 +65,10 @@ export const config = {
 type GiphyItem = {
   url: string;
   mediaType: "gif";
+  normalizedUrl?: string;
+  normalizedMediaType?: "video";
+  normalizedMimeType?: string;
+  previewUrl?: string;
   width?: number;
   height?: number;
 };
@@ -176,12 +180,30 @@ async function handler(
       const json = await response.json();
       const items: GiphyItem[] =
         json?.data
-          ?.map((item: any) => ({
-            url: item?.images?.original?.url || item?.images?.downsized_large?.url,
-            mediaType: "gif" as const,
-            width: Number(item?.images?.original?.width) || undefined,
-            height: Number(item?.images?.original?.height) || undefined,
-          }))
+          ?.map((item: any) => {
+            const normalizedUrl =
+              item?.images?.fixed_height?.mp4 ||
+              item?.images?.fixed_width?.mp4 ||
+              item?.images?.downsized_small?.mp4 ||
+              item?.images?.original?.mp4 ||
+              item?.images?.looping?.mp4 ||
+              undefined;
+
+            return {
+              url: item?.images?.original?.url || item?.images?.downsized_large?.url,
+              mediaType: "gif" as const,
+              normalizedUrl,
+              normalizedMediaType: normalizedUrl ? "video" as const : undefined,
+              normalizedMimeType: normalizedUrl ? "video/mp4" : undefined,
+              previewUrl:
+                item?.images?.fixed_width_small?.webp ||
+                item?.images?.preview_gif?.url ||
+                item?.images?.fixed_width_small?.url ||
+                undefined,
+              width: Number(item?.images?.original?.width) || undefined,
+              height: Number(item?.images?.original?.height) || undefined,
+            };
+          })
           ?.filter((item: GiphyItem, index: number) =>
             Boolean(item.url) &&
             isSafeMediaText(

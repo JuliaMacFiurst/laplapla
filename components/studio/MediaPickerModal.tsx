@@ -13,6 +13,10 @@ interface MediaPickerModalProps {
   onSelect: (payload: {
     url: string;
     mediaType: "image" | "video" | "sticker";
+    sourceUrl?: string;
+    sourceMediaType?: "gif" | "image" | "video";
+    mediaMimeType?: string;
+    mediaNormalized?: boolean;
     previewUrl?: string;
     animationType?: "webp" | "apng" | "gif";
     source?: "giphy" | "laplapla" | "upload" | "custom";
@@ -22,8 +26,11 @@ interface MediaPickerModalProps {
 
 type MediaPickerResult = {
   url: string;
+  normalizedUrl?: string;
+  normalizedMediaType?: "video";
+  normalizedMimeType?: string;
   previewUrl?: string;
-  mediaType: "image" | "video" | "sticker";
+  mediaType: "gif" | "image" | "video" | "sticker";
   animationType?: "webp" | "apng" | "gif";
   source?: "giphy" | "laplapla" | "upload" | "custom";
   tags?: string[];
@@ -92,7 +99,7 @@ export default function MediaPickerModal({
     });
 
     const data = await res.json().catch(() => null) as
-      | { items?: Array<{ url?: string; previewUrl?: string; mediaType?: string; animationType?: string; source?: string; tags?: string[] }>; error?: string; hasMore?: boolean }
+      | { items?: Array<{ url?: string; normalizedUrl?: string; normalizedMediaType?: string; normalizedMimeType?: string; previewUrl?: string; mediaType?: string; animationType?: string; source?: string; tags?: string[] }>; error?: string; hasMore?: boolean }
       | null;
 
     if (!res.ok) {
@@ -102,8 +109,17 @@ export default function MediaPickerModal({
     const items: MediaPickerResult[] = (data?.items || [])
       .map((item): MediaPickerResult => ({
         url: item?.url || "",
+        normalizedUrl: item?.normalizedUrl,
+        normalizedMediaType: item?.normalizedMediaType === "video" ? "video" : undefined,
+        normalizedMimeType: item?.normalizedMimeType,
         previewUrl: item?.previewUrl,
-        mediaType: source === "stickers" ? "sticker" as const : item?.mediaType === "video" ? "video" as const : "image" as const,
+        mediaType: source === "stickers"
+          ? "sticker" as const
+          : item?.mediaType === "gif"
+            ? "gif" as const
+            : item?.mediaType === "video"
+              ? "video" as const
+              : "image" as const,
         animationType: item?.animationType === "apng" || item?.animationType === "gif" || item?.animationType === "webp"
           ? item.animationType
           : undefined,
@@ -583,12 +599,18 @@ export default function MediaPickerModal({
                 key={`${item.mediaType}-${item.url}-${index}`}
                 className={isMobile ? undefined : "media-result-item"}
                 onClick={() => {
-                  const lower = item.url.toLowerCase();
+                  const runtimeUrl = item.normalizedUrl || item.url;
+                  const lower = runtimeUrl.toLowerCase();
                   const isVideo =
+                    item.normalizedMediaType === "video" ||
                     lower.endsWith(".mp4") || lower.endsWith(".webm");
                   onSelect({
-                    url: item.url,
+                    url: runtimeUrl,
                     mediaType: item.mediaType === "sticker" ? "sticker" : isVideo ? "video" : "image",
+                    sourceUrl: item.mediaType === "gif" ? item.url : undefined,
+                    sourceMediaType: item.mediaType === "gif" ? "gif" : undefined,
+                    mediaMimeType: item.normalizedMimeType,
+                    mediaNormalized: Boolean(item.normalizedUrl),
                     previewUrl: item.previewUrl,
                     animationType: item.animationType,
                     source: item.source,

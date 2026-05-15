@@ -48,7 +48,7 @@
 }
 
 .studio-mobile-root--tablet-landscape .studio-mobile-panel {
-  border-left: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid rgba(255,255,255,0.1);
 }
 
 .studio-layout {

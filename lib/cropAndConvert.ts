@@ -162,6 +162,62 @@ export async function cropAndConvert(
   }
 }
 
+export async function convertWebmToMp4(
+  inputBlob: Blob,
+  onProgress?: (progress: number) => void,
+): Promise<Blob> {
+  if (typeof window === "undefined") {
+    throw new Error("convertWebmToMp4 must run in the browser");
+  }
+
+  try {
+    const ffmpegInstance = await getFFmpeg();
+
+    ffmpegInstance.on("progress", ({ progress }) => {
+      if (onProgress) {
+        onProgress(progress);
+      }
+    });
+
+    const inputName = "studio-input.webm";
+    const outputName = "studio-output.mp4";
+
+    await ffmpegInstance.writeFile(inputName, await fetchFile(inputBlob));
+
+    await ffmpegInstance.exec([
+      "-i", inputName,
+      "-r", "30",
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-profile:v", "baseline",
+      "-level", "3.1",
+      "-pix_fmt", "yuv420p",
+      "-c:a", "aac",
+      "-b:a", "128k",
+      "-movflags", "faststart",
+      outputName,
+    ]);
+
+    const data = await ffmpegInstance.readFile(outputName);
+
+    try {
+      await ffmpegInstance.deleteFile(inputName);
+      await ffmpegInstance.deleteFile(outputName);
+    } catch {}
+
+    const buffer =
+      data instanceof Uint8Array ? data.buffer : new Uint8Array(data as any).buffer;
+
+    return new Blob([buffer], { type: "video/mp4" });
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `MP4 conversion failed: ${error.message}`
+        : "MP4 conversion failed",
+    );
+  }
+}
+
 export async function preloadFFmpeg(): Promise<void> {
   await getFFmpeg();
 }

@@ -19,6 +19,7 @@ import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
+import { convertWebmToMp4, preloadFFmpeg } from "@/lib/cropAndConvert";
 import { createStudioSticker } from "@/lib/studioStickers";
 import {
   getHardcodedParrotStyleRecords,
@@ -84,6 +85,10 @@ interface StudioRootProps {
     image?: string;
     mediaUrl?: string;
     mediaType?: "image" | "video";
+    sourceMediaUrl?: string;
+    sourceMediaType?: "gif" | "image" | "video";
+    mediaMimeType?: string;
+    mediaNormalized?: boolean;
     mediaFit?: "cover" | "contain";
     mediaPosition?: "top" | "center" | "bottom";
     textPosition?: "top" | "center" | "bottom";
@@ -253,7 +258,7 @@ interface MobileAudioSheetProps {
 
 type VoiceActionKey = "enhance" | "louder" | "child";
 type VoiceActionStatus = "idle" | "loading" | "done";
-type MobileExportState = "idle" | "recording" | "processing" | "success" | "fallback-screen-record" | "failed";
+type MobileExportState = "idle" | "recording" | "processing" | "success" | "fallback-screen-record";
 type MobileExportCapability = "checking" | "direct-record" | "guided-record";
 
 function getProjectPreviewDurationMs(project: StudioProject) {
@@ -266,37 +271,609 @@ function getProjectPreviewDurationMs(project: StudioProject) {
 }
 
 function detectSupportedRecorderMimeType() {
+  return getSupportedRecorderMimeTypes()?.[0] ?? "";
+}
+
+function getSupportedRecorderMimeTypes() {
   if (typeof MediaRecorder === "undefined") return null;
 
   const candidates = [
+    "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+    "video/mp4;codecs=h264,aac",
     "video/mp4",
     "video/webm;codecs=vp9,opus",
     "video/webm;codecs=vp8,opus",
     "video/webm",
   ];
 
-  for (const mimeType of candidates) {
-    if (MediaRecorder.isTypeSupported(mimeType)) {
-      return mimeType;
-    }
-  }
+  return candidates.filter((mimeType) => MediaRecorder.isTypeSupported(mimeType));
+}
 
-  return "";
+function isRawGifUrl(url?: string | null) {
+  if (!url) return false;
+  return url.split("?")[0]?.toLowerCase().endsWith(".gif") ?? false;
+}
+
+function hasUnnormalizedGifMedia(project: StudioProject) {
+  return project.slides.some((slide) =>
+    isRawGifUrl(slide.mediaUrl) ||
+    (slide.sourceMediaType === "gif" && slide.mediaNormalized !== true),
+  );
+}
+
+function hasUnnormalizedAnimatedSticker(project: StudioProject) {
+  return project.slides.some((slide) =>
+    (slide.stickers ?? []).some((sticker) =>
+      sticker.visible !== false &&
+      (sticker.source === "giphy" || sticker.source === "laplapla") &&
+      (sticker.animationType === "gif" || sticker.animationType === "webp" || isRawGifUrl(sticker.sourceUrl)),
+    ),
+  );
 }
 
 function detectMobileExportCapability(previewNode: HTMLDivElement | null): MobileExportCapability {
   const mimeType = detectSupportedRecorderMimeType();
+  const canCaptureCanvas = canRecordStudioCanvas();
   const canCapturePreview =
-    !!previewNode &&
-    typeof (previewNode as HTMLDivElement & {
-      captureStream?: (frameRate?: number) => MediaStream;
-    }).captureStream === "function";
+    canCaptureCanvas ||
+    (!!previewNode &&
+      typeof (previewNode as HTMLDivElement & {
+        captureStream?: (frameRate?: number) => MediaStream;
+      }).captureStream === "function");
 
   if (mimeType && canCapturePreview) {
     return "direct-record";
   }
 
   return "guided-record";
+}
+
+function canRecordStudioCanvas() {
+  const mimeType = detectSupportedRecorderMimeType();
+  if (!mimeType || typeof MediaRecorder === "undefined" || typeof document === "undefined") {
+    return false;
+  }
+
+  const canvas = document.createElement("canvas") as HTMLCanvasElement & {
+    captureStream?: (frameRate?: number) => MediaStream;
+  };
+
+  return typeof canvas.captureStream === "function";
+}
+
+function isMp4Blob(blob: Blob, mimeType: string) {
+  return blob.type.includes("mp4") || mimeType.includes("mp4");
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
+function parseHexColor(hex: string, fallback: [number, number, number] = [0, 0, 0]) {
+  const cleaned = hex.replace("#", "").trim();
+  const normalized = cleaned.length === 3
+    ? cleaned.split("").map((char) => `${char}${char}`).join("")
+    : cleaned.padEnd(6, "0").slice(0, 6);
+  const value = Number.parseInt(normalized, 16);
+
+  if (Number.isNaN(value)) {
+    return fallback;
+  }
+
+  return [
+    (value >> 16) & 255,
+    (value >> 8) & 255,
+    value & 255,
+  ] as [number, number, number];
+}
+
+function rgbaFromHex(hex: string, opacity: number) {
+  const [r, g, b] = parseHexColor(hex);
+  return `rgba(${r}, ${g}, ${b}, ${clamp(opacity, 0, 1)})`;
+}
+
+function getSlideDurationMs(slide: StudioSlide) {
+  return slide.voiceDuration && slide.voiceDuration > 0 ? slide.voiceDuration * 1000 : 3000;
+}
+
+function getSlideForElapsed(project: StudioProject, elapsedMs: number) {
+  let cursor = 0;
+
+  for (let index = 0; index < project.slides.length; index += 1) {
+    const slide = project.slides[index];
+    const duration = getSlideDurationMs(slide);
+
+    if (elapsedMs < cursor + duration || index === project.slides.length - 1) {
+      return { slide, index };
+    }
+
+    cursor += duration;
+  }
+
+  return { slide: project.slides[0], index: 0 };
+}
+
+function createImageLoader() {
+  const cache = new Map<string, Promise<HTMLImageElement | null>>();
+
+  return (src: string) => {
+    if (!cache.has(src)) {
+      cache.set(src, new Promise((resolve) => {
+        const image = new window.Image();
+        image.crossOrigin = "anonymous";
+        image.decoding = "async";
+        image.onload = () => resolve(image);
+        image.onerror = () => resolve(null);
+        image.src = src;
+      }));
+    }
+
+    return cache.get(src)!;
+  };
+}
+
+function createVideoLoader() {
+  const cache = new Map<string, Promise<HTMLVideoElement | null>>();
+
+  return (src: string) => {
+    if (!cache.has(src)) {
+      cache.set(src, new Promise((resolve) => {
+        const video = document.createElement("video");
+        video.crossOrigin = "anonymous";
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.preload = "auto";
+        video.onloadeddata = () => resolve(video);
+        video.onerror = () => resolve(null);
+        video.src = src;
+        void video.play().catch(() => {});
+      }));
+    }
+
+    return cache.get(src)!;
+  };
+}
+
+function decodeAudioBuffer(audioContext: AudioContext, src: string) {
+  return fetch(src)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to load audio: ${src}`);
+      }
+
+      return response.arrayBuffer();
+    })
+    .then((buffer) => audioContext.decodeAudioData(buffer))
+    .catch(() => null);
+}
+
+async function createStudioExportAudioMix(project: StudioProject, durationMs: number) {
+  const AudioContextCtor = window.AudioContext || (window as typeof window & {
+    webkitAudioContext?: typeof AudioContext;
+  }).webkitAudioContext;
+
+  if (!AudioContextCtor) {
+    return {
+      stream: null as MediaStream | null,
+      start: () => {},
+      cleanup: () => {},
+    };
+  }
+
+  const audioContext = new AudioContextCtor({ sampleRate: 48000 });
+  const destination = audioContext.createMediaStreamDestination();
+  const scheduledSources: AudioBufferSourceNode[] = [];
+  const trackBuffers = await Promise.all(
+    project.musicTracks.map(async (track) => ({
+      track,
+      buffer: await decodeAudioBuffer(audioContext, track.src),
+    })),
+  );
+  const voiceBuffers = await Promise.all(
+    project.slides.map(async (slide) => ({
+      slide,
+      buffer: slide.voiceUrl ? await decodeAudioBuffer(audioContext, slide.voiceUrl) : null,
+    })),
+  );
+
+  const start = () => {
+    void audioContext.resume().catch(() => {});
+    const startAt = audioContext.currentTime + 0.08;
+    const stopAt = startAt + durationMs / 1000 + 0.2;
+
+    for (const { track, buffer } of trackBuffers) {
+      if (!buffer) continue;
+
+      const source = audioContext.createBufferSource();
+      const gain = audioContext.createGain();
+      source.buffer = buffer;
+      source.loop = true;
+      gain.gain.value = clamp(track.volume ?? 1, 0, 1);
+      source.connect(gain);
+      gain.connect(destination);
+      source.start(startAt);
+      source.stop(stopAt);
+      scheduledSources.push(source);
+    }
+
+    let cursorMs = 0;
+    voiceBuffers.forEach(({ slide, buffer }) => {
+      if (!buffer) {
+        cursorMs += getSlideDurationMs(slide);
+        return;
+      }
+
+      const source = audioContext.createBufferSource();
+      const gain = audioContext.createGain();
+      source.buffer = buffer;
+      gain.gain.value = 1;
+      source.connect(gain);
+      gain.connect(destination);
+      source.start(startAt + cursorMs / 1000);
+      source.stop(Math.min(stopAt, startAt + cursorMs / 1000 + buffer.duration + 0.1));
+      scheduledSources.push(source);
+      cursorMs += getSlideDurationMs(slide);
+    });
+  };
+
+  return {
+    stream: destination.stream,
+    start,
+    cleanup: () => {
+      for (const source of scheduledSources) {
+        try {
+          source.stop();
+        } catch {}
+        try {
+          source.disconnect();
+        } catch {}
+      }
+
+      destination.stream.getTracks().forEach((track) => track.stop());
+      void audioContext.close().catch(() => {});
+    },
+  };
+}
+
+function drawContainedMedia(
+  context: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  sourceWidth: number,
+  sourceHeight: number,
+  slide: StudioSlide,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const fitMode = slide.mediaFit ?? "cover";
+  const safeSourceWidth = Math.max(1, sourceWidth);
+  const safeSourceHeight = Math.max(1, sourceHeight);
+  const sourceRatio = safeSourceWidth / safeSourceHeight;
+  const canvasRatio = canvasWidth / canvasHeight;
+  let drawWidth = canvasWidth;
+  let drawHeight = canvasHeight;
+  let drawX = 0;
+  let drawY = 0;
+
+  if (fitMode === "cover") {
+    if (sourceRatio > canvasRatio) {
+      drawHeight = canvasHeight;
+      drawWidth = canvasHeight * sourceRatio;
+      drawX = (canvasWidth - drawWidth) / 2;
+    } else {
+      drawWidth = canvasWidth;
+      drawHeight = canvasWidth / sourceRatio;
+      drawY = (canvasHeight - drawHeight) / 2;
+    }
+  } else if (sourceRatio > canvasRatio) {
+    drawWidth = canvasWidth;
+    drawHeight = canvasWidth / sourceRatio;
+    drawY = (canvasHeight - drawHeight) / 2;
+  } else {
+    drawHeight = canvasHeight;
+    drawWidth = canvasHeight * sourceRatio;
+    drawX = (canvasWidth - drawWidth) / 2;
+  }
+
+  if (fitMode === "cover") {
+    if ((slide.mediaPosition ?? "center") === "top") {
+      drawY = 0;
+    } else if ((slide.mediaPosition ?? "center") === "bottom") {
+      drawY = canvasHeight - drawHeight;
+    }
+  }
+
+  const scale = slide.mediaScale ?? 1;
+  context.save();
+  context.translate(canvasWidth / 2 + (slide.mediaOffsetX ?? 0) * 3, canvasHeight / 2 + (slide.mediaOffsetY ?? 0) * 3);
+  context.scale(scale, scale);
+  context.translate(-canvasWidth / 2, -canvasHeight / 2);
+  context.drawImage(source, drawX, drawY, drawWidth, drawHeight);
+  context.restore();
+}
+
+function wrapCanvasText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let currentLine = "";
+
+  words.forEach((word) => {
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (context.measureText(candidate).width <= maxWidth || !currentLine) {
+      currentLine = candidate;
+      return;
+    }
+
+    lines.push(currentLine);
+    currentLine = word;
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
+async function recordStudioProjectCanvas(
+  project: StudioProject,
+  mimeType: string,
+  onProgress: (progress: number, slideIndex: number) => void,
+  options: { includeAudio?: boolean } = {},
+) {
+  const includeAudio = options.includeAudio !== false;
+  const canvas = document.createElement("canvas") as HTMLCanvasElement & {
+    captureStream?: (frameRate?: number) => MediaStream;
+  };
+  canvas.width = 720;
+  canvas.height = 1280;
+
+  if (typeof canvas.captureStream !== "function") {
+    throw new Error("Canvas recording is not supported");
+  }
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas context is not available");
+  }
+
+  await document.fonts?.ready?.catch(() => {});
+
+  const loadImage = createImageLoader();
+  const loadVideo = createVideoLoader();
+  const watermarkImagePromise = loadImage("/icons/watermark.webp");
+  const totalDurationMs = getProjectPreviewDurationMs(project);
+  const watermarkImage = await watermarkImagePromise;
+  await Promise.all([
+    watermarkImagePromise,
+    ...project.slides.flatMap((slide) => {
+      const preloaders: Array<Promise<unknown>> = [];
+
+      if (slide.mediaUrl) {
+        preloaders.push(slide.mediaType === "video" ? loadVideo(slide.mediaUrl) : loadImage(slide.mediaUrl));
+      }
+
+      (slide.stickers ?? []).forEach((sticker) => {
+        if (sticker.visible !== false) {
+          preloaders.push(loadImage(sticker.sourceUrl));
+        }
+      });
+
+      return preloaders;
+    }),
+  ]);
+
+  const audioMix = includeAudio
+    ? await createStudioExportAudioMix(project, totalDurationMs)
+    : {
+        stream: null as MediaStream | null,
+        start: () => {},
+        cleanup: () => {},
+      };
+  const stream = canvas.captureStream(30);
+  audioMix.stream?.getAudioTracks().forEach((track) => stream.addTrack(track));
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 4_000_000 } : undefined);
+  const chunks: BlobPart[] = [];
+  let animationFrameId = 0;
+  let startedAt = 0;
+
+  recorder.ondataavailable = (event) => {
+    if (event.data.size > 0) {
+      chunks.push(event.data);
+    }
+  };
+
+  const drawFrame = async (elapsedMs: number) => {
+    const { slide, index } = getSlideForElapsed(project, elapsedMs);
+    context.fillStyle = slide.bgColor || "#000";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (slide.mediaUrl) {
+      if (slide.mediaType === "video") {
+        const video = await loadVideo(slide.mediaUrl);
+        if (video && video.readyState >= 2) {
+          drawContainedMedia(context, video, video.videoWidth, video.videoHeight, slide, canvas.width, canvas.height);
+        }
+      } else {
+        const image = await loadImage(slide.mediaUrl);
+        if (image) {
+          drawContainedMedia(context, image, image.naturalWidth, image.naturalHeight, slide, canvas.width, canvas.height);
+        }
+      }
+    }
+
+    const stickers = [...(slide.stickers ?? [])]
+      .filter((sticker) => sticker.visible !== false)
+      .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+    for (const sticker of stickers) {
+      const image = await loadImage(sticker.sourceUrl);
+      if (!image) continue;
+
+      const x = (sticker.x / 100) * canvas.width;
+      const y = (sticker.y / 100) * canvas.height;
+      const width = (sticker.width / 100) * canvas.width;
+      const height = (sticker.height / 100) * canvas.height;
+
+      context.save();
+      context.globalAlpha = sticker.opacity ?? 1;
+      context.translate(x, y);
+      context.rotate(((sticker.rotation ?? 0) * Math.PI) / 180);
+      context.drawImage(image, -width / 2, -height / 2, width, height);
+      context.restore();
+    }
+
+    if (slide.text?.trim()) {
+      const fontSize = (slide.fontSize || 28) * 2.35;
+      const fontFamily = resolveFontFamily(slide.fontFamily);
+      const lineHeight = fontSize * 1.12;
+      const maxTextWidth = canvas.width * 0.82;
+      context.font = `${slide.fontStyle ?? "normal"} ${slide.fontWeight ?? 700} ${fontSize}px ${fontFamily}`;
+      context.textAlign = slide.textAlign ?? "center";
+      context.textBaseline = "middle";
+
+      const lines = slide.text
+        .split("\n")
+        .flatMap((line) => wrapCanvasText(context, line, maxTextWidth));
+      const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
+      const baseY = slide.textPosition === "top"
+        ? 190
+        : slide.textPosition === "bottom"
+          ? canvas.height - 150 - blockHeight / 2
+          : canvas.height * 0.56;
+      const x = canvas.width / 2 + (slide.textOffsetX ?? 0) * 2.35;
+      const y = baseY + (slide.textOffsetY ?? 0) * 2.35;
+
+      if (slide.textBgEnabled) {
+        context.fillStyle = rgbaFromHex(slide.textBgColor ?? "#000", slide.textBgOpacity ?? 0.5);
+        context.beginPath();
+        context.roundRect(
+          canvas.width * 0.05,
+          y - blockHeight / 2 - 18,
+          canvas.width * 0.9,
+          blockHeight + 36,
+          26,
+        );
+        context.fill();
+      }
+
+      context.fillStyle = slide.textColor || "#fff";
+      lines.forEach((line, lineIndex) => {
+        context.fillText(line, x, y - blockHeight / 2 + lineHeight * lineIndex + lineHeight / 2, maxTextWidth);
+      });
+    }
+
+    if (watermarkImage) {
+      const watermarkSize = 112;
+      context.save();
+      context.globalAlpha = 0.82;
+      context.drawImage(
+        watermarkImage,
+        canvas.width - watermarkSize - 18,
+        18,
+        watermarkSize,
+        watermarkSize,
+      );
+      context.restore();
+    }
+
+    onProgress(Math.min(0.98, elapsedMs / Math.max(1, totalDurationMs)), index + 1);
+  };
+
+  await drawFrame(0);
+
+  await new Promise<void>((resolve, reject) => {
+    recorder.onerror = () => reject(new Error("Canvas recording failed"));
+    recorder.onstart = () => resolve();
+    recorder.start(250);
+  });
+  await drawFrame(0);
+
+  await new Promise<void>((resolve) => {
+    startedAt = performance.now();
+    audioMix.start();
+
+    const tick = () => {
+      const elapsedMs = performance.now() - startedAt;
+      void drawFrame(elapsedMs);
+
+      if (elapsedMs >= totalDurationMs) {
+        resolve();
+        return;
+      }
+
+      animationFrameId = window.requestAnimationFrame(tick);
+    };
+
+    animationFrameId = window.requestAnimationFrame(tick);
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+
+      if (chunks.length > 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error("Canvas recording stopped without data"));
+    }, 8_000);
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+
+    recorder.onerror = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      reject(new Error("Canvas recording stopped with an error"));
+    };
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data);
+      }
+    };
+    recorder.onstop = finish;
+
+    try {
+      recorder.requestData();
+    } catch {}
+
+    recorder.stop();
+  });
+
+  if (animationFrameId) {
+    window.cancelAnimationFrame(animationFrameId);
+  }
+  stream.getTracks().forEach((track) => track.stop());
+  audioMix.cleanup();
+
+  if (!chunks.length) {
+    throw new Error("Canvas recording produced an empty file");
+  }
+
+  return new Blob(chunks, { type: mimeType || "video/webm" });
 }
 
 function areStudioTracksEqual(a: StudioProject["musicTracks"], b: StudioProject["musicTracks"]) {
@@ -713,7 +1290,18 @@ function StudioDesktopLayout({
         lang={lang}
         isOpen={isMediaOpen}
         onClose={() => setIsMediaOpen(false)}
-        onSelect={({ url, mediaType, previewUrl, animationType, source, tags }) => {
+        onSelect={({
+          url,
+          mediaType,
+          sourceUrl,
+          sourceMediaType,
+          mediaMimeType,
+          mediaNormalized,
+          previewUrl,
+          animationType,
+          source,
+          tags,
+        }) => {
           const normalizedUrl = toStudioMediaUrl(url) ?? url;
           if (mediaType === "sticker") {
             const nextSticker = createStudioSticker(normalizedUrl, {
@@ -741,6 +1329,10 @@ function StudioDesktopLayout({
             ...slide,
             mediaUrl: normalizedUrl,
             mediaType,
+            sourceMediaUrl: sourceUrl,
+            sourceMediaType,
+            mediaMimeType,
+            mediaNormalized,
           }));
 
           setIsMediaOpen(false);
@@ -817,6 +1409,7 @@ function StudioMobileLayout({
   const [exportProgress, setExportProgress] = useState(0);
   const [exportSlideProgress, setExportSlideProgress] = useState(1);
   const [exportedWithoutSound, setExportedWithoutSound] = useState(false);
+  const [exportShareStatusText, setExportShareStatusText] = useState<string | null>(null);
   const [isExportFallbackPlayerMode, setIsExportFallbackPlayerMode] = useState(false);
   const [showExportFallbackHint, setShowExportFallbackHint] = useState(false);
   const [isExportFallbackPlaybackStarted, setIsExportFallbackPlaybackStarted] = useState(false);
@@ -936,6 +1529,8 @@ function StudioMobileLayout({
       setExportCapability("checking");
       return;
     }
+
+    preloadFFmpeg().catch(() => {});
 
     const detectCapability = () => {
       setExportCapability(detectMobileExportCapability(previewRef.current));
@@ -1207,6 +1802,7 @@ function StudioMobileLayout({
     setExportProgress(0);
     setExportSlideProgress(1);
     setExportedWithoutSound(false);
+    setExportShareStatusText(null);
     setIsExportFallbackPlayerMode(false);
     setShowExportFallbackHint(false);
     setIsExportFallbackPlaybackStarted(false);
@@ -1295,7 +1891,7 @@ function StudioMobileLayout({
   }, [isExportFallbackPlayerMode, showExportFallbackHint]);
 
   function handleExportPlaybackComplete() {
-    if (exportState !== "recording") return;
+    if (!isExportFallbackPlayerMode || exportState !== "recording") return;
 
     setExportState("processing");
     setExportStatusText("Preparing your video...");
@@ -1307,7 +1903,7 @@ function StudioMobileLayout({
 
     const link = document.createElement("a");
     link.href = exportBlobUrl;
-    link.download = "laplapla-story.webm";
+    link.download = "laplapla-story.mp4";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1316,48 +1912,62 @@ function StudioMobileLayout({
   async function handleShareExportedVideo() {
     if (!exportBlobUrl) return;
 
-    const response = await fetch(exportBlobUrl);
-    const blob = await response.blob();
-    const file = new File([blob], "laplapla-story.webm", { type: blob.type || "video/webm" });
+    setExportShareStatusText(null);
 
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: "LapLapLa Story",
-        text: exportCaption,
-      });
-      return;
-    }
-
-    await handleSaveExportedVideo();
-  }
-
-  function beginExportProgress(totalDurationMs: number) {
-    const totalSlides = Math.max(1, project.slides.length);
-    const startTime = Date.now();
-
-    const interval = window.setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(0.98, elapsed / totalDurationMs);
-      const nextSlide = Math.min(
-        totalSlides,
-        Math.max(1, Math.floor(progress * totalSlides) + 1),
+    try {
+      const response = await fetch(exportBlobUrl);
+      const blob = await response.blob();
+      const file = new File([blob], "laplapla-story.mp4", { type: blob.type || "video/mp4" });
+      const hasNativeShare = typeof navigator.share === "function";
+      const canShareFiles = Boolean(
+        hasNativeShare &&
+        (!navigator.canShare || navigator.canShare({ files: [file] })),
       );
 
-      setExportProgress(progress);
-      setExportSlideProgress(nextSlide);
-      setExportStatusText(`Recording slide ${nextSlide} of ${totalSlides}...`);
-
-      if (elapsed >= totalDurationMs) {
-        window.clearInterval(interval);
+      if (canShareFiles) {
+        await navigator.share({
+          files: [file],
+          title: "LapLapLa Story",
+          text: exportCaption,
+        });
+        setExportShareStatusText("Share sheet opened.");
+        return;
       }
-    }, 180);
 
-    return interval;
+      setExportShareStatusText("Sharing this file is not available in this browser. Downloading instead.");
+      await handleSaveExportedVideo();
+    } catch (error) {
+      const isAbort =
+        error instanceof DOMException &&
+        (error.name === "AbortError" || error.name === "NotAllowedError");
+
+      if (isAbort) {
+        setExportShareStatusText("Sharing was cancelled.");
+        return;
+      }
+
+      console.error("Studio share failed", error);
+      setExportShareStatusText("Share failed. Downloading instead.");
+      await handleSaveExportedVideo();
+    }
   }
 
   async function handleStartExport() {
     resetExportUi();
+
+    if (hasUnnormalizedGifMedia(project)) {
+      setExportStatusText("This project has an old GIF that needs to be re-added before export.");
+      setExportProgress(0);
+      setExportSlideProgress(1);
+      return;
+    }
+
+    if (hasUnnormalizedAnimatedSticker(project)) {
+      setExportStatusText("Animated stickers still need video-alpha conversion before export.");
+      setExportProgress(0);
+      setExportSlideProgress(1);
+      return;
+    }
 
     const capability = detectMobileExportCapability(previewRef.current);
     setExportCapability(capability);
@@ -1368,63 +1978,91 @@ function StudioMobileLayout({
     }
 
     const mimeType = detectSupportedRecorderMimeType();
-    const previewNode = previewRef.current as HTMLDivElement & {
-      captureStream?: (frameRate?: number) => MediaStream;
-    };
 
-    const totalDurationMs = getProjectPreviewDurationMs(project) + 800;
-    setExportResetSignal((current) => current + 1);
-
-    if (!mimeType || typeof previewNode?.captureStream !== "function") {
+    if (!mimeType) {
       startScreenRecordFallback();
       return;
     }
 
     try {
-      const stream = previewNode.captureStream(30);
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      const chunks: BlobPart[] = [];
-      const progressInterval = beginExportProgress(totalDurationMs);
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data);
-        }
-      };
-
-      recorder.onerror = () => {
-        window.clearInterval(progressInterval);
-        startScreenRecordFallback();
-      };
-
-      recorder.onstop = () => {
-        window.clearInterval(progressInterval);
-
-        if (chunks.length === 0) {
-          startScreenRecordFallback();
-          return;
-        }
-
-        const blob = new Blob(chunks, { type: mimeType || "video/webm" });
-        const nextUrl = URL.createObjectURL(blob);
-        setExportBlobUrl(nextUrl);
-        setExportState("success");
-        setExportStatusText("Your video is ready 🎉");
-        setExportProgress(1);
-        setExportedWithoutSound(true);
-      };
-
       setExportState("recording");
-      setExportStatusText("Recording slide 1 of 1...");
+      setExportStatusText(`Recording slide 1 of ${Math.max(1, project.slides.length)}...`);
       setExportProgress(0);
       setExportSlideProgress(1);
-      recorder.start();
 
-      exportStopTimeoutRef.current = window.setTimeout(() => {
-        if (recorder.state !== "inactive") {
-          recorder.stop();
+      const supportedRecorderMimeTypes = getSupportedRecorderMimeTypes() ?? [];
+      const firstMp4MimeType = supportedRecorderMimeTypes.find((item) => item.includes("mp4")) ?? mimeType;
+      const firstWebmMimeType = supportedRecorderMimeTypes.find((item) => item.includes("webm")) ?? "";
+      const recorderAttempts = [
+        { mimeType: firstMp4MimeType, includeAudio: true },
+        { mimeType: firstMp4MimeType, includeAudio: false },
+        { mimeType: firstWebmMimeType, includeAudio: false },
+        { mimeType: "", includeAudio: false },
+      ].filter((attempt, index, attempts) =>
+        attempt.mimeType !== undefined &&
+        attempts.findIndex((other) =>
+          other.mimeType === attempt.mimeType && other.includeAudio === attempt.includeAudio,
+        ) === index,
+      );
+      let blob: Blob | null = null;
+      let usedMimeType = mimeType;
+      let recordedWithoutAudio = false;
+      let lastRecordError: unknown = null;
+
+      for (const attempt of recorderAttempts) {
+        try {
+          setExportStatusText(
+            attempt.includeAudio
+              ? `Recording slide 1 of ${Math.max(1, project.slides.length)}...`
+              : "Recording video without audio...",
+          );
+          blob = await recordStudioProjectCanvas(
+            project,
+            attempt.mimeType,
+            (progress, slideIndex) => {
+              setExportProgress(progress * 0.78);
+              setExportSlideProgress(slideIndex);
+              setExportStatusText(`Recording slide ${slideIndex} of ${Math.max(1, project.slides.length)}...`);
+            },
+            { includeAudio: attempt.includeAudio },
+          );
+          usedMimeType = attempt.mimeType || blob.type || mimeType;
+          recordedWithoutAudio = !attempt.includeAudio;
+          break;
+        } catch (recordError) {
+          lastRecordError = recordError;
+          console.warn(
+            "Studio canvas recorder candidate failed",
+            attempt.mimeType || "native",
+            attempt.includeAudio ? "with-audio" : "video-only",
+            recordError,
+          );
         }
-      }, totalDurationMs);
+      }
+
+      if (!blob) {
+        throw lastRecordError instanceof Error
+          ? lastRecordError
+          : new Error("Canvas recording failed");
+      }
+
+      setExportState("processing");
+      setExportStatusText(isMp4Blob(blob, usedMimeType) ? "Finalizing MP4..." : "Converting to MP4...");
+      const mp4Blob = isMp4Blob(blob, usedMimeType)
+        ? blob
+        : await withTimeout(
+            convertWebmToMp4(blob, (progress) => {
+              setExportProgress(0.78 + Math.min(0.2, progress * 0.2));
+            }),
+            90_000,
+            "MP4 conversion timed out on this device",
+          );
+      const nextUrl = URL.createObjectURL(mp4Blob);
+      setExportBlobUrl(nextUrl);
+      setExportState("success");
+      setExportStatusText("Your MP4 video is ready");
+      setExportProgress(1);
+      setExportedWithoutSound(recordedWithoutAudio);
     } catch (error) {
       console.error("Mobile export failed", error);
       startScreenRecordFallback();
@@ -1514,10 +2152,10 @@ function StudioMobileLayout({
       style={{
         position: "fixed",
         inset: 0,
-        height: "var(--app-viewport-height, 100dvh)",
+        height: isTabletLandscape ? "100lvh" : "var(--app-viewport-height, 100dvh)",
         width: "100%",
         display: "flex",
-        flexDirection: isTabletLandscape ? "row" : "column",
+        flexDirection: isTabletLandscape ? "row-reverse" : "column",
         background: "#000",
         overflow: "hidden",
         overflowX: "hidden",
@@ -1557,7 +2195,7 @@ function StudioMobileLayout({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: isTabletStudio ? "18px" : "8px",
+          padding: isTabletLandscape ? "18px 24px" : isTabletStudio ? "18px" : "8px",
           minHeight: 0,
           minWidth: 0,
           overflow: "hidden",
@@ -1624,14 +2262,14 @@ function StudioMobileLayout({
       <div
         className="studio-mobile-panel"
         style={{
-          flex: isTabletLandscape ? "0 0 min(40vw, 420px)" : "0 0 auto",
-          width: isTabletLandscape ? "min(40vw, 420px)" : undefined,
+          flex: isTabletLandscape ? "0 0 clamp(320px, 34vw, 390px)" : "0 0 auto",
+          width: isTabletLandscape ? "clamp(320px, 34vw, 390px)" : undefined,
           maxHeight: isTabletLandscape ? "none" : isTabletStudio ? "36vh" : "40vh",
           height: isTabletLandscape ? "100%" : undefined,
           overflowY: "auto",
           overflowX: "hidden",
           background: "#1a1a1a",
-          padding: isTabletLandscape ? "14px 14px 88px" : isTabletStudio ? "14px" : "10px",
+          padding: isTabletLandscape ? "76px 14px 92px" : isTabletStudio ? "14px" : "10px",
           zIndex: 5,
           minWidth: 0,
         }}
@@ -1889,8 +2527,42 @@ function StudioMobileLayout({
           {mode === "text" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ color: "#fff", fontSize: "13px", lineHeight: 1.4 }}>
-                Drag text on the canvas. Use the pink corner handle to resize or the X button to remove it.
+                Edit text here. Drag the text block on the canvas to place it.
               </div>
+
+              <textarea
+                value={activeSlide.text ?? ""}
+                disabled={activeSlide.introLayout === "book-meta"}
+                onChange={(event) => {
+                  updateSlide({
+                    ...activeSlide,
+                    text: event.currentTarget.value,
+                  }, { commitHistory: false });
+                }}
+                onBlur={(event) => {
+                  updateSlide({
+                    ...activeSlide,
+                    text: event.currentTarget.value,
+                  });
+                }}
+                rows={isTabletLandscape ? 4 : 3}
+                placeholder="Напиши что-нибудь..."
+                style={{
+                  width: "100%",
+                  minHeight: isTabletLandscape ? "112px" : "92px",
+                  resize: "none",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  borderRadius: "14px",
+                  background: "#fff",
+                  color: "#111",
+                  padding: "12px",
+                  fontSize: "18px",
+                  lineHeight: 1.35,
+                  fontFamily: "var(--font-nunito), system-ui, sans-serif",
+                  outline: "none",
+                  boxShadow: "inset 0 2px 8px rgba(0,0,0,0.08)",
+                }}
+              />
 
               <div style={{ display: "flex", gap: "8px", alignItems: "stretch" }}>
                 <button
@@ -2190,9 +2862,9 @@ function StudioMobileLayout({
         aria-label="Studio mobile navigation"
         style={{
           position: isTabletLandscape ? "fixed" : "sticky",
-          right: isTabletLandscape ? 0 : undefined,
+          left: isTabletLandscape ? 0 : undefined,
           bottom: 0,
-          width: isTabletLandscape ? "min(40vw, 420px)" : "100%",
+          width: isTabletLandscape ? "clamp(320px, 34vw, 390px)" : "100%",
           zIndex: 10,
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
@@ -2231,7 +2903,18 @@ function StudioMobileLayout({
         isOpen={isMediaOpen}
         isMobile
         onClose={() => setIsMediaOpen(false)}
-        onSelect={({ url, mediaType, previewUrl, animationType, source, tags }) => {
+        onSelect={({
+          url,
+          mediaType,
+          sourceUrl,
+          sourceMediaType,
+          mediaMimeType,
+          mediaNormalized,
+          previewUrl,
+          animationType,
+          source,
+          tags,
+        }) => {
           if (mediaType === "sticker") {
             const normalizedUrl = toStudioMediaUrl(url) ?? url;
             const nextSticker = createStudioSticker(normalizedUrl, {
@@ -2259,6 +2942,10 @@ function StudioMobileLayout({
             ...activeSlide,
             mediaUrl: toStudioMediaUrl(url) ?? url,
             mediaType,
+            sourceMediaUrl: sourceUrl,
+            sourceMediaType,
+            mediaMimeType,
+            mediaNormalized,
           });
           setIsMediaOpen(false);
         }}
@@ -2778,10 +3465,10 @@ function StudioMobileLayout({
             ) : null}
             <div
               style={{
-                height: isExportFallbackPlayerMode ? "100dvh" : "100%",
-                width: isExportFallbackPlayerMode ? "100vw" : "auto",
+                height: "100%",
+                width: "auto",
                 aspectRatio: "9 / 16",
-                maxWidth: isExportFallbackPlayerMode ? "none" : "100%",
+                maxWidth: "100%",
                 position: "relative",
                 flexShrink: 0,
                 overflow: "hidden",
@@ -2830,7 +3517,7 @@ function StudioMobileLayout({
               <>
                 <div style={{ color: "#fff", fontSize: "14px", fontWeight: 600 }}>
                   {exportState === "processing"
-                    ? "Preparing your video..."
+                    ? exportStatusText
                     : `Recording slide ${exportSlideProgress} of ${Math.max(1, project.slides.length)}`}
                 </div>
                 <div
@@ -2948,6 +3635,11 @@ function StudioMobileLayout({
                 >
                   Save
                 </button>
+                {exportShareStatusText ? (
+                  <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "12px", lineHeight: 1.35 }}>
+                    {exportShareStatusText}
+                  </div>
+                ) : null}
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     type="button"
@@ -3003,6 +3695,7 @@ function StudioMobileLayout({
                 </button>
               </>
             ) : null}
+
             </div>
           ) : null}
         </div>
@@ -3879,6 +4572,10 @@ export default function StudioRoot({
           (importedMediaUrl?.includes(".mp4") || importedMediaUrl?.includes(".webm")
             ? "video"
             : "image"),
+        sourceMediaUrl: s.sourceMediaUrl,
+        sourceMediaType: s.sourceMediaType,
+        mediaMimeType: s.mediaMimeType,
+        mediaNormalized: s.mediaNormalized,
         mediaFit: s.mediaFit ?? "contain",
         mediaPosition: s.mediaPosition ?? "center",
         textPosition: s.textPosition ?? "bottom",

@@ -9,7 +9,7 @@ import TranslationWarning from "@/components/TranslationWarning";
 import MobileSlideshowViewer from "@/components/studio/mobile/MobileSlideshowViewer";
 import { useMobileSlideshow } from "@/components/studio/mobile/useMobileSlideshow";
 import CatsLayout from "@/components/Cats/CatsLayout";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { dictionaries, Lang } from "../../i18n";
 import { CAT_PRESETS, type AnyCatPreset } from "../../content/cats";
 import {
@@ -97,7 +97,8 @@ function matchesCatPresetQuery(preset: AnyCatPreset, query: string) {
 export default function CatPage({ lang }: { lang: Lang }) {
   const t = dictionaries[lang].cats;
   const seo = dictionaries[lang].seo.cats.index;
-  const isMobile = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const usesTouchCatsLayout = responsiveViewport.deviceClass !== "desktop";
   const mobileSlideshow = useMobileSlideshow();
   const mobileSlideshowIsOpen = mobileSlideshow.isOpen;
   const mobileSlideshowSlides = mobileSlideshow.slides;
@@ -372,7 +373,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const selectPresetFromSearch = (preset: AnyCatPreset) => {
     clearSearch();
 
-    if (isMobile) {
+    if (usesTouchCatsLayout) {
       void openMobilePreset(preset);
       return;
     }
@@ -658,7 +659,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
       <CatsLayout active="view" lang={lang}>
-        {isMobile ? (
+        {usesTouchCatsLayout ? (
           mobileTriggerButtons
         ) : (
           <>

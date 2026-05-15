@@ -33,6 +33,10 @@ export type StudioSlide = {
   mediaFit?: "cover" | "contain";
   mediaPosition?: "top" | "center" | "bottom";
   mediaType?: "image" | "video";
+  sourceMediaUrl?: string;
+  sourceMediaType?: "gif" | "image" | "video";
+  mediaMimeType?: string;
+  mediaNormalized?: boolean;
   textPosition?: "top" | "center" | "bottom";
   textBgEnabled?: boolean;
   textBgColor?: string;
