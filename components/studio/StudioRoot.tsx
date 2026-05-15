@@ -27,6 +27,12 @@ import {
 } from "@/lib/parrots/catalog";
 
 const DEFAULT_PROJECT_ID = "current-studio-project";
+const STUDIO_EXPORT_IMAGE_LOAD_TIMEOUT_MS = 8_000;
+const STUDIO_EXPORT_VIDEO_LOAD_TIMEOUT_MS = 10_000;
+const STUDIO_EXPORT_AUDIO_LOAD_TIMEOUT_MS = 8_000;
+const STUDIO_EXPORT_FIRST_FRAME_TIMEOUT_MS = 12_000;
+const STUDIO_EXPORT_RECORDER_START_TIMEOUT_MS = 4_000;
+const STUDIO_EXPORT_START_SKIP_MS = 180;
 
 function createStudioId() {
   if (typeof globalThis !== "undefined" && typeof globalThis.crypto?.randomUUID === "function") {
@@ -289,28 +295,6 @@ function getSupportedRecorderMimeTypes() {
   return candidates.filter((mimeType) => MediaRecorder.isTypeSupported(mimeType));
 }
 
-function isRawGifUrl(url?: string | null) {
-  if (!url) return false;
-  return url.split("?")[0]?.toLowerCase().endsWith(".gif") ?? false;
-}
-
-function hasUnnormalizedGifMedia(project: StudioProject) {
-  return project.slides.some((slide) =>
-    isRawGifUrl(slide.mediaUrl) ||
-    (slide.sourceMediaType === "gif" && slide.mediaNormalized !== true),
-  );
-}
-
-function hasUnnormalizedAnimatedSticker(project: StudioProject) {
-  return project.slides.some((slide) =>
-    (slide.stickers ?? []).some((sticker) =>
-      sticker.visible !== false &&
-      (sticker.source === "giphy" || sticker.source === "laplapla") &&
-      (sticker.animationType === "gif" || sticker.animationType === "webp" || isRawGifUrl(sticker.sourceUrl)),
-    ),
-  );
-}
-
 function detectMobileExportCapability(previewNode: HTMLDivElement | null): MobileExportCapability {
   const mimeType = detectSupportedRecorderMimeType();
   const canCaptureCanvas = canRecordStudioCanvas();
@@ -343,6 +327,11 @@ function canRecordStudioCanvas() {
 
 function isMp4Blob(blob: Blob, mimeType: string) {
   return blob.type.includes("mp4") || mimeType.includes("mp4");
+}
+
+function isAndroidBrowser() {
+  if (typeof navigator === "undefined") return false;
+  return /Android/i.test(navigator.userAgent);
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -414,10 +403,20 @@ function createImageLoader() {
     if (!cache.has(src)) {
       cache.set(src, new Promise((resolve) => {
         const image = new window.Image();
+        let settled = false;
+        const finish = (value: HTMLImageElement | null) => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeoutId);
+          resolve(value);
+        };
+        const timeoutId = window.setTimeout(() => {
+          finish(null);
+        }, STUDIO_EXPORT_IMAGE_LOAD_TIMEOUT_MS);
         image.crossOrigin = "anonymous";
         image.decoding = "async";
-        image.onload = () => resolve(image);
-        image.onerror = () => resolve(null);
+        image.onload = () => finish(image);
+        image.onerror = () => finish(null);
         image.src = src;
       }));
     }
@@ -433,13 +432,24 @@ function createVideoLoader() {
     if (!cache.has(src)) {
       cache.set(src, new Promise((resolve) => {
         const video = document.createElement("video");
+        let settled = false;
+        const finish = (value: HTMLVideoElement | null) => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeoutId);
+          resolve(value);
+        };
+        const timeoutId = window.setTimeout(() => {
+          finish(video.readyState >= 2 ? video : null);
+        }, STUDIO_EXPORT_VIDEO_LOAD_TIMEOUT_MS);
         video.crossOrigin = "anonymous";
         video.muted = true;
         video.loop = true;
         video.playsInline = true;
         video.preload = "auto";
-        video.onloadeddata = () => resolve(video);
-        video.onerror = () => resolve(null);
+        video.onloadeddata = () => finish(video);
+        video.oncanplay = () => finish(video);
+        video.onerror = () => finish(null);
         video.src = src;
         void video.play().catch(() => {});
       }));
@@ -450,7 +460,12 @@ function createVideoLoader() {
 }
 
 function decodeAudioBuffer(audioContext: AudioContext, src: string) {
-  return fetch(src)
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    controller.abort();
+  }, STUDIO_EXPORT_AUDIO_LOAD_TIMEOUT_MS);
+
+  return fetch(src, { signal: controller.signal })
     .then((response) => {
       if (!response.ok) {
         throw new Error(`Failed to load audio: ${src}`);
@@ -459,7 +474,10 @@ function decodeAudioBuffer(audioContext: AudioContext, src: string) {
       return response.arrayBuffer();
     })
     .then((buffer) => audioContext.decodeAudioData(buffer))
-    .catch(() => null);
+    .catch(() => null)
+    .finally(() => {
+      window.clearTimeout(timeoutId);
+    });
 }
 
 async function createStudioExportAudioMix(project: StudioProject, durationMs: number) {
@@ -651,14 +669,16 @@ async function recordStudioProjectCanvas(
     throw new Error("Canvas context is not available");
   }
 
-  await document.fonts?.ready?.catch(() => {});
+  if (document.fonts?.ready) {
+    await withTimeout(document.fonts.ready, 3_000, "Font loading timed out").catch(() => {});
+  }
 
   const loadImage = createImageLoader();
   const loadVideo = createVideoLoader();
   const watermarkImagePromise = loadImage("/icons/watermark.webp");
   const totalDurationMs = getProjectPreviewDurationMs(project);
   const watermarkImage = await watermarkImagePromise;
-  await Promise.all([
+  await Promise.allSettled([
     watermarkImagePromise,
     ...project.slides.flatMap((slide) => {
       const preloaders: Array<Promise<unknown>> = [];
@@ -669,7 +689,7 @@ async function recordStudioProjectCanvas(
 
       (slide.stickers ?? []).forEach((sticker) => {
         if (sticker.visible !== false) {
-          preloaders.push(loadImage(sticker.sourceUrl));
+          preloaders.push(sticker.animationType === "video" ? loadVideo(sticker.sourceUrl) : loadImage(sticker.sourceUrl));
         }
       });
 
@@ -721,8 +741,10 @@ async function recordStudioProjectCanvas(
       .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
     for (const sticker of stickers) {
-      const image = await loadImage(sticker.sourceUrl);
-      if (!image) continue;
+      const source = sticker.animationType === "video"
+        ? await loadVideo(sticker.sourceUrl)
+        : await loadImage(sticker.sourceUrl);
+      if (!source) continue;
 
       const x = (sticker.x / 100) * canvas.width;
       const y = (sticker.y / 100) * canvas.height;
@@ -733,7 +755,7 @@ async function recordStudioProjectCanvas(
       context.globalAlpha = sticker.opacity ?? 1;
       context.translate(x, y);
       context.rotate(((sticker.rotation ?? 0) * Math.PI) / 180);
-      context.drawImage(image, -width / 2, -height / 2, width, height);
+      context.drawImage(source, -width / 2, -height / 2, width, height);
       context.restore();
     }
 
@@ -794,17 +816,51 @@ async function recordStudioProjectCanvas(
     onProgress(Math.min(0.98, elapsedMs / Math.max(1, totalDurationMs)), index + 1);
   };
 
-  await drawFrame(0);
+  await withTimeout(
+    drawFrame(0),
+    STUDIO_EXPORT_FIRST_FRAME_TIMEOUT_MS,
+    "First export frame timed out",
+  );
 
   await new Promise<void>((resolve, reject) => {
-    recorder.onerror = () => reject(new Error("Canvas recording failed"));
-    recorder.onstart = () => resolve();
-    recorder.start(250);
+    let settled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+
+      if (recorder.state === "recording") {
+        resolve();
+        return;
+      }
+
+      reject(new Error("Canvas recording start timed out"));
+    }, STUDIO_EXPORT_RECORDER_START_TIMEOUT_MS);
+
+    recorder.onerror = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      reject(new Error("Canvas recording failed"));
+    };
+    recorder.onstart = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+
+    try {
+      recorder.start(250);
+    } catch (error) {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      reject(error);
+    }
   });
-  await drawFrame(0);
 
   await new Promise<void>((resolve) => {
-    startedAt = performance.now();
+    startedAt = performance.now() - STUDIO_EXPORT_START_SKIP_MS;
     audioMix.start();
 
     const tick = () => {
@@ -1378,6 +1434,8 @@ function StudioMobileLayout({
   const studioViewport = useStudioViewportMode();
   const isTabletStudio = studioViewport.isTablet;
   const isTabletLandscape = studioViewport.isTablet && studioViewport.orientation === "landscape";
+  const t = dictionaries[lang].cats.studio;
+  const exportText = t.exportSheet;
   const hasPushedHistoryRef = useRef(false);
   const onClose = useCallback(() => {
     void router.push(
@@ -1403,8 +1461,9 @@ function StudioMobileLayout({
   const [isPreviewSheetOpen, setIsPreviewSheetOpen] = useState(false);
   const [isExportSheetOpen, setIsExportSheetOpen] = useState(false);
   const [exportState, setExportState] = useState<MobileExportState>("idle");
-  const [exportStatusText, setExportStatusText] = useState("We’ll record your slideshow as it plays ✨");
+  const [exportStatusText, setExportStatusText] = useState(exportText.idle);
   const [exportBlobUrl, setExportBlobUrl] = useState<string | null>(null);
+  const [exportBlob, setExportBlob] = useState<Blob | null>(null);
   const [exportResetSignal, setExportResetSignal] = useState(0);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportSlideProgress, setExportSlideProgress] = useState(1);
@@ -1461,6 +1520,17 @@ function StudioMobileLayout({
     color: "#dffff0",
     fontSize: "12px",
     lineHeight: 1.45,
+  } satisfies React.CSSProperties;
+  const exportBodyTextStyle = {
+    color: "rgba(255,255,255,0.88)",
+    fontSize: isTabletStudio ? "17px" : "13px",
+    lineHeight: 1.42,
+    fontWeight: 650,
+  } satisfies React.CSSProperties;
+  const exportMutedTextStyle = {
+    color: "rgba(255,255,255,0.74)",
+    fontSize: isTabletStudio ? "15px" : "12px",
+    lineHeight: 1.42,
   } satisfies React.CSSProperties;
   useEffect(() => {
     setMusicPresets(fallbackMusicPresets);
@@ -1643,12 +1713,12 @@ function StudioMobileLayout({
     if (!isExportSheetOpen || exportState !== "idle") return;
 
     if (exportCapability === "direct-record") {
-      setExportStatusText("We’ll record your slideshow as it plays ✨");
+      setExportStatusText(exportText.idle);
       return;
     }
 
     if (exportCapability === "guided-record") {
-      setExportStatusText("Save locally with your phone’s screen recording.");
+      setExportStatusText(exportText.localScreenRecording);
     }
   }, [exportCapability, exportState, isExportSheetOpen]);
 
@@ -1797,8 +1867,9 @@ function StudioMobileLayout({
       URL.revokeObjectURL(exportBlobUrl);
     }
     setExportBlobUrl(null);
+    setExportBlob(null);
     setExportState("idle");
-    setExportStatusText("We’ll record your slideshow as it plays ✨");
+    setExportStatusText(exportText.idle);
     setExportProgress(0);
     setExportSlideProgress(1);
     setExportedWithoutSound(false);
@@ -1810,7 +1881,7 @@ function StudioMobileLayout({
 
   function startScreenRecordFallback() {
     setExportState("fallback-screen-record");
-    setExportStatusText("Use your device screen recording to save this story.");
+    setExportStatusText(exportText.localScreenRecording);
     setExportProgress(0);
     setExportSlideProgress(1);
   }
@@ -1857,7 +1928,7 @@ function StudioMobileLayout({
     setIsExportFallbackPlayerMode(true);
     setShowExportFallbackHint(true);
     setIsExportFallbackPlaybackStarted(false);
-    setExportStatusText("Start screen recording, then tap the center of the screen to play from the beginning.");
+    setExportStatusText(exportText.fullscreenHint);
 
     window.setTimeout(() => {
       requestExportFullscreen();
@@ -1873,7 +1944,9 @@ function StudioMobileLayout({
 
   function startExportFallbackPlaybackFromBeginning() {
     setShowExportFallbackHint(false);
-    setExportStatusText("Recording from slide 1...");
+    setExportStatusText(exportText.recordingSlide
+      .replace("{current}", "1")
+      .replace("{total}", String(Math.max(1, project.slides.length))));
     setIsExportFallbackPlaybackStarted(true);
     setExportResetSignal((current) => current + 1);
   }
@@ -1894,7 +1967,7 @@ function StudioMobileLayout({
     if (!isExportFallbackPlayerMode || exportState !== "recording") return;
 
     setExportState("processing");
-    setExportStatusText("Preparing your video...");
+    setExportStatusText(exportText.finalizingMp4);
     setExportProgress(1);
   }
 
@@ -1910,14 +1983,12 @@ function StudioMobileLayout({
   }
 
   async function handleShareExportedVideo() {
-    if (!exportBlobUrl) return;
+    if (!exportBlobUrl || !exportBlob) return;
 
     setExportShareStatusText(null);
 
     try {
-      const response = await fetch(exportBlobUrl);
-      const blob = await response.blob();
-      const file = new File([blob], "laplapla-story.mp4", { type: blob.type || "video/mp4" });
+      const file = new File([exportBlob], "laplapla-story.mp4", { type: exportBlob.type || "video/mp4" });
       const hasNativeShare = typeof navigator.share === "function";
       const canShareFiles = Boolean(
         hasNativeShare &&
@@ -1930,11 +2001,11 @@ function StudioMobileLayout({
           title: "LapLapLa Story",
           text: exportCaption,
         });
-        setExportShareStatusText("Share sheet opened.");
+        setExportShareStatusText(exportText.shareOpened);
         return;
       }
 
-      setExportShareStatusText("Sharing this file is not available in this browser. Downloading instead.");
+      setExportShareStatusText(exportText.shareUnavailable);
       await handleSaveExportedVideo();
     } catch (error) {
       const isAbort =
@@ -1942,32 +2013,17 @@ function StudioMobileLayout({
         (error.name === "AbortError" || error.name === "NotAllowedError");
 
       if (isAbort) {
-        setExportShareStatusText("Sharing was cancelled.");
+        setExportShareStatusText(exportText.shareCancelled);
         return;
       }
 
-      console.error("Studio share failed", error);
-      setExportShareStatusText("Share failed. Downloading instead.");
+      setExportShareStatusText(exportText.shareUnavailable);
       await handleSaveExportedVideo();
     }
   }
 
   async function handleStartExport() {
     resetExportUi();
-
-    if (hasUnnormalizedGifMedia(project)) {
-      setExportStatusText("This project has an old GIF that needs to be re-added before export.");
-      setExportProgress(0);
-      setExportSlideProgress(1);
-      return;
-    }
-
-    if (hasUnnormalizedAnimatedSticker(project)) {
-      setExportStatusText("Animated stickers still need video-alpha conversion before export.");
-      setExportProgress(0);
-      setExportSlideProgress(1);
-      return;
-    }
 
     const capability = detectMobileExportCapability(previewRef.current);
     setExportCapability(capability);
@@ -1986,19 +2042,29 @@ function StudioMobileLayout({
 
     try {
       setExportState("recording");
-      setExportStatusText(`Recording slide 1 of ${Math.max(1, project.slides.length)}...`);
+      setExportStatusText(exportText.recordingSlide
+        .replace("{current}", "1")
+        .replace("{total}", String(Math.max(1, project.slides.length))));
       setExportProgress(0);
       setExportSlideProgress(1);
 
       const supportedRecorderMimeTypes = getSupportedRecorderMimeTypes() ?? [];
       const firstMp4MimeType = supportedRecorderMimeTypes.find((item) => item.includes("mp4")) ?? mimeType;
       const firstWebmMimeType = supportedRecorderMimeTypes.find((item) => item.includes("webm")) ?? "";
-      const recorderAttempts = [
-        { mimeType: firstMp4MimeType, includeAudio: true },
-        { mimeType: firstMp4MimeType, includeAudio: false },
-        { mimeType: firstWebmMimeType, includeAudio: false },
-        { mimeType: "", includeAudio: false },
-      ].filter((attempt, index, attempts) =>
+      const prefersVideoOnlyExport = isAndroidBrowser();
+      const recorderAttemptPlan = prefersVideoOnlyExport
+        ? [
+            { mimeType: firstMp4MimeType, includeAudio: false },
+            { mimeType: firstWebmMimeType, includeAudio: false },
+            { mimeType: "", includeAudio: false },
+          ]
+        : [
+            { mimeType: firstMp4MimeType, includeAudio: true },
+            { mimeType: firstMp4MimeType, includeAudio: false },
+            { mimeType: firstWebmMimeType, includeAudio: false },
+            { mimeType: "", includeAudio: false },
+          ];
+      const recorderAttempts = recorderAttemptPlan.filter((attempt, index, attempts) =>
         attempt.mimeType !== undefined &&
         attempts.findIndex((other) =>
           other.mimeType === attempt.mimeType && other.includeAudio === attempt.includeAudio,
@@ -2008,13 +2074,14 @@ function StudioMobileLayout({
       let usedMimeType = mimeType;
       let recordedWithoutAudio = false;
       let lastRecordError: unknown = null;
+      const failedRecorderAttempts: string[] = [];
 
       for (const attempt of recorderAttempts) {
         try {
           setExportStatusText(
             attempt.includeAudio
-              ? `Recording slide 1 of ${Math.max(1, project.slides.length)}...`
-              : "Recording video without audio...",
+              ? exportText.preparingMedia
+              : exportText.preparingVideoOnly,
           );
           blob = await recordStudioProjectCanvas(
             project,
@@ -2022,7 +2089,9 @@ function StudioMobileLayout({
             (progress, slideIndex) => {
               setExportProgress(progress * 0.78);
               setExportSlideProgress(slideIndex);
-              setExportStatusText(`Recording slide ${slideIndex} of ${Math.max(1, project.slides.length)}...`);
+              setExportStatusText(exportText.recordingSlide
+                .replace("{current}", String(slideIndex))
+                .replace("{total}", String(Math.max(1, project.slides.length))));
             },
             { includeAudio: attempt.includeAudio },
           );
@@ -2031,23 +2100,21 @@ function StudioMobileLayout({
           break;
         } catch (recordError) {
           lastRecordError = recordError;
-          console.warn(
-            "Studio canvas recorder candidate failed",
-            attempt.mimeType || "native",
-            attempt.includeAudio ? "with-audio" : "video-only",
-            recordError,
+          failedRecorderAttempts.push(
+            `${attempt.mimeType || "native"} ${attempt.includeAudio ? "with-audio" : "video-only"}`,
           );
         }
       }
 
       if (!blob) {
+        console.warn("Studio canvas recorder failed all candidates", failedRecorderAttempts, lastRecordError);
         throw lastRecordError instanceof Error
           ? lastRecordError
           : new Error("Canvas recording failed");
       }
 
       setExportState("processing");
-      setExportStatusText(isMp4Blob(blob, usedMimeType) ? "Finalizing MP4..." : "Converting to MP4...");
+      setExportStatusText(isMp4Blob(blob, usedMimeType) ? exportText.finalizingMp4 : exportText.convertingMp4);
       const mp4Blob = isMp4Blob(blob, usedMimeType)
         ? blob
         : await withTimeout(
@@ -2059,8 +2126,9 @@ function StudioMobileLayout({
           );
       const nextUrl = URL.createObjectURL(mp4Blob);
       setExportBlobUrl(nextUrl);
+      setExportBlob(mp4Blob);
       setExportState("success");
-      setExportStatusText("Your MP4 video is ready");
+      setExportStatusText(exportText.ready);
       setExportProgress(1);
       setExportedWithoutSound(recordedWithoutAudio);
     } catch (error) {
@@ -2126,7 +2194,7 @@ function StudioMobileLayout({
   useEffect(() => {
     if (!activePicker) return;
 
-    const handlePointerOutside = (event: MouseEvent | TouchEvent) => {
+    const handlePointerOutside = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (pickerRef.current?.contains(target)) return;
@@ -2134,11 +2202,9 @@ function StudioMobileLayout({
     };
 
     document.addEventListener("mousedown", handlePointerOutside);
-    document.addEventListener("touchstart", handlePointerOutside);
 
     return () => {
       document.removeEventListener("mousedown", handlePointerOutside);
-      document.removeEventListener("touchstart", handlePointerOutside);
     };
   }, [activePicker]);
 
@@ -2152,13 +2218,15 @@ function StudioMobileLayout({
       style={{
         position: "fixed",
         inset: 0,
-        height: isTabletLandscape ? "100lvh" : "var(--app-viewport-height, 100dvh)",
+        height: "100dvh",
+        maxHeight: "100dvh",
         width: "100%",
         display: "flex",
         flexDirection: isTabletLandscape ? "row-reverse" : "column",
         background: "#000",
         overflow: "hidden",
         overflowX: "hidden",
+        overscrollBehavior: "none",
         zIndex: 100,
       }}
     >
@@ -2206,7 +2274,7 @@ function StudioMobileLayout({
             height: "100%",
             aspectRatio: "9 / 16",
             maxWidth: "100%",
-            maxHeight: isTabletLandscape ? "calc(var(--app-viewport-height, 100dvh) - 36px)" : "100%",
+            maxHeight: "100%",
             position: "relative",
             zIndex: 1,
             overflow: "hidden",
@@ -2268,8 +2336,9 @@ function StudioMobileLayout({
           height: isTabletLandscape ? "100%" : undefined,
           overflowY: "auto",
           overflowX: "hidden",
+          overscrollBehavior: "contain",
           background: "#1a1a1a",
-          padding: isTabletLandscape ? "76px 14px 92px" : isTabletStudio ? "14px" : "10px",
+          padding: isTabletLandscape ? "76px 14px 150px" : isTabletStudio ? "14px" : "10px",
           zIndex: 5,
           minWidth: 0,
         }}
@@ -2780,7 +2849,7 @@ function StudioMobileLayout({
                   color: "#000",
                 }}
               >
-                Preview slideshow
+                {t.preview}
               </button>
               <button
                 type="button"
@@ -2794,10 +2863,10 @@ function StudioMobileLayout({
                   color: "#000",
                 }}
               >
-                Export
+                {t.export}
               </button>
-              <div style={{ color: "rgba(255,255,255,0.68)", fontSize: "12px", lineHeight: 1.35 }}>
-                We’ll record your slideshow as it plays ✨ Works on most devices
+              <div style={exportMutedTextStyle}>
+                {exportText.idle} {exportText.idleWorks}
               </div>
               <div
                 style={{
@@ -2902,6 +2971,7 @@ function StudioMobileLayout({
         lang={lang}
         isOpen={isMediaOpen}
         isMobile
+        disableStickers={isTabletStudio}
         onClose={() => setIsMediaOpen(false)}
         onSelect={({
           url,
@@ -3358,7 +3428,9 @@ function StudioMobileLayout({
               }}
             >
                 <div>
-                  <div style={{ color: "#fff", fontSize: "18px", fontWeight: 700 }}>Export</div>
+                  <div style={{ color: "#fff", fontSize: isTabletStudio ? "24px" : "18px", fontWeight: 800 }}>
+                    {t.export}
+                  </div>
                 <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "12px" }}>{exportStatusText}</div>
               </div>
               <button
@@ -3434,7 +3506,7 @@ function StudioMobileLayout({
                       pointerEvents: "none",
                     }}
                   >
-                    Start screen recording, then tap the center of the screen to play from the beginning. Tap top-left corner to close.
+                    {exportText.fullscreenHint}
                   </div>
                 ) : null}
                 {!isExportFallbackPlaybackStarted ? (
@@ -3515,10 +3587,12 @@ function StudioMobileLayout({
             >
             {(exportState === "recording" || exportState === "processing") ? (
               <>
-                <div style={{ color: "#fff", fontSize: "14px", fontWeight: 600 }}>
+                <div style={{ color: "#fff", fontSize: isTabletStudio ? "20px" : "14px", fontWeight: 800, lineHeight: 1.25 }}>
                   {exportState === "processing"
                     ? exportStatusText
-                    : `Recording slide ${exportSlideProgress} of ${Math.max(1, project.slides.length)}`}
+                    : exportText.recordingSlide
+                        .replace("{current}", String(exportSlideProgress))
+                        .replace("{total}", String(Math.max(1, project.slides.length)))}
                 </div>
                 <div
                   style={{
@@ -3538,8 +3612,8 @@ function StudioMobileLayout({
                     }}
                   />
                 </div>
-                <div style={{ color: "rgba(255,255,255,0.68)", fontSize: "12px" }}>
-                  Keep this page open while we export.
+                <div style={exportMutedTextStyle}>
+                  {exportText.keepOpen}
                 </div>
               </>
             ) : null}
@@ -3556,31 +3630,33 @@ function StudioMobileLayout({
                     fontWeight: 700,
                   }}
                 >
-                  {exportCapability === "direct-record" ? "Start export" : "Save to phone"}
+                  {exportCapability === "direct-record" ? exportText.startExport : exportText.saveToPhone}
                 </button>
                 {exportCapability === "direct-record" ? (
-                  <div style={{ color: "rgba(255,255,255,0.68)", fontSize: "12px", lineHeight: 1.35 }}>
-                    We’ll record your slideshow as it plays ✨ Works on most devices
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div style={exportBodyTextStyle}>{exportText.idle}</div>
+                    <div style={exportMutedTextStyle}>{exportText.idleWorks}</div>
+                    <div style={exportMutedTextStyle}>{exportText.browserProcessing}</div>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <div style={{ color: "rgba(255,255,255,0.82)", fontSize: "12px", lineHeight: 1.35 }}>
-                      Local save on this phone uses built-in screen recording.
+                    <div style={exportBodyTextStyle}>
+                      {exportText.localScreenRecording}
                     </div>
-                    <div style={{ color: "rgba(255,255,255,0.56)", fontSize: "11px", lineHeight: 1.35 }}>
-                      Nothing is uploaded. The slideshow stays on your device while you save it.
+                    <div style={exportMutedTextStyle}>
+                      {exportText.privacyNote}
                     </div>
                   </div>
                 )}
                 {exportCapability === "guided-record" ? (
                   <div style={mobileHintCardStyle}>
                     <strong style={{ display: "block", marginBottom: "6px", color: "#98f0c5" }}>
-                      Before you start
+                      {exportText.beforeStart}
                     </strong>
-                    <div>1. Tap <strong>Save to phone</strong>.</div>
-                    <div>2. Turn on screen recording from your phone controls.</div>
-                    <div>3. In fullscreen, tap the <strong>center</strong> of the screen to start the slideshow from slide 1.</div>
-                    <div>4. To close fullscreen later, tap the <strong>top-left corner</strong>.</div>
+                    <div>1. {exportText.guidedStepSave}</div>
+                    <div>2. {exportText.guidedStepRecord}</div>
+                    <div>3. {exportText.guidedStepPlay}</div>
+                    <div>4. {exportText.guidedStepClose}</div>
                   </div>
                 ) : null}
               </>
@@ -3588,8 +3664,8 @@ function StudioMobileLayout({
 
             {exportState === "success" ? (
               <>
-                <div style={{ color: "#fff", fontSize: "18px", fontWeight: 700 }}>
-                  Your video is ready 🎉
+                <div style={{ color: "#fff", fontSize: isTabletStudio ? "24px" : "18px", fontWeight: 800 }}>
+                  {exportText.ready}
                 </div>
                 {exportBlobUrl ? (
                   <video
@@ -3608,8 +3684,8 @@ function StudioMobileLayout({
                   />
                 ) : null}
                 {exportedWithoutSound ? (
-                  <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "12px" }}>
-                    Exported without sound on this device
+                  <div style={exportMutedTextStyle}>
+                    {exportText.exportedWithoutSound}
                   </div>
                 ) : null}
                 <button
@@ -3622,7 +3698,7 @@ function StudioMobileLayout({
                     fontWeight: 700,
                   }}
                 >
-                  Share
+                  {exportText.share}
                 </button>
                 <button
                   type="button"
@@ -3633,10 +3709,10 @@ function StudioMobileLayout({
                     color: "#000",
                   }}
                 >
-                  Save
+                  {exportText.save}
                 </button>
                 {exportShareStatusText ? (
-                  <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "12px", lineHeight: 1.35 }}>
+                  <div style={exportMutedTextStyle}>
                     {exportShareStatusText}
                   </div>
                 ) : null}
@@ -3646,14 +3722,14 @@ function StudioMobileLayout({
                     onClick={() => void navigator.clipboard?.writeText(exportCaption)}
                     style={{ ...mobileButtonStyle, flex: 1 }}
                   >
-                    Copy caption
+                    {exportText.copyCaption}
                   </button>
                   <button
                     type="button"
                     onClick={() => void navigator.clipboard?.writeText(exportCredits)}
                     style={{ ...mobileButtonStyle, flex: 1 }}
                   >
-                    Copy credits
+                    {exportText.copyCredits}
                   </button>
                 </div>
               </>
@@ -3661,26 +3737,24 @@ function StudioMobileLayout({
 
             {exportState === "fallback-screen-record" ? (
               <>
-                <div style={{ color: "#fff", fontSize: "18px", fontWeight: 700 }}>
-                  Record using your device
+                <div style={{ color: "#fff", fontSize: isTabletStudio ? "24px" : "18px", fontWeight: 800 }}>
+                  {exportText.fallbackTitle}
                 </div>
-                <div style={{ color: "rgba(255,255,255,0.78)", fontSize: "13px", lineHeight: 1.45 }}>
-                  1. Start screen recording on your phone
-                  <br />
-                  2. Play the slideshow in fullscreen
+                <div style={exportBodyTextStyle}>
+                  {exportText.fallbackInstructions.split("\n").map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
                 </div>
-                <div style={{ color: "rgba(255,255,255,0.56)", fontSize: "11px", lineHeight: 1.4 }}>
-                  This is the most reliable local-save path on mobile browsers right now.
+                <div style={exportMutedTextStyle}>
+                  {exportText.privacyNote}
                 </div>
                 <div style={mobileHintCardStyle}>
                   <strong style={{ display: "block", marginBottom: "6px", color: "#98f0c5" }}>
-                    How to record on your phone
+                    {exportText.beforeStart}
                   </strong>
-                  <div>1. Open your phone’s quick settings / control center.</div>
-                  <div>2. Start <strong>Screen Recording</strong>.</div>
-                  <div>3. Return here and tap <strong>Open fullscreen player</strong>.</div>
-                  <div>4. In fullscreen, tap the <strong>center</strong> to begin from the first slide.</div>
-                  <div>5. Tap the <strong>top-left corner</strong> when you want to close fullscreen.</div>
+                  <div>1. {exportText.guidedStepRecord}</div>
+                  <div>2. {exportText.guidedStepPlay}</div>
+                  <div>3. {exportText.guidedStepClose}</div>
                 </div>
                 <button
                   type="button"
@@ -3691,7 +3765,7 @@ function StudioMobileLayout({
                     color: "#000",
                   }}
                 >
-                  Open fullscreen player
+                  {exportText.saveToPhone}
                 </button>
               </>
             ) : null}

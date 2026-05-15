@@ -403,6 +403,38 @@ type DictionaryShape = {
       stickers?: string;
       addSticker?: string;
       opacity?: string;
+      exportSheet: {
+        idle: string;
+        idleWorks: string;
+        browserProcessing: string;
+        keepOpen: string;
+        startExport: string;
+        saveToPhone: string;
+        preparingMedia: string;
+        preparingVideoOnly: string;
+        recordingSlide: string;
+        finalizingMp4: string;
+        convertingMp4: string;
+        ready: string;
+        exportedWithoutSound: string;
+        share: string;
+        save: string;
+        copyCaption: string;
+        copyCredits: string;
+        shareOpened: string;
+        shareUnavailable: string;
+        shareCancelled: string;
+        fallbackTitle: string;
+        fallbackInstructions: string;
+        localScreenRecording: string;
+        privacyNote: string;
+        beforeStart: string;
+        guidedStepSave: string;
+        guidedStepRecord: string;
+        guidedStepPlay: string;
+        guidedStepClose: string;
+        fullscreenHint: string;
+      };
     };
 
     export: {

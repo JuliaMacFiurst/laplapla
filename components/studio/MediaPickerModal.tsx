@@ -9,6 +9,7 @@ interface MediaPickerModalProps {
   lang: Lang;
   isOpen: boolean;
   isMobile?: boolean;
+  disableStickers?: boolean;
   onClose: () => void;
   onSelect: (payload: {
     url: string;
@@ -18,7 +19,7 @@ interface MediaPickerModalProps {
     mediaMimeType?: string;
     mediaNormalized?: boolean;
     previewUrl?: string;
-    animationType?: "webp" | "apng" | "gif";
+    animationType?: "webp" | "apng" | "gif" | "video";
     source?: "giphy" | "laplapla" | "upload" | "custom";
     tags?: string[];
   }) => void;
@@ -31,7 +32,7 @@ type MediaPickerResult = {
   normalizedMimeType?: string;
   previewUrl?: string;
   mediaType: "gif" | "image" | "video" | "sticker";
-  animationType?: "webp" | "apng" | "gif";
+  animationType?: "webp" | "apng" | "gif" | "video";
   source?: "giphy" | "laplapla" | "upload" | "custom";
   tags?: string[];
 };
@@ -47,6 +48,7 @@ export default function MediaPickerModal({
   lang,
   isOpen,
   isMobile = false,
+  disableStickers = false,
   onClose,
   onSelect,
 }: MediaPickerModalProps) {
@@ -120,7 +122,7 @@ export default function MediaPickerModal({
             : item?.mediaType === "video"
               ? "video" as const
               : "image" as const,
-        animationType: item?.animationType === "apng" || item?.animationType === "gif" || item?.animationType === "webp"
+        animationType: item?.animationType === "apng" || item?.animationType === "gif" || item?.animationType === "webp" || item?.animationType === "video"
           ? item.animationType
           : undefined,
         source: item?.source === "laplapla" || item?.source === "giphy" ? item.source : undefined,
@@ -183,11 +185,16 @@ export default function MediaPickerModal({
   }, [isOpen, onClose]);
 
   useEffect(() => {
+    if (disableStickers && activeTab === "stickers") {
+      setActiveTab("giphy");
+      return;
+    }
+
     setResults([]);
     setQuery("");
     setOffset(0);
     setHasMore(false);
-  }, [activeTab]);
+  }, [activeTab, disableStickers]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -458,13 +465,15 @@ export default function MediaPickerModal({
           >
             {t.tabPexels}
           </button>
-          <button
-            className={`media-tab-button ${activeTab === "stickers" ? "active" : ""}`}
-            onClick={() => setActiveTab("stickers")}
-            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
-          >
-            {t.tabStickers || "Stickers"}
-          </button>
+          {!disableStickers ? (
+            <button
+              className={`media-tab-button ${activeTab === "stickers" ? "active" : ""}`}
+              onClick={() => setActiveTab("stickers")}
+              style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
+            >
+              {t.tabStickers || "Stickers"}
+            </button>
+          ) : null}
           <button
             className={`media-tab-button ${activeTab === "upload" ? "active" : ""}`}
             onClick={() => setActiveTab("upload")}
@@ -599,18 +608,20 @@ export default function MediaPickerModal({
                 key={`${item.mediaType}-${item.url}-${index}`}
                 className={isMobile ? undefined : "media-result-item"}
                 onClick={() => {
-                  const runtimeUrl = item.normalizedUrl || item.url;
+                  const runtimeUrl = item.mediaType === "sticker" ? item.url : item.normalizedUrl || item.url;
                   const lower = runtimeUrl.toLowerCase();
                   const isVideo =
-                    item.normalizedMediaType === "video" ||
-                    lower.endsWith(".mp4") || lower.endsWith(".webm");
+                    item.mediaType !== "sticker" &&
+                    (item.normalizedMediaType === "video" ||
+                      lower.endsWith(".mp4") ||
+                      lower.endsWith(".webm"));
                   onSelect({
                     url: runtimeUrl,
                     mediaType: item.mediaType === "sticker" ? "sticker" : isVideo ? "video" : "image",
                     sourceUrl: item.mediaType === "gif" ? item.url : undefined,
                     sourceMediaType: item.mediaType === "gif" ? "gif" : undefined,
-                    mediaMimeType: item.normalizedMimeType,
-                    mediaNormalized: Boolean(item.normalizedUrl),
+                    mediaMimeType: item.mediaType === "sticker" ? undefined : item.normalizedMimeType,
+                    mediaNormalized: item.mediaType !== "sticker" && Boolean(item.normalizedUrl),
                     previewUrl: item.previewUrl,
                     animationType: item.animationType,
                     source: item.source,

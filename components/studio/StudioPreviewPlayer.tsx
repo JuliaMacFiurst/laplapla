@@ -42,26 +42,51 @@ export function StudioStickerLayer({ slide }: { slide: StudioSlide }) {
       }}
     >
       {stickers.map((sticker) => (
-        // eslint-disable-next-line @next/next/no-img-element -- Animated sticker formats must bypass Next image optimization.
-        <img
-          key={sticker.id}
-          src={sticker.sourceUrl}
-          alt="animated sticker"
-          draggable={false}
-          style={{
-            position: "absolute",
-            left: `${sticker.x}%`,
-            top: `${sticker.y}%`,
-            width: `${sticker.width}%`,
-            height: `${sticker.height}%`,
-            transform: `translate(-50%, -50%) rotate(${sticker.rotation ?? 0}deg)`,
-            transformOrigin: "center center",
-            objectFit: "contain",
-            opacity: sticker.opacity ?? 1,
-            zIndex: 10 + (sticker.zIndex ?? 0),
-            userSelect: "none",
-          }}
-        />
+        sticker.animationType === "video" || /\.(mp4|webm)(?:\?|$)/i.test(sticker.sourceUrl) ? (
+          <video
+            key={sticker.id}
+            src={sticker.sourceUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            draggable={false}
+            style={{
+              position: "absolute",
+              left: `${sticker.x}%`,
+              top: `${sticker.y}%`,
+              width: `${sticker.width}%`,
+              height: `${sticker.height}%`,
+              transform: `translate(-50%, -50%) rotate(${sticker.rotation ?? 0}deg)`,
+              transformOrigin: "center center",
+              objectFit: "contain",
+              opacity: sticker.opacity ?? 1,
+              zIndex: 10 + (sticker.zIndex ?? 0),
+              userSelect: "none",
+            }}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element -- Animated sticker formats must bypass Next image optimization.
+          <img
+            key={sticker.id}
+            src={sticker.sourceUrl}
+            alt="animated sticker"
+            draggable={false}
+            style={{
+              position: "absolute",
+              left: `${sticker.x}%`,
+              top: `${sticker.y}%`,
+              width: `${sticker.width}%`,
+              height: `${sticker.height}%`,
+              transform: `translate(-50%, -50%) rotate(${sticker.rotation ?? 0}deg)`,
+              transformOrigin: "center center",
+              objectFit: "contain",
+              opacity: sticker.opacity ?? 1,
+              zIndex: 10 + (sticker.zIndex ?? 0),
+              userSelect: "none",
+            }}
+          />
+        )
       ))}
     </div>
   );

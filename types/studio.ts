@@ -1,6 +1,6 @@
 import type { Track } from "@/components/studio/MusicPanel";
 
-export type StudioStickerAnimationType = "webp" | "apng" | "gif";
+export type StudioStickerAnimationType = "webp" | "apng" | "gif" | "video";
 
 export type StudioSticker = {
   id: string;

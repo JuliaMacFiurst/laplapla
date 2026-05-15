@@ -131,6 +131,9 @@ function StickerOverlay({
   }
 
   if (sticker.visible === false) return null;
+  const isVideoSticker =
+    sticker.animationType === "video" ||
+    /\.(mp4|webm)(?:\?|$)/i.test(draft.sourceUrl);
 
   return (
     <div
@@ -158,20 +161,39 @@ function StickerOverlay({
         willChange: gestureRef.current ? "left, top, width, height" : "auto",
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- Animated sticker formats must bypass Next image optimization. */}
-      <img
-        src={draft.sourceUrl}
-        alt="animated sticker"
-        draggable={false}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          pointerEvents: "none",
-          userSelect: "none",
-          display: "block",
-        }}
-      />
+      {isVideoSticker ? (
+        <video
+          src={draft.sourceUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            pointerEvents: "none",
+            userSelect: "none",
+            display: "block",
+          }}
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element -- Animated sticker formats must bypass Next image optimization.
+        <img
+          src={draft.sourceUrl}
+          alt="animated sticker"
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            pointerEvents: "none",
+            userSelect: "none",
+            display: "block",
+          }}
+        />
+      )}
 
       {isEditable && (isActive || isHovered) ? (
         <div

@@ -19,6 +19,10 @@ export function inferStickerAnimationType(url: string): StudioStickerAnimationTy
     return "gif";
   }
 
+  if (lower.endsWith(".mp4") || lower.endsWith(".webm")) {
+    return "video";
+  }
+
   return "webp";
 }
 
