@@ -2,6 +2,7 @@ import { CAT_PRESETS, type AnyCatPreset, type CatPresetMediaType } from "@/conte
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Lang } from "@/i18n";
 import { normalizeCatCategoryKey } from "@/lib/catCategories";
+import { isolateMixedBidiText } from "@/lib/i18n/bidi";
 
 type CatPresetKind = "full" | "text";
 
@@ -106,7 +107,7 @@ function mapDbPresetToRuntimePreset(
 
   const fallbackPrompt = normalizeText(preset.prompt);
   const translatedPrompt = lang === "ru" ? fallbackPrompt : normalizeText(translation?.prompt);
-  const prompt = translatedPrompt || fallbackPrompt;
+  const prompt = isolateMixedBidiText(translatedPrompt || fallbackPrompt, lang);
 
   if (!prompt) {
     return null;
@@ -124,7 +125,7 @@ function mapDbPresetToRuntimePreset(
   const fallbackCategory = normalizeText(preset.category);
   const translatedCategory = lang === "ru" ? fallbackCategory : normalizeText(translation?.category);
   const categoryKey = normalizeCatCategoryKey(fallbackCategory);
-  const categoryLabel = translatedCategory || fallbackCategory;
+  const categoryLabel = isolateMixedBidiText(translatedCategory || fallbackCategory, lang);
   const common = {
     id: `db:${preset.id}`,
     lang,
@@ -137,7 +138,7 @@ function mapDbPresetToRuntimePreset(
 
   if (preset.kind === "text") {
     const texts = sortedSlides
-      .map((slide, index) => getTranslatedSlideText(translation, slide, index))
+      .map((slide, index) => isolateMixedBidiText(getTranslatedSlideText(translation, slide, index), lang))
       .filter(Boolean);
 
     return texts.length

@@ -1,6 +1,7 @@
 import { ru } from "./ru";
 import { he } from "./he";
 import { en } from "./en";
+import { isolateMixedBidiTree } from "@/lib/i18n/bidi";
 
 export type Lang = "ru" | "he" | "en";
 
@@ -812,6 +813,6 @@ export type AboutSectionKey = (typeof ABOUT_SECTIONS)[number];
 
 export const dictionaries: Record<Lang, DictionaryShape> = {
   ru: ru as unknown as DictionaryShape,
-  he: he as unknown as DictionaryShape,
+  he: isolateMixedBidiTree(he, "he") as unknown as DictionaryShape,
   en: en as unknown as DictionaryShape,
 };

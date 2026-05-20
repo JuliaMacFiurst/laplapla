@@ -114,6 +114,10 @@ body {
   direction: rtl;
 }
 
+html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, figcaption, blockquote) {
+  unicode-bidi: isolate;
+}
+
 .lang-switcher button {
   background: none; 
   border: none; /* сиреневый контур */

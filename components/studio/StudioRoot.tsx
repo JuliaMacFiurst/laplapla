@@ -2416,6 +2416,12 @@ function StudioMobileLayout({
     };
   }, [activePicker]);
 
+  const mobileStudioFlexDirection = isTabletLandscape
+    ? lang === "he"
+      ? "row"
+      : "row-reverse"
+    : "column";
+
   return (
     <div
       className={[
@@ -2430,7 +2436,7 @@ function StudioMobileLayout({
         maxHeight: "100dvh",
         width: "100%",
         display: "flex",
-        flexDirection: isTabletLandscape ? "row-reverse" : "column",
+        flexDirection: mobileStudioFlexDirection,
         background: "#000",
         overflow: "hidden",
         overflowX: "hidden",

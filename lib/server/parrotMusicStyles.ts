@@ -1,6 +1,7 @@
 import type { Lang } from "@/i18n";
 import { iconForInstrument, iconForMusicStyle } from "@/utils/parrot-presets";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { isolateMixedBidiText } from "@/lib/i18n/bidi";
 import {
   getHardcodedParrotStyleRecords,
   type ParrotStyleInstrument,
@@ -278,13 +279,16 @@ function mapStyle(
 
   return {
     id: slug,
-    title: localizedTitle,
-    description: localizedDescription,
+    title: isolateMixedBidiText(localizedTitle, lang),
+    description: isolateMixedBidiText(localizedDescription, lang),
     iconUrl: normalizeText(row.icon_url) || iconForMusicStyle(slug),
     searchArtist: normalizeText(row.search_artist),
     searchGenre: normalizeText(row.search_genre),
     loops: mappedPresets,
-    slides: mappedSlides,
+    slides: mappedSlides.map((slide) => ({
+      ...slide,
+      text: isolateMixedBidiText(slide.text, lang),
+    })),
   };
 }
 
