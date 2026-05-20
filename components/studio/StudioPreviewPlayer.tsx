@@ -29,6 +29,7 @@ interface StudioPreviewPlayerProps {
   showWatermark?: boolean;
   showCloseButton?: boolean;
   isPlaybackEnabled?: boolean;
+  preferAudioElementDuration?: boolean;
 }
 
 export function StudioStickerLayer({ slide }: { slide: StudioSlide }) {
@@ -358,11 +359,13 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       showWatermark = false,
       showCloseButton = true,
       isPlaybackEnabled = true,
+      preferAudioElementDuration = false,
     },
     containerRef,
   ) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [playEpoch, setPlayEpoch] = useState(0);
+    const [audioDurationBySlideId, setAudioDurationBySlideId] = useState<Record<string, number>>({});
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const voiceRef = useRef<HTMLAudioElement | null>(null);
 
@@ -453,10 +456,11 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       if (!isPlaybackEnabled) return;
       if (!currentSlide) return;
 
-      const duration =
-        currentSlide.voiceDuration && currentSlide.voiceDuration > 0
-          ? currentSlide.voiceDuration * 1000
-          : 3000;
+      const storedDurationMs = getStudioSlideDurationMs(currentSlide);
+      const audioElementDurationMs = preferAudioElementDuration
+        ? audioDurationBySlideId[currentSlide.id]
+        : undefined;
+      const duration = Math.max(storedDurationMs, audioElementDurationMs ?? 0);
 
       timeoutRef.current = setTimeout(() => {
         setCurrentIndex((prev) => {
@@ -477,7 +481,17 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
       return () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
-    }, [currentIndex, slides, currentSlide, playEpoch, loopPlayback, onPlaybackComplete, isPlaybackEnabled]);
+    }, [
+      audioDurationBySlideId,
+      currentIndex,
+      slides,
+      currentSlide,
+      playEpoch,
+      loopPlayback,
+      onPlaybackComplete,
+      isPlaybackEnabled,
+      preferAudioElementDuration,
+    ]);
 
     useEffect(() => {
       const audio = voiceRef.current;
@@ -598,6 +612,23 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
             autoPlay
             playsInline
             preload="auto"
+            onLoadedMetadata={(event) => {
+              if (!preferAudioElementDuration || !currentSlide?.id) return;
+              const duration = event.currentTarget.duration;
+              if (!Number.isFinite(duration) || duration <= 0) return;
+
+              setAudioDurationBySlideId((current) => {
+                const nextDurationMs = duration * 1000;
+                if (Math.abs((current[currentSlide.id] ?? 0) - nextDurationMs) < 50) {
+                  return current;
+                }
+
+                return {
+                  ...current,
+                  [currentSlide.id]: nextDurationMs,
+                };
+              });
+            }}
             onPlay={() => {
               try {
                 musicEngineRef?.current?.duckMusic?.();

@@ -280,15 +280,6 @@ type VoiceActionStatus = "idle" | "loading" | "done";
 type MobileExportState = "idle" | "recording" | "processing" | "success" | "fallback-screen-record";
 type MobileExportCapability = "checking" | "direct-record" | "guided-record";
 
-function getProjectPreviewDurationMs(project: StudioProject) {
-  return project.slides.reduce((total, slide) => {
-    const slideDuration = slide.voiceDuration && slide.voiceDuration > 0
-      ? slide.voiceDuration * 1000
-      : 3000;
-    return total + slideDuration;
-  }, 0);
-}
-
 function detectSupportedRecorderMimeType() {
   return getSupportedRecorderMimeTypes()?.[0] ?? "";
 }
@@ -412,12 +403,20 @@ function rgbaFromHex(hex: string, opacity: number) {
   return `rgba(${r}, ${g}, ${b}, ${clamp(opacity, 0, 1)})`;
 }
 
-function getSlideForElapsed(project: StudioProject, elapsedMs: number) {
+function getSlideDurationForTiming(slide: StudioSlide, durationBySlideId?: Record<string, number>) {
+  return Math.max(getStudioSlideDurationMs(slide), durationBySlideId?.[slide.id] ?? 0);
+}
+
+function getProjectTimingDurationMs(project: StudioProject, durationBySlideId?: Record<string, number>) {
+  return project.slides.reduce((total, slide) => total + getSlideDurationForTiming(slide, durationBySlideId), 0);
+}
+
+function getSlideForElapsed(project: StudioProject, elapsedMs: number, durationBySlideId?: Record<string, number>) {
   let cursor = 0;
 
   for (let index = 0; index < project.slides.length; index += 1) {
     const slide = project.slides[index];
-    const duration = getStudioSlideDurationMs(slide);
+    const duration = getSlideDurationForTiming(slide, durationBySlideId);
 
     if (elapsedMs < cursor + duration || index === project.slides.length - 1) {
       return { slide, index, slideElapsedMs: Math.max(0, elapsedMs - cursor) };
@@ -427,6 +426,48 @@ function getSlideForElapsed(project: StudioProject, elapsedMs: number) {
   }
 
   return { slide: project.slides[0], index: 0, slideElapsedMs: 0 };
+}
+
+function probeAudioDurationMs(src: string) {
+  return new Promise<number>((resolve) => {
+    const audio = new Audio();
+    const cleanup = () => {
+      audio.removeAttribute("src");
+      audio.load();
+    };
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      resolve(0);
+    }, 4_000);
+
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      window.clearTimeout(timeoutId);
+      const durationMs = Number.isFinite(audio.duration) && audio.duration > 0
+        ? audio.duration * 1000
+        : 0;
+      cleanup();
+      resolve(durationMs);
+    };
+    audio.onerror = () => {
+      window.clearTimeout(timeoutId);
+      cleanup();
+      resolve(0);
+    };
+    audio.src = src;
+  });
+}
+
+async function getProjectAudioDurationOverrides(project: StudioProject) {
+  const entries = await Promise.all(
+    project.slides.map(async (slide) => {
+      if (!slide.voiceUrl) return null;
+      const durationMs = await probeAudioDurationMs(slide.voiceUrl);
+      return durationMs > 0 ? [slide.id, durationMs] as const : null;
+    }),
+  );
+
+  return Object.fromEntries(entries.filter((entry): entry is [string, number] => Boolean(entry)));
 }
 
 function createImageLoader() {
@@ -578,7 +619,7 @@ async function createStudioExportAudioMix(project: StudioProject, durationMs: nu
       source.start(startAt + cursorMs / 1000);
       source.stop(Math.min(stopAt, startAt + cursorMs / 1000 + buffer.duration + 0.1));
       scheduledSources.push(source);
-      cursorMs += getStudioSlideDurationMs(slide);
+      cursorMs += Math.max(getStudioSlideDurationMs(slide), buffer.duration * 1000);
     });
   };
 
@@ -690,7 +731,8 @@ async function recordStudioProjectCanvas(
   const loadImage = createImageLoader();
   const loadVideo = createVideoLoader();
   const watermarkImagePromise = loadImage("/icons/watermark.webp");
-  const totalDurationMs = getProjectPreviewDurationMs(project);
+  const audioDurationBySlideId = await getProjectAudioDurationOverrides(project);
+  const totalDurationMs = getProjectTimingDurationMs(project, audioDurationBySlideId);
   const watermarkImage = await watermarkImagePromise;
   await Promise.allSettled([
     watermarkImagePromise,
@@ -732,7 +774,7 @@ async function recordStudioProjectCanvas(
   };
 
   const drawFrame = async (elapsedMs: number) => {
-    const { slide, index, slideElapsedMs } = getSlideForElapsed(project, elapsedMs);
+    const { slide, index, slideElapsedMs } = getSlideForElapsed(project, elapsedMs, audioDurationBySlideId);
     context.fillStyle = slide.bgColor || "#000";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -859,7 +901,7 @@ async function recordStudioProjectCanvas(
       const activeWordIndex = getActiveStudioWordIndex({
         elapsedMs: slideElapsedMs,
         wordCount,
-        durationMs: getStudioSlideDurationMs(slide),
+        durationMs: getSlideDurationForTiming(slide, audioDurationBySlideId),
       });
 
       textLayout.lines.forEach((line, lineIndex) => {
@@ -3584,6 +3626,7 @@ function StudioMobileLayout({
                   lang={lang}
                   onClose={() => setIsPreviewSheetOpen(false)}
                   isMobileFullscreen
+                  preferAudioElementDuration={isTabletStudio}
                 />
               </div>
             </div>
@@ -3756,6 +3799,7 @@ function StudioMobileLayout({
                 showWatermark={exportState !== "idle"}
                 showCloseButton={!isExportFallbackPlayerMode}
                 isPlaybackEnabled={!isExportFallbackPlayerMode || isExportFallbackPlaybackStarted}
+                preferAudioElementDuration={isTabletStudio}
               />
             </div>
           </div>
