@@ -5,6 +5,9 @@ import { applyApiGuard } from "@/utils/rateLimit";
 
 const TTL_MS = 30 * 60 * 1000;
 const MAX_QUERY_LENGTH = 96;
+const MAX_STICKER_RESULTS = 12;
+const STICKER_REQUEST_LIMIT_PER_HOUR = 100;
+const STICKER_UPSTREAM_LIMIT_PER_HOUR = 100;
 const LAPLAPLA_TAG = "laplapla";
 
 type StickerItem = {
@@ -25,6 +28,11 @@ type GiphyStickerResponse = {
   query: string;
   cached: boolean;
   hasMore: boolean;
+};
+
+type StickerQuota = {
+  count: number;
+  resetAt: number;
 };
 
 const BLOCKED_MEDIA_TERMS = [
@@ -68,6 +76,32 @@ function inferAnimationType(url: string): StickerItem["animationType"] {
   if (clean.endsWith(".png")) return "apng";
   if (clean.endsWith(".gif")) return "gif";
   return "webp";
+}
+
+function consumeStickerUpstreamQuota(cost: number) {
+  const now = Date.now();
+  const quotaKey = "giphy-stickers:upstream-quota";
+  const existing = getMemoryCache<StickerQuota>(quotaKey);
+  const current = existing && existing.resetAt > now
+    ? existing
+    : {
+        count: 0,
+        resetAt: now + 60 * 60 * 1000,
+      };
+
+  if (current.count + cost > STICKER_UPSTREAM_LIMIT_PER_HOUR) {
+    return false;
+  }
+
+  setMemoryCache(
+    quotaKey,
+    {
+      count: current.count + cost,
+      resetAt: current.resetAt,
+    },
+    Math.max(1, current.resetAt - now),
+  );
+  return true;
 }
 
 function pickStickerUrl(item: any) {
@@ -161,8 +195,8 @@ async function handler(
   if (
     !applyApiGuard(req, res, {
       methods: ["GET", "POST"],
-      limit: 300,
-      windowMs: 60_000,
+      limit: STICKER_REQUEST_LIMIT_PER_HOUR,
+      windowMs: 60 * 60 * 1000,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "giphy-stickers",
     })
@@ -175,7 +209,7 @@ async function handler(
   const rawLimit = (payload as Record<string, unknown>).limit;
   const rawOffset = (payload as Record<string, unknown>).offset;
   const query = normalizeQuery(Array.isArray(rawQuery) ? rawQuery[0] : rawQuery);
-  const limit = Math.min(36, Math.max(1, Number(Array.isArray(rawLimit) ? rawLimit[0] : rawLimit) || 24));
+  const limit = Math.min(MAX_STICKER_RESULTS, Math.max(1, Number(Array.isArray(rawLimit) ? rawLimit[0] : rawLimit) || MAX_STICKER_RESULTS));
   const offset = Math.max(0, Number(Array.isArray(rawOffset) ? rawOffset[0] : rawOffset) || 0);
 
   const apiKey = process.env.GIPHY_API_KEY;
@@ -196,6 +230,10 @@ async function handler(
 
   try {
     const brandedQuery = query ? `${LAPLAPLA_TAG} ${query}` : LAPLAPLA_TAG;
+    if (!consumeStickerUpstreamQuota(2)) {
+      return res.status(429).json({ error: "Too many sticker searches. Please try again later." });
+    }
+
     const [branded, regular] = await Promise.all([
       fetchGiphyStickers(apiKey, brandedQuery, limit, offset, "laplapla").catch(() => []),
       fetchGiphyStickers(apiKey, query, limit, offset, "giphy"),
