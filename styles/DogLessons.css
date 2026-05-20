@@ -2251,6 +2251,10 @@ lesson-dog-name::before,
   }
 
   @media (min-width: 768px) and (orientation: landscape) {
+    .lesson-mobile-shell--hebrew {
+      direction: ltr;
+    }
+
     .lesson-mobile-shell {
       position: relative;
       grid-template-columns: minmax(260px, 34vw) minmax(0, 1fr);

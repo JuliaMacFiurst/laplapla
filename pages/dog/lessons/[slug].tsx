@@ -2334,7 +2334,7 @@ function LessonPlayerDesktop() {
           <h1 className="lessons-title page-title">{lesson.title}</h1>
           {!usesTouchLessonLayout && !isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
           {usesTouchLessonLayout ? (
-            <div className="lesson-mobile-shell">
+            <div className={`lesson-mobile-shell ${lang === "he" ? "lesson-mobile-shell--hebrew" : ""}`}>
               <div className="lesson-mobile-topbar">
                 <div className="lesson-mobile-topbar-main">
                   <div className="lesson-mobile-action-row">
