@@ -39,6 +39,13 @@ type ImportedSlide = {
   activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
 };
 
+type CatsImportPayload = {
+  slides?: ImportedSlide[];
+  prompt?: string;
+  presetId?: string | null;
+  lang?: Lang;
+};
+
 type ParrotImportPayload = {
   type: "parrot_import";
   styleSlug: string;
@@ -149,6 +156,9 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
     ImportedSlide[] | undefined
   >(undefined);
   const [initialTracks, setInitialTracks] = useState<Track[] | undefined>(undefined);
+  const [initialPrompt, setInitialPrompt] = useState<string | undefined>(undefined);
+  const [initialPresetId, setInitialPresetId] = useState<string | undefined>(undefined);
+  const [initialSourceLang, setInitialSourceLang] = useState<Lang | undefined>(undefined);
   const [isImportReady, setIsImportReady] = useState(false);
 
   useEffect(() => {
@@ -161,6 +171,9 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
 
         let nextSlides: ImportedSlide[] | undefined;
         let nextTracks: Track[] | undefined;
+        let nextPrompt: string | undefined;
+        let nextPresetId: string | undefined;
+        let nextSourceLang: Lang | undefined;
         let shouldConsumeParrot = false;
         let shouldConsumeCats = false;
 
@@ -204,10 +217,25 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
         }
 
         if (!nextSlides && catsStored) {
-          const parsed = JSON.parse(catsStored) as ImportedSlide[];
+          const parsed = JSON.parse(catsStored) as ImportedSlide[] | CatsImportPayload;
           if (Array.isArray(parsed) && parsed.length > 0) {
             nextSlides = parsed;
             nextTracks = undefined;
+            shouldConsumeCats = true;
+          } else if (
+            parsed &&
+            typeof parsed === "object" &&
+            Array.isArray((parsed as CatsImportPayload).slides) &&
+            (parsed as CatsImportPayload).slides!.length > 0
+          ) {
+            const payload = parsed as CatsImportPayload;
+            nextSlides = payload.slides;
+            nextTracks = undefined;
+            nextPrompt = typeof payload.prompt === "string" ? payload.prompt : undefined;
+            nextPresetId = typeof payload.presetId === "string" ? payload.presetId : undefined;
+            nextSourceLang = payload.lang === "ru" || payload.lang === "en" || payload.lang === "he"
+              ? payload.lang
+              : undefined;
             shouldConsumeCats = true;
           }
         }
@@ -221,6 +249,9 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
           if (shouldOverwrite && !cancelled) {
             setInitialSlides(nextSlides);
             setInitialTracks(nextTracks);
+            setInitialPrompt(nextPrompt);
+            setInitialPresetId(nextPresetId);
+            setInitialSourceLang(nextSourceLang);
           }
         }
 
@@ -271,6 +302,9 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
             lang={lang}
             expectedStudioType="cats"
             initialSlides={initialSlides}
+            initialPrompt={initialPrompt}
+            initialPresetId={initialPresetId}
+            initialSourceLang={initialSourceLang}
             initialTracks={initialTracks}
           />
         ) : null
@@ -284,6 +318,9 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
               lang={lang}
               expectedStudioType={router.pathname === "/studio" ? "cats" : undefined}
               initialSlides={initialSlides}
+              initialPrompt={initialPrompt}
+              initialPresetId={initialPresetId}
+              initialSourceLang={initialSourceLang}
               initialTracks={initialTracks}
             />
           ) : null}

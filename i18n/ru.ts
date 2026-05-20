@@ -394,6 +394,12 @@ export const ru = {
         save: "Сохранить",
         copyCaption: "Скопировать подпись",
         copyCredits: "Скопировать кредиты",
+        captionTemplate: "Котики Объяснят: {question}",
+        creditsText:
+          "Создано в LapLapLa Cat Studio. Часть медиа может быть предоставлена GIPHY и Pexels.",
+        copiedCaption: "Подпись скопирована.",
+        copiedCredits: "Кредиты скопированы.",
+        copyFailed: "Не удалось скопировать. Попробуйте ещё раз.",
         shareOpened: "Окно отправки открыто.",
         shareUnavailable: "Здесь отправка недоступна. Скачиваем файл.",
         shareCancelled: "Отправка отменена.",

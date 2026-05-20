@@ -109,6 +109,9 @@ interface StudioRootProps {
     voiceBaseDuration?: number;
     activeVoiceEffects?: Partial<Record<VoiceActionKey, boolean>>;
   }>;
+  initialPrompt?: string;
+  initialPresetId?: string;
+  initialSourceLang?: Lang;
   initialTracks?: Track[];
 }
 
@@ -350,6 +353,30 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
         reject(error);
       });
   });
+}
+
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-10000px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!copied) {
+    throw new Error("Clipboard copy failed");
+  }
 }
 
 function parseHexColor(hex: string, fallback: [number, number, number] = [0, 0, 0]) {
@@ -1570,8 +1597,42 @@ function StudioMobileLayout({
 
   const selectedMusicPreset = musicPresets.find((preset) => preset.id === selectedMusicPresetId) ?? null;
   const activeSticker = activeSlide.stickers?.find((sticker) => sticker.id === activeStickerId) ?? null;
-  const exportCaption = "Made with LapLapLa Cat Studio";
-  const exportCredits = "Some media may be sourced from GIPHY and Pexels. Created with LapLapLa Cat Studio.";
+  const [localizedExportPrompt, setLocalizedExportPrompt] = useState(project.sourcePrompt ?? "");
+  const exportQuestion = (localizedExportPrompt || project.sourcePrompt || "").trim();
+  const exportCaption = exportText.captionTemplate.replace("{question}", exportQuestion || "LapLapLa");
+  const exportCredits = exportText.creditsText;
+
+  useEffect(() => {
+    setLocalizedExportPrompt(project.sourcePrompt ?? "");
+  }, [project.sourcePrompt, project.sourcePresetId]);
+
+  useEffect(() => {
+    if (!project.sourcePresetId) return;
+
+    let cancelled = false;
+
+    const loadLocalizedPrompt = async () => {
+      try {
+        const response = await fetch(`/api/cat-presets?lang=${encodeURIComponent(lang)}`);
+        if (!response.ok) return;
+
+        const data = await response.json() as { presets?: Array<{ id?: string; prompt?: string }> };
+        const preset = Array.isArray(data.presets)
+          ? data.presets.find((item) => item.id === project.sourcePresetId)
+          : null;
+
+        if (!cancelled && typeof preset?.prompt === "string" && preset.prompt.trim()) {
+          setLocalizedExportPrompt(preset.prompt.trim());
+        }
+      } catch {}
+    };
+
+    void loadLocalizedPrompt();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang, project.sourcePresetId]);
 
   useEffect(() => {
     if (activeAudioSheet !== "voice") return;
@@ -2019,6 +2080,15 @@ function StudioMobileLayout({
 
       setExportShareStatusText(exportText.shareUnavailable);
       await handleSaveExportedVideo();
+    }
+  }
+
+  async function handleCopyExportText(text: string, successText: string) {
+    try {
+      await copyTextToClipboard(text);
+      setExportShareStatusText(successText);
+    } catch {
+      setExportShareStatusText(exportText.copyFailed);
     }
   }
 
@@ -2792,7 +2862,7 @@ function StudioMobileLayout({
                     color: "#000",
                   }}
                 >
-                  {activeSlide.mediaFit === "cover" ? "Заполнить" : "По размеру"}
+                  {activeSlide.mediaFit === "cover" ? "Fill" : "Fit"}
                 </button>
               ) : null}
 
@@ -2829,7 +2899,7 @@ function StudioMobileLayout({
                 onClick={() => setActiveAudioSheet("music")}
                 style={mobileButtonStyle}
               >
-                Выбор музыки
+                Choose music
               </button>
               <button
                 type="button"
@@ -2871,6 +2941,27 @@ function StudioMobileLayout({
               >
                 {t.export}
               </button>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyExportText(exportCaption, exportText.copiedCaption)}
+                  style={{ ...mobileButtonStyle, flex: 1, minWidth: 0 }}
+                >
+                  {exportText.copyCaption}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyExportText(exportCredits, exportText.copiedCredits)}
+                  style={{ ...mobileButtonStyle, flex: 1, minWidth: 0 }}
+                >
+                  {exportText.copyCredits}
+                </button>
+              </div>
+              {exportShareStatusText ? (
+                <div style={exportMutedTextStyle}>
+                  {exportShareStatusText}
+                </div>
+              ) : null}
               <div style={exportMutedTextStyle}>
                 {exportText.idle} {exportText.idleWorks}
               </div>
@@ -3028,7 +3119,7 @@ function StudioMobileLayout({
       />
       {activeAudioSheet === "music" ? (
         <MobileAudioSheet
-          title="Музыка"
+          title="Music"
           onClose={() => {
             if (previewAudioRef.current) {
               previewAudioRef.current.pause();
@@ -3048,9 +3139,9 @@ function StudioMobileLayout({
                 color: "#000",
               }}
             >
-              <div style={{ marginBottom: "10px", fontWeight: 700 }}>Выбранные дорожки</div>
+              <div style={{ marginBottom: "10px", fontWeight: 700 }}>Selected tracks</div>
               {project.musicTracks.length === 0 ? (
-                <div style={{ opacity: 0.7, fontSize: "14px" }}>Пока ничего не выбрано</div>
+                <div style={{ opacity: 0.7, fontSize: "14px" }}>Nothing selected yet</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {project.musicTracks.map((track) => (
@@ -3224,7 +3315,7 @@ function StudioMobileLayout({
               }}
             >
               <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "12px", fontWeight: 700 }}>
-                Текст слайда
+                Slide text
               </div>
               <div
                 style={{
@@ -3352,7 +3443,7 @@ function StudioMobileLayout({
               </div>
             ) : (
               <div style={{ color: "#aaa", fontSize: "14px" }}>
-                После записи здесь появится голосовая дорожка с управлением.
+                Your voice track controls will appear here after recording.
               </div>
             )}
           </div>
@@ -3725,14 +3816,14 @@ function StudioMobileLayout({
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     type="button"
-                    onClick={() => void navigator.clipboard?.writeText(exportCaption)}
+                    onClick={() => void handleCopyExportText(exportCaption, exportText.copiedCaption)}
                     style={{ ...mobileButtonStyle, flex: 1 }}
                   >
                     {exportText.copyCaption}
                   </button>
                   <button
                     type="button"
-                    onClick={() => void navigator.clipboard?.writeText(exportCredits)}
+                    onClick={() => void handleCopyExportText(exportCredits, exportText.copiedCredits)}
                     style={{ ...mobileButtonStyle, flex: 1 }}
                   >
                     {exportText.copyCredits}
@@ -3789,6 +3880,9 @@ export default function StudioRoot({
   projectId = DEFAULT_PROJECT_ID,
   expectedStudioType,
   initialSlides,
+  initialPrompt,
+  initialPresetId,
+  initialSourceLang,
   initialTracks,
 }: StudioRootProps) {
   if (typeof window !== "undefined" && expectedStudioType) {
@@ -4679,6 +4773,9 @@ export default function StudioRoot({
       slides: mappedSlides.length > 0 ? mappedSlides : [createEmptySlide()],
       musicTracks: initialTracks ?? [],
       updatedAt: Date.now(),
+      sourcePrompt: initialPrompt,
+      sourcePresetId: initialPresetId,
+      sourceLang: initialSourceLang,
     };
 
     setProject(newProject);
@@ -4689,7 +4786,7 @@ export default function StudioRoot({
     void saveProject(newProject).then(() => {
       markProjectSaved(newProject);
     });
-  }, [initialSlides, initialTracks, projectId]);
+  }, [initialSlides, initialPrompt, initialPresetId, initialSourceLang, initialTracks, projectId]);
 
   function pushHistory(current: StudioProject) {
     pendingHistorySnapshotRef.current = null;

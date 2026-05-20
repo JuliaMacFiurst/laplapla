@@ -392,6 +392,12 @@ export const en = {
         save: "Save",
         copyCaption: "Copy caption",
         copyCredits: "Copy credits",
+        captionTemplate: "Cats Explain: {question}",
+        creditsText:
+          "Created in LapLapLa Cat Studio. Some media may be provided by GIPHY and Pexels.",
+        copiedCaption: "Caption copied.",
+        copiedCredits: "Credits copied.",
+        copyFailed: "Could not copy. Please try again.",
         shareOpened: "Share sheet opened.",
         shareUnavailable: "Sharing is unavailable here. Downloading instead.",
         shareCancelled: "Sharing was cancelled.",

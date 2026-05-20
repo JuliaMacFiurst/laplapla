@@ -516,7 +516,12 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   const handleEditInStudio = (sourceSlides: CatRuntimeSlide[]) => {
-    sessionStorage.setItem("catsSlides", JSON.stringify(sourceSlides));
+    sessionStorage.setItem("catsSlides", JSON.stringify({
+      slides: sourceSlides,
+      prompt: inputText,
+      presetId: activePresetId,
+      lang,
+    }));
     void router.push(
       buildStudioRoute("cats", currentLang),
       undefined,

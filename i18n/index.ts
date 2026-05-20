@@ -421,6 +421,11 @@ type DictionaryShape = {
         save: string;
         copyCaption: string;
         copyCredits: string;
+        captionTemplate: string;
+        creditsText: string;
+        copiedCaption: string;
+        copiedCredits: string;
+        copyFailed: string;
         shareOpened: string;
         shareUnavailable: string;
         shareCancelled: string;

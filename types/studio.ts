@@ -66,4 +66,7 @@ export type StudioProject = {
   updatedAt: number
   fontFamily?: string;
   musicTracks: Track[];
+  sourcePrompt?: string;
+  sourcePresetId?: string;
+  sourceLang?: "ru" | "en" | "he";
 }
