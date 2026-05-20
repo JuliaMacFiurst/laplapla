@@ -2025,6 +2025,12 @@ function StudioMobileLayout({
   async function handleStartExport() {
     resetExportUi();
 
+    if (studioViewport.isMobile) {
+      setExportCapability("guided-record");
+      startScreenRecordFallback();
+      return;
+    }
+
     const capability = detectMobileExportCapability(previewRef.current);
     setExportCapability(capability);
 

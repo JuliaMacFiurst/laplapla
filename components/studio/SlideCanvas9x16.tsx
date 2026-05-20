@@ -511,11 +511,6 @@ export default function SlideCanvas9x16({
     gesture.latestX = nextPosition.x;
     gesture.latestY = nextPosition.y;
     setPosition(nextPosition);
-    onUpdateSlide({
-      ...slide,
-      textOffsetX: Math.round(nextPosition.x),
-      textOffsetY: Math.round(nextPosition.y),
-    }, { commitHistory: false });
   }
 
   function handleTextPointerEnd(e: ReactPointerEvent<HTMLDivElement>) {
