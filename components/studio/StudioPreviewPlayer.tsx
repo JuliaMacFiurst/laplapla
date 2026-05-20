@@ -117,7 +117,9 @@ function renderStudioText(slide: StudioSlide, options?: { animated?: boolean; pl
     }
 
     const tokens = tokenizeStudioText(slide.text || "");
-    const wordCount = tokens.filter((token) => token.kind === "word").length;
+    const words = tokens
+      .filter((token) => token.kind === "word")
+      .map((token) => token.text);
     const durationMs = getStudioSlideDurationMs(slide);
 
     return (
@@ -129,7 +131,7 @@ function renderStudioText(slide: StudioSlide, options?: { animated?: boolean; pl
 
           const timing = getStudioWordTiming({
             wordIndex: token.wordIndex,
-            wordCount,
+            words,
             durationMs,
           });
 

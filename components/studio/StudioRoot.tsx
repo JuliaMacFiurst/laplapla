@@ -897,10 +897,12 @@ async function recordStudioProjectCanvas(
 
       context.fillStyle = slide.textColor || "#fff";
       const wordTokens = tokenizeStudioText(slide.text || "");
-      const wordCount = wordTokens.filter((token) => token.kind === "word").length;
+      const words = wordTokens
+        .filter((token) => token.kind === "word")
+        .map((token) => token.text);
       const activeWordIndex = getActiveStudioWordIndex({
         elapsedMs: slideElapsedMs,
-        wordCount,
+        words,
         durationMs: getSlideDurationForTiming(slide, audioDurationBySlideId),
       });
 
