@@ -16,6 +16,31 @@ import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { buildStudioRoute } from "@/lib/studioRouting";
+import type { StudioProject } from "@/types/studio";
+
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-10000px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!copied) {
+    throw new Error("Clipboard copy failed");
+  }
+}
 
 export default function StudioExportPage() {
   const [slides, setSlides] = useState<StudioSlide[]>([]);
@@ -35,12 +60,18 @@ export default function StudioExportPage() {
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/export";
   const isMobile = useIsMobile();
 
-  const [projectData, setProjectData] = useState<any>(null);
+  const [projectData, setProjectData] = useState<StudioProject | null>(null);
+  const [localizedExportPrompt, setLocalizedExportPrompt] = useState("");
+  const [copyStatusText, setCopyStatusText] = useState("");
   const [resetSignal, setResetSignal] = useState(0);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
   const [isFinished, setIsFinished] = useState(false);
   const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
+  const exportText = dictionaries[lang].cats.studio.exportSheet;
+  const exportQuestion = (localizedExportPrompt || projectData?.sourcePrompt || "").trim();
+  const exportCaption = exportText.captionTemplate.replace("{question}", exportQuestion || "LapLapLa");
+  const exportCredits = exportText.creditsText;
 
   // Pause preview audio while tutorial is open
   useEffect(() => {
@@ -59,6 +90,7 @@ export default function StudioExportPage() {
       if (!project) return;
 
       setProjectData(project);
+      setLocalizedExportPrompt(project.sourcePrompt ?? "");
 
       if (project.slides) {
         setSlides(project.slides);
@@ -66,6 +98,37 @@ export default function StudioExportPage() {
     }
     init();
   }, []);
+
+  useEffect(() => {
+    if (!projectData?.sourcePresetId) {
+      setLocalizedExportPrompt(projectData?.sourcePrompt ?? "");
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadLocalizedPrompt = async () => {
+      try {
+        const response = await fetch(`/api/cat-presets?lang=${encodeURIComponent(lang)}`);
+        if (!response.ok) return;
+
+        const data = await response.json() as { presets?: Array<{ id?: string; prompt?: string }> };
+        const preset = Array.isArray(data.presets)
+          ? data.presets.find((item) => item.id === projectData.sourcePresetId)
+          : null;
+
+        if (!cancelled && typeof preset?.prompt === "string" && preset.prompt.trim()) {
+          setLocalizedExportPrompt(preset.prompt.trim());
+        }
+      } catch {}
+    };
+
+    void loadLocalizedPrompt();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang, projectData?.sourcePresetId, projectData?.sourcePrompt]);
 
   useEffect(() => {
     if (!projectData?.musicTracks?.length) return;
@@ -221,6 +284,15 @@ export default function StudioExportPage() {
       return acc + d;
     }, 0) * 1000;
 
+  async function handleCopyExportText(text: string, successText: string) {
+    try {
+      await copyTextToClipboard(text);
+      setCopyStatusText(successText);
+    } catch {
+      setCopyStatusText(exportText.copyFailed);
+    }
+  }
+
   function ShareModal({ videoUrl }: { videoUrl: string }) {
     return (
       <div className="export-share-modal">
@@ -245,14 +317,25 @@ export default function StudioExportPage() {
             {t.download}
           </button>
 
-          <button
-            className="studio-button button-pitch"
-            onClick={() => {
-              navigator.clipboard.writeText(t.shareDescription);
-            }}
-          >
-            {t.copyDescription}
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+            <button
+              className="studio-button button-pitch"
+              onClick={() => void handleCopyExportText(exportCaption, exportText.copiedCaption)}
+            >
+              {exportText.copyCaption}
+            </button>
+            <button
+              className="studio-button button-pitch"
+              onClick={() => void handleCopyExportText(exportCredits, exportText.copiedCredits)}
+            >
+              {exportText.copyCredits}
+            </button>
+          </div>
+          {copyStatusText ? (
+            <div style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>
+              {copyStatusText}
+            </div>
+          ) : null}
 
           {navigator.share && (
             <button
