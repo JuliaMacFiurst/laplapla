@@ -10,6 +10,11 @@ import {
   getStudioMediaSafeLayout,
   getStudioTextSafeLayout,
 } from "@/lib/studioSlideSafeLayout";
+import {
+  getStudioSlideDurationMs,
+  getStudioWordTiming,
+  tokenizeStudioText,
+} from "@/lib/studioKaraokeText";
 
 interface StudioPreviewPlayerProps {
   slides: StudioSlide[];
@@ -104,9 +109,45 @@ interface StudioSlideMediaProps {
   safeLayoutScale?: number;
 }
 
-function renderStudioText(slide: StudioSlide) {
+function renderStudioText(slide: StudioSlide, options?: { animated?: boolean; playKey?: string }) {
   if (slide.introLayout !== "book-meta") {
-    return slide.text;
+    if (!options?.animated) {
+      return slide.text;
+    }
+
+    const tokens = tokenizeStudioText(slide.text || "");
+    const wordCount = tokens.filter((token) => token.kind === "word").length;
+    const durationMs = getStudioSlideDurationMs(slide);
+
+    return (
+      <span className="studio-karaoke-text" key={options.playKey}>
+        {tokens.map((token, index) => {
+          if (token.kind === "space") {
+            return <span key={`space-${index}`}>{token.text}</span>;
+          }
+
+          const timing = getStudioWordTiming({
+            wordIndex: token.wordIndex,
+            wordCount,
+            durationMs,
+          });
+
+          return (
+            <span
+              key={`word-${index}-${token.text}`}
+              className="studio-karaoke-word"
+              style={{
+                "--karaoke-color": timing.color,
+                animationDelay: `${timing.startMs}ms`,
+                animationDuration: `${timing.durationMs}ms`,
+              } as React.CSSProperties}
+            >
+              {token.text}
+            </span>
+          );
+        })}
+      </span>
+    );
   }
 
   const lines = (slide.text || "")
@@ -617,7 +658,10 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                   transform: previewTextBaseTranslate,
                 }}
               >
-                {renderStudioText(currentSlide)}
+                {renderStudioText(currentSlide, {
+                  animated: isPlaybackEnabled,
+                  playKey: `${currentSlide.id}-${currentIndex}-${playEpoch}`,
+                })}
               </div>
             )}
 
@@ -667,6 +711,33 @@ const recordingStyles = (
       100% {
         transform: translateX(100%);
       }
+    }
+    @keyframes studioKaraokeWord {
+      0%,
+      100% {
+        transform: scale(1);
+        background: transparent;
+        color: inherit;
+      }
+      18%,
+      72% {
+        transform: scale(1.1);
+        background: var(--karaoke-color);
+        color: #111;
+      }
+    }
+    .studio-karaoke-text {
+      display: inline;
+    }
+    .studio-karaoke-word {
+      display: inline-block;
+      padding: 0 0.18em;
+      margin: 0 -0.04em;
+      border-radius: 0.32em;
+      transform-origin: center;
+      animation-name: studioKaraokeWord;
+      animation-timing-function: ease-in-out;
+      animation-fill-mode: both;
     }
   `}</style>
 );

@@ -26,6 +26,12 @@ import {
   getStudioTextSafeLayout,
 } from "@/lib/studioSlideSafeLayout";
 import {
+  getActiveStudioWordIndex,
+  getStudioSlideDurationMs,
+  getStudioWordHighlightColor,
+  tokenizeStudioText,
+} from "@/lib/studioKaraokeText";
+import {
   getHardcodedParrotStyleRecords,
   type ParrotStyleRecord,
 } from "@/lib/parrots/catalog";
@@ -406,25 +412,21 @@ function rgbaFromHex(hex: string, opacity: number) {
   return `rgba(${r}, ${g}, ${b}, ${clamp(opacity, 0, 1)})`;
 }
 
-function getSlideDurationMs(slide: StudioSlide) {
-  return slide.voiceDuration && slide.voiceDuration > 0 ? slide.voiceDuration * 1000 : 3000;
-}
-
 function getSlideForElapsed(project: StudioProject, elapsedMs: number) {
   let cursor = 0;
 
   for (let index = 0; index < project.slides.length; index += 1) {
     const slide = project.slides[index];
-    const duration = getSlideDurationMs(slide);
+    const duration = getStudioSlideDurationMs(slide);
 
     if (elapsedMs < cursor + duration || index === project.slides.length - 1) {
-      return { slide, index };
+      return { slide, index, slideElapsedMs: Math.max(0, elapsedMs - cursor) };
     }
 
     cursor += duration;
   }
 
-  return { slide: project.slides[0], index: 0 };
+  return { slide: project.slides[0], index: 0, slideElapsedMs: 0 };
 }
 
 function createImageLoader() {
@@ -563,7 +565,7 @@ async function createStudioExportAudioMix(project: StudioProject, durationMs: nu
     let cursorMs = 0;
     voiceBuffers.forEach(({ slide, buffer }) => {
       if (!buffer) {
-        cursorMs += getSlideDurationMs(slide);
+        cursorMs += getStudioSlideDurationMs(slide);
         return;
       }
 
@@ -576,7 +578,7 @@ async function createStudioExportAudioMix(project: StudioProject, durationMs: nu
       source.start(startAt + cursorMs / 1000);
       source.stop(Math.min(stopAt, startAt + cursorMs / 1000 + buffer.duration + 0.1));
       scheduledSources.push(source);
-      cursorMs += getSlideDurationMs(slide);
+      cursorMs += getStudioSlideDurationMs(slide);
     });
   };
 
@@ -730,7 +732,7 @@ async function recordStudioProjectCanvas(
   };
 
   const drawFrame = async (elapsedMs: number) => {
-    const { slide, index } = getSlideForElapsed(project, elapsedMs);
+    const { slide, index, slideElapsedMs } = getSlideForElapsed(project, elapsedMs);
     context.fillStyle = slide.bgColor || "#000";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -852,13 +854,57 @@ async function recordStudioProjectCanvas(
       }
 
       context.fillStyle = slide.textColor || "#fff";
+      const wordTokens = tokenizeStudioText(slide.text || "");
+      const wordCount = wordTokens.filter((token) => token.kind === "word").length;
+      const activeWordIndex = getActiveStudioWordIndex({
+        elapsedMs: slideElapsedMs,
+        wordCount,
+        durationMs: getStudioSlideDurationMs(slide),
+      });
+
       textLayout.lines.forEach((line, lineIndex) => {
-        context.fillText(
-          line,
-          textLayout.x,
-          textLayout.y - textLayout.blockHeight / 2 + lineHeight * lineIndex + lineHeight / 2,
-          textLayout.maxWidth,
-        );
+        const lineY = textLayout.y - textLayout.blockHeight / 2 + lineHeight * lineIndex + lineHeight / 2;
+        const lineTokens = tokenizeStudioText(line);
+        const lineWidth = context.measureText(line).width;
+        let cursorX = textLayout.x - lineWidth / 2;
+        let seenWordsBeforeLine = textLayout.lines
+          .slice(0, lineIndex)
+          .reduce((total, previousLine) => total + tokenizeStudioText(previousLine).filter((token) => token.kind === "word").length, 0);
+
+        lineTokens.forEach((token) => {
+          const tokenWidth = context.measureText(token.text).width;
+          if (token.kind === "word") {
+            const wordIndex = seenWordsBeforeLine;
+            const isActive = wordIndex === activeWordIndex;
+            const centerX = cursorX + tokenWidth / 2;
+
+            if (isActive) {
+              context.save();
+              context.fillStyle = getStudioWordHighlightColor(wordIndex);
+              context.beginPath();
+              context.roundRect(
+                cursorX - fontSize * 0.16,
+                lineY - lineHeight * 0.42,
+                tokenWidth + fontSize * 0.32,
+                lineHeight * 0.84,
+                fontSize * 0.22,
+              );
+              context.fill();
+              context.restore();
+            }
+
+            context.save();
+            context.fillStyle = isActive ? "#111111" : slide.textColor || "#fff";
+            context.font = `${slide.fontStyle ?? "normal"} ${slide.fontWeight ?? 700} ${isActive ? fontSize * 1.08 : fontSize}px ${fontFamily}`;
+            context.fillText(token.text, centerX, lineY, tokenWidth + fontSize * 0.45);
+            context.restore();
+            seenWordsBeforeLine += 1;
+          } else {
+            context.fillText(token.text, cursorX + tokenWidth / 2, lineY, tokenWidth);
+          }
+
+          cursorX += tokenWidth;
+        });
       });
     }
 
