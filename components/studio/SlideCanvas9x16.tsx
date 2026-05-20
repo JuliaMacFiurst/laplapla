@@ -3,6 +3,10 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { resolveFontFamily } from "@/lib/fonts";
 import type { StudioSlide, StudioSticker } from "@/types/studio";
 import { dictionaries, type Lang } from "@/i18n";
+import {
+  getStudioMediaSafeLayout,
+  getStudioTextSafeLayout,
+} from "@/lib/studioSlideSafeLayout";
 
 interface SlideCanvasProps {
   slide: StudioSlide;
@@ -379,33 +383,9 @@ export default function SlideCanvas9x16({
 
   const objectPosition = positionMap[slide.mediaPosition ?? "center"];
 
-  const textPositionMap: Record<
-    "top" | "center" | "bottom",
-    string
-  > = {
-    top: "flex-start",
-    center: "center",
-    bottom: "flex-end",
-  };
-
-  const textVerticalAlign = textPositionMap[
-    slide.textPosition ?? "center"
-  ];
-  const textHorizontalAlignMap: Record<
-    "left" | "center" | "right",
-    string
-  > = {
-    left: "flex-start",
-    center: "center",
-    right: "flex-end",
-  };
-  const textHorizontalAlign = textHorizontalAlignMap[
-    slide.textAlign ?? "center"
-  ];
-
   const textBgEnabled = slide.textBgEnabled ?? false;
-  const textBgColor = slide.textBgColor ?? "#000000";
-  const textBgOpacity = slide.textBgOpacity ?? 0.6;
+  const textBgColor = slide.textBgColor ?? "#ffffff";
+  const textBgOpacity = slide.textBgOpacity ?? 0.62;
   const fontSize = slide.fontSize ?? 24;
   const showMobileEditorFrame = isMobile && isTextEditing;
   const showMobileMediaEditor = isMobile && isMediaEditing && Boolean(mediaUrl);
@@ -433,7 +413,15 @@ export default function SlideCanvas9x16({
     resizeStateRef.current = null;
     mediaDragStateRef.current = null;
     mediaResizeStateRef.current = null;
-  }, [slide.id, slide.mediaUrl]);
+  }, [
+    slide.id,
+    slide.mediaOffsetX,
+    slide.mediaOffsetY,
+    slide.mediaScale,
+    slide.mediaUrl,
+    slide.textOffsetX,
+    slide.textOffsetY,
+  ]);
 
   useEffect(() => {
     if (dragStateRef.current || resizeStateRef.current) return;
@@ -715,6 +703,26 @@ export default function SlideCanvas9x16({
     };
   }
 
+  const safeLayoutWidth = 360;
+  const safeLayoutHeight = 640;
+  const safeTextLayout = getStudioTextSafeLayout({
+    slide,
+    canvasWidth: safeLayoutWidth,
+    canvasHeight: safeLayoutHeight,
+    fontSize,
+    lineHeight: fontSize * 1.12,
+    offsetScale: 0,
+    mediaAspectRatio,
+  });
+  const safeMediaLayout = getStudioMediaSafeLayout({
+    slide,
+    canvasWidth: safeLayoutWidth,
+    canvasHeight: safeLayoutHeight,
+    mediaAspectRatio,
+    textLayout: slide.text?.trim() ? safeTextLayout : undefined,
+    offsetScale: 0,
+  });
+  const textBaseTranslate = "translate(-50%, -50%)";
   const mediaStyle = {
     position: "absolute",
     inset: 0,
@@ -763,10 +771,7 @@ export default function SlideCanvas9x16({
         marginBottom: isMobile ? 0 : 16,
         position: "relative",
         overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: textVerticalAlign,
-        alignItems: isMobile ? textHorizontalAlign : "stretch",
+        display: "block",
         maxWidth: "100%",
       }}
     >
@@ -780,7 +785,7 @@ export default function SlideCanvas9x16({
             left: mediaFrame.left,
             top: mediaFrame.top,
             transform: isMobile
-              ? `translate(${mediaTransform.x}px, ${mediaTransform.y}px) scale(${mediaTransform.scale})`
+              ? `translate(${mediaTransform.x}px, ${mediaTransform.y + safeMediaLayout.offsetY * effectiveScale}px) scale(${mediaTransform.scale})`
               : undefined,
             transformOrigin: "center center",
             border: showMobileMediaEditor ? "1px dashed rgba(255, 179, 209, 0.9)" : "none",
@@ -900,21 +905,26 @@ export default function SlideCanvas9x16({
       <div
         data-disable-slide-swipe={showMobileEditorFrame ? "true" : undefined}
         style={{
-          position: "relative",
+          position: "absolute",
+          left: `${(safeTextLayout.x / safeLayoutWidth) * 100}%`,
+          top: `${(safeTextLayout.y / safeLayoutHeight) * 100}%`,
           zIndex: 20,
           fontFamily: resolveFontFamily(slide.fontFamily),
           fontSize: effectiveFontSize,
-          textAlign: slide.textAlign ?? "center",
+          textAlign: "center",
           whiteSpace: "pre-wrap",
           flex: "0 0 auto",
           padding: textSpacing,
-          margin: textSpacing,
+          margin: 0,
           borderRadius: textRadius,
-          width: isMobile ? "fit-content" : undefined,
-          maxWidth: `calc(100% - ${textSpacing * 2}px)`,
+          boxSizing: "border-box",
+          width: `${(safeTextLayout.maxWidth / safeLayoutWidth) * 100}%`,
+          maxWidth: `${(safeTextLayout.maxWidth / safeLayoutWidth) * 100}%`,
           overflowWrap: "break-word",
           wordBreak: "break-word",
-          transform: isMobile ? `translate(${position.x}px, ${position.y}px)` : undefined,
+          transform: isMobile
+            ? `${textBaseTranslate} translate(${position.x}px, ${position.y}px)`
+            : textBaseTranslate,
           border: showMobileEditorFrame ? "1px dashed rgba(255, 179, 209, 0.9)" : "none",
           touchAction: showMobileEditorFrame ? "none" : "auto",
           pointerEvents: showMobileEditorFrame ? "auto" : "none",

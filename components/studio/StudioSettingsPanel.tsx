@@ -258,7 +258,7 @@ export default function StudioSettingsPanel({
               <input
                 type="color"
                 className="studio-color-picker"
-                value={slide.textBgColor ?? "#000000"}
+                value={slide.textBgColor ?? "#ffffff"}
                 onChange={(e) => onChangeTextBgColor?.(e.target.value)}
               />
 
@@ -267,7 +267,7 @@ export default function StudioSettingsPanel({
                 min={0}
                 max={1}
                 step={0.05}
-                value={slide.textBgOpacity ?? 0.6}
+                value={slide.textBgOpacity ?? 0.62}
                 onChange={(e) =>
                   onChangeTextBgOpacity?.(Number(e.target.value))
                 }

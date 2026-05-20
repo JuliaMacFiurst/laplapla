@@ -22,6 +22,10 @@ import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
 import { convertWebmToMp4, preloadFFmpeg } from "@/lib/cropAndConvert";
 import { createStudioSticker } from "@/lib/studioStickers";
 import {
+  getStudioMediaSafeLayout,
+  getStudioTextSafeLayout,
+} from "@/lib/studioSlideSafeLayout";
+import {
   getHardcodedParrotStyleRecords,
   type ParrotStyleRecord,
 } from "@/lib/parrots/catalog";
@@ -603,6 +607,7 @@ function drawContainedMedia(
   slide: StudioSlide,
   canvasWidth: number,
   canvasHeight: number,
+  autoOffsetY = 0,
 ) {
   const fitMode = slide.mediaFit ?? "cover";
   const safeSourceWidth = Math.max(1, sourceWidth);
@@ -644,34 +649,14 @@ function drawContainedMedia(
 
   const scale = slide.mediaScale ?? 1;
   context.save();
-  context.translate(canvasWidth / 2 + (slide.mediaOffsetX ?? 0) * 3, canvasHeight / 2 + (slide.mediaOffsetY ?? 0) * 3);
+  context.translate(
+    canvasWidth / 2 + (slide.mediaOffsetX ?? 0) * 3,
+    canvasHeight / 2 + (slide.mediaOffsetY ?? 0) * 3 + autoOffsetY,
+  );
   context.scale(scale, scale);
   context.translate(-canvasWidth / 2, -canvasHeight / 2);
   context.drawImage(source, drawX, drawY, drawWidth, drawHeight);
   context.restore();
-}
-
-function wrapCanvasText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let currentLine = "";
-
-  words.forEach((word) => {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-    if (context.measureText(candidate).width <= maxWidth || !currentLine) {
-      currentLine = candidate;
-      return;
-    }
-
-    lines.push(currentLine);
-    currentLine = word;
-  });
-
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  return lines;
 }
 
 async function recordStudioProjectCanvas(
@@ -749,18 +734,74 @@ async function recordStudioProjectCanvas(
     context.fillStyle = slide.bgColor || "#000";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
+    let mediaAspectRatio: number | undefined;
+    let mediaSource: {
+      source: CanvasImageSource;
+      width: number;
+      height: number;
+    } | null = null;
+
     if (slide.mediaUrl) {
       if (slide.mediaType === "video") {
         const video = await loadVideo(slide.mediaUrl);
         if (video && video.readyState >= 2) {
-          drawContainedMedia(context, video, video.videoWidth, video.videoHeight, slide, canvas.width, canvas.height);
+          mediaAspectRatio = video.videoWidth / Math.max(1, video.videoHeight);
+          mediaSource = {
+            source: video,
+            width: video.videoWidth,
+            height: video.videoHeight,
+          };
         }
       } else {
         const image = await loadImage(slide.mediaUrl);
         if (image) {
-          drawContainedMedia(context, image, image.naturalWidth, image.naturalHeight, slide, canvas.width, canvas.height);
+          mediaAspectRatio = image.naturalWidth / Math.max(1, image.naturalHeight);
+          mediaSource = {
+            source: image,
+            width: image.naturalWidth,
+            height: image.naturalHeight,
+          };
         }
       }
+    }
+
+    let textLayout: ReturnType<typeof getStudioTextSafeLayout> | null = null;
+
+    if (slide.text?.trim()) {
+      const fontSize = (slide.fontSize || 28) * 2.35;
+      const fontFamily = resolveFontFamily(slide.fontFamily);
+      context.font = `${slide.fontStyle ?? "normal"} ${slide.fontWeight ?? 700} ${fontSize}px ${fontFamily}`;
+      textLayout = getStudioTextSafeLayout({
+        slide,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        fontSize,
+        lineHeight: fontSize * 1.12,
+        measureText: (line) => context.measureText(line).width,
+        offsetScale: 2.35,
+        mediaAspectRatio,
+      });
+    }
+
+    if (mediaSource) {
+      const mediaSafeLayout = getStudioMediaSafeLayout({
+        slide,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        mediaAspectRatio: mediaAspectRatio ?? 9 / 16,
+        textLayout: textLayout ?? undefined,
+        offsetScale: 3,
+      });
+      drawContainedMedia(
+        context,
+        mediaSource.source,
+        mediaSource.width,
+        mediaSource.height,
+        slide,
+        canvas.width,
+        canvas.height,
+        mediaSafeLayout.offsetY,
+      );
     }
 
     const stickers = [...(slide.stickers ?? [])]
@@ -786,43 +827,38 @@ async function recordStudioProjectCanvas(
       context.restore();
     }
 
-    if (slide.text?.trim()) {
+    if (textLayout) {
       const fontSize = (slide.fontSize || 28) * 2.35;
       const fontFamily = resolveFontFamily(slide.fontFamily);
       const lineHeight = fontSize * 1.12;
-      const maxTextWidth = canvas.width * 0.82;
       context.font = `${slide.fontStyle ?? "normal"} ${slide.fontWeight ?? 700} ${fontSize}px ${fontFamily}`;
-      context.textAlign = slide.textAlign ?? "center";
+      context.textAlign = "center";
       context.textBaseline = "middle";
 
-      const lines = slide.text
-        .split("\n")
-        .flatMap((line) => wrapCanvasText(context, line, maxTextWidth));
-      const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
-      const baseY = slide.textPosition === "top"
-        ? 190
-        : slide.textPosition === "bottom"
-          ? canvas.height - 150 - blockHeight / 2
-          : canvas.height * 0.56;
-      const x = canvas.width / 2 + (slide.textOffsetX ?? 0) * 2.35;
-      const y = baseY + (slide.textOffsetY ?? 0) * 2.35;
-
       if (slide.textBgEnabled) {
-        context.fillStyle = rgbaFromHex(slide.textBgColor ?? "#000", slide.textBgOpacity ?? 0.5);
+        context.fillStyle = rgbaFromHex(
+          slide.textBgColor ?? "#ffffff",
+          slide.textBgOpacity ?? 0.62,
+        );
         context.beginPath();
         context.roundRect(
           canvas.width * 0.05,
-          y - blockHeight / 2 - 18,
+          textLayout.y - textLayout.blockHeight / 2 - 18,
           canvas.width * 0.9,
-          blockHeight + 36,
+          textLayout.blockHeight + 36,
           26,
         );
         context.fill();
       }
 
       context.fillStyle = slide.textColor || "#fff";
-      lines.forEach((line, lineIndex) => {
-        context.fillText(line, x, y - blockHeight / 2 + lineHeight * lineIndex + lineHeight / 2, maxTextWidth);
+      textLayout.lines.forEach((line, lineIndex) => {
+        context.fillText(
+          line,
+          textLayout.x,
+          textLayout.y - textLayout.blockHeight / 2 + lineHeight * lineIndex + lineHeight / 2,
+          textLayout.maxWidth,
+        );
       });
     }
 
@@ -1781,7 +1817,13 @@ function StudioMobileLayout({
     if (exportCapability === "guided-record") {
       setExportStatusText(exportText.localScreenRecording);
     }
-  }, [exportCapability, exportState, isExportSheetOpen]);
+  }, [
+    exportCapability,
+    exportState,
+    exportText.idle,
+    exportText.localScreenRecording,
+    isExportSheetOpen,
+  ]);
 
   useEffect(() => {
     const engine = audioEngineRef.current;
@@ -1820,7 +1862,7 @@ function StudioMobileLayout({
   }, [activeSlide.textColor]);
 
   useEffect(() => {
-    setBgColorState(hexToHsl(activeSlide.textBgColor ?? "#000000"));
+    setBgColorState(hexToHsl(activeSlide.textBgColor ?? "#ffffff"));
   }, [activeSlide.textBgColor]);
 
   useEffect(() => {
@@ -2752,7 +2794,7 @@ function StudioMobileLayout({
                       width: "14px",
                       height: "14px",
                       borderRadius: "999px",
-                      background: activeSlide.textBgEnabled ? activeSlide.textBgColor ?? "#000000" : "#111",
+                      background: activeSlide.textBgEnabled ? activeSlide.textBgColor ?? "#ffffff" : "#111",
                       border: "1px solid rgba(255,255,255,0.35)",
                     }}
                   />
@@ -2801,7 +2843,7 @@ function StudioMobileLayout({
                     <MobileColorPicker
                       title="Background color"
                       state={bgColorState}
-                      opacity={activeSlide.textBgOpacity ?? 0.6}
+                      opacity={activeSlide.textBgOpacity ?? 0.62}
                       showOpacity
                       onChangeState={(nextState) => {
                         setBgColorState(nextState);
@@ -4756,7 +4798,7 @@ export default function StudioRoot({
         textAlign: s.textAlign ?? "center",
         textBgEnabled: s.textBgEnabled ?? true,
         textBgColor: s.textBgColor ?? "#ffffff",
-        textBgOpacity: s.textBgOpacity ?? 1,
+        textBgOpacity: s.textBgOpacity ?? 0.62,
         introLayout: s.introLayout,
         voiceUrl: s.voiceUrl,
         voiceDuration: s.voiceDuration,

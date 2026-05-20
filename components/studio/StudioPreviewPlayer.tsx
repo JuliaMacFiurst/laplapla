@@ -6,6 +6,10 @@ import { resolveFontFamily } from "@/lib/fonts";
 import type { StudioSlide } from "@/types/studio";
 import { dictionaries, type Lang } from "@/i18n";
 import type { CSSProperties } from "react";
+import {
+  getStudioMediaSafeLayout,
+  getStudioTextSafeLayout,
+} from "@/lib/studioSlideSafeLayout";
 
 interface StudioPreviewPlayerProps {
   slides: StudioSlide[];
@@ -97,6 +101,7 @@ interface StudioSlideMediaProps {
   playEpoch?: number;
   autoPlayVideo?: boolean;
   style?: CSSProperties;
+  safeLayoutScale?: number;
 }
 
 function renderStudioText(slide: StudioSlide) {
@@ -145,6 +150,7 @@ export function StudioSlideMedia({
   playEpoch = 0,
   autoPlayVideo = true,
   style,
+  safeLayoutScale = 1,
 }: StudioSlideMediaProps) {
   const [mediaAspectRatio, setMediaAspectRatio] = useState(9 / 16);
   const fitMode: "cover" | "contain" = slide.mediaFit ?? "cover";
@@ -194,6 +200,30 @@ export function StudioSlideMedia({
   }
 
   const mediaFrame = getMediaFrame();
+  const layoutWidth = 360 * safeLayoutScale;
+  const layoutHeight = 640 * safeLayoutScale;
+  const safeFontSize = (slide.fontSize || 28) * safeLayoutScale;
+  const estimatedTextLayout = slide.text?.trim()
+    ? getStudioTextSafeLayout({
+        slide,
+        canvasWidth: layoutWidth,
+        canvasHeight: layoutHeight,
+        fontSize: safeFontSize,
+        lineHeight: safeFontSize * 1.12,
+        maxWidth: layoutWidth * 0.92,
+        measureText: (line) => line.length * safeFontSize * 0.56,
+        offsetScale: safeLayoutScale,
+        mediaAspectRatio,
+      })
+    : null;
+  const mediaSafeLayout = getStudioMediaSafeLayout({
+    slide,
+    canvasWidth: layoutWidth,
+    canvasHeight: layoutHeight,
+    mediaAspectRatio,
+    textLayout: estimatedTextLayout ?? undefined,
+    offsetScale: safeLayoutScale,
+  });
   const mediaPosition =
     slide.mediaPosition === "top"
       ? "center top"
@@ -215,7 +245,7 @@ export function StudioSlideMedia({
         top: mediaFrame.top,
         overflow: "hidden",
         zIndex: 1,
-        transform: `translate(${slide.mediaOffsetX ?? 0}px, ${slide.mediaOffsetY ?? 0}px) scale(${slide.mediaScale ?? 1})`,
+        transform: `translate(${(slide.mediaOffsetX ?? 0) * safeLayoutScale}px, ${(slide.mediaOffsetY ?? 0) * safeLayoutScale + mediaSafeLayout.offsetY}px) scale(${slide.mediaScale ?? 1})`,
         transformOrigin: "center center",
         ...style,
       }}
@@ -445,6 +475,22 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
 
     if (!currentSlide) return null;
 
+    const safeLayoutScale = isExportMode ? 3 : 1;
+    const previewWidth = 360 * safeLayoutScale;
+    const previewHeight = 640 * safeLayoutScale;
+    const previewFontSize = (currentSlide.fontSize || 28) * safeLayoutScale;
+    const previewTextLayout = currentSlide.text?.trim()
+      ? getStudioTextSafeLayout({
+          slide: currentSlide,
+          canvasWidth: previewWidth,
+          canvasHeight: previewHeight,
+          fontSize: previewFontSize,
+          lineHeight: previewFontSize * 1.12,
+          offsetScale: safeLayoutScale,
+        })
+      : null;
+    const previewTextBaseTranslate = "translate(-50%, -50%)";
+
     return (
       <div
         className="studio-preview-player"
@@ -489,14 +535,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
             aspectRatio: "9 / 16",
             overflow: "hidden",
             backgroundColor: currentSlide.bgColor || "#000",
-            display: "flex",
-            justifyContent: "center",
-            alignItems:
-              currentSlide.textPosition === "top"
-                ? "flex-start"
-                : currentSlide.textPosition === "bottom"
-                  ? "flex-end"
-                  : "center",
+            display: "block",
           }}
         >
           {/* MEDIA */}
@@ -505,6 +544,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
               slide={currentSlide}
               playEpoch={isPlaybackEnabled ? playEpoch : 0}
               autoPlayVideo={isPlaybackEnabled}
+              safeLayoutScale={safeLayoutScale}
             />
           ) : null}
 
@@ -539,7 +579,7 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
               <div
                 style={{
                   padding: 20,
-                textAlign: currentSlide.textAlign || "center",
+                textAlign: "center",
                 fontSize: isExportMode
                   ? (currentSlide.fontSize || 28) * (1080 / 360)
                   : currentSlide.fontSize || 28,
@@ -547,8 +587,8 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                 color: currentSlide.textColor || "#fff",
                 background: currentSlide.textBgEnabled
                   ? (() => {
-                      const base = currentSlide.textBgColor || '#000000';
-                      const opacity = currentSlide.textBgOpacity ?? 0.5;
+                      const base = currentSlide.textBgColor || '#ffffff';
+                      const opacity = currentSlide.textBgOpacity ?? 0.62;
                       if (base.startsWith('#')) {
                         const hex = base.replace('#', '');
                         const bigint = parseInt(hex.length === 3
@@ -563,14 +603,18 @@ const StudioPreviewPlayer = forwardRef<HTMLDivElement, StudioPreviewPlayerProps>
                     })()
                   : "transparent",
                 opacity: 1,
-                display: "inline-block",
-                maxWidth: "90%",
+                display: "block",
+                boxSizing: "border-box",
+                width: previewTextLayout ? `${(previewTextLayout.maxWidth / previewWidth) * 100}%` : "90%",
+                maxWidth: previewTextLayout ? `${(previewTextLayout.maxWidth / previewWidth) * 100}%` : "90%",
                 borderRadius: currentSlide.textBgEnabled ? 16 : 0,
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
-                position: "relative",
+                position: "absolute",
+                left: previewTextLayout ? `${(previewTextLayout.x / previewWidth) * 100}%` : "50%",
+                top: previewTextLayout ? `${(previewTextLayout.y / previewHeight) * 100}%` : "50%",
                 zIndex: 20,
-                  transform: `translate(${currentSlide.textOffsetX ?? 0}px, ${currentSlide.textOffsetY ?? 0}px)`,
+                  transform: previewTextBaseTranslate,
                 }}
               >
                 {renderStudioText(currentSlide)}
