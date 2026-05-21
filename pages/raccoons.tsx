@@ -13,6 +13,7 @@ import { quests } from "@/utils/quests.config";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedHref, DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
 import MobileQuestSelectScreen from "@/components/Raccoons/MobileQuestSelectScreen";
 import type { EntitySearchResult } from "@/components/Raccoons/types";
@@ -67,6 +68,8 @@ export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/raccoons";
   const searchUi = SEARCH_UI[lang];
   const isMobile = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const usesCompactMapLayout = isMobile || responsiveViewport.deviceClass === "tablet";
   const [activeTab, setActiveTab] = useState<MapTab>("country");
   const [deepLinkedPreviewId, setDeepLinkedPreviewId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -247,7 +250,7 @@ export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
       return;
     }
 
-    if (isMobile) {
+    if (usesCompactMapLayout) {
       document.body.classList.add("raccoons-mobile-page");
       return () => {
         document.body.classList.remove("raccoons-mobile-page");
@@ -256,9 +259,9 @@ export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
 
     document.body.classList.remove("raccoons-mobile-page");
     return undefined;
-  }, [isMobile]);
+  }, [usesCompactMapLayout]);
 
-  if (isMobile) {
+  if (usesCompactMapLayout) {
     return (
       <>
         <SEO title={seo.title} description={seo.description} path={seoPath} />

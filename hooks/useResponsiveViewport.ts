@@ -17,7 +17,7 @@ export type ResponsiveViewportState = {
 
 const MOBILE_MAX_WIDTH = 767;
 const TABLET_MAX_WIDTH = 1199;
-const COARSE_TABLET_MAX_WIDTH = 1440;
+const COARSE_TABLET_MAX_WIDTH = 1600;
 
 const SSR_VIEWPORT: ResponsiveViewportState = {
   width: 0,

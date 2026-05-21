@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import MapViewport from "@/components/Raccoons/MapViewport";
 import MapPopup from "@/components/Raccoons/MapPopup";
 
@@ -490,7 +491,9 @@ export default function InteractiveMap({
 }: InteractiveMapProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
-  const isMobile = useIsMobile();
+  const phoneLayout = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const isMobile = phoneLayout || responsiveViewport.deviceClass === "tablet";
   const t = dictionaries[lang].raccoons.popup;
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
@@ -554,6 +557,7 @@ export default function InteractiveMap({
   const didDragRef = useRef(false);
   const pointerStartClientXRef = useRef(0);
   const pointerStartClientYRef = useRef(0);
+  const lastTouchDragAtRef = useRef(0);
   const ignoreNextOutsideClickRef = useRef(false);
   const lastTapTsRef = useRef(0);
   const pinchDistanceRef = useRef(0);
@@ -1323,8 +1327,12 @@ export default function InteractiveMap({
     if (!viewBox || viewBox.width <= 0 || viewBox.height <= 0) {
       return null;
     }
-    const svgWidth = viewBox.width * nextZoom;
-    const svgHeight = viewBox.height * nextZoom;
+    // SVG viewBox values are internal coordinates, not CSS pixels. Clamp against
+    // the rendered SVG viewport so maps with small viewBoxes do not get pinned.
+    const layoutWidth = svg.clientWidth || viewBox.width;
+    const layoutHeight = svg.clientHeight || viewBox.height;
+    const svgWidth = layoutWidth * nextZoom;
+    const svgHeight = layoutHeight * nextZoom;
 
     let minX = containerRect.width - svgWidth;
     let maxX = 0;
@@ -1385,7 +1393,7 @@ export default function InteractiveMap({
     }
 
     mapContent.style.transformOrigin = "0 0";
-    mapContent.style.transform = `translate(${nextX}px, ${nextY}px) scale(${nextZoom})`;
+    mapContent.style.transform = `translate3d(${nextX}px, ${nextY}px, 0) scale(${nextZoom})`;
   }, []);
 
   // --- Helper to reset the map view to the safe initial view ---
@@ -1517,6 +1525,10 @@ export default function InteractiveMap({
   }, [applyMapTransform, clampMobilePosition, isMobile, svgContent, type]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (Date.now() - lastTouchDragAtRef.current < 800) {
+      return;
+    }
+
     isDraggingRef.current = true;
     movedDuringDragRef.current = false;
     didDragRef.current = false;
@@ -1530,6 +1542,10 @@ export default function InteractiveMap({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (Date.now() - lastTouchDragAtRef.current < 800) {
+      return;
+    }
+
     if (!isDraggingRef.current) return;
     e.preventDefault();
     if (
@@ -1555,6 +1571,8 @@ export default function InteractiveMap({
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    lastTouchDragAtRef.current = Date.now();
+
     if (e.touches.length === 2) {
       const [touchA, touchB] = [e.touches[0], e.touches[1]];
       const dx = touchA.clientX - touchB.clientX;
@@ -1591,6 +1609,8 @@ export default function InteractiveMap({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    lastTouchDragAtRef.current = Date.now();
+
     if (e.touches.length === 2) {
       e.preventDefault();
       const [touchA, touchB] = [e.touches[0], e.touches[1]];
@@ -1646,6 +1666,8 @@ export default function InteractiveMap({
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    lastTouchDragAtRef.current = Date.now();
+
     if (e.touches.length >= 2) {
       return;
     }
@@ -2954,6 +2976,7 @@ export default function InteractiveMap({
                                             },
                                           );
                                         }}
+                                        className="map-popup-slide-media"
                                         style={{
                                           width: "100%",
                                           height: "auto",
@@ -2966,6 +2989,7 @@ export default function InteractiveMap({
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
                                         src={displayMediaUrl}
+                                        className="map-popup-slide-media"
                                         onError={() => {
                                           console.error(
                                             "[popup-media/render-error]",
