@@ -1380,7 +1380,7 @@ lesson-dog-name::before,
   }
 }
 
-@media (max-width: 1199px) {
+@media (max-width: 1199px), (pointer: coarse) and (hover: none) and (min-width: 768px) and (max-width: 1440px) {
   body.dog-lesson-mobile-page {
     overscroll-behavior: none;
     touch-action: manipulation;

@@ -307,18 +307,31 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
 
             @media (min-width: 768px) {
               .style-presets-row {
-                grid-template-columns: repeat(auto-fill, 104px);
-                gap: 14px;
+                width: min(100%, 680px);
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 18px;
+                margin-left: auto;
+                margin-right: auto;
               }
 
               .style-preset-btn {
-                width: 104px;
-                height: 104px;
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1;
+                border-radius: 18px;
+                padding: 10px;
               }
 
               .style-preset-label {
-                max-width: 90px;
-                font-size: 14px;
+                max-width: calc(100% - 8px);
+                font-size: 16px;
+              }
+            }
+
+            @media (min-width: 768px) and (orientation: landscape) {
+              .style-presets-row {
+                width: min(100%, 1020px);
+                grid-template-columns: repeat(5, minmax(0, 1fr));
               }
             }
           `}</style>

@@ -1062,6 +1062,50 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   }
 }
 
+@media (min-width: 768px) and (max-width: 1199px), (pointer: coarse) and (hover: none) and (min-width: 768px) and (max-width: 1440px) {
+  .home-wrapper {
+    width: min(100%, 1120px);
+    max-width: none;
+    box-sizing: border-box;
+    padding-inline: clamp(16px, 2vw, 28px);
+  }
+
+  .home-wrapper .home-brand-links {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .home-wrapper .video-section-mobile {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) and (orientation: portrait), (pointer: coarse) and (hover: none) and (min-width: 768px) and (max-width: 1440px) and (orientation: portrait) {
+  .home-wrapper .grid {
+    width: min(100%, 690px);
+    margin-inline: auto;
+    gap: 18px;
+  }
+
+  .home-wrapper .card {
+    max-width: 206px;
+    box-sizing: border-box;
+  }
+
+  .home-wrapper .card img {
+    top: -28px;
+    max-width: 246px;
+    max-height: 246px;
+  }
+
+  .home-wrapper .home-brand-overview {
+    margin-top: 38px;
+  }
+
+  .home-wrapper .home-brand-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .home-wrapper-mobile {
     max-width: none;

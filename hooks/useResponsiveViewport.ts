@@ -17,6 +17,7 @@ export type ResponsiveViewportState = {
 
 const MOBILE_MAX_WIDTH = 767;
 const TABLET_MAX_WIDTH = 1199;
+const COARSE_TABLET_MAX_WIDTH = 1440;
 
 const SSR_VIEWPORT: ResponsiveViewportState = {
   width: 0,
@@ -44,7 +45,7 @@ function readViewport(): ResponsiveViewportState {
   const deviceClass: ResponsiveDeviceClass =
     width <= MOBILE_MAX_WIDTH
       ? "mobile"
-      : width <= TABLET_MAX_WIDTH || (isCoarsePointer && isNoHover && shortestSide <= TABLET_MAX_WIDTH && widestSide <= 1366)
+      : width <= TABLET_MAX_WIDTH || (isCoarsePointer && isNoHover && shortestSide <= TABLET_MAX_WIDTH && widestSide <= COARSE_TABLET_MAX_WIDTH)
         ? "tablet"
         : "desktop";
   const standaloneNavigator = "standalone" in window.navigator

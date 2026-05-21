@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export function useIsTabletViewport(maxWidth = 1366) {
+export function useIsTabletViewport(maxWidth = 1440) {
   const [isTablet, setIsTablet] = useState(false);
 
   useEffect(() => {

@@ -1579,8 +1579,9 @@ export default function ParrotStudioRoot({
           inset: 0;
           width: 100vw;
           max-width: 100vw;
-          height: var(--app-viewport-height, 100dvh);
-          max-height: var(--app-viewport-height, 100dvh);
+          height: 100dvh;
+          min-height: 100dvh;
+          max-height: 100dvh;
           display: grid;
           grid-template-rows: auto auto minmax(0, 1fr) auto auto;
           overflow: hidden;
@@ -1752,11 +1753,12 @@ export default function ParrotStudioRoot({
           color: rgba(255, 244, 232, 0.56);
         }
 
-        @media (min-width: 768px) and (max-width: 1199px) {
+        @media (min-width: 768px) and (max-width: 1199px), (pointer: coarse) and (hover: none) and (min-width: 768px) and (max-width: 1440px) {
           .parrot-studio-root {
             grid-template-rows: auto auto minmax(0, 1fr) auto auto;
-            height: var(--app-viewport-height, 100dvh);
-            max-height: var(--app-viewport-height, 100dvh);
+            height: 100dvh;
+            min-height: 100dvh;
+            max-height: 100dvh;
           }
 
           .parrot-studio-root__topbar {
@@ -1803,7 +1805,7 @@ export default function ParrotStudioRoot({
           }
         }
 
-        @media (min-width: 768px) and (max-width: 1199px) and (orientation: landscape) {
+        @media (min-width: 768px) and (max-width: 1199px) and (orientation: landscape), (pointer: coarse) and (hover: none) and (min-width: 768px) and (max-width: 1440px) and (orientation: landscape) {
           .parrot-studio-root {
             grid-template-columns: minmax(280px, 36vw) minmax(0, 1fr);
             grid-template-rows: auto minmax(0, 1fr) auto;
