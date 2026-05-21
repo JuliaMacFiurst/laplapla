@@ -4,7 +4,7 @@ import BookScreen from "@/components/BookScreen";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { useBook } from "@/hooks/useBook";
 import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
@@ -31,7 +31,8 @@ export default function StandaloneBookScreenPages({
   bottomNavigation,
 }: StandaloneBookScreenPagesProps) {
   const router = useRouter();
-  const isMobile = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const usesTouchBookLayout = responsiveViewport.deviceClass !== "desktop";
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchResults, setSearchResults] = useState<Book[] | null>(null);
@@ -227,7 +228,7 @@ export default function StandaloneBookScreenPages({
   useEffect(() => () => abortSearchPipeline(), [abortSearchPipeline]);
 
   useEffect(() => {
-    if (!isMobile) {
+    if (!usesTouchBookLayout) {
       return;
     }
 
@@ -245,7 +246,7 @@ export default function StandaloneBookScreenPages({
 
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [isMobile, isSearchOpen, isSettingsOpen]);
+  }, [isSearchOpen, isSettingsOpen, usesTouchBookLayout]);
 
   const handleModeSelect = (modeId: string | number) => {
     closeCurrentBookQuiz();
@@ -424,7 +425,7 @@ export default function StandaloneBookScreenPages({
 
   return (
     <>
-      {isMobile ? (
+      {usesTouchBookLayout ? (
         <>
           <div className="capybara-mobile-topbar standalone-book-mobile-topbar">
             <button
@@ -537,7 +538,7 @@ export default function StandaloneBookScreenPages({
           ) : null}
         </>
       ) : null}
-      {isMobile ? (
+      {usesTouchBookLayout ? (
         <>
           <div className="standalone-book-mobile-shell">{bookContent}</div>
           {bottomNavigation ? (

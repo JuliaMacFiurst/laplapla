@@ -1625,6 +1625,7 @@
   justify-content: space-between;
   width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
   color: #475569;
   background:
@@ -1841,6 +1842,13 @@
     gap: 0.55rem;
   }
 
+  @media (min-width: 768px) {
+    .book-seo-navigation {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+  }
+
   .book-reader-nav-button {
     gap: 0.7rem;
     min-height: 4.35rem;
@@ -1897,6 +1905,21 @@
     margin-top: 0;
     margin-left: auto;
     margin-right: auto;
+  }
+
+  @media (min-width: 768px) {
+    .standalone-book-mobile-shell {
+      height: 100svh;
+      min-height: 100svh;
+    }
+
+    .mobile-book-bottom-nav {
+      width: 100%;
+    }
+
+    .mobile-book-bottom-nav .book-reader-bottom-nav {
+      width: 100%;
+    }
   }
 
   .book-feed.book-feed-mobile {
@@ -2835,6 +2858,8 @@
     top: 0;
     left: 0;
     right: 0;
+    width: auto;
+    max-width: none;
     margin-top: 0;
     z-index: 220;
     pointer-events: none;
@@ -3001,6 +3026,12 @@
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+
+  @media (min-width: 768px) and (orientation: landscape) {
+    .book-feed.book-feed-mobile .book-panel > .book-card {
+      width: 70vw;
+    }
   }
 
   .mobile-book-screen {

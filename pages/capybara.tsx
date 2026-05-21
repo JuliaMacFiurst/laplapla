@@ -619,31 +619,33 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             <span className="search-toggle-button-icon" aria-hidden="true">⌕</span>
           </button>
         )}
-        <form className="search-form" onSubmit={handleSearchSubmit}>
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              className="search-input"
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
-              placeholder={t.search.placeholder}
-              aria-label={t.search.placeholder}
-            />
-            {inputValue ? (
-              <button
-                type="button"
-                className="search-clear-button"
-                onClick={handleClearSearch}
-                aria-label={t.search.clear}
-              >
-                <span aria-hidden="true">×</span>
+        {!usesTouchBookLayout ? (
+          <form className="search-form" onSubmit={handleSearchSubmit}>
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                className="search-input"
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                placeholder={t.search.placeholder}
+                aria-label={t.search.placeholder}
+              />
+              {inputValue ? (
+                <button
+                  type="button"
+                  className="search-clear-button"
+                  onClick={handleClearSearch}
+                  aria-label={t.search.clear}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              ) : null}
+              <button type="submit" className="search-button" disabled={searchLoading}>
+                {t.search.button}
               </button>
-            ) : null}
-            <button type="submit" className="search-button" disabled={searchLoading}>
-              {t.search.button}
-            </button>
-          </div>
-        </form>
+            </div>
+          </form>
+        ) : null}
         {!usesTouchBookLayout ? renderSearchFilters() : null}
       </header>
 
