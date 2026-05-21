@@ -5,7 +5,7 @@ import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
-import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
+import type { Book, BookFeedPreview, BookTest, ExplanationMode, Slide } from "@/types/types";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
@@ -18,12 +18,10 @@ type SlideMedia = {
   videoUrl?: string;
 };
 
-interface MobileBookPanel {
+const EMPTY_MEDIA_CACHE = new Map<number, SlideMedia>();
+
+interface MobileBookPanel extends BookFeedPreview {
   panelId: string;
-  book: Book;
-  slides: Slide[];
-  selectedModeId: string | number | null;
-  mediaCache: ReadonlyMap<number, SlideMedia>;
 }
 
 interface BookFeedProps {
@@ -89,22 +87,94 @@ export default function BookFeed({
   const lastPanelRef = useRef<HTMLDivElement | null>(null);
   const wheelLocked = useRef(false);
   const mobilePanelCounterRef = useRef(0);
-  const mobileLoadQueuedRef = useRef(false);
+  const mobilePreviewIdsRef = useRef<string[]>([]);
+  const mobilePreviewRequestRef = useRef<Promise<void> | null>(null);
   const [isMobileFeed, setIsMobileFeed] = useState(false);
   const responsiveViewport = useResponsiveViewport();
   const usesTouchBookFeed = responsiveViewport.deviceClass !== "desktop";
   const [mobilePanels, setMobilePanels] = useState<MobileBookPanel[]>([]);
+  const [mobilePreviewLoading, setMobilePreviewLoading] = useState(false);
+  const [mobilePreviewError, setMobilePreviewError] = useState<string | null>(null);
   const previousBookLabel = dict.navigation?.previousBook || "Previous book";
   const nextBookLabel = dict.navigation?.nextBook || "Next book";
 
   const openStandaloneBook = useCallback(async (
     targetBook: Book,
-    targetModeId?: string | number | null,
+    targetMode?: ExplanationMode | string | number | null,
   ) => {
-    const targetMode = modes.find((mode) => String(mode.id) === String(targetModeId));
-    const href = targetMode ? buildBookModeHref(targetBook, targetMode) : buildBookHref(targetBook);
+    const resolvedMode =
+      targetMode && typeof targetMode === "object"
+        ? targetMode
+        : modes.find((mode) => String(mode.id) === String(targetMode));
+    const href = resolvedMode ? buildBookModeHref(targetBook, resolvedMode) : buildBookHref(targetBook);
     await router.push(href, undefined, { locale: lang });
   }, [lang, modes, router]);
+
+  const loadMobilePreviews = useCallback((count = 4) => {
+    if (mobilePreviewRequestRef.current) {
+      return mobilePreviewRequestRef.current;
+    }
+
+    const request = (async () => {
+      setMobilePreviewLoading(true);
+      setMobilePreviewError(null);
+
+      try {
+        const searchParams = new URLSearchParams({
+          count: String(count),
+          lang,
+        });
+        if (mobilePreviewIdsRef.current.length > 0) {
+          searchParams.set("exclude_ids", mobilePreviewIdsRef.current.join(","));
+        }
+
+        const response = await fetch(`/api/books/feed-previews?${searchParams.toString()}`);
+        if (!response.ok) {
+          throw new Error(dict.errors.randomBookLoad);
+        }
+
+        const previews = (await response.json()) as BookFeedPreview[];
+        if (!Array.isArray(previews) || previews.length === 0) {
+          throw new Error(dict.errors.randomBookLoad);
+        }
+
+        setMobilePanels((previousPanels) => {
+          const knownBookIds = new Set(previousPanels.map((panel) => String(panel.book.id)));
+          const nextPanels = [...previousPanels];
+
+          previews.forEach((preview) => {
+            const bookId = String(preview.book.id);
+            if (knownBookIds.has(bookId)) {
+              return;
+            }
+
+            knownBookIds.add(bookId);
+            mobilePanelCounterRef.current += 1;
+            nextPanels.push({
+              ...preview,
+              panelId: `book-panel-${mobilePanelCounterRef.current}`,
+            });
+          });
+
+          mobilePreviewIdsRef.current = Array.from(knownBookIds).slice(-48);
+          return nextPanels;
+        });
+      } catch (previewError) {
+        setMobilePreviewError(previewError instanceof Error ? previewError.message : dict.errors.randomBookLoad);
+      } finally {
+        setMobilePreviewLoading(false);
+      }
+    })();
+
+    mobilePreviewRequestRef.current = request;
+    void request.finally(() => {
+      if (mobilePreviewRequestRef.current === request) {
+        mobilePreviewRequestRef.current = null;
+      }
+    });
+
+    return request;
+  }, [dict.errors.randomBookLoad, lang]);
 
   const maybeLoadPreviousBook = useCallback(() => {
     if (loading || wheelLocked.current || !hasPreviousBook) {
@@ -140,63 +210,20 @@ export default function BookFeed({
     }
 
     setMobilePanels([]);
-    mobileLoadQueuedRef.current = false;
+    mobilePreviewIdsRef.current = [];
+    mobilePreviewRequestRef.current = null;
   }, [isMobileFeed]);
 
   useEffect(() => {
-    if (!isMobileFeed || !book) {
+    if (!isMobileFeed) {
       return;
     }
 
-    if (loading && slides.length === 0) {
-      return;
-    }
-
-    const nextPanelSnapshot: Omit<MobileBookPanel, "panelId"> = {
-      book,
-      slides,
-      selectedModeId,
-      mediaCache: new Map(mediaCache),
-    };
-
-    setMobilePanels((prev) => {
-      const lastPanel = prev[prev.length - 1];
-      if (lastPanel && String(lastPanel.book.id) === String(book.id)) {
-        const nextPanels = prev.slice();
-        nextPanels[nextPanels.length - 1] = {
-          ...lastPanel,
-          ...nextPanelSnapshot,
-        };
-        return nextPanels;
-      }
-
-      mobilePanelCounterRef.current += 1;
-      const nextPanels = [
-        ...prev,
-        {
-          panelId: `book-panel-${mobilePanelCounterRef.current}`,
-          ...nextPanelSnapshot,
-        },
-      ];
-
-      if (nextPanels.length > 5) {
-        return nextPanels.slice(-5);
-      }
-
-      return nextPanels;
-    });
-
-    if (!loading) {
-      mobileLoadQueuedRef.current = false;
-    }
-  }, [
-    book,
-    isMobileFeed,
-    loading,
-    mediaCache,
-    selectedModeId,
-    slides,
-  ]);
+    setMobilePanels([]);
+    mobilePreviewIdsRef.current = [];
+    mobilePreviewRequestRef.current = null;
+    void loadMobilePreviews(5);
+  }, [isMobileFeed, lang, loadMobilePreviews]);
 
   useEffect(() => {
     if (!isMobileFeed || !feedRef.current || !lastPanelRef.current) {
@@ -206,22 +233,22 @@ export default function BookFeed({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (!entry?.isIntersecting || loading || mobileLoadQueuedRef.current) {
+        if (!entry?.isIntersecting) {
           return;
         }
 
-        mobileLoadQueuedRef.current = true;
-        onNextBook();
+        void loadMobilePreviews(4);
       },
       {
         root: feedRef.current,
-        threshold: 0.92,
+        rootMargin: "150% 0px",
+        threshold: 0.15,
       },
     );
 
     observer.observe(lastPanelRef.current);
     return () => observer.disconnect();
-  }, [isMobileFeed, loading, mobilePanels, onNextBook]);
+  }, [isMobileFeed, loadMobilePreviews, mobilePanels]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -268,19 +295,19 @@ export default function BookFeed({
         }
       }}
     >
-      {loading && !book ? (
+      {(isMobileFeed ? mobilePreviewLoading && mobilePanels.length === 0 : loading && !book) ? (
         <div className="loading-spinner-container">
           <LoadingSpinner />
         </div>
       ) : null}
 
-      {error && !book ? (
+      {(isMobileFeed ? mobilePreviewError && mobilePanels.length === 0 : error && !book) ? (
         <div className="error-message-container">
-          <ErrorMessage message={error} customTitle={errorTitle || dict.loadingErrorTitle} dict={dict} />
+          <ErrorMessage message={(isMobileFeed ? mobilePreviewError : error) || dict.errors.bookLoad} customTitle={errorTitle || dict.loadingErrorTitle} dict={dict} />
         </div>
       ) : null}
 
-      {book && isMobileFeed ? (
+      {isMobileFeed ? (
         mobilePanels.map((panel, index) => {
           const isLatestPanel = index === mobilePanels.length - 1;
 
@@ -294,10 +321,10 @@ export default function BookFeed({
               <BookCard
                 book={panel.book}
                 lang={lang}
-                slides={panel.slides}
+                slides={[panel.firstSlide]}
                 tests={[]}
-                modes={modes}
-                selectedModeId={panel.selectedModeId}
+                modes={[]}
+                selectedModeId={panel.plotMode?.id ?? null}
                 currentSlideIndex={0}
                 loading={false}
                 showTests={false}
@@ -311,9 +338,9 @@ export default function BookFeed({
                 onSlideIndexChange={() => {}}
                 onFindNewImage={async () => {}}
                 isFindingNewImage={false}
-                mediaCache={panel.mediaCache}
+                mediaCache={EMPTY_MEDIA_CACHE}
                 onPreloadNextSlide={() => {}}
-                onOpenStandaloneBook={(modeId) => void openStandaloneBook(panel.book, modeId ?? panel.selectedModeId)}
+                onOpenStandaloneBook={() => void openStandaloneBook(panel.book, panel.plotMode)}
                 mobileVariant="feed"
                 showEmptyError={false}
                 t={dict}

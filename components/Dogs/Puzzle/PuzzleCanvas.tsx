@@ -1,12 +1,39 @@
 "use client";
 
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { devLog } from "@/utils/devLog";
 import { PuzzleEngine } from "./PuzzleEngine";
 
 type Props = {
   sourceCanvas: HTMLCanvasElement;
   traySelector?: string;
+};
+
+const getAudio = (
+  ref: MutableRefObject<HTMLAudioElement | null>,
+  src: string,
+  volume: number,
+) => {
+  if (!ref.current) {
+    ref.current = new Audio(src);
+    ref.current.preload = "auto";
+    ref.current.volume = volume;
+  }
+
+  return ref.current;
+};
+
+const playPuzzleSound = (
+  ref: MutableRefObject<HTMLAudioElement | null>,
+  src: string,
+  volume: number,
+) => {
+  try {
+    const audio = getAudio(ref, src, volume);
+    audio.volume = volume;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  } catch {}
 };
 
 export default function PuzzleCanvas({
@@ -41,21 +68,7 @@ export default function PuzzleCanvas({
     { x: number; y: number; vx: number; vy: number; size: number }[]
   >([]);
 
-  const getAudio = (
-    ref: MutableRefObject<HTMLAudioElement | null>,
-    src: string,
-    volume: number,
-  ) => {
-    if (!ref.current) {
-      ref.current = new Audio(src);
-      ref.current.preload = "auto";
-      ref.current.volume = volume;
-    }
-
-    return ref.current;
-  };
-
-  const unlockPuzzleAudio = () => {
+  const unlockPuzzleAudio = useCallback(() => {
     if (audioUnlockedRef.current) return;
 
     audioUnlockedRef.current = true;
@@ -79,20 +92,7 @@ export default function PuzzleCanvas({
           audio.volume = previousVolume;
         });
     });
-  };
-
-  const playPuzzleSound = (
-    ref: MutableRefObject<HTMLAudioElement | null>,
-    src: string,
-    volume: number,
-  ) => {
-    try {
-      const audio = getAudio(ref, src, volume);
-      audio.volume = volume;
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-    } catch {}
-  };
+  }, []);
 
   const renderPieces = (
     ctx: CanvasRenderingContext2D,
@@ -635,7 +635,7 @@ export default function PuzzleCanvas({
       document.removeEventListener("pointerup", handleGlobalPointerUp);
       document.removeEventListener("pointercancel", handleGlobalPointerUp);
     };
-  }, [sourceCanvas, traySelector]);
+  }, [sourceCanvas, traySelector, unlockPuzzleAudio]);
 
   function getPointerPos(clientX: number, clientY: number) {
     const rect = canvasRef.current!.getBoundingClientRect();

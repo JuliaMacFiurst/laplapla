@@ -72,6 +72,12 @@ export interface ExplanationMode {
   [key: string]: unknown;
 }
 
+export interface BookFeedPreview {
+  book: Book;
+  plotMode: ExplanationMode | null;
+  firstSlide: Slide;
+}
+
 // Represents a single pre-defined capybara illustration
 export interface CapybaraIllustration {
   id: string;

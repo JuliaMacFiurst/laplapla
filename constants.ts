@@ -44,5 +44,4 @@ export const fallbackImages = [
     'capybara_with_balloon.webp',
     'capybara_with_butterfly.webp',
     'capybara_with_gift.webp',
-    'capybara.webp',
   ];

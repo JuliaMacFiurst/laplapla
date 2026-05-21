@@ -43,7 +43,9 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     toggleCurrentBookQuiz,
     closeCurrentBookQuiz,
     mediaCache,
-  } = useBook(t, currentLang);
+  } = useBook(t, currentLang, {
+    disableInitialRandom: true,
+  });
   const [mode, setMode] = useState<"slideshow" | "search">("slideshow");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -64,6 +66,29 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   const previousLangRef = useRef(currentLang);
   const didResolveRouteBookRef = useRef(false);
 
+  useEffect(() => {
+    if (
+      responsiveViewport.width === 0 ||
+      usesTouchBookLayout ||
+      currentBook ||
+      loading ||
+      mode !== "slideshow" ||
+      router.query.book
+    ) {
+      return;
+    }
+
+    void loadRandomBook();
+  }, [
+    currentBook,
+    loadRandomBook,
+    loading,
+    mode,
+    responsiveViewport.width,
+    router.query.book,
+    usesTouchBookLayout,
+  ]);
+
   const abortSearchPipeline = useCallback(() => {
     searchControllerRef.current?.abort();
     searchControllerRef.current = null;
@@ -78,6 +103,10 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
   }, [abortSearchPipeline]);
 
   useEffect(() => {
+    if (responsiveViewport.width === 0 || (usesTouchBookLayout && !isSearchOpen)) {
+      return;
+    }
+
     let active = true;
 
     const loadBookFilters = async () => {
@@ -114,7 +143,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     return () => {
       active = false;
     };
-  }, [currentLang]);
+  }, [currentLang, isSearchOpen, responsiveViewport.width, usesTouchBookLayout]);
 
   const buildSearchUrl = useCallback((query: string) => {
     const searchParams = new URLSearchParams();

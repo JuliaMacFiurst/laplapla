@@ -132,16 +132,19 @@ export default function MobileBookScreen({
     ? String(book.age_group).trim()
     : "";
   const isReader = variant === "reader";
-  const feedModeSelect = (modeId: string | number) => {
-    if (onOpenStandaloneBook) {
-      onOpenStandaloneBook(modeId);
-      return;
-    }
-
-    onModeSelect(modeId);
-  };
   const firstSlide = slides[0] || null;
-  const firstSlideMedia = mediaCache.get(0) || null;
+  const firstSlideMedia = mediaCache.get(0) || (
+    firstSlide?.capybaraImage || firstSlide?.gifUrl || firstSlide?.imageUrl || firstSlide?.videoUrl
+      ? {
+          type: firstSlide.type || (firstSlide.videoUrl ? "video" : firstSlide.gifUrl ? "gif" : "image"),
+          capybaraImage: firstSlide.capybaraImage,
+          capybaraImageAlt: firstSlide.capybaraImageAlt,
+          gifUrl: firstSlide.gifUrl,
+          imageUrl: firstSlide.imageUrl,
+          videoUrl: firstSlide.videoUrl,
+        } satisfies SlideMedia
+      : null
+  );
   const previewSeed = `${String(book.id)}-${String(selectedModeId ?? "default")}`;
   const fallbackIndex = Math.abs(
     Array.from(previewSeed).reduce((acc, char) => acc + char.charCodeAt(0), 0),
@@ -163,13 +166,15 @@ export default function MobileBookScreen({
           </div>
         </div>
 
-        <MobileModeTabs
-          lang={lang}
-          modes={modes}
-          selectedModeId={selectedModeId}
-          disabled={loading}
-          onSelect={isReader ? onModeSelect : feedModeSelect}
-        />
+        {isReader ? (
+          <MobileModeTabs
+            lang={lang}
+            modes={modes}
+            selectedModeId={selectedModeId}
+            disabled={loading}
+            onSelect={onModeSelect}
+          />
+        ) : null}
       </div>
 
       <div className="mobile-book-stage">
