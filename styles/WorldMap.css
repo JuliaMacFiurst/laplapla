@@ -560,6 +560,34 @@ body.raccoons-mobile-page .footer-stack {
   color: #fff;
 }
 
+.map-popup-mobile-viewer .mobile-slideshow-page {
+  gap: clamp(8px, 1.5dvh, 14px);
+}
+
+.map-popup-mobile-viewer .mobile-slideshow-media-shell {
+  align-items: stretch;
+}
+
+.map-popup-mobile-viewer .mobile-slideshow-media-frame {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: clamp(14px, 4vw, 24px);
+}
+
+.map-popup-mobile-viewer .map-popup-mobile-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+}
+
+.map-popup-mobile-viewer .mobile-slideshow-caption {
+  flex: 0 0 auto;
+}
+
 .raccoons-mobile-quests-screen {
   position: fixed;
   inset: 0;
@@ -957,10 +985,12 @@ body.raccoons-mobile-page .footer-stack {
     padding-inline: clamp(18px, 4vw, 42px);
   }
 
-  body.raccoons-mobile-page .mobile-slideshow-media-frame {
-    width: min(100%, 980px);
-    height: 100%;
-    aspect-ratio: auto;
+  body.raccoons-mobile-page .map-popup-mobile-viewer .mobile-slideshow-page {
+    padding-inline: clamp(20px, 5vw, 72px);
+  }
+
+  body.raccoons-mobile-page .map-popup-mobile-viewer .mobile-slideshow-media-frame {
+    width: min(100%, 1180px);
   }
 }
 

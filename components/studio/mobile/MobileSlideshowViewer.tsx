@@ -30,7 +30,9 @@ interface MobileSlideshowViewerProps {
   onRandomQuestion: () => Promise<void> | void;
   onLastSlideSecondary?: () => Promise<void> | void;
   onTopLeftAction?: () => Promise<void> | void;
+  className?: string;
   renderSlideHeader?: (slide: StudioSlide, slideIndex: number) => ReactNode;
+  renderSlideMedia?: (slide: StudioSlide, slideIndex: number) => ReactNode;
 }
 
 export default function MobileSlideshowViewer({
@@ -56,7 +58,9 @@ export default function MobileSlideshowViewer({
   onRandomQuestion,
   onLastSlideSecondary,
   onTopLeftAction,
+  className,
   renderSlideHeader,
+  renderSlideMedia,
 }: MobileSlideshowViewerProps) {
   useEffect(() => {
     if (!isOpen) {
@@ -83,7 +87,12 @@ export default function MobileSlideshowViewer({
       : "mobile-slideshow-caption mobile-slideshow-caption-latin";
 
   return (
-    <div className="mobile-slideshow-viewer" role="dialog" aria-modal="true" aria-label={closeLabel}>
+    <div
+      className={`mobile-slideshow-viewer${className ? ` ${className}` : ""}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={closeLabel}
+    >
       <div className="mobile-slideshow-topbar">
         {topLeftActionLabel ? (
           <button
@@ -139,10 +148,14 @@ export default function MobileSlideshowViewer({
                         className="mobile-slideshow-media-frame"
                         style={{ background: slide.bgColor || "#f7f7f7" }}
                       >
-                        <StudioSlideMedia
-                          slide={{ ...slide, mediaFit: "contain" }}
-                          autoPlayVideo={slideIndex === currentSlideIndex}
-                        />
+                        {renderSlideMedia ? (
+                          renderSlideMedia(slide, slideIndex)
+                        ) : (
+                          <StudioSlideMedia
+                            slide={{ ...slide, mediaFit: "contain" }}
+                            autoPlayVideo={slideIndex === currentSlideIndex}
+                          />
+                        )}
                       </div>
                     </div>
                     <div

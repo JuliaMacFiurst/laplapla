@@ -133,6 +133,7 @@ export default function MapPopup({
       findNewImageLabel={findNewImageLabel}
       editInStudioLabel={editInStudioLabel}
       closeLabel={closeLabel}
+      className="map-popup-mobile-viewer"
       topLeftActionLabel={openTextPageLabel}
       onClose={onClose}
       onIndexChange={onIndexChange}
@@ -142,6 +143,33 @@ export default function MapPopup({
       onRandomQuestion={onShowOnMap}
       onLastSlideSecondary={onWatchYoutube}
       onTopLeftAction={onOpenTextPage}
+      renderSlideMedia={(slide, slideIndex) => {
+        if (!slide.mediaUrl) {
+          return null;
+        }
+
+        return slide.mediaType === "video" ? (
+          <video
+            key={`${slide.id}:${slide.mediaUrl}`}
+            src={slide.mediaUrl}
+            className="map-popup-mobile-media"
+            autoPlay={slideIndex === currentSlideIndex}
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <Image
+            key={`${slide.id}:${slide.mediaUrl}`}
+            src={slide.mediaUrl}
+            alt={slide.text?.trim() || ""}
+            fill
+            unoptimized
+            sizes="100vw"
+            className="map-popup-mobile-media"
+          />
+        );
+      }}
       renderSlideHeader={
         flagImageUrl
           ? (_slide, slideIndex) =>
