@@ -5,7 +5,9 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import Image from "next/image";
 import { fallbackImages } from "@/constants";
@@ -42,6 +44,7 @@ const SWIPE_VELOCITY_THRESHOLD = 0.18;
 const SWIPE_LOCK_THRESHOLD = 6;
 const VERTICAL_CANCEL_THRESHOLD = 12;
 const HORIZONTAL_CONFIRM_THRESHOLD = 14;
+const WHEEL_GESTURE_COOLDOWN_MS = 700;
 
 export default function MobileStoryCarousel({
   story,
@@ -75,11 +78,14 @@ export default function MobileStoryCarousel({
   const dragOffsetRef = useRef(0);
   const isDraggingRef = useRef(false);
   const activeTouchIdRef = useRef<number | null>(null);
+  const activePointerIdRef = useRef<number | null>(null);
   const slideIndexRef = useRef(clampSlideIndex(initialSlideIndex));
   const onSlideIndexChangeRef = useRef(onSlideIndexChange);
   const onSwipeStateChangeRef = useRef(onSwipeStateChange);
   const removeWindowListenersRef = useRef<(() => void) | null>(null);
   const suppressClickRef = useRef(false);
+  const wheelLockRef = useRef(false);
+  const wheelUnlockTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     onSlideIndexChangeRef.current = onSlideIndexChange;
@@ -98,6 +104,7 @@ export default function MobileStoryCarousel({
     setIsDragging(false);
     isDraggingRef.current = false;
     activeTouchIdRef.current = null;
+    activePointerIdRef.current = null;
     gestureAxisRef.current = "pending";
   }, [clampSlideIndex, initialSlideIndex, story.id]);
 
@@ -112,6 +119,9 @@ export default function MobileStoryCarousel({
 
   useEffect(() => () => {
     removeWindowListenersRef.current?.();
+    if (wheelUnlockTimeoutRef.current) {
+      window.clearTimeout(wheelUnlockTimeoutRef.current);
+    }
   }, []);
 
   const previousSlideLabel = dict.navigation?.previousSlide || "Previous slide";
@@ -137,6 +147,7 @@ export default function MobileStoryCarousel({
 
   const clearGesture = () => {
     activeTouchIdRef.current = null;
+    activePointerIdRef.current = null;
     gestureAxisRef.current = "pending";
     isDraggingRef.current = false;
     dragOffsetRef.current = 0;
@@ -151,6 +162,55 @@ export default function MobileStoryCarousel({
     }
 
     setSlideIndex(clampedIndex);
+  };
+
+  const scheduleWheelUnlock = () => {
+    if (wheelUnlockTimeoutRef.current) {
+      window.clearTimeout(wheelUnlockTimeoutRef.current);
+    }
+
+    wheelUnlockTimeoutRef.current = window.setTimeout(() => {
+      wheelLockRef.current = false;
+      wheelUnlockTimeoutRef.current = null;
+    }, WHEEL_GESTURE_COOLDOWN_MS);
+  };
+
+  const updateDrag = (deltaX: number, deltaY: number, preventDefault?: () => void) => {
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (gestureAxisRef.current === "pending") {
+      if (absDeltaX < SWIPE_LOCK_THRESHOLD && absDeltaY < SWIPE_LOCK_THRESHOLD) {
+        return;
+      }
+
+      if (absDeltaY > VERTICAL_CANCEL_THRESHOLD && absDeltaY > absDeltaX * 1.5) {
+        gestureAxisRef.current = "vertical";
+        finishSwipe();
+        return;
+      }
+
+      if (absDeltaX < HORIZONTAL_CONFIRM_THRESHOLD || absDeltaX <= absDeltaY) {
+        return;
+      }
+
+      gestureAxisRef.current = "horizontal";
+      suppressClickRef.current = true;
+      setIsDragging(true);
+      onSwipeStateChangeRef.current?.(true);
+    }
+
+    if (gestureAxisRef.current !== "horizontal") {
+      return;
+    }
+
+    preventDefault?.();
+
+    const isAtStart = slideIndexRef.current === 0 && deltaX > 0;
+    const isAtEnd = slideIndexRef.current === slideCount - 1 && deltaX < 0;
+    const nextDragOffset = isAtStart || isAtEnd ? deltaX * 0.25 : deltaX;
+    dragOffsetRef.current = nextDragOffset;
+    setDragOffset(nextDragOffset);
   };
 
   const finishSwipe = () => {
@@ -208,43 +268,11 @@ export default function MobileStoryCarousel({
       return;
     }
 
-    const deltaX = touch.clientX - startXRef.current;
-    const deltaY = touch.clientY - startYRef.current;
-    const absDeltaX = Math.abs(deltaX);
-    const absDeltaY = Math.abs(deltaY);
-
-    if (gestureAxisRef.current === "pending") {
-      if (absDeltaX < SWIPE_LOCK_THRESHOLD && absDeltaY < SWIPE_LOCK_THRESHOLD) {
-        return;
-      }
-
-      if (absDeltaY > VERTICAL_CANCEL_THRESHOLD && absDeltaY > absDeltaX * 1.5) {
-        gestureAxisRef.current = "vertical";
-        finishSwipe();
-        return;
-      }
-
-      if (absDeltaX < HORIZONTAL_CONFIRM_THRESHOLD || absDeltaX <= absDeltaY) {
-        return;
-      }
-
-      gestureAxisRef.current = "horizontal";
-      suppressClickRef.current = true;
-      setIsDragging(true);
-      onSwipeStateChangeRef.current?.(true);
-    }
-
-    if (gestureAxisRef.current !== "horizontal") {
-      return;
-    }
-
-    event.preventDefault();
-
-    const isAtStart = slideIndexRef.current === 0 && deltaX > 0;
-    const isAtEnd = slideIndexRef.current === slideCount - 1 && deltaX < 0;
-    const nextDragOffset = isAtStart || isAtEnd ? deltaX * 0.25 : deltaX;
-    dragOffsetRef.current = nextDragOffset;
-    setDragOffset(nextDragOffset);
+    updateDrag(
+      touch.clientX - startXRef.current,
+      touch.clientY - startYRef.current,
+      () => event.preventDefault(),
+    );
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
@@ -287,6 +315,71 @@ export default function MobileStoryCarousel({
     attachTouchListeners();
   };
 
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch" || event.button !== 0) {
+      return;
+    }
+
+    activePointerIdRef.current = event.pointerId;
+    startXRef.current = event.clientX;
+    startYRef.current = event.clientY;
+    startTimeRef.current = performance.now();
+    gestureAxisRef.current = "pending";
+    dragOffsetRef.current = 0;
+    isDraggingRef.current = true;
+    suppressClickRef.current = false;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || activePointerIdRef.current !== event.pointerId) {
+      return;
+    }
+
+    updateDrag(
+      event.clientX - startXRef.current,
+      event.clientY - startYRef.current,
+      () => event.preventDefault(),
+    );
+  };
+
+  const handlePointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== event.pointerId) {
+      return;
+    }
+
+    activePointerIdRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    finishSwipe();
+  };
+
+  const handleWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    if (slideCount <= 1) {
+      return;
+    }
+
+    const horizontalDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : 0;
+    const shiftedDelta = event.shiftKey && Math.abs(event.deltaY) > 12 ? event.deltaY : 0;
+    const effectiveDelta = horizontalDelta || shiftedDelta;
+
+    if (Math.abs(effectiveDelta) < 24) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (wheelLockRef.current) {
+      scheduleWheelUnlock();
+      return;
+    }
+
+    wheelLockRef.current = true;
+    commitSlideChange(slideIndexRef.current + (effectiveDelta > 0 ? 1 : -1));
+    scheduleWheelUnlock();
+  };
+
   const handleClickCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (!suppressClickRef.current) {
       return;
@@ -326,6 +419,11 @@ export default function MobileStoryCarousel({
         onTouchStart={handleTouchStart}
         onTouchEnd={finishSwipe}
         onTouchCancel={finishSwipe}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onWheel={handleWheel}
         onClickCapture={handleClickCapture}
       >
         <div className="mobile-story-slide-shell">

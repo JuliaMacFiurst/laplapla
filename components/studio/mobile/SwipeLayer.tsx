@@ -1,7 +1,12 @@
 "use client";
 
-import { Children, type ReactNode } from "react";
-import { useRef, useState } from "react";
+import {
+  Children,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type WheelEvent as ReactWheelEvent,
+} from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface SwipeLayerProps {
   children: ReactNode;
@@ -14,6 +19,7 @@ interface SwipeLayerProps {
 
 const SWIPE_DISTANCE_THRESHOLD = 56;
 const SWIPE_VELOCITY_THRESHOLD = 0.35;
+const WHEEL_GESTURE_COOLDOWN_MS = 700;
 
 export default function SwipeLayer({
   children,
@@ -33,30 +39,43 @@ export default function SwipeLayer({
   const startYRef = useRef(0);
   const startTimeRef = useRef(0);
   const isHorizontalRef = useRef(false);
+  const activePointerIdRef = useRef<number | null>(null);
+  const dragOffsetRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const wheelLockRef = useRef(false);
+  const wheelUnlockTimeoutRef = useRef<number | null>(null);
 
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0];
-    startXRef.current = touch.clientX;
-    startYRef.current = touch.clientY;
+  useEffect(() => () => {
+    if (wheelUnlockTimeoutRef.current) {
+      window.clearTimeout(wheelUnlockTimeoutRef.current);
+    }
+  }, []);
+
+  const beginDrag = (clientX: number, clientY: number) => {
+    startXRef.current = clientX;
+    startYRef.current = clientY;
     startTimeRef.current = performance.now();
     isHorizontalRef.current = false;
+    dragOffsetRef.current = 0;
+    isDraggingRef.current = true;
     setIsDragging(true);
   };
 
-  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!isDragging) {
+  const updateDrag = (clientX: number, clientY: number, preventDefault?: () => void) => {
+    if (!isDraggingRef.current) {
       return;
     }
 
-    const touch = event.touches[0];
-    const deltaX = touch.clientX - startXRef.current;
-    const deltaY = touch.clientY - startYRef.current;
+    const deltaX = clientX - startXRef.current;
+    const deltaY = clientY - startYRef.current;
     const effectiveDeltaX = deltaX;
 
     if (!isHorizontalRef.current) {
       if (Math.abs(deltaY) > Math.abs(effectiveDeltaX)) {
         setIsDragging(false);
+        isDraggingRef.current = false;
         setDragOffset(0);
+        dragOffsetRef.current = 0;
         return;
       }
 
@@ -68,29 +87,42 @@ export default function SwipeLayer({
       onInteract?.();
     }
 
-    event.preventDefault();
+    preventDefault?.();
 
     const isAtStart = currentIndex === 0 && (isRtl ? effectiveDeltaX < 0 : effectiveDeltaX > 0);
     const isAtEnd = currentIndex === totalSlides - 1 && (isRtl ? effectiveDeltaX > 0 : effectiveDeltaX < 0);
     const dampenedDelta = isAtStart || isAtEnd ? effectiveDeltaX * 0.25 : effectiveDeltaX;
+    dragOffsetRef.current = dampenedDelta;
     setDragOffset(dampenedDelta);
   };
 
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    beginDrag(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    updateDrag(touch.clientX, touch.clientY, () => event.preventDefault());
+  };
+
   const finishSwipe = () => {
-    if (!isDragging) {
+    if (!isDraggingRef.current) {
       setDragOffset(0);
+      dragOffsetRef.current = 0;
       return;
     }
 
     const elapsed = Math.max(performance.now() - startTimeRef.current, 1);
-    const velocity = Math.abs(dragOffset) / elapsed;
+    const finalDragOffset = dragOffsetRef.current;
+    const velocity = Math.abs(finalDragOffset) / elapsed;
 
     const shouldNavigate =
-      Math.abs(dragOffset) > SWIPE_DISTANCE_THRESHOLD ||
+      Math.abs(finalDragOffset) > SWIPE_DISTANCE_THRESHOLD ||
       velocity > SWIPE_VELOCITY_THRESHOLD;
 
     if (shouldNavigate && totalSlides > 1) {
-      const direction = isRtl ? (dragOffset > 0 ? 1 : -1) : (dragOffset < 0 ? 1 : -1);
+      const direction = isRtl ? (finalDragOffset > 0 ? 1 : -1) : (finalDragOffset < 0 ? 1 : -1);
       const nextIndex = Math.min(Math.max(currentIndex + direction, 0), totalSlides - 1);
 
       if (nextIndex !== currentIndex) {
@@ -99,7 +131,83 @@ export default function SwipeLayer({
     }
 
     setIsDragging(false);
+    isDraggingRef.current = false;
     setDragOffset(0);
+    dragOffsetRef.current = 0;
+    activePointerIdRef.current = null;
+  };
+
+  const scheduleWheelUnlock = () => {
+    if (wheelUnlockTimeoutRef.current) {
+      window.clearTimeout(wheelUnlockTimeoutRef.current);
+    }
+
+    wheelUnlockTimeoutRef.current = window.setTimeout(() => {
+      wheelLockRef.current = false;
+      wheelUnlockTimeoutRef.current = null;
+    }, WHEEL_GESTURE_COOLDOWN_MS);
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch" || event.button !== 0) {
+      return;
+    }
+
+    activePointerIdRef.current = event.pointerId;
+    beginDrag(event.clientX, event.clientY);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== event.pointerId) {
+      return;
+    }
+
+    updateDrag(event.clientX, event.clientY, () => event.preventDefault());
+  };
+
+  const handlePointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== event.pointerId) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    finishSwipe();
+  };
+
+  const handleWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    if (totalSlides <= 1) {
+      return;
+    }
+
+    const horizontalDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : 0;
+    const shiftedDelta = event.shiftKey && Math.abs(event.deltaY) > 12 ? event.deltaY : 0;
+    const effectiveDelta = horizontalDelta || shiftedDelta;
+
+    if (Math.abs(effectiveDelta) < 24) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (wheelLockRef.current) {
+      scheduleWheelUnlock();
+      return;
+    }
+
+    onInteract?.();
+
+    const direction = isRtl ? (effectiveDelta < 0 ? 1 : -1) : (effectiveDelta > 0 ? 1 : -1);
+    const nextIndex = Math.min(Math.max(currentIndex + direction, 0), totalSlides - 1);
+
+    if (nextIndex !== currentIndex) {
+      onIndexChange(nextIndex);
+    }
+
+    wheelLockRef.current = true;
+    scheduleWheelUnlock();
   };
 
   return (
@@ -109,6 +217,11 @@ export default function SwipeLayer({
       onTouchMove={handleTouchMove}
       onTouchEnd={finishSwipe}
       onTouchCancel={finishSwipe}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onWheel={handleWheel}
       style={{
         width: "100%",
         height: "100%",

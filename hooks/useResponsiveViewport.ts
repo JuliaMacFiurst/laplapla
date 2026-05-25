@@ -42,10 +42,11 @@ function readViewport(): ResponsiveViewportState {
   const widestSide = Math.max(width, height);
   const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
   const isNoHover = window.matchMedia("(hover: none)").matches;
+  const usesTouchPrimaryInput = isCoarsePointer && isNoHover;
   const deviceClass: ResponsiveDeviceClass =
-    width <= MOBILE_MAX_WIDTH
+    usesTouchPrimaryInput && width <= MOBILE_MAX_WIDTH
       ? "mobile"
-      : width <= TABLET_MAX_WIDTH || (isCoarsePointer && isNoHover && shortestSide <= TABLET_MAX_WIDTH && widestSide <= COARSE_TABLET_MAX_WIDTH)
+      : usesTouchPrimaryInput && shortestSide <= TABLET_MAX_WIDTH && widestSide <= COARSE_TABLET_MAX_WIDTH
         ? "tablet"
         : "desktop";
   const standaloneNavigator = "standalone" in window.navigator

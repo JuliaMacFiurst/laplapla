@@ -40,10 +40,8 @@ export default function MobileSlideshowViewer({
   slides,
   currentSlideIndex,
   loading,
-  showSwipeHint,
   lang,
   loadingLabel,
-  swipeHintLabel,
   randomQuestionLabel,
   lastSlideSecondaryLabel,
   findNewImageLabel,
@@ -167,12 +165,6 @@ export default function MobileSlideshowViewer({
                 ))}
               </SwipeLayer>
 
-              {showSwipeHint ? (
-                <div className="mobile-slideshow-hint" aria-hidden="true">
-                  <span className="mobile-slideshow-hint-text">{swipeHintLabel}</span>
-                  <span className="mobile-slideshow-hint-arrow">{isRtl ? "←" : "→"}</span>
-                </div>
-              ) : null}
             </div>
 
             <div className="mobile-slideshow-controls">
