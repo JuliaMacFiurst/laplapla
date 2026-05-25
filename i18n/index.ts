@@ -797,6 +797,8 @@ type DictionaryShape = {
     creatorPrefix: string;
     authorLink: string;
     youtubeChannel: string;
+    developmentJournalIntro: string;
+    developmentJournalLink: string;
   };
 };
 

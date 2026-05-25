@@ -383,6 +383,17 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                     {t.footer.youtubeChannel}
                   </a>
                 </div>
+                <div className="footer-development-journal">
+                  <span>{t.footer.developmentJournalIntro}</span>
+                  <a
+                    href="https://t.me/laplapla_lab"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span aria-hidden="true">🦝</span>
+                    {t.footer.developmentJournalLink}
+                  </a>
+                </div>
               </div>
 
              {(isCatsPage || isCapybaraPage) && (

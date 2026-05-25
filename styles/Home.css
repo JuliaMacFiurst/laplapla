@@ -256,6 +256,42 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   opacity: 0.75;
 }
 
+.footer-development-journal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  max-width: 620px;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.footer-development-journal a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 6px 11px;
+  border: 2px solid rgba(255, 122, 162, 0.36);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 5px 14px rgba(255, 122, 162, 0.18);
+  color: #b9366d;
+  text-decoration: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.footer-development-journal a:hover {
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 18px rgba(124, 156, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.footer-development-journal a:focus-visible {
+  outline: 3px solid rgba(124, 156, 255, 0.56);
+  outline-offset: 2px;
+}
+
 .footer-right {
   display: flex;
   flex-direction: column;

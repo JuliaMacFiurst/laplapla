@@ -1102,5 +1102,8 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
     creatorPrefix: "Created by",
     authorLink: "Project author",
     youtubeChannel: "YouTube channel: @LapLapLa-studio",
+    developmentJournalIntro:
+      "Want to follow the project as it grows? The raccoons keep a development journal here:",
+    developmentJournalLink: "Raccoon journal",
   },
 } as const;
