@@ -502,6 +502,16 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
 
   const handleOpenSearchBook = async (book: Book) => {
     closeCurrentBookQuiz();
+    if (usesTouchBookLayout) {
+      setIsSearchOpen(false);
+      setMode("slideshow");
+      setSearchResults(null);
+      setSearchMessage(null);
+      setInputValue("");
+      await router.push(buildLocalizedHref(buildBookHref(book), currentLang), undefined, { locale: currentLang });
+      return;
+    }
+
     setMode("slideshow");
     setSearchResults(null);
     setSearchMessage(null);
