@@ -248,6 +248,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <ResponsiveViewportBridge />
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
+        <meta key="p:domain_verify" name="p:domain_verify" content="ff738603a169c8fea886f04008fdc102" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon_io/favicon-48x48.png" />
         <link rel="icon" type="image/webp" sizes="32x32" href="/favicon_io/favicon-32x32.webp" />
