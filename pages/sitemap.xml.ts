@@ -2,6 +2,7 @@ import type { GetServerSideProps } from "next";
 import { normalizeSiteUrl } from "@/lib/config";
 import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { loadRecipeSitemapPaths } from "@/lib/recipes";
 
 const CORE_SITEMAP_PAGES = [
   { path: "/", priority: "1.0", changefreq: "weekly" },
@@ -72,7 +73,13 @@ function buildSitemapXml(entries: SitemapEntry[], baseUrl: string) {
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const baseUrl = normalizeSiteUrl(process.env["NEXT_PUBLIC_SITE_URL"]);
-  const entries = CORE_SITEMAP_PAGES.flatMap(({ path, priority, changefreq }) =>
+  const recipePaths = await loadRecipeSitemapPaths();
+  const recipeEntries = recipePaths.map((path) => ({
+    path,
+    priority: "0.72",
+    changefreq: "weekly",
+  }));
+  const entries = [...CORE_SITEMAP_PAGES, ...recipeEntries].flatMap(({ path, priority, changefreq }) =>
     SITEMAP_LANGS.map((lang) => ({
       path,
       url: buildAbsoluteUrl(baseUrl, path, lang),

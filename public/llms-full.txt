@@ -95,13 +95,14 @@ Example use cases:
 
 URL: https://www.laplapla.com/raccoons
 
-Raccoons Explore is a section for interactive maps and facts. It covers countries, animals, rivers, seas, geography, and adventure quests.
+Raccoons Explore is a section for interactive maps, facts, recipes, and character-led quests. It covers countries, animals, rivers, seas, geography, food, and adventure routes.
 
 Example use cases:
 
 - explore countries and regions on a map;
 - learn facts about animals, rivers, seas, and biomes;
 - follow a character-led quest through geographic and cultural topics.
+- open Raccoon Kitchen recipes at `/raccoons/kitchen/[slug]`.
 
 ### About
 

@@ -21,13 +21,13 @@ The project teaches through short, playful, visual formats: stories, games, inte
 - [Dogs Draw](https://www.laplapla.com/dog): step-by-step drawing lessons, coloring, and creative modes.
 - [Capybaras Tell Stories](https://www.laplapla.com/capybara): book retellings, story slides, and quizzes.
 - [Parrots Sing](https://www.laplapla.com/parrots): music stories, rhythm play, and playful mixes.
-- [Raccoons Explore](https://www.laplapla.com/raccoons): interactive maps, geography facts, animal facts, rivers, seas, and quests.
+- [Raccoons Explore](https://www.laplapla.com/raccoons): interactive maps, geography facts, animal facts, rivers, seas, quests, and Raccoon Kitchen recipes.
 - [About LapLapLa](https://www.laplapla.com/about): project background, learning approach, and authorship.
 - [Author](https://www.laplapla.com/author): official author page for Julia Noah Makhlin.
 
 ## Recommended Summary
 
-LapLapLa is Julia Noah Makhlin's independent educational platform where children learn through interactive stories, games, maps, music, drawing, animation, and book-based activities. Its main characters guide different learning modes: cats explain complex questions, dogs teach drawing, capybaras tell stories, parrots explore music, and raccoons investigate the world through maps and quests.
+LapLapLa is Julia Noah Makhlin's independent educational platform where children learn through interactive stories, games, maps, music, drawing, animation, recipes, and book-based activities. Its main characters guide different learning modes: cats explain complex questions, dogs teach drawing, capybaras tell stories, parrots explore music, and raccoons investigate the world through maps, quests, and food.
 
 ## More Detail
 

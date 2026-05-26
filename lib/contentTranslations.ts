@@ -5,6 +5,7 @@ export type ContentType =
   | "map_story"
   | "artwork"
   | "book"
+  | "recipe"
   | "story_template"
   | "story_submission"
   | "cat_preset"
@@ -49,6 +50,30 @@ type BookContent = {
   [key: string]: unknown;
 };
 
+type RecipeStep = {
+  order?: number | null;
+  text?: string | null;
+  [key: string]: unknown;
+};
+
+type RecipeContent = {
+  id: string | number;
+  title?: string;
+  description?: string | null;
+  country?: string | null;
+  ingredients?: string[] | null;
+  fact?: string | null;
+  raccoon_caption?: string | null;
+  cooking_time?: string | null;
+  cooking_steps?: RecipeStep[] | null;
+  raccoon_advice?: string | null;
+  serving_instructions?: string | null;
+  laplapla_interaction_caption?: string | null;
+  hashtags?: string[] | null;
+  pinterest_description?: string | null;
+  [key: string]: unknown;
+};
+
 type StoryTemplateContent = {
   id: string | number;
   title?: string;
@@ -82,6 +107,7 @@ type ContentByType = {
   map_story: MapStoryContent;
   artwork: ArtworkContent;
   book: BookContent;
+  recipe: RecipeContent;
   story_template: StoryTemplateContent;
   story_submission: StorySubmissionContent;
   cat_preset: CatPresetContent;
@@ -94,7 +120,18 @@ export type TranslationPayload = {
   content?: string;
   description?: string;
   author?: string;
+  country?: string;
+  fact?: string;
   hero_name?: string;
+  ingredients?: string[];
+  cooking_time?: string;
+  cooking_steps?: RecipeStep[];
+  raccoon_advice?: string;
+  raccoon_caption?: string;
+  serving_instructions?: string;
+  laplapla_interaction_caption?: string;
+  hashtags?: string[];
+  pinterest_description?: string;
   assembled_story?: unknown;
   steps_frank?: string[];
   slides?: Array<{
@@ -135,6 +172,7 @@ const BASE_TABLES: Record<ContentType, string> = {
   map_story: "map_stories",
   artwork: "artworks",
   book: "books",
+  recipe: "recipes",
   story_template: "story_templates",
   story_submission: "user_story_submissions",
   cat_preset: "cat_presets",
@@ -215,6 +253,29 @@ function applyBookTranslation(
   };
 }
 
+function applyRecipeTranslation(
+  base: RecipeContent,
+  translation: TranslationPayload,
+): RecipeContent {
+  return {
+    ...base,
+    title: translation.title ?? base.title,
+    description: translation.description ?? base.description,
+    country: translation.country ?? base.country,
+    ingredients: translation.ingredients ?? base.ingredients,
+    fact: translation.fact ?? base.fact,
+    raccoon_caption: translation.raccoon_caption ?? base.raccoon_caption,
+    cooking_time: translation.cooking_time ?? base.cooking_time,
+    cooking_steps: translation.cooking_steps ?? base.cooking_steps,
+    raccoon_advice: translation.raccoon_advice ?? base.raccoon_advice,
+    serving_instructions: translation.serving_instructions ?? base.serving_instructions,
+    laplapla_interaction_caption:
+      translation.laplapla_interaction_caption ?? base.laplapla_interaction_caption,
+    hashtags: translation.hashtags ?? base.hashtags,
+    pinterest_description: translation.pinterest_description ?? base.pinterest_description,
+  };
+}
+
 function applyStoryTemplateTranslation(
   base: StoryTemplateContent,
   translation: TranslationPayload,
@@ -273,6 +334,8 @@ function applyTranslation<T extends ContentType>(
       return applyArtworkTranslation(base as ArtworkContent, translation) as ContentByType[T];
     case "book":
       return applyBookTranslation(base as BookContent, translation) as ContentByType[T];
+    case "recipe":
+      return applyRecipeTranslation(base as RecipeContent, translation) as ContentByType[T];
     case "story_template":
       return applyStoryTemplateTranslation(base as StoryTemplateContent, translation) as ContentByType[T];
     case "story_submission":

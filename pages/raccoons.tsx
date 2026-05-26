@@ -1,6 +1,7 @@
 // pages/raccoons.tsx
-import type { GetStaticProps } from "next";
-import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
+import type { GetServerSideProps } from "next";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
@@ -12,6 +13,7 @@ import type { Quest } from "@/components/Raccoons/QuestSection";
 import { quests } from "@/utils/quests.config";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedHref, DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
+import { getRecipeCardImage, getRecipeExportImage, loadActiveRecipes, type Recipe } from "@/lib/recipes";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
@@ -60,7 +62,100 @@ const visuallyHiddenStyle = {
   border: 0,
 };
 
-export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
+const KITCHEN_UI: Record<Lang, {
+  title: string;
+  subtitle: string;
+  open: string;
+  country: string;
+  time: string;
+}> = {
+  ru: {
+    title: "Кухня Енотиков",
+    subtitle: "Новые рецепты из путешествий: карточки подтягиваются из R2-экспортов и ведут на отдельные страницы.",
+    open: "Открыть рецепт",
+    country: "Страна",
+    time: "Время",
+  },
+  en: {
+    title: "Raccoon Kitchen",
+    subtitle: "New travel recipes from the raccoons, loaded from the R2 exports and opened as separate recipe pages.",
+    open: "Open recipe",
+    country: "Country",
+    time: "Time",
+  },
+  he: {
+    title: "מטבח הדביבונים",
+    subtitle: "מתכונים חדשים מהמסעות של הדביבונים, נטענים מיצואי R2 ונפתחים כעמודי מתכון נפרדים.",
+    open: "לפתוח מתכון",
+    country: "מדינה",
+    time: "זמן",
+  },
+};
+
+function RaccoonKitchenSection({ lang, recipes }: { lang: Lang; recipes: Recipe[] }) {
+  if (recipes.length === 0) {
+    return null;
+  }
+
+  const ui = KITCHEN_UI[lang];
+
+  return (
+    <section id="kitchen" className="raccoon-kitchen-section" aria-labelledby="raccoon-kitchen-title" dir={lang === "he" ? "rtl" : "ltr"}>
+      <div className="raccoon-kitchen-header">
+        <div>
+          <h2 id="raccoon-kitchen-title">{ui.title}</h2>
+          <p>{ui.subtitle}</p>
+        </div>
+      </div>
+      <div className="raccoon-kitchen-feed" aria-label={ui.title}>
+        {recipes.map((recipe) => {
+          const image = getRecipeCardImage(recipe, lang);
+          const exportImage = getRecipeExportImage(recipe, lang);
+
+          return (
+            <Link
+              key={recipe.id}
+              href={`/raccoons/kitchen/${recipe.slug}`}
+              locale={lang}
+              className={`raccoon-kitchen-card ${exportImage ? "raccoon-kitchen-card-export" : ""}`}
+              style={{
+                "--recipe-gradient-from": recipe.gradient_from || "#fff3bf",
+                "--recipe-gradient-to": recipe.gradient_to || "#ffd8a8",
+              } as CSSProperties}
+            >
+              {exportImage ? (
+                <>
+                  <img className="raccoon-kitchen-export-image" src={exportImage} alt={recipe.title} loading="lazy" />
+                  <span className="raccoon-kitchen-card-sr">{ui.open}: {recipe.title}</span>
+                </>
+              ) : (
+                <>
+                  <span className="raccoon-kitchen-card-media">
+                    {image ? (
+                      <img src={image} alt="" loading="lazy" />
+                    ) : null}
+                  </span>
+                  <span className="raccoon-kitchen-card-body">
+                    <span className="raccoon-kitchen-card-kicker">
+                      {[recipe.country, recipe.cooking_time].filter(Boolean).join(" · ")}
+                    </span>
+                    <span className="raccoon-kitchen-card-title">{recipe.title}</span>
+                    {recipe.description ? (
+                      <span className="raccoon-kitchen-card-description">{recipe.description}</span>
+                    ) : null}
+                    <span className="raccoon-kitchen-card-link">{ui.open}</span>
+                  </span>
+                </>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: Lang; recipes: Recipe[] }) {
   const router = useRouter();
   const lang = providedLang ?? getCurrentLang(router);
   const t = dictionaries[lang].raccoons;
@@ -406,6 +501,7 @@ export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
             ) : null}
           </div>
           <MapWrapper type={activeTab} previewSelectedId={previewSelectedId} onUserSelect={handleMapUserSelect} />
+          <RaccoonKitchenSection lang={lang} recipes={recipes} />
           <QuestSection quests={localizedQuests} />
         </div>
       </main>
@@ -413,12 +509,20 @@ export default function RaccoonsPage({ lang: providedLang }: { lang?: Lang }) {
   );
 }
 
-export const getStaticProps: GetStaticProps<{ lang: Lang }> = async ({ locale }) => {
+export const getServerSideProps: GetServerSideProps<{ lang: Lang; recipes: Recipe[] }> = async ({ locale }) => {
   const lang = isLang(locale) ? locale : DEFAULT_LANG;
+  let recipes: Recipe[] = [];
+
+  try {
+    recipes = await loadActiveRecipes(24, lang);
+  } catch (error) {
+    console.error("[raccoons] failed to load recipes", error);
+  }
 
   return {
     props: {
       lang,
+      recipes,
     },
   };
 };
