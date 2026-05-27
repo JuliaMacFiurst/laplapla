@@ -101,13 +101,22 @@ function HomepageRetentionBlocks({
       <div className="home-retention-feed">
         <Link
           className={`home-retention-card home-retention-recipe-card ${recipe ? "" : "is-empty"}`}
-          href={recipe ? `/api/recipes/${encodeURIComponent(recipe.slug)}?lang=${lang}` : buildLocalizedPublicPath("/raccoons", lang)}
+          href={recipe ? buildLocalizedPublicPath(`/raccoons/kitchen/${recipe.slug}`, lang) : buildLocalizedPublicPath("/raccoons", lang)}
         >
-          <span className="home-retention-card-label">{ui.recipe}</span>
-          <span className="home-retention-card-badge">{ui.recipeBadge}</span>
+          <span className="home-retention-card-label">{ui.recipeBadge}</span>
           {recipe ? (
             <>
               <span className="home-retention-recipe-media">
+                <span className="home-retention-raccoon-chef">
+                  <Image
+                    src={raccoonChefUrl}
+                    alt=""
+                    fill
+                    sizes="220px"
+                    loading="eager"
+                    unoptimized
+                  />
+                </span>
                 <Image
                   className="home-retention-recipe-image"
                   src={recipe.imageUrl}
@@ -117,16 +126,6 @@ function HomepageRetentionBlocks({
                   loading="eager"
                   unoptimized
                 />
-                <span className="home-retention-raccoon-chef">
-                  <Image
-                    src={raccoonChefUrl}
-                    alt=""
-                    fill
-                    sizes="96px"
-                    loading="eager"
-                    unoptimized
-                  />
-                </span>
               </span>
               <span className="home-retention-country">
                 {recipe.flagUrl ? (

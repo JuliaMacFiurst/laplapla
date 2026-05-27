@@ -613,8 +613,8 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 .home-retention-card {
   position: relative;
   display: grid;
-  grid-template-rows: auto auto 1fr auto auto;
-  min-height: 310px;
+  grid-template-rows: auto auto 1fr auto;
+  min-height: 270px;
   padding: 16px;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.88);
@@ -640,23 +640,45 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
 .home-retention-card-label {
   position: relative;
-  z-index: 2;
+  z-index: 5;
+  display: -webkit-box;
   justify-self: start;
   margin-bottom: 7px;
   padding: 5px 12px 6px;
+  box-sizing: border-box;
+  max-height: 42px;
+  max-width: 100%;
+  overflow: hidden;
   border-radius: 999px;
   background: #fff;
   color: #7350a9;
   font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.35rem;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   box-shadow: 0 5px 12px rgba(90, 54, 113, 0.12);
+}
+
+.home-retention-card:nth-child(1) .home-retention-card-label {
+  background: #fff0f7;
+  color: #9a548a;
+}
+
+.home-retention-card:nth-child(2) .home-retention-card-label {
+  background: #e8fff3;
+  color: #4d8569;
+}
+
+.home-retention-card:nth-child(3) .home-retention-card-label {
+  background: #f2efff;
+  color: #7259a8;
 }
 
 .home-retention-card-badge {
   position: relative;
-  z-index: 2;
+  z-index: 5;
   justify-self: start;
   margin-bottom: 8px;
   color: #6b5878;
@@ -670,14 +692,10 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 }
 
 .home-retention-recipe-media {
-  position: relative;
-  display: grid;
-  place-items: center;
-  justify-self: center;
-  width: min(100%, 250px);
-  aspect-ratio: 1.16 / 1;
-  min-height: 0;
-  margin-top: 2px;
+    z-index: 1;
+    pointer-events: none;
+    position: absolute;
+    inset: 48px 80px 180px 25%;
 }
 
 .home-retention-recipe-image {
@@ -685,13 +703,20 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   border-radius: 16px;
   object-fit: contain;
   filter: drop-shadow(0 12px 18px rgba(142, 72, 72, 0.18));
+  z-index: 3;
+  width: 34% !important;
+  height: 34% !important;
+  top: 57% !important;
+  left: 52% !important;
+  transform: translate(-50%, -50%);
 }
 
 .home-retention-raccoon-chef {
   position: absolute;
-  right: -8px;
-  bottom: -10px;
-  width: 86px;
+  z-index: 2;
+  width: 250px;
+  top: 4px;
+  right: 0;
   aspect-ratio: 1 / 1;
   filter: drop-shadow(0 8px 12px rgba(85, 55, 62, 0.18));
 }
@@ -701,15 +726,41 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 }
 
 .home-retention-country {
+  position: relative;
+  z-index: 5;
   display: inline-flex;
-  align-items: center;
+  align-items: start;
   gap: 7px;
   min-height: 22px;
-  margin-top: 7px;
+  max-width: 58%;
+  margin-top: 0px;
   color: #5f4a6d;
   font-size: 1.35rem;
   font-weight: 800;
   line-height: 1;
+}
+
+.home-retention-recipe-card .home-retention-card-title,
+.home-retention-recipe-card .home-retention-card-action {
+  max-width: 48%;
+}
+
+.home-retention-recipe-card .home-retention-card-label,
+.home-retention-recipe-card .home-retention-country,
+.home-retention-recipe-card .home-retention-card-title,
+.home-retention-recipe-card .home-retention-card-action {
+  justify-self: end;
+  margin-left: auto;
+  text-align: right;
+}
+
+.home-retention-recipe-card .home-retention-card-label {
+  max-width: 80%;
+}
+
+.home-retention-recipe-card .home-retention-country {
+  justify-content: flex-end;
+  max-width: 48%;
 }
 
 .home-retention-country img {
@@ -765,23 +816,37 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 }
 
 .home-retention-card-title {
+  position: relative;
+  z-index: 5;
   display: -webkit-box;
   min-height: 2.1em;
   overflow: hidden;
   margin-top: 9px;
   color: #332746;
   font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
-  font-size: 2rem;
+  font-size: 1.78rem;
   font-weight: 900;
-  line-height: 1.04;
+  line-height: 1.02;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
 }
 
 .home-retention-card-action {
+  position: relative;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   justify-self: start;
+  align-self: end;
   margin-top: 10px;
   padding: 8px 16px 10px;
+  box-sizing: border-box;
+  min-height: 42px;
+  height: 42px;
+  max-height: 42px;
+  max-width: 100%;
+  overflow: hidden;
   border-radius: 999px;
   border: 2px solid rgba(255, 255, 255, 0.86);
   background: linear-gradient(135deg, #ffb7d2, #fff4b8 54%, #bff3e1);
@@ -790,6 +855,8 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   font-size: 1.45rem;
   font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   text-shadow: 0 1px 1px rgba(91, 55, 111, 0.45);
   box-shadow: 0 8px 15px rgba(121, 83, 107, 0.16);
 }
