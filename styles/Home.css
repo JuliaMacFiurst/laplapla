@@ -599,22 +599,21 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
 .home-retention-feed {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(280px, 1fr);
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: x proximity;
-  padding: 14px 2px 14px;
+  overflow: visible;
+  padding: 14px 2px 12px;
   scrollbar-color: rgba(95, 66, 132, 0.28) transparent;
 }
 
 .home-retention-card {
   position: relative;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  min-height: 270px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  height: clamp(330px, 32vw, 380px);
+  min-height: 0;
+  max-height: 380px;
+  aspect-ratio: 1 / 1;
   padding: 16px;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.88);
@@ -688,14 +687,19 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 }
 
 .home-retention-recipe-card {
+  grid-template-columns: minmax(0, 56%) minmax(0, 44%);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   background: linear-gradient(145deg, #ffe0ec, #ffd7dc 58%, #fff1b9);
 }
 
 .home-retention-recipe-media {
-    z-index: 1;
-    pointer-events: none;
-    position: absolute;
-    inset: 48px 80px 180px 25%;
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  top: 76px;
+  bottom: 52px;
+  left: 20px;
+  width: 56%;
 }
 
 .home-retention-recipe-image {
@@ -714,9 +718,9 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 .home-retention-raccoon-chef {
   position: absolute;
   z-index: 2;
-  width: 250px;
-  top: 4px;
-  right: 0;
+  width: min(250px, 100%);
+  top: 0;
+  left: 0;
   aspect-ratio: 1 / 1;
   filter: drop-shadow(0 8px 12px rgba(85, 55, 62, 0.18));
 }
@@ -729,11 +733,10 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   position: relative;
   z-index: 5;
   display: inline-flex;
-  align-items: start;
+  align-items: center;
   gap: 7px;
   min-height: 22px;
-  max-width: 58%;
-  margin-top: 0px;
+  margin-top: 14px;
   color: #5f4a6d;
   font-size: 1.35rem;
   font-weight: 800;
@@ -742,25 +745,27 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
 .home-retention-recipe-card .home-retention-card-title,
 .home-retention-recipe-card .home-retention-card-action {
-  max-width: 48%;
+  max-width: 100%;
 }
 
 .home-retention-recipe-card .home-retention-card-label,
 .home-retention-recipe-card .home-retention-country,
 .home-retention-recipe-card .home-retention-card-title,
 .home-retention-recipe-card .home-retention-card-action {
+  grid-column: 2;
   justify-self: end;
   margin-left: auto;
   text-align: right;
 }
 
 .home-retention-recipe-card .home-retention-card-label {
-  max-width: 80%;
+  grid-column: 1 / -1;
+  max-width: 64%;
 }
 
 .home-retention-recipe-card .home-retention-country {
   justify-content: flex-end;
-  max-width: 48%;
+  max-width: 100%;
 }
 
 .home-retention-country img {
@@ -775,7 +780,8 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 .home-retention-dog-media {
   position: relative;
   display: block;
-  min-height: 180px;
+  min-height: 0;
+  height: clamp(150px, 15vw, 178px);
   border-radius: 14px;
 }
 
@@ -799,7 +805,7 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   position: absolute;
   right: 0;
   bottom: -10px;
-  width: 40%;
+  width: 70%;
   max-width: 128px;
   aspect-ratio: 1 / 1;
   filter: drop-shadow(0 12px 14px rgba(51, 39, 70, 0.18));
@@ -819,7 +825,7 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   position: relative;
   z-index: 5;
   display: -webkit-box;
-  min-height: 2.1em;
+  min-height: 0;
   overflow: hidden;
   margin-top: 9px;
   color: #332746;
@@ -864,13 +870,18 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 .home-retention-placeholder {
   display: grid;
   place-items: center;
-  min-height: 170px;
+  min-height: 0;
+  height: 100%;
   border: 2px dashed rgba(75, 54, 115, 0.22);
   border-radius: 14px;
   color: #5b4972;
   font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 2.2rem;
   font-weight: 800;
+}
+
+.home-retention-bedtime-card {
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .home-retention-card-note {
@@ -905,6 +916,220 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
 .home-retention-links span {
   opacity: 0.52;
+}
+
+.home-retention-feed {
+  grid-auto-flow: row;
+  grid-auto-columns: initial;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  overflow: visible;
+}
+
+.home-retention-card {
+  height: 360px;
+  min-height: 0;
+  max-height: 360px;
+  aspect-ratio: auto;
+  box-sizing: border-box;
+}
+
+.home-retention-card-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  max-height: 38px;
+  line-height: 1;
+  white-space: nowrap;
+  -webkit-line-clamp: initial;
+}
+
+.home-retention-recipe-card {
+  display: grid;
+  grid-template-columns: minmax(0, 53%) minmax(0, 47%);
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  column-gap: 12px;
+  row-gap: 8px;
+}
+
+.home-retention-recipe-card .home-retention-card-label {
+  grid-column: 1;
+    justify-self: start;
+    margin-left: 0;
+    margin-right: auto;
+    text-align: left;
+    max-width: fit-content;
+}
+
+.home-retention-recipe-media {
+  position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.home-retention-raccoon-chef {
+    width: min(340px, 135%);
+    max-width: none;
+
+    position: absolute;
+    bottom: 110px;
+    left: -68px;
+
+    z-index: 2;
+}
+
+.home-retention-recipe-image {
+    position: absolute !important;
+
+    width: 105px !important;
+    height: 105px !important;
+
+    top: 17% !important;
+    left: 32% !important;
+
+    transform: rotate(-8deg);
+
+    z-index: 4;
+}
+
+.home-retention-recipe-card .home-retention-country,
+.home-retention-recipe-card .home-retention-card-title {
+    display: flex;
+    flex-direction: column;
+}
+
+.home-retention-recipe-card .home-retention-card-title {
+    grid-row: 3;
+    transform: translateY(20px);
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+
+    height: 100%;
+}
+
+.home-retention-recipe-card .home-retention-country,
+.home-retention-recipe-card .home-retention-card-title,
+.home-retention-recipe-card .home-retention-card-action {
+  grid-column: 2;
+  justify-self: end;
+  max-width: 100%;
+  margin-left: 0;
+  text-align: right;
+}
+
+.home-retention-recipe-card .home-retention-country {
+  grid-row: 2;
+  align-self: start;
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.home-retention-recipe-card .home-retention-card-action {
+  grid-row: 5;
+  align-self: end;
+}
+
+.home-retention-dog-card {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  row-gap: 8px;
+}
+
+.home-retention-dog-media {
+  height: auto;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.home-retention-lesson-preview {
+  width: min(78%, 230px);
+  max-height: 100%;
+}
+
+.home-retention-frank {
+  right: 2px;
+  bottom: -4px;
+  width: 70%;
+}
+
+.home-retention-dog-card .home-retention-card-action {
+  align-self: end;
+}
+
+.home-retention-bedtime-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.home-retention-placeholder {
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .home-retention-section {
+    width: min(100% - 20px, 760px);
+    padding: 20px 12px 16px;
+  }
+
+  .home-retention-title {
+    font-size: clamp(2.6rem, 12vw, 3.4rem);
+  }
+
+  .home-retention-feed {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(280px, min(82vw, 340px));
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    padding: 12px 4px 16px;
+  }
+
+  .home-retention-card {
+    height: 340px;
+    max-height: 340px;
+  }
+
+  .home-retention-card-label {
+    font-size: 1.22rem;
+  }
+
+  .home-retention-card-title {
+    font-size: 1.55rem;
+  }
+
+  .home-retention-card-action {
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    font-size: 1.25rem;
+  }
+
+  .home-retention-recipe-card {
+    grid-template-columns: minmax(0, 52%) minmax(0, 48%);
+  }
+
+  .home-retention-recipe-media {
+    position: relative;
+    inset: auto;
+    width: 100%;
+  }
+
+  .home-retention-raccoon-chef {
+    width: min(220px, 100%);
+  }
+
+  .home-retention-recipe-card .home-retention-card-label {
+    max-width: 72%;
+  }
+
+  .home-retention-dog-media {
+    height: 150px;
+  }
 }
 
 .home-brand-overview {
