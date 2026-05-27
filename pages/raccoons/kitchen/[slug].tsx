@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import type { CSSProperties } from "react";
 import CorePageLinks from "@/components/CorePageLinks";
@@ -224,7 +225,15 @@ export default function RaccoonRecipePage({
             </div>
             {recipe.image_url ? (
               <figure className="recipe-photo">
-                <img src={recipe.image_url} alt={recipe.title} />
+                <Image
+                  src={recipe.image_url}
+                  alt={recipe.title}
+                  width={720}
+                  height={720}
+                  sizes="(max-width: 767px) 86vw, (max-width: 900px) 390px, 42vw"
+                  priority
+                  unoptimized
+                />
                 {recipe.raccoon_caption ? <figcaption>{recipe.raccoon_caption}</figcaption> : null}
               </figure>
             ) : null}
@@ -289,7 +298,15 @@ export default function RaccoonRecipePage({
               </div>
               <div className="recipe-raccoon-sticker-grid">
                 {raccoonImages.map((url) => (
-                  <img key={url} src={url} alt="" loading="lazy" />
+                  <span key={url} className="recipe-raccoon-sticker-frame">
+                    <Image
+                      src={url}
+                      alt=""
+                      fill
+                      sizes="130px"
+                      unoptimized
+                    />
+                  </span>
                 ))}
               </div>
             </section>
@@ -308,7 +325,14 @@ export default function RaccoonRecipePage({
                 </a>
               </div>
               <a className="recipe-collage-preview" href="#recipe-collage-fullscreen" aria-label={ui.openCollage}>
-                <img src={collageImage} alt={recipe.title} loading="lazy" />
+                <Image
+                  src={collageImage}
+                  alt={recipe.title}
+                  width={900}
+                  height={1200}
+                  sizes="(max-width: 767px) 92vw, 520px"
+                  unoptimized
+                />
               </a>
               <div id="recipe-collage-fullscreen" className="recipe-collage-fullscreen" role="dialog" aria-modal="true" aria-label={ui.collageTitle}>
                 <a className="recipe-collage-fullscreen-backdrop" href="#recipe-collage-title" aria-label={ui.closeCollage} />
@@ -316,7 +340,14 @@ export default function RaccoonRecipePage({
                   <a className="recipe-collage-close" href="#recipe-collage-title" aria-label={ui.closeCollage}>
                     ×
                   </a>
-                  <img src={collageImage} alt={recipe.title} />
+                  <Image
+                    src={collageImage}
+                    alt={recipe.title}
+                    width={1200}
+                    height={1600}
+                    sizes="96vw"
+                    unoptimized
+                  />
                 </div>
               </div>
             </section>

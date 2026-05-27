@@ -26,6 +26,7 @@ const RETENTION_UI: Record<Lang, {
   recipe: string;
   dogs: string;
   bedtime: string;
+  mobileTitle: string;
   empty: string;
   recipeBadge: string;
   lessonBadge: string;
@@ -41,6 +42,7 @@ const RETENTION_UI: Record<Lang, {
     recipe: "Рецепт недели",
     dogs: "Пёсики нарисуют",
     bedtime: "Сказки на ночь",
+    mobileTitle: "Новинки",
     empty: "Скоро появится",
     recipeBadge: "Новый рецепт каждую пятницу",
     lessonBadge: "Урок дня",
@@ -56,6 +58,7 @@ const RETENTION_UI: Record<Lang, {
     recipe: "Recipe of the week",
     dogs: "Dogs Draw",
     bedtime: "Bedtime stories",
+    mobileTitle: "New",
     empty: "Coming soon",
     recipeBadge: "New recipe every Friday",
     lessonBadge: "Lesson of the day",
@@ -71,6 +74,7 @@ const RETENTION_UI: Record<Lang, {
     recipe: "מתכון השבוע",
     dogs: "כלבלבים מציירים",
     bedtime: "סיפורים לפני השינה",
+    mobileTitle: "חדש",
     empty: "בקרוב",
     recipeBadge: "מתכון חדש בכל יום שישי",
     lessonBadge: "שיעור היום",
@@ -93,11 +97,14 @@ function HomepageRetentionBlocks({
   const ui = RETENTION_UI[lang];
   const recipe = retention?.recipe || null;
   const dogLesson = retention?.dogLesson || null;
-  const raccoonChefUrl = "https://media.laplapla.com/stickers/raccoon-stickers/raccoon-chief.png";
+  const recipeCoverUrl = `https://media.laplapla.com/stickers/raccoon-stickers/raccoon-kitchen-covers/raccoons-cook-${lang}.webp`;
 
   return (
     <section className="home-retention-section" aria-labelledby="home-retention-title">
-      <h2 id="home-retention-title" className="home-retention-title page-title">{ui.title}</h2>
+      <h2 id="home-retention-title" className="home-retention-title page-title">
+        <span className="home-retention-title-desktop">{ui.title}</span>
+        <span className="home-retention-title-mobile">{ui.mobileTitle}</span>
+      </h2>
       <div className="home-retention-feed">
         <Link
           className={`home-retention-card home-retention-recipe-card ${recipe ? "" : "is-empty"}`}
@@ -107,39 +114,43 @@ function HomepageRetentionBlocks({
           {recipe ? (
             <>
               <span className="home-retention-recipe-media">
-                <span className="home-retention-raccoon-chef">
+                <span className="home-retention-recipe-cover">
                   <Image
-                    src={raccoonChefUrl}
+                    src={recipeCoverUrl}
                     alt=""
                     fill
-                    sizes="220px"
+                    sizes="(max-width: 767px) 84vw, (max-width: 900px) 340px, 360px"
                     loading="eager"
                     unoptimized
                   />
                 </span>
-                <Image
-                  className="home-retention-recipe-image"
-                  src={recipe.imageUrl}
-                  alt={recipe.title}
-                  fill
-                  sizes="(max-width: 767px) 76vw, 350px"
-                  loading="eager"
-                  unoptimized
-                />
               </span>
-              <span className="home-retention-country">
-                {recipe.flagUrl ? (
+              <span className="home-retention-recipe-copy">
+                <span className="home-retention-recipe-dish">
                   <Image
-                    src={recipe.flagUrl}
-                    alt={recipe.countryName || recipe.targetId || ""}
-                    width={24}
-                    height={18}
+                    className="home-retention-recipe-image"
+                    src={recipe.imageUrl}
+                    alt=""
+                    fill
+                    sizes="(max-width: 767px) 86px, 118px"
+                    loading="eager"
                     unoptimized
                   />
-                ) : null}
-                {recipe.countryName}
+                </span>
+                <span className="home-retention-country">
+                  {recipe.flagUrl ? (
+                    <Image
+                      src={recipe.flagUrl}
+                      alt={recipe.countryName || recipe.targetId || ""}
+                      width={24}
+                      height={18}
+                      unoptimized
+                    />
+                  ) : null}
+                  {recipe.countryName}
+                </span>
+                <span className="home-retention-card-title">{recipe.title}</span>
               </span>
-              <span className="home-retention-card-title">{recipe.title}</span>
               <span className="home-retention-card-action">{ui.openRecipe}</span>
             </>
           ) : (

@@ -66,6 +66,7 @@ export default function MobileMapScreen({
 }: MobileMapScreenProps) {
   const t = dictionaries[lang].raccoons;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const exploreLabel = lang === "ru" ? "Исследовать" : lang === "he" ? "לחקור" : "Explore";
 
   return (
     <main className="raccoons-mobile-screen" dir={lang === "he" ? "rtl" : "ltr"}>
@@ -92,7 +93,7 @@ export default function MobileMapScreen({
           className="raccoons-mobile-quest-button"
           onClick={onOpenQuests}
         >
-          {t.quests.playQuest}
+          {exploreLabel}
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 // pages/raccoons.tsx
 import Link from "next/link";
+import Image from "next/image";
 import type { GetServerSideProps } from "next";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useRouter } from "next/router";
@@ -125,14 +126,27 @@ function RaccoonKitchenSection({ lang, recipes }: { lang: Lang; recipes: Recipe[
             >
               {exportImage ? (
                 <>
-                  <img className="raccoon-kitchen-export-image" src={exportImage} alt={recipe.title} loading="lazy" />
+                  <Image
+                    className="raccoon-kitchen-export-image"
+                    src={exportImage}
+                    alt={recipe.title}
+                    fill
+                    sizes="(max-width: 767px) 76vw, 280px"
+                    unoptimized
+                  />
                   <span className="raccoon-kitchen-card-sr">{ui.open}: {recipe.title}</span>
                 </>
               ) : (
                 <>
                   <span className="raccoon-kitchen-card-media">
                     {image ? (
-                      <img src={image} alt="" loading="lazy" />
+                      <Image
+                        src={image}
+                        alt=""
+                        fill
+                        sizes="(max-width: 767px) 76vw, 280px"
+                        unoptimized
+                      />
                     ) : null}
                   </span>
                   <span className="raccoon-kitchen-card-body">
@@ -364,6 +378,7 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
           <MobileQuestSelectScreen
             lang={lang}
             quests={localizedQuests}
+            recipes={recipes}
             onBackToMap={closeMobileQuestSelect}
             onGoHome={goToHomeScreen}
           />

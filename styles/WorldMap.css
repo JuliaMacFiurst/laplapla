@@ -296,6 +296,7 @@ svg path[data-selected="true"] {
 }
 
 .raccoon-kitchen-card-media {
+  position: relative;
   display: block;
   width: 100%;
   height: 260px;
@@ -358,6 +359,7 @@ svg path[data-selected="true"] {
 }
 
 .raccoon-kitchen-card-export {
+  position: relative;
   display: block;
   min-height: 0;
   aspect-ratio: 2 / 3;
@@ -492,6 +494,7 @@ svg path[data-selected="true"] {
 .recipe-photo img {
   display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 1 / 1;
   object-fit: cover;
 }
@@ -599,12 +602,17 @@ svg path[data-selected="true"] {
   gap: 12px;
 }
 
-.recipe-raccoon-sticker-grid img {
+.recipe-raccoon-sticker-frame {
+  position: relative;
+  display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: contain;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.8);
+}
+
+.recipe-raccoon-sticker-frame img {
+  object-fit: contain;
 }
 
 .recipe-collage-viewer {
@@ -715,7 +723,9 @@ svg path[data-selected="true"] {
   }
 
   .recipe-photo {
-    max-width: 520px;
+    width: 100%;
+    max-width: 420px;
+    justify-self: center;
   }
 
   .recipe-section-heading-row {
@@ -725,6 +735,18 @@ svg path[data-selected="true"] {
 
   .recipe-collage-preview {
     min-height: 260px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 900px) {
+  .recipe-photo {
+    max-width: 390px;
+  }
+}
+
+@media (max-width: 767px) {
+  .recipe-photo {
+    max-width: min(320px, 86vw);
   }
 }
 
@@ -1102,17 +1124,20 @@ body.raccoons-mobile-page .footer-stack {
     linear-gradient(180deg, rgba(244, 249, 252, 0.94), rgba(255, 248, 239, 0.98)),
     url("/cloudy-bg.svg") center/cover no-repeat;
   color: #24384a;
-  display: flex;
-  flex-direction: column;
 }
 
 .raccoons-mobile-quests-topbar {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 12px;
   align-items: center;
   padding: calc(12px + env(safe-area-inset-top, 0)) 16px 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
 }
 
 .raccoons-mobile-quests-topbar-actions {
@@ -1150,6 +1175,24 @@ body.raccoons-mobile-page .footer-stack {
   color: rgba(49, 83, 107, 0.78);
 }
 
+.raccoons-mobile-adventure-snap {
+  height: 100dvh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.raccoons-mobile-adventure-panel {
+  min-height: 100dvh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  padding-top: calc(96px + env(safe-area-inset-top, 0));
+}
+
 .raccoons-mobile-quest-carousel {
   flex: 1 1 auto;
   min-height: 0;
@@ -1161,6 +1204,118 @@ body.raccoons-mobile-page .footer-stack {
   -webkit-overflow-scrolling: touch;
   padding: 14px 18px calc(22px + env(safe-area-inset-bottom, 0));
   scrollbar-width: none;
+}
+
+.raccoons-mobile-kitchen-panel {
+  padding: calc(96px + env(safe-area-inset-top, 0)) 0 calc(16px + env(safe-area-inset-bottom, 0));
+  background:
+    radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.9), transparent 28%),
+    linear-gradient(180deg, rgba(255, 247, 208, 0.96), rgba(255, 232, 241, 0.96));
+}
+
+.raccoons-mobile-kitchen-heading {
+  flex: 0 0 auto;
+  padding: 0 18px 10px;
+  color: #432e57;
+}
+
+.raccoons-mobile-kitchen-heading h2 {
+  margin: 0;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  font-size: clamp(2.4rem, 12vw, 3.5rem);
+  line-height: 0.95;
+}
+
+.raccoons-mobile-kitchen-heading p {
+  margin: 6px 0 0;
+  max-width: 28rem;
+  color: rgba(67, 46, 87, 0.72);
+  font-family: var(--font-varela-round), system-ui, sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.raccoons-mobile-recipe-carousel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 18px calc(22px + env(safe-area-inset-bottom, 0));
+  scrollbar-width: none;
+}
+
+.raccoons-mobile-recipe-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.raccoons-mobile-recipe-card {
+  flex: 0 0 min(82vw, 350px);
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+  scroll-snap-align: center;
+}
+
+.raccoons-mobile-recipe-poster {
+  position: relative;
+  min-height: 0;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 34px rgba(106, 76, 42, 0.18);
+}
+
+.raccoons-mobile-recipe-poster img {
+  object-fit: contain;
+}
+
+.raccoons-mobile-recipe-copy {
+  padding: 10px 12px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 10px 20px rgba(106, 76, 42, 0.12);
+}
+
+.raccoons-mobile-recipe-copy h3 {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #2f2442;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  font-size: 2rem;
+  line-height: 0.98;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.raccoons-mobile-recipe-copy p {
+  min-height: 1.2em;
+  margin: 5px 0 10px;
+  color: rgba(47, 36, 66, 0.72);
+  font-family: var(--font-varela-round), system-ui, sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.raccoons-mobile-recipe-copy button {
+  width: 100%;
+  min-height: 42px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff9ec8, #ffe890 52%, #9be7c0);
+  color: #fff;
+  font-family: var(--font-varela-round), system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-shadow: 0 1px 1px rgba(72, 48, 88, 0.3);
+  box-shadow: 0 10px 18px rgba(122, 82, 112, 0.16);
 }
 
 .raccoons-mobile-quest-carousel::-webkit-scrollbar {
