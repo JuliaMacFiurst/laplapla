@@ -1,11 +1,11 @@
-const CACHE_NAME = "laplapla-pwa-v1";
+const CACHE_NAME = "laplapla-pwa-v2";
 const APP_SHELL_ASSETS = [
   "/",
   "/favicon.ico",
   "/apple-touch-icon.png",
   "/favicon_io/site.webmanifest",
-  "/favicon_io/android-chrome-192x192.webp",
-  "/favicon_io/android-chrome-512x512.webp",
+  "/favicon_io/android-chrome-192x192.png",
+  "/favicon_io/android-chrome-512x512.png",
   "/laplapla-logo.webp",
 ];
 

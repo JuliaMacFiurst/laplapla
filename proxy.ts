@@ -38,6 +38,7 @@ function redirectToCanonical(request: NextRequest, pathname: string, queryKeysTo
 
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+  const rawPathname = new URL(request.url).pathname;
   const normalizedPathname = pathname !== "/" ? pathname.replace(/\/+$/, "") || "/" : pathname;
 
   if (
@@ -52,6 +53,21 @@ export function proxy(request: NextRequest) {
   }
 
   const segments = normalizedPathname.split("/").filter(Boolean);
+  const rawSegments = rawPathname.split("/").filter(Boolean);
+
+  if (rawSegments[0] === DEFAULT_LANG) {
+    const canonicalPath = `/${rawSegments.slice(1).join("/")}`.replace(/\/+$/, "") || "/";
+    return redirectToCanonical(request, canonicalPath);
+  }
+
+  if (segments[0] === DEFAULT_LANG) {
+    const canonicalPath = `/${segments.slice(1).join("/")}`;
+    return redirectToCanonical(request, canonicalPath === "/" ? "/" : canonicalPath);
+  }
+
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return redirectToCanonical(request, normalizedPathname);
+  }
 
   if (normalizedPathname === "/map") {
     const rawType = QUERY_TYPE_KEYS.map((key) => searchParams.get(key)).find(Boolean);

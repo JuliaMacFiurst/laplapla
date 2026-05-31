@@ -249,14 +249,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
         <meta key="p:domain_verify" name="p:domain_verify" content="ff738603a169c8fea886f04008fdc102" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/favicon_io/favicon-48x48.png" />
-        <link rel="icon" type="image/webp" sizes="32x32" href="/favicon_io/favicon-32x32.webp" />
-        <link rel="icon" type="image/webp" sizes="16x16" href="/favicon_io/favicon-16x16.webp" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/favicon_io/site.webmanifest" />
-        <link rel="icon" type="image/webp" sizes="192x192" href="/favicon_io/android-chrome-192x192.webp" />
-        <link rel="icon" type="image/webp" sizes="512x512" href="/favicon_io/android-chrome-512x512.webp" />
       </Head>
 
       {isBrowserCaptureEnabled && (

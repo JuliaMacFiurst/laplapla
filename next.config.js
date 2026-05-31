@@ -93,6 +93,21 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "laplapla.com",
+          },
+        ],
+        destination: "https://www.laplapla.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     if (!supabaseStorageOrigin) {
       return [];
