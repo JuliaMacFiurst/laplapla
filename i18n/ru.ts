@@ -330,6 +330,12 @@ export const ru = {
       sec: "сек",
 
       mediaPicker: {
+        title: "Добавить медиа",
+        tabAll: "Все",
+        tabGif: "GIF",
+        tabMemeImages: "Мемы",
+        tabReactions: "Реакции",
+        tabVideos: "Видео",
         tabGiphy: "GIPHY",
         tabPexels: "Pexels",
         tabStickers: "Стикеры",
@@ -342,6 +348,13 @@ export const ru = {
         loadMore: "Загрузить ещё",
         stickerNotice:
           "Сначала показываются LapLapLa stickers. Пустой поиск открывает trending stickers.",
+
+        unifiedNoticeTitle:
+          "Медиа от внешних провайдеров. Используйте аккуратно и уважайте авторов.",
+        unifiedRule1: "Когда возможно, для видео выбираются MP4/WebM вместо raw GIF.",
+        unifiedRule2: "Не используйте медиа во вредном, незаконном или вводящем в заблуждение контексте.",
+        giphyTermsPrefix: "Соблюдайте официальные",
+        giphyTermsSuffix: " GIPHY.",
 
         giphyNoticeTitle:
           "GIF от GIPHY ✨ Используйте их бережно и уважайте авторов.",
@@ -371,6 +384,9 @@ export const ru = {
         errorVideoTooLarge: "Видео слишком большое.",
         errorVideoTooLong: "Видео слишком длинное.",
         errorVideoMetadata: "Не удалось прочитать метаданные видео.",
+        errorMissingQuery: "Введите поисковый запрос.",
+        errorSearchFailed: "Не удалось выполнить поиск медиа. Попробуйте ещё раз.",
+        errorTrendingFailed: "Трендовые медиа сейчас недоступны.",
       },
       stickers: "Стикеры",
       addSticker: "Добавить стикер",

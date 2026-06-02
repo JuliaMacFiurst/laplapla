@@ -1,6 +1,7 @@
 import type { MapPopupType } from "@/types/mapPopup";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
+import { searchUnifiedMemes } from "@/lib/server/memes/search";
 
 type PexelsCandidate = {
   url: string;
@@ -12,7 +13,7 @@ type PexelsCandidate = {
 
 type GiphyCandidate = {
   url: string;
-  mediaType: "gif";
+  mediaType: "gif" | "video";
   title?: string;
   sourceUrl?: string;
   username?: string;
@@ -58,12 +59,7 @@ const PEXELS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const GIPHY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FINAL_RESULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FALLBACK_RESULT_CACHE_TTL_MS = 2 * 60 * 1000;
-const GIPHY_COOLDOWN_TTL_MS = 15 * 60 * 1000;
-const GIPHY_MIN_REQUEST_INTERVAL_MS = 1200;
-const PROVIDER_REQUEST_TIMEOUT_MS = 6000;
 const SEARCH_DEADLINE_MS = 12000;
-const inflightGiphyRequests = new Map<string, Promise<GiphyCandidate[]>>();
-let lastGiphyRequestAt = 0;
 
 const STOP_WORDS = new Set([
   "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "in", "into", "is", "it", "of", "on",
@@ -282,20 +278,6 @@ function scoreCandidateText(candidateText: string, relevanceTerms: string[]) {
   return score;
 }
 
-async function fetchWithTimeout(input: string, init?: RequestInit, timeoutMs = PROVIDER_REQUEST_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(input, {
-      ...init,
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
 async function searchPexelsCandidates(query: string): Promise<PexelsCandidate[]> {
   const cacheKey = `map-popup:pexels:${query}`;
   const cached = getMemoryCache<PexelsCandidate[]>(cacheKey);
@@ -303,60 +285,28 @@ async function searchPexelsCandidates(query: string): Promise<PexelsCandidate[]>
     return cached;
   }
 
-  const apiKey = process.env.PEXELS_API_KEY;
-  if (!apiKey) {
-    return [];
-  }
-
-  const photoSearchParams = new URLSearchParams({
-    query,
-    per_page: "18",
-    orientation: "landscape",
-  });
-
-  const videoSearchParams = new URLSearchParams({
-    query,
-    per_page: "24",
-    orientation: "landscape",
-  });
-
   try {
-    const [photoResponse, videoResponse] = await Promise.all([
-      fetchWithTimeout(`https://api.pexels.com/v1/search?${photoSearchParams.toString()}`, {
-        headers: { Authorization: apiKey },
-      }),
-      fetchWithTimeout(`https://api.pexels.com/videos/search?${videoSearchParams.toString()}`, {
-        headers: { Authorization: apiKey },
-      }),
-    ]);
+    const response = await searchUnifiedMemes({
+    query,
+      lang: "ru",
+      limit: 36,
+      offset: 0,
+      providers: ["pexels"],
+      types: ["mp4", "webm", "image"],
+    });
 
-    const photoJson = photoResponse.ok ? await photoResponse.json() : null;
-    const videoJson = videoResponse.ok ? await videoResponse.json() : null;
+    const items = response.items.map((item): PexelsCandidate => ({
+      url: item.media_url,
+      mediaType: item.type === "mp4" || item.type === "webm" ? "video" : "image",
+      photographer: item.author,
+      alt: item.tags.join(" "),
+      sourceUrl: item.source_url,
+    }));
 
-    const photos: PexelsCandidate[] =
-      photoJson?.photos?.map((photo: any) => ({
-        url: photo?.src?.large || photo?.src?.medium || photo?.src?.original,
-        mediaType: "image" as const,
-        photographer: typeof photo?.photographer === "string" ? photo.photographer : undefined,
-        alt: typeof photo?.alt === "string" ? photo.alt : undefined,
-        sourceUrl: typeof photo?.url === "string" ? photo.url : undefined,
-      }))?.filter((item: PexelsCandidate) => Boolean(item.url)) ?? [];
-
-    const videos: PexelsCandidate[] =
-      videoJson?.videos?.map((video: any) => ({
-        url:
-          video?.video_files?.find((file: any) => file?.file_type === "video/mp4" && file?.width >= 720)?.link ||
-          video?.video_files?.find((file: any) => file?.file_type === "video/mp4")?.link,
-        mediaType: "video" as const,
-        photographer: typeof video?.user?.name === "string" ? video.user.name : undefined,
-        alt: typeof video?.url === "string" ? video.url : undefined,
-        sourceUrl: typeof video?.url === "string" ? video.url : undefined,
-      }))?.filter((item: PexelsCandidate) => Boolean(item.url)) ?? [];
-
-    return setMemoryCache(cacheKey, [...videos, ...photos], PEXELS_CACHE_TTL_MS);
+    return setMemoryCache(cacheKey, items, PEXELS_CACHE_TTL_MS);
   } catch (error) {
     if ((error as { name?: string } | null)?.name !== "AbortError") {
-      console.error("[map-popup-media] Pexels request failed", error);
+      console.error("[map-popup-media] unified Pexels request failed", error);
     }
     return [];
   }
@@ -369,73 +319,31 @@ async function searchGiphyCandidates(query: string): Promise<GiphyCandidate[]> {
     return cached;
   }
 
-  const cooldownKey = "map-popup:giphy:cooldown";
-  const isCoolingDown = getMemoryCache<boolean>(cooldownKey);
-  if (isCoolingDown) {
-    return [];
-  }
-
-  const existingInflight = inflightGiphyRequests.get(cacheKey);
-  if (existingInflight) {
-    return existingInflight;
-  }
-
-  const apiKey = process.env.GIPHY_API_KEY;
-  if (!apiKey) {
-    return [];
-  }
-
-  const requestPromise = (async () => {
-    const timeSinceLastRequest = Date.now() - lastGiphyRequestAt;
-    if (timeSinceLastRequest < GIPHY_MIN_REQUEST_INTERVAL_MS) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, GIPHY_MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest),
-      );
-    }
-
-    lastGiphyRequestAt = Date.now();
-
-    const searchParams = new URLSearchParams({
-      api_key: apiKey,
-      q: query,
-      limit: "20",
-      rating: "g",
-      bundle: "messaging_non_clips",
+  try {
+    const response = await searchUnifiedMemes({
+      query,
+      lang: "ru",
+      limit: 20,
+      offset: 0,
+      providers: ["giphy"],
+      types: ["gif", "mp4", "webm"],
     });
 
-    const response = await fetchWithTimeout(`https://api.giphy.com/v1/gifs/search?${searchParams.toString()}`);
-    if (!response.ok) {
-      if (response.status === 429) {
-        setMemoryCache(cooldownKey, true, GIPHY_COOLDOWN_TTL_MS);
-      }
-      return [];
-    }
-
-    const json = await response.json();
-    const items =
-      json?.data?.map((item: any) => ({
-        url: item?.images?.original?.url || item?.images?.downsized_large?.url,
-        mediaType: "gif" as const,
-        title: typeof item?.title === "string" ? item.title : undefined,
-        sourceUrl: typeof item?.url === "string" ? item.url : undefined,
-        username: typeof item?.username === "string" ? item.username : undefined,
-      }))?.filter((item: GiphyCandidate) => Boolean(item.url)) ?? [];
+    const items = response.items.map((item): GiphyCandidate => ({
+      url: item.media_url,
+      mediaType: item.type === "mp4" || item.type === "webm" ? "video" : "gif",
+      title: item.tags.join(" "),
+      sourceUrl: item.source_url,
+      username: item.author,
+    }));
 
     return setMemoryCache(cacheKey, items, GIPHY_CACHE_TTL_MS);
-  })()
-    .catch((error) => {
-      if ((error as { name?: string } | null)?.name !== "AbortError") {
-        console.error("[map-popup-media] GIPHY request failed", error);
-      }
-      setMemoryCache(cooldownKey, true, GIPHY_COOLDOWN_TTL_MS);
-      return [];
-    })
-    .finally(() => {
-      inflightGiphyRequests.delete(cacheKey);
-    });
-
-  inflightGiphyRequests.set(cacheKey, requestPromise);
-  return requestPromise;
+  } catch (error) {
+    if ((error as { name?: string } | null)?.name !== "AbortError") {
+      console.error("[map-popup-media] unified GIPHY request failed", error);
+    }
+    return [];
+  }
 }
 
 function buildPexelsCredit(candidate: PexelsCandidate) {
@@ -524,7 +432,7 @@ function rankCandidates(
 
       return {
         url: candidate.url,
-        mediaType: "gif" as const,
+        mediaType: candidate.mediaType,
         source: "giphy" as const,
         creditLine: buildGiphyCredit(candidate),
         searchQuery: giphyQuery,
@@ -603,7 +511,7 @@ function pickFirstSafeCandidate(
 
     return {
       url: candidate.url,
-      mediaType: "gif" as const,
+      mediaType: candidate.mediaType,
       source: "giphy" as const,
       creditLine: buildGiphyCredit(candidate),
       searchQuery: giphyQuery,

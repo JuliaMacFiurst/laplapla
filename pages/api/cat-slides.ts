@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { fetchVideoFromPexels } from "@/lib/pexelsVideo";
 import { loadCombinedCatPresets } from "@/lib/server/catPresets";
+import { searchUnifiedMemes } from "@/lib/server/memes/search";
+import type { UnifiedMemeProvider, UnifiedMemeMediaType } from "@/lib/server/memes/types";
 import { withApiHandler } from "@/utils/apiHandler";
 import { devLog } from "@/utils/devLog";
 
@@ -11,12 +12,6 @@ export const config = {
     },
   },
 };
-
-if (!process.env.GIPHY_API_KEY) {
-  throw new Error("GIPHY_API_KEY is not set in environment variables.");
-}
-
-const apiKey = process.env.GIPHY_API_KEY;
 
 // TODO: Future cat questions (not implemented yet)
 // This list is kept only as a reference and must NOT be used in runtime.
@@ -127,38 +122,45 @@ const apiKey = process.env.GIPHY_API_KEY;
 Зачем ходить в школу?
 */
 
-async function fetchGifFromGiphy(query: string, used: Set<string>): Promise<string | null> {
-  devLog("🌀 GIPHY search:", query);
-  const offset = Math.floor(Math.random() * 50); // 🔁 Случайное смещение
-  const searchParams = new URLSearchParams({
-    api_key: apiKey || '',
-    q: query,
-    limit: '10',
-    offset: offset.toString(),
-    rating: 'g',
-  });
-
-  const response = await fetch(`https://api.giphy.com/v1/gifs/search?${searchParams.toString()}`);
-  const json = await response.json();
-
-  const gifs = json?.data
-    ?.map((g: any) => g.images?.original?.url)
-    .filter((url: string) => !!url && !used.has(url)); // Исключаем повторы
-
-  if (gifs?.length) {
-    const chosen = gifs[Math.floor(Math.random() * gifs.length)];
-    devLog("🌀 GIPHY chosen:", chosen);
-    used.add(chosen);
-    return chosen;
-  }
-
-  return null;
-}
-
 function extractKeywords(text: string): string {
   const words = text.split(/\s+/).filter(w => w.length > 3 && /^[а-яА-Яa-zA-Z]+$/.test(w));
   const keywords = words.slice(0, 2).join(' ');
   return keywords ? `${keywords} cat` : 'cute cat';
+}
+
+async function fetchCatMediaFromUnified(params: {
+  query: string;
+  lang: "ru" | "en" | "he";
+  providers: UnifiedMemeProvider[];
+  types: UnifiedMemeMediaType[];
+  used: Set<string>;
+}) {
+  devLog("🌀 Unified media search:", {
+    query: params.query,
+    providers: params.providers,
+    types: params.types,
+  });
+
+  const response = await searchUnifiedMemes({
+    query: params.query,
+    lang: params.lang,
+    limit: 10,
+    offset: Math.floor(Math.random() * 20),
+    providers: params.providers,
+    types: params.types,
+  });
+
+  const candidates = response.items.filter((item) => !params.used.has(item.media_url));
+  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  if (!chosen) return null;
+
+  devLog("🌀 Unified media chosen:", {
+    provider: chosen.provider,
+    type: chosen.type,
+    cached: response.cached,
+    url: chosen.media_url,
+  });
+  return chosen.media_url;
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -217,7 +219,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   devLog("🧩 sourceSlides preview:", sourceSlides.slice(0, 2));
 
   const slides = [];
-  const usedGifs: Set<string> = new Set();
   const usedMedia: Set<string> = new Set();
 
   for (const slide of sourceSlides) {
@@ -232,19 +233,49 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!image) {
       if (isEven) {
         image =
-          (await fetchVideoFromPexels(extractKeywords(text))) ||
-          (await fetchGifFromGiphy(extractKeywords(text), usedGifs)) ||
+          (await fetchCatMediaFromUnified({
+            query: extractKeywords(text),
+            lang,
+            providers: ["pexels"],
+            types: ["mp4", "webm"],
+            used: usedMedia,
+          })) ||
+          (await fetchCatMediaFromUnified({
+            query: extractKeywords(text),
+            lang,
+            providers: ["giphy"],
+            types: ["gif", "mp4", "webm"],
+            used: usedMedia,
+          })) ||
           '';
       } else {
         image =
-          (await fetchGifFromGiphy(extractKeywords(text), usedGifs)) ||
-          (await fetchVideoFromPexels(extractKeywords(text))) ||
+          (await fetchCatMediaFromUnified({
+            query: extractKeywords(text),
+            lang,
+            providers: ["giphy"],
+            types: ["gif", "mp4", "webm"],
+            used: usedMedia,
+          })) ||
+          (await fetchCatMediaFromUnified({
+            query: extractKeywords(text),
+            lang,
+            providers: ["pexels"],
+            types: ["mp4", "webm"],
+            used: usedMedia,
+          })) ||
           '';
       }
     }
 
     if (!image || usedMedia.has(image)) {
-      image = (await fetchGifFromGiphy('cute cat', usedGifs)) || '';
+      image = (await fetchCatMediaFromUnified({
+        query: "cute cat",
+        lang,
+        providers: ["giphy", "pexels"],
+        types: ["gif", "mp4", "webm"],
+        used: usedMedia,
+      })) || '';
     }
 
     if (!image || usedMedia.has(image)) continue;

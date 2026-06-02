@@ -16,6 +16,10 @@ type SlideMedia = {
   videoUrl?: string;
 };
 
+function isVideoMediaUrl(url?: string) {
+  return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
+}
+
 interface StoryCarouselProps {
   story: CarouselStory;
   lang: Lang;
@@ -159,6 +163,23 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
           onLoad={(event) => {
             const image = event.currentTarget;
             setIsPortraitMedia(image.naturalHeight > image.naturalWidth * 1.05);
+          }}
+        />
+      );
+    }
+
+    if (currentMedia?.type === "gif" && currentMedia.gifUrl && isVideoMediaUrl(currentMedia.gifUrl)) {
+      return (
+        <video
+          src={currentMedia.gifUrl}
+          className={`story-video${classNameSuffix}`}
+          autoPlay
+          muted
+          loop
+          playsInline
+          onLoadedMetadata={(event) => {
+            const video = event.currentTarget;
+            setIsPortraitMedia(video.videoHeight > video.videoWidth * 1.05);
           }}
         />
       );

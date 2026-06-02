@@ -6,7 +6,7 @@ export type StudioSticker = {
   id: string;
   sourceUrl: string;
   previewUrl?: string;
-  source: "giphy" | "laplapla" | "upload" | "custom";
+  source: "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels" | "laplapla" | "upload" | "custom";
   animationType: StudioStickerAnimationType;
   x: number;
   y: number;
@@ -34,7 +34,7 @@ export type StudioSlide = {
   mediaPosition?: "top" | "center" | "bottom";
   mediaType?: "image" | "video";
   sourceMediaUrl?: string;
-  sourceMediaType?: "gif" | "image" | "video";
+  sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4";
   mediaMimeType?: string;
   mediaNormalized?: boolean;
   textPosition?: "top" | "center" | "bottom";

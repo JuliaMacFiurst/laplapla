@@ -8,6 +8,10 @@ type SlideMedia = {
   videoUrl?: string;
 };
 
+function isVideoMediaUrl(url?: string) {
+  return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
+}
+
 export type ImportedStudioSlide = {
   text: string;
   image?: string;
@@ -38,6 +42,9 @@ function resolveSlideMediaUrl(
   }
 
   if (resolvedMedia?.type === "gif" && resolvedMedia.gifUrl) {
+    if (isVideoMediaUrl(resolvedMedia.gifUrl)) {
+      return { mediaUrl: resolvedMedia.gifUrl, mediaType: "video" };
+    }
     return { mediaUrl: resolvedMedia.gifUrl, mediaType: "image" };
   }
 
@@ -55,6 +62,9 @@ function resolveSlideMediaUrl(
 
   const fallbackImage = slide.capybaraImage || slide.imageUrl || slide.gifUrl;
   if (fallbackImage) {
+    if (isVideoMediaUrl(fallbackImage)) {
+      return { mediaUrl: fallbackImage, mediaType: "video" };
+    }
     return { mediaUrl: fallbackImage, mediaType: "image" };
   }
 

@@ -6,10 +6,6 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (!process.env.GIPHY_API_KEY) {
-    return res.status(500).json({ error: "GIPHY_API_KEY not set" });
-  }
-
   const keywords = typeof req.query.keywords === "string" ? req.query.keywords.split(",") : [];
   const mood = typeof req.query.mood === "string" ? req.query.mood : undefined;
   const gifs = await fetchCapybaraGifs(getMediaQuery(keywords, mood));

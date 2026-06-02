@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { dictionaries, Lang } from "@/i18n";
-import { devLog } from "@/utils/devLog";
+import { devInfo, devLog } from "@/utils/devLog";
 
 interface MediaPickerModalProps {
   lang: Lang;
@@ -15,26 +15,49 @@ interface MediaPickerModalProps {
     url: string;
     mediaType: "image" | "video" | "sticker";
     sourceUrl?: string;
-    sourceMediaType?: "gif" | "image" | "video";
+    sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4";
     mediaMimeType?: string;
     mediaNormalized?: boolean;
     previewUrl?: string;
     animationType?: "webp" | "apng" | "gif" | "video";
-    source?: "giphy" | "laplapla" | "upload" | "custom";
+    source?: "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels" | "laplapla" | "upload" | "custom";
     tags?: string[];
   }) => void;
 }
 
 type MediaPickerResult = {
+  id: string;
   url: string;
   normalizedUrl?: string;
   normalizedMediaType?: "video";
   normalizedMimeType?: string;
+  sourceUrl?: string;
   previewUrl?: string;
   mediaType: "gif" | "image" | "video" | "sticker";
+  sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4";
   animationType?: "webp" | "apng" | "gif" | "video";
-  source?: "giphy" | "laplapla" | "upload" | "custom";
+  source?: "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels" | "laplapla" | "upload" | "custom";
   tags?: string[];
+};
+
+type MediaPickerTab = "all" | "gif" | "images" | "reactions" | "videos" | "stickers" | "upload";
+
+type UnifiedMemeMedia = {
+  id: string;
+  provider: "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels";
+  providerId: string;
+  type: "image" | "gif" | "mp4" | "webm" | "sticker";
+  preview_url: string;
+  media_url: string;
+  width?: number;
+  height?: number;
+  duration?: number;
+  tags: string[];
+  nsfw: boolean;
+  source_url?: string;
+  author?: string;
+  popularity?: number;
+  created_at?: string;
 };
 
 function buildMediaPreviewAlt(url: string, index: number) {
@@ -42,6 +65,17 @@ function buildMediaPreviewAlt(url: string, index: number) {
   const normalized = filename.replace(/[-_]+/g, " ").trim();
 
   return normalized || `illustration ${index + 1}`;
+}
+
+function countMediaProviders(items: UnifiedMemeMedia[]) {
+  return items.reduce<Record<string, number>>((counts, item) => {
+    counts[item.provider] = (counts[item.provider] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function isVideoMediaUrl(url?: string) {
+  return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
 }
 
 export default function MediaPickerModal({
@@ -52,15 +86,14 @@ export default function MediaPickerModal({
   onClose,
   onSelect,
 }: MediaPickerModalProps) {
-  const [activeTab, setActiveTab] = useState<"giphy" | "pexels" | "stickers" | "upload">(
-    "giphy",
-  );
+  const [activeTab, setActiveTab] = useState<MediaPickerTab>("all");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MediaPickerResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [showLoadMoreButton, setShowLoadMoreButton] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const t = dictionaries[lang].cats.studio.mediaPicker;
 
@@ -73,6 +106,15 @@ export default function MediaPickerModal({
   const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
   const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
   const MAX_VIDEO_SECONDS = 20;
+  const tabs: Array<{ id: MediaPickerTab; label: string; hidden?: boolean }> = [
+    { id: "all", label: t.tabAll },
+    { id: "gif", label: t.tabGif },
+    { id: "images", label: t.tabMemeImages },
+    { id: "reactions", label: t.tabReactions },
+    { id: "videos", label: t.tabVideos },
+    { id: "stickers", label: t.tabStickers, hidden: disableStickers },
+    { id: "upload", label: t.tabUpload },
+  ];
 
   function readFileAsDataUrl(file: File) {
     return new Promise<string>((resolve, reject) => {
@@ -83,92 +125,110 @@ export default function MediaPickerModal({
     });
   }
 
+  const getTabTypes = useCallback((
+    tab: MediaPickerTab,
+  ): Array<UnifiedMemeMedia["type"]> | undefined => {
+    if (tab === "gif") return ["gif", "mp4", "webm"];
+    if (tab === "images") return ["image"];
+    if (tab === "videos" || tab === "reactions") return ["mp4", "webm"];
+    if (tab === "stickers") return ["sticker"];
+    return undefined;
+  }, []);
+
   const searchLibraryMedia = useCallback(async (
-    source: "giphy" | "pexels" | "stickers",
+    tab: MediaPickerTab,
     rawQuery: string,
     limit: number,
     requestOffset = 0,
   ) => {
-    const endpoint = source === "giphy"
-      ? "/api/giphy"
-      : source === "stickers"
-        ? "/api/giphy-stickers"
-        : "/api/pexels";
-    const res = await fetch(endpoint, {
+    const types = getTabTypes(tab);
+    const category = tab === "reactions" ? "funny" : undefined;
+    const res = await fetch("/api/memes/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: rawQuery, limit, offset: requestOffset }),
+      body: JSON.stringify({
+        q: rawQuery,
+        limit,
+        offset: requestOffset,
+        types,
+        category,
+        lang,
+      }),
     });
 
     const data = await res.json().catch(() => null) as
-      | { items?: Array<{ url?: string; normalizedUrl?: string; normalizedMediaType?: string; normalizedMimeType?: string; previewUrl?: string; mediaType?: string; animationType?: string; source?: string; tags?: string[] }>; error?: string; hasMore?: boolean }
+      | { items?: UnifiedMemeMedia[]; error?: string; cached?: boolean; hasMore?: boolean }
       | null;
 
     if (!res.ok) {
-      throw new Error(data?.error || `Media search failed: ${res.status}`);
+      throw new Error(data?.error || t.errorSearchFailed);
     }
 
+    const providerCounts = countMediaProviders(data?.items || []);
+    devInfo("[Studio media] loaded", {
+      tab,
+      query: rawQuery,
+      limit,
+      offset: requestOffset,
+      cached: Boolean(data?.cached),
+      hasMore: Boolean(data?.hasMore),
+      providers: providerCounts,
+    });
+
     const items: MediaPickerResult[] = (data?.items || [])
-      .map((item): MediaPickerResult => ({
-        url: item?.url || "",
-        normalizedUrl: item?.normalizedUrl,
-        normalizedMediaType: item?.normalizedMediaType === "video" ? "video" : undefined,
-        normalizedMimeType: item?.normalizedMimeType,
-        previewUrl: item?.previewUrl,
-        mediaType: source === "stickers"
-          ? "sticker" as const
-          : item?.mediaType === "gif"
-            ? "gif" as const
-            : item?.mediaType === "video"
-              ? "video" as const
-              : "image" as const,
-        animationType: item?.animationType === "apng" || item?.animationType === "gif" || item?.animationType === "webp" || item?.animationType === "video"
-          ? item.animationType
-          : undefined,
-        source: item?.source === "laplapla" || item?.source === "giphy" ? item.source : undefined,
-        tags: item?.tags,
-      }))
+      .map((item): MediaPickerResult => {
+        const isVideo = item.type === "mp4" || item.type === "webm";
+        return {
+          id: item.id,
+          url: item.media_url || "",
+          normalizedUrl: isVideo ? item.media_url : undefined,
+          normalizedMediaType: isVideo ? "video" : undefined,
+          normalizedMimeType: isVideo ? `video/${item.type}` : undefined,
+          sourceUrl: item.source_url,
+          previewUrl: item.preview_url,
+          mediaType: item.type === "sticker"
+            ? "sticker"
+            : item.type === "gif"
+              ? "gif"
+              : isVideo
+                ? "video"
+                : "image",
+          sourceMediaType: item.type === "mp4" || item.type === "webm" ? item.type : item.type === "gif" ? "gif" : item.type === "image" ? "image" : undefined,
+          animationType: item.type === "sticker" ? "webp" : isVideo ? "video" : item.type === "gif" ? "gif" : undefined,
+          source: item.provider,
+          tags: item.tags,
+        };
+      })
       .filter((item) => Boolean(item.url));
 
     return {
       items,
       hasMore: Boolean(data?.hasMore ?? items.length >= limit),
     };
-  }, []);
+  }, [getTabTypes, lang, t.errorSearchFailed]);
 
   const handleSearch = useCallback(async () => {
+    if (activeTab === "upload") return;
     if (!query.trim() && activeTab !== "stickers") return;
 
     setLoading(true);
     setOffset(0);
+    setSearchError(null);
 
     try {
-      const nextLimit = activeTab === "stickers" ? 24 : 10;
-      if (activeTab === "giphy") {
-        const { items, hasMore: more } = await searchLibraryMedia("giphy", query, nextLimit);
-        setResults(items);
-        setHasMore(more);
-      }
-
-      if (activeTab === "pexels") {
-        const { items, hasMore: more } = await searchLibraryMedia("pexels", query, nextLimit);
-        setResults(items);
-        setHasMore(more);
-      }
-
-      if (activeTab === "stickers") {
-        const { items, hasMore: more } = await searchLibraryMedia("stickers", query, nextLimit, 0);
-        setResults(items);
-        setHasMore(more);
-      }
+      const nextLimit = activeTab === "stickers" ? 24 : 18;
+      const { items, hasMore: more } = await searchLibraryMedia(activeTab, query, nextLimit, 0);
+      setResults(items);
+      setHasMore(more);
     } catch (err) {
       console.error("Media search error:", err);
       setResults([]);
       setHasMore(false);
+      setSearchError(t.errorSearchFailed);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, query, searchLibraryMedia]);
+  }, [activeTab, query, searchLibraryMedia, t.errorSearchFailed]);
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) {
@@ -186,7 +246,7 @@ export default function MediaPickerModal({
 
   useEffect(() => {
     if (disableStickers && activeTab === "stickers") {
-      setActiveTab("giphy");
+      setActiveTab("all");
       return;
     }
 
@@ -194,11 +254,13 @@ export default function MediaPickerModal({
     setQuery("");
     setOffset(0);
     setHasMore(false);
+    setSearchError(null);
   }, [activeTab, disableStickers]);
 
   useEffect(() => {
     if (!isOpen) {
       setUploadError(null);
+      setSearchError(null);
       setConfirmRights(false);
       setShowLoadMoreButton(false);
     }
@@ -249,34 +311,19 @@ export default function MediaPickerModal({
   async function handleLoadMore() {
     if (!query.trim() && activeTab !== "stickers") return;
 
-    const pageSize = activeTab === "stickers" ? 24 : 10;
+    const pageSize = activeTab === "stickers" ? 24 : 18;
     const nextOffset = offset + pageSize;
-    const nextLimit = activeTab === "stickers" ? pageSize : nextOffset + pageSize;
     setLoading(true);
+    setSearchError(null);
 
     try {
-      if (activeTab === "giphy") {
-        const { items, hasMore: more } = await searchLibraryMedia("giphy", query, nextLimit);
-        setResults(items);
-        setOffset(nextOffset);
-        setHasMore(more);
-      }
-
-      if (activeTab === "pexels") {
-        const { items, hasMore: more } = await searchLibraryMedia("pexels", query, nextLimit);
-        setResults(items);
-        setOffset(nextOffset);
-        setHasMore(more);
-      }
-
-      if (activeTab === "stickers") {
-        const { items, hasMore: more } = await searchLibraryMedia("stickers", query, nextLimit, nextOffset);
-        setResults((current) => [...current, ...items]);
-        setOffset(nextOffset);
-        setHasMore(more);
-      }
+      const { items, hasMore: more } = await searchLibraryMedia(activeTab, query, pageSize, nextOffset);
+      setResults((current) => [...current, ...items]);
+      setOffset(nextOffset);
+      setHasMore(more);
     } catch (err) {
       console.error("Load more error:", err);
+      setSearchError(t.errorSearchFailed);
     } finally {
       setLoading(false);
     }
@@ -432,7 +479,7 @@ export default function MediaPickerModal({
               marginBottom: "12px",
             }}
           >
-            <strong style={{ color: "#fff", fontSize: "16px" }}>Add media</strong>
+            <strong style={{ color: "#fff", fontSize: "16px" }}>{t.title}</strong>
             <button
               type="button"
               onClick={onClose}
@@ -451,36 +498,16 @@ export default function MediaPickerModal({
           </div>
         ) : null}
         <div className="media-tabs">
-          <button
-            className={`media-tab-button ${activeTab === "giphy" ? "active" : ""}`}
-            onClick={() => setActiveTab("giphy")}
-            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
-          >
-            {t.tabGiphy}
-          </button>
-          <button
-            className={`media-tab-button ${activeTab === "pexels" ? "active" : ""}`}
-            onClick={() => setActiveTab("pexels")}
-            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
-          >
-            {t.tabPexels}
-          </button>
-          {!disableStickers ? (
+          {tabs.filter((tab) => !tab.hidden).map((tab) => (
             <button
-              className={`media-tab-button ${activeTab === "stickers" ? "active" : ""}`}
-              onClick={() => setActiveTab("stickers")}
+              key={tab.id}
+              className={`media-tab-button ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
               style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
             >
-              {t.tabStickers || "Stickers"}
+              {tab.label}
             </button>
-          ) : null}
-          <button
-            className={`media-tab-button ${activeTab === "upload" ? "active" : ""}`}
-            onClick={() => setActiveTab("upload")}
-            style={isMobile ? { minHeight: "44px", padding: "10px 12px", borderRadius: "12px" } : undefined}
-          >
-            {t.tabUpload}
-          </button>
+          ))}
         </div>
 
         {activeTab !== "upload" && (
@@ -495,7 +522,7 @@ export default function MediaPickerModal({
                   handleSearch();
                 }
               }}
-              placeholder={activeTab === "stickers" ? (t.stickerSearchPlaceholder || t.searchPlaceholder) : t.searchPlaceholder}
+              placeholder={activeTab === "stickers" ? t.stickerSearchPlaceholder : t.searchPlaceholder}
               className="media-search-input"
               style={isMobile ? {
                 minWidth: 0,
@@ -514,14 +541,14 @@ export default function MediaPickerModal({
           </div>
         )}
 
-        {activeTab === "giphy" && (
+        {activeTab !== "upload" && activeTab !== "stickers" && (
           <div className="media-notice media-notice-warning" style={isMobile ? { color: "#000" } : undefined}>
-            <p style={{ margin: "0 0 6px 0" }}>{t.giphyNoticeTitle}</p>
+            <p style={{ margin: "0 0 6px 0" }}>{t.unifiedNoticeTitle}</p>
             <ul style={{ margin: 0, paddingLeft: 16 }}>
-              <li>{t.giphyRule1}</li>
-              <li>{t.giphyRule2}</li>
+              <li>{t.unifiedRule1}</li>
+              <li>{t.unifiedRule2}</li>
               <li>
-                Follow GIPHY’s official{" "}
+                {t.giphyTermsPrefix}{" "}
                 <a
                   href="https://support.giphy.com/hc/en-us/articles/360020027752-GIPHY-Terms-of-Service"
                   target="_blank"
@@ -529,19 +556,8 @@ export default function MediaPickerModal({
                 >
                   {t.giphyTerms}
                 </a>
-                .
+                {t.giphyTermsSuffix}
               </li>
-            </ul>
-          </div>
-        )}
-
-        {activeTab === "pexels" && (
-          <div className="media-notice" style={isMobile ? { color: "#000" } : undefined}>
-            <p style={{ margin: "0 0 6px 0" }}>{t.pexelsNoticeTitle}</p>
-            <ul style={{ margin: 0, paddingLeft: 16 }}>
-              <li>{t.pexelsRule1}</li>
-              <li>{t.pexelsRule2}</li>
-              <li>{t.pexelsRule3}</li>
             </ul>
           </div>
         )}
@@ -549,7 +565,7 @@ export default function MediaPickerModal({
         {activeTab === "stickers" && (
           <div className="media-notice" style={isMobile ? { color: "#000" } : undefined}>
             <p style={{ margin: 0 }}>
-              {t.stickerNotice || "Animated sticker results prioritize LapLapLa assets first, then GIPHY stickers."}
+              {t.stickerNotice}
             </p>
           </div>
         )}
@@ -601,11 +617,14 @@ export default function MediaPickerModal({
           } : undefined}
         >
           {loading && <p style={isMobile ? { width: "100%", color: "#fff" } : undefined}>{t.loading}</p>}
+          {!loading && searchError ? (
+            <p style={isMobile ? { width: "100%", color: "#fff" } : undefined}>{searchError}</p>
+          ) : null}
 
           {!loading &&
             results.map((item, index) => (
               <div
-                key={`${item.mediaType}-${item.url}-${index}`}
+                key={`${item.id}-${index}`}
                 className={isMobile ? undefined : "media-result-item"}
                 onClick={() => {
                   const runtimeUrl = item.mediaType === "sticker" ? item.url : item.normalizedUrl || item.url;
@@ -615,11 +634,19 @@ export default function MediaPickerModal({
                     (item.normalizedMediaType === "video" ||
                       lower.endsWith(".mp4") ||
                       lower.endsWith(".webm"));
+                  devInfo("[Studio media] selected", {
+                    source: item.source,
+                    mediaType: item.mediaType,
+                    runtimeType: item.mediaType === "sticker" ? "sticker" : isVideo ? "video" : "image",
+                    sourceMediaType: item.sourceMediaType,
+                    url: runtimeUrl,
+                    sourceUrl: item.sourceUrl,
+                  });
                   onSelect({
                     url: runtimeUrl,
                     mediaType: item.mediaType === "sticker" ? "sticker" : isVideo ? "video" : "image",
-                    sourceUrl: item.mediaType === "gif" ? item.url : undefined,
-                    sourceMediaType: item.mediaType === "gif" ? "gif" : undefined,
+                    sourceUrl: item.sourceUrl || (item.mediaType === "gif" ? item.url : undefined),
+                    sourceMediaType: item.sourceMediaType,
                     mediaMimeType: item.mediaType === "sticker" ? undefined : item.normalizedMimeType,
                     mediaNormalized: item.mediaType !== "sticker" && Boolean(item.normalizedUrl),
                     previewUrl: item.previewUrl,
@@ -646,9 +673,10 @@ export default function MediaPickerModal({
                   boxSizing: "border-box",
                 } : undefined}
               >
-                {item.url.endsWith(".mp4") || item.url.endsWith(".webm") ? (
+                {isVideoMediaUrl(item.url) ? (
                   <video
                     src={item.url}
+                    poster={item.previewUrl}
                     autoPlay
                     loop
                     muted
@@ -696,7 +724,7 @@ export default function MediaPickerModal({
                 disabled={loading}
                 onClick={handleLoadMore}
               >
-                {t.loadMore || "Загрузить ещё"}
+                {t.loadMore}
               </button>
             </div>
           )}
@@ -733,7 +761,7 @@ export default function MediaPickerModal({
                 transition: "opacity 160ms ease, transform 160ms ease",
               }}
             >
-              {loading ? t.loading : t.loadMore || "Загрузить ещё"}
+              {loading ? t.loading : t.loadMore}
             </button>
           </div>
         ) : null}

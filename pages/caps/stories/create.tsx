@@ -173,14 +173,19 @@ const heroPreviewCache: Record<string, string> = {};
 const heroPreviewStatusCache: Record<string, "pending" | "done" | "failed"> = {};
 
 async function searchPreviewEndpoint(
-  endpoint: "/api/giphy" | "/api/pexels",
+  source: "giphy" | "pexels",
   query: string,
   limit = 6,
 ) {
-  const response = await fetch(endpoint, {
+  const response = await fetch("/api/memes/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ q: query, limit }),
+    body: JSON.stringify({
+      q: query,
+      limit,
+      providers: source,
+      types: source === "giphy" ? ["gif", "mp4", "webm"] : ["image"],
+    }),
   });
 
   if (!response.ok) {
@@ -188,11 +193,18 @@ async function searchPreviewEndpoint(
   }
 
   const payload = await response.json() as {
-    items?: Array<{ url?: string; mediaType?: "image" | "video" | "gif" }>;
+    items?: Array<{ media_url?: string; type?: "image" | "gif" | "mp4" | "webm" | "sticker" }>;
   };
 
   return (payload.items || [])
-    .map((item) => ({ url: item.url || "", mediaType: item.mediaType || "image" }))
+    .map((item) => ({
+      url: item.media_url || "",
+      mediaType: item.type === "mp4" || item.type === "webm"
+        ? "video" as const
+        : item.type === "gif"
+          ? "gif" as const
+          : "image" as const,
+    }))
     .filter((item) => Boolean(item.url));
 }
 
@@ -209,13 +221,13 @@ async function fetchHeroPreview(heroName: string) {
     .filter((value, index, list) => list.indexOf(value) === index);
 
   for (const query of queries) {
-    const giphyItems = await searchPreviewEndpoint("/api/giphy", query, 5);
-    const giphyPreview = giphyItems.find((item) => item.mediaType === "gif");
+    const giphyItems = await searchPreviewEndpoint("giphy", query, 5);
+    const giphyPreview = giphyItems.find((item) => item.mediaType === "gif" || item.mediaType === "video");
     if (giphyPreview?.url) {
       return giphyPreview.url;
     }
 
-    const pexelsItems = await searchPreviewEndpoint("/api/pexels", query, 6);
+    const pexelsItems = await searchPreviewEndpoint("pexels", query, 6);
     const pexelsPreview = pexelsItems.find((item) => item.mediaType === "image");
     if (pexelsPreview?.url) {
       return pexelsPreview.url;

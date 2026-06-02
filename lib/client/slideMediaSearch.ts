@@ -1,12 +1,23 @@
 export type SlideMediaCandidate = {
   url: string;
   mediaType: "gif" | "image" | "video";
+  source?: SearchSource;
+  previewUrl?: string;
+  sourceUrl?: string;
+  sourceMediaType?: "gif" | "image" | "video" | "mp4" | "webm";
 };
 
 export type SearchSource = "giphy" | "pexels";
 
 type SearchResponse = {
-  items?: SlideMediaCandidate[];
+  items?: Array<{
+    provider?: string;
+    type?: string;
+    media_url?: string;
+    preview_url?: string;
+    source_url?: string;
+  }>;
+  cached?: boolean;
 };
 
 const MAX_MEDIA_QUERY_LENGTH = 200;
@@ -88,14 +99,13 @@ const fetchSourceItems = async (
   query: string,
   limit = 8,
 ): Promise<SlideMediaCandidate[]> => {
-  const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
   const safeQuery = sanitizeSlideMediaQuery(source, query);
 
   if (!safeQuery) {
     return [];
   }
 
-  const response = await fetch(endpoint, {
+  const response = await fetch("/api/memes/search", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -103,6 +113,8 @@ const fetchSourceItems = async (
     body: JSON.stringify({
       query: safeQuery,
       limit,
+      providers: source,
+      types: source === "giphy" ? ["gif", "mp4", "webm"] : ["image", "mp4", "webm"],
     }),
   });
   if (!response.ok) {
@@ -114,7 +126,37 @@ const fetchSourceItems = async (
     return [];
   }
 
-  return json.items.filter((item): item is SlideMediaCandidate => Boolean(item?.url && item?.mediaType));
+  const mapped = json.items
+    .map((item): SlideMediaCandidate | null => {
+      const url = item?.media_url || "";
+      const type = item?.type || "";
+      if (!url) return null;
+      const mediaType = type === "mp4" || type === "webm"
+        ? "video"
+        : type === "gif"
+          ? "gif"
+          : "image";
+      return {
+        url,
+        mediaType,
+        source,
+        previewUrl: item.preview_url,
+        sourceUrl: item.source_url,
+        sourceMediaType: type === "mp4" || type === "webm" ? type : mediaType,
+      };
+    })
+    .filter(Boolean) as SlideMediaCandidate[];
+
+  if (process.env.NODE_ENV === "development") {
+    console.info("[slide-media] unified search", {
+      source,
+      query: safeQuery,
+      count: mapped.length,
+      cached: Boolean(json.cached),
+    });
+  }
+
+  return mapped;
 };
 
 export async function findAlternativeSlideMedia({

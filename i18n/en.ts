@@ -330,6 +330,12 @@ export const en = {
       noActiveTracks: "No Active Tracks",
 
       mediaPicker: {
+        title: "Add media",
+        tabAll: "All",
+        tabGif: "GIF",
+        tabMemeImages: "Meme images",
+        tabReactions: "Reactions",
+        tabVideos: "Videos",
         tabGiphy: "GIPHY",
         tabPexels: "Pexels",
         tabStickers: "Stickers",
@@ -342,6 +348,13 @@ export const en = {
         loadMore: "Load more",
         stickerNotice:
           "LapLapLa stickers appear first. Empty search shows trending stickers.",
+
+        unifiedNoticeTitle:
+          "Media from external providers. Use it carefully and respect creators.",
+        unifiedRule1: "Video-friendly MP4/WebM results are preferred when available.",
+        unifiedRule2: "Do not use media in harmful, illegal, or misleading contexts.",
+        giphyTermsPrefix: "Follow GIPHY’s official",
+        giphyTermsSuffix: ".",
 
         giphyNoticeTitle:
           "GIFs by GIPHY ✨ Please use them kindly and respect creators.",
@@ -369,6 +382,9 @@ export const en = {
         errorVideoTooLarge: "Video is too large.",
         errorVideoTooLong: "Video is too long.",
         errorVideoMetadata: "Could not read video metadata.",
+        errorMissingQuery: "Enter a search query.",
+        errorSearchFailed: "Media search failed. Please try again.",
+        errorTrendingFailed: "Trending media is unavailable right now.",
       },
       stickers: "Stickers",
       addSticker: "Add sticker",

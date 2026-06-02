@@ -13,6 +13,10 @@ type SlideMedia = {
   videoUrl?: string;
 };
 
+function isVideoMediaUrl(url?: string) {
+  return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
+}
+
 interface MobileGeneratedStoryViewerProps {
   lang: Lang;
   title: string;
@@ -33,11 +37,12 @@ function toViewerSlides(
 ): StudioSlide[] {
   return slides.map((slide, index) => {
     const media = mediaCache.get(index);
+    const mediaUrl = media?.videoUrl || media?.gifUrl || media?.capybaraImage || media?.imageUrl;
     return {
       id: `${title}-${index}`,
       text: slide.text,
-      mediaUrl: media?.videoUrl || media?.gifUrl || media?.capybaraImage || media?.imageUrl,
-      mediaType: media?.videoUrl ? "video" : "image",
+      mediaUrl,
+      mediaType: isVideoMediaUrl(mediaUrl) ? "video" : "image",
       mediaFit: "contain",
       bgColor: "#ffffff",
       textColor: "#111111",

@@ -18,6 +18,10 @@ type SlideMedia = {
   videoUrl?: string;
 };
 
+function isVideoMediaUrl(url?: string) {
+  return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
+}
+
 interface MobileBookScreenProps {
   book: Book;
   lang: Lang;
@@ -149,8 +153,9 @@ export default function MobileBookScreen({
   const fallbackIndex = Math.abs(
     Array.from(previewSeed).reduce((acc, char) => acc + char.charCodeAt(0), 0),
   ) % fallbackImages.length;
+  const previewVideoUrl = firstSlideMedia?.videoUrl || (isVideoMediaUrl(firstSlideMedia?.gifUrl) ? firstSlideMedia?.gifUrl : undefined);
   const previewMediaUrl = firstSlideMedia?.capybaraImage ||
-    firstSlideMedia?.gifUrl ||
+    (previewVideoUrl ? undefined : firstSlideMedia?.gifUrl) ||
     firstSlideMedia?.imageUrl ||
     `/images/capybaras/${fallbackImages[fallbackIndex]}`;
 
@@ -198,11 +203,13 @@ export default function MobileBookScreen({
             onClick={() => onOpenStandaloneBook?.(selectedModeId)}
           >
             <div className="mobile-story-media">
-              {firstSlideMedia?.type === "video" && firstSlideMedia.videoUrl ? (
+              {previewVideoUrl ? (
                 <video
-                  src={firstSlideMedia.videoUrl}
+                  src={previewVideoUrl}
                   className="mobile-story-media-asset"
+                  autoPlay
                   muted
+                  loop
                   playsInline
                   preload="metadata"
                 />

@@ -29,6 +29,11 @@ export default function LicensesPage() {
               link: "https://www.pexels.com/license/",
             },
             {
+              h: "Pixabay",
+              p: `Images and videos may be provided via the Pixabay API. Pixabay media is released under the Pixabay Content License. LapLapLa shows Pixabay as a media source when relevant, does not claim ownership of Pixabay media, and is not affiliated with Pixabay.`,
+              link: "https://pixabay.com/service/license-summary/",
+            },
+            {
               h: "Google Gemini",
               p: `AI-generated text and content are produced using Google Gemini APIs. Use of these services is subject to Google’s Terms of Service and Generative AI policies. LapLapLa does not claim ownership over Google’s services and is not affiliated with Google.`,
               link: "https://ai.google.dev/terms",
@@ -53,6 +58,11 @@ export default function LicensesPage() {
               link: "https://www.pexels.com/license/",
             },
             {
+              h: "Pixabay",
+              p: `תמונות וסרטונים עשויים להיות מסופקים דרך API של Pixabay. המדיה כפופה לרישיון התוכן של Pixabay. LapLapLa מציגה את Pixabay כמקור מדיה כשזה רלוונטי, אינה בעלת הזכויות ואינה קשורה ל‑Pixabay.`,
+              link: "https://pixabay.com/service/license-summary/",
+            },
+            {
               h: "Google Gemini",
               p: `תוכן טקסטואלי שנוצר באמצעות בינה מלאכותית מופק דרך Google Gemini API. השימוש כפוף לתנאי השימוש של Google ולמדיניות הבינה המלאכותית שלה. LapLapLa אינה קשורה ל‑Google ואינה בעלת הזכויות על השירות.`,
               link: "https://ai.google.dev/terms",
@@ -75,6 +85,11 @@ export default function LicensesPage() {
               h: "Pexels",
               p: `Видео предоставляются через API Pexels. Медиа можно использовать в соответствии с лицензией Pexels. LapLapLa не владеет правами на этот контент и не аффилирована с Pexels.`,
               link: "https://www.pexels.com/license/",
+            },
+            {
+              h: "Pixabay",
+              p: `Изображения и видео могут предоставляться через API Pixabay. Медиа регулируются Pixabay Content License. LapLapLa указывает Pixabay как источник медиа, когда это применимо, не владеет правами на этот контент и не аффилирована с Pixabay.`,
+              link: "https://pixabay.com/service/license-summary/",
             },
             {
               h: "Google Gemini",

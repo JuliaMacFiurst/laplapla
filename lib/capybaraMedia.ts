@@ -1,4 +1,4 @@
-import axios from "axios";
+import { searchUnifiedMemes } from "@/lib/server/memes/search";
 
 const buildSearchQuery = (keywords?: string[], mood?: string) => {
   const parts = ["capybara", ...(keywords || []), mood].filter(Boolean);
@@ -15,76 +15,57 @@ export const getMediaQuery = (keywords?: string[], mood?: string) =>
   buildSearchQuery(keywords, mood) || "capybara";
 
 export const fetchCapybaraImages = async (query: string) => {
-  const response = await axios.get("https://api.pexels.com/v1/search", {
-    headers: {
-      Authorization: process.env.PEXELS_API_KEY || "",
-    },
-    params: {
+  const response = await searchUnifiedMemes({
       query,
-      per_page: 12,
-      page: 1,
-    },
+      lang: "ru",
+      limit: 12,
+      offset: 0,
+      providers: ["pexels"],
+      types: ["image"],
   });
 
-  const photos = (response.data?.photos || []) as Array<{
-    alt?: string;
-    src?: { medium?: string; large?: string };
-  }>;
-
-  return shuffle(photos)
-    .map((photo) => ({
+  return shuffle(response.items)
+    .map((item) => ({
       type: "image" as const,
-      imageUrl: photo.src?.large || photo.src?.medium || "",
-      imageAlt: photo.alt || "Capybara",
+      imageUrl: item.media_url,
+      imageAlt: item.tags.join(", ") || "Capybara",
     }))
     .filter((photo) => photo.imageUrl);
 };
 
 export const fetchCapybaraGifs = async (query: string) => {
-  const response = await axios.get("https://api.giphy.com/v1/gifs/search", {
-    params: {
-      api_key: process.env.GIPHY_API_KEY || "",
-      q: query,
-      limit: 10,
-      rating: "g",
-    },
+  const response = await searchUnifiedMemes({
+    query,
+    lang: "ru",
+    limit: 10,
+    offset: 0,
+    providers: ["giphy"],
+    types: ["gif"],
   });
 
-  const gifs = (response.data?.data || []) as Array<{
-    images?: { original?: { url?: string } };
-  }>;
-
-  return shuffle(gifs)
+  return shuffle(response.items)
     .map((item) => ({
       type: "gif" as const,
-      gifUrl: item.images?.original?.url || "",
+      gifUrl: item.media_url,
     }))
     .filter((item) => item.gifUrl);
 };
 
 export const fetchCapybaraVideos = async (query: string) => {
-  const response = await axios.get("https://api.pexels.com/videos/search", {
-    headers: {
-      Authorization: process.env.PEXELS_API_KEY || "",
-    },
-    params: {
-      query,
-      per_page: 10,
-      page: 1,
-    },
+  const response = await searchUnifiedMemes({
+    query,
+    lang: "ru",
+    limit: 10,
+    offset: 0,
+    providers: ["pexels"],
+    types: ["mp4", "webm"],
   });
 
-  const videos = (response.data?.videos || []) as Array<{
-    image?: string;
-    video_files?: Array<{ quality?: string; link?: string }>;
-  }>;
-
-  return shuffle(videos)
-    .map((video) => ({
+  return shuffle(response.items)
+    .map((item) => ({
       type: "video" as const,
-      videoUrl:
-        video.video_files?.find((file) => file.quality === "sd" || file.quality === "hd")?.link || "",
-      preview: video.image || "",
+      videoUrl: item.media_url,
+      preview: item.preview_url,
     }))
     .filter((video) => video.videoUrl);
 };

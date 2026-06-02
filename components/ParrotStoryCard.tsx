@@ -44,7 +44,10 @@ type MediaItem = {
 };
 
 type MediaResponse = {
-  items: MediaItem[];
+  items: Array<{
+    media_url?: string;
+    type?: string;
+  }>;
   query: string;
   cached: boolean;
 };
@@ -215,9 +218,8 @@ async function loadMediaItems(
     return inFlight;
   }
 
-  const endpoint = source === "giphy" ? "/api/giphy" : "/api/pexels";
   const request = (async (): Promise<MediaItemsResult> => {
-    const response = await fetch(endpoint, {
+    const response = await fetch("/api/memes/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -225,6 +227,8 @@ async function loadMediaItems(
       body: JSON.stringify({
         query: safeQuery,
         limit: 8,
+        providers: source,
+        types: source === "giphy" ? ["gif", "mp4", "webm"] : ["image", "mp4", "webm"],
       }),
     });
     if (!response.ok) {
@@ -235,10 +239,14 @@ async function loadMediaItems(
     const items = Array.isArray(json.items)
       ? json.items
           .map((item) =>
-            item?.url
+            item?.media_url
               ? {
-                  url: item.url,
-                  mediaType: item.mediaType ?? getMediaTypeFromUrl(item.url),
+                  url: item.media_url,
+                  mediaType: item.type === "mp4" || item.type === "webm"
+                    ? "video"
+                    : item.type === "gif"
+                      ? "gif"
+                      : getMediaTypeFromUrl(item.media_url),
                 }
               : null,
           )

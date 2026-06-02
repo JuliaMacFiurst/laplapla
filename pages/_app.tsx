@@ -418,6 +418,16 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                       Pexels
                     </a>
                   </div>
+                  <div>
+                    Some media provided by{" "}
+                    <a
+                      href="https://pixabay.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Pixabay
+                    </a>
+                  </div>
                 </div>
               )}
             </footer>

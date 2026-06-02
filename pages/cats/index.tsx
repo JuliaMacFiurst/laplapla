@@ -50,6 +50,10 @@ function pickRandomItems<T>(items: T[], count: number) {
   return shuffled.slice(0, count);
 }
 
+function isVideoMediaUrl(url?: string) {
+  return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
+}
+
 function buildStudioSlides(slides: CatRuntimeSlide[], seed: string): StudioSlide[] {
   return slides
     .filter((slide) => slide.text && slide.image)
@@ -57,7 +61,7 @@ function buildStudioSlides(slides: CatRuntimeSlide[], seed: string): StudioSlide
       id: `${seed}-${index}`,
       text: slide.text,
       mediaUrl: slide.image,
-      mediaType: slide.image?.endsWith(".mp4") ? "video" : "image",
+      mediaType: isVideoMediaUrl(slide.image) ? "video" : "image",
       mediaFit: "contain",
       bgColor: "#ffffff",
       textColor: "#111111",
@@ -470,7 +474,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
             ? {
                 ...currentSlide,
                 mediaUrl: nextImage,
-                mediaType: nextImage.endsWith(".mp4") ? "video" : "image",
+                mediaType: isVideoMediaUrl(nextImage) ? "video" : "image",
               }
             : currentSlide,
         ),
@@ -724,15 +728,16 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
                     return (
                       <div key={idx} className="cat-slide">
-                        {slide.image.endsWith(".mp4") ? (
+                        {isVideoMediaUrl(slide.image) ? (
                           <video
                             className="cat-slide-video"
-                            controls
                             autoPlay
                             muted
+                            loop
                             playsInline
+                            preload="metadata"
                           >
-                            <source src={slide.image} type="video/mp4" />
+                            <source src={slide.image} type={slide.image.includes(".webm") ? "video/webm" : "video/mp4"} />
                           </video>
                         ) : (
                           <Image

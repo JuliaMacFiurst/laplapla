@@ -25,6 +25,10 @@ type SlideMedia = {
   videoUrl?: string;
 };
 
+function isVideoMediaUrl(url?: string) {
+  return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
+}
+
 interface MobileStoryCarouselProps {
   story: CarouselStory;
   lang: Lang;
@@ -437,13 +441,14 @@ export default function MobileStoryCarousel({
             {story.slides.map((slide, targetSlideIndex) => {
               const media = mediaCache?.get(targetSlideIndex) || null;
               const mediaUrl = media?.capybaraImage || media?.gifUrl || media?.imageUrl || getFallbackForSlide(targetSlideIndex);
+              const videoUrl = media?.videoUrl || (isVideoMediaUrl(media?.gifUrl) ? media?.gifUrl : undefined);
 
               return (
                 <div key={`${story.id}-${targetSlideIndex}`} className="mobile-story-slide">
                   <div className="mobile-story-media">
-                    {media?.type === "video" && media.videoUrl ? (
+                    {videoUrl ? (
                       <video
-                        src={media.videoUrl}
+                        src={videoUrl}
                         className="mobile-story-media-asset"
                         draggable={false}
                         autoPlay

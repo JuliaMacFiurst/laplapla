@@ -369,16 +369,28 @@ type DictionaryShape = {
       audio: string;
 
       mediaPicker: {
+        title: string;
+        tabAll: string;
+        tabGif: string;
+        tabMemeImages: string;
+        tabReactions: string;
+        tabVideos: string;
         tabGiphy: string;
         tabPexels: string;
-        tabStickers?: string;
+        tabStickers: string;
         tabUpload: string;
         searchPlaceholder: string;
-        stickerSearchPlaceholder?: string;
+        stickerSearchPlaceholder: string;
         searchButton: string;
         loading: string;
         loadMore: string;
-        stickerNotice?: string;
+        stickerNotice: string;
+
+        unifiedNoticeTitle: string;
+        unifiedRule1: string;
+        unifiedRule2: string;
+        giphyTermsPrefix: string;
+        giphyTermsSuffix: string;
 
         giphyNoticeTitle: string;
         giphyRule1: string;
@@ -400,6 +412,9 @@ type DictionaryShape = {
         errorVideoTooLarge: string;
         errorVideoTooLong: string;
         errorVideoMetadata: string;
+        errorMissingQuery: string;
+        errorSearchFailed: string;
+        errorTrendingFailed: string;
       };
       stickers?: string;
       addSticker?: string;
