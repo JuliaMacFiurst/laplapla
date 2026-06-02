@@ -3,6 +3,7 @@ import { rankMedia } from "./rank";
 import { getCachedSearch, setCachedSearch, upsertMemeMedia } from "./cache";
 import { searchGiphy } from "./providers/giphy";
 import { searchImgflip } from "./providers/imgflip";
+import { searchLapLapLaStickers } from "./providers/laplaplaStickers";
 import { searchPexels } from "./providers/pexels";
 import { searchPixabay } from "./providers/pixabay";
 import { searchReddit } from "./providers/reddit";
@@ -14,9 +15,26 @@ const PROVIDERS: Record<UnifiedMemeProvider, (params: ProviderSearchParams) => P
   imgflip: searchImgflip,
   pixabay: searchPixabay,
   pexels: searchPexels,
+  laplapla: searchLapLapLaStickers,
 };
 
 const PROVIDER_TIMEOUT_MS = 4500;
+const DIVERSIFIED_PROVIDER_ORDER: UnifiedMemeProvider[] = [
+  "giphy",
+  "pexels",
+  "pixabay",
+  "reddit",
+  "imgflip",
+  "laplapla",
+];
+const DIVERSIFIED_TYPE_ORDER: UnifiedMemeMedia["type"][] = [
+  "gif",
+  "mp4",
+  "webm",
+  "image",
+  "sticker",
+];
+const MAX_PERSISTED_SEARCH_WINDOW = 240;
 
 function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, timeoutMs: number) {
   const controller = new AbortController();
@@ -24,15 +42,70 @@ function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, timeoutMs: nu
   return work(controller.signal).finally(() => clearTimeout(timeout));
 }
 
+function diversifyProviders(items: UnifiedMemeMedia[], enabled: boolean) {
+  if (!enabled) return items;
+
+  const groups = new Map<UnifiedMemeProvider, UnifiedMemeMedia[]>();
+  for (const item of items) {
+    const group = groups.get(item.provider) || [];
+    group.push(item);
+    groups.set(item.provider, group);
+  }
+
+  const orderedProviders = [
+    ...DIVERSIFIED_PROVIDER_ORDER.filter((provider) => groups.has(provider)),
+    ...Array.from(groups.keys()).filter((provider) => !DIVERSIFIED_PROVIDER_ORDER.includes(provider)),
+  ];
+  const diversified: UnifiedMemeMedia[] = [];
+
+  while (orderedProviders.some((provider) => (groups.get(provider)?.length || 0) > 0)) {
+    for (const provider of orderedProviders) {
+      const next = groups.get(provider)?.shift();
+      if (next) diversified.push(next);
+    }
+  }
+
+  return diversified;
+}
+
+function diversifyMediaTypes(items: UnifiedMemeMedia[], enabled: boolean) {
+  if (!enabled) return items;
+
+  const groups = new Map<UnifiedMemeMedia["type"], UnifiedMemeMedia[]>();
+  for (const item of items) {
+    const group = groups.get(item.type) || [];
+    group.push(item);
+    groups.set(item.type, group);
+  }
+
+  const orderedTypes = [
+    ...DIVERSIFIED_TYPE_ORDER.filter((type) => groups.has(type)),
+    ...Array.from(groups.keys()).filter((type) => !DIVERSIFIED_TYPE_ORDER.includes(type)),
+  ];
+  const diversified: UnifiedMemeMedia[] = [];
+
+  while (orderedTypes.some((type) => (groups.get(type)?.length || 0) > 0)) {
+    for (const type of orderedTypes) {
+      const next = groups.get(type)?.shift();
+      if (next) diversified.push(next);
+    }
+  }
+
+  return diversified;
+}
+
 export async function searchUnifiedMemes(params: UnifiedMemeSearchParams): Promise<UnifiedMemeSearchResponse> {
-  const cached = await getCachedSearch(params);
-  if (cached) {
-    return {
-      items: cached.items.slice(params.offset, params.offset + params.limit),
-      query: params.query,
-      cached: true,
-      hasMore: cached.items.length > params.offset + params.limit,
-    };
+  const shouldPersist = params.persist !== false;
+  if (shouldPersist) {
+    const cached = await getCachedSearch(params);
+    if (cached) {
+      return {
+        items: cached.items.slice(params.offset, params.offset + params.limit),
+        query: params.query,
+        cached: true,
+        hasMore: cached.items.length > params.offset + params.limit,
+      };
+    }
   }
 
   const providerNames = params.providers?.length ? params.providers : Object.keys(PROVIDERS) as UnifiedMemeProvider[];
@@ -46,9 +119,16 @@ export async function searchUnifiedMemes(params: UnifiedMemeSearchParams): Promi
   const normalized = rawItems.map(normalizeMedia).filter(Boolean) as UnifiedMemeMedia[];
   const filtered = normalized.filter((item) => !params.types?.length || params.types.includes(item.type));
   const ranked = rankMedia(dedupeMedia(filtered), params);
-  const persisted = await upsertMemeMedia(ranked);
+  const shouldDiversify = !params.providers?.length && (!params.types?.length || params.types.length > 1);
+  const diversifiedByType = diversifyMediaTypes(ranked, shouldDiversify);
+  const diversified = diversifyProviders(diversifiedByType, shouldDiversify);
+  const persistWindow = Math.min(Math.max(params.offset + params.limit, params.limit), MAX_PERSISTED_SEARCH_WINDOW);
+  const itemsForResponse = shouldPersist ? diversified.slice(0, persistWindow) : diversified;
+  const persisted = shouldPersist ? await upsertMemeMedia(itemsForResponse) : itemsForResponse;
 
-  await setCachedSearch(params, persisted);
+  if (shouldPersist) {
+    await setCachedSearch(params, persisted);
+  }
 
   return {
     items: persisted.slice(params.offset, params.offset + params.limit),

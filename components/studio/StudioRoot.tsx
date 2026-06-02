@@ -102,7 +102,7 @@ interface StudioRootProps {
     mediaUrl?: string;
     mediaType?: "image" | "video";
     sourceMediaUrl?: string;
-    sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4";
+    sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4" | "mov";
     mediaMimeType?: string;
     mediaNormalized?: boolean;
     mediaFit?: "cover" | "contain";

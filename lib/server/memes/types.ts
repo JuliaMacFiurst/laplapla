@@ -1,6 +1,6 @@
 import type { Lang } from "@/i18n";
 
-export type UnifiedMemeProvider = "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels";
+export type UnifiedMemeProvider = "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels" | "laplapla";
 
 export type UnifiedMemeMediaType = "image" | "gif" | "mp4" | "webm" | "sticker";
 
@@ -30,6 +30,7 @@ export type UnifiedMemeSearchParams = {
   types?: UnifiedMemeMediaType[];
   category?: string;
   lang: Lang;
+  persist?: boolean;
 };
 
 export type UnifiedMemeSearchResponse = {

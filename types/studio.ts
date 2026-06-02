@@ -34,7 +34,7 @@ export type StudioSlide = {
   mediaPosition?: "top" | "center" | "bottom";
   mediaType?: "image" | "video";
   sourceMediaUrl?: string;
-  sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4";
+  sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4" | "mov";
   mediaMimeType?: string;
   mediaNormalized?: boolean;
   textPosition?: "top" | "center" | "bottom";

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { dictionaries, Lang } from "@/i18n";
 import { devInfo, devLog } from "@/utils/devLog";
 
@@ -15,7 +15,7 @@ interface MediaPickerModalProps {
     url: string;
     mediaType: "image" | "video" | "sticker";
     sourceUrl?: string;
-    sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4";
+    sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4" | "mov";
     mediaMimeType?: string;
     mediaNormalized?: boolean;
     previewUrl?: string;
@@ -34,17 +34,17 @@ type MediaPickerResult = {
   sourceUrl?: string;
   previewUrl?: string;
   mediaType: "gif" | "image" | "video" | "sticker";
-  sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4";
+  sourceMediaType?: "gif" | "image" | "video" | "webm" | "mp4" | "mov";
   animationType?: "webp" | "apng" | "gif" | "video";
   source?: "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels" | "laplapla" | "upload" | "custom";
   tags?: string[];
 };
 
-type MediaPickerTab = "all" | "gif" | "images" | "reactions" | "videos" | "stickers" | "upload";
+type MediaPickerTab = "all" | "gif" | "videos" | "stickers" | "upload";
 
 type UnifiedMemeMedia = {
   id: string;
-  provider: "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels";
+  provider: "giphy" | "reddit" | "imgflip" | "pixabay" | "pexels" | "laplapla";
   providerId: string;
   type: "image" | "gif" | "mp4" | "webm" | "sticker";
   preview_url: string;
@@ -59,6 +59,9 @@ type UnifiedMemeMedia = {
   popularity?: number;
   created_at?: string;
 };
+
+const DEFAULT_SEARCH_TYPES: UnifiedMemeMedia["type"][] = ["image", "gif", "mp4", "webm"];
+const STICKER_SEARCH_TYPES: UnifiedMemeMedia["type"][] = ["sticker"];
 
 function buildMediaPreviewAlt(url: string, index: number) {
   const filename = url.split("?")[0]?.split("/").pop()?.replace(/\.[a-z0-9]+$/i, "") || "";
@@ -89,11 +92,14 @@ export default function MediaPickerModal({
   const [activeTab, setActiveTab] = useState<MediaPickerTab>("all");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MediaPickerResult[]>([]);
+  const [stickerResults, setStickerResults] = useState<MediaPickerResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [stickersHasMore, setStickersHasMore] = useState(false);
   const [showLoadMoreButton, setShowLoadMoreButton] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchedQuery, setSearchedQuery] = useState("");
+  const [searchedStickerQuery, setSearchedStickerQuery] = useState("");
 
   const t = dictionaries[lang].cats.studio.mediaPicker;
 
@@ -106,11 +112,10 @@ export default function MediaPickerModal({
   const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
   const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
   const MAX_VIDEO_SECONDS = 20;
+  const SEARCH_PAGE_SIZE = 50;
   const tabs: Array<{ id: MediaPickerTab; label: string; hidden?: boolean }> = [
     { id: "all", label: t.tabAll },
     { id: "gif", label: t.tabGif },
-    { id: "images", label: t.tabMemeImages },
-    { id: "reactions", label: t.tabReactions },
     { id: "videos", label: t.tabVideos },
     { id: "stickers", label: t.tabStickers, hidden: disableStickers },
     { id: "upload", label: t.tabUpload },
@@ -125,24 +130,12 @@ export default function MediaPickerModal({
     });
   }
 
-  const getTabTypes = useCallback((
-    tab: MediaPickerTab,
-  ): Array<UnifiedMemeMedia["type"]> | undefined => {
-    if (tab === "gif") return ["gif", "mp4", "webm"];
-    if (tab === "images") return ["image"];
-    if (tab === "videos" || tab === "reactions") return ["mp4", "webm"];
-    if (tab === "stickers") return ["sticker"];
-    return undefined;
-  }, []);
-
   const searchLibraryMedia = useCallback(async (
-    tab: MediaPickerTab,
     rawQuery: string,
     limit: number,
     requestOffset = 0,
+    types: UnifiedMemeMedia["type"][] = DEFAULT_SEARCH_TYPES,
   ) => {
-    const types = getTabTypes(tab);
-    const category = tab === "reactions" ? "funny" : undefined;
     const res = await fetch("/api/memes/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -150,9 +143,8 @@ export default function MediaPickerModal({
         q: rawQuery,
         limit,
         offset: requestOffset,
-        types,
-        category,
         lang,
+        types,
       }),
     });
 
@@ -166,10 +158,10 @@ export default function MediaPickerModal({
 
     const providerCounts = countMediaProviders(data?.items || []);
     devInfo("[Studio media] loaded", {
-      tab,
       query: rawQuery,
       limit,
       offset: requestOffset,
+      types,
       cached: Boolean(data?.cached),
       hasMore: Boolean(data?.hasMore),
       providers: providerCounts,
@@ -177,24 +169,28 @@ export default function MediaPickerModal({
 
     const items: MediaPickerResult[] = (data?.items || [])
       .map((item): MediaPickerResult => {
-        const isVideo = item.type === "mp4" || item.type === "webm";
+        const mediaUrl = item.media_url || "";
+        const isRuntimeVideo = item.type === "mp4" || item.type === "webm" || isVideoMediaUrl(mediaUrl);
+        const isGif = item.type === "gif";
         return {
           id: item.id,
-          url: item.media_url || "",
-          normalizedUrl: isVideo ? item.media_url : undefined,
-          normalizedMediaType: isVideo ? "video" : undefined,
-          normalizedMimeType: isVideo ? `video/${item.type}` : undefined,
+          url: mediaUrl,
+          normalizedUrl: isRuntimeVideo ? mediaUrl : undefined,
+          normalizedMediaType: isRuntimeVideo ? "video" : undefined,
+          normalizedMimeType: isRuntimeVideo
+            ? `video/${item.type === "webm" ? "webm" : "mp4"}`
+            : undefined,
           sourceUrl: item.source_url,
           previewUrl: item.preview_url,
           mediaType: item.type === "sticker"
             ? "sticker"
-            : item.type === "gif"
+            : isGif
               ? "gif"
-              : isVideo
+              : isRuntimeVideo
                 ? "video"
                 : "image",
           sourceMediaType: item.type === "mp4" || item.type === "webm" ? item.type : item.type === "gif" ? "gif" : item.type === "image" ? "image" : undefined,
-          animationType: item.type === "sticker" ? "webp" : isVideo ? "video" : item.type === "gif" ? "gif" : undefined,
+          animationType: item.type === "sticker" ? "webp" : isRuntimeVideo ? "video" : item.type === "gif" ? "gif" : undefined,
           source: item.provider,
           tags: item.tags,
         };
@@ -205,25 +201,50 @@ export default function MediaPickerModal({
       items,
       hasMore: Boolean(data?.hasMore ?? items.length >= limit),
     };
-  }, [getTabTypes, lang, t.errorSearchFailed]);
+  }, [lang, t.errorSearchFailed]);
+
+  const visibleResults = useMemo(() => {
+    if (activeTab === "stickers") {
+      return stickerResults;
+    }
+    if (activeTab === "gif") {
+      return results.filter((item) => item.mediaType === "gif");
+    }
+    if (activeTab === "videos") {
+      return results.filter((item) => item.mediaType === "video");
+    }
+    return results;
+  }, [activeTab, results, stickerResults]);
+
+  const activeHasMore = activeTab === "stickers" ? stickersHasMore : hasMore;
 
   const handleSearch = useCallback(async () => {
-    if (activeTab === "upload") return;
     if (!query.trim() && activeTab !== "stickers") return;
 
     setLoading(true);
-    setOffset(0);
     setSearchError(null);
 
     try {
-      const nextLimit = activeTab === "stickers" ? 24 : 18;
-      const { items, hasMore: more } = await searchLibraryMedia(activeTab, query, nextLimit, 0);
-      setResults(items);
-      setHasMore(more);
+      if (activeTab === "stickers") {
+        const { items, hasMore: more } = await searchLibraryMedia(query.trim(), SEARCH_PAGE_SIZE, 0, STICKER_SEARCH_TYPES);
+        setStickerResults(items);
+        setSearchedStickerQuery(query.trim());
+        setStickersHasMore(more);
+      } else {
+        const { items, hasMore: more } = await searchLibraryMedia(query.trim(), SEARCH_PAGE_SIZE, 0, DEFAULT_SEARCH_TYPES);
+        setResults(items);
+        setSearchedQuery(query.trim());
+        setHasMore(more);
+      }
     } catch (err) {
       console.error("Media search error:", err);
-      setResults([]);
-      setHasMore(false);
+      if (activeTab === "stickers") {
+        setStickerResults([]);
+        setStickersHasMore(false);
+      } else {
+        setResults([]);
+        setHasMore(false);
+      }
       setSearchError(t.errorSearchFailed);
     } finally {
       setLoading(false);
@@ -250,11 +271,6 @@ export default function MediaPickerModal({
       return;
     }
 
-    setResults([]);
-    setQuery("");
-    setOffset(0);
-    setHasMore(false);
-    setSearchError(null);
   }, [activeTab, disableStickers]);
 
   useEffect(() => {
@@ -267,12 +283,12 @@ export default function MediaPickerModal({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || activeTab === "upload") return;
+    if (!isOpen) return;
     if (!query.trim() && activeTab !== "stickers") return;
 
     const timeoutId = window.setTimeout(() => {
       void handleSearch();
-    }, activeTab === "stickers" ? 280 : 420);
+    }, 420);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -294,7 +310,7 @@ export default function MediaPickerModal({
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [isMobile, results, loading, hasMore]);
+  }, [activeHasMore, isMobile, visibleResults, loading]);
 
   function handleResultsScroll() {
     if (!isMobile) return;
@@ -309,18 +325,41 @@ export default function MediaPickerModal({
   }
 
   async function handleLoadMore() {
-    if (!query.trim() && activeTab !== "stickers") return;
+    const isStickerSearch = activeTab === "stickers";
+    const activeQuery = isStickerSearch
+      ? searchedStickerQuery || query.trim()
+      : searchedQuery || query.trim();
+    if (!activeQuery) return;
 
-    const pageSize = activeTab === "stickers" ? 24 : 18;
-    const nextOffset = offset + pageSize;
     setLoading(true);
     setSearchError(null);
 
     try {
-      const { items, hasMore: more } = await searchLibraryMedia(activeTab, query, pageSize, nextOffset);
-      setResults((current) => [...current, ...items]);
-      setOffset(nextOffset);
-      setHasMore(more);
+      const currentResults = isStickerSearch ? stickerResults : results;
+      const { items, hasMore: more } = await searchLibraryMedia(
+        activeQuery,
+        SEARCH_PAGE_SIZE,
+        currentResults.length,
+        isStickerSearch ? STICKER_SEARCH_TYPES : DEFAULT_SEARCH_TYPES,
+      );
+      const mergeResults = (current: MediaPickerResult[]) => {
+        const seen = new Set(current.map((item) => `${item.source}:${item.id}:${item.url}`));
+        const nextItems = items.filter((item) => {
+          const key = `${item.source}:${item.id}:${item.url}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return [...current, ...nextItems];
+      };
+
+      if (isStickerSearch) {
+        setStickerResults(mergeResults);
+        setStickersHasMore(more);
+      } else {
+        setResults(mergeResults);
+        setHasMore(more);
+      }
     } catch (err) {
       console.error("Load more error:", err);
       setSearchError(t.errorSearchFailed);
@@ -548,15 +587,31 @@ export default function MediaPickerModal({
               <li>{t.unifiedRule1}</li>
               <li>{t.unifiedRule2}</li>
               <li>
-                {t.giphyTermsPrefix}{" "}
+                {t.providerTermsPrefix}{" "}
                 <a
                   href="https://support.giphy.com/hc/en-us/articles/360020027752-GIPHY-Terms-of-Service"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {t.giphyTerms}
+                  GIPHY
                 </a>
-                {t.giphyTermsSuffix}
+                {", "}
+                <a href="https://www.pexels.com/license/" target="_blank" rel="noopener noreferrer">
+                  Pexels
+                </a>
+                {", "}
+                <a href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener noreferrer">
+                  Pixabay
+                </a>
+                {", "}
+                <a href="https://www.redditinc.com/policies/content-policy" target="_blank" rel="noopener noreferrer">
+                  Reddit
+                </a>
+                {", "}
+                <a href="https://imgflip.com/terms" target="_blank" rel="noopener noreferrer">
+                  Imgflip
+                </a>
+                {t.providerTermsSuffix}
               </li>
             </ul>
           </div>
@@ -613,7 +668,7 @@ export default function MediaPickerModal({
             minHeight: 0,
             width: "100%",
             alignItems: "flex-start",
-            paddingBottom: hasMore ? "12px" : "0",
+            paddingBottom: activeHasMore ? "12px" : "0",
           } : undefined}
         >
           {loading && <p style={isMobile ? { width: "100%", color: "#fff" } : undefined}>{t.loading}</p>}
@@ -622,7 +677,7 @@ export default function MediaPickerModal({
           ) : null}
 
           {!loading &&
-            results.map((item, index) => (
+            visibleResults.map((item, index) => (
               <div
                 key={`${item.id}-${index}`}
                 className={isMobile ? undefined : "media-result-item"}
@@ -632,8 +687,7 @@ export default function MediaPickerModal({
                   const isVideo =
                     item.mediaType !== "sticker" &&
                     (item.normalizedMediaType === "video" ||
-                      lower.endsWith(".mp4") ||
-                      lower.endsWith(".webm"));
+                      isVideoMediaUrl(lower));
                   devInfo("[Studio media] selected", {
                     source: item.source,
                     mediaType: item.mediaType,
@@ -717,7 +771,7 @@ export default function MediaPickerModal({
                 )}
               </div>
             ))}
-          {!loading && hasMore && !isMobile && (
+          {!loading && activeHasMore && !isMobile && (
             <div className="media-load-more-wrapper">
               <button
                 className={`media-load-more-button ${loading ? "loading" : ""}`}
@@ -729,7 +783,7 @@ export default function MediaPickerModal({
             </div>
           )}
         </div>
-        {isMobile && hasMore ? (
+        {isMobile && activeHasMore ? (
           <div
             style={{
               position: "sticky",

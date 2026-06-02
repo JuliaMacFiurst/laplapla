@@ -389,6 +389,8 @@ type DictionaryShape = {
         unifiedNoticeTitle: string;
         unifiedRule1: string;
         unifiedRule2: string;
+        providerTermsPrefix: string;
+        providerTermsSuffix: string;
         giphyTermsPrefix: string;
         giphyTermsSuffix: string;
 

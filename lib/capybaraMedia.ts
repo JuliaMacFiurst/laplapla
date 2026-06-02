@@ -20,8 +20,9 @@ export const fetchCapybaraImages = async (query: string) => {
       lang: "ru",
       limit: 12,
       offset: 0,
-      providers: ["pexels"],
+      providers: ["pexels", "pixabay", "reddit", "imgflip"],
       types: ["image"],
+      persist: false,
   });
 
   return shuffle(response.items)
@@ -39,8 +40,9 @@ export const fetchCapybaraGifs = async (query: string) => {
     lang: "ru",
     limit: 10,
     offset: 0,
-    providers: ["giphy"],
+    providers: ["giphy", "reddit"],
     types: ["gif"],
+    persist: false,
   });
 
   return shuffle(response.items)
@@ -57,8 +59,9 @@ export const fetchCapybaraVideos = async (query: string) => {
     lang: "ru",
     limit: 10,
     offset: 0,
-    providers: ["pexels"],
+    providers: ["pexels", "pixabay", "reddit"],
     types: ["mp4", "webm"],
+    persist: false,
   });
 
   return shuffle(response.items)

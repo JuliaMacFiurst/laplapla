@@ -353,6 +353,8 @@ export const en = {
           "Media from external providers. Use it carefully and respect creators.",
         unifiedRule1: "Video-friendly MP4/WebM results are preferred when available.",
         unifiedRule2: "Do not use media in harmful, illegal, or misleading contexts.",
+        providerTermsPrefix: "Check each source's terms and license:",
+        providerTermsSuffix: ".",
         giphyTermsPrefix: "Follow GIPHY’s official",
         giphyTermsSuffix: ".",
 

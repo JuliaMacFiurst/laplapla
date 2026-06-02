@@ -2,8 +2,8 @@ import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { UnifiedMemeMedia, UnifiedMemeProvider, UnifiedMemeMediaType } from "./types";
 
-const SEARCH_TTL_MS = 20 * 60 * 1000;
-const MEDIA_TTL_MS = 24 * 60 * 60 * 1000;
+const SEARCH_TTL_MS = 10 * 60 * 1000;
+const MEDIA_TTL_MS = 6 * 60 * 60 * 1000;
 
 type SearchCacheKeyInput = {
   query: string;

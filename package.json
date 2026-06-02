@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "cleanup:meme-cache": "tsx scripts/cleanupMemeCache.ts",
     "backup:storage": "tsx scripts/backupStorage.ts",
     "backup:db": "tsx scripts/backupDatabase.ts",
     "backup:all": "npm run backup:storage && npm run backup:db"

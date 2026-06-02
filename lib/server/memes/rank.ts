@@ -14,6 +14,7 @@ const PROVIDER_PRIORITY: Record<UnifiedMemeMedia["provider"], number> = {
   pexels: 62,
   pixabay: 60,
   imgflip: 45,
+  laplapla: 120,
 };
 
 export function rankMedia(items: UnifiedMemeMedia[], params: Pick<UnifiedMemeSearchParams, "query" | "types">) {

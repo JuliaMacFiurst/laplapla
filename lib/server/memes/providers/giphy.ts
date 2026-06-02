@@ -1,5 +1,5 @@
 import type { ProviderSearchParams, RawProviderMedia } from "../types";
-import { inferMediaType, isSafeMediaText, normalizeTags } from "../normalize";
+import { isSafeMediaText, normalizeTags } from "../normalize";
 
 const MAX_QUERY_LENGTH = 160;
 const LAPLAPLA_TAG = "laplapla";
@@ -42,7 +42,7 @@ function pickStickerUrl(item: any) {
   );
 }
 
-function toMedia(item: any, sticker: boolean): RawProviderMedia | null {
+function toMedia(item: any, sticker: boolean, providerIdSuffix = ""): RawProviderMedia | null {
   const providerId = String(item?.id || "");
   const title = String(item?.title || "");
   const username = String(item?.username || "");
@@ -55,8 +55,8 @@ function toMedia(item: any, sticker: boolean): RawProviderMedia | null {
 
   return {
     provider: "giphy",
-    providerId,
-    type: sticker ? "sticker" : inferMediaType(mediaUrl, "gif"),
+    providerId: `${providerId}${providerIdSuffix}`,
+    type: sticker ? "sticker" : "gif",
     media_url: mediaUrl,
     preview_url: previewUrl,
     width: Number(item?.images?.original?.width || item?.images?.fixed_height?.width) || undefined,
@@ -83,7 +83,7 @@ export async function searchGiphy(params: ProviderSearchParams): Promise<RawProv
   const query = normalizeQuery(params.query || params.category || "");
   const limit = Math.min(50, Math.max(1, params.limit + params.offset));
   const wantsStickers = !params.types?.length || params.types.includes("sticker");
-  const wantsGifs = !params.types?.length || params.types.some((type) => type === "gif" || type === "mp4" || type === "webm");
+  const wantsGifs = !params.types?.length || params.types.includes("gif");
 
   const requests: Array<Promise<RawProviderMedia[]>> = [];
 
@@ -96,7 +96,7 @@ export async function searchGiphy(params: ProviderSearchParams): Promise<RawProv
     });
     requests.push(
       fetchGiphy("gifs/search", searchParams, params.signal)
-        .then((json) => (json?.data || []).map((item: any) => toMedia(item, false)).filter(Boolean)),
+        .then((json) => (json?.data || []).map((item: any) => toMedia(item, false, ":gif")).filter(Boolean)),
     );
   }
 
@@ -106,11 +106,24 @@ export async function searchGiphy(params: ProviderSearchParams): Promise<RawProv
       limit: String(Math.min(24, limit)),
       rating: "g",
     });
-    if (query) searchParams.set("q", `${LAPLAPLA_TAG} ${query}`);
+    if (query) searchParams.set("q", query);
     requests.push(
       fetchGiphy(query ? "stickers/search" : "stickers/trending", searchParams, params.signal)
-        .then((json) => (json?.data || []).map((item: any) => toMedia(item, true)).filter(Boolean)),
+        .then((json) => (json?.data || []).map((item: any) => toMedia(item, true, ":sticker")).filter(Boolean)),
     );
+
+    if (query) {
+      const brandedSearchParams = new URLSearchParams({
+        api_key: apiKey,
+        q: `${LAPLAPLA_TAG} ${query}`,
+        limit: String(Math.min(12, limit)),
+        rating: "g",
+      });
+      requests.push(
+        fetchGiphy("stickers/search", brandedSearchParams, params.signal)
+          .then((json) => (json?.data || []).map((item: any) => toMedia(item, true, ":sticker")).filter(Boolean)),
+      );
+    }
   }
 
   const settled = await Promise.allSettled(requests);

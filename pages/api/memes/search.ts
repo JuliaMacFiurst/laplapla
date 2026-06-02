@@ -6,7 +6,7 @@ import type { UnifiedMemeMediaType, UnifiedMemeProvider, UnifiedMemeSearchRespon
 import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
 
-const PROVIDERS = new Set<UnifiedMemeProvider>(["giphy", "reddit", "imgflip", "pixabay", "pexels"]);
+const PROVIDERS = new Set<UnifiedMemeProvider>(["giphy", "reddit", "imgflip", "pixabay", "pexels", "laplapla"]);
 const TYPES = new Set<UnifiedMemeMediaType>(["image", "gif", "mp4", "webm", "sticker"]);
 
 export const config = {
@@ -61,7 +61,9 @@ async function handler(
   const providers = parseCsv((payload as Record<string, unknown>).providers, PROVIDERS);
   const types = parseCsv((payload as Record<string, unknown>).types, TYPES);
 
-  if (!query && !category) {
+  const isStickerOnlySearch = types.length === 1 && types[0] === "sticker";
+
+  if (!query && !category && !isStickerOnlySearch) {
     return res.status(400).json({ error: t.errorMissingQuery });
   }
 

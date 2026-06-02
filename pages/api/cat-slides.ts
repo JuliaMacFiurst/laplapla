@@ -128,12 +128,37 @@ function extractKeywords(text: string): string {
   return keywords ? `${keywords} cat` : 'cute cat';
 }
 
+const CAT_PRIMARY_VIDEO_PROVIDERS: UnifiedMemeProvider[] = ["pexels", "pixabay"];
+const CAT_MIXED_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip", "giphy", "pexels"];
+const CAT_MIXED_TYPES: UnifiedMemeMediaType[] = ["image", "gif", "mp4", "webm"];
+const CAT_TEST_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip"];
+
+function getProviderTypes(provider: UnifiedMemeProvider): UnifiedMemeMediaType[] {
+  if (provider === "imgflip") return ["image"];
+  if (provider === "pixabay") return ["mp4", "webm", "image"];
+  if (provider === "reddit") return ["gif", "mp4", "webm", "image"];
+  if (provider === "giphy") return ["gif", "mp4", "webm"];
+  return ["mp4", "webm", "image"];
+}
+
+function getCatProviderQueries(provider: UnifiedMemeProvider, query: string) {
+  const fallbackQueries =
+    provider === "imgflip"
+      ? ["cat", "funny cat"]
+      : provider === "reddit"
+        ? ["cat", "funny cat", "cute cat"]
+        : ["cat", "cute cat", "funny cat"];
+
+  return Array.from(new Set([query, ...fallbackQueries]));
+}
+
 async function fetchCatMediaFromUnified(params: {
   query: string;
   lang: "ru" | "en" | "he";
   providers: UnifiedMemeProvider[];
   types: UnifiedMemeMediaType[];
   used: Set<string>;
+  offset?: number;
 }) {
   devLog("🌀 Unified media search:", {
     query: params.query,
@@ -145,12 +170,20 @@ async function fetchCatMediaFromUnified(params: {
     query: params.query,
     lang: params.lang,
     limit: 10,
-    offset: Math.floor(Math.random() * 20),
+    offset: params.offset ?? Math.floor(Math.random() * 20),
     providers: params.providers,
     types: params.types,
+    persist: false,
   });
 
   const candidates = response.items.filter((item) => !params.used.has(item.media_url));
+  devLog("🌀 Unified media candidates:", {
+    total: response.items.length,
+    unused: candidates.length,
+    providers: Array.from(new Set(response.items.map((item) => item.provider))),
+    cached: response.cached,
+  });
+
   const chosen = candidates[Math.floor(Math.random() * candidates.length)];
   if (!chosen) return null;
 
@@ -161,6 +194,27 @@ async function fetchCatMediaFromUnified(params: {
     url: chosen.media_url,
   });
   return chosen.media_url;
+}
+
+async function fetchCatMediaFromProvider(params: {
+  provider: UnifiedMemeProvider;
+  query: string;
+  lang: "ru" | "en" | "he";
+  used: Set<string>;
+}) {
+  for (const query of getCatProviderQueries(params.provider, params.query)) {
+    const media = await fetchCatMediaFromUnified({
+      query,
+      lang: params.lang,
+      providers: [params.provider],
+      types: getProviderTypes(params.provider),
+      used: params.used,
+      offset: params.provider === "imgflip" ? 0 : Math.floor(Math.random() * 5),
+    });
+    if (media) return media;
+  }
+
+  return null;
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -229,38 +283,62 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     devLog("🖼 Has predefined media:", Boolean(slide.mediaUrl));
 
     const isEven = slides.length % 2 === 0;
+    const slideIndex = slides.length;
+    const testProvider = CAT_TEST_PROVIDERS[slideIndex % CAT_TEST_PROVIDERS.length];
+    const query = extractKeywords(text);
 
     if (!image) {
-      if (isEven) {
+      image = (await fetchCatMediaFromProvider({
+        provider: testProvider,
+        query,
+        lang,
+        used: usedMedia,
+      })) || "";
+
+      if (!image && isEven) {
         image =
           (await fetchCatMediaFromUnified({
-            query: extractKeywords(text),
+            query,
             lang,
-            providers: ["pexels"],
+            providers: CAT_PRIMARY_VIDEO_PROVIDERS,
             types: ["mp4", "webm"],
             used: usedMedia,
           })) ||
           (await fetchCatMediaFromUnified({
-            query: extractKeywords(text),
+            query,
             lang,
             providers: ["giphy"],
             types: ["gif", "mp4", "webm"],
+            used: usedMedia,
+          })) ||
+          (await fetchCatMediaFromUnified({
+            query,
+            lang,
+            providers: CAT_MIXED_PROVIDERS,
+            types: CAT_MIXED_TYPES,
             used: usedMedia,
           })) ||
           '';
-      } else {
+      } else if (!image) {
         image =
           (await fetchCatMediaFromUnified({
-            query: extractKeywords(text),
+            query,
             lang,
             providers: ["giphy"],
             types: ["gif", "mp4", "webm"],
             used: usedMedia,
           })) ||
           (await fetchCatMediaFromUnified({
-            query: extractKeywords(text),
+            query,
             lang,
-            providers: ["pexels"],
+            providers: CAT_MIXED_PROVIDERS,
+            types: CAT_MIXED_TYPES,
+            used: usedMedia,
+          })) ||
+          (await fetchCatMediaFromUnified({
+            query,
+            lang,
+            providers: CAT_PRIMARY_VIDEO_PROVIDERS,
             types: ["mp4", "webm"],
             used: usedMedia,
           })) ||
@@ -272,8 +350,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       image = (await fetchCatMediaFromUnified({
         query: "cute cat",
         lang,
-        providers: ["giphy", "pexels"],
-        types: ["gif", "mp4", "webm"],
+        providers: CAT_MIXED_PROVIDERS,
+        types: CAT_MIXED_TYPES,
         used: usedMedia,
       })) || '';
     }
