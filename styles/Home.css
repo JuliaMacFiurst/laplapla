@@ -842,9 +842,41 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 }
 
 .home-retention-bedtime-card {
+  grid-template-rows: auto minmax(0, 1fr);
   background:
     radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.86), transparent 28%),
     linear-gradient(145deg, #e8e2ff, #d6f5ff 55%, #fde7f3);
+}
+
+.home-retention-bedtime-media {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+}
+
+.home-retention-bedtime-media::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(180deg, rgba(26, 29, 54, 0.08) 38%, rgba(24, 28, 53, 0.9) 100%);
+}
+
+.home-retention-bedtime-media img {
+  object-fit: cover;
+}
+
+.home-retention-bedtime-copy {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  align-self: end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.home-retention-bedtime-copy .home-retention-card-title {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(20, 22, 45, 0.62);
 }
 
 .home-retention-card-title {
@@ -907,6 +939,10 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 }
 
 .home-retention-bedtime-card {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.home-retention-bedtime-card.is-empty {
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
@@ -1056,6 +1092,10 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
 .home-retention-bedtime-card {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.home-retention-bedtime-card.is-empty {
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 

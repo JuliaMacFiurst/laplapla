@@ -103,6 +103,10 @@ export const he = {
       title: "כניסת מנהל LapLapLa",
       description: "עמוד כניסה למנהלים עבור כלים מוגנים של LapLapLa.",
     },
+    bedtimeStories: {
+      title: "סיפורי לילה של קפיברות — סיפורים מאוירים לילדים",
+      description: "דפדפו בסיפורי לילה מאוירים ונעימים יחד עם הקפיברות.",
+    },
   },
 
   identity: {
@@ -182,6 +186,35 @@ export const he = {
     },
     cta: "לגלות",
     installBanner: "להתקין את אפליקציית LapLapLa",
+  },
+  homeRetention: {
+    title: "✨ חדש ב-LapLapLa",
+    recipe: "מתכון השבוע",
+    dogs: "כלבלבים מציירים",
+    bedtime: "סיפורים לפני השינה",
+    mobileTitle: "חדש",
+    empty: "בקרוב",
+    recipeBadge: "מתכון חדש בכל יום שישי",
+    lessonBadge: "שיעור היום",
+    openRecipe: "לפתוח מתכון",
+    openLesson: "להתחיל לצייר",
+    openBedtimeStory: "לקרוא סיפור",
+    bedtimeSoon: "בקרוב יהיו כאן סיפורי ערב.",
+    recipeArchive: "ארכיון מתכונים",
+    drawingArchive: "כל שיעורי הציור",
+    bedtimeArchive: "כל הסיפורים",
+  },
+  bedtimeStories: {
+    kicker: "ערב שקט עם קפיברות",
+    title: "סיפורי לילה של קפיברות",
+    subtitle: "בחרו סיפור, התרווחו ודפדפו בו עמוד אחר עמוד.",
+    readStory: "לקרוא סיפור",
+    close: "לסגור",
+    previous: "העמוד הקודם",
+    next: "העמוד הבא",
+    counter: "עמוד {current} מתוך {total}",
+    empty: "סיפורים חדשים כבר בדרך.",
+    backHome: "לדף הבית",
   },
   pwaInstall: {
     seo: {

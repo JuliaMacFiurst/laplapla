@@ -111,6 +111,10 @@ type DictionaryShape = {
       title: string;
       description: string;
     };
+    bedtimeStories: {
+      title: string;
+      description: string;
+    };
   };
 
   home: {
@@ -135,6 +139,37 @@ type DictionaryShape = {
     };
     cta: string;
     installBanner: string;
+  };
+
+  homeRetention: {
+    title: string;
+    recipe: string;
+    dogs: string;
+    bedtime: string;
+    mobileTitle: string;
+    empty: string;
+    recipeBadge: string;
+    lessonBadge: string;
+    openRecipe: string;
+    openLesson: string;
+    openBedtimeStory: string;
+    bedtimeSoon: string;
+    recipeArchive: string;
+    drawingArchive: string;
+    bedtimeArchive: string;
+  };
+
+  bedtimeStories: {
+    kicker: string;
+    title: string;
+    subtitle: string;
+    readStory: string;
+    close: string;
+    previous: string;
+    next: string;
+    counter: string;
+    empty: string;
+    backHome: string;
   };
 
   pwaInstall: {

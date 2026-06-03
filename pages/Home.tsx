@@ -21,72 +21,6 @@ const HOME_ALTERNATES = [
   { hrefLang: "x-default", href: BASE_URL },
 ];
 
-const RETENTION_UI: Record<Lang, {
-  title: string;
-  recipe: string;
-  dogs: string;
-  bedtime: string;
-  mobileTitle: string;
-  empty: string;
-  recipeBadge: string;
-  lessonBadge: string;
-  openRecipe: string;
-  openLesson: string;
-  bedtimeSoon: string;
-  recipeArchive: string;
-  drawingArchive: string;
-  bedtimeArchive: string;
-}> = {
-  ru: {
-    title: "✨ Новинки от LapLapLa",
-    recipe: "Рецепт недели",
-    dogs: "Пёсики нарисуют",
-    bedtime: "Сказки на ночь",
-    mobileTitle: "Новинки",
-    empty: "Скоро появится",
-    recipeBadge: "Новый рецепт каждую пятницу",
-    lessonBadge: "Урок дня",
-    openRecipe: "Открыть рецепт",
-    openLesson: "Начать рисовать",
-    bedtimeSoon: "Здесь скоро поселятся вечерние истории.",
-    recipeArchive: "Архив рецептов",
-    drawingArchive: "Все уроки рисования",
-    bedtimeArchive: "Архив сказок",
-  },
-  en: {
-    title: "✨ New From LapLapLa",
-    recipe: "Recipe of the week",
-    dogs: "Dogs Draw",
-    bedtime: "Bedtime stories",
-    mobileTitle: "New",
-    empty: "Coming soon",
-    recipeBadge: "New recipe every Friday",
-    lessonBadge: "Lesson of the day",
-    openRecipe: "Open recipe",
-    openLesson: "Start drawing",
-    bedtimeSoon: "Evening stories will live here soon.",
-    recipeArchive: "Recipe archive",
-    drawingArchive: "All drawing lessons",
-    bedtimeArchive: "Story archive",
-  },
-  he: {
-    title: "✨ חדש ב-LapLapLa",
-    recipe: "מתכון השבוע",
-    dogs: "כלבלבים מציירים",
-    bedtime: "סיפורים לפני השינה",
-    mobileTitle: "חדש",
-    empty: "בקרוב",
-    recipeBadge: "מתכון חדש בכל יום שישי",
-    lessonBadge: "שיעור היום",
-    openRecipe: "לפתוח מתכון",
-    openLesson: "להתחיל לצייר",
-    bedtimeSoon: "בקרוב יהיו כאן סיפורי ערב.",
-    recipeArchive: "ארכיון מתכונים",
-    drawingArchive: "כל שיעורי הציור",
-    bedtimeArchive: "ארכיון סיפורים",
-  },
-};
-
 function HomepageRetentionBlocks({
   lang,
   retention,
@@ -94,9 +28,10 @@ function HomepageRetentionBlocks({
   lang: Lang;
   retention?: HomepageRetentionData | null;
 }) {
-  const ui = RETENTION_UI[lang];
+  const ui = dictionaries[lang].homeRetention;
   const recipe = retention?.recipe || null;
   const dogLesson = retention?.dogLesson || null;
+  const bedtimeStory = retention?.bedtimeStory || null;
   const recipeCoverUrl = `https://media.laplapla.com/stickers/raccoon-stickers/raccoon-kitchen-covers/raccoons-cook-${lang}.webp`;
 
   return (
@@ -204,16 +139,40 @@ function HomepageRetentionBlocks({
           ) : null}
         </Link>
 
-        <div className="home-retention-card home-retention-bedtime-card is-empty">
+        <Link
+          className={`home-retention-card home-retention-bedtime-card ${bedtimeStory ? "" : "is-empty"}`}
+          href={buildLocalizedPublicPath("/bedtime-stories", lang)}
+        >
           <span className="home-retention-card-label">{ui.bedtime}</span>
-          <span className="home-retention-placeholder">{ui.empty}</span>
-          <span className="home-retention-card-note">{ui.bedtimeSoon}</span>
-        </div>
+          {bedtimeStory ? (
+            <>
+              <span className="home-retention-bedtime-media">
+                <Image
+                  src={bedtimeStory.previewUrl}
+                  alt={bedtimeStory.title}
+                  fill
+                  sizes="(max-width: 767px) 84vw, (max-width: 900px) 340px, 360px"
+                  loading="eager"
+                  unoptimized
+                />
+              </span>
+              <span className="home-retention-bedtime-copy">
+                <span className="home-retention-card-title">{bedtimeStory.title}</span>
+                <span className="home-retention-card-action">{ui.openBedtimeStory}</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="home-retention-placeholder">{ui.empty}</span>
+              <span className="home-retention-card-note">{ui.bedtimeSoon}</span>
+            </>
+          )}
+        </Link>
       </div>
       <nav className="home-retention-links" aria-label={ui.title}>
         <Link href={buildLocalizedPublicPath("/raccoons", lang)}>{ui.recipeArchive}</Link>
         <Link href={buildLocalizedPublicPath("/dog/lessons", lang)}>{ui.drawingArchive}</Link>
-        <span aria-disabled="true">{ui.bedtimeArchive}</span>
+        <Link href={buildLocalizedPublicPath("/bedtime-stories", lang)}>{ui.bedtimeArchive}</Link>
       </nav>
     </section>
   );

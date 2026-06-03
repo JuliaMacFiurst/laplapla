@@ -103,6 +103,10 @@ export const ru = {
       title: "Вход администратора LapLapLa",
       description: "Страница входа администратора для защищённых инструментов LapLapLa.",
     },
+    bedtimeStories: {
+      title: "Сказки капибар — истории для чтения перед сном",
+      description: "Листайте добрые иллюстрированные сказки вместе с капибарами.",
+    },
   },
 
   identity: {
@@ -182,6 +186,35 @@ export const ru = {
     },
     cta: "Исследовать",
     installBanner: "Установить приложение",
+  },
+  homeRetention: {
+    title: "✨ Новинки от LapLapLa",
+    recipe: "Рецепт недели",
+    dogs: "Пёсики нарисуют",
+    bedtime: "Сказки на ночь",
+    mobileTitle: "Новинки",
+    empty: "Скоро появится",
+    recipeBadge: "Новый рецепт каждую пятницу",
+    lessonBadge: "Урок дня",
+    openRecipe: "Открыть рецепт",
+    openLesson: "Начать рисовать",
+    openBedtimeStory: "Читать сказку",
+    bedtimeSoon: "Здесь скоро поселятся вечерние истории.",
+    recipeArchive: "Архив рецептов",
+    drawingArchive: "Все уроки рисования",
+    bedtimeArchive: "Все сказки",
+  },
+  bedtimeStories: {
+    kicker: "Тихий вечер с капибарами",
+    title: "Сказки капибар",
+    subtitle: "Выбирайте историю, устраивайтесь поудобнее и листайте её страницу за страницей.",
+    readStory: "Читать сказку",
+    close: "Закрыть",
+    previous: "Предыдущая страница",
+    next: "Следующая страница",
+    counter: "Страница {current} из {total}",
+    empty: "Новые сказки уже готовятся.",
+    backHome: "На главную",
   },
   pwaInstall: {
     seo: {

@@ -103,6 +103,10 @@ export const en = {
       title: "LapLapLa Admin Login",
       description: "Administrator sign-in page for protected LapLapLa tools.",
     },
+    bedtimeStories: {
+      title: "Capybara Bedtime Stories — illustrated stories for kids",
+      description: "Turn the pages of gentle illustrated bedtime stories with the capybaras.",
+    },
   },
 
   identity: {
@@ -182,6 +186,35 @@ export const en = {
     },
     cta: "Explore",
     installBanner: "Install the LapLapLa app",
+  },
+  homeRetention: {
+    title: "✨ New From LapLapLa",
+    recipe: "Recipe of the week",
+    dogs: "Dogs Draw",
+    bedtime: "Bedtime stories",
+    mobileTitle: "New",
+    empty: "Coming soon",
+    recipeBadge: "New recipe every Friday",
+    lessonBadge: "Lesson of the day",
+    openRecipe: "Open recipe",
+    openLesson: "Start drawing",
+    openBedtimeStory: "Read story",
+    bedtimeSoon: "Evening stories will live here soon.",
+    recipeArchive: "Recipe archive",
+    drawingArchive: "All drawing lessons",
+    bedtimeArchive: "All stories",
+  },
+  bedtimeStories: {
+    kicker: "A quiet evening with capybaras",
+    title: "Capybara Bedtime Stories",
+    subtitle: "Choose a story, get comfortable, and turn the pages one by one.",
+    readStory: "Read story",
+    close: "Close",
+    previous: "Previous page",
+    next: "Next page",
+    counter: "Page {current} of {total}",
+    empty: "New stories are on their way.",
+    backHome: "Back home",
   },
   pwaInstall: {
     seo: {

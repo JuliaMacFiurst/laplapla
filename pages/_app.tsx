@@ -21,6 +21,7 @@ import '../styles/export.css';
 import '../styles/Puzzle.css';
 import '../styles/Replay.css'
 import '../styles/PWAInstall.css';
+import '../styles/BedtimeStories.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";

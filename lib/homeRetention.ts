@@ -6,6 +6,7 @@ import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import type { Lang } from "@/i18n";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import countryNames from "@/utils/country_names.json";
+import { loadLatestBedtimeStory } from "@/lib/bedtimeStories";
 
 export type HomepageRetentionData = {
   recipe: {
@@ -22,6 +23,11 @@ export type HomepageRetentionData = {
     previewUrl: string;
     dogImageUrl: string | null;
   } | null;
+  bedtimeStory: {
+    slug: string;
+    title: string;
+    previewUrl: string;
+  } | null;
 };
 
 type LessonRow = {
@@ -34,6 +40,7 @@ type LessonRow = {
 };
 
 const LESSON_PREVIEW_URL_TTL_SECONDS = 60 * 60;
+const FRANK_IMAGE_PATTERN = /\.(?:avif|gif|jpe?g|png|webp)$/i;
 let cachedFrankImageUrl: string | null | undefined;
 
 function normalizeTargetId(value: string | null | undefined) {
@@ -156,9 +163,9 @@ async function loadFrankImageUrl() {
   try {
     const images = await listR2Objects("stickers/dogs-stickers/frank/anims/");
     cachedFrankImageUrl =
-      images.find((item) => item.key.endsWith("/draw-poster.png"))?.url ||
-      images.find((item) => item.key.endsWith("/paint-poster.png"))?.url ||
-      images.find((item) => /\.png$/i.test(item.key))?.url ||
+      images.find((item) => /\/draw-poster\.(?:avif|gif|jpe?g|png|webp)$/i.test(item.key))?.url ||
+      images.find((item) => /\/paint-poster\.(?:avif|gif|jpe?g|png|webp)$/i.test(item.key))?.url ||
+      images.find((item) => FRANK_IMAGE_PATTERN.test(item.key))?.url ||
       null;
   } catch (error) {
     console.error("[home-retention] failed to load Frank image", error);
@@ -205,7 +212,7 @@ async function loadDogLessonOfTheWeek(lang: Lang): Promise<HomepageRetentionData
 }
 
 export async function loadHomepageRetentionData(lang: Lang): Promise<HomepageRetentionData> {
-  const [recipe, dogLesson] = await Promise.all([
+  const [recipe, dogLesson, bedtimeStory] = await Promise.all([
     loadRecipeOfTheWeek(lang).catch((error) => {
       console.error("[home-retention] failed to load recipe", error);
       return null;
@@ -214,10 +221,21 @@ export async function loadHomepageRetentionData(lang: Lang): Promise<HomepageRet
       console.error("[home-retention] failed to load dog lesson", error);
       return null;
     }),
+    loadLatestBedtimeStory(lang).catch((error) => {
+      console.error("[home-retention] failed to load bedtime story", error);
+      return null;
+    }),
   ]);
 
   return {
     recipe,
     dogLesson,
+    bedtimeStory: bedtimeStory
+      ? {
+          slug: bedtimeStory.slug,
+          title: bedtimeStory.title,
+          previewUrl: bedtimeStory.previewUrl,
+        }
+      : null,
   };
 }

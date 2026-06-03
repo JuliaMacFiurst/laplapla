@@ -1,0 +1,256 @@
+.bedtime-stories-page {
+  min-height: 100vh;
+  padding: 96px 24px 72px;
+  box-sizing: border-box;
+  background: #17213b;
+  color: #fff9ed;
+}
+
+.bedtime-stories-header {
+  width: min(1120px, 100%);
+  margin: 0 auto 32px;
+}
+
+.bedtime-stories-home-link {
+  display: inline-block;
+  margin-bottom: 28px;
+  color: #b9d8ff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.bedtime-stories-header p,
+.bedtime-stories-header div {
+  margin: 0;
+  color: #cfdbef;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.bedtime-stories-header h1 {
+  margin: 6px 0 8px;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  font-size: clamp(3.2rem, 8vw, 6.5rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.bedtime-stories-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 22px;
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.bedtime-story-card {
+  min-width: 0;
+}
+
+.bedtime-story-card button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: #263451;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+  box-shadow: 0 18px 42px rgba(4, 10, 27, 0.34);
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.bedtime-story-card button:hover,
+.bedtime-story-card button:focus-visible {
+  transform: translateY(-4px);
+  border-color: #b9d8ff;
+}
+
+.bedtime-story-card button:focus-visible {
+  outline: 3px solid #b9d8ff;
+  outline-offset: 4px;
+}
+
+.bedtime-story-poster {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  background: #10182c;
+}
+
+.bedtime-story-poster img {
+  object-fit: cover;
+}
+
+.bedtime-story-copy {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: grid;
+  gap: 6px;
+  padding: 52px 18px 18px;
+  background: linear-gradient(transparent, rgba(9, 15, 31, 0.94));
+}
+
+.bedtime-story-copy strong {
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.bedtime-story-copy span {
+  color: #c9ddf8;
+  font-weight: 800;
+}
+
+.bedtime-stories-empty {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  color: #cfdbef;
+  font-size: 1.2rem;
+}
+
+.bedtime-reader-backdrop {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  background: rgba(5, 9, 20, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.bedtime-reader {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(920px, 100%);
+  height: min(94vh, 1040px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: #17213b;
+  color: #fff9ed;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.48);
+}
+
+.bedtime-reader-header,
+.bedtime-reader-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+}
+
+.bedtime-reader-header {
+  justify-content: space-between;
+}
+
+.bedtime-reader-header h2 {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  font-size: 1.8rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bedtime-reader-close,
+.bedtime-reader-controls button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: #2b3957;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.4rem;
+}
+
+.bedtime-reader-controls button:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+.bedtime-reader-page {
+  position: relative;
+  min-height: 0;
+  background: #0b1121;
+}
+
+.bedtime-reader-page img {
+  object-fit: contain;
+}
+
+.bedtime-reader-page-loader {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 3px solid rgba(255, 255, 255, 0.18);
+  border-top-color: #b9d8ff;
+  border-radius: 50%;
+  animation: bedtime-reader-spin 800ms linear infinite;
+}
+
+@keyframes bedtime-reader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bedtime-reader-controls {
+  justify-content: center;
+}
+
+.bedtime-reader-controls span {
+  min-width: min(220px, 48vw);
+  text-align: center;
+  font-weight: 800;
+}
+
+@media (max-width: 767px) {
+  .bedtime-stories-page {
+    padding: 78px 14px 40px;
+  }
+
+  .bedtime-stories-header {
+    margin-bottom: 22px;
+  }
+
+  .bedtime-stories-shelf {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 4px 2px 18px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .bedtime-story-card {
+    flex: 0 0 min(76vw, 310px);
+    scroll-snap-align: center;
+  }
+
+  .bedtime-reader-backdrop {
+    padding: 0;
+  }
+
+  .bedtime-reader {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+}
