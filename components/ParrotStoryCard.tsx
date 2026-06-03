@@ -286,7 +286,10 @@ async function fetchMedia(
 
   const specialParrotQuery = getSpecialParrotQuery(index, slideCount);
   const source: "giphy" | "pexels" = specialParrotQuery ? "giphy" : index % 2 === 0 ? "giphy" : "pexels";
-  const queries = specialParrotQuery ? [specialParrotQuery] : buildMediaQueries(styleSlug, slide.text);
+  const queries = [
+    ...buildMediaQueries(styleSlug, slide.text),
+    ...(specialParrotQuery ? [specialParrotQuery] : []),
+  ];
   const cacheKey = `${styleSlug}:${index}:${source}:${queries.join("|")}`;
   const cachedMedia = getCachedMedia(cacheKey);
 

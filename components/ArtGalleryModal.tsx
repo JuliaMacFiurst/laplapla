@@ -105,7 +105,7 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
         artworkTitle: artwork?.title || "",
         slideText: slide.text,
         excludedUrls: slide.mediaUrl ? [slide.mediaUrl] : [],
-        preferYorkie: currentSlideIndex % 2 === 0,
+        preferYorkie: true,
       });
 
       if (!alternative?.url) {

@@ -62,6 +62,15 @@ type UnifiedMemeMedia = {
 
 const DEFAULT_SEARCH_TYPES: UnifiedMemeMedia["type"][] = ["image", "gif", "mp4", "webm"];
 const STICKER_SEARCH_TYPES: UnifiedMemeMedia["type"][] = ["sticker"];
+const GIF_SEARCH_TYPES: UnifiedMemeMedia["type"][] = ["gif"];
+const VIDEO_SEARCH_TYPES: UnifiedMemeMedia["type"][] = ["mp4", "webm"];
+
+function getSearchTypes(tab: MediaPickerTab) {
+  if (tab === "stickers") return STICKER_SEARCH_TYPES;
+  if (tab === "gif") return GIF_SEARCH_TYPES;
+  if (tab === "videos") return VIDEO_SEARCH_TYPES;
+  return DEFAULT_SEARCH_TYPES;
+}
 
 function buildMediaPreviewAlt(url: string, index: number) {
   const filename = url.split("?")[0]?.split("/").pop()?.replace(/\.[a-z0-9]+$/i, "") || "";
@@ -105,13 +114,14 @@ export default function MediaPickerModal({
   const [confirmRights, setConfirmRights] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   const MAX_IMAGE_MB = 10;
   const MAX_VIDEO_MB = 25;
   const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
   const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
   const MAX_VIDEO_SECONDS = 20;
-  const SEARCH_PAGE_SIZE = 50;
+  const SEARCH_PAGE_SIZE = isMobile ? 18 : 50;
   const tabs: Array<{ id: MediaPickerTab; label: string; hidden?: boolean }> = [
     { id: "all", label: t.tabAll },
     { id: "gif", label: t.tabGif },
@@ -134,10 +144,12 @@ export default function MediaPickerModal({
     limit: number,
     requestOffset = 0,
     types: UnifiedMemeMedia["type"][] = DEFAULT_SEARCH_TYPES,
+    signal?: AbortSignal,
   ) => {
     const res = await fetch("/api/memes/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal,
       body: JSON.stringify({
         q: rawQuery,
         limit,
@@ -220,22 +232,26 @@ export default function MediaPickerModal({
   const handleSearch = useCallback(async () => {
     if (!query.trim() && activeTab !== "stickers") return;
 
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
     setLoading(true);
     setSearchError(null);
 
     try {
       if (activeTab === "stickers") {
-        const { items, hasMore: more } = await searchLibraryMedia(query.trim(), SEARCH_PAGE_SIZE, 0, STICKER_SEARCH_TYPES);
+        const { items, hasMore: more } = await searchLibraryMedia(query.trim(), SEARCH_PAGE_SIZE, 0, STICKER_SEARCH_TYPES, controller.signal);
         setStickerResults(items);
         setSearchedStickerQuery(query.trim());
         setStickersHasMore(more);
       } else {
-        const { items, hasMore: more } = await searchLibraryMedia(query.trim(), SEARCH_PAGE_SIZE, 0, DEFAULT_SEARCH_TYPES);
+        const { items, hasMore: more } = await searchLibraryMedia(query.trim(), SEARCH_PAGE_SIZE, 0, getSearchTypes(activeTab), controller.signal);
         setResults(items);
         setSearchedQuery(query.trim());
         setHasMore(more);
       }
     } catch (err) {
+      if (controller.signal.aborted) return;
       console.error("Media search error:", err);
       if (activeTab === "stickers") {
         setStickerResults([]);
@@ -246,9 +262,12 @@ export default function MediaPickerModal({
       }
       setSearchError(t.errorSearchFailed);
     } finally {
-      setLoading(false);
+      if (searchAbortRef.current === controller) {
+        searchAbortRef.current = null;
+        setLoading(false);
+      }
     }
-  }, [activeTab, query, searchLibraryMedia, t.errorSearchFailed]);
+  }, [activeTab, isMobile, query, searchLibraryMedia, t.errorSearchFailed]);
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) {
@@ -274,11 +293,18 @@ export default function MediaPickerModal({
 
   useEffect(() => {
     if (!isOpen) {
+      searchAbortRef.current?.abort();
+      searchAbortRef.current = null;
+      setLoading(false);
       setUploadError(null);
       setSearchError(null);
       setConfirmRights(false);
     }
   }, [isOpen]);
+
+  useEffect(() => () => {
+    searchAbortRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -309,7 +335,7 @@ export default function MediaPickerModal({
         activeQuery,
         SEARCH_PAGE_SIZE,
         currentResults.length,
-        isStickerSearch ? STICKER_SEARCH_TYPES : DEFAULT_SEARCH_TYPES,
+        getSearchTypes(activeTab),
       );
       const mergeResults = (current: MediaPickerResult[]) => {
         const seen = new Set(current.map((item) => `${item.source}:${item.id}:${item.url}`));
@@ -699,11 +725,11 @@ export default function MediaPickerModal({
                   <video
                     src={item.url}
                     poster={item.previewUrl}
-                    autoPlay
+                    autoPlay={!isMobile}
                     loop
                     muted
                     playsInline
-                    preload="metadata"
+                    preload={isMobile ? "none" : "metadata"}
                     className="media-preview-video"
                     style={isMobile ? {
                       width: "100%",

@@ -102,7 +102,10 @@ export async function resolveParrotStorySlidesWithMedia(
     }
 
     const specialParrotQuery = getSpecialParrotQuery(index, slides.length);
-    const queries = specialParrotQuery ? [specialParrotQuery] : buildMediaQueries(styleSlug, slide.text);
+    const queries = [
+      ...buildMediaQueries(styleSlug, slide.text),
+      ...(specialParrotQuery ? [specialParrotQuery] : []),
+    ];
     const media = await findAlternativeSlideMedia({
       queries,
       excludedUrls: Array.from(usedMedia),
@@ -129,7 +132,10 @@ export async function findAlternativeParrotStoryMedia(
   excludedUrls: string[] = [],
 ) {
   const specialParrotQuery = getSpecialParrotQuery(slideIndex, slideCount);
-  const queries = specialParrotQuery ? [specialParrotQuery] : buildMediaQueries(styleSlug, slide.text);
+  const queries = [
+    ...buildMediaQueries(styleSlug, slide.text),
+    ...(specialParrotQuery ? [specialParrotQuery] : []),
+  ];
 
   return findAlternativeSlideMedia({
     queries,

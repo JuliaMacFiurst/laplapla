@@ -123,9 +123,14 @@ export const config = {
 */
 
 function extractKeywords(text: string): string {
-  const words = text.split(/\s+/).filter(w => w.length > 3 && /^[а-яА-Яa-zA-Z]+$/.test(w));
-  const keywords = words.slice(0, 2).join(' ');
-  return keywords ? `${keywords} cat` : 'cute cat';
+  const words = text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2)
+    .slice(0, 6);
+  const keywords = words.join(" ");
+  return keywords ? `cat ${keywords}` : "cute cat";
 }
 
 const CAT_PRIMARY_VIDEO_PROVIDERS: UnifiedMemeProvider[] = ["pexels", "pixabay"];

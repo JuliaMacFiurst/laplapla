@@ -180,7 +180,7 @@ export default function MobileArtGallery({
         artworkTitle: artwork?.title || "",
         slideText: stripHtml(slide.text),
         excludedUrls: slide.mediaUrl ? [slide.mediaUrl] : [],
-        preferYorkie: slideIndex % 2 === 0,
+        preferYorkie: true,
       });
 
       if (!alternative?.url) {

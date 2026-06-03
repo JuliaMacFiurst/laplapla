@@ -47,12 +47,12 @@ function buildArtGalleryQueries(
 
   if (preferYorkie) {
     return [
-      "yorkshire terrier dog portrait",
-      "yorkie dog portrait",
-      "yorkshire terrier puppy",
       `yorkshire terrier ${shortSentence}`.trim(),
       `yorkie ${shortSentence}`.trim(),
       `yorkshire terrier ${stripHtml(artworkTitle)}`.trim(),
+      "yorkshire terrier dog portrait",
+      "yorkie dog portrait",
+      "yorkshire terrier puppy",
     ].filter(Boolean);
   }
 
@@ -85,12 +85,11 @@ export async function buildArtworkSlides(
     let mediaUrl = imageQueue[index];
 
     if (!mediaUrl) {
-      const shouldPreferYorkie = index % 2 === 0;
       const alternative = await findAlternativeSlideMedia({
         queries: buildArtGalleryQueries(
           artwork.title,
           sentence,
-          shouldPreferYorkie,
+          true,
           fallbackHints,
         ),
         excludedUrls: Array.from(usedUrls),
