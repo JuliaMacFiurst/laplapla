@@ -101,7 +101,7 @@ export default function ParrotStoryOverlay({ title, lang, styleSlug, slides, onC
         currentSlide,
         slideIndex,
         resolvedSlides.length,
-        currentSlide.mediaUrl ? [currentSlide.mediaUrl] : [],
+        resolvedSlides.map((slide) => slide.mediaUrl).filter(Boolean) as string[],
       );
 
       if (!alternative) return;

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fallbackImages } from "@/constants";
-import { buildSlideMediaQueries, findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
+import { findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
+import { buildShortSlideMediaQuery, extractSlideConcepts, mapWithConcurrency } from "@/lib/media/slideMedia";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book, BookExplanation, BookTest, ExplanationMode, Slide } from "@/types/types";
 
@@ -21,6 +22,7 @@ interface LoadBookOptions {
 }
 
 interface ResolvedSlideMedia {
+  mediaId?: string;
   type: "image" | "video" | "gif";
   capybaraImage?: string;
   capybaraImageAlt?: string;
@@ -80,34 +82,6 @@ const capybaraQueries = [
   "capybara animal",
 ];
 
-const STOP_WORDS = new Set([
-  "и", "в", "во", "на", "с", "со", "к", "ко", "у", "о", "об", "от", "до", "по", "за", "из", "под",
-  "над", "для", "что", "как", "а", "но", "или", "же", "ли", "не", "ни", "это", "тот", "та", "те",
-  "они", "она", "он", "мы", "вы", "ты", "я", "его", "ее", "их", "свои", "свой", "свою", "своим",
-  "там", "тут", "вдруг", "ой", "ах", "эх", "ну", "бы",
-  "the", "a", "an", "and", "or", "of", "to", "in", "on", "at", "for", "with", "from", "by",
-  "he", "she", "they", "we", "you", "it", "this", "that", "these", "those", "into", "over",
-]);
-
-const WEAK_WORDS = new Set([
-  "пошли",
-  "увидели",
-  "оказались",
-  "решили",
-  "встретили",
-  "сказал",
-  "сказала",
-  "сказали",
-  "достигают",
-  "идут",
-  "идет",
-  "идём",
-  "пришли",
-  "подошли",
-]);
-
-const RUSSIAN_ENDINGS = /(?:ого|его|ому|ему|ыми|ими|ами|ями|иях|иях|ах|ях|ов|ев|ий|ый|ой|ая|яя|ое|ее|ые|ие|а|я|ы|и|у|ю|е|о)$/u;
-
 const normalizeText = (value: string) =>
   value
     .toLowerCase()
@@ -134,29 +108,8 @@ const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean)))
 const hashString = (value: string) =>
   Array.from(value).reduce((acc, char) => ((acc * 31) + char.charCodeAt(0)) >>> 0, 0);
 
-const stemRussianWord = (word: string) => {
-  const stemmed = word.replace(RUSSIAN_ENDINGS, "");
-  return stemmed.length >= 4 ? stemmed : word;
-};
-
 export const extractSlideKeywords = (text: string): string[] => {
-  const originalTokens = text.match(/\p{L}+/gu) || [];
-
-  return unique(
-    originalTokens
-      .map((token, index) => ({ token, index }))
-      .filter(({ token, index }) => !(index > 0 && /^\p{Lu}/u.test(token)))
-      .map(({ token }) => normalizeText(token))
-      .filter((word) => word.length >= 4)
-      .filter((word) => !STOP_WORDS.has(word))
-      .filter((word) => !WEAK_WORDS.has(word))
-      .map(stemRussianWord)
-      .filter((word) => word.length >= 4)
-      .filter((word) => !STOP_WORDS.has(word))
-      .filter((word) => !WEAK_WORDS.has(word))
-      .sort((a, b) => b.length - a.length)
-      .slice(0, 3),
-  );
+  return extractSlideConcepts(text);
 };
 
 const buildSlideCacheKey = (slide: Slide) =>
@@ -221,17 +174,10 @@ const pickCapybaraQuery = (slide: Slide) => {
 };
 
 const buildContextualQueryVariants = (slide: Slide) => {
-  const normalizedText = normalizeText(slide.text);
   const keywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
-  const keywordPhrase = keywords.join(" ").trim();
-  const firstKeyword = keywords[0] || "";
-  const firstTwoKeywords = keywords.slice(0, 2).join(" ").trim();
-
   return unique([
-    clampMediaQuery(keywordPhrase),
-    clampMediaQuery(firstTwoKeywords),
-    clampMediaQuery(firstKeyword),
-    clampMediaQuery(normalizedText),
+    clampMediaQuery(buildShortSlideMediaQuery("capybara", slide.text, keywords)),
+    "capybara",
   ]).filter(Boolean);
 };
 
@@ -413,6 +359,7 @@ const resolveCandidateToMedia = (candidate: Awaited<ReturnType<typeof findAltern
     return {
       type: "video",
       videoUrl: candidate.url,
+      mediaId: candidate.id,
     };
   }
 
@@ -420,6 +367,7 @@ const resolveCandidateToMedia = (candidate: Awaited<ReturnType<typeof findAltern
     return {
       type: "gif",
       gifUrl: candidate.url,
+      mediaId: candidate.id,
     };
   }
 
@@ -427,6 +375,7 @@ const resolveCandidateToMedia = (candidate: Awaited<ReturnType<typeof findAltern
     type: "image",
     imageUrl: candidate.url,
     capybaraImage: candidate.url,
+    mediaId: candidate.id,
   };
 };
 
@@ -435,12 +384,10 @@ const searchPrimarySlideMedia = async (
   slideIndex: number,
   totalSlides: number,
   excludedUrls: string[] = [],
+  excludedIds: string[] = [],
 ): Promise<ResolvedSlideMedia | null> => {
   const contextualVariants = buildContextualQueryVariants(slide);
-  const queries = [
-    ...buildSlideMediaQueries(...contextualVariants),
-    ...contextualVariants,
-  ].filter(Boolean);
+  const queries = contextualVariants;
 
   const preferredSources =
     shouldUseContextMedia(slideIndex, totalSlides) && giphyUsed < MAX_GIPHY
@@ -450,7 +397,9 @@ const searchPrimarySlideMedia = async (
   const candidate = await findAlternativeSlideMedia({
     queries,
     excludedUrls,
+    excludedIds,
     preferredSources: [...preferredSources],
+    selectionSeed: `${slideIndex}:${slide.text}`,
   });
 
   if (candidate?.mediaType === "gif") {
@@ -509,7 +458,7 @@ const searchCuteAnimalFallback = async (signal?: AbortSignal): Promise<ResolvedS
   return imageUrl ? { type: "image", imageUrl, capybaraImage: imageUrl, capybaraImageAlt: "Cute animal" } : null;
 };
 
-const getFallbackMedia = () => {
+const getFallbackMedia = (): ResolvedSlideMedia => {
   const fallbackImage = getFallbackImage();
   return {
     type: "image" as const,
@@ -546,7 +495,7 @@ const buildMediaPlan = (
   const prefersCapybaraMedia = shouldPreferCapybaraMedia(slideIndex, totalSlides);
   const contextualKeywords = slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text);
   const contextualQuery = clampMediaQuery(
-    contextualKeywords.join(" ") || normalizeText(slide.text) || "nature",
+    buildShortSlideMediaQuery("capybara", slide.text, contextualKeywords),
   );
   const capybaraQuery = clampMediaQuery(pickCapybaraQuery(slide));
   if (prefersCapybaraMedia) {
@@ -583,6 +532,9 @@ const collectResolvedMediaUrls = (entries: Iterable<ResolvedSlideMedia>) =>
     [entry.videoUrl, entry.gifUrl, entry.imageUrl, entry.capybaraImage].filter(Boolean) as string[],
   );
 
+const collectResolvedMediaIds = (entries: Iterable<ResolvedSlideMedia>) =>
+  Array.from(entries).map((entry) => entry.mediaId).filter(Boolean) as string[];
+
 const getPreloadIndices = (activeIndex: number, totalSlides: number, count: number) => {
   const indices: number[] = [];
 
@@ -601,6 +553,7 @@ const preloadSlideMedia = async (
   slideIndex: number,
   totalSlides: number,
   usedMediaUrls: string[] = [],
+  usedMediaIds: string[] = [],
   recentFirstSlideMediaUrls: string[] = [],
   signal?: AbortSignal,
 ): Promise<ResolvedSlideMedia> => {
@@ -645,7 +598,7 @@ const preloadSlideMedia = async (
   }
 
   const primaryResult = await withTimeout(
-    searchPrimarySlideMedia(slide, slideIndex, totalSlides, excludedUrls),
+    searchPrimarySlideMedia(slide, slideIndex, totalSlides, excludedUrls, usedMediaIds),
     MEDIA_TIMEOUT_MS,
   );
   if (primaryResult) {
@@ -682,6 +635,21 @@ const preloadSlideMedia = async (
     return animalResult;
   }
 
+  const r2Result = await withTimeout(
+    findAlternativeSlideMedia({
+      queries: [buildShortSlideMediaQuery("capybara", slide.text, keywords), "capybara"],
+      excludedUrls,
+      excludedIds: usedMediaIds,
+      preferredSources: ["laplapla"],
+      allowedMediaTypes: ["image"],
+      selectionSeed: seed,
+    }),
+    MEDIA_TIMEOUT_MS,
+  );
+  if (r2Result) {
+    return resolveCandidateToMedia(r2Result) || getFallbackMedia();
+  }
+
   return getFallbackMedia();
 };
 
@@ -689,9 +657,7 @@ const prepareSlides = (slides: Slide[]) =>
   slides.map((slide, index) => ({
     ...slide,
     id: slide.id ?? `slide-${index}`,
-    keywords: shouldUseContextMedia(index, slides.length)
-      ? (slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text))
-      : undefined,
+    keywords: slide.keywords?.length ? slide.keywords : extractSlideKeywords(slide.text),
   }));
 
 const createDefaultBookUiState = (): BookUiState => ({
@@ -797,7 +763,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       return new Map<number, ResolvedSlideMedia>();
     }
 
-    const preloadIndices = getPreloadIndices(slideIndex, nextSlides.length, PRELOAD_AHEAD_COUNT)
+    const preloadIndices = Array.from({ length: nextSlides.length }, (_, offset) => (slideIndex + offset) % nextSlides.length)
       .filter((index) => Boolean(nextSlides[index]) && !slideMediaInFlightRef.current.has(index));
 
     if (preloadIndices.length === 0) {
@@ -809,25 +775,38 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     });
 
     try {
-      const nextCache = new Map<number, ResolvedSlideMedia>();
-
-      for (const index of preloadIndices) {
+      const resolvedEntries = await mapWithConcurrency(preloadIndices, 4, async (index) => {
         try {
           const media = await preloadSlideMedia(
             nextSlides[index],
             index,
             nextSlides.length,
-            collectResolvedMediaUrls(nextCache.values()),
+            collectResolvedMediaUrls(mediaCacheRef.current.values()),
+            collectResolvedMediaIds(mediaCacheRef.current.values()),
             recentFirstSlideMediaUrlsRef.current,
             signal,
           );
-          nextCache.set(index, media);
+          return [index, media] as const;
         } catch (error) {
           if (isAbortError(error)) {
             throw error;
           }
           console.error("[MEDIA INIT ERROR]:", error);
+          return [index, getFallbackMedia()] as const;
         }
+      });
+      const nextCache = new Map<number, ResolvedSlideMedia>();
+      const usedUrls = new Set<string>();
+      const usedIds = new Set<string>();
+      for (const [index, media] of resolvedEntries) {
+        const mediaUrl = getPrimaryMediaUrl(media);
+        if ((mediaUrl && usedUrls.has(mediaUrl)) || (media.mediaId && usedIds.has(media.mediaId))) {
+          nextCache.set(index, getFallbackMedia());
+          continue;
+        }
+        if (mediaUrl) usedUrls.add(mediaUrl);
+        if (media.mediaId) usedIds.add(media.mediaId);
+        nextCache.set(index, media);
       }
 
       mediaCacheRef.current = nextCache;
@@ -880,6 +859,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
             index,
             slidesRef.current.length,
             collectResolvedMediaUrls(nextCache.values()),
+            collectResolvedMediaIds(nextCache.values()),
             recentFirstSlideMediaUrlsRef.current,
           );
           if (!nextCache.has(index)) {
@@ -917,6 +897,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
           index,
           nextSlides.length,
           collectResolvedMediaUrls(nextCache.values()),
+          collectResolvedMediaIds(nextCache.values()),
           recentFirstSlideMediaUrlsRef.current,
         );
         nextCache.set(index, media);
@@ -947,28 +928,24 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       modeLabel?: string;
     },
   ) => {
+    void options;
     const slide = slidesRef.current[slideIndex];
     if (!slide) {
       return false;
     }
 
-  const currentMedia = mediaCacheRef.current.get(slideIndex);
-    const queries = buildSlideMediaQueries(
-      slide.keywords?.join(" "),
-      options?.bookTitle,
-      options?.modeLabel,
-      slide.text,
-    );
+    const currentMedia = mediaCacheRef.current.get(slideIndex);
+    const queries = [
+      buildShortSlideMediaQuery("capybara", slide.text, slide.keywords),
+      "capybara",
+    ];
 
     const alternative = await findAlternativeSlideMedia({
       queries,
-      excludedUrls: [
-        currentMedia?.videoUrl,
-        currentMedia?.gifUrl,
-        currentMedia?.imageUrl,
-        currentMedia?.capybaraImage,
-      ].filter(Boolean) as string[],
-      preferredSources: ["giphy", "pexels"],
+      excludedUrls: collectResolvedMediaUrls(mediaCacheRef.current.values()),
+      excludedIds: collectResolvedMediaIds(mediaCacheRef.current.values()),
+      preferredSources: ["giphy", "pexels", "laplapla"],
+      selectionSeed: `${slideIndex}:${slide.text}`,
     });
 
     if (!alternative) {
@@ -981,17 +958,20 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
             type: "video",
             videoUrl: alternative.url,
             capybaraImage: currentMedia?.capybaraImage,
+            mediaId: alternative.id,
           }
         : alternative.mediaType === "gif"
           ? {
               type: "gif",
               gifUrl: alternative.url,
+              mediaId: alternative.id,
             }
           : {
               type: "image",
               imageUrl: alternative.url,
               capybaraImage: alternative.url,
               capybaraImageAlt: currentMedia?.capybaraImageAlt || "Capybara",
+              mediaId: alternative.id,
             };
 
     const nextCache = new Map(mediaCacheRef.current);

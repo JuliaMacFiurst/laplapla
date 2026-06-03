@@ -104,7 +104,7 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
         fallbackHints,
         artworkTitle: artwork?.title || "",
         slideText: slide.text,
-        excludedUrls: slide.mediaUrl ? [slide.mediaUrl] : [],
+        excludedUrls: slides.map((item) => item.mediaUrl).filter(Boolean) as string[],
         preferYorkie: true,
       });
 

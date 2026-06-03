@@ -179,7 +179,7 @@ export default function MobileArtGallery({
         fallbackHints,
         artworkTitle: artwork?.title || "",
         slideText: stripHtml(slide.text),
-        excludedUrls: slide.mediaUrl ? [slide.mediaUrl] : [],
+        excludedUrls: slides.map((item) => item.mediaUrl).filter(Boolean) as string[],
         preferYorkie: true,
       });
 

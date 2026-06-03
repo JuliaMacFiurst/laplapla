@@ -15,6 +15,7 @@ import {
   type StoryStepKey,
   type StoryTemplateSummary,
 } from "@/lib/story/story-shared";
+import { extractSlideConcepts } from "@/lib/media/slideMedia";
 
 type LooseRecord = Record<string, unknown>;
 
@@ -522,7 +523,7 @@ export function parseUserStoryToSlides(assembledStory: unknown): StorySlide[] {
         step,
         text,
         slides: [text],
-        keywords: stepKeywords,
+        keywords: stepKeywords.length ? stepKeywords : extractSlideConcepts(text),
         mediaUrl: undefined,
       }));
     });
@@ -706,7 +707,7 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
       step: "narration",
       text: getRequiredStoryText(template, "narration", fullPath.narration),
       slides: [],
-      keywords: [],
+      keywords: extractSlideConcepts(getRequiredStoryText(template, "narration", fullPath.narration)),
     },
   ];
 
@@ -724,7 +725,7 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
         step: stepKey,
         text: stepText,
         slides: [],
-        keywords: [],
+        keywords: extractSlideConcepts(stepText),
       },
     );
 
@@ -733,7 +734,7 @@ export function buildStory(template: NormalizedStoryTemplate, path: Partial<Stor
         step: toFragmentStepKey(stepKey),
         text: fragmentText,
         slides: [],
-        keywords: [],
+        keywords: extractSlideConcepts(fragmentText),
       });
     }
   }

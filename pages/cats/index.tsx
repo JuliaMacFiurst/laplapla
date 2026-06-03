@@ -12,10 +12,8 @@ import CatsLayout from "@/components/Cats/CatsLayout";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { dictionaries, Lang } from "../../i18n";
 import { CAT_PRESETS, type AnyCatPreset } from "../../content/cats";
-import {
-  buildAnimalSlideMediaQueries,
-  findAlternativeSlideMedia,
-} from "@/lib/client/slideMediaSearch";
+import { findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
+import { buildShortSlideMediaQuery } from "@/lib/media/slideMedia";
 import { DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import type { StudioSlide } from "@/types/studio";
@@ -416,10 +414,12 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   const findAlternativeImage = async (slideText: string, currentImage?: string) => {
+    void currentImage;
     const alternative = await findAlternativeSlideMedia({
-      queries: buildAnimalSlideMediaQueries(["cat", "kitten", "kitty"], inputText, slideText),
-      excludedUrls: currentImage ? [currentImage] : [],
-      preferredSources: ["giphy", "pexels"],
+      queries: [buildShortSlideMediaQuery("cat", slideText), "cat"],
+      excludedUrls: slides.map((slide) => slide.image).filter(Boolean) as string[],
+      preferredSources: ["giphy", "pexels", "laplapla"],
+      selectionSeed: slideText,
     });
 
     return alternative?.url ?? null;

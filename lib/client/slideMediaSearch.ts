@@ -1,4 +1,5 @@
 export type SlideMediaCandidate = {
+  id: string;
   url: string;
   mediaType: "gif" | "image" | "video";
   source?: SearchSource;
@@ -7,11 +8,13 @@ export type SlideMediaCandidate = {
   sourceMediaType?: "gif" | "image" | "video" | "mp4" | "webm";
 };
 
-export type SearchSource = "giphy" | "pexels";
+export type SearchSource = "giphy" | "pexels" | "laplapla";
 
 type SearchResponse = {
   items?: Array<{
     provider?: string;
+    providerId?: string;
+    id?: string;
     type?: string;
     media_url?: string;
     preview_url?: string;
@@ -114,7 +117,12 @@ const fetchSourceItems = async (
       query: safeQuery,
       limit,
       providers: source,
-      types: source === "giphy" ? ["gif", "mp4", "webm"] : ["image", "mp4", "webm"],
+      types:
+        source === "giphy"
+          ? ["gif", "mp4", "webm"]
+          : source === "laplapla"
+            ? ["sticker", "image", "gif", "mp4", "webm"]
+            : ["image", "mp4", "webm"],
     }),
   });
   if (!response.ok) {
@@ -137,6 +145,7 @@ const fetchSourceItems = async (
           ? "gif"
           : "image";
       return {
+        id: item.id || `${item.provider || source}:${item.providerId || url}`,
         url,
         mediaType,
         source,
@@ -162,16 +171,21 @@ const fetchSourceItems = async (
 export async function findAlternativeSlideMedia({
   queries,
   excludedUrls = [],
-  preferredSources = ["giphy", "pexels"],
+  preferredSources = ["giphy", "pexels", "laplapla"],
   allowedMediaTypes,
+  excludedIds = [],
+  selectionSeed = "",
 }: {
   queries: string[];
   excludedUrls?: string[];
   preferredSources?: SearchSource[];
   allowedMediaTypes?: SlideMediaCandidate["mediaType"][];
+  excludedIds?: string[];
+  selectionSeed?: string;
 }): Promise<SlideMediaCandidate | null> {
   const uniqueQueries = Array.from(new Set(queries.map(normalizeQuery).filter(Boolean)));
   const excluded = new Set(excludedUrls.filter(Boolean));
+  const excludedMediaIds = new Set(excludedIds.filter(Boolean));
   const sources = Array.from(new Set(preferredSources));
   const allowedTypes = allowedMediaTypes?.length
     ? new Set(allowedMediaTypes)
@@ -180,11 +194,16 @@ export async function findAlternativeSlideMedia({
   for (const query of uniqueQueries) {
     for (const source of sources) {
       const items = await fetchSourceItems(source, query);
-      const alternative = items.find(
+      const candidates = items.filter(
         (item) =>
+          !excludedMediaIds.has(item.id) &&
           !excluded.has(item.url) &&
           (!allowedTypes || allowedTypes.has(item.mediaType)),
       );
+      const pool = candidates.slice(0, 8);
+      const seed = Array.from(`${selectionSeed}:${query}:${source}`)
+        .reduce((value, char) => ((value * 31) + char.charCodeAt(0)) >>> 0, 0);
+      const alternative = pool.length ? pool[seed % pool.length] : null;
       if (alternative) {
         return alternative;
       }

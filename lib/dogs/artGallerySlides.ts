@@ -1,8 +1,6 @@
-import {
-  buildAnimalSlideMediaQueries,
-  findAlternativeSlideMedia,
-} from "@/lib/client/slideMediaSearch";
+import { findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import type { StudioSlide } from "@/types/studio";
+import { buildShortSlideMediaQuery, mapWithConcurrency } from "@/lib/media/slideMedia";
 
 export type Artwork = {
   id: string;
@@ -40,19 +38,14 @@ function buildArtGalleryQueries(
   preferYorkie: boolean,
   fallbackHints: string[] = [],
 ) {
-  const shortSentence = stripHtml(sentence)
-    .split(/\s+/)
-    .slice(0, 6)
-    .join(" ");
+  const prefix = preferYorkie ? "yorkshire terrier" : "dog";
+  const shortQuery = buildShortSlideMediaQuery(prefix, stripHtml(sentence));
 
   if (preferYorkie) {
     return [
-      `yorkshire terrier ${shortSentence}`.trim(),
-      `yorkie ${shortSentence}`.trim(),
-      `yorkshire terrier ${stripHtml(artworkTitle)}`.trim(),
+      shortQuery,
+      buildShortSlideMediaQuery("yorkshire terrier", stripHtml(artworkTitle)),
       "yorkshire terrier dog portrait",
-      "yorkie dog portrait",
-      "yorkshire terrier puppy",
     ].filter(Boolean);
   }
 
@@ -60,14 +53,8 @@ function buildArtGalleryQueries(
     "cute dog portrait",
     "puppy dog portrait",
     "pet dog portrait",
-    `dog ${shortSentence}`.trim(),
-    `puppy ${shortSentence}`.trim(),
-    `dog ${stripHtml(artworkTitle)}`.trim(),
-    ...buildAnimalSlideMediaQueries(
-      fallbackHints.length > 0 ? fallbackHints : GENERIC_DOG_HINTS,
-      artworkTitle,
-      sentence,
-    ),
+    shortQuery,
+    buildShortSlideMediaQuery("dog", stripHtml(artworkTitle), fallbackHints),
   ].filter(Boolean);
 }
 
@@ -78,10 +65,8 @@ export async function buildArtworkSlides(
   const sentences = splitIntoSentences(artwork.description);
   const imageQueue = artwork.image_url.filter(Boolean);
   const usedUrls = new Set(imageQueue);
-  const slides: StudioSlide[] = [];
-
-  for (let index = 0; index < sentences.length; index += 1) {
-    const sentence = sentences[index];
+  const usedMediaIds = new Set<string>();
+  return mapWithConcurrency<string, StudioSlide>(sentences, 4, async (sentence, index) => {
     let mediaUrl = imageQueue[index];
 
     if (!mediaUrl) {
@@ -93,21 +78,26 @@ export async function buildArtworkSlides(
           fallbackHints,
         ),
         excludedUrls: Array.from(usedUrls),
-        preferredSources: ["pexels"],
+        excludedIds: Array.from(usedMediaIds),
+        preferredSources: ["pexels", "laplapla"],
         allowedMediaTypes: ["image"],
+        selectionSeed: `${artwork.id}:${index}:${sentence}`,
       });
 
       mediaUrl =
         alternative?.url ||
         imageQueue[imageQueue.length - 1] ||
         "/dog/fibi.webp";
+      if (alternative) {
+        usedMediaIds.add(alternative.id);
+      }
     }
 
     if (mediaUrl) {
       usedUrls.add(mediaUrl);
     }
 
-    slides.push({
+    return {
       id: `${artwork.id}-${index}`,
       text: escapeHtml(sentence),
       mediaUrl,
@@ -115,10 +105,8 @@ export async function buildArtworkSlides(
       mediaFit: "contain",
       bgColor: "#ffffff",
       textColor: "#111111",
-    });
-  }
-
-  return slides;
+    };
+  });
 }
 
 export async function findArtworkSlideAlternativeMedia(params: {
@@ -149,14 +137,11 @@ export async function findArtworkSlideAlternativeMedia(params: {
             false,
             params.fallbackHints,
           ),
-          ...buildAnimalSlideMediaQueries(
-            slideHints,
-            params.artworkTitle,
-            stripHtml(params.slideText),
-          ),
+          buildShortSlideMediaQuery(slideHints[0] || "dog", stripHtml(params.slideText)),
         ],
     excludedUrls: params.excludedUrls,
-    preferredSources: ["pexels"],
+    preferredSources: ["pexels", "laplapla"],
     allowedMediaTypes: ["image"],
+    selectionSeed: `${params.artworkTitle}:${params.slideText}`,
   });
 }

@@ -1,11 +1,12 @@
 import * as React from "react";
 import Image from "next/image";
 import {
-  buildAnimalSlideMediaQueries,
   findAlternativeSlideMedia,
   sanitizeSlideMediaQuery,
 } from "@/lib/client/slideMediaSearch";
 import { AMATIC_FONT_FAMILY } from "@/lib/fonts";
+import { mapWithConcurrency } from "@/lib/media/slideMedia";
+import { buildParrotMediaQueries } from "@/lib/parrotStoryMedia";
 import { devDebug } from "@/utils/devLog";
 
 type Props = {
@@ -31,6 +32,7 @@ export type Slide = {
   text: string;
   mediaUrl?: string;
   mediaType?: "gif" | "image" | "video";
+  mediaId?: string;
 };
 
 const openGoogle = (q: string) =>
@@ -39,6 +41,7 @@ const openGoogle = (q: string) =>
 type MediaType = "gif" | "image" | "video";
 
 type MediaItem = {
+  id: string;
   url: string;
   mediaType: MediaType;
 };
@@ -46,6 +49,9 @@ type MediaItem = {
 type MediaResponse = {
   items: Array<{
     media_url?: string;
+    id?: string;
+    provider?: string;
+    providerId?: string;
     type?: string;
   }>;
   query: string;
@@ -68,54 +74,10 @@ const mediaItemsInFlight = new Map<string, Promise<MediaItemsResult>>();
 const CLIENT_TTL_MS = 60 * 60 * 1000;
 const SESSION_STORAGE_KEY = "parrot-story-media-cache-v1";
 const PLACEHOLDER_MEDIA: MediaItem = {
+  id: "local:parrot-placeholder",
   url: "/images/parrot.webp",
   mediaType: "image",
 };
-const PARROT_SEARCH_HINTS = ["parrot", "cute parrot", "funny parrot"];
-
-const STOPWORDS = new Set([
-  "the", "and", "for", "with", "that", "this", "from", "into",
-  "это", "как", "что", "для", "или", "его", "она", "они", "про",
-  "עם", "של", "זה", "את", "על", "גם", "אבל", "כמו",
-  "music", "style", "sound", "song", "genre",
-  "музыка", "стиль", "звук", "песня", "жанр",
-  "מוזיקה", "סגנון", "צליל", "שיר",
-]);
-
-const STYLE_HINTS: Record<string, string[]> = {
-  lofi: ["lofi", "chill", "vinyl", "music", "study"],
-  bossa: ["bossa", "nova", "brazil", "guitar", "jazz"],
-  synthwave: ["synthwave", "retro", "neon", "night", "synth"],
-  funk: ["funk", "groove", "bass", "dance", "rhythm"],
-  house: ["house", "dance", "club", "beat", "dj"],
-  reggae: ["reggae", "dub", "groove", "island", "sunny"],
-  ambient: ["ambient", "calm", "space", "dreamy", "soft"],
-  jazzhop: ["jazzhop", "jazz", "beats", "lofi", "study"],
-  chiptune: ["chiptune", "8bit", "arcade", "pixel", "game"],
-  kpop: ["kpop", "dance", "stage", "pop", "show"],
-  afroperc: ["afro", "percussion", "drums", "rhythm", "festival"],
-  celtic: ["celtic", "folk", "flute", "violin", "legend"],
-  latin: ["latin", "fiesta", "dance", "percussion", "summer"],
-  cartoon: ["cartoon", "funny", "playful", "comic", "animation"],
-  rock: ["rock", "guitar", "drums", "stage", "energy"],
-  classic: ["classical", "orchestra", "concert", "piano", "symphony"],
-  dance: ["dance", "party", "club", "beat", "energy"],
-  spiritual: ["spiritual", "calm", "peace", "meditation", "light"],
-};
-
-const extractKeywords = (text: string, styleSlug: string) => {
-  const tokens = text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 2 && !STOPWORDS.has(word));
-
-  const styleHints = STYLE_HINTS[styleSlug.trim().toLowerCase()] ?? [styleSlug.trim().toLowerCase()];
-  const merged = [...styleHints, ...tokens];
-
-  return merged.filter((word, index) => word && merged.indexOf(word) === index).slice(0, 5);
-};
-
 const getSpecialParrotQuery = (index: number, slideCount: number) => {
   const firstIndex = 0;
   const middleIndex = Math.floor(slideCount / 2);
@@ -125,17 +87,6 @@ const getSpecialParrotQuery = (index: number, slideCount: number) => {
   if (index === middleIndex) return "funny parrot";
   if (index === lastIndex) return "parrot dancing";
   return null;
-};
-
-const buildMediaQueries = (styleSlug: string, slideText: string) => {
-  const keywords = extractKeywords(slideText, styleSlug);
-  const style = styleSlug.trim().toLowerCase();
-  return buildAnimalSlideMediaQueries(
-    PARROT_SEARCH_HINTS,
-    [style, ...keywords].filter(Boolean).join(" ").trim(),
-    [style, ...keywords.slice(0, 3)].filter(Boolean).join(" ").trim(),
-    [...keywords, style, "music"].filter(Boolean).join(" ").trim(),
-  );
 };
 
 const isVideoUrl = (url: string) => /\.mp4(\?|$)|\.webm(\?|$)/i.test(url);
@@ -241,6 +192,7 @@ async function loadMediaItems(
           .map((item) =>
             item?.media_url
               ? {
+                  id: item.id || `${item.provider || source}:${item.providerId || item.media_url}`,
                   url: item.media_url,
                   mediaType: item.type === "mp4" || item.type === "webm"
                     ? "video"
@@ -276,9 +228,11 @@ async function fetchMedia(
   index: number,
   slideCount: number,
   usedMedia: Set<string>,
+  usedMediaIds: Set<string>,
 ): Promise<MediaItem | null> {
   if (slide.mediaUrl) {
     return {
+      id: slide.mediaId || `url:${slide.mediaUrl}`,
       url: slide.mediaUrl,
       mediaType: slide.mediaType ?? getMediaTypeFromUrl(slide.mediaUrl),
     };
@@ -287,14 +241,15 @@ async function fetchMedia(
   const specialParrotQuery = getSpecialParrotQuery(index, slideCount);
   const source: "giphy" | "pexels" = specialParrotQuery ? "giphy" : index % 2 === 0 ? "giphy" : "pexels";
   const queries = [
-    ...buildMediaQueries(styleSlug, slide.text),
+    ...buildParrotMediaQueries(styleSlug, slide.text, index),
     ...(specialParrotQuery ? [specialParrotQuery] : []),
   ];
   const cacheKey = `${styleSlug}:${index}:${source}:${queries.join("|")}`;
   const cachedMedia = getCachedMedia(cacheKey);
 
-  if (cachedMedia && !usedMedia.has(cachedMedia.url)) {
+  if (cachedMedia && !usedMedia.has(cachedMedia.url) && !usedMediaIds.has(cachedMedia.id)) {
     usedMedia.add(cachedMedia.url);
+    usedMediaIds.add(cachedMedia.id);
     logMediaDebug({ index, query: queries[0] ?? "", source, cacheHit: true, mediaUrl: cachedMedia.url });
     return cachedMedia;
   }
@@ -303,12 +258,14 @@ async function fetchMedia(
 
   for (const query of queries) {
     const { items, cacheHit } = await loadMediaItems(source, query);
-    const selected = items.find((item) => !usedMedia.has(item.url)) ?? items[0] ?? null;
+    const candidates = items.filter((item) => !usedMedia.has(item.url) && !usedMediaIds.has(item.id)).slice(0, 8);
+    const selected = candidates.length ? candidates[index % candidates.length] : null;
 
     if (selected) {
       clientMediaCache.set(cacheKey, { media: selected, timestamp: Date.now() });
       persistSessionCache();
       usedMedia.add(selected.url);
+      usedMediaIds.add(selected.id);
       logMediaDebug({ index, query, source, cacheHit, mediaUrl: selected.url });
       return selected;
     }
@@ -322,6 +279,7 @@ async function fetchMedia(
     clientMediaCache.set(cacheKey, { media: reusableMedia, timestamp: Date.now() });
     persistSessionCache();
     usedMedia.add(reusableMedia.url);
+    usedMediaIds.add(reusableMedia.id);
     logMediaDebug({
       index,
       query: queries[0] ?? "",
@@ -605,20 +563,21 @@ export default function ParrotStoryCard({
       const usedMedia = new Set<string>(
         slides.map((slide) => slide.mediaUrl).filter(Boolean) as string[],
       );
-      const nextSlides: Slide[] = [];
+      const usedMediaIds = new Set<string>(
+        slides.map((slide) => slide.mediaId).filter(Boolean) as string[],
+      );
+      const nextSlides = await mapWithConcurrency(slides, 4, async (slide, index) => {
+        const media = await fetchMedia(styleSlug, slide, index, slides.length, usedMedia, usedMediaIds);
 
-      for (let index = 0; index < slides.length; index += 1) {
-        const slide = slides[index];
-        const media = await fetchMedia(styleSlug, slide, index, slides.length, usedMedia);
-
-        nextSlides.push({
+        return {
           ...slide,
           mediaUrl: slide.mediaUrl ?? media?.url ?? undefined,
           mediaType:
             slide.mediaType ??
             (slide.mediaUrl ? getMediaTypeFromUrl(slide.mediaUrl) : media?.mediaType),
-        });
-      }
+          mediaId: slide.mediaId ?? media?.id,
+        };
+      });
 
       if (!cancelled) {
         setResolvedSlides(nextSlides);
@@ -643,9 +602,10 @@ export default function ParrotStoryCard({
     setRefreshingSlideIndex(slideIndex);
     try {
       const alternative = await findAlternativeSlideMedia({
-        queries: buildAnimalSlideMediaQueries(PARROT_SEARCH_HINTS, title, description, styleSlug, slide.text),
-        excludedUrls: slide.mediaUrl ? [slide.mediaUrl] : [],
-        preferredSources: ["giphy", "pexels"],
+        queries: buildParrotMediaQueries(styleSlug, slide.text, slideIndex),
+        excludedUrls: resolvedSlides.map((item) => item.mediaUrl).filter(Boolean) as string[],
+        preferredSources: ["giphy", "pexels", "laplapla"],
+        selectionSeed: `${styleSlug}:${slideIndex}:${slide.text}`,
       });
 
       if (!alternative) {
@@ -659,6 +619,7 @@ export default function ParrotStoryCard({
                 ...currentSlide,
                 mediaUrl: alternative.url,
                 mediaType: alternative.mediaType,
+                mediaId: alternative.id,
               }
             : currentSlide,
         ),
@@ -666,7 +627,7 @@ export default function ParrotStoryCard({
     } finally {
       setRefreshingSlideIndex((current) => (current === slideIndex ? null : current));
     }
-  }, [description, resolvedSlides, styleSlug, title]);
+  }, [resolvedSlides, styleSlug]);
 
   return (
     <div className={`story-container story-card-root force-ltr-layout ${lang === "he" ? "text-rtl-scope" : ""}`}>

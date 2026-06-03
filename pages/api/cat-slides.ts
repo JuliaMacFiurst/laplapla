@@ -4,6 +4,7 @@ import { searchUnifiedMemes } from "@/lib/server/memes/search";
 import type { UnifiedMemeProvider, UnifiedMemeMediaType } from "@/lib/server/memes/types";
 import { withApiHandler } from "@/utils/apiHandler";
 import { devLog } from "@/utils/devLog";
+import { buildShortSlideMediaQuery, mapWithConcurrency } from "@/lib/media/slideMedia";
 
 export const config = {
   api: {
@@ -122,20 +123,9 @@ export const config = {
 Зачем ходить в школу?
 */
 
-function extractKeywords(text: string): string {
-  const words = text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 2)
-    .slice(0, 6);
-  const keywords = words.join(" ");
-  return keywords ? `cat ${keywords}` : "cute cat";
-}
-
 const CAT_PRIMARY_VIDEO_PROVIDERS: UnifiedMemeProvider[] = ["pexels", "pixabay"];
-const CAT_MIXED_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip", "giphy", "pexels"];
-const CAT_MIXED_TYPES: UnifiedMemeMediaType[] = ["image", "gif", "mp4", "webm"];
+const CAT_MIXED_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip", "giphy", "pexels", "laplapla"];
+const CAT_MIXED_TYPES: UnifiedMemeMediaType[] = ["image", "gif", "mp4", "webm", "sticker"];
 const CAT_TEST_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip"];
 
 function getProviderTypes(provider: UnifiedMemeProvider): UnifiedMemeMediaType[] {
@@ -143,6 +133,7 @@ function getProviderTypes(provider: UnifiedMemeProvider): UnifiedMemeMediaType[]
   if (provider === "pixabay") return ["mp4", "webm", "image"];
   if (provider === "reddit") return ["gif", "mp4", "webm", "image"];
   if (provider === "giphy") return ["gif", "mp4", "webm"];
+  if (provider === "laplapla") return ["sticker", "image", "gif", "mp4", "webm"];
   return ["mp4", "webm", "image"];
 }
 
@@ -163,6 +154,7 @@ async function fetchCatMediaFromUnified(params: {
   providers: UnifiedMemeProvider[];
   types: UnifiedMemeMediaType[];
   used: Set<string>;
+  usedIds: Set<string>;
   offset?: number;
 }) {
   devLog("🌀 Unified media search:", {
@@ -181,7 +173,9 @@ async function fetchCatMediaFromUnified(params: {
     persist: false,
   });
 
-  const candidates = response.items.filter((item) => !params.used.has(item.media_url));
+  const candidates = response.items.filter(
+    (item) => !params.used.has(item.media_url) && !params.usedIds.has(`${item.provider}:${item.providerId}`),
+  );
   devLog("🌀 Unified media candidates:", {
     total: response.items.length,
     unused: candidates.length,
@@ -191,6 +185,7 @@ async function fetchCatMediaFromUnified(params: {
 
   const chosen = candidates[Math.floor(Math.random() * candidates.length)];
   if (!chosen) return null;
+  params.usedIds.add(`${chosen.provider}:${chosen.providerId}`);
 
   devLog("🌀 Unified media chosen:", {
     provider: chosen.provider,
@@ -206,6 +201,7 @@ async function fetchCatMediaFromProvider(params: {
   query: string;
   lang: "ru" | "en" | "he";
   used: Set<string>;
+  usedIds: Set<string>;
 }) {
   for (const query of getCatProviderQueries(params.provider, params.query)) {
     const media = await fetchCatMediaFromUnified({
@@ -214,6 +210,7 @@ async function fetchCatMediaFromProvider(params: {
       providers: [params.provider],
       types: getProviderTypes(params.provider),
       used: params.used,
+      usedIds: params.usedIds,
       offset: params.provider === "imgflip" ? 0 : Math.floor(Math.random() * 5),
     });
     if (media) return media;
@@ -277,20 +274,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   devLog("🧩 sourceSlides length:", sourceSlides.length);
   devLog("🧩 sourceSlides preview:", sourceSlides.slice(0, 2));
 
-  const slides = [];
+  const slides: Array<{ text: string; image: string }> = [];
   const usedMedia: Set<string> = new Set();
+  const usedMediaIds: Set<string> = new Set();
 
-  for (const slide of sourceSlides) {
+  const resolvedSlides = await mapWithConcurrency(sourceSlides, 4, async (slide, sourceIndex) => {
     const text = slide.text;
     let image = slide.mediaUrl || '';
 
     devLog("🖼 Slide text:", text);
     devLog("🖼 Has predefined media:", Boolean(slide.mediaUrl));
 
-    const isEven = slides.length % 2 === 0;
-    const slideIndex = slides.length;
+    const isEven = sourceIndex % 2 === 0;
+    const slideIndex = sourceIndex;
     const testProvider = CAT_TEST_PROVIDERS[slideIndex % CAT_TEST_PROVIDERS.length];
-    const query = extractKeywords(text);
+    const query = buildShortSlideMediaQuery("cat", text);
 
     if (!image) {
       image = (await fetchCatMediaFromProvider({
@@ -298,6 +296,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         query,
         lang,
         used: usedMedia,
+        usedIds: usedMediaIds,
       })) || "";
 
       if (!image && isEven) {
@@ -308,6 +307,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             providers: CAT_PRIMARY_VIDEO_PROVIDERS,
             types: ["mp4", "webm"],
             used: usedMedia,
+            usedIds: usedMediaIds,
           })) ||
           (await fetchCatMediaFromUnified({
             query,
@@ -315,6 +315,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             providers: ["giphy"],
             types: ["gif", "mp4", "webm"],
             used: usedMedia,
+            usedIds: usedMediaIds,
           })) ||
           (await fetchCatMediaFromUnified({
             query,
@@ -322,6 +323,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             providers: CAT_MIXED_PROVIDERS,
             types: CAT_MIXED_TYPES,
             used: usedMedia,
+            usedIds: usedMediaIds,
           })) ||
           '';
       } else if (!image) {
@@ -332,6 +334,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             providers: ["giphy"],
             types: ["gif", "mp4", "webm"],
             used: usedMedia,
+            usedIds: usedMediaIds,
           })) ||
           (await fetchCatMediaFromUnified({
             query,
@@ -339,6 +342,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             providers: CAT_MIXED_PROVIDERS,
             types: CAT_MIXED_TYPES,
             used: usedMedia,
+            usedIds: usedMediaIds,
           })) ||
           (await fetchCatMediaFromUnified({
             query,
@@ -346,6 +350,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             providers: CAT_PRIMARY_VIDEO_PROVIDERS,
             types: ["mp4", "webm"],
             used: usedMedia,
+            usedIds: usedMediaIds,
           })) ||
           '';
       }
@@ -358,18 +363,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         providers: CAT_MIXED_PROVIDERS,
         types: CAT_MIXED_TYPES,
         used: usedMedia,
+        usedIds: usedMediaIds,
       })) || '';
     }
 
-    if (!image || usedMedia.has(image)) continue;
+    if (!image || usedMedia.has(image)) {
+      image = "/images/cat.webp";
+    }
 
     usedMedia.add(image);
-
-    slides.push({
+    return {
       text,
       image,
-    });
-  }
+    };
+  });
+  slides.push(...resolvedSlides);
 
   devLog("✅ Slides ready:", slides.length);
   return res.status(200).json({ slides, prompt });

@@ -1,4 +1,4 @@
-import { extractSlideKeywords } from "@/hooks/useBook";
+import { extractSlideConcepts } from "@/lib/media/slideMedia";
 
 export const STORY_STEP_KEYS = [
   "narration",
@@ -92,7 +92,7 @@ export type NormalizedStoryTemplate = {
   translated?: boolean;
 };
 
-const makeKeywords = (text: string) => extractSlideKeywords(text);
+const makeKeywords = (text: string) => extractSlideConcepts(text);
 
 export function splitTextToSlides(text: string): string[] {
   return text

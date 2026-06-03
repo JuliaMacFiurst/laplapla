@@ -3,6 +3,7 @@ import type { Lang } from "@/i18n";
 import { fallbackImages } from "@/constants";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
+import { findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import {
   STORY_STEP_KEYS,
   blocksToSlides,
@@ -13,6 +14,7 @@ import {
   type StorySlide,
   type StoryStepKey,
 } from "@/lib/story/story-shared";
+import { buildShortSlideMediaQuery, extractSlideConcepts, mapWithConcurrency } from "@/lib/media/slideMedia";
 
 export type StoryDraftState = {
   mode: "template" | "custom" | "user_story" | null;
@@ -166,31 +168,22 @@ function uniqQueries(values: string[]) {
 }
 
 function buildSlideKeywords(slide: StorySlide) {
-  return slide.keywords?.length ? slide.keywords : slide.text.split(/\s+/).slice(0, 5);
+  return extractSlideConcepts(slide.text, slide.keywords);
 }
 
 function buildContextQueries(slide: StorySlide) {
   const keywords = buildSlideKeywords(slide);
-  const keywordPhrase = keywords.join(" ").trim();
-
   return uniqQueries([
-    keywordPhrase,
-    slide.text.split(/[.!?…]/)[0] || slide.text,
-    keywords.slice(0, 3).join(" "),
-    keywords[0] || "",
+    buildShortSlideMediaQuery("capybara", slide.text, keywords),
+    "capybara",
   ]);
 }
 
 function buildCapybaraQueries(slide: StorySlide) {
   const keywords = buildSlideKeywords(slide);
-  const keywordPhrase = keywords.join(" ").trim();
-
   return uniqQueries([
-    `capybara ${keywordPhrase}`,
-    `cute capybara ${keywords[0] || ""}`,
-    `funny capybara ${keywords[0] || ""}`,
+    buildShortSlideMediaQuery("capybara", slide.text, keywords),
     "cute capybara",
-    "funny capybara",
     "capybara",
   ]);
 }
@@ -281,6 +274,18 @@ async function resolveSlideMedia(
     }
   }
 
+  const r2Fallback = await findAlternativeSlideMedia({
+    queries: buildCapybaraQueries(slide),
+    excludedUrls: Array.from(excludedUrls),
+    preferredSources: ["laplapla"],
+    allowedMediaTypes: ["image"],
+    selectionSeed: `${index}:${slide.text}`,
+  });
+  if (r2Fallback) {
+    excludedUrls.add(r2Fallback.url);
+    return toSlideMedia(r2Fallback);
+  }
+
   const fallbackImage = slide.mediaUrl || getFallbackImage(index + hashString(slide.text));
   return {
     type: "image",
@@ -365,26 +370,23 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
 
     void (async () => {
       const excludedUrls = new Set<string>();
-      const results: SlideMedia[] = [];
-
-      for (let index = 0; index < draft.slideshow.length; index += 1) {
-        const slide = draft.slideshow[index];
+      const results = await mapWithConcurrency(draft.slideshow, 4, async (slide, index) => {
         try {
           const media = await resolveSlideMedia(slide, index, draft.slideshow.length, excludedUrls);
           const resolvedUrl = media.gifUrl || media.videoUrl || media.imageUrl || media.capybaraImage;
           if (resolvedUrl) {
             excludedUrls.add(resolvedUrl);
           }
-          results.push(media);
+          return media;
         } catch {
           const fallbackImage = getFallbackImage(index);
-          results.push({
+          return {
             type: "image",
             imageUrl: fallbackImage,
             capybaraImage: fallbackImage,
-          });
+          } as SlideMedia;
         }
-      }
+      });
 
       if (mediaLoadIdRef.current !== loadId) {
         return;
@@ -645,7 +647,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
       step: stepKey,
       text: stepText,
       slides: [stepText],
-      keywords: [],
+      keywords: extractSlideConcepts(stepText),
     };
 
     setDraft((prev) => {
