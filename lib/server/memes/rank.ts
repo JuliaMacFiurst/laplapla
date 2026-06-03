@@ -30,6 +30,9 @@ export function rankMedia(items: UnifiedMemeMedia[], params: Pick<UnifiedMemeSea
 function scoreMedia(item: UnifiedMemeMedia, terms: string[]) {
   const tagText = item.tags.join(" ").toLowerCase();
   const matchScore = terms.reduce((score, term) => score + (tagText.includes(term) ? 35 : 0), 0);
-  const popularity = Math.min(Number(item.popularity) || 0, 1000) / 10;
+  const popularityLimit = item.provider === "laplapla" && /^r2(?::|-animated:)/.test(item.providerId)
+    ? 20_000
+    : 1000;
+  const popularity = Math.min(Number(item.popularity) || 0, popularityLimit) / 10;
   return TYPE_PRIORITY[item.type] + PROVIDER_PRIORITY[item.provider] + matchScore + popularity;
 }

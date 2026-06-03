@@ -35,6 +35,7 @@ const DIVERSIFIED_TYPE_ORDER: UnifiedMemeMedia["type"][] = [
   "sticker",
 ];
 const MAX_PERSISTED_SEARCH_WINDOW = 240;
+const PROVIDER_HAS_MORE_LOOKAHEAD = 1;
 
 function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, timeoutMs: number) {
   const controller = new AbortController();
@@ -96,14 +97,17 @@ function diversifyMediaTypes(items: UnifiedMemeMedia[], enabled: boolean) {
 
 export async function searchUnifiedMemes(params: UnifiedMemeSearchParams): Promise<UnifiedMemeSearchResponse> {
   const shouldPersist = params.persist !== false;
+  const resultEnd = params.offset + params.limit;
+  const providerWindow = Math.min(resultEnd + PROVIDER_HAS_MORE_LOOKAHEAD, MAX_PERSISTED_SEARCH_WINDOW);
+
   if (shouldPersist) {
     const cached = await getCachedSearch(params);
-    if (cached) {
+    if (cached && cached.items.length >= resultEnd) {
       return {
-        items: cached.items.slice(params.offset, params.offset + params.limit),
+        items: cached.items.slice(params.offset, resultEnd),
         query: params.query,
         cached: true,
-        hasMore: cached.items.length > params.offset + params.limit,
+        hasMore: cached.items.length > resultEnd,
       };
     }
   }
@@ -111,7 +115,10 @@ export async function searchUnifiedMemes(params: UnifiedMemeSearchParams): Promi
   const providerNames = params.providers?.length ? params.providers : Object.keys(PROVIDERS) as UnifiedMemeProvider[];
   const settled = await Promise.allSettled(
     providerNames.map((provider) =>
-      withTimeout((signal) => PROVIDERS[provider]({ ...params, signal }), PROVIDER_TIMEOUT_MS),
+      withTimeout(
+        (signal) => PROVIDERS[provider]({ ...params, limit: providerWindow, offset: 0, signal }),
+        PROVIDER_TIMEOUT_MS,
+      ),
     ),
   );
 
@@ -122,7 +129,7 @@ export async function searchUnifiedMemes(params: UnifiedMemeSearchParams): Promi
   const shouldDiversify = !params.providers?.length && (!params.types?.length || params.types.length > 1);
   const diversifiedByType = diversifyMediaTypes(ranked, shouldDiversify);
   const diversified = diversifyProviders(diversifiedByType, shouldDiversify);
-  const persistWindow = Math.min(Math.max(params.offset + params.limit, params.limit), MAX_PERSISTED_SEARCH_WINDOW);
+  const persistWindow = Math.min(Math.max(resultEnd + PROVIDER_HAS_MORE_LOOKAHEAD, params.limit), MAX_PERSISTED_SEARCH_WINDOW);
   const itemsForResponse = shouldPersist ? diversified.slice(0, persistWindow) : diversified;
   const persisted = shouldPersist ? await upsertMemeMedia(itemsForResponse) : itemsForResponse;
 
@@ -131,9 +138,9 @@ export async function searchUnifiedMemes(params: UnifiedMemeSearchParams): Promi
   }
 
   return {
-    items: persisted.slice(params.offset, params.offset + params.limit),
+    items: persisted.slice(params.offset, resultEnd),
     query: params.query,
     cached: false,
-    hasMore: persisted.length > params.offset + params.limit,
+    hasMore: persisted.length > resultEnd,
   };
 }

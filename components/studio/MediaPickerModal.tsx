@@ -96,7 +96,6 @@ export default function MediaPickerModal({
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [stickersHasMore, setStickersHasMore] = useState(false);
-  const [showLoadMoreButton, setShowLoadMoreButton] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchedQuery, setSearchedQuery] = useState("");
   const [searchedStickerQuery, setSearchedStickerQuery] = useState("");
@@ -278,7 +277,6 @@ export default function MediaPickerModal({
       setUploadError(null);
       setSearchError(null);
       setConfirmRights(false);
-      setShowLoadMoreButton(false);
     }
   }, [isOpen]);
 
@@ -294,35 +292,6 @@ export default function MediaPickerModal({
       window.clearTimeout(timeoutId);
     };
   }, [activeTab, handleSearch, isOpen, query]);
-
-  useEffect(() => {
-    if (!isMobile) return;
-
-    const frame = requestAnimationFrame(() => {
-      const node = resultsRef.current;
-      if (!node) return;
-      const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
-      setShowLoadMoreButton((current) => {
-        if (distanceToBottom <= 48) return true;
-        if (distanceToBottom >= 120) return false;
-        return current;
-      });
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [activeHasMore, isMobile, visibleResults, loading]);
-
-  function handleResultsScroll() {
-    if (!isMobile) return;
-    const node = resultsRef.current;
-    if (!node) return;
-    const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
-    setShowLoadMoreButton((current) => {
-      if (distanceToBottom <= 48) return true;
-      if (distanceToBottom >= 120) return false;
-      return current;
-    });
-  }
 
   async function handleLoadMore() {
     const isStickerSearch = activeTab === "stickers";
@@ -656,7 +625,6 @@ export default function MediaPickerModal({
         <div
           ref={resultsRef}
           className={isMobile ? undefined : "media-results-grid"}
-          onScroll={handleResultsScroll}
           style={isMobile ? {
             overflowX: "hidden",
             overflowY: "auto",
@@ -771,35 +739,28 @@ export default function MediaPickerModal({
                 )}
               </div>
             ))}
-          {!loading && activeHasMore && !isMobile && (
-            <div className="media-load-more-wrapper">
-              <button
-                className={`media-load-more-button ${loading ? "loading" : ""}`}
-                disabled={loading}
-                onClick={handleLoadMore}
-              >
-                {t.loadMore}
-              </button>
-            </div>
-          )}
         </div>
-        {isMobile && activeHasMore ? (
+        {activeTab !== "upload" && activeHasMore ? (
           <div
+            className={isMobile ? undefined : "media-load-more-wrapper"}
             style={{
-              position: "sticky",
-              bottom: 0,
+              ...(isMobile ? {
+                position: "sticky",
+                bottom: 0,
+                paddingTop: "10px",
+                paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+                background: "linear-gradient(180deg, rgba(22,22,22,0) 0%, rgba(22,22,22,0.94) 26%, #161616 100%)",
+                marginTop: "auto",
+              } : undefined),
               minHeight: "74px",
-              paddingTop: "10px",
-              paddingBottom: "max(10px, env(safe-area-inset-bottom))",
-              background: "linear-gradient(180deg, rgba(22,22,22,0) 0%, rgba(22,22,22,0.94) 26%, #161616 100%)",
-              marginTop: "auto",
             }}
           >
             <button
               type="button"
+              className={isMobile ? undefined : `media-load-more-button ${loading ? "loading" : ""}`}
               disabled={loading}
               onClick={handleLoadMore}
-              style={{
+              style={isMobile ? {
                 width: "100%",
                 minHeight: "48px",
                 borderRadius: "14px",
@@ -809,11 +770,7 @@ export default function MediaPickerModal({
                 fontSize: "15px",
                 fontWeight: 700,
                 boxShadow: "0 10px 24px rgba(0,0,0,0.24)",
-                opacity: showLoadMoreButton || loading ? 1 : 0,
-                transform: showLoadMoreButton || loading ? "translateY(0)" : "translateY(10px)",
-                pointerEvents: showLoadMoreButton || loading ? "auto" : "none",
-                transition: "opacity 160ms ease, transform 160ms ease",
-              }}
+              } : undefined}
             >
               {loading ? t.loading : t.loadMore}
             </button>

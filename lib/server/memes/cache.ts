@@ -2,8 +2,13 @@ import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { UnifiedMemeMedia, UnifiedMemeProvider, UnifiedMemeMediaType } from "./types";
 
-const SEARCH_TTL_MS = 10 * 60 * 1000;
-const MEDIA_TTL_MS = 6 * 60 * 60 * 1000;
+const SEARCH_TTL_MS = 5 * 60 * 1000;
+const MEDIA_TTL_MS = 2 * 60 * 60 * 1000;
+const SEARCH_CACHE_VERSION = "v3-r2-sticker-assets";
+const CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
+const CLEANUP_MAX_AGE_HOURS = 2;
+const CLEANUP_KEEP_PER_PROVIDER = 120;
+let lastCleanupAt = 0;
 
 type SearchCacheKeyInput = {
   query: string;
@@ -19,9 +24,14 @@ function sorted(values?: string[]) {
   return [...(values || [])].sort();
 }
 
+function buildPersistedSearchQuery(query: string) {
+  return `${SEARCH_CACHE_VERSION}:${query.trim().toLowerCase()}`;
+}
+
 export function buildSearchCacheKey(input: SearchCacheKeyInput) {
   return [
     "memes",
+    SEARCH_CACHE_VERSION,
     input.query.trim().toLowerCase(),
     input.lang,
     input.category || "",
@@ -38,6 +48,21 @@ function getSupabaseOrNull() {
   } catch {
     return null;
   }
+}
+
+function maybeCleanupMemeCache(supabase: ReturnType<typeof createServerSupabaseClient>) {
+  const now = Date.now();
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
+  lastCleanupAt = now;
+
+  void supabase.rpc("cleanup_meme_engine_cache", {
+    p_max_age: `${CLEANUP_MAX_AGE_HOURS} hours`,
+    p_keep_per_provider: CLEANUP_KEEP_PER_PROVIDER,
+  }).then(({ error }) => {
+    if (error) {
+      console.error("[meme_cache] cleanup failed", error);
+    }
+  });
 }
 
 function toCacheRow(item: UnifiedMemeMedia) {
@@ -62,10 +87,15 @@ function toCacheRow(item: UnifiedMemeMedia) {
 }
 
 function fromCacheRow(row: any): UnifiedMemeMedia {
+  const providerId = String(row.provider_id || "");
+  const stableId = row.provider === "laplapla" && /^r2(?::|-animated:)/.test(providerId)
+    ? providerId
+    : String(row.id || `${row.provider}:${providerId}`);
+
   return {
-    id: String(row.id || `${row.provider}:${row.provider_id}`),
+    id: stableId,
     provider: row.provider,
-    providerId: row.provider_id,
+    providerId,
     type: row.type,
     preview_url: row.preview_url || row.media_url,
     media_url: row.media_url,
@@ -92,6 +122,7 @@ export async function upsertMemeMedia(items: UnifiedMemeMedia[]) {
     .select("*");
 
   if (error || !data) return items;
+  maybeCleanupMemeCache(supabase);
   return data.map(fromCacheRow);
 }
 
@@ -117,7 +148,7 @@ export async function getCachedSearch(input: SearchCacheKeyInput) {
   const { data: searchRows } = await supabase
     .from("meme_search_cache")
     .select("*")
-    .eq("query", input.query.trim().toLowerCase())
+    .eq("query", buildPersistedSearchQuery(input.query))
     .eq("lang", input.lang)
     .gt("expires_at", now)
     .order("created_at", { ascending: false })
@@ -157,7 +188,7 @@ export async function setCachedSearch(input: SearchCacheKeyInput, items: Unified
   await supabase
     .from("meme_search_cache")
     .upsert({
-      query: input.query.trim().toLowerCase(),
+      query: buildPersistedSearchQuery(input.query),
       lang: input.lang,
       provider_filter: sorted(input.providers),
       type_filter: sorted(input.types),
