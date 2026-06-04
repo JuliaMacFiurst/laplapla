@@ -15,8 +15,9 @@ export async function captureAndAlertServerError(
   error: unknown,
   context: CaptureAndAlertContext,
 ) {
+  let sentryEventId: string | undefined;
   try {
-    Sentry.captureException(error, {
+    sentryEventId = Sentry.captureException(error, {
       tags: {
         route: context.route || "api",
         method: context.method || "UNKNOWN",
@@ -41,5 +42,6 @@ export async function captureAndAlertServerError(
     environment: context.environment || sentryEnvironment || process.env.NODE_ENV || "unknown",
     statusCode,
     sentryUrl: context.sentryUrl,
+    eventId: sentryEventId,
   });
 }

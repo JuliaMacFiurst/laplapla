@@ -1,4 +1,4 @@
-import { shouldIgnoreMonitoringNoise } from "@/sentry.shared";
+import { shouldIgnoreMonitoringNoise } from "../../sentry.shared";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -23,14 +23,25 @@ export type DiscordAlertInput = {
   method: string;
   runtime: string;
   environment: string;
+  kind?: "error" | "heartbeat";
+  eventId?: string;
+  requestId?: string;
   sentryUrl?: string;
+  vercelUrl?: string;
   statusCode?: number | string | null;
 };
+
+export type DiscordAlertResult =
+  | { ok: true; status: "sent" | "throttled" | "ignored" }
+  | { ok: false; status: "not-configured" | "wrong-environment" | "discord-error"; error: string };
 
 const DISCORD_CONTENT_LIMIT = 2000;
 const DISCORD_FIELD_LIMIT = 1024;
 const TITLE_LIMIT = 200;
 const THROTTLE_WINDOW_MS = 5 * 60 * 1000;
+const DEFAULT_SENTRY_ISSUES_URL = "https://sentry.io/issues/";
+const DEFAULT_VERCEL_LOGS_URL =
+  "https://vercel.com/juliamacfiursts-projects/laplapla/logs";
 
 const recentAlerts = new Map<string, number>();
 
@@ -94,9 +105,40 @@ function getColor(level: string): number {
   }
 }
 
+function buildSentryUrl(eventId: string | null): string | null {
+  const configuredUrl = readString(process.env.SENTRY_ISSUES_URL);
+  if (configuredUrl) {
+    return eventId
+      ? `${configuredUrl}${configuredUrl.includes("?") ? "&" : "?"}query=${encodeURIComponent(eventId)}`
+      : configuredUrl;
+  }
+
+  const org = readString(process.env.SENTRY_ORG);
+  if (!org) {
+    return eventId
+      ? `${DEFAULT_SENTRY_ISSUES_URL}?query=${encodeURIComponent(eventId)}`
+      : DEFAULT_SENTRY_ISSUES_URL;
+  }
+
+  const baseUrl = `https://sentry.io/organizations/${encodeURIComponent(org)}/issues/`;
+  return eventId ? `${baseUrl}?query=${encodeURIComponent(eventId)}` : baseUrl;
+}
+
+function buildVercelUrl(): string | null {
+  const configuredUrl = readString(process.env.VERCEL_PROJECT_DASHBOARD_URL);
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  return DEFAULT_VERCEL_LOGS_URL;
+}
+
 function normalizeDetails(input: DiscordAlertInput): Required<Omit<DiscordAlertInput, "statusCode">> & {
   statusCode: string | null;
 } {
+  const eventId = sanitizeInline(input.eventId || "unknown");
+  const sentryUrl = pickString(input.sentryUrl, buildSentryUrl(eventId === "unknown" ? null : eventId));
+
   return {
     title: truncate(sanitizeInline(input.title || "unknown"), TITLE_LIMIT),
     level: sanitizeInline(input.level || "unknown"),
@@ -104,14 +146,20 @@ function normalizeDetails(input: DiscordAlertInput): Required<Omit<DiscordAlertI
     method: sanitizeInline(input.method || "unknown"),
     runtime: sanitizeInline(input.runtime || "unknown"),
     environment: sanitizeInline(input.environment || "unknown"),
-    sentryUrl: sanitizeInline(input.sentryUrl || "unknown"),
+    kind: input.kind || "error",
+    eventId,
+    requestId: sanitizeInline(input.requestId || "unknown"),
+    sentryUrl: sanitizeInline(sentryUrl || "unknown"),
+    vercelUrl: sanitizeInline(input.vercelUrl || buildVercelUrl() || "unknown"),
     statusCode: input.statusCode == null ? null : String(input.statusCode),
   };
 }
 
 function buildAiBlock(details: ReturnType<typeof normalizeDetails>): string {
   const block = [
-    "⚠️ New production error detected",
+    details.kind === "heartbeat"
+      ? "Monitoring heartbeat is healthy"
+      : "New production error detected",
     "",
     "=== SENTRY ALERT ===",
     `TITLE: ${details.title}`,
@@ -120,7 +168,8 @@ function buildAiBlock(details: ReturnType<typeof normalizeDetails>): string {
     `METHOD: ${details.method}`,
     `RUNTIME: ${details.runtime}`,
     `ENV: ${details.environment}`,
-    `URL: ${details.sentryUrl}`,
+    `SENTRY: ${details.sentryUrl}`,
+    `VERCEL: ${details.vercelUrl}`,
     "=== END ===",
   ].join("\n");
 
@@ -145,11 +194,35 @@ function buildEmbed(details: ReturnType<typeof normalizeDetails>): DiscordEmbed 
       inline: true,
     },
     {
-      name: "💥 Error",
+      name: details.kind === "heartbeat" ? "Status" : "Error",
       value: formatFieldValue(details.title),
       inline: false,
     },
   ];
+
+  if (details.statusCode) {
+    fields.push({
+      name: "Status",
+      value: formatFieldValue(details.statusCode),
+      inline: true,
+    });
+  }
+
+  if (details.eventId !== "unknown") {
+    fields.push({
+      name: "Sentry Event ID",
+      value: formatFieldValue(details.eventId),
+      inline: false,
+    });
+  }
+
+  if (details.requestId !== "unknown") {
+    fields.push({
+      name: "Request ID",
+      value: formatFieldValue(details.requestId),
+      inline: false,
+    });
+  }
 
   if (details.sentryUrl !== "unknown") {
     fields.push({
@@ -159,8 +232,16 @@ function buildEmbed(details: ReturnType<typeof normalizeDetails>): DiscordEmbed 
     });
   }
 
+  if (details.vercelUrl !== "unknown") {
+    fields.push({
+      name: "Open in Vercel",
+      value: formatFieldValue(`[View runtime details](${details.vercelUrl})`),
+      inline: false,
+    });
+  }
+
   return {
-    title: "🚨 New Error",
+    title: details.kind === "heartbeat" ? "Monitoring heartbeat" : "New Error",
     color: getColor(details.level),
     fields,
     url: details.sentryUrl !== "unknown" ? details.sentryUrl : undefined,
@@ -168,9 +249,13 @@ function buildEmbed(details: ReturnType<typeof normalizeDetails>): DiscordEmbed 
   };
 }
 
+function getThrottleKey(details: ReturnType<typeof normalizeDetails>): string {
+  return `${details.route}::${details.title}`;
+}
+
 function shouldThrottle(details: ReturnType<typeof normalizeDetails>): boolean {
   const now = Date.now();
-  const key = `${details.route}::${details.title}`;
+  const key = getThrottleKey(details);
 
   for (const [existingKey, timestamp] of recentAlerts) {
     if (now - timestamp > THROTTLE_WINDOW_MS) {
@@ -183,38 +268,42 @@ function shouldThrottle(details: ReturnType<typeof normalizeDetails>): boolean {
     return true;
   }
 
-  recentAlerts.set(key, now);
   return false;
 }
 
-export async function sendDiscordErrorAlert(input: DiscordAlertInput) {
+function markAlertSent(details: ReturnType<typeof normalizeDetails>) {
+  recentAlerts.set(getThrottleKey(details), Date.now());
+}
+
+export async function sendDiscordErrorAlert(input: DiscordAlertInput): Promise<DiscordAlertResult> {
   if (typeof window !== "undefined") {
-    return;
+    return { ok: false, status: "not-configured", error: "Discord alerts are server-only" };
   }
 
   const webhook = process.env.DISCORD_WEBHOOK_URL;
   if (!webhook) {
-    return;
+    return { ok: false, status: "not-configured", error: "DISCORD_WEBHOOK_URL is missing" };
   }
 
   const details = normalizeDetails(input);
 
   if (details.environment.toLowerCase() !== "production") {
-    return;
+    return { ok: false, status: "wrong-environment", error: `Environment is ${details.environment}` };
   }
 
   if (
+    details.kind !== "heartbeat" &&
     shouldIgnoreMonitoringNoise({
       message: details.title,
       statusCode: details.statusCode,
       environment: details.environment,
     })
   ) {
-    return;
+    return { ok: true, status: "ignored" };
   }
 
   if (shouldThrottle(details)) {
-    return;
+    return { ok: true, status: "throttled" };
   }
 
   try {
@@ -234,13 +323,22 @@ export async function sendDiscordErrorAlert(input: DiscordAlertInput) {
 
     if (!response.ok) {
       const responseText = await response.text();
+      const message = `Discord returned ${response.status}: ${truncate(responseText, 500)}`;
       console.error("Discord webhook error:", {
         status: response.status,
         body: truncate(responseText, 500),
       });
+      return { ok: false, status: "discord-error", error: message };
     }
+    markAlertSent(details);
+    return { ok: true, status: "sent" };
   } catch (error) {
     console.error("Discord webhook error:", error);
+    return {
+      ok: false,
+      status: "discord-error",
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 

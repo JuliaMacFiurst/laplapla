@@ -87,6 +87,11 @@ npm run build
 - В Sentry alert action указывайте URL вида `https://your-domain.com/api/alert-discord`; если используете секрет, передавайте header `x-alert-secret`.
 - Для production server-side alerting без Sentry webhook UI достаточно `DISCORD_WEBHOOK_URL` и `SENTRY_ENVIRONMENT=production`; env-изменения в Vercel применяются только после нового deploy.
 - В production для [pages/api/alert-discord.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/pages/api/alert-discord.ts) `DISCORD_ALERT_SECRET` обязателен.
+- Discord-alert содержит Sentry event ID/search link, Vercel runtime link и `x-vercel-id`, когда эти данные доступны.
+- По умолчанию используются общий Sentry event search и Runtime Logs проекта LapLapLa; `SENTRY_ISSUES_URL` и `VERCEL_PROJECT_DASHBOARD_URL` позволяют переопределить их.
+- Ежедневный heartbeat запускается Vercel Cron в `08:00 UTC` через `/api/cron/monitoring-heartbeat`; для него обязателен `CRON_SECRET`.
+- Чтобы клиентские ошибки попадали в Discord, в Sentry создайте Issue Alert: environment `production`, level `error`/`fatal`, action webhook `https://www.laplapla.com/api/alert-discord` и header `x-alert-secret: <DISCORD_ALERT_SECRET>`.
+- `/api/alert-discord` возвращает `502`, если Discord отклонил сообщение или webhook недоступен.
 
 ## Локальные backup-скрипты
 

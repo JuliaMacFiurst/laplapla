@@ -25,7 +25,11 @@ const EXTENSION_PATTERNS = [
 
 const IGNORED_STATUS_CODES = new Set(["400", "401", "403", "404"]);
 
-export const sentryEnvironment = process.env.SENTRY_ENVIRONMENT || "development";
+export const sentryEnvironment =
+  process.env.SENTRY_ENVIRONMENT ||
+  process.env.VERCEL_ENV ||
+  process.env.NODE_ENV ||
+  "development";
 
 function getEventMessage(event: Event): string {
   return (

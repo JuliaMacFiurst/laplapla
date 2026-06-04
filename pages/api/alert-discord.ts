@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { withApiHandler } from "@/utils/apiHandler";
 import { getDiscordAlertInputFromSentryPayload, sendDiscordErrorAlert } from "@/lib/monitoring/discordAlert";
 
-type AlertDiscordResponse = { ok: true } | { error: string };
+type AlertDiscordResponse = { ok: true; status: string } | { error: string };
 
 const ALERT_SECRET_HEADER = "x-alert-secret";
 
@@ -48,9 +48,14 @@ async function handler(
     }
   }
 
-  await sendDiscordErrorAlert(getDiscordAlertInputFromSentryPayload(req.body));
+  const result = await sendDiscordErrorAlert(getDiscordAlertInputFromSentryPayload(req.body));
 
-  res.status(200).json({ ok: true });
+  if (!result.ok) {
+    res.status(502).json({ error: result.error });
+    return;
+  }
+
+  res.status(200).json({ ok: true, status: result.status });
 }
 
 export default withApiHandler<AlertDiscordResponse>(

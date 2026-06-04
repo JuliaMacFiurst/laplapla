@@ -112,9 +112,10 @@ export function withApiHandler<T = unknown>(
     try {
       await handler(req, res);
     } catch (error) {
+      let sentryEventId: string | undefined;
       if (hasSentryDsn()) {
         try {
-          Sentry.captureException(error, {
+          sentryEventId = Sentry.captureException(error, {
             tags: {
               route: req.url || "api",
               method: req.method || "UNKNOWN",
@@ -129,7 +130,16 @@ export function withApiHandler<T = unknown>(
         }
       }
 
-      console.error(`[${req.url || "api"}] request failed`, error);
+      const requestId = req.headers["x-vercel-id"];
+      console.error(JSON.stringify({
+        level: "error",
+        message: "API request failed",
+        route: req.url || "api",
+        method: req.method || "UNKNOWN",
+        requestId: Array.isArray(requestId) ? requestId[0] : requestId,
+        sentryEventId,
+        error: error instanceof Error ? error.message : String(error),
+      }));
 
       if (options.onError) {
         await options.onError(error, req, res);
@@ -149,6 +159,8 @@ export function withApiHandler<T = unknown>(
           runtime: "server",
           environment: sentryEnvironment || process.env.NODE_ENV || "unknown",
           statusCode: status,
+          eventId: sentryEventId,
+          requestId: Array.isArray(requestId) ? requestId[0] : requestId,
         });
       }
     }
