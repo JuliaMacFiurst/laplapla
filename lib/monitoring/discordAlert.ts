@@ -349,10 +349,18 @@ function getPrimaryPayload(body: unknown): UnknownRecord | null {
   }
 
   const data = asRecord(root.data);
-  const issue = asRecord(root.issue);
-  const event = asRecord(root.event);
+  const issue = asRecord(data?.issue) || asRecord(root.issue);
+  const event = asRecord(data?.event) || asRecord(root.event);
 
-  return data || issue || event || root;
+  if (data || issue || event) {
+    return {
+      ...(data || {}),
+      ...(issue || {}),
+      ...(event || {}),
+    };
+  }
+
+  return root;
 }
 
 function getTagValue(payload: UnknownRecord | null, key: string): string | null {
@@ -477,6 +485,19 @@ function extractLink(body: unknown, payload: UnknownRecord | null): string {
   );
 }
 
+function extractEventId(body: unknown, payload: UnknownRecord | null): string {
+  const root = asRecord(body);
+
+  return sanitizeInline(
+    pickString(
+      payload?.event_id,
+      payload?.eventId,
+      root?.event_id,
+      root?.eventId,
+    ),
+  );
+}
+
 export function getDiscordAlertInputFromSentryPayload(body: unknown): DiscordAlertInput {
   const payload = getPrimaryPayload(body);
 
@@ -488,5 +509,6 @@ export function getDiscordAlertInputFromSentryPayload(body: unknown): DiscordAle
     runtime: extractRuntime(body, payload) || "unknown",
     environment: extractEnvironment(body, payload) || "unknown",
     sentryUrl: extractLink(body, payload) || "unknown",
+    eventId: extractEventId(body, payload) || "unknown",
   };
 }

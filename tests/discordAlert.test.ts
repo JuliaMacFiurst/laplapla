@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { sendDiscordErrorAlert } from "../lib/monitoring/discordAlert";
+import {
+  getDiscordAlertInputFromSentryPayload,
+  sendDiscordErrorAlert,
+} from "../lib/monitoring/discordAlert";
 
 const originalEnv = { ...process.env };
 
@@ -21,6 +24,37 @@ function alertInput(title: string) {
 }
 
 describe("Discord monitoring alerts", () => {
+  it("extracts details from nested Sentry alert-rule payloads", () => {
+    const alert = getDiscordAlertInputFromSentryPayload({
+      action: "triggered",
+      data: {
+        issue: {
+          title: "TypeError: Cannot read properties of undefined",
+          web_url: "https://sentry.io/organizations/laplapla/issues/123/",
+        },
+        event: {
+          event_id: "event-123",
+          level: "error",
+          environment: "production",
+          tags: [
+            { key: "route", value: "/books/example" },
+            { key: "runtime", value: "client" },
+          ],
+        },
+      },
+    });
+
+    expect(alert).toMatchObject({
+      title: "TypeError: Cannot read properties of undefined",
+      level: "error",
+      route: "/books/example",
+      runtime: "client",
+      environment: "production",
+      sentryUrl: "https://sentry.io/organizations/laplapla/issues/123/",
+      eventId: "event-123",
+    });
+  });
+
   it("reports Discord delivery failures", async () => {
     process.env.DISCORD_WEBHOOK_URL = "https://discord.invalid/webhook";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
