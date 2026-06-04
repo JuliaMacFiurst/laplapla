@@ -84,13 +84,13 @@ npm run build
 - Для прямой server-side отправки Discord-alert без Sentry webhook UI используется helper [lib/monitoring/discordAlert.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/discordAlert.ts).
 - Для fallback coverage в routes вне `withApiHandler` используется helper [lib/monitoring/captureAndAlertServerError.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/captureAndAlertServerError.ts).
 - Нужные env: `DISCORD_WEBHOOK_URL` и опционально `DISCORD_ALERT_SECRET`.
-- В Sentry alert action указывайте URL вида `https://your-domain.com/api/alert-discord`; если используете секрет, передавайте header `x-alert-secret`.
+- В Sentry Internal Integration укажите webhook `https://www.laplapla.com/api/alert-discord`, включите `Alert Rule Action`, а Client Secret сохраните в Vercel как server-only env `SENTRY_WEBHOOK_SECRET`.
 - Для production server-side alerting без Sentry webhook UI достаточно `DISCORD_WEBHOOK_URL` и `SENTRY_ENVIRONMENT=production`; env-изменения в Vercel применяются только после нового deploy.
 - В production для [pages/api/alert-discord.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/pages/api/alert-discord.ts) `DISCORD_ALERT_SECRET` обязателен.
 - Discord-alert содержит Sentry event ID/search link, Vercel runtime link и `x-vercel-id`, когда эти данные доступны.
 - По умолчанию используются общий Sentry event search и Runtime Logs проекта LapLapLa; `SENTRY_ISSUES_URL` и `VERCEL_PROJECT_DASHBOARD_URL` позволяют переопределить их.
 - Ежедневный heartbeat запускается Vercel Cron в `08:00 UTC` через `/api/cron/monitoring-heartbeat`; для него обязателен `CRON_SECRET`.
-- Чтобы клиентские ошибки попадали в Discord, в Sentry создайте Issue Alert: environment `production`, level `error`/`fatal`, action webhook `https://www.laplapla.com/api/alert-discord` и header `x-alert-secret: <DISCORD_ALERT_SECRET>`.
+- Чтобы клиентские ошибки попадали в Discord, в Sentry создайте Issue Alert: environment `production`, level `error`/`fatal`, action `Send a notification via <Internal Integration>`. Endpoint проверяет стандартную HMAC-подпись Sentry; `x-alert-secret` остаётся только для ручных тестов.
 - `/api/alert-discord` возвращает `502`, если Discord отклонил сообщение или webhook недоступен.
 
 ## Локальные backup-скрипты
