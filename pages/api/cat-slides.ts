@@ -127,6 +127,9 @@ const CAT_PRIMARY_VIDEO_PROVIDERS: UnifiedMemeProvider[] = ["pexels", "pixabay"]
 const CAT_MIXED_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip", "giphy", "pexels", "laplapla"];
 const CAT_MIXED_TYPES: UnifiedMemeMediaType[] = ["image", "gif", "mp4", "webm", "sticker"];
 const CAT_TEST_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "giphy", "pexels"];
+const CAT_MEDIA_SEARCH_LIMIT = 18;
+const CAT_MEDIA_RANDOM_OFFSET_WINDOW = 12;
+const CAT_MEDIA_SELECTION_POOL_SIZE = 12;
 
 function getProviderTypes(provider: UnifiedMemeProvider): UnifiedMemeMediaType[] {
   if (provider === "imgflip") return ["image"];
@@ -166,8 +169,8 @@ async function fetchCatMediaFromUnified(params: {
   const response = await searchUnifiedMemes({
     query: params.query,
     lang: params.lang,
-    limit: 10,
-    offset: params.offset ?? Math.floor(Math.random() * 20),
+    limit: CAT_MEDIA_SEARCH_LIMIT,
+    offset: params.offset ?? Math.floor(Math.random() * CAT_MEDIA_RANDOM_OFFSET_WINDOW),
     providers: params.providers,
     types: params.types,
     persist: false,
@@ -183,7 +186,8 @@ async function fetchCatMediaFromUnified(params: {
     cached: response.cached,
   });
 
-  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  const selectionPool = candidates.slice(0, CAT_MEDIA_SELECTION_POOL_SIZE);
+  const chosen = selectionPool[Math.floor(Math.random() * selectionPool.length)];
   if (!chosen) return null;
   params.usedIds.add(`${chosen.provider}:${chosen.providerId}`);
 
@@ -211,7 +215,7 @@ async function fetchCatMediaFromProvider(params: {
       types: getProviderTypes(params.provider),
       used: params.used,
       usedIds: params.usedIds,
-      offset: params.provider === "imgflip" ? 0 : Math.floor(Math.random() * 5),
+      offset: params.provider === "imgflip" ? 0 : Math.floor(Math.random() * CAT_MEDIA_RANDOM_OFFSET_WINDOW),
     });
     if (media) return media;
   }
