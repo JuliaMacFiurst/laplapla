@@ -126,7 +126,7 @@ export const config = {
 const CAT_PRIMARY_VIDEO_PROVIDERS: UnifiedMemeProvider[] = ["pexels", "pixabay"];
 const CAT_MIXED_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip", "giphy", "pexels", "laplapla"];
 const CAT_MIXED_TYPES: UnifiedMemeMediaType[] = ["image", "gif", "mp4", "webm", "sticker"];
-const CAT_TEST_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "imgflip"];
+const CAT_TEST_PROVIDERS: UnifiedMemeProvider[] = ["pixabay", "reddit", "giphy", "pexels"];
 
 function getProviderTypes(provider: UnifiedMemeProvider): UnifiedMemeMediaType[] {
   if (provider === "imgflip") return ["image"];
@@ -140,7 +140,7 @@ function getProviderTypes(provider: UnifiedMemeProvider): UnifiedMemeMediaType[]
 function getCatProviderQueries(provider: UnifiedMemeProvider, query: string) {
   const fallbackQueries =
     provider === "imgflip"
-      ? ["cat", "funny cat"]
+      ? []
       : provider === "reddit"
         ? ["cat", "funny cat", "cute cat"]
         : ["cat", "cute cat", "funny cat"];
