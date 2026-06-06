@@ -1,4 +1,3 @@
-import type { GetServerSideProps } from "next";
 import { normalizeSiteUrl } from "@/lib/config";
 import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
@@ -71,7 +70,7 @@ function buildSitemapXml(entries: SitemapEntry[], baseUrl: string) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${body}\n</urlset>`;
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ res }) => {
+export async function generateSitemapXml() {
   const baseUrl = normalizeSiteUrl(process.env["NEXT_PUBLIC_SITE_URL"]);
   const recipePaths = await loadRecipeSitemapPaths();
   const recipeEntries = recipePaths.map((path) => ({
@@ -88,15 +87,5 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     })),
   );
 
-  res.setHeader("Content-Type", "application/xml");
-  res.write(buildSitemapXml(entries, baseUrl));
-  res.end();
-
-  return {
-    props: {},
-  };
-};
-
-export default function SitemapXml() {
-  return null;
+  return buildSitemapXml(entries, baseUrl);
 }

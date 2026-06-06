@@ -109,16 +109,31 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    if (!supabaseStorageOrigin) {
-      return [];
-    }
-
-    return [
+    const beforeFiles = [
       {
-        source: "/supabase-storage/:path*",
-        destination: `${supabaseStorageOrigin.replace(/\/+$/, "")}/storage/v1/object/public/:path*`,
+        source: "/sitemap.xml",
+        destination: "/api/sitemap.xml",
       },
     ];
+
+    if (!supabaseStorageOrigin) {
+      return {
+        beforeFiles,
+        afterFiles: [],
+        fallback: [],
+      };
+    }
+
+    return {
+      beforeFiles,
+      afterFiles: [
+        {
+          source: "/supabase-storage/:path*",
+          destination: `${supabaseStorageOrigin.replace(/\/+$/, "")}/storage/v1/object/public/:path*`,
+        },
+      ],
+      fallback: [],
+    };
   },
 };
 
