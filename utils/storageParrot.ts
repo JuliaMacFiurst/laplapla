@@ -1,5 +1,5 @@
-import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { getParrotAudioUrl } from "@/lib/parrotMediaUrls";
 
 export const getParrotLoopUrl = (path: string): string => {
-  return buildSupabasePublicUrl("parrot-audio", `parrots/${path}`);
+  return getParrotAudioUrl(`parrots/${path}`);
 };

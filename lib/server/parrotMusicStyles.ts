@@ -1,6 +1,6 @@
 import type { Lang } from "@/i18n";
 import { iconForInstrument, iconForMusicStyle } from "@/utils/parrot-presets";
-import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { getParrotAudioUrl, getParrotStyleMediaUrl } from "@/lib/parrotMediaUrls";
 import { isolateMixedBidiText } from "@/lib/i18n/bidi";
 import {
   getHardcodedParrotStyleRecords,
@@ -77,7 +77,7 @@ function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function normalizeParrotAudioStoragePath(value: string) {
+function normalizeParrotBucketStoragePath(value: string, bucket: "parrot-audio" | "parrot-style-media") {
   const withoutQuery = value.split(/[?#]/, 1)[0] ?? "";
   const normalized = withoutQuery.trim();
 
@@ -97,17 +97,17 @@ function normalizeParrotAudioStoragePath(value: string) {
   }
 
   candidate = candidate
-    .replace(/^\/supabase-storage\/parrot-audio\/?/i, "")
+    .replace(new RegExp(`^/supabase-storage/${bucket}/?`, "i"), "")
     .replace(/^\/supabase-storage\/?/i, "")
     .replace(/^\/+/, "")
-    .replace(/^storage\/v1\/object\/public\/parrot-audio\/?/i, "")
-    .replace(/^parrot-audio\/?/i, "");
+    .replace(new RegExp(`^storage/v1/object/public/${bucket}/?`, "i"), "")
+    .replace(new RegExp(`^${bucket}/?`, "i"), "");
 
   if (!candidate) {
     return "";
   }
 
-  return candidate.startsWith("parrots/") ? candidate : `parrots/${candidate}`;
+  return candidate;
 }
 
 function resolveParrotAudioUrl(value: unknown) {
@@ -116,16 +116,39 @@ function resolveParrotAudioUrl(value: unknown) {
     return "";
   }
 
-  if (/^https?:\/\//i.test(normalized) && !/\/storage\/v1\/object\/public\/parrot-audio\//i.test(normalized)) {
+  const isLegacyParrotAudioUrl =
+    /\/storage\/v1\/object\/public\/parrot-audio\//i.test(normalized) ||
+    /\/supabase-storage\/parrot-audio\//i.test(normalized);
+
+  if (/^https?:\/\//i.test(normalized) && !isLegacyParrotAudioUrl) {
     return normalized;
   }
 
-  const pathInsideBucket = normalizeParrotAudioStoragePath(normalized);
+  const pathInsideBucket = normalizeParrotBucketStoragePath(normalized, "parrot-audio");
   if (!pathInsideBucket) {
     return "";
   }
 
-  return buildSupabasePublicUrl("parrot-audio", pathInsideBucket);
+  return getParrotAudioUrl(pathInsideBucket.startsWith("parrots/") ? pathInsideBucket : `parrots/${pathInsideBucket}`);
+}
+
+function resolveParrotStyleMediaUrl(value: unknown) {
+  const normalized = normalizeText(value);
+  if (!normalized) {
+    return "";
+  }
+
+  const isHttpUrl = /^https?:\/\//i.test(normalized);
+  const isLegacySupabaseStyleMediaUrl =
+    /\/storage\/v1\/object\/public\/parrot-style-media\//i.test(normalized) ||
+    /\/supabase-storage\/parrot-style-media\//i.test(normalized);
+
+  if (isHttpUrl && !isLegacySupabaseStyleMediaUrl) {
+    return normalized;
+  }
+
+  const pathInsideBucket = normalizeParrotBucketStoragePath(normalized, "parrot-style-media");
+  return pathInsideBucket ? getParrotStyleMediaUrl(pathInsideBucket) : "";
 }
 
 function normalizeOrder(value: unknown) {
@@ -258,7 +281,7 @@ function mapStyle(
       }
 
       const mapped: ParrotStyleSlide = { text };
-      const mediaUrl = normalizeText(slide.media_url);
+      const mediaUrl = resolveParrotStyleMediaUrl(slide.media_url);
       if (mediaUrl) {
         mapped.mediaUrl = mediaUrl;
       }

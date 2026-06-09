@@ -16,7 +16,7 @@ import MediaPickerModal from "./MediaPickerModal";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
-import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
+import { isStudioVideoAssetUrl, toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
 import { convertWebmToMp4, preloadFFmpeg } from "@/lib/cropAndConvert";
@@ -4876,16 +4876,15 @@ export default function StudioRoot({
     const mappedSlides: StudioSlide[] = (initialSlides ?? []).map(
       (s) => {
         const importedMediaUrl = s.image ?? s.mediaUrl;
+        const mediaType = importedMediaUrl && isStudioVideoAssetUrl(importedMediaUrl)
+          ? "video"
+          : s.mediaType ?? "image";
         return ({
         id: createStudioId(),
         text: s.text,
         fontSize: getImportedSlideFontSize(s.text),
         mediaUrl: toStudioMediaUrl(importedMediaUrl),
-        mediaType:
-          s.mediaType ??
-          (importedMediaUrl?.includes(".mp4") || importedMediaUrl?.includes(".webm")
-            ? "video"
-            : "image"),
+        mediaType,
         sourceMediaUrl: s.sourceMediaUrl,
         sourceMediaType: s.sourceMediaType,
         mediaMimeType: s.mediaMimeType,

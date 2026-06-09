@@ -38,20 +38,7 @@ type TrackRowProps = {
   onRemove: (trackId: string) => void;
 };
 
-const areTracksEqual = (a: Track[], b: Track[]) => {
-  if (a.length !== b.length) return false;
-
-  return a.every((track, index) => {
-    const other = b[index];
-    return (
-      other &&
-      track.id === other.id &&
-      track.src === other.src &&
-      track.label === other.label &&
-      track.volume === other.volume
-    );
-  });
-};
+const EMPTY_TRACKS: Track[] = [];
 
 const TrackRow = memo(function TrackRow({
   track,
@@ -167,8 +154,8 @@ export default function MusicPanel({
   const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [presets, setPresets] = useState<ParrotStyleRecord[]>(fallbackPresets);
-  const [activeTracks, setActiveTracks] = useState<Track[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const activeTracks = initialTracks ?? EMPTY_TRACKS;
 
   const [recordSeconds, setRecordSeconds] = useState(0);
 
@@ -210,34 +197,6 @@ export default function MusicPanel({
     }
   }, [presets, selectedPresetId]);
 
-  // --- Restore tracks from initialTracks on mount or when changed ---
-  useEffect(() => {
-    if (!initialTracks) return;
-
-    if (skipNextInitialTracksSyncRef.current) {
-      skipNextInitialTracksSyncRef.current = false;
-      return;
-    }
-
-    if (areTracksEqual(activeTracks, initialTracks)) {
-      return;
-    }
-
-    const nextIds = new Set(initialTracks.map((track) => track.id));
-    activeTracks.forEach((track) => {
-      if (!nextIds.has(track.id)) {
-        engineRef?.current?.removeTrack?.(track.id);
-      }
-    });
-
-    setActiveTracks(initialTracks);
-
-    initialTracks.forEach((track) => {
-      engineRef?.current?.addTrack?.(track);
-      engineRef?.current?.setVolume?.(track.id, track.volume);
-    });
-  }, [activeTracks, engineRef, initialTracks]);
-
   // --- Persist tracks whenever they change ---
   useEffect(() => {
     sessionStorage.setItem(
@@ -245,10 +204,6 @@ export default function MusicPanel({
       JSON.stringify(activeTracks)
     );
   }, [activeTracks]);
-
-  useEffect(() => {
-    onTracksChange?.(activeTracks);
-  }, [activeTracks, onTracksChange]);
 
   useEffect(() => {
     return () => {
@@ -276,24 +231,22 @@ export default function MusicPanel({
   const [isOpen, setIsOpen] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
-  const skipNextInitialTracksSyncRef = useRef(false);
 
 
   const selectedPreset = presets.find((p) => p.id === selectedPresetId) ?? null;
 
   const handleTrackVolumeChange = useCallback((trackId: string, volume: number) => {
-    skipNextInitialTracksSyncRef.current = true;
-    setActiveTracks((prev) =>
-      prev.map((track) => (track.id === trackId ? { ...track, volume } : track))
+    const nextTracks = activeTracks.map((track) =>
+      track.id === trackId ? { ...track, volume } : track
     );
+    onTracksChange?.(nextTracks);
     engineRef?.current?.setVolume?.(trackId, volume);
-  }, [engineRef]);
+  }, [activeTracks, engineRef, onTracksChange]);
 
   const handleTrackRemove = useCallback((trackId: string) => {
-    skipNextInitialTracksSyncRef.current = true;
-    setActiveTracks((prev) => prev.filter((track) => track.id !== trackId));
+    onTracksChange?.(activeTracks.filter((track) => track.id !== trackId));
     engineRef?.current?.removeTrack?.(trackId);
-  }, [engineRef]);
+  }, [activeTracks, engineRef, onTracksChange]);
 
   return (
     <div className="studio-panel" style={{ marginTop: 24 }}>
@@ -618,9 +571,6 @@ export default function MusicPanel({
                             onClick={() => {
                               if (activeTracks.length >= 4) return;
 
-                              if (activeTracks.some((t) => t.id === variant.id))
-                                return;
-
                               const newTrack = {
                                 id: `${selectedPreset.id}:${loop.id}:${variant.id}`,
                                 label: variant.label || loop.label,
@@ -628,8 +578,11 @@ export default function MusicPanel({
                                 volume: 1,
                               };
 
-                              skipNextInitialTracksSyncRef.current = true;
-                              setActiveTracks((prev) => [...prev, newTrack]);
+                              if (activeTracks.some((track) => track.id === newTrack.id)) {
+                                return;
+                              }
+
+                              onTracksChange?.([...activeTracks, newTrack]);
                               engineRef?.current?.addTrack?.(newTrack);
                             }}
                             style={{

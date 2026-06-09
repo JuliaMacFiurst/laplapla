@@ -7,7 +7,7 @@ function isRelativeUrl(url: string) {
   return url.startsWith("/") || url.startsWith("./") || url.startsWith("../");
 }
 
-function isVideoAssetUrl(url: string) {
+export function isStudioVideoAssetUrl(url: string) {
   return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url);
 }
 
@@ -19,7 +19,7 @@ export function toStudioMediaUrl(url?: string | null) {
 
   // Proxying remote videos breaks range requests and hits the proxy size cap.
   // Let the browser load video assets directly while keeping image proxying intact.
-  if (isVideoAssetUrl(url)) {
+  if (isStudioVideoAssetUrl(url)) {
     return url;
   }
 

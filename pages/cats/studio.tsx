@@ -9,6 +9,7 @@ import { buildStudioRoute } from "@/lib/studioRouting";
 import type { Track } from "@/components/studio/MusicPanel";
 import { loadProject } from "@/lib/studioStorage";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
+import { isStudioVideoAssetUrl } from "@/lib/studioMediaProxy";
 import type { StudioProject } from "@/types/studio";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
@@ -74,6 +75,17 @@ type ParrotImportPayload = {
     activeVoiceEffects?: Partial<Record<"enhance" | "louder" | "child", boolean>>;
   }>;
 };
+
+function getImportedParrotMediaType(
+  mediaUrl: string | undefined,
+  mediaType: "gif" | "image" | "video" | undefined,
+): "image" | "video" {
+  if (mediaUrl && isStudioVideoAssetUrl(mediaUrl)) {
+    return "video";
+  }
+
+  return mediaType === "video" ? "video" : "image";
+}
 
 function buildTracksFromParrotImport(
   data: ParrotImportPayload,
@@ -185,7 +197,7 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
                 ? parsed.slides.map((slide) => ({
                   text: slide.text,
                   image: slide.mediaUrl,
-                  mediaType: slide.mediaType === "gif" ? "image" : slide.mediaType,
+                  mediaType: getImportedParrotMediaType(slide.mediaUrl, slide.mediaType),
                   mediaFit: "contain",
                   mediaPosition: "center",
                   textPosition: "bottom",
