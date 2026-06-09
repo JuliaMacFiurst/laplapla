@@ -16,7 +16,7 @@ import MediaPickerModal from "./MediaPickerModal";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
-import { isStudioVideoAssetUrl, toStudioMediaUrl } from "@/lib/studioMediaProxy";
+import { isStudioVideoAssetUrl, toStudioAudioUrl, toStudioMediaUrl } from "@/lib/studioMediaProxy";
 import { trackEvent } from "@/lib/analytics/client";
 import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
@@ -535,15 +535,16 @@ function createVideoLoader() {
 }
 
 function decodeAudioBuffer(audioContext: AudioContext, src: string) {
+  const audioSrc = toStudioAudioUrl(src) ?? src;
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => {
     controller.abort();
   }, STUDIO_EXPORT_AUDIO_LOAD_TIMEOUT_MS);
 
-  return fetch(src, { signal: controller.signal })
+  return fetch(audioSrc, { signal: controller.signal })
     .then((response) => {
       if (!response.ok) {
-        throw new Error(`Failed to load audio: ${src}`);
+        throw new Error(`Failed to load audio: ${audioSrc}`);
       }
 
       return response.arrayBuffer();
@@ -2018,6 +2019,11 @@ function StudioMobileLayout({
     audioEngineRef.current?.setVolume?.(track.id, track.volume);
   }
 
+  function warmStartMusicTracks() {
+    if (project.musicTracks.length === 0) return;
+    void audioEngineRef.current?.playAll?.();
+  }
+
   function togglePreviewAudio(id: string, src: string) {
     if (previewingAudioId === id && previewAudioRef.current) {
       previewAudioRef.current.pause();
@@ -2032,7 +2038,7 @@ function StudioMobileLayout({
       previewAudioRef.current.currentTime = 0;
     }
 
-    const audio = new Audio(src);
+    const audio = new Audio(toStudioAudioUrl(src) ?? src);
     previewAudioRef.current = audio;
     setPreviewingAudioId(id);
     audio.onended = () => {
@@ -2047,8 +2053,9 @@ function StudioMobileLayout({
       audioEngineRef.current?.stopAll?.();
       setAreTracksPlaying(false);
     } else {
-      audioEngineRef.current?.playAll?.();
-      setAreTracksPlaying(true);
+      void audioEngineRef.current?.playAll?.().then((didStart) => {
+        setAreTracksPlaying(Boolean(didStart));
+      });
     }
   }
 
@@ -2137,6 +2144,7 @@ function StudioMobileLayout({
   }
 
   function startExportFallbackPlaybackFromBeginning() {
+    warmStartMusicTracks();
     setShowExportFallbackHint(false);
     setExportStatusText(exportText.recordingSlide
       .replace("{current}", "1")
@@ -3057,7 +3065,10 @@ function StudioMobileLayout({
               </div>
               <button
                 type="button"
-                onClick={() => setIsPreviewSheetOpen(true)}
+                onClick={() => {
+                  warmStartMusicTracks();
+                  setIsPreviewSheetOpen(true);
+                }}
                 style={{
                   ...mobileButtonStyle,
                   background: "#8fdcff",
@@ -3069,6 +3080,7 @@ function StudioMobileLayout({
               <button
                 type="button"
                 onClick={() => {
+                  warmStartMusicTracks();
                   resetExportUi();
                   setIsExportSheetOpen(true);
                 }}

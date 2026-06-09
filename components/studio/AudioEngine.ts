@@ -22,6 +22,7 @@ import {
   useEffect,
 } from "react";
 import { devWarn } from "@/utils/devLog";
+import { toStudioAudioUrl } from "@/lib/studioMediaProxy";
 
 export type AudioTrack = {
   id: string;
@@ -33,10 +34,12 @@ export type AudioEngineHandle = {
   addTrack: (track: AudioTrack) => void;
   removeTrack: (id: string) => void;
   setVolume: (id: string, volume: number) => void;
-  playAll: () => void;
+  playAll: () => Promise<boolean>;
   pauseAll: () => void;
   stopAll: () => void;
   getTracks: () => AudioTrack[];
+  duckMusic: () => void;
+  restoreMusic: () => void;
 };
 
 interface AudioEngineProps {
@@ -57,8 +60,11 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
     if (audioMapRef.current.has(track.id)) return;
 
     const audio = document.createElement("audio");
-    audio.src = track.src;
-    audio.crossOrigin = "anonymous";
+    const playableSrc = toStudioAudioUrl(track.src) ?? track.src;
+    audio.src = playableSrc;
+    if (/^https?:\/\//i.test(playableSrc)) {
+      audio.crossOrigin = "anonymous";
+    }
     audio.loop = true;
     const baseVolume = typeof track.volume === "number" ? track.volume : 1;
     audio.volume = baseVolume * musicMultiplierRef.current;
@@ -99,6 +105,8 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
   };
 
   const playAll = async () => {
+    let didStart = false;
+
     for (const track of tracksRef.current) {
       const audio = audioMapRef.current.get(track.id);
       if (!audio) continue;
@@ -108,10 +116,13 @@ const AudioEngine = forwardRef<AudioEngineHandle, AudioEngineProps>(
 
       try {
         await audio.play();
+        didStart = true;
       } catch (e) {
         devWarn("Audio play error:", e);
       }
     }
+
+    return didStart;
   };
 
   const pauseAll = () => {

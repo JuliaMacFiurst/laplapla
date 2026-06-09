@@ -24,6 +24,7 @@ import {
   getHardcodedParrotStyleRecords,
   type ParrotStyleRecord,
 } from "@/lib/parrots/catalog";
+import { toStudioAudioUrl } from "@/lib/studioMediaProxy";
 
 export type Track = {
   id: string;
@@ -413,10 +414,12 @@ export default function MusicPanel({
               onClick={() => {
                 if (isPlaying) {
                   engineRef?.current?.stopAll?.();
+                  setIsPlaying(false);
                 } else {
-                  engineRef?.current?.playAll?.();
+                  void engineRef?.current?.playAll?.().then((didStart) => {
+                    setIsPlaying(Boolean(didStart));
+                  });
                 }
-                setIsPlaying(!isPlaying);
               }}
               className={`studio-button ${isPlaying ? "btn-pink" : "btn-blue"}`}
             >
@@ -512,10 +515,12 @@ export default function MusicPanel({
                     onClick={() => {
                       if (isPlaying) {
                         engineRef?.current?.stopAll?.();
+                        setIsPlaying(false);
                       } else {
-                        engineRef?.current?.playAll?.();
+                        void engineRef?.current?.playAll?.().then((didStart) => {
+                          setIsPlaying(Boolean(didStart));
+                        });
                       }
-                      setIsPlaying(!isPlaying);
                     }}
                     className={`studio-button ${isPlaying ? "btn-pink" : "btn-blue"}`}
                   >
@@ -613,7 +618,7 @@ export default function MusicPanel({
                                 previewAudioRef.current.currentTime = 0;
                               }
 
-                              const audio = new Audio(variant.src);
+                              const audio = new Audio(toStudioAudioUrl(variant.src) ?? variant.src);
                               previewAudioRef.current = audio;
                               setPreviewingId(variant.id);
 
