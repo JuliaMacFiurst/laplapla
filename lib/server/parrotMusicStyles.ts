@@ -61,6 +61,14 @@ type ParrotMusicStyleTranslationRow = {
 type ParrotMusicStyleTranslation = {
   title?: unknown;
   description?: unknown;
+  presets?: Array<{
+    preset_key?: unknown;
+    title?: unknown;
+    variants?: Array<{
+      variant_key?: unknown;
+      title?: unknown;
+    }>;
+  }>;
   slides?: Array<{
     order?: unknown;
     text?: unknown;
@@ -191,7 +199,35 @@ function getTranslatedSlideText(
   return normalizeText(translatedSlide?.text) || normalizeText(fallbackSlide.text);
 }
 
-function mapVariant(row: ParrotMusicStyleVariantRow): ParrotStyleVariant | null {
+function getTranslatedPreset(
+  translation: ParrotMusicStyleTranslation | null,
+  presetKey: string,
+) {
+  return Array.isArray(translation?.presets)
+    ? translation.presets.find((preset) => normalizeText(preset.preset_key) === presetKey)
+    : null;
+}
+
+function getTranslatedVariantTitle(
+  translatedPreset: ReturnType<typeof getTranslatedPreset>,
+  variantKey: string,
+) {
+  if (!Array.isArray(translatedPreset?.variants)) {
+    return "";
+  }
+
+  const translatedVariant = translatedPreset.variants.find(
+    (variant) => normalizeText(variant.variant_key) === variantKey,
+  );
+
+  return normalizeText(translatedVariant?.title);
+}
+
+function mapVariant(
+  row: ParrotMusicStyleVariantRow,
+  lang: Lang,
+  translatedPreset: ReturnType<typeof getTranslatedPreset>,
+): ParrotStyleVariant | null {
   const id = normalizeText(row.variant_key) || row.id;
   const src = resolveParrotAudioUrl(row.audio_url);
 
@@ -199,16 +235,22 @@ function mapVariant(row: ParrotMusicStyleVariantRow): ParrotStyleVariant | null 
     return null;
   }
 
+  const fallbackLabel = normalizeText(row.title);
+  const translatedLabel =
+    lang === "ru" ? fallbackLabel : getTranslatedVariantTitle(translatedPreset, id) || fallbackLabel;
+
   return {
     id,
     src,
-    label: normalizeText(row.title) || undefined,
+    label: translatedLabel ? isolateMixedBidiText(translatedLabel, lang) : undefined,
   };
 }
 
 function mapPreset(
   row: ParrotMusicStylePresetRow,
   variants: ParrotMusicStyleVariantRow[],
+  lang: Lang,
+  translation: ParrotMusicStyleTranslation | null,
 ): ParrotStyleInstrument | null {
   const presetKey = normalizeText(row.preset_key);
   const label = normalizeText(row.title);
@@ -217,8 +259,13 @@ function mapPreset(
     return null;
   }
 
+  const translatedPreset = lang === "ru" ? null : getTranslatedPreset(translation, presetKey);
+  const localizedLabel = lang === "ru"
+    ? label
+    : normalizeText(translatedPreset?.title) || label;
+
   const mappedVariants = variants
-    .map(mapVariant)
+    .map((variant) => mapVariant(variant, lang, translatedPreset))
     .filter((variant): variant is ParrotStyleVariant => Boolean(variant));
 
   if (mappedVariants.length === 0) {
@@ -231,8 +278,8 @@ function mapPreset(
 
   return {
     id: presetKey,
-    label,
-    iconUrl: normalizeText(row.icon_url) || iconForInstrument(label || presetKey),
+    label: isolateMixedBidiText(localizedLabel, lang),
+    iconUrl: resolveParrotStyleMediaUrl(row.icon_url) || iconForInstrument(label || presetKey),
     variants: mappedVariants,
     defaultIndex: defaultIndex >= 0 ? defaultIndex : 0,
     defaultOn: Boolean(row.default_on),
@@ -259,7 +306,14 @@ function mapStyle(
   }
 
   const mappedPresets = presets
-    .map((preset) => mapPreset(preset, variantsByPresetId.get(preset.id) ?? []))
+    .map((preset) =>
+      mapPreset(
+        preset,
+        variantsByPresetId.get(preset.id) ?? [],
+        lang,
+        translation,
+      ),
+    )
     .filter((preset): preset is ParrotStyleInstrument => Boolean(preset));
 
   if (mappedPresets.length === 0) {

@@ -1,4 +1,5 @@
 // utils/parrot-presets.ts
+import { getParrotStyleMediaUrl } from "@/lib/parrotMediaUrls";
 import { getParrotLoopUrl } from "@/utils/storageParrot";
 export type ParrotLoop = {
   id: string;
@@ -21,44 +22,48 @@ export type ParrotPreset = {
 // Loops are sourced from Looperman (royalty-free)
 // Used for non-commercial educational purposes
 
+const instrumentIconUrl = (fileName: string) =>
+  getParrotStyleMediaUrl(`styles/instruments-icons/${fileName}`) ||
+  `/icons/instruments-icons/${fileName}`;
+
 /** Instrument icon resolver (centralized) */
 export const iconForInstrument = (labelOrId: string): string => {
   const s = (labelOrId || "").toLowerCase();
   if (s.includes("бит") || s.includes("beat") || s.includes("drum") || s.includes("барабан"))
-    return "/icons/instruments-icons/beat.webp";
+    return instrumentIconUrl("beat.webp");
   if (s.includes("аккорд") || s.includes("chord") || s.includes("harmony") || s.includes("piano") || s.includes("пианино"))
-    return "/icons/instruments-icons/chords.webp";
+    return instrumentIconUrl("chords.webp");
    if (s.includes("клавиши") || s.includes("piano") || s.includes("keys"))
-    return "/icons/instruments-icons/piano.webp";
+    return instrumentIconUrl("piano.webp");
   if (s.includes("бас") || s.includes("bass"))
-    return "/icons/instruments-icons/bass.webp";
+    return instrumentIconUrl("bass.webp");
   if (s.includes("перкус") || s.includes("percussion") || s.includes("shaker") || s.includes("конга") || s.includes("бонго"))
-    return "/icons/instruments-icons/percussion.webp";
+    return instrumentIconUrl("percussion.webp");
   if (s.includes("шум") || s.includes("fx") || s.includes("эффект") || s.includes("sfx"))
-    return "/icons/instruments-icons/fx.webp";
+    return instrumentIconUrl("fx.webp");
   if (s.includes("гитара") || s.includes("giutar") || s.includes("acoustic-guitar") || s.includes("акустическая гитара"))
-    return "/icons/instruments-icons/acoustic-guitar.webp";
+    return instrumentIconUrl("acoustic-guitar.webp");
   if (s.includes("дроуны") || s.includes("drone") || s.includes("drones") || s.includes("дроуны"))
-    return "/icons/instruments-icons/drone.webp";
+    return instrumentIconUrl("drone.webp");
   if (s.includes("пэды") || s.includes("pads") || s.includes("pad") || s.includes("пэды"))
-    return "/icons/instruments-icons/pad.webp";
+    return instrumentIconUrl("pad.webp");
   if (s.includes("sax") || s.includes("brass") || s.includes("саксофон"))
-    return "/icons/instruments-icons/sax.webp";
+    return instrumentIconUrl("sax.webp");
   if (s.includes("harp") || s.includes("арфа") || s.includes("harpsichord"))
-    return "/icons/instruments-icons/harp.webp";
+    return instrumentIconUrl("harp.webp");
   if (s.includes("flutes") || s.includes("дудочка") || s.includes ("флейта"))
-    return "/icons/instruments-icons/flute.webp";
+    return instrumentIconUrl("flute.webp");
   if (s.includes("mallet") || s.includes("ксилофон") || s.includes ("ксиллофон"))
-    return "/icons/instruments-icons/mallet.webp";
+    return instrumentIconUrl("mallet.webp");
   if (s.includes("violin") || s.includes("скрипка") || s.includes ("виолончель"))
-    return "/icons/instruments-icons/violin.webp";
+    return instrumentIconUrl("violin.webp");
   if (s.includes("strings") || s.includes("струнные") || s.includes ("оркестр"))
-    return "/icons/instruments-icons/strings.webp";
+    return instrumentIconUrl("strings.webp");
   if (s.includes("bells") || s.includes("колокольчики") || s.includes ("колокола"))
-    return "/icons/instruments-icons/bells.webp";
+    return instrumentIconUrl("bells.webp");
 
   // fallback generic loop icon
-  return "/icons/instruments-icons/loop.webp";
+  return instrumentIconUrl("loop.webp");
 };
 
 /** Music style icon resolver for studio style switcher */

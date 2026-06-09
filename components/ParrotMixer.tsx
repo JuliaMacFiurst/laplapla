@@ -99,6 +99,47 @@ type Props = {
 };
 
 const pickRandom = (items: string[]) => items[Math.floor(Math.random() * items.length)] ?? "";
+const CYRILLIC_RE = /[\u0400-\u04FF]/;
+
+function formatVariantCounter(
+  template: string,
+  currentVariant: number,
+  totalVariants: number,
+  lang: Props["lang"],
+) {
+  if (lang === "he") {
+    return (
+      <>
+        וריאנט{" "}
+        <span className="mixer-counter-value" dir="ltr">
+          {currentVariant}/{totalVariants}
+        </span>
+      </>
+    );
+  }
+
+  return template
+    .replace("{current}", String(currentVariant))
+    .replace("{total}", String(totalVariants));
+}
+
+function getLocalizedVariantLabel(
+  label: string | undefined,
+  localizedLayerName: string,
+  variantIndex: number,
+  lang: Props["lang"],
+) {
+  if (!label) {
+    return `${localizedLayerName} ${variantIndex + 1}`;
+  }
+
+  if (lang === "ru" || !CYRILLIC_RE.test(label)) {
+    return label;
+  }
+
+  const variantNumber = label.match(/(\d+)\s*$/)?.[1];
+  return variantNumber ? `${localizedLayerName} ${variantNumber}` : localizedLayerName;
+}
 
 export default function ParrotMixer({
   styleSlug = "",
@@ -1152,11 +1193,14 @@ export default function ParrotMixer({
                     >
                       ◀
                     </button>
-                    <div className="subtitle">
+                    <div className="subtitle mixer-variant-counter">
                       {total > 0
-                        ? ui.variantCounter
-                            .replace("{current}", String(idx !== null && idx !== undefined ? idx + 1 : 1))
-                            .replace("{total}", String(total))
+                        ? formatVariantCounter(
+                            ui.variantCounter,
+                            idx !== null && idx !== undefined ? idx + 1 : 1,
+                            total,
+                            lang,
+                          )
                         : "—"}
                     </div>
                     <button
@@ -1197,11 +1241,13 @@ export default function ParrotMixer({
                     {l.variants.map((v, i) => {
                       const isActivePreview =
                         preview && preview.loopId === l.id && preview.idx === i;
+                      const variantLabel = getLocalizedVariantLabel(v.label, localizedLayerName, i, lang);
+
                       return (
                         <div
                           key={v.id || i}
                           className={`mixer-loop-item color-${(i % 6) + 1}`}
-                          title={v.label || `${localizedLayerName} ${i + 1}`}
+                          title={variantLabel}
                         >
                           <button
                             onClick={() => {
@@ -1215,7 +1261,7 @@ export default function ParrotMixer({
                             className="mixer-loop-button"
                             aria-label={ui.chooseVariant.replace("{variant}", String(i + 1))}
                           >
-                            <span>{v.label || `${localizedLayerName} ${i + 1}`}</span>
+                            <span>{variantLabel}</span>
                             <span className="loop-eq" aria-hidden="true">
                               <i></i>
                               <i></i>

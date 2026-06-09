@@ -367,6 +367,17 @@
   text-align: center;
 }
 
+.mixer-variant-counter {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mixer-counter-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
 /* Film-strip / rolodex container */
 .rolodex {
   position: relative;
