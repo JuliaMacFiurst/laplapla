@@ -1,6 +1,6 @@
 import { getTranslationPayload } from "@/lib/contentTranslations";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
-import { listR2Objects } from "@/lib/r2";
+import { isR2ListConfigured, listR2Objects } from "@/lib/r2";
 import { getRecipeExportImage, type Recipe } from "@/lib/recipes";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import type { Lang } from "@/i18n";
@@ -158,6 +158,11 @@ async function loadRecipeOfTheWeek(lang: Lang): Promise<HomepageRetentionData["r
 
 async function loadFrankImageUrl() {
   if (cachedFrankImageUrl !== undefined) {
+    return cachedFrankImageUrl;
+  }
+
+  if (!isR2ListConfigured()) {
+    cachedFrankImageUrl = null;
     return cachedFrankImageUrl;
   }
 

@@ -1,8 +1,20 @@
 {
   "crons": [
     {
+      "path": "/api/cron/daily-report",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "30 7 * * 1"
+    },
+    {
       "path": "/api/cron/monitoring-heartbeat",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-analytics",
+      "schedule": "30 8 * * *"
     }
   ]
 }

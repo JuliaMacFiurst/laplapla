@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useEffect } from "react";
 import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildCanonicalMapEntityPath, type CanonicalMapEntityType } from "@/lib/mapEntityRouting";
+import { trackEvent } from "@/lib/analytics/client";
 import type { MapPopupContent } from "@/types/mapPopup";
 
 export type SeoEntityType = CanonicalMapEntityType;
@@ -236,6 +238,22 @@ export default function SeoEntityPage({
   const seoDescription = `${title} — ${mapSeo.descriptionSuffix}`;
   const seoPath = buildCanonicalMapEntityPath(entityType, slug);
   const mapTab = entityType === "biome" ? "physic" : entityType;
+
+  useEffect(() => {
+    trackEvent({
+      eventName: "map_opened",
+      entityType: "map",
+      entityId: `${entityType}:${slug}`,
+      entityTitle: title,
+      page: seoPath,
+      lang: currentLang,
+      metadata: {
+        entityType,
+        hasStories: hasAnyStories,
+        rawTargetId,
+      },
+    });
+  }, [currentLang, entityType, hasAnyStories, rawTargetId, seoPath, slug, title]);
 
   return (
     <>

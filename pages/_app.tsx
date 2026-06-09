@@ -34,6 +34,7 @@ import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
 import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
+import { trackEvent } from "@/lib/analytics/client";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -80,6 +81,27 @@ function readSessionFromHash(hash: string) {
 
 function ResponsiveViewportBridge() {
   useResponsiveViewport();
+  return null;
+}
+
+function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
+    trackEvent({
+      eventName: "page_viewed",
+      entityType: "page",
+      entityId: router.pathname,
+      entityTitle: document.title || router.pathname,
+      page: router.asPath,
+      lang,
+    });
+  }, [lang, router.asPath, router.isReady, router.pathname]);
+
   return null;
 }
 
@@ -247,6 +269,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <div className={fontVariableClasses}>
       <ResponsiveViewportBridge />
+      <AnalyticsPageViewTracker lang={lang} />
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />
         <meta key="p:domain_verify" name="p:domain_verify" content="ff738603a169c8fea886f04008fdc102" />

@@ -56,7 +56,7 @@ describe("Discord monitoring alerts", () => {
   });
 
   it("reports Discord delivery failures", async () => {
-    process.env.DISCORD_WEBHOOK_URL = "https://discord.invalid/webhook";
+    process.env.DISCORD_ERROR_WEBHOOK_URL = "https://discord.invalid/errors";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       new Response("invalid webhook", { status: 404 }),
     ));
@@ -70,7 +70,7 @@ describe("Discord monitoring alerts", () => {
   });
 
   it("does not throttle a retry after Discord rejects the first delivery", async () => {
-    process.env.DISCORD_WEBHOOK_URL = "https://discord.invalid/webhook";
+    process.env.DISCORD_ERROR_WEBHOOK_URL = "https://discord.invalid/errors";
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response("temporary failure", { status: 500 }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }));
@@ -86,7 +86,7 @@ describe("Discord monitoring alerts", () => {
   });
 
   it("includes Sentry and Vercel links in the payload", async () => {
-    process.env.DISCORD_WEBHOOK_URL = "https://discord.invalid/webhook";
+    process.env.DISCORD_ERROR_WEBHOOK_URL = "https://discord.invalid/errors";
     process.env.SENTRY_ORG = "laplapla";
     process.env.VERCEL_PROJECT_DASHBOARD_URL = "https://vercel.com/example/runtime-logs";
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
@@ -109,7 +109,7 @@ describe("Discord monitoring alerts", () => {
   });
 
   it("does not send non-production alerts", async () => {
-    process.env.DISCORD_WEBHOOK_URL = "https://discord.invalid/webhook";
+    process.env.DISCORD_ERROR_WEBHOOK_URL = "https://discord.invalid/errors";
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -120,5 +120,20 @@ describe("Discord monitoring alerts", () => {
 
     expect(result).toMatchObject({ ok: false, status: "wrong-environment" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the legacy webhook as an error-channel fallback", async () => {
+    delete process.env.DISCORD_ERROR_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = "https://discord.invalid/legacy";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await sendDiscordErrorAlert(alertInput("legacy error webhook fallback"));
+
+    expect(result).toEqual({ ok: true, status: "sent" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://discord.invalid/legacy?wait=true",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 });

@@ -10,6 +10,7 @@ import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import { buildLocalizedHref, buildLocalizedQuery } from "@/lib/i18n/routing";
 import { buildStudioHref } from "@/lib/studioRouting";
+import { trackEvent } from "@/lib/analytics/client";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book } from "@/types/types";
 
@@ -48,6 +49,8 @@ export default function StandaloneBookScreenPages({
   const searchControllerRef = useRef<AbortController | null>(null);
   const searchOverlayRef = useRef<HTMLDivElement | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
+  const openedTrackingKeyRef = useRef<string | null>(null);
+  const completedTrackingKeyRef = useRef<string | null>(null);
   const {
     currentBook,
     slides,
@@ -73,6 +76,52 @@ export default function StandaloneBookScreenPages({
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
   const selectedMode = explanationModes.find((item) => String(item.id) === String(selectedModeId));
   const activeBook = currentBook || book;
+
+  useEffect(() => {
+    const key = `${activeBook.id || getBookPathSlug(activeBook)}:${selectedModeId || "default"}`;
+    if (openedTrackingKeyRef.current === key) {
+      return;
+    }
+
+    openedTrackingKeyRef.current = key;
+    completedTrackingKeyRef.current = null;
+    trackEvent({
+      eventName: "story_opened",
+      entityType: "book",
+      entityId: getBookPathSlug(activeBook),
+      entityTitle: activeBook.title,
+      lang,
+      metadata: {
+        storyType: "book",
+        mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
+      },
+    });
+  }, [activeBook, lang, selectedMode, selectedModeId]);
+
+  useEffect(() => {
+    if (slides.length === 0 || currentSlideIndex < slides.length - 1) {
+      return;
+    }
+
+    const key = `${activeBook.id || getBookPathSlug(activeBook)}:${selectedModeId || "default"}`;
+    if (completedTrackingKeyRef.current === key) {
+      return;
+    }
+
+    completedTrackingKeyRef.current = key;
+    trackEvent({
+      eventName: "story_completed",
+      entityType: "book",
+      entityId: getBookPathSlug(activeBook),
+      entityTitle: activeBook.title,
+      lang,
+      metadata: {
+        storyType: "book",
+        mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
+        slideCount: slides.length,
+      },
+    });
+  }, [activeBook, currentSlideIndex, lang, selectedMode, selectedModeId, slides.length]);
 
   const abortSearchPipeline = useCallback(() => {
     searchControllerRef.current?.abort();

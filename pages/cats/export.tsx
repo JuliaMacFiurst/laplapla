@@ -16,6 +16,7 @@ import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { buildStudioRoute } from "@/lib/studioRouting";
+import { trackEvent } from "@/lib/analytics/client";
 import type { StudioProject } from "@/types/studio";
 
 async function copyTextToClipboard(text: string) {
@@ -261,6 +262,19 @@ export default function StudioExportPage() {
       setFinalVideoUrl(url);
       setIsFinished(true);
       setProcessingProgress(null);
+      trackEvent({
+        eventName: "video_exported",
+        entityType: "video",
+        entityId: projectData?.id || "current-studio-project",
+        entityTitle: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
+        lang,
+        metadata: {
+          slideCount: slides.length,
+          durationSeconds: Math.round(totalDuration / 1000),
+          sourcePresetId: projectData?.sourcePresetId || null,
+          sourceLang: projectData?.sourceLang || null,
+        },
+      });
     } catch (error) {
       console.error("Export failed", error);
       setExportError(
@@ -308,6 +322,16 @@ export default function StudioExportPage() {
           <button
             className="studio-button button-blue"
             onClick={() => {
+              trackEvent({
+                eventName: "story_downloaded",
+                entityType: "video",
+                entityId: projectData?.id || "current-studio-project",
+                entityTitle: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
+                lang,
+                metadata: {
+                  action: "video_download",
+                },
+              });
               const a = document.createElement("a");
               a.href = videoUrl;
               a.download = "studio-video.mp4";

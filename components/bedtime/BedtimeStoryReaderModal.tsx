@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { BedtimeStory } from "@/lib/bedtimeStories";
 import type { Lang } from "@/i18n";
+import { trackEvent } from "@/lib/analytics/client";
 
 type ReaderUi = {
   close: string;
@@ -23,6 +24,7 @@ export default function BedtimeStoryReaderModal({
 }) {
   const [pageIndex, setPageIndex] = useState(0);
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const completionTrackedRef = useRef(false);
   const isRtl = lang === "he";
   const pageCount = story.pageUrls.length;
   const counter = ui.counter
@@ -58,6 +60,25 @@ export default function BedtimeStoryReaderModal({
       nextPage.src = nextPageUrl;
     }
   }, [pageIndex, story.pageUrls]);
+
+  useEffect(() => {
+    if (completionTrackedRef.current || pageCount <= 0 || pageIndex < pageCount - 1) {
+      return;
+    }
+
+    completionTrackedRef.current = true;
+    trackEvent({
+      eventName: "story_completed",
+      entityType: "story",
+      entityId: story.slug || story.id,
+      entityTitle: story.title,
+      lang,
+      metadata: {
+        storyType: "bedtime",
+        pageCount,
+      },
+    });
+  }, [lang, pageCount, pageIndex, story.id, story.slug, story.title]);
 
   return (
     <div className="bedtime-reader-backdrop" role="presentation" onMouseDown={onClose}>

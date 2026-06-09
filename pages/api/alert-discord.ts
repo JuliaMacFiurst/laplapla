@@ -61,8 +61,8 @@ async function handler(
     return;
   }
 
-  if (!process.env.DISCORD_WEBHOOK_URL) {
-    console.error("Missing DISCORD_WEBHOOK_URL");
+  if (!process.env.DISCORD_ERROR_WEBHOOK_URL && !process.env.DISCORD_WEBHOOK_URL) {
+    console.error("Missing DISCORD_ERROR_WEBHOOK_URL");
     res.status(500).json({ error: "Webhook is not configured" });
     return;
   }

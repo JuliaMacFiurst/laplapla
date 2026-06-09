@@ -1,12 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import { BASE_URL } from "@/lib/config";
 import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
+import { trackEvent } from "@/lib/analytics/client";
 import {
   getRecipeExportImage,
   getRecipeRaccoonImages,
@@ -168,6 +169,22 @@ export default function RaccoonRecipePage({
   const recipePath = `/raccoons/kitchen/${recipe.slug}`;
   const canonicalUrl = `${BASE_URL}${buildLocalizedPublicPath(recipePath, lang)}`;
   const steps = (recipe.cooking_steps || []).filter((step) => getStepText(step).trim());
+
+  useEffect(() => {
+    trackEvent({
+      eventName: "recipe_opened",
+      entityType: "recipe",
+      entityId: recipe.slug,
+      entityTitle: recipe.title,
+      page: recipePath,
+      lang,
+      metadata: {
+        country: recipe.country || null,
+        hasCollage: Boolean(collageImage),
+      },
+    });
+  }, [collageImage, lang, recipe.country, recipe.slug, recipe.title, recipePath]);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Recipe",

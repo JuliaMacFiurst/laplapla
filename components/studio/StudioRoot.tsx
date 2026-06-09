@@ -17,6 +17,7 @@ import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { AMATIC_FONT_FAMILY, resolveFontFamily } from "@/lib/fonts";
 import { isStudioVideoAssetUrl, toStudioMediaUrl } from "@/lib/studioMediaProxy";
+import { trackEvent } from "@/lib/analytics/client";
 import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStylesWithOptions } from "@/lib/parrots/client";
 import { convertWebmToMp4, preloadFFmpeg } from "@/lib/cropAndConvert";
@@ -4920,6 +4921,19 @@ export default function StudioRoot({
     setProject(newProject);
     mobileExitBaselineSnapshotRef.current = JSON.stringify(newProject);
     setActiveSlideIndex(0);
+    trackEvent({
+      eventName: "project_created",
+      entityType: "studio_project",
+      entityId: projectId,
+      entityTitle: initialPrompt || initialPresetId || "Studio project",
+      lang,
+      metadata: {
+        slideCount: newProject.slides.length,
+        trackCount: newProject.musicTracks.length,
+        sourcePresetId: initialPresetId || null,
+        sourceLang: initialSourceLang || null,
+      },
+    });
 
     // Immediately overwrite saved project with external slides
     void saveProject(newProject).then(() => {

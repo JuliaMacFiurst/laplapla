@@ -48,9 +48,10 @@ const recentAlerts = new Map<string, number>();
 if (
   typeof window === "undefined" &&
   process.env.NODE_ENV === "production" &&
+  !process.env.DISCORD_ERROR_WEBHOOK_URL &&
   !process.env.DISCORD_WEBHOOK_URL
 ) {
-  console.error("Missing DISCORD_WEBHOOK_URL in production");
+  console.error("Missing DISCORD_ERROR_WEBHOOK_URL in production");
 }
 
 function asRecord(value: unknown): UnknownRecord | null {
@@ -280,9 +281,9 @@ export async function sendDiscordErrorAlert(input: DiscordAlertInput): Promise<D
     return { ok: false, status: "not-configured", error: "Discord alerts are server-only" };
   }
 
-  const webhook = process.env.DISCORD_WEBHOOK_URL;
+  const webhook = process.env.DISCORD_ERROR_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
   if (!webhook) {
-    return { ok: false, status: "not-configured", error: "DISCORD_WEBHOOK_URL is missing" };
+    return { ok: false, status: "not-configured", error: "DISCORD_ERROR_WEBHOOK_URL is missing" };
   }
 
   const details = normalizeDetails(input);

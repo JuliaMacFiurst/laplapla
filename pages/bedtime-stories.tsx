@@ -9,6 +9,7 @@ import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "@/i18n";
 import { loadBedtimeStories, type BedtimeStory } from "@/lib/bedtimeStories";
 import { buildLocalizedPublicPath, DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
+import { trackEvent } from "@/lib/analytics/client";
 
 type BedtimeStoriesPageProps = {
   lang: Lang;
@@ -39,7 +40,24 @@ export default function BedtimeStoriesPage({ lang, stories }: BedtimeStoriesPage
           <section className="bedtime-stories-shelf" aria-label={t.title}>
             {stories.map((story, index) => (
               <article className="bedtime-story-card" key={story.id}>
-                <button type="button" onClick={() => setSelectedStory(story)} aria-label={`${t.readStory}: ${story.title}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent({
+                      eventName: "story_opened",
+                      entityType: "story",
+                      entityId: story.slug || story.id,
+                      entityTitle: story.title,
+                      lang: resolvedLang,
+                      metadata: {
+                        storyType: "bedtime",
+                        pageCount: story.pageUrls.length,
+                      },
+                    });
+                    setSelectedStory(story);
+                  }}
+                  aria-label={`${t.readStory}: ${story.title}`}
+                >
                   <span className="bedtime-story-poster">
                     <Image
                       src={story.previewUrl}

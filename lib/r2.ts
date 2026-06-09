@@ -8,6 +8,15 @@ type R2Object = {
 
 const getEnv = (name: string) => process.env[name] || "";
 
+export function isR2ListConfigured() {
+  return Boolean(
+    getEnv("R2_BUCKET_NAME") &&
+      getEnv("R2_ENDPOINT") &&
+      getEnv("R2_ACCESS_KEY_ID") &&
+      getEnv("R2_SECRET_ACCESS_KEY"),
+  );
+}
+
 const hmac = (key: Buffer | string, value: string) =>
   crypto.createHmac("sha256", key).update(value).digest();
 

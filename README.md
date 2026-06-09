@@ -82,14 +82,20 @@ npm run build
 - Базовый принцип: до появления DSN в env мониторинг не должен менять текущее поведение приложения.
 - Для проксирования `Sentry -> Discord` используется серверный endpoint [pages/api/alert-discord.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/pages/api/alert-discord.ts).
 - Для прямой server-side отправки Discord-alert без Sentry webhook UI используется helper [lib/monitoring/discordAlert.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/discordAlert.ts).
+- Для product analytics reports используется отдельный helper [lib/monitoring/discordAnalyticsReport.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/discordAnalyticsReport.ts).
 - Для fallback coverage в routes вне `withApiHandler` используется helper [lib/monitoring/captureAndAlertServerError.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/captureAndAlertServerError.ts).
-- Нужные env: `DISCORD_WEBHOOK_URL` и опционально `DISCORD_ALERT_SECRET`.
+- Нужные env: `DISCORD_ERROR_WEBHOOK_URL` для production errors, `DISCORD_ANALYTICS_WEBHOOK_URL` для analytics reports и опционально `DISCORD_ALERT_SECRET`. Старый `DISCORD_WEBHOOK_URL` остается fallback только для error channel.
 - В Sentry Internal Integration укажите webhook `https://www.laplapla.com/api/alert-discord`, включите `Alert Rule Action`, а Client Secret сохраните в Vercel как server-only env `SENTRY_WEBHOOK_SECRET`.
-- Для production server-side alerting без Sentry webhook UI достаточно `DISCORD_WEBHOOK_URL` и `SENTRY_ENVIRONMENT=production`; env-изменения в Vercel применяются только после нового deploy.
+- Для production server-side alerting без Sentry webhook UI достаточно `DISCORD_ERROR_WEBHOOK_URL` и `SENTRY_ENVIRONMENT=production`; env-изменения в Vercel применяются только после нового deploy.
+- Analytics reports не отправляются в error channel. Если `DISCORD_ANALYTICS_WEBHOOK_URL` не настроен, daily-report cron должен залогировать warning и завершиться корректно.
 - В production для [pages/api/alert-discord.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/pages/api/alert-discord.ts) `DISCORD_ALERT_SECRET` обязателен.
 - Discord-alert содержит Sentry event ID/search link, Vercel runtime link и `x-vercel-id`, когда эти данные доступны.
 - По умолчанию используются общий Sentry event search и Runtime Logs проекта LapLapLa; `SENTRY_ISSUES_URL` и `VERCEL_PROJECT_DASHBOARD_URL` позволяют переопределить их.
 - Ежедневный heartbeat запускается Vercel Cron в `08:00 UTC` через `/api/cron/monitoring-heartbeat`; для него обязателен `CRON_SECRET`.
+- Product analytics пишется в Supabase table `analytics_events` через `/api/analytics/event`. Daily report запускается в `07:00 UTC` через `/api/cron/daily-report`, weekly report в `07:30 UTC` по понедельникам через `/api/cron/weekly-report`; для обоих обязателен `CRON_SECRET`.
+- Raw analytics events автоматически очищаются через `/api/cron/cleanup-analytics` в `08:30 UTC`; удаляются события старше 15 дней, чтобы daily и weekly сравнения оставались корректными.
+- Analytics не собирает email, IP, user-agent или fingerprint. Visitor/session считаются по случайным UUID в browser storage.
+- Для MVP Cloudflare не нужен; достаточно Supabase migration, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` и `DISCORD_ANALYTICS_WEBHOOK_URL`.
 - Чтобы клиентские ошибки попадали в Discord, в Sentry создайте Issue Alert: environment `production`, level `error`/`fatal`, action `Send a notification via <Internal Integration>`. Endpoint проверяет стандартную HMAC-подпись Sentry; `x-alert-secret` остаётся только для ручных тестов.
 - `/api/alert-discord` возвращает `502`, если Discord отклонил сообщение или webhook недоступен.
 
