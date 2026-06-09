@@ -7,6 +7,7 @@ import type { Lang } from "@/i18n";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import countryNames from "@/utils/country_names.json";
 import { loadLatestBedtimeStory } from "@/lib/bedtimeStories";
+import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 
 export type HomepageRetentionData = {
   recipe: {
@@ -169,6 +170,12 @@ async function loadFrankImageUrl() {
       null;
   } catch (error) {
     console.error("[home-retention] failed to load Frank image", error);
+    await captureAndAlertServerError(error, {
+      route: "/",
+      method: "GET",
+      runtime: "server",
+      statusCode: 500,
+    });
     cachedFrankImageUrl = null;
   }
 

@@ -21,7 +21,7 @@ function getR2MediaOrigin() {
     return normalizeOrigin(serverUrl);
   }
 
-  throw new Error("NEXT_PUBLIC_R2_MEDIA_URL is not configured");
+  return "";
 }
 
 function buildParrotR2Url(bucket: "parrot-audio" | "parrot-style-media", path: string) {
@@ -30,7 +30,8 @@ function buildParrotR2Url(bucket: "parrot-audio" | "parrot-style-media", path: s
     return "";
   }
 
-  return `${getR2MediaOrigin()}/${bucket}/${objectPath}`;
+  const origin = getR2MediaOrigin();
+  return origin ? `${origin}/${bucket}/${objectPath}` : "";
 }
 
 export function getParrotAudioUrl(path: string): string {
