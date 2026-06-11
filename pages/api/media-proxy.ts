@@ -12,6 +12,8 @@ const ALLOWED_HOSTS = new Set([
   "giphy.com",
   "upload.wikimedia.org",
   "media.laplapla.com",
+  "cdn.pixabay.com",
+  "i.vimeocdn.com",
 ]);
 
 const FETCH_TIMEOUT_MS = 7_000;

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { dictionaries, Lang } from "@/i18n";
 import { devInfo, devLog } from "@/utils/devLog";
+import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
 
 interface MediaPickerModalProps {
   lang: Lang;
@@ -88,6 +89,150 @@ function countMediaProviders(items: UnifiedMemeMedia[]) {
 
 function isVideoMediaUrl(url?: string) {
   return /\.(mp4|webm)(?:[?#]|$)/i.test(url || "");
+}
+
+function isLikelyImagePreviewUrl(url?: string) {
+  if (!url) return false;
+  if (/\.(jpg|jpeg|png|webp|gif)(?:[?#]|$)/i.test(url)) return true;
+
+  try {
+    const parsed = new URL(url);
+    return [
+      "images.pexels.com",
+      "cdn.pixabay.com",
+      "i.vimeocdn.com",
+      "media.giphy.com",
+    ].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function MediaPickerVideoPreview({
+  item,
+  index,
+  isMobile,
+}: {
+  item: MediaPickerResult;
+  index: number;
+  isMobile: boolean;
+}) {
+  const [posterFailed, setPosterFailed] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const posterUrl =
+    item.previewUrl && item.previewUrl !== item.url && isLikelyImagePreviewUrl(item.previewUrl)
+      ? item.previewUrl
+      : "";
+  const posterSrc = posterUrl ? toStudioMediaUrl(posterUrl) ?? posterUrl : "";
+  const showPoster = Boolean(posterUrl && !posterFailed);
+  const shouldAutoplayVideo = !showPoster;
+  const shouldLoadVideo = !isMobile || shouldAutoplayVideo;
+  const showVideo = !showPoster && videoReady;
+  const sharedMediaStyle: CSSProperties = isMobile
+    ? {
+        width: "100%",
+        height: "100%",
+        maxWidth: "100%",
+        maxHeight: "100%",
+        objectFit: "cover",
+        borderRadius: "12px",
+        display: "block",
+        flex: "0 0 auto",
+      }
+    : {};
+
+  return (
+    <div
+      className="media-video-preview-shell"
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        borderRadius: isMobile ? "12px" : "16px",
+        overflow: "hidden",
+        background: "linear-gradient(135deg, #ffe8a8 0%, #ffd0e5 52%, #bff7ec 100%)",
+      }}
+    >
+      <video
+        src={shouldLoadVideo ? item.url : undefined}
+        poster={showPoster ? posterSrc : undefined}
+        autoPlay={shouldAutoplayVideo}
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        className="media-preview-video"
+        onLoadedMetadata={(event) => {
+          if (showPoster) return;
+
+          const video = event.currentTarget;
+          if (Number.isFinite(video.duration) && video.duration > 0.2) {
+            try {
+              video.currentTime = 0.15;
+            } catch {}
+          }
+        }}
+        onLoadedData={() => setVideoReady(true)}
+        style={{
+          ...sharedMediaStyle,
+          opacity: showVideo || shouldAutoplayVideo ? 1 : 0,
+          transition: "opacity 160ms ease",
+        }}
+      />
+
+      {showPoster ? (
+        <Image
+          src={posterSrc}
+          alt={buildMediaPreviewAlt(item.url, index)}
+          fill
+          loading="lazy"
+          unoptimized
+          onError={() => setPosterFailed(true)}
+          style={{
+            objectFit: "cover",
+            borderRadius: isMobile ? "12px" : "16px",
+          }}
+        />
+      ) : null}
+
+      {!showPoster && !showVideo ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "grid",
+            placeItems: "center",
+            color: "#24151d",
+            fontWeight: 900,
+            fontSize: isMobile ? "28px" : "34px",
+          }}
+        >
+          ▶
+        </div>
+      ) : null}
+
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          right: isMobile ? "6px" : "8px",
+          bottom: isMobile ? "6px" : "8px",
+          width: isMobile ? "24px" : "30px",
+          height: isMobile ? "24px" : "30px",
+          borderRadius: "999px",
+          background: "rgba(0,0,0,0.58)",
+          color: "#fff",
+          display: "grid",
+          placeItems: "center",
+          fontSize: isMobile ? "12px" : "14px",
+          lineHeight: 1,
+        }}
+      >
+        ▶
+      </div>
+    </div>
+  );
 }
 
 export default function MediaPickerModal({
@@ -722,26 +867,7 @@ export default function MediaPickerModal({
                 } : undefined}
               >
                 {isVideoMediaUrl(item.url) ? (
-                  <video
-                    src={item.url}
-                    poster={item.previewUrl}
-                    autoPlay={!isMobile}
-                    loop
-                    muted
-                    playsInline
-                    preload={isMobile ? "none" : "metadata"}
-                    className="media-preview-video"
-                    style={isMobile ? {
-                      width: "100%",
-                      height: "100%",
-                      maxWidth: "100%",
-                      maxHeight: "100%",
-                      objectFit: "contain",
-                      borderRadius: "12px",
-                      display: "block",
-                      flex: "0 0 auto",
-                    } : undefined}
-                  />
+                  <MediaPickerVideoPreview item={item} index={index} isMobile={isMobile} />
                 ) : (
                   <Image
                     src={item.previewUrl || item.url}

@@ -1,5 +1,7 @@
 const STUDIO_PROXY_HOSTS = new Set([
   "images.pexels.com",
+  "cdn.pixabay.com",
+  "i.vimeocdn.com",
 ]);
 const STUDIO_AUDIO_PROXY_HOSTS = new Set([
   "media.laplapla.com",
