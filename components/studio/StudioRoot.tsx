@@ -4951,7 +4951,7 @@ export default function StudioRoot({
     void saveProject(newProject).then(() => {
       markProjectSaved(newProject);
     });
-  }, [initialSlides, initialPrompt, initialPresetId, initialSourceLang, initialTracks, projectId]);
+  }, [initialSlides, initialPrompt, initialPresetId, initialSourceLang, initialTracks, lang, projectId]);
 
   function pushHistory(current: StudioProject) {
     pendingHistorySnapshotRef.current = null;

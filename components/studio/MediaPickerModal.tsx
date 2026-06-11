@@ -412,7 +412,7 @@ export default function MediaPickerModal({
         setLoading(false);
       }
     }
-  }, [activeTab, isMobile, query, searchLibraryMedia, t.errorSearchFailed]);
+  }, [SEARCH_PAGE_SIZE, activeTab, query, searchLibraryMedia, t.errorSearchFailed]);
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) {
