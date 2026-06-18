@@ -107,7 +107,8 @@ function resolveAnalyticsSection(pathname: string) {
 
 function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
   const router = useRouter();
-  const contentStartedAtRef = useRef<number>(Date.now());
+  const activeStartedAtRef = useRef<number | null>(null);
+  const activeDurationMsRef = useRef(0);
 
   useEffect(() => {
     if (!router.isReady) {
@@ -116,7 +117,9 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
 
     const currentPage = router.asPath;
     const section = resolveAnalyticsSection(router.pathname);
-    contentStartedAtRef.current = Date.now();
+    const readableTitle = document.title || router.pathname;
+    activeDurationMsRef.current = 0;
+    activeStartedAtRef.current = document.visibilityState === "hidden" ? null : Date.now();
 
     trackSessionStart({
       section,
@@ -127,13 +130,16 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
       eventName: "page_view",
       entityType: "page",
       entityId: router.pathname,
-      entityTitle: document.title || router.pathname,
+      entityTitle: readableTitle,
       page: currentPage,
       lang,
       properties: {
         section,
+        content_type: "page",
         content_id: router.pathname,
-        content_title: document.title || router.pathname,
+        content_title: readableTitle,
+        page_title: document.title || readableTitle,
+        readable_title: readableTitle,
         language: lang,
         current_page: currentPage,
       },
@@ -142,35 +148,63 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
     const startTimer = window.setTimeout(() => {
       trackEvent("content_start", {
         section,
+        content_type: "page",
         content_id: router.pathname,
-        content_title: document.title || router.pathname,
+        content_title: readableTitle,
         language: lang,
         current_page: currentPage,
       });
     }, 2_000);
 
     let exitTracked = false;
+    const pauseActiveTimer = () => {
+      if (activeStartedAtRef.current === null) {
+        return;
+      }
+
+      activeDurationMsRef.current += Math.max(0, Date.now() - activeStartedAtRef.current);
+      activeStartedAtRef.current = null;
+    };
+    const resumeActiveTimer = () => {
+      if (activeStartedAtRef.current === null) {
+        activeStartedAtRef.current = Date.now();
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        pauseActiveTimer();
+      } else {
+        resumeActiveTimer();
+      }
+    };
     const trackExit = () => {
       if (exitTracked) {
         return;
       }
 
       exitTracked = true;
-      const duration = Math.max(0, Math.round((Date.now() - contentStartedAtRef.current) / 1000));
+      pauseActiveTimer();
+      const duration = Math.max(
+        0,
+        Math.min(30 * 60, Math.round(activeDurationMsRef.current / 1000)),
+      );
       trackEvent("content_exit", {
         section,
+        content_type: "page",
         content_id: router.pathname,
-        content_title: document.title || router.pathname,
+        content_title: readableTitle,
         language: lang,
         current_page: currentPage,
         duration_seconds: duration,
       });
     };
 
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pagehide", trackExit);
 
     return () => {
       window.clearTimeout(startTimer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", trackExit);
       trackExit();
     };

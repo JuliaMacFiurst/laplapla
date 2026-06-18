@@ -177,13 +177,15 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
   useEffect(() => {
     trackEvent("studio_open", {
       section: "studio",
+      studio_type: "cats",
       content_id: "cats-studio",
       content_title: seo.title,
       language: lang,
       current_page: router.asPath,
+      entry_point: isUnifiedMobileStudioRoute ? "mobile_studio_route" : "cats_studio_route",
       source: "cats",
     });
-  }, [lang, router.asPath, seo.title]);
+  }, [isUnifiedMobileStudioRoute, lang, router.asPath, seo.title]);
 
   useEffect(() => {
     let cancelled = false;

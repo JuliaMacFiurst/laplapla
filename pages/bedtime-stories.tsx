@@ -51,6 +51,7 @@ export default function BedtimeStoriesPage({ lang, stories }: BedtimeStoriesPage
                       lang: resolvedLang,
                       properties: {
                         section: "bedtime_stories",
+                        content_type: "bedtime_story",
                         content_id: story.slug || story.id,
                         content_slug: story.slug || story.id,
                         content_title: story.title,

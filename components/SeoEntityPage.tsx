@@ -250,6 +250,7 @@ export default function SeoEntityPage({
       lang: currentLang,
       properties: {
         section: "map",
+        content_type: entityType === "country" ? "country" : "map",
         content_id: `${entityType}:${slug}`,
         content_slug: slug,
         content_title: title,

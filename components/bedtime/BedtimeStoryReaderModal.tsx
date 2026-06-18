@@ -75,6 +75,7 @@ export default function BedtimeStoryReaderModal({
       lang,
       properties: {
         section: "bedtime_stories",
+        content_type: "bedtime_story",
         content_id: story.slug || story.id,
         content_slug: story.slug || story.id,
         content_title: story.title,
@@ -86,6 +87,7 @@ export default function BedtimeStoryReaderModal({
     });
     trackEvent("content_complete", {
       section: "bedtime_stories",
+      content_type: "bedtime_story",
       content_id: story.slug || story.id,
       content_slug: story.slug || story.id,
       content_title: story.title,
@@ -103,6 +105,7 @@ export default function BedtimeStoryReaderModal({
 
     trackEvent("content_progress", {
       section: "bedtime_stories",
+      content_type: "bedtime_story",
       content_id: story.slug || story.id,
       content_slug: story.slug || story.id,
       content_title: story.title,

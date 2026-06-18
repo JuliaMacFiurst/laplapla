@@ -242,10 +242,12 @@ export function ParrotsStudioPageContent() {
   useEffect(() => {
     trackEvent("studio_open", {
       section: "studio",
+      studio_type: "parrots",
       content_id: "parrots-studio",
       content_title: copy.title,
       language: lang,
       current_page: router.asPath,
+      entry_point: "parrots_studio_route",
       source: "parrots",
     });
   }, [copy.title, lang, router.asPath]);

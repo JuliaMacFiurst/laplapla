@@ -17,6 +17,9 @@ export const ANALYTICS_EVENT_NAMES = [
   "studio_export_started",
   "studio_export_completed",
   "studio_export_failed",
+  "studio_recording_started",
+  "studio_recording_completed",
+  "studio_recording_failed",
   "cat_question_opened",
   "cat_question_completed",
   "raccoon_map_opened",
@@ -76,9 +79,12 @@ export type AnalyticsDeviceType = "mobile" | "tablet" | "desktop" | "unknown";
 
 export type AnalyticsProperties = {
   section?: AnalyticsSection | string | null;
+  content_type?: AnalyticsEntityType | string | null;
   content_id?: string | number | null;
   content_slug?: string | null;
   content_title?: string | null;
+  page_title?: string | null;
+  readable_title?: string | null;
   language?: AnalyticsLang | null;
   device_type?: AnalyticsDeviceType | null;
   viewport_width?: number | null;
@@ -93,6 +99,12 @@ export type AnalyticsProperties = {
   total_steps?: number | null;
   error_message?: string | null;
   export_format?: string | null;
+  studio_type?: string | null;
+  entry_point?: string | null;
+  export_method?: string | null;
+  export_surface?: string | null;
+  project_id?: string | number | null;
+  scroll_percent?: number | null;
   [key: string]: string | number | boolean | null | undefined;
 };
 
@@ -128,6 +140,9 @@ export const ANALYTICS_EVENT_LABELS: Record<AnalyticsEventName, string> = {
   studio_export_started: "Studio exports started",
   studio_export_completed: "Studio exports completed",
   studio_export_failed: "Studio exports failed",
+  studio_recording_started: "Studio recordings started",
+  studio_recording_completed: "Studio recordings completed",
+  studio_recording_failed: "Studio recordings failed",
   cat_question_opened: "Cat questions opened",
   cat_question_completed: "Cat questions completed",
   raccoon_map_opened: "Raccoon map opened",

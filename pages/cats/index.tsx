@@ -252,6 +252,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
       maxTrackedSlideIndexRef.current = safeIndex;
       trackEvent("content_progress", {
         section: "cats",
+        content_type: "cat_question",
         content_id: activePreset.id,
         content_slug: activePreset.id,
         content_title: activePreset.prompt,
@@ -270,6 +271,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     completedQuestionKeyRef.current = key;
     trackEvent("cat_question_completed", {
       section: "cats",
+      content_type: "cat_question",
       content_id: activePreset.id,
       content_slug: activePreset.id,
       content_title: activePreset.prompt,
@@ -281,6 +283,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     });
     trackEvent("content_complete", {
       section: "cats",
+      content_type: "cat_question",
       content_id: activePreset.id,
       content_slug: activePreset.id,
       content_title: activePreset.prompt,
@@ -495,6 +498,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setActivePresetId(preset.id);
     trackEvent("cat_question_opened", {
       section: "cats",
+      content_type: "cat_question",
       content_id: preset.id,
       content_slug: preset.id,
       content_title: preset.prompt,
@@ -512,6 +516,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setPendingQuestion(preset.prompt);
     trackEvent("cat_question_opened", {
       section: "cats",
+      content_type: "cat_question",
       content_id: preset.id,
       content_slug: preset.id,
       content_title: preset.prompt,
@@ -634,6 +639,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setPendingQuestion(randomPreset.prompt);
     trackEvent("cat_question_opened", {
       section: "cats",
+      content_type: "cat_question",
       content_id: randomPreset.id,
       content_slug: randomPreset.id,
       content_title: randomPreset.prompt,
@@ -665,10 +671,12 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const handleEditInStudio = (sourceSlides: CatRuntimeSlide[]) => {
     trackEvent("studio_open", {
       section: "studio",
+      studio_type: "cats",
       content_id: activePresetId,
       content_title: inputText,
       language: lang,
       source_page: router.asPath,
+      entry_point: "cats_page",
       total_steps: sourceSlides.length,
     });
     sessionStorage.setItem("catsSlides", JSON.stringify({

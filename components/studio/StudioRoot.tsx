@@ -1534,7 +1534,9 @@ function StudioDesktopLayout({
             setActiveStickerId(nextSticker.id);
             trackEvent("studio_sticker_added", {
               section: "studio",
+              studio_type: "cats",
               content_id: activeSlide.id,
+              project_id: project.id,
               content_title: "Studio sticker",
               language: lang,
             });
@@ -1553,7 +1555,9 @@ function StudioDesktopLayout({
           }));
           trackEvent("studio_media_added", {
             section: "studio",
+            studio_type: "cats",
             content_id: activeSlide.id,
+            project_id: project.id,
             content_title: "Studio media",
             language: lang,
             media_type: mediaType,
@@ -2099,9 +2103,11 @@ function StudioMobileLayout({
   }
 
   function startScreenRecordFallback() {
-    trackEvent("studio_export_started", {
+    trackEvent("studio_recording_started", {
       section: "studio",
+      studio_type: "cats",
       content_id: project.id,
+      project_id: project.id,
       content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
       language: lang,
       export_format: "screen_recording",
@@ -2308,7 +2314,9 @@ function StudioMobileLayout({
     try {
       trackEvent("studio_export_started", {
         section: "studio",
+        studio_type: "cats",
         content_id: project.id,
+        project_id: project.id,
         content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
         language: lang,
         export_format: "mp4",
@@ -2408,7 +2416,9 @@ function StudioMobileLayout({
       setExportedWithoutSound(recordedWithoutAudio);
       trackEvent("studio_export_completed", {
         section: "studio",
+        studio_type: "cats",
         content_id: project.id,
+        project_id: project.id,
         content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
         language: lang,
         export_format: "mp4",
@@ -2421,7 +2431,9 @@ function StudioMobileLayout({
       console.error("Mobile export failed", error);
       trackEvent("studio_export_failed", {
         section: "studio",
+        studio_type: "cats",
         content_id: project.id,
+        project_id: project.id,
         content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
         language: lang,
         export_format: "mp4",
@@ -3333,7 +3345,9 @@ function StudioMobileLayout({
             setActiveStickerId(nextSticker.id);
             trackEvent("studio_sticker_added", {
               section: "studio",
+              studio_type: "cats",
               content_id: activeSlide.id,
+              project_id: project.id,
               content_title: "Studio sticker",
               language: lang,
             });
@@ -3343,7 +3357,9 @@ function StudioMobileLayout({
 
           trackEvent("studio_media_added", {
             section: "studio",
+            studio_type: "cats",
             content_id: activeSlide.id,
+            project_id: project.id,
             content_title: "Studio media",
             language: lang,
             media_type: mediaType,
@@ -5033,7 +5049,9 @@ export default function StudioRoot({
       lang,
       properties: {
         section: "studio",
+        studio_type: "cats",
         content_id: projectId,
+        project_id: projectId,
         content_title: initialPrompt || initialPresetId || "Studio project",
         language: lang,
         total_steps: newProject.slides.length,

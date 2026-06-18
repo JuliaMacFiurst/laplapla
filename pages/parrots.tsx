@@ -90,6 +90,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   useEffect(() => {
     trackEvent("parrot_music_opened", {
       section: "parrots",
+      content_type: "parrot_music",
       content_id: "parrot-music",
       content_title: seo.title,
       language: lang,

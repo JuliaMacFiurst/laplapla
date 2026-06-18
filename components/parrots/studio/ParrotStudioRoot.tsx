@@ -1139,6 +1139,8 @@ export default function ParrotStudioRoot({
     setIsRenderingSave(true);
     trackEvent("studio_export_started", {
       section: "parrots",
+      studio_type: "parrots",
+      content_type: "parrot_audio",
       content_id: selectedStyleSlug,
       content_slug: selectedStyleSlug,
       content_title: selectedStyleSlug,
@@ -1248,6 +1250,8 @@ export default function ParrotStudioRoot({
       setSavedCompositionSnapshot(compositionSnapshot);
       trackEvent("studio_export_completed", {
         section: "parrots",
+        studio_type: "parrots",
+        content_type: "parrot_audio",
         content_id: selectedStyleSlug,
         content_slug: selectedStyleSlug,
         content_title: selectedStyleSlug,
@@ -1261,6 +1265,8 @@ export default function ParrotStudioRoot({
       console.error("Failed to render parrot studio mix", error);
       trackEvent("studio_export_failed", {
         section: "parrots",
+        studio_type: "parrots",
+        content_type: "parrot_audio",
         content_id: selectedStyleSlug,
         content_slug: selectedStyleSlug,
         content_title: selectedStyleSlug,
@@ -1476,6 +1482,7 @@ export default function ParrotStudioRoot({
               recordedVoiceBlobRef.current = blob;
               trackEvent("parrot_audio_created", {
                 section: "parrots",
+                content_type: "parrot_audio",
                 content_id: selectedStyleSlug,
                 content_slug: selectedStyleSlug,
                 content_title: selectedStyleSlug,

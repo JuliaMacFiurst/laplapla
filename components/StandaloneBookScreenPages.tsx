@@ -98,6 +98,7 @@ export default function StandaloneBookScreenPages({
     });
     trackEvent("content_open", {
       section: "books",
+      content_type: "book",
       content_id: getBookPathSlug(activeBook),
       content_slug: getBookPathSlug(activeBook),
       content_title: activeBook.title,
@@ -114,6 +115,7 @@ export default function StandaloneBookScreenPages({
 
     trackEvent("content_progress", {
       section: "books",
+      content_type: "book",
       content_id: getBookPathSlug(activeBook),
       content_slug: getBookPathSlug(activeBook),
       content_title: activeBook.title,
@@ -150,6 +152,7 @@ export default function StandaloneBookScreenPages({
     });
     trackEvent("content_complete", {
       section: "books",
+      content_type: "book",
       content_id: getBookPathSlug(activeBook),
       content_slug: getBookPathSlug(activeBook),
       content_title: activeBook.title,

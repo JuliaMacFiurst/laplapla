@@ -380,6 +380,7 @@ export default function ParrotMixer({
       setRecUrl(tmpUrl);
       trackEvent("parrot_audio_created", {
         section: "parrots",
+        content_type: "parrot_audio",
         content_id: styleSlug || "parrot-mixer",
         content_title: styleSlug || "Parrot mixer",
         language: lang,
@@ -870,10 +871,13 @@ export default function ParrotMixer({
       say(ui.reactions.savedTrack);
       trackEvent("studio_export_completed", {
         section: "parrots",
+        studio_type: "parrots",
+        content_type: "parrot_audio",
         content_id: styleSlug || "parrot-mixer",
         content_title: styleSlug || "Parrot mixer",
         language: lang,
         export_format: "wav",
+        export_method: "offline_audio_render",
         duration_seconds: durationSec,
       });
     } catch (e) {
@@ -881,10 +885,13 @@ export default function ParrotMixer({
       say(ui.reactions.saveError);
       trackEvent("studio_export_failed", {
         section: "parrots",
+        studio_type: "parrots",
+        content_type: "parrot_audio",
         content_id: styleSlug || "parrot-mixer",
         content_title: styleSlug || "Parrot mixer",
         language: lang,
         export_format: "wav",
+        export_method: "offline_audio_render",
         error_message: e instanceof Error ? e.message : "Parrot mix export failed",
       });
     }

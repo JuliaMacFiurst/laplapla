@@ -235,9 +235,11 @@ export default function StudioExportPage() {
 
     setIsRecording(true);
     setExportError(null);
-    trackEvent("studio_export_started", {
+    trackEvent("studio_recording_started", {
       section: "studio",
+      studio_type: "cats",
       content_id: projectData?.id || "current-studio-project",
+      project_id: projectData?.id || "current-studio-project",
       content_title: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
       language: lang,
       export_format: "mp4",
@@ -281,14 +283,16 @@ export default function StudioExportPage() {
       setIsFinished(true);
       setProcessingProgress(null);
       trackEvent({
-        eventName: "studio_export_completed",
+        eventName: "studio_recording_completed",
         entityType: "video",
         entityId: projectData?.id || "current-studio-project",
         entityTitle: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
         lang,
         properties: {
           section: "studio",
+          studio_type: "cats",
           content_id: projectData?.id || "current-studio-project",
+          project_id: projectData?.id || "current-studio-project",
           content_title: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
           language: lang,
           export_format: "mp4",
@@ -309,9 +313,11 @@ export default function StudioExportPage() {
           ? error.message
           : `Export failed: ${String(error)}`,
       );
-      trackEvent("studio_export_failed", {
+      trackEvent("studio_recording_failed", {
         section: "studio",
+        studio_type: "cats",
         content_id: projectData?.id || "current-studio-project",
+        project_id: projectData?.id || "current-studio-project",
         content_title: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
         language: lang,
         export_format: "mp4",

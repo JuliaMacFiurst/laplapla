@@ -191,6 +191,15 @@ export default async function handler(
       total_steps: readNumber(properties.total_steps),
       error_message: readString(properties.error_message, 500),
       export_format: readString(properties.export_format, 80),
+      content_type: readString(properties.content_type, 80),
+      page_title: readString(properties.page_title, 240),
+      readable_title: readString(properties.readable_title, 240),
+      studio_type: readString(properties.studio_type, 80),
+      entry_point: readString(properties.entry_point, 120),
+      export_method: readString(properties.export_method, 120),
+      export_surface: readString(properties.export_surface, 80),
+      project_id: readString(properties.project_id, 160),
+      scroll_percent: readNumber(properties.scroll_percent),
     });
 
     if (error) {

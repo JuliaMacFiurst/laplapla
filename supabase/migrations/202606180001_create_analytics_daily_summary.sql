@@ -8,6 +8,7 @@ create table if not exists public.analytics_daily_summary (
   content_completes integer not null default 0,
   studio_projects integer not null default 0,
   studio_exports integer not null default 0,
+  studio_recordings integer not null default 0,
   avg_session_duration_seconds numeric,
   sections jsonb not null default '{}'::jsonb,
   languages jsonb not null default '{}'::jsonb,
@@ -18,6 +19,9 @@ create table if not exists public.analytics_daily_summary (
 );
 
 alter table public.analytics_daily_summary enable row level security;
+
+alter table public.analytics_daily_summary
+  add column if not exists studio_recordings integer not null default 0;
 
 revoke all on table public.analytics_daily_summary from anon;
 revoke all on table public.analytics_daily_summary from authenticated;
@@ -86,6 +90,7 @@ begin
       )) as content_completes,
       count(*) filter (where event_name in ('studio_project_created', 'project_created')) as studio_projects,
       count(*) filter (where event_name in ('studio_export_completed', 'video_exported')) as studio_exports,
+      count(*) filter (where event_name = 'studio_recording_completed') as studio_recordings,
       avg(duration_seconds) filter (where duration_seconds is not null and duration_seconds >= 0) as avg_session_duration_seconds
     from event_rows
     group by summary_date
@@ -190,6 +195,7 @@ begin
     content_completes,
     studio_projects,
     studio_exports,
+    studio_recordings,
     avg_session_duration_seconds,
     sections,
     languages,
@@ -208,6 +214,7 @@ begin
     daily.content_completes::integer,
     daily.studio_projects::integer,
     daily.studio_exports::integer,
+    daily.studio_recordings::integer,
     daily.avg_session_duration_seconds,
     coalesce(section_counts.sections, '{}'::jsonb),
     coalesce(language_counts.languages, '{}'::jsonb),
