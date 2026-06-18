@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import { BASE_URL } from "@/lib/config";
@@ -169,6 +169,8 @@ export default function RaccoonRecipePage({
   const recipePath = `/raccoons/kitchen/${recipe.slug}`;
   const canonicalUrl = `${BASE_URL}${buildLocalizedPublicPath(recipePath, lang)}`;
   const steps = (recipe.cooking_steps || []).filter((step) => getStepText(step).trim());
+  const stepsPanelRef = useRef<HTMLElement | null>(null);
+  const completionMarkerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     trackEvent({
@@ -178,12 +180,76 @@ export default function RaccoonRecipePage({
       entityTitle: recipe.title,
       page: recipePath,
       lang,
-      metadata: {
+      properties: {
+        section: "recipes",
+        content_id: recipe.slug,
+        content_slug: recipe.slug,
+        content_title: recipe.title,
+        language: lang,
+        total_steps: steps.length,
         country: recipe.country || null,
         hasCollage: Boolean(collageImage),
       },
     });
-  }, [collageImage, lang, recipe.country, recipe.slug, recipe.title, recipePath]);
+  }, [collageImage, lang, recipe.country, recipe.slug, recipe.title, recipePath, steps.length]);
+
+  useEffect(() => {
+    const target = stepsPanelRef.current;
+    if (!target || steps.length === 0 || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    let tracked = false;
+    const observer = new IntersectionObserver((entries) => {
+      if (tracked || !entries.some((entry) => entry.isIntersecting)) {
+        return;
+      }
+
+      tracked = true;
+      trackEvent("recipe_steps_viewed", {
+        section: "recipes",
+        content_id: recipe.slug,
+        content_slug: recipe.slug,
+        content_title: recipe.title,
+        language: lang,
+        completion_percent: 50,
+        total_steps: steps.length,
+      });
+      observer.disconnect();
+    }, { threshold: 0.35 });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [lang, recipe.slug, recipe.title, steps.length]);
+
+  useEffect(() => {
+    const target = completionMarkerRef.current;
+    if (!target || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    let tracked = false;
+    const observer = new IntersectionObserver((entries) => {
+      if (tracked || !entries.some((entry) => entry.isIntersecting)) {
+        return;
+      }
+
+      tracked = true;
+      trackEvent("content_complete", {
+        section: "recipes",
+        content_id: recipe.slug,
+        content_slug: recipe.slug,
+        content_title: recipe.title,
+        language: lang,
+        completion_percent: 100,
+        total_steps: steps.length || null,
+      });
+      observer.disconnect();
+    }, { threshold: 0.25 });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [lang, recipe.slug, recipe.title, steps.length]);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -266,7 +332,7 @@ export default function RaccoonRecipePage({
               </ul>
             </section>
 
-            <section className="recipe-panel recipe-steps-panel">
+            <section ref={stepsPanelRef} className="recipe-panel recipe-steps-panel">
               <h2>{ui.steps}</h2>
               <ol className="recipe-step-list">
                 {steps.map((step, index) => (
@@ -373,6 +439,7 @@ export default function RaccoonRecipePage({
           <section className="recipe-hidden-seo">
             <CorePageLinks current="raccoons" lang={lang} related={["home", "cats", "book"]} />
           </section>
+          <div ref={completionMarkerRef} aria-hidden="true" />
         </article>
       </main>
     </>

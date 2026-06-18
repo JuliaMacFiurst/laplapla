@@ -19,6 +19,7 @@ import {
   getHardcodedParrotStyleRecords,
   type ParrotStyleRecord,
 } from "@/lib/parrots/catalog";
+import { trackEvent } from "@/lib/analytics/client";
 
 type ImportedSlide = {
   text: string;
@@ -172,6 +173,17 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
   const [initialPresetId, setInitialPresetId] = useState<string | undefined>(undefined);
   const [initialSourceLang, setInitialSourceLang] = useState<Lang | undefined>(undefined);
   const [isImportReady, setIsImportReady] = useState(false);
+
+  useEffect(() => {
+    trackEvent("studio_open", {
+      section: "studio",
+      content_id: "cats-studio",
+      content_title: seo.title,
+      language: lang,
+      current_page: router.asPath,
+      source: "cats",
+    });
+  }, [lang, router.asPath, seo.title]);
 
   useEffect(() => {
     let cancelled = false;

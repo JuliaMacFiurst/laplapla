@@ -16,6 +16,7 @@ import { findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import { buildShortSlideMediaQuery } from "@/lib/media/slideMedia";
 import { DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
+import { trackEvent } from "@/lib/analytics/client";
 import type { StudioSlide } from "@/types/studio";
 import { resolveCatCategory } from "@/lib/catCategories";
 
@@ -132,6 +133,9 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [isDesktopSearchFocused, setIsDesktopSearchFocused] = useState(false);
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false);
   const lastResolvedTextPresetKeyRef = useRef<string | null>(null);
+  const completedQuestionKeyRef = useRef<string | null>(null);
+  const maxTrackedSlideIndexRef = useRef(-1);
+  const slideScrollWrapperRef = useRef<HTMLDivElement | null>(null);
 
   const presetsForLang = useMemo(
     () => availablePresets.filter((preset) => preset.lang === lang),
@@ -234,6 +238,109 @@ export default function CatPage({ lang }: { lang: Lang }) {
       current.filter((category) => availableCategories.some((option) => option.value === category)),
     );
   }, [availableCategories]);
+
+  const trackCatQuestionProgress = useCallback((slideIndex: number, source: "desktop" | "mobile") => {
+    if (!activePreset || slides.length === 0) {
+      return;
+    }
+
+    const safeIndex = Math.max(0, Math.min(slideIndex, slides.length - 1));
+    const completionPercent = Math.round(((safeIndex + 1) / slides.length) * 100);
+    const key = `${lang}:${activePreset.id}:${slides.length}`;
+
+    if (safeIndex > maxTrackedSlideIndexRef.current) {
+      maxTrackedSlideIndexRef.current = safeIndex;
+      trackEvent("content_progress", {
+        section: "cats",
+        content_id: activePreset.id,
+        content_slug: activePreset.id,
+        content_title: activePreset.prompt,
+        language: lang,
+        completion_percent: completionPercent,
+        step_index: safeIndex + 1,
+        total_steps: slides.length,
+        source,
+      });
+    }
+
+    if (completionPercent < 90 || completedQuestionKeyRef.current === key) {
+      return;
+    }
+
+    completedQuestionKeyRef.current = key;
+    trackEvent("cat_question_completed", {
+      section: "cats",
+      content_id: activePreset.id,
+      content_slug: activePreset.id,
+      content_title: activePreset.prompt,
+      language: lang,
+      completion_percent: completionPercent,
+      step_index: safeIndex + 1,
+      total_steps: slides.length,
+      source,
+    });
+    trackEvent("content_complete", {
+      section: "cats",
+      content_id: activePreset.id,
+      content_slug: activePreset.id,
+      content_title: activePreset.prompt,
+      language: lang,
+      completion_percent: completionPercent,
+      step_index: safeIndex + 1,
+      total_steps: slides.length,
+      source,
+    });
+  }, [activePreset, lang, slides.length]);
+
+  useEffect(() => {
+    maxTrackedSlideIndexRef.current = -1;
+  }, [activePreset?.id, lang, slides.length]);
+
+  useEffect(() => {
+    if (!usesTouchCatsLayout || mobileSlideshowLoading || mobileSlideshowSlides.length === 0) {
+      return;
+    }
+
+    trackCatQuestionProgress(mobileSlideshowCurrentSlideIndex, "mobile");
+  }, [
+    mobileSlideshowCurrentSlideIndex,
+    mobileSlideshowLoading,
+    mobileSlideshowSlides.length,
+    trackCatQuestionProgress,
+    usesTouchCatsLayout,
+  ]);
+
+  useEffect(() => {
+    const wrapper = slideScrollWrapperRef.current;
+    if (
+      usesTouchCatsLayout ||
+      loading ||
+      !wrapper ||
+      slides.length === 0 ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) {
+          return;
+        }
+
+        const slideIndex = Number((entry.target as HTMLElement).dataset.slideIndex);
+        if (Number.isFinite(slideIndex)) {
+          trackCatQuestionProgress(slideIndex, "desktop");
+        }
+      });
+    }, { threshold: 0.6 });
+
+    wrapper.querySelectorAll<HTMLElement>("[data-slide-index]").forEach((element) => {
+      observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [loading, slides.length, trackCatQuestionProgress, usesTouchCatsLayout]);
 
   const getSlidesForPreset = useCallback(async (
     preset: AnyCatPreset,
@@ -386,6 +493,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const applyPreset = (preset: AnyCatPreset) => {
     lastResolvedTextPresetKeyRef.current = preset.kind === "text" ? null : lastResolvedTextPresetKeyRef.current;
     setActivePresetId(preset.id);
+    trackEvent("cat_question_opened", {
+      section: "cats",
+      content_id: preset.id,
+      content_slug: preset.id,
+      content_title: preset.prompt,
+      language: lang,
+    });
     if (preset.kind === "full") {
       setError(null);
     }
@@ -396,6 +510,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setActivePresetId(preset.id);
     setError(null);
     setPendingQuestion(preset.prompt);
+    trackEvent("cat_question_opened", {
+      section: "cats",
+      content_id: preset.id,
+      content_slug: preset.id,
+      content_title: preset.prompt,
+      language: lang,
+    });
     mobileSlideshowOpen({ loading: true });
 
     try {
@@ -407,6 +528,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
       mobileSlideshowReplaceSlides(viewerSlides);
     } catch {
       setError(t.errors.generic);
+      trackEvent("error_seen", {
+        section: "cats",
+        content_id: preset.id,
+        content_title: preset.prompt,
+        language: lang,
+        error_message: t.errors.generic,
+      });
       mobileSlideshowClose();
     } finally {
       setPendingQuestion("");
@@ -504,6 +632,14 @@ export default function CatPage({ lang }: { lang: Lang }) {
     lastResolvedTextPresetKeyRef.current = randomPreset.kind === "text" ? `${lang}:${randomPreset.id}` : null;
     setActivePresetId(randomPreset.id);
     setPendingQuestion(randomPreset.prompt);
+    trackEvent("cat_question_opened", {
+      section: "cats",
+      content_id: randomPreset.id,
+      content_slug: randomPreset.id,
+      content_title: randomPreset.prompt,
+      language: lang,
+      source: "random",
+    });
     mobileSlideshowOpen({ loading: true });
 
     try {
@@ -513,6 +649,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
       mobileSlideshowReplaceSlides(buildStudioSlides(next.slides, next.seed));
     } catch {
       setError(t.errors.generic);
+      trackEvent("error_seen", {
+        section: "cats",
+        content_id: randomPreset.id,
+        content_title: randomPreset.prompt,
+        language: lang,
+        error_message: t.errors.generic,
+      });
       mobileSlideshowSetLoading(false);
     } finally {
       setPendingQuestion("");
@@ -520,6 +663,14 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   const handleEditInStudio = (sourceSlides: CatRuntimeSlide[]) => {
+    trackEvent("studio_open", {
+      section: "studio",
+      content_id: activePresetId,
+      content_title: inputText,
+      language: lang,
+      source_page: router.asPath,
+      total_steps: sourceSlides.length,
+    });
     sessionStorage.setItem("catsSlides", JSON.stringify({
       slides: sourceSlides,
       prompt: inputText,
@@ -722,12 +873,12 @@ export default function CatPage({ lang }: { lang: Lang }) {
                   <p className="cat-spinner-text">{t.thinkingLong}</p>
                 </div>
               ) : (
-                <div className="slide-scroll-wrapper">
+                <div ref={slideScrollWrapperRef} className="slide-scroll-wrapper">
                   {slides.map((slide, idx) => {
                     if (!slide.text || !slide.image) return null;
 
                     return (
-                      <div key={idx} className="cat-slide">
+                      <div key={idx} className="cat-slide" data-slide-index={idx}>
                         {isVideoMediaUrl(slide.image) ? (
                           <video
                             className="cat-slide-video"

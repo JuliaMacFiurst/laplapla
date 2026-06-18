@@ -44,14 +44,18 @@ export default function BedtimeStoriesPage({ lang, stories }: BedtimeStoriesPage
                   type="button"
                   onClick={() => {
                     trackEvent({
-                      eventName: "story_opened",
+                      eventName: "bedtime_story_opened",
                       entityType: "story",
                       entityId: story.slug || story.id,
                       entityTitle: story.title,
                       lang: resolvedLang,
-                      metadata: {
-                        storyType: "bedtime",
-                        pageCount: story.pageUrls.length,
+                      properties: {
+                        section: "bedtime_stories",
+                        content_id: story.slug || story.id,
+                        content_slug: story.slug || story.id,
+                        content_title: story.title,
+                        language: resolvedLang,
+                        total_steps: story.pageUrls.length,
                       },
                     });
                     setSelectedStory(story);

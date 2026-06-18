@@ -34,6 +34,7 @@ import type {
   ReplayBrushSettings,
   ReplayRegionData,
 } from "@/components/Dogs/Replay/types";
+import { trackEvent } from "@/lib/analytics/client";
 
 type Lesson = {
   id?: string;
@@ -383,6 +384,7 @@ function LessonPlayerDesktop() {
   const replayGroupIdRef = useRef(1);
   const regionMapsRef = useRef<Map<number, ReplayRegionData>>(new Map());
   const regionMapIdRef = useRef(1);
+  const completedLessonKeyRef = useRef<string | null>(null);
   const draftKey = typeof slug === "string" ? getDogLessonDraftKey(slug, lang) : null;
 
   const debugRenderRegions = () => {
@@ -911,6 +913,56 @@ function LessonPlayerDesktop() {
     return () => window.clearTimeout(timerId);
   }, [currentStepIndex, usesTouchLessonLayout, lesson]);
 
+  useEffect(() => {
+    if (!lesson || currentStepIndex < 0) {
+      return;
+    }
+
+    trackEvent("content_progress", {
+      section: "dog_lessons",
+      content_id: typeof slug === "string" ? slug : lesson.id || lesson.title,
+      content_slug: typeof slug === "string" ? slug : null,
+      content_title: lesson.title,
+      language: lang,
+      completion_percent: Math.round(((currentStepIndex + 1) / lesson.steps.length) * 100),
+      step_index: currentStepIndex + 1,
+      total_steps: lesson.steps.length,
+    });
+  }, [currentStepIndex, lang, lesson, slug]);
+
+  useEffect(() => {
+    if (!lesson || currentStepIndex !== lesson.steps.length - 1) {
+      return;
+    }
+
+    const key = `${lang}:${typeof slug === "string" ? slug : lesson.title}`;
+    if (completedLessonKeyRef.current === key) {
+      return;
+    }
+
+    completedLessonKeyRef.current = key;
+    trackEvent("dog_lesson_completed", {
+      section: "dog_lessons",
+      content_id: typeof slug === "string" ? slug : lesson.id || lesson.title,
+      content_slug: typeof slug === "string" ? slug : null,
+      content_title: lesson.title,
+      language: lang,
+      completion_percent: 100,
+      step_index: lesson.steps.length,
+      total_steps: lesson.steps.length,
+    });
+    trackEvent("content_complete", {
+      section: "dog_lessons",
+      content_id: typeof slug === "string" ? slug : lesson.id || lesson.title,
+      content_slug: typeof slug === "string" ? slug : null,
+      content_title: lesson.title,
+      language: lang,
+      completion_percent: 100,
+      step_index: lesson.steps.length,
+      total_steps: lesson.steps.length,
+    });
+  }, [currentStepIndex, lang, lesson, slug]);
+
   const computeRegionMap = useCallback(() => {
     const drawingCanvas = drawingCanvasRef.current;
     if (!drawingCanvas) return;
@@ -1411,6 +1463,14 @@ function LessonPlayerDesktop() {
         return;
       }
       setLesson(translatedLesson);
+      trackEvent("dog_lesson_opened", {
+        section: "dog_lessons",
+        content_id: slug,
+        content_slug: slug,
+        content_title: translatedLesson.title,
+        language: lang,
+        total_steps: translatedLesson.steps.length,
+      });
       setIsLessonTranslated(Boolean(payload.translated));
       setBrushSize(5);
       setHasUnsavedChanges(false);
@@ -1424,6 +1484,13 @@ function LessonPlayerDesktop() {
 
     fetchLesson().catch((error) => {
       console.error("Ошибка загрузки урока:", error);
+      trackEvent("error_seen", {
+        section: "dog_lessons",
+        content_id: slug,
+        content_slug: typeof slug === "string" ? slug : null,
+        language: lang,
+        error_message: error instanceof Error ? error.message : "Dog lesson load failed",
+      });
     });
   }, [clearReplayHistory, lang, slug]);
 

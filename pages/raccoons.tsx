@@ -20,6 +20,7 @@ import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
 import MobileQuestSelectScreen from "@/components/Raccoons/MobileQuestSelectScreen";
 import type { EntitySearchResult } from "@/components/Raccoons/types";
+import { trackEvent } from "@/lib/analytics/client";
 
 type MapTab = "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food";
 
@@ -200,6 +201,16 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
     })),
   ];
 
+  useEffect(() => {
+    trackEvent("raccoon_map_opened", {
+      section: "raccoons",
+      content_id: "raccoon-map",
+      content_title: seo.title,
+      language: lang,
+      current_page: router.asPath,
+    });
+  }, [lang, router.asPath, seo.title]);
+
   const clearMapDeepLinkState = () => {
     setDeepLinkedPreviewId(null);
 
@@ -255,6 +266,13 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
   const handleMapTabChange = (nextTab: MapTab) => {
     clearMapDeepLinkState();
     setActiveTab(nextTab);
+    trackEvent("content_open", {
+      section: "map",
+      content_id: nextTab,
+      content_title: `Raccoon map: ${nextTab}`,
+      language: lang,
+      current_page: router.asPath,
+    });
   };
 
   const handleMapUserSelect = (selectedId: string) => {
@@ -330,6 +348,13 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
   };
 
   const openMobileQuestSelect = () => {
+    trackEvent("content_open", {
+      section: "raccoons",
+      content_id: "raccoon-quests",
+      content_title: "Raccoon quests",
+      language: lang,
+      current_page: router.asPath,
+    });
     void router.push(
       {
         pathname: "/raccoons",

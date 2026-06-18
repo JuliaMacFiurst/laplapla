@@ -15,6 +15,7 @@ import StudioBottomBar from "./StudioBottomBar";
 import ParrotGuide from "./ParrotGuide";
 import SavePanel from "./SavePanel";
 import ParrotStoryOverlay from "./ParrotStoryOverlay";
+import { trackEvent } from "@/lib/analytics/client";
 
 type Mode = "loops" | "voice" | "effects" | "mix" | "save";
 type PreviewKey = keyof VoiceEffectsState | keyof LoopEffectState | "speed";
@@ -1136,6 +1137,17 @@ export default function ParrotStudioRoot({
 
   const renderThirtySecondMix = async () => {
     setIsRenderingSave(true);
+    trackEvent("studio_export_started", {
+      section: "parrots",
+      content_id: selectedStyleSlug,
+      content_slug: selectedStyleSlug,
+      content_title: selectedStyleSlug,
+      language: lang,
+      export_format: "wav",
+      export_method: "offline_audio_render",
+      export_surface: "mobile_audio_export",
+      duration_seconds: 30,
+    });
 
     try {
       const durationSec = 30;
@@ -1234,8 +1246,30 @@ export default function ParrotStudioRoot({
       anchor.click();
       document.body.removeChild(anchor);
       setSavedCompositionSnapshot(compositionSnapshot);
+      trackEvent("studio_export_completed", {
+        section: "parrots",
+        content_id: selectedStyleSlug,
+        content_slug: selectedStyleSlug,
+        content_title: selectedStyleSlug,
+        language: lang,
+        export_format: "wav",
+        export_method: "offline_audio_render",
+        export_surface: "mobile_audio_export",
+        duration_seconds: 30,
+      });
     } catch (error) {
       console.error("Failed to render parrot studio mix", error);
+      trackEvent("studio_export_failed", {
+        section: "parrots",
+        content_id: selectedStyleSlug,
+        content_slug: selectedStyleSlug,
+        content_title: selectedStyleSlug,
+        language: lang,
+        export_format: "wav",
+        export_method: "offline_audio_render",
+        export_surface: "mobile_audio_export",
+        error_message: error instanceof Error ? error.message : "Parrot audio export failed",
+      });
     } finally {
       setIsRenderingSave(false);
     }
@@ -1440,6 +1474,14 @@ export default function ParrotStudioRoot({
             onRecordingStateChange={setIsVoiceRecording}
             onRecordBlobReady={(blob) => {
               recordedVoiceBlobRef.current = blob;
+              trackEvent("parrot_audio_created", {
+                section: "parrots",
+                content_id: selectedStyleSlug,
+                content_slug: selectedStyleSlug,
+                content_title: selectedStyleSlug,
+                language: lang,
+                duration_seconds: Math.round(blob.size / 16000),
+              });
             }}
             onChange={(voice) =>
               setComposition((current) => ({

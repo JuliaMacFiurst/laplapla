@@ -96,7 +96,34 @@ export default function StandaloneBookScreenPages({
         mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
       },
     });
-  }, [activeBook, lang, selectedMode, selectedModeId]);
+    trackEvent("content_open", {
+      section: "books",
+      content_id: getBookPathSlug(activeBook),
+      content_slug: getBookPathSlug(activeBook),
+      content_title: activeBook.title,
+      language: lang,
+      total_steps: slides.length || null,
+      mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
+    });
+  }, [activeBook, lang, selectedMode, selectedModeId, slides.length]);
+
+  useEffect(() => {
+    if (slides.length === 0 || currentSlideIndex < 0) {
+      return;
+    }
+
+    trackEvent("content_progress", {
+      section: "books",
+      content_id: getBookPathSlug(activeBook),
+      content_slug: getBookPathSlug(activeBook),
+      content_title: activeBook.title,
+      language: lang,
+      completion_percent: Math.round(((currentSlideIndex + 1) / slides.length) * 100),
+      step_index: currentSlideIndex + 1,
+      total_steps: slides.length,
+      mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
+    });
+  }, [activeBook, currentSlideIndex, lang, selectedMode, slides.length]);
 
   useEffect(() => {
     if (slides.length === 0 || currentSlideIndex < slides.length - 1) {
@@ -120,6 +147,17 @@ export default function StandaloneBookScreenPages({
         mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
         slideCount: slides.length,
       },
+    });
+    trackEvent("content_complete", {
+      section: "books",
+      content_id: getBookPathSlug(activeBook),
+      content_slug: getBookPathSlug(activeBook),
+      content_title: activeBook.title,
+      language: lang,
+      completion_percent: 100,
+      step_index: slides.length,
+      total_steps: slides.length,
+      mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
     });
   }, [activeBook, currentSlideIndex, lang, selectedMode, selectedModeId, slides.length]);
 

@@ -4,6 +4,7 @@ import {
   isAnalyticsEventName,
   isAnalyticsLang,
   type AnalyticsMetadata,
+  type AnalyticsProperties,
 } from "@/lib/analytics/events";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 
@@ -30,15 +31,19 @@ function readUuid(value: unknown) {
   return normalized && UUID_PATTERN.test(normalized) ? normalized : null;
 }
 
-function sanitizeMetadata(value: unknown): AnalyticsMetadata {
+function isUnsafeAnalyticsKey(key: string) {
+  return /(^|_)(email|e_mail|name|first_name|last_name|full_name|ip|ip_address|phone|address|lat|latitude|lng|lon|longitude|geo|location)(_|$)/i.test(key);
+}
+
+function sanitizeAnalyticsObject(value: unknown, maxEntries = 40): AnalyticsMetadata {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
 
   const metadata: AnalyticsMetadata = {};
-  for (const [key, rawValue] of Object.entries(value).slice(0, 20)) {
+  for (const [key, rawValue] of Object.entries(value).slice(0, maxEntries)) {
     const normalizedKey = key.trim().replace(/[^a-zA-Z0-9_:-]/g, "").slice(0, 60);
-    if (!normalizedKey) {
+    if (!normalizedKey || isUnsafeAnalyticsKey(normalizedKey)) {
       continue;
     }
 
@@ -52,6 +57,27 @@ function sanitizeMetadata(value: unknown): AnalyticsMetadata {
   }
 
   return metadata;
+}
+
+function sanitizeMetadata(value: unknown): AnalyticsMetadata {
+  return sanitizeAnalyticsObject(value, 20);
+}
+
+function sanitizeProperties(value: unknown): AnalyticsProperties {
+  return sanitizeAnalyticsObject(value, 40) as AnalyticsProperties;
+}
+
+function readNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
 }
 
 async function readBody(req: NextApiRequest) {
@@ -127,16 +153,44 @@ export default async function handler(
 
   try {
     const supabase = createServerSupabaseClient({ serviceRole: true });
+    const metadata = sanitizeMetadata(payload.metadata);
+    const properties = sanitizeProperties(payload.properties);
+    const payloadLang = isAnalyticsLang(properties.language) ? properties.language : lang || null;
+    const payloadSessionId = readUuid(properties.session_id) || readUuid(payload.sessionId);
+    const payloadAnonymousUserId =
+      readUuid(properties.anonymous_user_id) || readUuid(payload.visitorId);
+    const payloadPage =
+      readString(properties.current_page, 300) ||
+      readString(payload.page, 300);
+
     const { error } = await supabase.from("analytics_events").insert({
       event_name: eventName,
       entity_type: entityType || null,
-      entity_id: readString(payload.entityId, 160),
-      entity_title: readString(payload.entityTitle, 240),
-      page: readString(payload.page, 300),
-      lang: lang || null,
-      visitor_id: readUuid(payload.visitorId),
-      session_id: readUuid(payload.sessionId),
-      metadata: sanitizeMetadata(payload.metadata),
+      entity_id: readString(properties.content_id, 160) || readString(payload.entityId, 160),
+      entity_title: readString(properties.content_title, 240) || readString(payload.entityTitle, 240),
+      page: payloadPage,
+      lang: payloadLang,
+      visitor_id: payloadAnonymousUserId,
+      session_id: payloadSessionId,
+      metadata,
+      properties,
+      section: readString(properties.section, 80),
+      content_id: readString(properties.content_id, 160) || readString(payload.entityId, 160),
+      content_slug: readString(properties.content_slug, 180),
+      content_title: readString(properties.content_title, 240) || readString(payload.entityTitle, 240),
+      language: payloadLang,
+      device_type: readString(properties.device_type, 32),
+      viewport_width: readNumber(properties.viewport_width),
+      source_page: readString(properties.source_page, 300),
+      current_page: payloadPage,
+      referrer: readString(properties.referrer, 300),
+      anonymous_user_id: payloadAnonymousUserId,
+      duration_seconds: readNumber(properties.duration_seconds),
+      completion_percent: readNumber(properties.completion_percent),
+      step_index: readNumber(properties.step_index),
+      total_steps: readNumber(properties.total_steps),
+      error_message: readString(properties.error_message, 500),
+      export_format: readString(properties.export_format, 80),
     });
 
     if (error) {

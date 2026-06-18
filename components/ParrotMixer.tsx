@@ -2,6 +2,7 @@ import Image from "next/image";
 import {useEffect, useMemo, useRef, useState } from "react";
 import { iconForInstrument } from "../utils/parrot-presets";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { trackEvent } from "@/lib/analytics/client";
 
 /** --- Types --- */
 export type LoopVariant = { id: string; src: string; label?: string };
@@ -377,6 +378,13 @@ export default function ParrotMixer({
       } catch {}
       const tmpUrl = URL.createObjectURL(blob);
       setRecUrl(tmpUrl);
+      trackEvent("parrot_audio_created", {
+        section: "parrots",
+        content_id: styleSlug || "parrot-mixer",
+        content_title: styleSlug || "Parrot mixer",
+        language: lang,
+        duration_seconds: Math.round(blob.size / 16000),
+      });
       try {
         const ab = await blob.arrayBuffer();
         const buf = await audioCtx.decodeAudioData(ab);
@@ -860,9 +868,25 @@ export default function ParrotMixer({
       URL.revokeObjectURL(url);
 
       say(ui.reactions.savedTrack);
+      trackEvent("studio_export_completed", {
+        section: "parrots",
+        content_id: styleSlug || "parrot-mixer",
+        content_title: styleSlug || "Parrot mixer",
+        language: lang,
+        export_format: "wav",
+        duration_seconds: durationSec,
+      });
     } catch (e) {
       console.error(e);
       say(ui.reactions.saveError);
+      trackEvent("studio_export_failed", {
+        section: "parrots",
+        content_id: styleSlug || "parrot-mixer",
+        content_title: styleSlug || "Parrot mixer",
+        language: lang,
+        export_format: "wav",
+        error_message: e instanceof Error ? e.message : "Parrot mix export failed",
+      });
     }
   };
 

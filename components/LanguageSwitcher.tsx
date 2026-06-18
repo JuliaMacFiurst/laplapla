@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Lang } from "../i18n";
 import { buildLocalizedAsPath, getCurrentLang } from "@/lib/i18n/routing";
+import { trackEvent } from "@/lib/analytics/client";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "ru", label: "RU" },
@@ -46,7 +47,15 @@ export default function LanguageSwitcher() {
       {LANGS.map(({ code, label }) => (
         <button
           key={code}
-          onClick={() => switchLang(code)}
+          onClick={() => {
+            trackEvent("language_changed", {
+              section: "other",
+              language: code,
+              previous_language: current,
+              current_page: router.asPath,
+            });
+            void switchLang(code);
+          }}
           className={code === current ? "active" : ""}
           aria-current={code === current ? "true" : undefined}
         >

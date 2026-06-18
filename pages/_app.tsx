@@ -24,7 +24,7 @@ import '../styles/PWAInstall.css';
 import '../styles/BedtimeStories.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
 import { dictionaries, Lang } from "../i18n";
@@ -34,7 +34,7 @@ import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
 import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
-import { trackEvent } from "@/lib/analytics/client";
+import { trackEvent, trackSessionStart } from "@/lib/analytics/client";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -84,23 +84,122 @@ function ResponsiveViewportBridge() {
   return null;
 }
 
+function resolveAnalyticsSection(pathname: string) {
+  return pathname.startsWith("/cats")
+    ? "cats"
+    : pathname.startsWith("/raccoons") ||
+        pathname.startsWith("/country") ||
+        pathname.startsWith("/sea") ||
+        pathname.startsWith("/river")
+      ? "raccoons"
+      : pathname.startsWith("/dog")
+        ? "dog_lessons"
+        : pathname.startsWith("/parrots")
+          ? "parrots"
+          : pathname.startsWith("/bedtime-stories")
+            ? "bedtime_stories"
+            : pathname.startsWith("/capybara") || pathname.startsWith("/books")
+              ? "books"
+              : pathname === "/"
+                ? "home"
+                : "other";
+}
+
 function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
   const router = useRouter();
+  const contentStartedAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
 
+    const currentPage = router.asPath;
+    const section = resolveAnalyticsSection(router.pathname);
+    contentStartedAtRef.current = Date.now();
+
+    trackSessionStart({
+      section,
+      language: lang,
+      current_page: currentPage,
+    });
     trackEvent({
-      eventName: "page_viewed",
+      eventName: "page_view",
       entityType: "page",
       entityId: router.pathname,
       entityTitle: document.title || router.pathname,
-      page: router.asPath,
+      page: currentPage,
       lang,
+      properties: {
+        section,
+        content_id: router.pathname,
+        content_title: document.title || router.pathname,
+        language: lang,
+        current_page: currentPage,
+      },
     });
+
+    const startTimer = window.setTimeout(() => {
+      trackEvent("content_start", {
+        section,
+        content_id: router.pathname,
+        content_title: document.title || router.pathname,
+        language: lang,
+        current_page: currentPage,
+      });
+    }, 2_000);
+
+    let exitTracked = false;
+    const trackExit = () => {
+      if (exitTracked) {
+        return;
+      }
+
+      exitTracked = true;
+      const duration = Math.max(0, Math.round((Date.now() - contentStartedAtRef.current) / 1000));
+      trackEvent("content_exit", {
+        section,
+        content_id: router.pathname,
+        content_title: document.title || router.pathname,
+        language: lang,
+        current_page: currentPage,
+        duration_seconds: duration,
+      });
+    };
+
+    window.addEventListener("pagehide", trackExit);
+
+    return () => {
+      window.clearTimeout(startTimer);
+      window.removeEventListener("pagehide", trackExit);
+      trackExit();
+    };
   }, [lang, router.asPath, router.isReady, router.pathname]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target.closest("a[href]") : null;
+      if (!(target instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      try {
+        const url = new URL(target.href, window.location.href);
+        if (url.origin !== window.location.origin) {
+          trackEvent("external_link_clicked", {
+            section: "other",
+            content_id: url.hostname,
+            content_title: target.textContent?.trim().slice(0, 120) || url.hostname,
+            current_page: router.asPath,
+            language: lang,
+          });
+        }
+      } catch {}
+    };
+
+    document.addEventListener("click", handleClick, { capture: true });
+    return () => document.removeEventListener("click", handleClick, { capture: true });
+  }, [lang, router.asPath]);
 
   return null;
 }

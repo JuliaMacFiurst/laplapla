@@ -1532,6 +1532,12 @@ function StudioDesktopLayout({
               ],
             }));
             setActiveStickerId(nextSticker.id);
+            trackEvent("studio_sticker_added", {
+              section: "studio",
+              content_id: activeSlide.id,
+              content_title: "Studio sticker",
+              language: lang,
+            });
             setIsMediaOpen(false);
             return;
           }
@@ -1545,6 +1551,13 @@ function StudioDesktopLayout({
             mediaMimeType,
             mediaNormalized,
           }));
+          trackEvent("studio_media_added", {
+            section: "studio",
+            content_id: activeSlide.id,
+            content_title: "Studio media",
+            language: lang,
+            media_type: mediaType,
+          });
 
           setIsMediaOpen(false);
         }}
@@ -1589,6 +1602,11 @@ function StudioMobileLayout({
   const studioViewport = useStudioViewportMode();
   const isTabletStudio = studioViewport.isTablet;
   const isTabletLandscape = studioViewport.isTablet && studioViewport.orientation === "landscape";
+  const studioExportSurface = studioViewport.isMobile
+    ? "mobile_recording"
+    : studioViewport.deviceClass === "tablet"
+      ? "tablet_recording"
+      : "desktop_recording";
   const t = dictionaries[lang].cats.studio;
   const exportText = t.exportSheet;
   const hasPushedHistoryRef = useRef(false);
@@ -2081,6 +2099,16 @@ function StudioMobileLayout({
   }
 
   function startScreenRecordFallback() {
+    trackEvent("studio_export_started", {
+      section: "studio",
+      content_id: project.id,
+      content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
+      language: lang,
+      export_format: "screen_recording",
+      export_method: "guided_screen_recording",
+      export_surface: studioExportSurface,
+      total_steps: project.slides.length,
+    });
     setExportState("fallback-screen-record");
     setExportStatusText(exportText.localScreenRecording);
     setExportProgress(0);
@@ -2176,6 +2204,16 @@ function StudioMobileLayout({
   async function handleSaveExportedVideo() {
     if (!exportBlobUrl) return;
 
+    trackEvent("share_clicked", {
+      section: "studio",
+      content_id: project.id,
+      content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
+      language: lang,
+      export_format: "mp4",
+      export_method: "direct_canvas_recording",
+      export_surface: studioExportSurface,
+      action: "video_download",
+    });
     const link = document.createElement("a");
     link.href = exportBlobUrl;
     link.download = "laplapla-story.mp4";
@@ -2202,6 +2240,16 @@ function StudioMobileLayout({
           files: [file],
           title: "LapLapLa Story",
           text: exportCaption,
+        });
+        trackEvent("share_clicked", {
+          section: "studio",
+          content_id: project.id,
+          content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
+          language: lang,
+          export_format: "mp4",
+          export_method: "direct_canvas_recording",
+          export_surface: studioExportSurface,
+          action: "native_share",
         });
         setExportShareStatusText(exportText.shareOpened);
         return;
@@ -2258,6 +2306,16 @@ function StudioMobileLayout({
     }
 
     try {
+      trackEvent("studio_export_started", {
+        section: "studio",
+        content_id: project.id,
+        content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
+        language: lang,
+        export_format: "mp4",
+        export_method: "direct_canvas_recording",
+        export_surface: studioExportSurface,
+        total_steps: project.slides.length,
+      });
       setExportState("recording");
       setExportStatusText(exportText.recordingSlide
         .replace("{current}", "1")
@@ -2348,8 +2406,29 @@ function StudioMobileLayout({
       setExportStatusText(exportText.ready);
       setExportProgress(1);
       setExportedWithoutSound(recordedWithoutAudio);
+      trackEvent("studio_export_completed", {
+        section: "studio",
+        content_id: project.id,
+        content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
+        language: lang,
+        export_format: "mp4",
+        export_method: "direct_canvas_recording",
+        export_surface: studioExportSurface,
+        total_steps: project.slides.length,
+        recorded_without_audio: recordedWithoutAudio,
+      });
     } catch (error) {
       console.error("Mobile export failed", error);
+      trackEvent("studio_export_failed", {
+        section: "studio",
+        content_id: project.id,
+        content_title: project.sourcePrompt || project.sourcePresetId || "Studio project",
+        language: lang,
+        export_format: "mp4",
+        export_method: "direct_canvas_recording",
+        export_surface: studioExportSurface,
+        error_message: error instanceof Error ? error.message : "Studio direct export failed",
+      });
       startScreenRecordFallback();
     }
   }
@@ -3252,10 +3331,23 @@ function StudioMobileLayout({
               ],
             });
             setActiveStickerId(nextSticker.id);
+            trackEvent("studio_sticker_added", {
+              section: "studio",
+              content_id: activeSlide.id,
+              content_title: "Studio sticker",
+              language: lang,
+            });
             setIsMediaOpen(false);
             return;
           }
 
+          trackEvent("studio_media_added", {
+            section: "studio",
+            content_id: activeSlide.id,
+            content_title: "Studio media",
+            language: lang,
+            media_type: mediaType,
+          });
           updateSlide({
             ...activeSlide,
             mediaUrl: toStudioMediaUrl(url) ?? url,
@@ -4934,14 +5026,18 @@ export default function StudioRoot({
     mobileExitBaselineSnapshotRef.current = JSON.stringify(newProject);
     setActiveSlideIndex(0);
     trackEvent({
-      eventName: "project_created",
+      eventName: "studio_project_created",
       entityType: "studio_project",
       entityId: projectId,
       entityTitle: initialPrompt || initialPresetId || "Studio project",
       lang,
-      metadata: {
-        slideCount: newProject.slides.length,
-        trackCount: newProject.musicTracks.length,
+      properties: {
+        section: "studio",
+        content_id: projectId,
+        content_title: initialPrompt || initialPresetId || "Studio project",
+        language: lang,
+        total_steps: newProject.slides.length,
+        track_count: newProject.musicTracks.length,
         sourcePresetId: initialPresetId || null,
         sourceLang: initialSourceLang || null,
       },

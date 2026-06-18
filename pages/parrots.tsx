@@ -2,6 +2,7 @@ import {useCallback, useEffect, useMemo, useState } from "react";
 import type { GetStaticProps } from "next";
 import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
+import { trackEvent } from "@/lib/analytics/client";
 import SEO from "@/components/SEO";
 import ParrotMixer, { type MusicConfig } from "../components/ParrotMixer";
 import ParrotStoryCard, { type Slide as ParrotSlide } from "../components/ParrotStoryCard";
@@ -85,6 +86,16 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   const responsiveViewport = useResponsiveViewport();
   const usesTouchParrotsLayout = responsiveViewport.deviceClass !== "desktop";
   const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
+
+  useEffect(() => {
+    trackEvent("parrot_music_opened", {
+      section: "parrots",
+      content_id: "parrot-music",
+      content_title: seo.title,
+      language: lang,
+      current_page: router.asPath,
+    });
+  }, [lang, router.asPath, seo.title]);
   const [styleRecords, setStyleRecords] = useState<ParrotStyleRecord[]>(fallbackPresets);
   const [activeId, setActiveId] = useState(fallbackPresets[0]?.id ?? "lofi");
   const preset = useMemo(

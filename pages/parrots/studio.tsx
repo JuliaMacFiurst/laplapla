@@ -14,6 +14,7 @@ import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/pa
 import type { StudioSlide } from "@/types/studio";
 import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
 import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
+import { trackEvent } from "@/lib/analytics/client";
 
 const StudioRoot = dynamic(() => import("@/components/studio/StudioRoot"), { ssr: false });
 
@@ -237,6 +238,17 @@ export function ParrotsStudioPageContent() {
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  useEffect(() => {
+    trackEvent("studio_open", {
+      section: "studio",
+      content_id: "parrots-studio",
+      content_title: copy.title,
+      language: lang,
+      current_page: router.asPath,
+      source: "parrots",
+    });
+  }, [copy.title, lang, router.asPath]);
 
   useEffect(() => {
     setStyleRecords(fallbackPresets);

@@ -240,14 +240,20 @@ export default function SeoEntityPage({
   const mapTab = entityType === "biome" ? "physic" : entityType;
 
   useEffect(() => {
+    const eventName = entityType === "country" ? "country_opened" : "content_open";
     trackEvent({
-      eventName: "map_opened",
+      eventName,
       entityType: "map",
       entityId: `${entityType}:${slug}`,
       entityTitle: title,
       page: seoPath,
       lang: currentLang,
-      metadata: {
+      properties: {
+        section: "map",
+        content_id: `${entityType}:${slug}`,
+        content_slug: slug,
+        content_title: title,
+        language: currentLang,
         entityType,
         hasStories: hasAnyStories,
         rawTargetId,

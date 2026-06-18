@@ -15,6 +15,7 @@ import { getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import { trackEvent } from "@/lib/analytics/client";
 import type { StudioProject } from "@/types/studio";
@@ -60,6 +61,13 @@ export default function StudioExportPage() {
   const seo = dictionaries[lang].seo.cats.export;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/cats/export";
   const isMobile = useIsMobile();
+  const responsiveViewport = useResponsiveViewport();
+  const exportSurface =
+    responsiveViewport.deviceClass === "tablet"
+      ? "tablet_recording"
+      : isMobile || responsiveViewport.deviceClass === "mobile"
+        ? "mobile_recording"
+        : "desktop_recording";
 
   const [projectData, setProjectData] = useState<StudioProject | null>(null);
   const [localizedExportPrompt, setLocalizedExportPrompt] = useState("");
@@ -227,6 +235,16 @@ export default function StudioExportPage() {
 
     setIsRecording(true);
     setExportError(null);
+    trackEvent("studio_export_started", {
+      section: "studio",
+      content_id: projectData?.id || "current-studio-project",
+      content_title: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
+      language: lang,
+      export_format: "mp4",
+      export_method: "screen_recording",
+      export_surface: exportSurface,
+      total_steps: slides.length,
+    });
     setRecordingDurationMs(totalDuration);
     setRecordingStartedAt(Date.now());
     document.body.classList.add("recording-mode");
@@ -263,12 +281,21 @@ export default function StudioExportPage() {
       setIsFinished(true);
       setProcessingProgress(null);
       trackEvent({
-        eventName: "video_exported",
+        eventName: "studio_export_completed",
         entityType: "video",
         entityId: projectData?.id || "current-studio-project",
         entityTitle: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
         lang,
-        metadata: {
+        properties: {
+          section: "studio",
+          content_id: projectData?.id || "current-studio-project",
+          content_title: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
+          language: lang,
+          export_format: "mp4",
+          export_method: "screen_recording",
+          export_surface: exportSurface,
+          total_steps: slides.length,
+          duration_seconds: Math.round(totalDuration / 1000),
           slideCount: slides.length,
           durationSeconds: Math.round(totalDuration / 1000),
           sourcePresetId: projectData?.sourcePresetId || null,
@@ -282,6 +309,16 @@ export default function StudioExportPage() {
           ? error.message
           : `Export failed: ${String(error)}`,
       );
+      trackEvent("studio_export_failed", {
+        section: "studio",
+        content_id: projectData?.id || "current-studio-project",
+        content_title: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
+        language: lang,
+        export_format: "mp4",
+        export_method: "screen_recording",
+        export_surface: exportSurface,
+        error_message: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       document.body.classList.remove("recording-mode");
       document.body.classList.remove("processing-mode");
@@ -323,12 +360,19 @@ export default function StudioExportPage() {
             className="studio-button button-blue"
             onClick={() => {
               trackEvent({
-                eventName: "story_downloaded",
+                eventName: "share_clicked",
                 entityType: "video",
                 entityId: projectData?.id || "current-studio-project",
                 entityTitle: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
                 lang,
-                metadata: {
+                properties: {
+                  section: "studio",
+                  content_id: projectData?.id || "current-studio-project",
+                  content_title: localizedExportPrompt || projectData?.sourcePrompt || "Studio video",
+                  language: lang,
+                  export_format: "mp4",
+                  export_method: "screen_recording",
+                  export_surface: exportSurface,
                   action: "video_download",
                 },
               });
