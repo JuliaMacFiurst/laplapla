@@ -264,6 +264,7 @@ export default function RaccoonRecipePage({
       }
       if (percent >= 90) {
         trackProgress(90);
+        trackComplete(90);
       }
     };
 

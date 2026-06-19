@@ -7,10 +7,14 @@ import type {
 const VISITOR_STORAGE_KEY = "laplapla_analytics_visitor_id";
 const SESSION_STORAGE_KEY = "laplapla_analytics_session_id";
 const SESSION_STARTED_KEY = "laplapla_analytics_session_started";
+const RETRY_QUEUE_STORAGE_KEY = "laplapla_analytics_retry_queue";
 const PAGE_VIEW_CACHE_KEY = "__laplaplaTrackedPageViews";
+const CONTENT_OPEN_CACHE_KEY = "__laplaplaTrackedContentOpens";
 const PROGRESS_CACHE_KEY = "__laplaplaProgressEvents";
+const ACTIVE_CONTENT_STATE_KEY = "__laplaplaActiveContentState";
 const PROGRESS_THROTTLE_MS = 15_000;
 const PROGRESS_STEP = 10;
+const MAX_RETRY_QUEUE_SIZE = 20;
 
 type AnalyticsTrackInput =
   | AnalyticsEventInput
@@ -24,7 +28,9 @@ type AnalyticsIds = {
 declare global {
   interface Window {
     [PAGE_VIEW_CACHE_KEY]?: Set<string>;
+    [CONTENT_OPEN_CACHE_KEY]?: Set<string>;
     [PROGRESS_CACHE_KEY]?: Map<string, { at: number; percent: number }>;
+    [ACTIVE_CONTENT_STATE_KEY]?: AnalyticsProperties;
   }
 }
 
@@ -85,6 +91,24 @@ function getCurrentPage() {
   return `${window.location.pathname}${window.location.search}`;
 }
 
+function shouldSkipAnalytics() {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("analytics_opt_out") === "1") {
+      window.localStorage.setItem("laplapla_analytics_opt_out", "1");
+      return true;
+    }
+
+    return window.localStorage.getItem("laplapla_analytics_opt_out") === "1";
+  } catch {
+    return false;
+  }
+}
+
 function stripUnsafeProperties(properties: AnalyticsProperties): AnalyticsProperties {
   const safe: AnalyticsProperties = {};
 
@@ -110,7 +134,7 @@ function stripUnsafeProperties(properties: AnalyticsProperties): AnalyticsProper
 
 function buildProperties(input: AnalyticsEventInput, ids: AnalyticsIds): AnalyticsProperties {
   const currentPage = input.page || getCurrentPage();
-  return stripUnsafeProperties({
+  const properties = stripUnsafeProperties({
     ...input.metadata,
     ...input.properties,
     content_id: input.properties?.content_id ?? input.entityId ?? null,
@@ -123,7 +147,54 @@ function buildProperties(input: AnalyticsEventInput, ids: AnalyticsIds): Analyti
     referrer: input.properties?.referrer ?? (typeof document !== "undefined" ? document.referrer || null : null),
     session_id: input.properties?.session_id ?? input.sessionId ?? ids.sessionId,
     anonymous_user_id: input.properties?.anonymous_user_id ?? input.visitorId ?? ids.anonymousUserId,
+    environment: input.properties?.environment ?? process.env.NODE_ENV ?? "unknown",
   });
+  return {
+    ...properties,
+    export_method: normalizeExportMethod(input.eventName, properties),
+  };
+}
+
+function normalizeExportMethod(
+  eventName: AnalyticsEventName,
+  properties: AnalyticsProperties,
+): string | null | undefined {
+  const existing = typeof properties.export_method === "string" ? properties.export_method : null;
+  const deviceType = properties.device_type || getDeviceType();
+  const isStudioEvent = eventName.startsWith("studio_") || eventName === "video_exported";
+
+  if (!isStudioEvent && !existing) {
+    return properties.export_method;
+  }
+
+  if (existing === "mobile_recording" ||
+      existing === "tablet_recording" ||
+      existing === "desktop_recording" ||
+      existing === "desktop_export" ||
+      existing === "parrot_audio" ||
+      existing === "unknown") {
+    return existing;
+  }
+
+  if (
+    existing === "offline_audio_render" ||
+    properties.content_type === "parrot_audio" ||
+    properties.section === "parrots"
+  ) {
+    return "parrot_audio";
+  }
+
+  if (eventName.startsWith("studio_recording_") || existing?.includes("screen_recording")) {
+    if (deviceType === "desktop") return "desktop_recording";
+    if (deviceType === "tablet") return "tablet_recording";
+    return "mobile_recording";
+  }
+
+  if (eventName.startsWith("studio_export_") || existing === "direct_canvas_recording") {
+    return "desktop_export";
+  }
+
+  return existing || "unknown";
 }
 
 function shouldSkipPageView(input: AnalyticsEventInput, properties: AnalyticsProperties) {
@@ -166,6 +237,30 @@ function shouldSkipProgress(input: AnalyticsEventInput, properties: AnalyticsPro
   return false;
 }
 
+function shouldSkipContentOpen(input: AnalyticsEventInput, properties: AnalyticsProperties) {
+  if (input.eventName !== "content_open") {
+    return false;
+  }
+
+  const key = [
+    properties.current_page || input.page || "",
+    properties.content_type || "",
+    properties.content_id || properties.content_slug || "",
+    properties.language || input.lang || "",
+  ].join(":");
+  if (!key.replace(/:/g, "").trim()) {
+    return false;
+  }
+
+  window[CONTENT_OPEN_CACHE_KEY] ||= new Set<string>();
+  if (window[CONTENT_OPEN_CACHE_KEY]?.has(key)) {
+    return true;
+  }
+
+  window[CONTENT_OPEN_CACHE_KEY]?.add(key);
+  return false;
+}
+
 function normalizeInput(args: AnalyticsTrackInput): AnalyticsEventInput {
   if (Array.isArray(args)) {
     return {
@@ -177,8 +272,99 @@ function normalizeInput(args: AnalyticsTrackInput): AnalyticsEventInput {
   return args;
 }
 
+function readRetryQueue(): AnalyticsEventInput[] {
+  try {
+    const raw = window.localStorage.getItem(RETRY_QUEUE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_RETRY_QUEUE_SIZE) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRetryQueue(queue: AnalyticsEventInput[]) {
+  try {
+    window.localStorage.setItem(RETRY_QUEUE_STORAGE_KEY, JSON.stringify(queue.slice(-MAX_RETRY_QUEUE_SIZE)));
+  } catch {}
+}
+
+function enqueueRetryPayload(payload: AnalyticsEventInput) {
+  writeRetryQueue([...readRetryQueue(), payload]);
+}
+
+function flushRetryQueue() {
+  const queue = readRetryQueue();
+  if (queue.length === 0) {
+    return;
+  }
+
+  writeRetryQueue([]);
+  for (const payload of queue) {
+    try {
+      void fetch("/api/analytics/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => enqueueRetryPayload(payload));
+    } catch {
+      enqueueRetryPayload(payload);
+    }
+  }
+}
+
+function updateActiveContentState(eventName: AnalyticsEventName, properties: AnalyticsProperties) {
+  if (eventName === "content_open") {
+    window[ACTIVE_CONTENT_STATE_KEY] = {
+      section: properties.section,
+      content_type: properties.content_type,
+      content_id: properties.content_id,
+      content_slug: properties.content_slug,
+      content_title: properties.content_title,
+      language: properties.language,
+      current_page: properties.current_page,
+      completion_percent: 0,
+      step_index: properties.step_index ?? null,
+      total_steps: properties.total_steps ?? null,
+    };
+    return;
+  }
+
+  if (eventName === "content_progress" || eventName === "content_complete") {
+    const current = window[ACTIVE_CONTENT_STATE_KEY] || {};
+    const nextCompletion =
+      typeof properties.completion_percent === "number"
+        ? properties.completion_percent
+        : eventName === "content_complete"
+          ? 100
+          : current.completion_percent;
+    window[ACTIVE_CONTENT_STATE_KEY] = {
+      ...current,
+      section: properties.section ?? current.section,
+      content_type: properties.content_type ?? current.content_type,
+      content_id: properties.content_id ?? current.content_id,
+      content_slug: properties.content_slug ?? current.content_slug,
+      content_title: properties.content_title ?? current.content_title,
+      language: properties.language ?? current.language,
+      current_page: properties.current_page ?? current.current_page,
+      completion_percent: Math.max(
+        Number(current.completion_percent || 0),
+        Number(nextCompletion || 0),
+      ),
+      step_index: properties.step_index ?? current.step_index,
+      total_steps: properties.total_steps ?? current.total_steps,
+    };
+    return;
+  }
+
+  if (eventName === "content_exit") {
+    window[ACTIVE_CONTENT_STATE_KEY] = undefined;
+  }
+}
+
 function sendPayload(payload: AnalyticsEventInput) {
   const body = JSON.stringify(payload);
+  flushRetryQueue();
 
   try {
     if (navigator.sendBeacon) {
@@ -197,8 +383,35 @@ function sendPayload(payload: AnalyticsEventInput) {
       },
       body,
       keepalive: true,
-    }).catch(() => {});
+    }).catch(() => enqueueRetryPayload(payload));
   } catch {}
+}
+
+export function getActiveContentExitProperties(currentPage?: string | null): AnalyticsProperties {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const state = window[ACTIVE_CONTENT_STATE_KEY];
+  if (!state) {
+    return {};
+  }
+
+  if (state.current_page && currentPage && state.current_page !== currentPage) {
+    return {};
+  }
+
+  return {
+    section: state.section,
+    content_type: state.content_type,
+    content_id: state.content_id,
+    content_slug: state.content_slug,
+    content_title: state.content_title,
+    language: state.language,
+    completion_percent: state.completion_percent ?? null,
+    step_index: state.step_index ?? null,
+    total_steps: state.total_steps ?? null,
+  };
 }
 
 export function trackEvent(eventName: AnalyticsEventName, properties?: AnalyticsProperties): void;
@@ -207,7 +420,7 @@ export function trackEvent(
   inputOrEventName: AnalyticsEventInput | AnalyticsEventName,
   properties?: AnalyticsProperties,
 ) {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || shouldSkipAnalytics()) {
     return;
   }
 
@@ -218,7 +431,11 @@ export function trackEvent(
     const ids = getAnalyticsIds();
     const mergedProperties = buildProperties(input, ids);
 
-    if (shouldSkipPageView(input, mergedProperties) || shouldSkipProgress(input, mergedProperties)) {
+    if (
+      shouldSkipPageView(input, mergedProperties) ||
+      shouldSkipContentOpen(input, mergedProperties) ||
+      shouldSkipProgress(input, mergedProperties)
+    ) {
       return;
     }
 
@@ -231,6 +448,7 @@ export function trackEvent(
       properties: mergedProperties,
     };
 
+    updateActiveContentState(input.eventName, mergedProperties);
     sendPayload(payload);
   } catch {
     // Analytics must never interrupt the user-facing experience.

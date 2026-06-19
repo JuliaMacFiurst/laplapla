@@ -34,7 +34,7 @@ import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
 import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
-import { trackEvent, trackSessionStart } from "@/lib/analytics/client";
+import { getActiveContentExitProperties, trackEvent, trackSessionStart } from "@/lib/analytics/client";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -188,14 +188,17 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
         0,
         Math.min(30 * 60, Math.round(activeDurationMsRef.current / 1000)),
       );
+      const activeContent = getActiveContentExitProperties(currentPage);
       trackEvent("content_exit", {
         section,
         content_type: "page",
         content_id: router.pathname,
         content_title: readableTitle,
+        ...activeContent,
         language: lang,
         current_page: currentPage,
         duration_seconds: duration,
+        completion_percent: activeContent.completion_percent ?? null,
       });
     };
 
