@@ -191,6 +191,17 @@ export default function RaccoonRecipePage({
         hasCollage: Boolean(collageImage),
       },
     });
+    trackEvent("content_open", {
+      section: "recipes",
+      content_type: "recipe",
+      content_id: recipe.slug,
+      content_slug: recipe.slug,
+      content_title: recipe.title,
+      language: lang,
+      total_steps: steps.length,
+      country: recipe.country || null,
+      hasCollage: Boolean(collageImage),
+    });
   }, [collageImage, lang, recipe.country, recipe.slug, recipe.title, recipePath, steps.length]);
 
   useEffect(() => {
@@ -253,7 +264,6 @@ export default function RaccoonRecipePage({
       }
       if (percent >= 90) {
         trackProgress(90);
-        trackComplete(90);
       }
     };
 

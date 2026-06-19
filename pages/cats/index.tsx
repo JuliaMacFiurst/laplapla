@@ -134,6 +134,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false);
   const lastResolvedTextPresetKeyRef = useRef<string | null>(null);
   const completedQuestionKeyRef = useRef<string | null>(null);
+  const trackedQuestionProgressKeyRef = useRef(new Set<string>());
   const maxTrackedSlideIndexRef = useRef(-1);
   const slideScrollWrapperRef = useRef<HTMLDivElement | null>(null);
 
@@ -250,21 +251,26 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
     if (safeIndex > maxTrackedSlideIndexRef.current) {
       maxTrackedSlideIndexRef.current = safeIndex;
-      trackEvent("content_progress", {
-        section: "cats",
-        content_type: "cat_question",
-        content_id: activePreset.id,
-        content_slug: activePreset.id,
-        content_title: activePreset.prompt,
-        language: lang,
-        completion_percent: completionPercent,
-        step_index: safeIndex + 1,
-        total_steps: slides.length,
-        source,
-      });
+      const progressCheckpoint = completionPercent >= 90 ? 90 : completionPercent >= 50 ? 50 : null;
+      const progressKey = progressCheckpoint === null ? null : `${key}:${progressCheckpoint}`;
+      if (progressCheckpoint !== null && progressKey && !trackedQuestionProgressKeyRef.current.has(progressKey)) {
+        trackedQuestionProgressKeyRef.current.add(progressKey);
+        trackEvent("content_progress", {
+          section: "cats",
+          content_type: "cat_question",
+          content_id: activePreset.id,
+          content_slug: activePreset.id,
+          content_title: activePreset.prompt,
+          language: lang,
+          completion_percent: progressCheckpoint,
+          step_index: safeIndex + 1,
+          total_steps: slides.length,
+          source,
+        });
+      }
     }
 
-    if (completionPercent < 90 || completedQuestionKeyRef.current === key) {
+    if (safeIndex < slides.length - 1 || completedQuestionKeyRef.current === key) {
       return;
     }
 
@@ -297,6 +303,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     maxTrackedSlideIndexRef.current = -1;
+    trackedQuestionProgressKeyRef.current = new Set();
+    completedQuestionKeyRef.current = null;
   }, [activePreset?.id, lang, slides.length]);
 
   useEffect(() => {
@@ -504,6 +512,14 @@ export default function CatPage({ lang }: { lang: Lang }) {
       content_title: preset.prompt,
       language: lang,
     });
+    trackEvent("content_open", {
+      section: "cats",
+      content_type: "cat_question",
+      content_id: preset.id,
+      content_slug: preset.id,
+      content_title: preset.prompt,
+      language: lang,
+    });
     if (preset.kind === "full") {
       setError(null);
     }
@@ -515,6 +531,14 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setError(null);
     setPendingQuestion(preset.prompt);
     trackEvent("cat_question_opened", {
+      section: "cats",
+      content_type: "cat_question",
+      content_id: preset.id,
+      content_slug: preset.id,
+      content_title: preset.prompt,
+      language: lang,
+    });
+    trackEvent("content_open", {
       section: "cats",
       content_type: "cat_question",
       content_id: preset.id,
@@ -638,6 +662,15 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setActivePresetId(randomPreset.id);
     setPendingQuestion(randomPreset.prompt);
     trackEvent("cat_question_opened", {
+      section: "cats",
+      content_type: "cat_question",
+      content_id: randomPreset.id,
+      content_slug: randomPreset.id,
+      content_title: randomPreset.prompt,
+      language: lang,
+      source: "random",
+    });
+    trackEvent("content_open", {
       section: "cats",
       content_type: "cat_question",
       content_id: randomPreset.id,

@@ -1475,6 +1475,15 @@ function LessonPlayerDesktop() {
         language: lang,
         total_steps: translatedLesson.steps.length,
       });
+      trackEvent("content_open", {
+        section: "dog_lessons",
+        content_type: "dog_lesson",
+        content_id: slug,
+        content_slug: slug,
+        content_title: translatedLesson.title,
+        language: lang,
+        total_steps: translatedLesson.steps.length,
+      });
       setIsLessonTranslated(Boolean(payload.translated));
       setBrushSize(5);
       setHasUnsavedChanges(false);

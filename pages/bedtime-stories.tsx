@@ -59,6 +59,15 @@ export default function BedtimeStoriesPage({ lang, stories }: BedtimeStoriesPage
                         total_steps: story.pageUrls.length,
                       },
                     });
+                    trackEvent("content_open", {
+                      section: "bedtime_stories",
+                      content_type: "bedtime_story",
+                      content_id: story.slug || story.id,
+                      content_slug: story.slug || story.id,
+                      content_title: story.title,
+                      language: resolvedLang,
+                      total_steps: story.pageUrls.length,
+                    });
                     setSelectedStory(story);
                   }}
                   aria-label={`${t.readStory}: ${story.title}`}
