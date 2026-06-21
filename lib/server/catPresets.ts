@@ -45,6 +45,7 @@ type CatPresetTranslatedSlide = {
 
 const SUPPORTED_LANGS = new Set<Lang>(["ru", "en", "he"]);
 const MEDIA_TYPES = new Set<CatPresetMediaType>(["gif", "video"]);
+const SUPABASE_PAGE_SIZE = 1000;
 
 function normalizeLang(value: string | undefined): Lang {
   return value && SUPPORTED_LANGS.has(value as Lang) ? value as Lang : "ru";
@@ -185,6 +186,34 @@ function getHardcodedCatPresetsForLang(lang: Lang) {
     });
 }
 
+async function loadSlidesForPresetIds(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  presetIds: string[],
+) {
+  const slides: CatPresetSlideRow[] = [];
+
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const to = from + SUPABASE_PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from("cat_preset_slides")
+      .select("id, preset_id, slide_order, text, media_url, media_type")
+      .in("preset_id", presetIds)
+      .order("slide_order", { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      throw error;
+    }
+
+    const page = (Array.isArray(data) ? data : []) as CatPresetSlideRow[];
+    slides.push(...page);
+
+    if (page.length < SUPABASE_PAGE_SIZE) {
+      return slides;
+    }
+  }
+}
+
 export async function loadCatPresetsFromDb(langInput: string | undefined): Promise<AnyCatPreset[]> {
   const lang = normalizeLang(langInput);
 
@@ -208,15 +237,7 @@ export async function loadCatPresetsFromDb(langInput: string | undefined): Promi
       return [];
     }
 
-    const { data: slideRows, error: slideError } = await supabase
-      .from("cat_preset_slides")
-      .select("id, preset_id, slide_order, text, media_url, media_type")
-      .in("preset_id", presetIds)
-      .order("slide_order", { ascending: true });
-
-    if (slideError) {
-      throw slideError;
-    }
+    const slideRows = await loadSlidesForPresetIds(supabase, presetIds);
 
     const translationsByContentId = new Map<string, CatPresetTranslation>();
 
@@ -242,7 +263,7 @@ export async function loadCatPresetsFromDb(langInput: string | undefined): Promi
     }
 
     const slidesByPresetId = new Map<string, CatPresetSlideRow[]>();
-    for (const slide of (slideRows || []) as CatPresetSlideRow[]) {
+    for (const slide of slideRows) {
       const slides = slidesByPresetId.get(slide.preset_id) ?? [];
       slides.push(slide);
       slidesByPresetId.set(slide.preset_id, slides);
