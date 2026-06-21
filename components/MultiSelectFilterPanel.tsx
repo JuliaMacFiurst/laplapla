@@ -3,6 +3,8 @@ import { useState } from "react";
 type FilterOption = {
   value: string;
   label: string;
+  count?: number;
+  icon?: string;
 };
 
 type FilterGroup = {
@@ -82,7 +84,15 @@ export default function MultiSelectFilterPanel({
                     onClick={() => group.onToggle(option.value)}
                     aria-pressed={isSelected}
                   >
-                    {option.label}
+                    {option.icon ? (
+                      <span className="multi-filter-chip-icon" aria-hidden="true">{option.icon}</span>
+                    ) : null}
+                    <span className="multi-filter-chip-label">{option.label}</span>
+                    {typeof option.count === "number" ? (
+                      <span className="multi-filter-chip-count" aria-label={`${option.count}`}>
+                        {option.count}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}

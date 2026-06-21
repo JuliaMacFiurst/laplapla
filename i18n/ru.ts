@@ -298,6 +298,8 @@ export const ru = {
     askButton: "Задать!",
     categoriesTitle: "Категории",
     clearCategories: "Очистить категории",
+    categoryResultsCount: "Показано {shown} из {total}",
+    loadMoreQuestions: "Показать ещё 3",
     thinkingShort: "Котики думают...",
     thinkingLong: "Котики думают над ответом на твой вопрос...",
     thinkingLongWithQuestion: 'Котики думают над вопросом: "{question}"',

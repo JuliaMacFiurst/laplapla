@@ -334,6 +334,8 @@ type DictionaryShape = {
     askButton: string;
     categoriesTitle: string;
     clearCategories: string;
+    categoryResultsCount: string;
+    loadMoreQuestions: string;
     thinkingShort: string;
     thinkingLong: string;
     thinkingLongWithQuestion: string;

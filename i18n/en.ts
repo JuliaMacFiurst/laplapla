@@ -298,6 +298,8 @@ export const en = {
     askButton: "Ask!",
     categoriesTitle: "Categories",
     clearCategories: "Clear categories",
+    categoryResultsCount: "Showing {shown} of {total}",
+    loadMoreQuestions: "Show 3 more",
     thinkingShort: "The cats are thinking...",
     thinkingLong: "The cats are thinking about your question...",
     thinkingLongWithQuestion: 'The cats are thinking about: "{question}"',

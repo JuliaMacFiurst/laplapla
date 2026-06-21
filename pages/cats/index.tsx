@@ -18,7 +18,7 @@ import { DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import { trackEvent } from "@/lib/analytics/client";
 import type { StudioSlide } from "@/types/studio";
-import { resolveCatCategory } from "@/lib/catCategories";
+import { getCatCategoryGroups, resolveCatCategory } from "@/lib/catCategories";
 
 type CatRuntimeSlide = {
   text: string;
@@ -26,6 +26,8 @@ type CatRuntimeSlide = {
 };
 
 const CAT_SEARCH_RESULTS_LIMIT = 8;
+const CAT_EXAMPLE_PRESET_COUNT = 3;
+const CAT_CATEGORY_PRESET_INCREMENT = 3;
 const visuallyHiddenStyle = {
   position: "absolute" as const,
   width: "1px",
@@ -128,6 +130,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [error, setError] = useState<string | null>(null);
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(null);
   const [examplePresets, setExamplePresets] = useState<AnyCatPreset[]>([]);
+  const [visibleCategoryPresetCount, setVisibleCategoryPresetCount] = useState(CAT_CATEGORY_PRESET_INCREMENT);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isDesktopSearchFocused, setIsDesktopSearchFocused] = useState(false);
@@ -143,22 +146,74 @@ export default function CatPage({ lang }: { lang: Lang }) {
     [availablePresets, lang],
   );
 
-  const availableCategories = useMemo(
-    () =>
-      Array.from(
-        presetsForLang.reduce((categories, preset) => {
-          const resolvedCategory = resolveCatCategory(preset);
-          if (!resolvedCategory || categories.has(resolvedCategory.key)) {
-            return categories;
-          }
+  const toggleCategory = useCallback((category: string) => {
+    setSelectedCategories((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category],
+    );
+  }, []);
 
-          categories.set(resolvedCategory.key, resolvedCategory.label);
-          return categories;
-        }, new Map<string, string>()),
-      )
-        .map(([value, label]) => ({ value, label }))
-        .sort((left, right) => left.label.localeCompare(right.label, lang, { sensitivity: "base" })),
-    [lang, presetsForLang],
+  const categoryOptionGroups = useMemo(() => {
+    const categoryCounts = new Map<string, {
+      key: string;
+      label: string;
+      groupKey: string;
+      icon: string;
+      order: number;
+      count: number;
+    }>();
+
+    for (const preset of presetsForLang) {
+      const resolvedCategory = resolveCatCategory(preset, lang);
+      if (!resolvedCategory) {
+        continue;
+      }
+
+      const current = categoryCounts.get(resolvedCategory.key) ?? {
+        key: resolvedCategory.key,
+        label: resolvedCategory.label,
+        groupKey: resolvedCategory.groupKey,
+        icon: resolvedCategory.icon,
+        order: resolvedCategory.order,
+        count: 0,
+      };
+      current.count += 1;
+      categoryCounts.set(resolvedCategory.key, current);
+    }
+
+    return getCatCategoryGroups(lang)
+      .map((group) => {
+        const options = Array.from(categoryCounts.values())
+          .filter((category) => category.groupKey === group.key && category.count > 0)
+          .sort((left, right) =>
+            left.order - right.order ||
+            left.label.localeCompare(right.label, lang, { sensitivity: "base" }),
+          )
+          .map((category) => ({
+            value: category.key,
+            label: category.label,
+            count: category.count,
+            icon: category.icon,
+          }));
+
+        return {
+          id: `cats-categories-${group.key}`,
+          label: group.label,
+          options,
+        };
+      })
+      .filter((group) => group.options.length > 0);
+  }, [lang, presetsForLang]);
+
+  const availableCategoryGroups = useMemo(
+    () =>
+      categoryOptionGroups.map((group) => ({
+        ...group,
+        selectedValues: selectedCategories,
+        onToggle: toggleCategory,
+      })),
+    [categoryOptionGroups, selectedCategories, toggleCategory],
   );
 
   const filteredPresetsForLang = useMemo(() => {
@@ -167,10 +222,25 @@ export default function CatPage({ lang }: { lang: Lang }) {
     }
 
     return presetsForLang.filter((preset) => {
-      const category = resolveCatCategory(preset);
+      const category = resolveCatCategory(preset, lang);
       return category ? selectedCategories.includes(category.key) : false;
     });
-  }, [presetsForLang, selectedCategories]);
+  }, [lang, presetsForLang, selectedCategories]);
+
+  const categoryFilterKey = selectedCategories.join("|");
+  const isCategoryFiltered = selectedCategories.length > 0;
+  const visibleQuestionPresets = isCategoryFiltered
+    ? filteredPresetsForLang.slice(0, visibleCategoryPresetCount)
+    : examplePresets;
+  const hasMoreCategoryPresets =
+    isCategoryFiltered && visibleCategoryPresetCount < filteredPresetsForLang.length;
+  const visibleCategoryPresetTotal = Math.min(visibleQuestionPresets.length, filteredPresetsForLang.length);
+  const categoryResultsLabel = t.categoryResultsCount
+    .replace("{shown}", String(visibleCategoryPresetTotal))
+    .replace("{total}", String(filteredPresetsForLang.length));
+  const loadMoreCategoryPresets = () => {
+    setVisibleCategoryPresetCount((current) => current + CAT_CATEGORY_PRESET_INCREMENT);
+  };
 
   const activePreset = useMemo(() => {
     if (!activePresetId) return null;
@@ -231,14 +301,24 @@ export default function CatPage({ lang }: { lang: Lang }) {
   }, [lang]);
 
   useEffect(() => {
-    setExamplePresets(pickRandomItems(filteredPresetsForLang, 3));
-  }, [filteredPresetsForLang]);
+    if (isCategoryFiltered) {
+      return;
+    }
+
+    setExamplePresets(pickRandomItems(filteredPresetsForLang, CAT_EXAMPLE_PRESET_COUNT));
+  }, [filteredPresetsForLang, isCategoryFiltered]);
+
+  useEffect(() => {
+    setVisibleCategoryPresetCount(CAT_CATEGORY_PRESET_INCREMENT);
+  }, [categoryFilterKey, lang]);
 
   useEffect(() => {
     setSelectedCategories((current) =>
-      current.filter((category) => availableCategories.some((option) => option.value === category)),
+      current.filter((category) =>
+        categoryOptionGroups.some((group) => group.options.some((option) => option.value === category)),
+      ),
     );
-  }, [availableCategories]);
+  }, [categoryOptionGroups]);
 
   const trackCatQuestionProgress = useCallback((slideIndex: number, source: "desktop" | "mobile") => {
     if (!activePreset || slides.length === 0) {
@@ -476,14 +556,6 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setSearchQuery("");
     setIsDesktopSearchFocused(false);
     setIsMobileSearchFocused(false);
-  };
-
-  const toggleCategory = (category: string) => {
-    setSelectedCategories((current) =>
-      current.includes(category)
-        ? current.filter((item) => item !== category)
-        : [...current, category],
-    );
   };
 
   const clearCategories = () => {
@@ -788,15 +860,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
           clearLabel={t.clearCategories}
           onClear={clearCategories}
           className={`cats-category-panel cats-category-panel-${mode}`}
-          groups={[
-            {
-              id: "cats-categories",
-              label: t.categoriesTitle,
-              options: availableCategories,
-              selectedValues: selectedCategories,
-              onToggle: toggleCategory,
-            },
-          ]}
+          groups={availableCategoryGroups}
         />
 
         {isFocused && searchResults.length > 0 ? (
@@ -825,7 +889,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
       {error ? <p className="error-message">{error}</p> : null}
       {renderSearchBlock("mobile")}
       <div className="cats-mobile-trigger-list">
-        {examplePresets.map((item) => (
+        {visibleQuestionPresets.map((item) => (
           <button
             key={`${item.kind}:${item.id}`}
             type="button"
@@ -838,6 +902,20 @@ export default function CatPage({ lang }: { lang: Lang }) {
           </button>
         ))}
       </div>
+      {isCategoryFiltered ? (
+        <div className="cats-category-results-footer cats-category-results-footer-mobile">
+          <span className="cats-category-results-count">{categoryResultsLabel}</span>
+          {hasMoreCategoryPresets ? (
+            <button
+              type="button"
+              className="cats-load-more-questions"
+              onClick={loadMoreCategoryPresets}
+            >
+              {t.loadMoreQuestions}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="cats-mobile-slideshow-intro">
         <span className="cats-mobile-slideshow-intro-title">{t.mobileIntroTitle}</span>
         <span className="cats-mobile-slideshow-intro-text">{t.mobileIntroText}</span>
@@ -872,7 +950,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
             {renderSearchBlock("desktop")}
 
             <div className="example-buttons">
-              {examplePresets.map((item) => (
+              {visibleQuestionPresets.map((item) => (
                 <button
                   key={`${item.kind}:${item.id}`}
                   className="example-button"
@@ -884,6 +962,20 @@ export default function CatPage({ lang }: { lang: Lang }) {
                 </button>
               ))}
             </div>
+            {isCategoryFiltered ? (
+              <div className="cats-category-results-footer">
+                <span className="cats-category-results-count">{categoryResultsLabel}</span>
+                {hasMoreCategoryPresets ? (
+                  <button
+                    type="button"
+                    className="cats-load-more-questions"
+                    onClick={loadMoreCategoryPresets}
+                  >
+                    {t.loadMoreQuestions}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
 
             {error && <p className="error-message">{error}</p>}
 
