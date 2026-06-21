@@ -3,8 +3,39 @@ import { isSafeMediaText, normalizeTags } from "../normalize";
 
 let templateCache: { expiresAt: number; items: any[] } | null = null;
 
+const GENERIC_QUERY_TERMS = new Set([
+  "fun",
+  "funny",
+  "gif",
+  "image",
+  "meme",
+  "memes",
+  "pic",
+  "picture",
+  "template",
+  "templates",
+  "video",
+  "мем",
+  "мема",
+  "мемы",
+  "прикол",
+  "приколы",
+  "смешная",
+  "смешное",
+  "смешной",
+  "смешные",
+]);
+
+function getSearchTerms(query: string) {
+  return query
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((term) => term.trim().toLowerCase())
+    .filter((term) => term.length > 1 && !GENERIC_QUERY_TERMS.has(term));
+}
+
 export async function searchImgflip(params: ProviderSearchParams): Promise<RawProviderMedia[]> {
   const query = params.query.trim().toLowerCase();
+  const searchTerms = getSearchTerms(query);
   const wantsImages = !params.types?.length || params.types.includes("image");
   if (!wantsImages) return [];
 
@@ -22,7 +53,9 @@ export async function searchImgflip(params: ProviderSearchParams): Promise<RawPr
   return templateCache.items
     .filter((item) => {
       const name = String(item?.name || "");
-      return (!query || name.toLowerCase().includes(query)) && isSafeMediaText(name);
+      const normalizedName = name.toLowerCase();
+      const matchesQuery = !query || searchTerms.length === 0 || searchTerms.every((term) => normalizedName.includes(term));
+      return matchesQuery && isSafeMediaText(name);
     })
     .slice(params.offset, params.offset + params.limit)
     .map((item): RawProviderMedia => ({
