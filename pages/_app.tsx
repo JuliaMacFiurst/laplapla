@@ -84,6 +84,20 @@ function ResponsiveViewportBridge() {
   return null;
 }
 
+function LaplaplaDevtoolsBootstrap() {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development" || typeof window === "undefined") {
+      return;
+    }
+
+    void import("@/lib/devtools/laplaplaDevtools").then(({ initializeLaplaplaDevtools }) => {
+      initializeLaplaplaDevtools();
+    });
+  }, []);
+
+  return null;
+}
+
 function resolveAnalyticsSection(pathname: string) {
   return pathname.startsWith("/cats")
     ? "cats"
@@ -405,6 +419,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <div className={fontVariableClasses}>
       <ResponsiveViewportBridge />
+      <LaplaplaDevtoolsBootstrap />
       <AnalyticsPageViewTracker lang={lang} />
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1" />

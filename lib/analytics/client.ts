@@ -31,6 +31,18 @@ declare global {
     [CONTENT_OPEN_CACHE_KEY]?: Set<string>;
     [PROGRESS_CACHE_KEY]?: Map<string, { at: number; percent: number }>;
     [ACTIVE_CONTENT_STATE_KEY]?: AnalyticsProperties;
+    __laplaplaRecordAnalyticsDebug?: (input: {
+      id: string;
+      eventName: string;
+      route: string;
+    }) => void;
+    __laplaplaCompleteAnalyticsDebug?: (input: {
+      id: string;
+      status: "sent" | "failed";
+      responseStatus?: number | null;
+      durationMs?: number | null;
+      errorMessage?: string | null;
+    }) => void;
   }
 }
 
@@ -44,6 +56,10 @@ function createId() {
     const next = char === "x" ? value : (value & 0x3) | 0x8;
     return next.toString(16);
   });
+}
+
+function createDebugId() {
+  return `analytics_${createId()}`;
 }
 
 function readOrCreateStorageId(storage: Storage, key: string) {
@@ -362,14 +378,34 @@ function updateActiveContentState(eventName: AnalyticsEventName, properties: Ana
   }
 }
 
-function sendPayload(payload: AnalyticsEventInput) {
+function sendPayload(payload: AnalyticsEventInput, debugEventId?: string) {
   const body = JSON.stringify(payload);
   flushRetryQueue();
+  const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const completeDebug = (
+    status: "sent" | "failed",
+    responseStatus: number | null = null,
+    errorMessage: string | null = null,
+  ) => {
+    if (!debugEventId || process.env.NODE_ENV !== "development") {
+      return;
+    }
+
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    window.__laplaplaCompleteAnalyticsDebug?.({
+      id: debugEventId,
+      status,
+      responseStatus,
+      durationMs: Math.round(now - startedAt),
+      errorMessage,
+    });
+  };
 
   try {
     if (navigator.sendBeacon) {
       const blob = new Blob([body], { type: "application/json" });
       if (navigator.sendBeacon("/api/analytics/event", blob)) {
+        completeDebug("sent");
         return;
       }
     }
@@ -383,8 +419,17 @@ function sendPayload(payload: AnalyticsEventInput) {
       },
       body,
       keepalive: true,
-    }).catch(() => enqueueRetryPayload(payload));
-  } catch {}
+    })
+      .then((response) => {
+        completeDebug(response.ok ? "sent" : "failed", response.status);
+      })
+      .catch((error) => {
+        completeDebug("failed", null, error instanceof Error ? error.message : "Analytics request failed");
+        enqueueRetryPayload(payload);
+      });
+  } catch (error) {
+    completeDebug("failed", null, error instanceof Error ? error.message : "Analytics request failed");
+  }
 }
 
 export function getActiveContentExitProperties(currentPage?: string | null): AnalyticsProperties {
@@ -448,8 +493,20 @@ export function trackEvent(
       properties: mergedProperties,
     };
 
+    const debugEventId =
+      process.env.NODE_ENV === "development" && window.__laplaplaRecordAnalyticsDebug
+        ? createDebugId()
+        : undefined;
+    if (debugEventId) {
+      window.__laplaplaRecordAnalyticsDebug?.({
+        id: debugEventId,
+        eventName: input.eventName,
+        route: String(payload.page || mergedProperties.current_page || getCurrentPage() || ""),
+      });
+    }
+
     updateActiveContentState(input.eventName, mergedProperties);
-    sendPayload(payload);
+    sendPayload(payload, debugEventId);
   } catch {
     // Analytics must never interrupt the user-facing experience.
   }

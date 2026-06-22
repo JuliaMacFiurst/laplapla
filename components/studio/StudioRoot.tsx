@@ -4172,6 +4172,8 @@ export default function StudioRoot({
   const [isRecording, setIsRecording] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSaveAttemptAt, setLastSaveAttemptAt] = useState<number | null>(null);
+  const [lastSaveStatus, setLastSaveStatus] = useState<"idle" | "saving" | "saved" | "failed" | "unknown">("idle");
   const projectRef = useRef(project);
   const lastSavedSnapshotRef = useRef<string>(JSON.stringify(project));
   const mobileExitBaselineSnapshotRef = useRef<string | null>(null);
@@ -4207,11 +4209,17 @@ export default function StudioRoot({
 
     isSavingRef.current = true;
     setIsSaving(true);
+    setLastSaveAttemptAt(Date.now());
+    setLastSaveStatus("saving");
 
     try {
       await saveProject(targetProject);
       lastSavedSnapshotRef.current = nextSnapshot;
       setLastSavedAt(Date.now());
+      setLastSaveStatus("saved");
+    } catch (error) {
+      setLastSaveStatus("failed");
+      throw error;
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
@@ -4222,6 +4230,16 @@ export default function StudioRoot({
     projectRef.current = savedProject;
     lastSavedSnapshotRef.current = JSON.stringify(savedProject);
     setLastSavedAt(Date.now());
+    setLastSaveStatus("saved");
+  }
+
+  function markProjectSaveAttempt() {
+    setLastSaveAttemptAt(Date.now());
+    setLastSaveStatus("saving");
+  }
+
+  function markProjectSaveFailed() {
+    setLastSaveStatus("failed");
   }
 
   function releaseVoiceRecording() {
@@ -4409,9 +4427,14 @@ export default function StudioRoot({
           };
 
           // Persist immediately using fresh state
-          void saveProject(updatedProject).then(() => {
-            markProjectSaved(updatedProject);
-          });
+          markProjectSaveAttempt();
+          void saveProject(updatedProject)
+            .then(() => {
+              markProjectSaved(updatedProject);
+            })
+            .catch(() => {
+              markProjectSaveFailed();
+            });
 
           return updatedProject;
         });
@@ -4732,9 +4755,14 @@ export default function StudioRoot({
         updatedAt: Date.now(),
       };
 
-      void saveProject(updatedProject).then(() => {
-        markProjectSaved(updatedProject);
-      });
+      markProjectSaveAttempt();
+      void saveProject(updatedProject)
+        .then(() => {
+          markProjectSaved(updatedProject);
+        })
+        .catch(() => {
+          markProjectSaveFailed();
+        });
       return updatedProject;
     });
   }
@@ -4902,6 +4930,53 @@ export default function StudioRoot({
   }, [project]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV !== "development" || typeof window === "undefined") {
+      return;
+    }
+
+    const routeType = new URLSearchParams(window.location.search).get("type");
+    const activeStudioPageType =
+      expectedStudioType ??
+      routeType ??
+      (projectId.includes("parrot") ? "parrots" : projectId.includes("studio") ? "cats" : null);
+
+    window.__laplaplaUpdateProjectSaveDebug?.({
+      source: "StudioRoot",
+      projectId,
+      activeStudioPageType,
+      isSaving,
+      isSaved,
+      hasUnsavedChanges,
+      lastSavedAt: lastSavedAt ? new Date(lastSavedAt).toISOString() : null,
+      lastSaveAttemptAt: lastSaveAttemptAt ? new Date(lastSaveAttemptAt).toISOString() : null,
+      lastSaveStatus,
+      slideCount: project.slides.length,
+      trackCount: project.musicTracks.length,
+      historyDepth: history.length,
+      futureDepth: future.length,
+      hasInitialImport: Boolean((initialSlides && initialSlides.length > 0) || (initialTracks && initialTracks.length > 0)),
+      updatedAt: project.updatedAt ? new Date(project.updatedAt).toISOString() : null,
+    });
+  }, [
+    expectedStudioType,
+    future.length,
+    hasUnsavedChanges,
+    history.length,
+    initialSlides,
+    initialTracks,
+    isSaved,
+    isSaving,
+    lastSaveAttemptAt,
+    lastSaveStatus,
+    lastSavedAt,
+    project.id,
+    project.musicTracks.length,
+    project.slides.length,
+    project.updatedAt,
+    projectId,
+  ]);
+
+  useEffect(() => {
     return () => {
       releaseVoiceRecording();
     };
@@ -5062,9 +5137,14 @@ export default function StudioRoot({
     });
 
     // Immediately overwrite saved project with external slides
-    void saveProject(newProject).then(() => {
-      markProjectSaved(newProject);
-    });
+    markProjectSaveAttempt();
+    void saveProject(newProject)
+      .then(() => {
+        markProjectSaved(newProject);
+      })
+      .catch(() => {
+        markProjectSaveFailed();
+      });
   }, [initialSlides, initialPrompt, initialPresetId, initialSourceLang, initialTracks, lang, projectId]);
 
   function pushHistory(current: StudioProject) {
