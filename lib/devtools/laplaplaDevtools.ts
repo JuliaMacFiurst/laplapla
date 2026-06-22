@@ -35,6 +35,10 @@ type NetworkDebugEntry = {
   errorMessage: string | null;
 };
 
+type PermissionRole = "guest" | "free_user" | "paid_user" | "admin" | "unknown";
+type SubscriptionPlan = "none" | "free" | "pro" | "unknown";
+type PermissionCapability = boolean | "unknown";
+
 type AnalyticsRecordInput = {
   id: string;
   eventName: string;
@@ -88,6 +92,7 @@ type DevtoolsGlobal = {
   getLaplaplaNetworkDebug: () => ReturnType<typeof getLaplaplaNetworkDebug>;
   getLaplaplaMonetizationReadiness: () => ReturnType<typeof getLaplaplaMonetizationReadiness>;
   getLaplaplaProjectSaveDebug: () => ReturnType<typeof getLaplaplaProjectSaveDebug>;
+  getLaplaplaPermissionMatrixDebug: () => ReturnType<typeof getLaplaplaPermissionMatrixDebug>;
 };
 
 declare global {
@@ -546,6 +551,247 @@ function getActiveStudioPageType() {
   return null;
 }
 
+function readStringMetadata(metadata: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = metadata[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function normalizeRole(value: string | null, isAuthenticated: boolean): PermissionRole {
+  if (!isAuthenticated) return "guest";
+  if (!value) return "unknown";
+
+  const normalized = value.toLowerCase();
+  if (normalized === "admin") return "admin";
+  if (normalized === "paid_user" || normalized === "paid" || normalized === "pro") return "paid_user";
+  if (normalized === "free_user" || normalized === "free" || normalized === "user") return "free_user";
+  if (normalized === "guest") return "guest";
+  return "unknown";
+}
+
+function normalizePlan(value: string | null, isAuthenticated: boolean): SubscriptionPlan {
+  if (!isAuthenticated) return "none";
+  if (!value) return "unknown";
+
+  const normalized = value.toLowerCase();
+  if (normalized === "none" || normalized === "guest") return "none";
+  if (normalized === "free") return "free";
+  if (normalized === "pro" || normalized === "paid" || normalized === "premium") return "pro";
+  return "unknown";
+}
+
+function getPagePermissionSurface() {
+  const url = new URL(window.location.href);
+  const pathname = url.pathname;
+  const type = url.searchParams.get("type");
+  const pageType = getActiveStudioPageType();
+  const isAdminPage = pathname.includes("/admin");
+  const isStudioPage = Boolean(pageType) || pathname.includes("/studio");
+  const isGeneratorPage =
+    isStudioPage ||
+    pathname.includes("/cats") ||
+    pathname.includes("/parrots") ||
+    pathname.includes("/capybara") ||
+    pathname.includes("/raccoons") ||
+    pathname.includes("/bedtime-stories");
+
+  return {
+    pathname,
+    queryKeys: [...url.searchParams.keys()].sort(),
+    studioType: type ?? pageType,
+    pageType: isAdminPage ? "admin" : pageType ?? (isGeneratorPage ? "content_page" : "general"),
+    detectedUiSurfaces: [
+      isGeneratorPage ? "generation_surface" : null,
+      isStudioPage ? "project_save_surface" : null,
+      isStudioPage || pathname.includes("/export") ? "export_surface" : null,
+      pathname.includes("/admin") ? "admin_surface" : null,
+    ].filter((item): item is string => Boolean(item)),
+  };
+}
+
+function getDetectedPermissionGates() {
+  const networkRequests = getNetworkBuffer();
+  const pathname = window.location.pathname;
+  const gates: Array<{
+    featureName: string;
+    requiredRole: PermissionRole | "service" | "unknown";
+    requiredPlan: SubscriptionPlan;
+    currentState: "allowed" | "blocked" | "unknown";
+    reason: string;
+    enforcement: "server" | "client" | "unknown";
+    evidence: string;
+  }> = [];
+
+  if (
+    pathname.includes("/admin") ||
+    networkRequests.some((request) => request.pathname.includes("/api/map-popup-content/"))
+  ) {
+    gates.push({
+      featureName: "admin_map_popup_content_persistence",
+      requiredRole: "admin",
+      requiredPlan: "unknown",
+      currentState: "unknown",
+      reason: "Server routes use admin access checks; current browser role cannot be derived from private server env.",
+      enforcement: "server",
+      evidence: "lib/server/auth/adminAccess.ts and pages/api/map-popup-content/*",
+    });
+  }
+
+  if (networkRequests.some((request) => request.pathname.includes("/api/cron/"))) {
+    gates.push({
+      featureName: "cron_admin_tasks",
+      requiredRole: "service",
+      requiredPlan: "unknown",
+      currentState: "unknown",
+      reason: "Cron routes use a server secret; this is not a user permission gate.",
+      enforcement: "server",
+      evidence: "pages/api/cron/*",
+    });
+  }
+
+  return gates;
+}
+
+function getMissingPermissionModelPieces(detectedFeatureGates: ReturnType<typeof getDetectedPermissionGates>) {
+  const missing = [
+    "role source",
+    "subscription source",
+    "client-side UI gates",
+    "project ownership",
+    "usage limits",
+  ];
+
+  if (detectedFeatureGates.length === 0) {
+    missing.push("server-side enforcement");
+  }
+
+  return missing;
+}
+
+async function getSafePermissionAuthState() {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      return {
+        authDetected: true,
+        currentUserState: "unknown" as const,
+        currentRole: "unknown" as PermissionRole,
+        subscriptionPlan: "unknown" as SubscriptionPlan,
+        userId: null as string | null,
+        warning: sanitizeErrorMessage(error),
+      };
+    }
+
+    const user = data.session?.user;
+    if (!user) {
+      return {
+        authDetected: true,
+        currentUserState: "guest" as const,
+        currentRole: "guest" as PermissionRole,
+        subscriptionPlan: "none" as SubscriptionPlan,
+        userId: null as string | null,
+        warning: null as string | null,
+      };
+    }
+
+    const metadata = {
+      ...(user.app_metadata || {}),
+      ...(user.user_metadata || {}),
+    } as Record<string, unknown>;
+    const role = readStringMetadata(metadata, ["role", "user_role", "userRole"]);
+    const plan = readStringMetadata(metadata, [
+      "subscription_plan",
+      "subscriptionPlan",
+      "plan",
+      "price_plan",
+      "pricePlan",
+    ]);
+
+    return {
+      authDetected: true,
+      currentUserState: "authenticated" as const,
+      currentRole: normalizeRole(role, true),
+      subscriptionPlan: normalizePlan(plan, true),
+      userId: user.id || null,
+      warning: null as string | null,
+    };
+  } catch (error) {
+    return {
+      authDetected: true,
+      currentUserState: "unknown" as const,
+      currentRole: "unknown" as PermissionRole,
+      subscriptionPlan: "unknown" as SubscriptionPlan,
+      userId: null as string | null,
+      warning: sanitizeErrorMessage(error),
+    };
+  }
+}
+
+async function getLaplaplaPermissionMatrixDebug() {
+  const authState = await getSafePermissionAuthState();
+  const pageSurface = getPagePermissionSurface();
+  const detectedFeatureGates = getDetectedPermissionGates();
+  const hasPermissionModel =
+    authState.currentRole === "admin" ||
+    authState.currentRole === "free_user" ||
+    authState.currentRole === "paid_user" ||
+    authState.subscriptionPlan === "free" ||
+    authState.subscriptionPlan === "pro";
+  const canOpenAdmin =
+    authState.currentRole === "admin" ? true : authState.currentUserState === "guest" ? false : "unknown";
+
+  return {
+    status: hasPermissionModel ? "ok" as const : "permissions_not_implemented" as const,
+    authDetected: authState.authDetected,
+    currentUserState: authState.currentUserState,
+    currentUserId: authState.userId,
+    currentRole: authState.currentRole,
+    subscriptionPlan: authState.subscriptionPlan,
+    detectedFeatureGates,
+    inferredPageCapabilities: {
+      currentPage: pageSurface.pathname,
+      queryKeys: pageSurface.queryKeys,
+      pageType: pageSurface.pageType,
+      studioType: pageSurface.studioType,
+      detectedUiSurfaces: pageSurface.detectedUiSurfaces,
+      canGenerate: "unknown" as PermissionCapability,
+      canSaveProject: "unknown" as PermissionCapability,
+      canExport: "unknown" as PermissionCapability,
+      canUsePremiumMedia: "unknown" as PermissionCapability,
+      canOpenAdmin,
+    },
+    potentialPaidFeatureSurfaces: [
+      "save project",
+      "export",
+      "AI generation",
+      "premium media",
+      "analytics/admin",
+      "batch generation",
+    ],
+    missingPermissionModelPieces: getMissingPermissionModelPieces(detectedFeatureGates),
+    runtimeNotes: [
+      "No client permission provider or subscription runtime source was detected.",
+      "Existing admin checks are server-side diagnostics only and are not converted into UI gates here.",
+      "This tool reports runtime signals only; it does not define paid/free product rules.",
+    ],
+    authWarning: authState.warning,
+    safety: {
+      personalIdentifiers: authState.userId ? "user_id_only" as const : "none" as const,
+      requestBodiesCaptured: false,
+      responseBodiesCaptured: false,
+      fullProfilesCaptured: false,
+      privateProjectContentCaptured: false,
+      secretValuesCaptured: false,
+    },
+    timestamp: new Date().toISOString(),
+  };
+}
+
 async function getLaplaplaProjectSaveDebug() {
   const local = safeStorageKeys(window.localStorage, "localStorage");
   const session = safeStorageKeys(window.sessionStorage, "sessionStorage");
@@ -845,6 +1091,7 @@ export function initializeLaplaplaDevtools() {
     getLaplaplaNetworkDebug,
     getLaplaplaMonetizationReadiness,
     getLaplaplaProjectSaveDebug,
+    getLaplaplaPermissionMatrixDebug,
   };
   window[DEVTOOLS_KEY] = api;
 
@@ -878,6 +1125,11 @@ export function initializeLaplaplaDevtools() {
       name: "getLaplaplaProjectSaveDebug",
       description: "Return safe project save, draft and generated-content storage metadata without project bodies.",
       execute: api.getLaplaplaProjectSaveDebug,
+    },
+    {
+      name: "getLaplaplaPermissionMatrixDebug",
+      description: "Return safe future permission and paid feature gate diagnostics without private auth or content data.",
+      execute: api.getLaplaplaPermissionMatrixDebug,
     },
     {
       name: "getLaplaplaMonetizationReadiness",
