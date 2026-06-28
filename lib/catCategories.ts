@@ -323,6 +323,12 @@ function splitMixedCategoryParts(normalizedText: string) {
     .filter(Boolean);
 }
 
+function buildMixedCategoryKey(parts: string[]) {
+  const sortedParts = [...parts].sort((left, right) => left.localeCompare(right, "ru", { sensitivity: "base" }));
+  const slug = buildCategorySlug(sortedParts.join(" и "));
+  return slug ? `${DYNAMIC_CATEGORY_KEY_PREFIX}${slug}` : "";
+}
+
 function findExactCategoryDefinition(normalizedText: string) {
   const compact = buildCategorySlug(normalizedText);
   const directMatch = CAT_CATEGORY_DEFINITIONS.find((category) => category.key === compact);
@@ -349,7 +355,13 @@ export function normalizeCatCategoryKey(value: unknown) {
   }
 
   const normalized = normalizeCategoryText(value);
-  const matched = findCategoryDefinition(normalized);
+  const mixedParts = splitMixedCategoryParts(normalized);
+  const mixedCategoryKey = resolveMixedDynamicCategoryKey(mixedParts);
+  if (mixedCategoryKey) {
+    return mixedCategoryKey;
+  }
+
+  const matched = findCategoryDefinition(normalized, mixedParts);
 
   if (matched) {
     return matched.key;
@@ -359,7 +371,39 @@ export function normalizeCatCategoryKey(value: unknown) {
   return slug ? `${DYNAMIC_CATEGORY_KEY_PREFIX}${slug}` : "misc";
 }
 
-function findCategoryDefinition(normalizedText: string) {
+function resolveMixedDynamicCategoryKey(mixedParts: string[]) {
+  if (mixedParts.length < 2) {
+    return "";
+  }
+
+  const matchedParts = mixedParts.map((part) =>
+    findExactCategoryDefinition(part) || findIncludedCategoryDefinition(part),
+  );
+
+  if (matchedParts.some((part) => !part)) {
+    return "";
+  }
+
+  const matchedKeys = matchedParts.map((part) => part!.key);
+  const uniqueMatchedKeys = Array.from(new Set(matchedKeys));
+  if (uniqueMatchedKeys.length < 2) {
+    return "";
+  }
+
+  const hasPhysics = uniqueMatchedKeys.includes("physics-math");
+  const hasLooseStoryCategory = uniqueMatchedKeys.some((key) => key === "books-media" || key === "history");
+  if (hasPhysics && hasLooseStoryCategory) {
+    return "";
+  }
+
+  if (uniqueMatchedKeys.includes("music") && uniqueMatchedKeys.includes("science-general")) {
+    return "";
+  }
+
+  return buildMixedCategoryKey(mixedParts);
+}
+
+function findCategoryDefinition(normalizedText: string, mixedParts = splitMixedCategoryParts(normalizedText)) {
   if (!normalizedText) {
     return CATEGORY_BY_KEY.get("misc")!;
   }
@@ -369,7 +413,6 @@ function findCategoryDefinition(normalizedText: string) {
     return exactAliasMatch;
   }
 
-  const mixedParts = splitMixedCategoryParts(normalizedText);
   if (mixedParts.length > 1) {
     const matchedParts = mixedParts.map((part) =>
       findExactCategoryDefinition(part) || findIncludedCategoryDefinition(part),

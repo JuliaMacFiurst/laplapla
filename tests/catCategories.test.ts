@@ -37,4 +37,11 @@ describe("cat category taxonomy", () => {
     expect(category?.key).toBe("custom:нейробиология-и-лингвистика");
     expect(category?.label).toBe("Нейробиология и лингвистика");
   });
+
+  it("keeps meaningful mixed known categories as visible dynamic categories", () => {
+    const category = resolveCatCategory({ category: "Геометрия и Искусство" }, "ru");
+
+    expect(category?.key).toBe("custom:геометрия-и-искусство");
+    expect(category?.label).toBe("Геометрия и Искусство");
+  });
 });
