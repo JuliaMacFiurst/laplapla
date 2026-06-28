@@ -26,7 +26,7 @@ export type CatCategoryKey =
   | "misc";
 
 export type ResolvedCatCategory = {
-  key: CatCategoryKey;
+  key: string;
   label: string;
   groupKey: CatCategoryGroupKey;
   groupLabel: string;
@@ -281,6 +281,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
 
 const CATEGORY_BY_KEY = new Map(CAT_CATEGORY_DEFINITIONS.map((category) => [category.key, category]));
 const GROUP_BY_KEY = new Map(CAT_CATEGORY_GROUPS.map((group) => [group.key, group]));
+const DYNAMIC_CATEGORY_KEY_PREFIX = "custom:";
 
 function getLabel(labels: LocalizedLabel, lang: Lang) {
   return labels[lang] || labels.ru;
@@ -296,10 +297,66 @@ function normalizeCategoryText(value: unknown) {
     .trim();
 }
 
+function buildCategorySlug(normalizedText: string) {
+  return normalizedText
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function denormalizeCategorySlug(slug: string) {
+  return slug
+    .replace(/^custom:/, "")
+    .replace(/-/g, " ")
+    .trim();
+}
+
+function capitalizeCategoryLabel(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? trimmed.charAt(0).toLocaleUpperCase() + trimmed.slice(1) : "";
+}
+
+function splitMixedCategoryParts(normalizedText: string) {
+  return normalizedText
+    .split(/\s+(?:и|and|&)\s+/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function findExactCategoryDefinition(normalizedText: string) {
+  const compact = buildCategorySlug(normalizedText);
+  const directMatch = CAT_CATEGORY_DEFINITIONS.find((category) => category.key === compact);
+  if (directMatch) {
+    return directMatch;
+  }
+
+  return CAT_CATEGORY_DEFINITIONS.find((category) =>
+    category.aliases.some((alias) => normalizedText === alias.toLowerCase().replace(/ё/g, "е")),
+  ) || null;
+}
+
+function findIncludedCategoryDefinition(normalizedText: string) {
+  return CAT_CATEGORY_DEFINITIONS.find((category) =>
+    category.key !== "science-general" &&
+    category.aliases.some((alias) => normalizedText.includes(alias.toLowerCase().replace(/ё/g, "е"))),
+  ) || null;
+}
+
 export function normalizeCatCategoryKey(value: unknown) {
+  const rawValue = String(value ?? "").trim();
+  if (rawValue.startsWith(DYNAMIC_CATEGORY_KEY_PREFIX)) {
+    return rawValue;
+  }
+
   const normalized = normalizeCategoryText(value);
   const matched = findCategoryDefinition(normalized);
-  return matched.key;
+
+  if (matched) {
+    return matched.key;
+  }
+
+  const slug = buildCategorySlug(normalized);
+  return slug ? `${DYNAMIC_CATEGORY_KEY_PREFIX}${slug}` : "misc";
 }
 
 function findCategoryDefinition(normalizedText: string) {
@@ -307,37 +364,92 @@ function findCategoryDefinition(normalizedText: string) {
     return CATEGORY_BY_KEY.get("misc")!;
   }
 
-  const compact = normalizedText.replace(/\s+/g, "-");
-  const directMatch = CAT_CATEGORY_DEFINITIONS.find((category) => category.key === compact);
-  if (directMatch) {
-    return directMatch;
-  }
-
-  const exactAliasMatch = CAT_CATEGORY_DEFINITIONS.find((category) =>
-    category.aliases.some((alias) => normalizedText === alias.toLowerCase().replace(/ё/g, "е")),
-  );
+  const exactAliasMatch = findExactCategoryDefinition(normalizedText);
   if (exactAliasMatch) {
     return exactAliasMatch;
   }
 
-  return CAT_CATEGORY_DEFINITIONS.find((category) =>
-    category.key !== "science-general" &&
-    category.aliases.some((alias) => normalizedText.includes(alias.toLowerCase().replace(/ё/g, "е"))),
-  ) || CATEGORY_BY_KEY.get("misc")!;
+  const mixedParts = splitMixedCategoryParts(normalizedText);
+  if (mixedParts.length > 1) {
+    const matchedParts = mixedParts.map((part) =>
+      findExactCategoryDefinition(part) || findIncludedCategoryDefinition(part),
+    );
+
+    if (matchedParts.some((part) => !part)) {
+      return null;
+    }
+  }
+
+  return findIncludedCategoryDefinition(normalizedText);
 }
 
-export function getCatCategoryMeta(key: string, lang: Lang): ResolvedCatCategory {
-  const category = CATEGORY_BY_KEY.get(key as CatCategoryKey) || CATEGORY_BY_KEY.get("misc")!;
-  const group = GROUP_BY_KEY.get(category.groupKey)!;
+function inferDynamicCategoryGroup(normalizedText: string): CatCategoryGroupKey {
+  const matchedCategory = findIncludedCategoryDefinition(normalizedText);
+  if (matchedCategory) {
+    return matchedCategory.groupKey;
+  }
+
+  if (/(лингвист|язык|социолог|эконом|прав|полит|linguist|language|society|law|politic|econom)/.test(normalizedText)) {
+    return "human";
+  }
+
+  if (/(медиа|кино|книг|литератур|искусств|музык|культур|media|book|film|art|music|culture)/.test(normalizedText)) {
+    return "culture";
+  }
+
+  if (/(живот|биолог|земл|океан|географ|animal|biology|earth|ocean|geography)/.test(normalizedText)) {
+    return "world";
+  }
+
+  if (/(наук|физ|хим|косм|технолог|математ|science|physics|chem|space|tech|math)/.test(normalizedText)) {
+    return "science";
+  }
+
+  return "human";
+}
+
+export function getCatCategoryMeta(key: string, lang: Lang, dynamicLabel?: string): ResolvedCatCategory {
+  const category = CATEGORY_BY_KEY.get(key as CatCategoryKey);
+
+  if (!category && key.startsWith(DYNAMIC_CATEGORY_KEY_PREFIX)) {
+    const normalizedDynamicLabel = normalizeCategoryText(dynamicLabel || denormalizeCategorySlug(key));
+    const groupKey = inferDynamicCategoryGroup(normalizedDynamicLabel);
+    const group = GROUP_BY_KEY.get(groupKey)!;
+
+    return {
+      key,
+      label: capitalizeCategoryLabel(dynamicLabel || denormalizeCategorySlug(key)),
+      groupKey,
+      groupLabel: getLabel(group.labels, lang),
+      icon: "＋",
+      order: 80,
+    };
+  }
+
+  const knownCategory = category || CATEGORY_BY_KEY.get("misc")!;
+  const group = GROUP_BY_KEY.get(knownCategory.groupKey)!;
 
   return {
-    key: category.key,
-    label: getLabel(category.labels, lang),
-    groupKey: category.groupKey,
+    key: knownCategory.key,
+    label: getLabel(knownCategory.labels, lang),
+    groupKey: knownCategory.groupKey,
     groupLabel: getLabel(group.labels, lang),
-    icon: category.icon,
-    order: category.order,
+    icon: knownCategory.icon,
+    order: knownCategory.order,
   };
+}
+
+function getCategoryLabel(source: CatCategorySource) {
+  return String(source.categoryLabel ?? source.category ?? source.categoryKey ?? "").trim();
+}
+
+function getCategoryKeySource(source: CatCategorySource) {
+  const categoryKey = String(source.categoryKey ?? "").trim();
+  if (categoryKey) {
+    return categoryKey;
+  }
+
+  return String(source.category ?? source.categoryLabel ?? "").trim();
 }
 
 export function getCatCategoryGroups(lang: Lang) {
@@ -351,12 +463,13 @@ export function getCatCategoryGroups(lang: Lang) {
 }
 
 export function resolveCatCategory(source: CatCategorySource, lang: Lang = "ru"): ResolvedCatCategory | null {
-  const rawValue = source.categoryKey ?? source.category ?? source.categoryLabel ?? "";
-  const key = normalizeCatCategoryKey(rawValue);
+  const rawLabel = getCategoryLabel(source);
+  const keySource = getCategoryKeySource(source);
+  const key = normalizeCatCategoryKey(keySource);
 
   if (!key) {
     return null;
   }
 
-  return getCatCategoryMeta(key, lang);
+  return getCatCategoryMeta(key, lang, rawLabel);
 }

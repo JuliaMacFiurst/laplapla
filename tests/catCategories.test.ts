@@ -19,4 +19,22 @@ describe("cat category taxonomy", () => {
     expect(resolveCatCategory({ category: "Наука" }, "ru")?.key).toBe("science-general");
     expect(resolveCatCategory({ category: "Музыка и Наука" }, "ru")?.key).toBe("music");
   });
+
+  it("keeps unknown mixed categories visible as dynamic categories", () => {
+    const category = resolveCatCategory({ category: "нейробиология и лингвистика" }, "ru");
+
+    expect(category?.key).toBe("custom:нейробиология-и-лингвистика");
+    expect(category?.label).toBe("Нейробиология и лингвистика");
+  });
+
+  it("resolves API-provided dynamic category keys with the original category label", () => {
+    const category = resolveCatCategory({
+      category: "нейробиология и лингвистика",
+      categoryKey: "custom:нейробиология-и-лингвистика",
+      categoryLabel: "нейробиология и лингвистика",
+    }, "ru");
+
+    expect(category?.key).toBe("custom:нейробиология-и-лингвистика");
+    expect(category?.label).toBe("Нейробиология и лингвистика");
+  });
 });
