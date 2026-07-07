@@ -78,23 +78,32 @@ function normalizeForSearch(value: string) {
 }
 
 function matchesCatPresetQuery(preset: AnyCatPreset, query: string) {
-  const normalizedPrompt = normalizeForSearch(preset.prompt);
-  if (!normalizedPrompt) {
+  const normalizedSearchText = [
+    preset.prompt,
+    preset.category,
+    preset.categoryLabel,
+    preset.categoryKey,
+  ]
+    .map((value) => normalizeForSearch(String(value ?? "")))
+    .filter(Boolean)
+    .join(" ");
+
+  if (!normalizedSearchText) {
     return false;
   }
 
-  if (normalizedPrompt.includes(query)) {
+  if (normalizedSearchText.includes(query)) {
     return true;
   }
 
   const queryTokens = query.split(" ").filter(Boolean);
-  const promptTokens = normalizedPrompt.split(" ").filter(Boolean);
+  const searchableTokens = normalizedSearchText.split(" ").filter(Boolean);
 
   return queryTokens.every((queryToken) =>
-    promptTokens.some((promptToken) =>
-      promptToken.startsWith(queryToken) ||
-      queryToken.startsWith(promptToken) ||
-      promptToken.includes(queryToken),
+    searchableTokens.some((searchableToken) =>
+      searchableToken.startsWith(queryToken) ||
+      queryToken.startsWith(searchableToken) ||
+      searchableToken.includes(queryToken),
     ),
   );
 }

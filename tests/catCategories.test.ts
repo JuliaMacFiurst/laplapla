@@ -44,4 +44,11 @@ describe("cat category taxonomy", () => {
     expect(category?.key).toBe("custom:геометрия-и-искусство");
     expect(category?.label).toBe("Геометрия и Искусство");
   });
+
+  it("keeps chemistry and nature as a visible mixed dynamic category", () => {
+    const category = resolveCatCategory({ category: "Химия и Природа" }, "ru");
+
+    expect(category?.key).toBe("custom:природа-и-химия");
+    expect(category?.label).toBe("Химия и Природа");
+  });
 });

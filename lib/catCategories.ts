@@ -167,7 +167,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Earth and geography",
       he: "כדור הארץ וגיאוגרפיה",
     },
-    aliases: ["земл", "географ", "геолог", "океан", "вулкан", "остров", "путешеств", "earth", "geography", "geology", "ocean", "volcano", "island", "travel"],
+    aliases: ["земл", "географ", "геолог", "океан", "вулкан", "остров", "путешеств", "природ", "earth", "geography", "geology", "ocean", "volcano", "island", "travel", "nature"],
   },
   {
     key: "history",
@@ -440,7 +440,7 @@ function inferDynamicCategoryGroup(normalizedText: string): CatCategoryGroupKey 
     return "culture";
   }
 
-  if (/(живот|биолог|земл|океан|географ|animal|biology|earth|ocean|geography)/.test(normalizedText)) {
+  if (/(живот|биолог|земл|океан|географ|природ|animal|biology|earth|ocean|geography|nature)/.test(normalizedText)) {
     return "world";
   }
 
