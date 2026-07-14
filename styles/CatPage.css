@@ -138,7 +138,14 @@ html, body {
   gap: 0.5rem;
 }
 
+.cats-category-panel .multi-filter-chip-shell {
+  min-width: 0;
+  display: flex;
+}
+
 .cats-category-panel .multi-filter-chip {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -190,6 +197,16 @@ html, body {
 .cats-category-panel .multi-filter-chip-active .multi-filter-chip-count {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
+}
+
+.cats-category-panel .multi-filter-subcategory-trigger {
+  width: 1.65rem;
+  min-height: 1.65rem;
+  font-size: 0.95rem;
+}
+
+.cats-category-panel .multi-filter-subcategory-popover {
+  text-align: left;
 }
 
 .cats-search-results {
@@ -293,6 +310,22 @@ html, body {
     min-width: 1.35rem;
     height: 1.35rem;
     font-size: 0.72rem;
+  }
+
+  .cats-category-panel .multi-filter-subcategory-trigger {
+    width: 1.45rem;
+    min-height: 1.45rem;
+    font-size: 0.82rem;
+  }
+
+  .cats-category-panel .multi-filter-chip-shell-open .multi-filter-subcategory-popover {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: 18vh;
+    width: auto;
+    max-height: 62vh;
+    overflow: auto;
   }
 }
 

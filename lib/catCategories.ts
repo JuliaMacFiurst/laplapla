@@ -107,7 +107,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Physics and math",
       he: "פיזיקה ומתמטיקה",
     },
-    aliases: ["физ", "квант", "математ", "геометр", "маятник", "physics", "quantum", "math", "geometry"],
+    aliases: ["физика", "математика", "физ", "квант", "математ", "геометр", "маятник", "physics", "quantum", "math", "geometry"],
   },
   {
     key: "chemistry",
@@ -119,7 +119,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Chemistry",
       he: "כימיה",
     },
-    aliases: ["хим", "углерод", "водород", "карбон", "chem", "carbon", "hydrogen"],
+    aliases: ["химия", "хим", "углерод", "водород", "карбон", "chemistry", "chem", "carbon", "hydrogen"],
   },
   {
     key: "biology",
@@ -131,7 +131,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Biology and evolution",
       he: "ביולוגיה ואבולוציה",
     },
-    aliases: ["биолог", "эволюц", "нейробиолог", "мозг", "biology", "evolution", "neuro", "brain"],
+    aliases: ["биология", "биолог", "эволюц", "нейробиолог", "мозг", "biology", "evolution", "neuro", "brain"],
   },
   {
     key: "animals",
@@ -143,7 +143,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Animals",
       he: "חיות",
     },
-    aliases: ["живот", "зоолог", "птиц", "акул", "динозав", "animal", "zoology", "bird", "shark", "dinosaur"],
+    aliases: ["животные", "живот", "зоолог", "птиц", "акул", "динозав", "animals", "animal", "zoology", "bird", "shark", "dinosaur"],
   },
   {
     key: "space",
@@ -167,7 +167,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Earth and geography",
       he: "כדור הארץ וגיאוגרפיה",
     },
-    aliases: ["земл", "географ", "геолог", "океан", "вулкан", "остров", "путешеств", "природ", "earth", "geography", "geology", "ocean", "volcano", "island", "travel", "nature"],
+    aliases: ["земля", "география", "геология", "природа", "земл", "географ", "геолог", "океан", "вулкан", "остров", "путешеств", "природ", "earth", "geography", "geology", "ocean", "volcano", "island", "travel", "nature"],
   },
   {
     key: "history",
@@ -179,7 +179,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "History and society",
       he: "היסטוריה וחברה",
     },
-    aliases: ["истор", "антрополог", "общество", "геополит", "государств", "диктатор", "history", "anthropology", "society", "geopolitics"],
+    aliases: ["история", "истор", "антрополог", "общество", "геополит", "государств", "диктатор", "history", "anthropology", "society", "geopolitics"],
   },
   {
     key: "art",
@@ -191,7 +191,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Art and culture",
       he: "אמנות ותרבות",
     },
-    aliases: ["искусств", "культур", "ваби", "карти", "худож", "art", "culture", "artist"],
+    aliases: ["искусство", "культура", "искусств", "культур", "ваби", "карти", "худож", "art", "culture", "artist"],
   },
   {
     key: "books-media",
@@ -203,7 +203,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Books, film and media",
       he: "ספרים, קולנוע ומדיה",
     },
-    aliases: ["книг", "литератур", "кино", "фэнтези", "гарри", "нарни", "медиа", "поп-культур", "books", "literature", "film", "media", "fantasy"],
+    aliases: ["книги", "литература", "книг", "литератур", "кино", "фэнтези", "гарри", "нарни", "медиа", "поп-культур", "books", "literature", "film", "media", "fantasy"],
   },
   {
     key: "music",
@@ -215,7 +215,7 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
       en: "Music and sound",
       he: "מוזיקה וסאונד",
     },
-    aliases: ["музык", "звук", "нота", "тишин", "music", "sound", "note", "silence"],
+    aliases: ["музыка", "музык", "звук", "нота", "тишин", "music", "sound", "note", "silence"],
   },
   {
     key: "mind-society",
@@ -282,6 +282,26 @@ const CAT_CATEGORY_DEFINITIONS: Array<{
 const CATEGORY_BY_KEY = new Map(CAT_CATEGORY_DEFINITIONS.map((category) => [category.key, category]));
 const GROUP_BY_KEY = new Map(CAT_CATEGORY_GROUPS.map((group) => [group.key, group]));
 const DYNAMIC_CATEGORY_KEY_PREFIX = "custom:";
+const PRIMARY_CATEGORY_ROOT_ALIASES: Array<{
+  key: CatCategoryKey;
+  aliases: string[];
+}> = [
+  { key: "science-general", aliases: ["наука", "science"] },
+  { key: "physics-math", aliases: ["физика", "математика", "physics", "math"] },
+  { key: "chemistry", aliases: ["химия", "chemistry", "chem"] },
+  { key: "biology", aliases: ["биология", "biology"] },
+  { key: "animals", aliases: ["животные", "animals"] },
+  { key: "space", aliases: ["космос", "space"] },
+  { key: "earth", aliases: ["земля", "география", "геология", "природа", "earth", "geography", "geology", "nature"] },
+  { key: "history", aliases: ["история", "history"] },
+  { key: "art", aliases: ["искусство", "культура", "art", "culture"] },
+  { key: "books-media", aliases: ["книги", "литература", "кино", "медиа", "books", "literature", "film", "media"] },
+  { key: "music", aliases: ["музыка", "music"] },
+  { key: "mind-society", aliases: ["психология", "философия", "psychology", "philosophy"] },
+  { key: "technology", aliases: ["технологии", "technology"] },
+  { key: "internet", aliases: ["интернет", "internet"] },
+  { key: "sport", aliases: ["спорт", "sport"] },
+];
 
 function getLabel(labels: LocalizedLabel, lang: Lang) {
   return labels[lang] || labels.ru;
@@ -323,12 +343,6 @@ function splitMixedCategoryParts(normalizedText: string) {
     .filter(Boolean);
 }
 
-function buildMixedCategoryKey(parts: string[]) {
-  const sortedParts = [...parts].sort((left, right) => left.localeCompare(right, "ru", { sensitivity: "base" }));
-  const slug = buildCategorySlug(sortedParts.join(" и "));
-  return slug ? `${DYNAMIC_CATEGORY_KEY_PREFIX}${slug}` : "";
-}
-
 function findExactCategoryDefinition(normalizedText: string) {
   const compact = buildCategorySlug(normalizedText);
   const directMatch = CAT_CATEGORY_DEFINITIONS.find((category) => category.key === compact);
@@ -348,6 +362,17 @@ function findIncludedCategoryDefinition(normalizedText: string) {
   ) || null;
 }
 
+function findPrimaryRootCategoryDefinition(normalizedText: string) {
+  const match = PRIMARY_CATEGORY_ROOT_ALIASES.find((category) =>
+    category.aliases.some((alias) => {
+      const normalizedAlias = alias.toLowerCase().replace(/ё/g, "е");
+      return normalizedText === normalizedAlias || normalizedText.startsWith(`${normalizedAlias} `);
+    }),
+  );
+
+  return match ? CATEGORY_BY_KEY.get(match.key) || null : null;
+}
+
 export function normalizeCatCategoryKey(value: unknown) {
   const rawValue = String(value ?? "").trim();
   if (rawValue.startsWith(DYNAMIC_CATEGORY_KEY_PREFIX)) {
@@ -356,9 +381,9 @@ export function normalizeCatCategoryKey(value: unknown) {
 
   const normalized = normalizeCategoryText(value);
   const mixedParts = splitMixedCategoryParts(normalized);
-  const mixedCategoryKey = resolveMixedDynamicCategoryKey(mixedParts);
-  if (mixedCategoryKey) {
-    return mixedCategoryKey;
+  const primaryCategoryKey = resolvePrimaryMixedCategoryKey(mixedParts);
+  if (primaryCategoryKey) {
+    return primaryCategoryKey;
   }
 
   const matched = findCategoryDefinition(normalized, mixedParts);
@@ -371,36 +396,21 @@ export function normalizeCatCategoryKey(value: unknown) {
   return slug ? `${DYNAMIC_CATEGORY_KEY_PREFIX}${slug}` : "misc";
 }
 
-function resolveMixedDynamicCategoryKey(mixedParts: string[]) {
+function resolvePrimaryMixedCategoryKey(mixedParts: string[]) {
   if (mixedParts.length < 2) {
     return "";
   }
 
-  const matchedParts = mixedParts.map((part) =>
-    findExactCategoryDefinition(part) || findIncludedCategoryDefinition(part),
-  );
+  const primaryPart = mixedParts[0];
+  const matchedPrimaryCategory = findExactCategoryDefinition(primaryPart) ||
+    findPrimaryRootCategoryDefinition(primaryPart);
 
-  if (matchedParts.some((part) => !part)) {
-    return "";
+  if (matchedPrimaryCategory) {
+    return matchedPrimaryCategory.key;
   }
 
-  const matchedKeys = matchedParts.map((part) => part!.key);
-  const uniqueMatchedKeys = Array.from(new Set(matchedKeys));
-  if (uniqueMatchedKeys.length < 2) {
-    return "";
-  }
-
-  const hasPhysics = uniqueMatchedKeys.includes("physics-math");
-  const hasLooseStoryCategory = uniqueMatchedKeys.some((key) => key === "books-media" || key === "history");
-  if (hasPhysics && hasLooseStoryCategory) {
-    return "";
-  }
-
-  if (uniqueMatchedKeys.includes("music") && uniqueMatchedKeys.includes("science-general")) {
-    return "";
-  }
-
-  return buildMixedCategoryKey(mixedParts);
+  const slug = buildCategorySlug(primaryPart);
+  return slug ? `${DYNAMIC_CATEGORY_KEY_PREFIX}${slug}` : "";
 }
 
 function findCategoryDefinition(normalizedText: string, mixedParts = splitMixedCategoryParts(normalizedText)) {
@@ -455,13 +465,14 @@ export function getCatCategoryMeta(key: string, lang: Lang, dynamicLabel?: strin
   const category = CATEGORY_BY_KEY.get(key as CatCategoryKey);
 
   if (!category && key.startsWith(DYNAMIC_CATEGORY_KEY_PREFIX)) {
-    const normalizedDynamicLabel = normalizeCategoryText(dynamicLabel || denormalizeCategorySlug(key));
+    const labelFromKey = denormalizeCategorySlug(key);
+    const normalizedDynamicLabel = normalizeCategoryText(dynamicLabel || labelFromKey);
     const groupKey = inferDynamicCategoryGroup(normalizedDynamicLabel);
     const group = GROUP_BY_KEY.get(groupKey)!;
 
     return {
       key,
-      label: capitalizeCategoryLabel(dynamicLabel || denormalizeCategorySlug(key)),
+      label: capitalizeCategoryLabel(labelFromKey),
       groupKey,
       groupLabel: getLabel(group.labels, lang),
       icon: "＋",
@@ -487,12 +498,17 @@ function getCategoryLabel(source: CatCategorySource) {
 }
 
 function getCategoryKeySource(source: CatCategorySource) {
+  const category = String(source.category ?? "").trim();
+  if (category) {
+    return category;
+  }
+
   const categoryKey = String(source.categoryKey ?? "").trim();
   if (categoryKey) {
     return categoryKey;
   }
 
-  return String(source.category ?? source.categoryLabel ?? "").trim();
+  return String(source.categoryLabel ?? "").trim();
 }
 
 export function getCatCategoryGroups(lang: Lang) {

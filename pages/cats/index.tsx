@@ -28,6 +28,7 @@ type CatRuntimeSlide = {
 const CAT_SEARCH_RESULTS_LIMIT = 8;
 const CAT_EXAMPLE_PRESET_COUNT = 3;
 const CAT_CATEGORY_PRESET_INCREMENT = 3;
+const CAT_SUBCATEGORY_VALUE_SEPARATOR = "\u001F";
 const visuallyHiddenStyle = {
   position: "absolute" as const,
   width: "1px",
@@ -102,10 +103,18 @@ function matchesCatPresetQuery(preset: AnyCatPreset, query: string) {
   return queryTokens.every((queryToken) =>
     searchableTokens.some((searchableToken) =>
       searchableToken.startsWith(queryToken) ||
-      queryToken.startsWith(searchableToken) ||
+      (searchableToken.length >= 4 && queryToken.startsWith(searchableToken)) ||
       searchableToken.includes(queryToken),
     ),
   );
+}
+
+function buildCatSubcategoryValue(categoryKey: string, label: string) {
+  return `${categoryKey}${CAT_SUBCATEGORY_VALUE_SEPARATOR}${label}`;
+}
+
+function getCatPresetSubcategoryLabel(preset: AnyCatPreset) {
+  return String(preset.categoryLabel ?? preset.category ?? "").trim();
 }
 
 export default function CatPage({ lang }: { lang: Lang }) {
@@ -142,6 +151,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [visibleCategoryPresetCount, setVisibleCategoryPresetCount] = useState(CAT_CATEGORY_PRESET_INCREMENT);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [isDesktopSearchFocused, setIsDesktopSearchFocused] = useState(false);
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false);
   const lastResolvedTextPresetKeyRef = useRef<string | null>(null);
@@ -157,9 +167,19 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
   const toggleCategory = useCallback((category: string) => {
     setSelectedCategories((current) =>
-      current.includes(category)
-        ? current.filter((item) => item !== category)
-        : [...current, category],
+      current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
+    );
+    setSelectedSubcategories((current) =>
+      current.filter((value) => !value.startsWith(`${category}${CAT_SUBCATEGORY_VALUE_SEPARATOR}`)),
+    );
+  }, []);
+
+  const toggleSubcategory = useCallback((category: string, subcategory: string) => {
+    setSelectedCategories((current) => current.includes(category) ? current : [...current, category]);
+    setSelectedSubcategories((current) =>
+      current.includes(subcategory)
+        ? current.filter((item) => item !== subcategory)
+        : [...current, subcategory],
     );
   }, []);
 
@@ -171,6 +191,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
       icon: string;
       order: number;
       count: number;
+      subcategories: Map<string, number>;
     }>();
 
     for (const preset of presetsForLang) {
@@ -186,8 +207,13 @@ export default function CatPage({ lang }: { lang: Lang }) {
         icon: resolvedCategory.icon,
         order: resolvedCategory.order,
         count: 0,
+        subcategories: new Map<string, number>(),
       };
       current.count += 1;
+      const rawSubcategory = getCatPresetSubcategoryLabel(preset) || resolvedCategory.label;
+      if (rawSubcategory) {
+        current.subcategories.set(rawSubcategory, (current.subcategories.get(rawSubcategory) ?? 0) + 1);
+      }
       categoryCounts.set(resolvedCategory.key, current);
     }
 
@@ -204,6 +230,19 @@ export default function CatPage({ lang }: { lang: Lang }) {
             label: category.label,
             count: category.count,
             icon: category.icon,
+            subcategories: Array.from(category.subcategories.entries())
+              .map(([label, count]) => {
+                const value = buildCatSubcategoryValue(category.key, label);
+                return {
+                  value,
+                  label,
+                  count,
+                  selected: selectedSubcategories.includes(value),
+                };
+              })
+              .sort((left, right) =>
+                left.label.localeCompare(right.label, lang, { sensitivity: "base" }),
+              ),
           }));
 
         return {
@@ -213,7 +252,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
         };
       })
       .filter((group) => group.options.length > 0);
-  }, [lang, presetsForLang]);
+  }, [lang, presetsForLang, selectedSubcategories]);
 
   const availableCategoryGroups = useMemo(
     () =>
@@ -221,8 +260,9 @@ export default function CatPage({ lang }: { lang: Lang }) {
         ...group,
         selectedValues: selectedCategories,
         onToggle: toggleCategory,
+        onSubcategoryToggle: toggleSubcategory,
       })),
-    [categoryOptionGroups, selectedCategories, toggleCategory],
+    [categoryOptionGroups, selectedCategories, toggleCategory, toggleSubcategory],
   );
 
   const filteredPresetsForLang = useMemo(() => {
@@ -232,11 +272,26 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
     return presetsForLang.filter((preset) => {
       const category = resolveCatCategory(preset, lang);
-      return category ? selectedCategories.includes(category.key) : false;
-    });
-  }, [lang, presetsForLang, selectedCategories]);
+      if (!category || !selectedCategories.includes(category.key)) {
+        return false;
+      }
 
-  const categoryFilterKey = selectedCategories.join("|");
+      const selectedSubcategoriesForCategory = selectedSubcategories.filter((value) =>
+        value.startsWith(`${category.key}${CAT_SUBCATEGORY_VALUE_SEPARATOR}`),
+      );
+      if (selectedSubcategoriesForCategory.length === 0) {
+        return true;
+      }
+
+      const subcategoryValue = buildCatSubcategoryValue(
+        category.key,
+        getCatPresetSubcategoryLabel(preset) || category.label,
+      );
+      return selectedSubcategoriesForCategory.includes(subcategoryValue);
+    });
+  }, [lang, presetsForLang, selectedCategories, selectedSubcategories]);
+
+  const categoryFilterKey = `${selectedCategories.join("|")}::${selectedSubcategories.join("|")}`;
   const isCategoryFiltered = selectedCategories.length > 0;
   const visibleQuestionPresets = isCategoryFiltered
     ? filteredPresetsForLang.slice(0, visibleCategoryPresetCount)
@@ -322,11 +377,22 @@ export default function CatPage({ lang }: { lang: Lang }) {
   }, [categoryFilterKey, lang]);
 
   useEffect(() => {
-    setSelectedCategories((current) =>
-      current.filter((category) =>
+    setSelectedCategories((current) => {
+      const next = current.filter((category) =>
         categoryOptionGroups.some((group) => group.options.some((option) => option.value === category)),
-      ),
-    );
+      );
+      return next.length === current.length ? current : next;
+    });
+    setSelectedSubcategories((current) => {
+      const validSubcategories = new Set(
+        categoryOptionGroups.flatMap((group) =>
+          group.options.flatMap((option) => option.subcategories?.map((subcategory) => subcategory.value) ?? []),
+        ),
+      );
+
+      const next = current.filter((subcategory) => validSubcategories.has(subcategory));
+      return next.length === current.length ? current : next;
+    });
   }, [categoryOptionGroups]);
 
   const trackCatQuestionProgress = useCallback((slideIndex: number, source: "desktop" | "mobile") => {
@@ -569,6 +635,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
   const clearCategories = () => {
     setSelectedCategories([]);
+    setSelectedSubcategories([]);
   };
 
   const selectPresetFromSearch = (preset: AnyCatPreset) => {
