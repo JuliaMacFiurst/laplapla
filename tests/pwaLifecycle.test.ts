@@ -50,13 +50,22 @@ describe("PWA lifecycle", () => {
     );
   });
 
-  it("has installable core manifest fields and does not mislabel regular icons as maskable", () => {
+  it("has installable core manifest fields and keeps regular and maskable icons separate", () => {
     expect(manifest.start_url).toBe("/");
     expect(manifest.scope).toBe("/");
     expect(manifest.display).toBe("standalone");
-    expect(manifest.icons.some((icon) => icon.sizes === "192x192")).toBe(true);
-    expect(manifest.icons.some((icon) => icon.sizes === "512x512")).toBe(true);
-    expect(manifest.icons.some((icon) => icon.purpose?.includes("maskable"))).toBe(false);
+    expect(
+      manifest.icons.some((icon) => icon.sizes === "192x192" && icon.purpose === "any"),
+    ).toBe(true);
+    expect(
+      manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "any"),
+    ).toBe(true);
+    expect(
+      manifest.icons.some((icon) => icon.sizes === "192x192" && icon.purpose === "maskable"),
+    ).toBe(true);
+    expect(
+      manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"),
+    ).toBe(true);
   });
 
   it("keeps the generated worker in sync with its template", () => {
