@@ -10,6 +10,7 @@ const OFFLINE_PATH = "__OFFLINE_PATH__";
 const PRECACHE_URLS = [
   OFFLINE_PATH,
   "__LOGO_PATH__",
+  "__SPLASH_PATH__",
   "/favicon_io/site.webmanifest",
   "/favicon_io/android-chrome-192x192.png",
   "/favicon_io/android-chrome-512x512.png"

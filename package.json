@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "prebuild": "node scripts/generatePwaAssets.mjs",
+    "generate:splash": "node scripts/generateSplashAssets.mjs",
+    "prebuild": "npm run generate:splash && node scripts/generatePwaAssets.mjs",
     "dev": "next dev",
     "dev:codex": "bash scripts/dev-codex.sh",
     "build": "next build",
@@ -40,6 +41,7 @@
     "@types/sanitize-html": "^2.16.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4",
+    "sharp": "0.35.3",
     "tsx": "^4.21.0",
     "typescript": "~5.7.2",
     "vitest": "^4.1.5"

@@ -18,6 +18,7 @@ const replacements = {
   __APP_NAME__: config.appName,
   __APP_VERSION__: deploymentVersion,
   __LOGO_PATH__: config.logoPath,
+  __SPLASH_PATH__: config.splashPath,
   __OFFLINE_PATH__: config.offlinePath,
 };
 

@@ -72,5 +72,8 @@ describe("PWA lifecycle", () => {
     expect(worker).not.toContain("__APP_VERSION__");
     expect(worker).toContain('const APP_ID = "laplapla"');
     expect(worker).toContain('const OFFLINE_PATH = "/offline.html"');
+    expect(worker).toContain(
+      '"/pwa/splash/generated/web/app-splash-logo-640.webp"',
+    );
   });
 });

@@ -17,11 +17,12 @@ export default function AppSplash({ brand = APP_BRAND, visible }: AppSplashProps
     >
       <Image
         className="app-splash__logo"
-        src={brand.logoPath}
+        src={brand.splashPath}
         alt=""
         width={168}
         height={168}
         priority
+        unoptimized
       />
       <span className="app-splash__loader" aria-hidden="true" />
     </div>
