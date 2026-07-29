@@ -21,3 +21,18 @@ export function selectSmallestSvgHit<T>(
 
   return selected;
 }
+
+export function selectFirstInteractiveViewportHit<TElement, TPath>(
+  elements: readonly TElement[],
+  resolvePath: (element: TElement) => TPath | null,
+  isInteractive: (path: TPath) => boolean,
+): TPath | null {
+  for (const element of elements) {
+    const path = resolvePath(element);
+    if (path && isInteractive(path)) {
+      return path;
+    }
+  }
+
+  return null;
+}

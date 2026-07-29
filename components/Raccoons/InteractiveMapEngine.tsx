@@ -38,7 +38,10 @@ import {
   type MapPopupMediaStatus,
 } from "@/lib/mapPopup/mediaLifecycle";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
-import { selectSmallestSvgHit } from "@/lib/mapSvgInteraction";
+import {
+  selectFirstInteractiveViewportHit,
+  selectSmallestSvgHit,
+} from "@/lib/mapSvgInteraction";
 import { supabase } from "@/lib/supabase";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
@@ -1034,10 +1037,15 @@ export default function InteractiveMap({
     }
 
     hoveredPathRef.current = null;
+    if (type === "animal") {
+      selectedElementRef.current = null;
+      clearSelectedStyle();
+      setSelectedElement(null);
+    }
     setIsPopupOpen(false);
     setCurrentSlideIndex(0);
     setViewMode("slides");
-  }, [isPopupOpen]);
+  }, [clearSelectedStyle, isPopupOpen, type]);
 
   const openSelection = useCallback((path: SVGPathElement, id: string) => {
     if (!id) {
@@ -2368,7 +2376,29 @@ export default function InteractiveMap({
     };
 
     const getPathFromPointerEvent = (event: MouseEvent) => {
-      if (type === "animal" || type === "weather" || type === "physic") {
+      if (type === "animal") {
+        if (typeof document.elementsFromPoint !== "function") {
+          return getPathFromNode(event.target);
+        }
+
+        const elements = document.elementsFromPoint(
+          event.clientX,
+          event.clientY,
+        );
+        return (
+          selectFirstInteractiveViewportHit(
+            elements,
+            (element) =>
+              element.closest("path[id]") as SVGPathElement | null,
+            (path) =>
+              isInteractivePath(path) &&
+              mapContent.contains(path) &&
+              !path.closest('[data-interaction-overlay="true"]'),
+          ) ?? getPathFromNode(event.target)
+        );
+      }
+
+      if (type === "weather" || type === "physic") {
         return getBiomePathFromPointerEvent(event);
       }
 
