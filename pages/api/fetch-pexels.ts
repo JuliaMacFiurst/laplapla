@@ -1,6 +1,11 @@
 // pages/api/fetch-pexels.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { withApiHandler } from "@/utils/apiHandler";
+import { fetchWithTimeout } from "@/lib/server/security/fetchWithTimeout";
+
+const ALLOWED_TYPES = new Set(["country", "animal", "physic", "river", "food", "culture"]);
+const ALLOWED_ORIENTATIONS = new Set(["landscape", "portrait", "square"]);
+const ALLOWED_SIZES = new Set(["large", "medium", "small"]);
 
 export const config = {
   api: {
@@ -16,8 +21,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const { keywords, type, orientation, size } = req.body;
-  if (!keywords || !Array.isArray(keywords)) {
+  if (
+    !keywords ||
+    !Array.isArray(keywords) ||
+    keywords.length === 0 ||
+    keywords.length > 8 ||
+    keywords.some((word) => typeof word !== "string" || !word.trim() || word.length > 80)
+  ) {
     return res.status(400).json({ error: "Missing keywords" });
+  }
+  if (type != null && !ALLOWED_TYPES.has(String(type))) {
+    return res.status(400).json({ error: "Invalid type" });
+  }
+  if (orientation != null && !ALLOWED_ORIENTATIONS.has(String(orientation))) {
+    return res.status(400).json({ error: "Invalid orientation" });
+  }
+  if (size != null && !ALLOWED_SIZES.has(String(size))) {
+    return res.status(400).json({ error: "Invalid size" });
   }
 
   try {
@@ -27,7 +47,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const results: string[] = [];
 
     for (const word of keywords) {
-      const query = buildQuery(word, type);
+      const query = buildQuery(word.trim(), type);
       const params = new URLSearchParams({
         query,
         per_page: "10",
@@ -39,9 +59,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         params.set("size", size);
       }
 
-      const resp = await fetch(`https://api.pexels.com/v1/search?${params.toString()}`, {
-        headers: { Authorization: apiKey },
-      });
+      const resp = await fetchWithTimeout(
+        `https://api.pexels.com/v1/search?${params.toString()}`,
+        { headers: { Authorization: apiKey } },
+        6_000,
+      );
+      if (!resp.ok) {
+        throw new Error("Pexels request failed");
+      }
       const data = await resp.json();
 
       const blacklist = [
@@ -69,9 +94,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     res.status(200).json({ images: results });
-  } catch (err: any) {
-    console.error("❌ Ошибка при запросе к Pexels:", err);
-    res.status(500).json({ error: err.message });
+  } catch {
+    res.status(502).json({ error: "Media provider unavailable" });
   }
 }
 

@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
 import { starInfoList } from "@/utils/starInfo";
+import { sanitizeRichText, sanitizeSvg } from "@/lib/security/sanitize";
 
 type StepId =
   | "first_click"
@@ -62,7 +63,7 @@ const StarsMap = forwardRef(function StarsMap(
     async function loadSvg() {
       const svgContent = await getMapSvg("north-stars/north-stars.svg");
       if (svgContainerRef.current && svgContent) {
-        svgContainerRef.current.innerHTML = svgContent;
+        svgContainerRef.current.innerHTML = sanitizeSvg(svgContent);
       }
       setSvgLoaded(true);
     }
@@ -100,7 +101,9 @@ const StarsMap = forwardRef(function StarsMap(
       // === Всегда обновляем информацию енота о звезде ===
       const info = starInfoList.find((s) => s.id === starId);
       if (info && racTextRef.current) {
-        racTextRef.current.innerHTML = `Енот: «${info.name}. ${info.description}»`;
+        racTextRef.current.innerHTML = sanitizeRichText(
+          `Енот: «${info.name}. ${info.description}»`,
+        );
       }
 
       if (routeStep === "waiting_merak") {

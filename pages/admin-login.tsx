@@ -4,17 +4,10 @@ import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { supabase } from "@/lib/supabase";
+import { getSafeRelativeRedirect } from "@/lib/security/safeRedirect";
 
-function buildDefaultAdminTargetUrl(lang: Lang) {
-  const explicitSiteUrl =
-    process.env["NEXT_PUBLIC_SITE_URL"] ||
-    process.env["NEXT_PUBLIC_LAPLAPLA_SITE_URL"];
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : explicitSiteUrl || "http://localhost:3000";
-  const targetUrl = new URL(buildLocalizedPublicPath("/raccoons", lang), origin);
-  return targetUrl.toString();
+function buildDefaultAdminTargetPath(lang: Lang) {
+  return buildLocalizedPublicPath("/raccoons", lang);
 }
 
 function buildAdminLoginCallbackUrl(nextTarget: string) {
@@ -77,7 +70,7 @@ function hasAuthRedirectParams() {
 export default function AdminLoginPage() {
   const router = useRouter();
   const lang = getCurrentLang(router);
-  const defaultNextTarget = useMemo(() => buildDefaultAdminTargetUrl(lang), [lang]);
+  const defaultNextTarget = useMemo(() => buildDefaultAdminTargetPath(lang), [lang]);
   const seo = dictionaries[lang].seo.adminLogin;
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/admin-login";
   const [loading, setLoading] = useState(false);
@@ -90,7 +83,10 @@ export default function AdminLoginPage() {
     }
 
     let active = true;
-    const nextTarget = getStringParam(router.query.next) || defaultNextTarget;
+    const nextTarget = getSafeRelativeRedirect(
+      getStringParam(router.query.next),
+      defaultNextTarget,
+    );
     const callbackInProgress = hasAuthRedirectParams();
 
     const redirectToTarget = () => {
@@ -187,7 +183,7 @@ export default function AdminLoginPage() {
       provider: "google",
       options: {
         redirectTo: buildAdminLoginCallbackUrl(
-          getStringParam(router.query.next) || defaultNextTarget,
+          getSafeRelativeRedirect(getStringParam(router.query.next), defaultNextTarget),
         ),
       },
     });

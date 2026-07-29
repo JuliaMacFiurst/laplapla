@@ -34,6 +34,7 @@ import type { CharacterResult } from "@/types/types";
 import countryNames from "@/utils/country_names.json";
 import seaNames from "@/utils/sea_names.json";
 import { starInfoList } from "@/utils/starInfo";
+import { sanitizeRichText } from "@/lib/security/sanitize";
 
 type MobilePageProps = {
   go: (id: PageId) => void;
@@ -165,7 +166,7 @@ function QuestMobileTextReveal({
         <p
           key={`${index}-${paragraph.slice(0, 16)}`}
           className="quest-mobile-paragraph"
-          dangerouslySetInnerHTML={{ __html: paragraph }}
+          dangerouslySetInnerHTML={{ __html: sanitizeRichText(paragraph) }}
         />
       ))}
       {hasMore ? (
@@ -194,7 +195,7 @@ function QuestMobileFeedback({
   speaker: string;
   text: string;
 }) {
-  const cleanText = text.replace(/<button\b[^>]*>.*?<\/button>/gis, "");
+  const cleanText = sanitizeRichText(text);
 
   return (
     <div className="quest-mobile-feedback" aria-live="polite">

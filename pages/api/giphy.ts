@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
+import { fetchWithTimeout } from "@/lib/server/security/fetchWithTimeout";
 
 const TTL_MS = 60 * 60 * 1000;
 const MAX_GIPHY_QUERY_LENGTH = 200;
@@ -166,8 +167,10 @@ async function handler(
         rating: "g",
       });
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://api.giphy.com/v1/gifs/search?${searchParams.toString()}`,
+        {},
+        6_000,
       );
 
       if (!response.ok) {
@@ -237,6 +240,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET", "POST"],
+      limit: 300,
+      windowMs: 60_000,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "giphy",
     },

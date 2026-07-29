@@ -23,6 +23,9 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET"],
+      limit: 60,
+      windowMs: 60_000,
+      keyPrefix: "parrot-music-styles",
     },
     cacheControl: "public, max-age=60, stale-while-revalidate=300",
   },

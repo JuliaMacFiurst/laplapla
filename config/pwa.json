@@ -1,0 +1,9 @@
+{
+  "appId": "laplapla",
+  "appName": "LapLapLa",
+  "cacheVersion": "2026.07.29.1",
+  "logoPath": "/laplapla-logo.webp",
+  "backgroundColor": "#ffffff",
+  "themeColor": "#fff8ef",
+  "offlinePath": "/offline.html"
+}

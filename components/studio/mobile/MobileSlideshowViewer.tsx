@@ -5,6 +5,7 @@ import { useEffect, type ReactNode } from "react";
 import { StudioSlideMedia } from "@/components/studio/StudioPreviewPlayer";
 import type { Lang } from "@/i18n";
 import type { StudioSlide } from "@/types/studio";
+import { sanitizeRichText } from "@/lib/security/sanitize";
 import SwipeLayer from "./SwipeLayer";
 
 interface MobileSlideshowViewerProps {
@@ -159,7 +160,7 @@ export default function MobileSlideshowViewer({
                     <div
                       className={captionClassName}
                       dir={isRtl ? "rtl" : "ltr"}
-                      dangerouslySetInnerHTML={{ __html: slide.text }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeRichText(slide.text) }}
                     />
                   </div>
                 ))}

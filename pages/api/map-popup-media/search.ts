@@ -21,7 +21,7 @@ type SearchResponse =
         searchQuery: string;
         relevanceScore: number;
       } | null;
-      debug: {
+      debug?: {
         stage: string;
         cacheHit: boolean;
         type: string;
@@ -93,15 +93,35 @@ async function handler(
     return;
   }
 
-  if (!targetId || typeof targetId !== "string") {
+  if (
+    !targetId ||
+    typeof targetId !== "string" ||
+    targetId.length > 160 ||
+    !/^[\p{L}\p{N}_.:-]+$/u.test(targetId)
+  ) {
     res.status(400).json({ error: "Invalid or missing target_id" });
     logApi(res.statusCode, startedAt);
     return;
   }
 
-  if (!slideText || typeof slideText !== "string") {
+  if (!slideText || typeof slideText !== "string" || slideText.length > 1_200) {
     res.status(400).json({ error: "Invalid or missing slide_text" });
     logApi(res.statusCode, startedAt);
+    return;
+  }
+
+  if (
+    excludeUrls.length > 20 ||
+    excludeUrls.some((url) => {
+      if (url.length > 2_048) return true;
+      try {
+        return new URL(url).protocol !== "https:";
+      } catch {
+        return true;
+      }
+    })
+  ) {
+    res.status(400).json({ error: "Invalid exclude_url" });
     return;
   }
 
@@ -117,7 +137,11 @@ async function handler(
       console.log("[map-popup-media/search]", result.debug);
     }
 
-    res.status(200).json(result);
+    res.status(200).json(
+      process.env.NODE_ENV === "development"
+        ? result
+        : { item: result.item },
+    );
     logApi(res.statusCode, startedAt);
     return;
   } catch (error) {

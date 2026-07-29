@@ -89,6 +89,8 @@ export default withApiHandler<AlertDiscordResponse>(
   {
     guard: {
       methods: ["POST"],
+      limit: 30,
+      windowMs: 60_000,
       maxBodyBytes: MAX_BODY_BYTES,
       keyPrefix: "alert-discord",
     },

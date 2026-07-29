@@ -48,6 +48,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET"],
+      limit: 120,
+      windowMs: 60_000,
       maxBodyBytes: 4 * 1024,
       keyPrefix: "memes-trending",
     },

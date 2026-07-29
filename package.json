@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
+    "prebuild": "node scripts/generatePwaAssets.mjs",
     "dev": "next dev",
     "dev:codex": "bash scripts/dev-codex.sh",
     "build": "next build",
@@ -19,15 +20,16 @@
     "@ffmpeg/core": "^0.12.9",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
-    "@sentry/nextjs": "^10.50.0",
+    "@sentry/nextjs": "^10.69.0",
     "@supabase/supabase-js": "^2.50.0",
-    "axios": "^1.13.5",
+    "axios": "^1.18.1",
     "gif.js": "^0.2.0",
     "idb": "^8.0.3",
-    "next": "^16.1.6",
+    "next": "^16.2.12",
     "openai": "^5.5.1",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.1",
+    "sanitize-html": "^2.17.6"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^16.2.4",
@@ -35,10 +37,17 @@
     "@types/node": "^22.16.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/sanitize-html": "^2.16.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4",
     "tsx": "^4.21.0",
     "typescript": "~5.7.2",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "form-data": "4.0.6",
+    "postcss": "8.5.25",
+    "sharp": "0.35.3",
+    "ws": "8.21.1"
   }
 }

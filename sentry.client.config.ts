@@ -1,5 +1,10 @@
 import * as Sentry from "@sentry/nextjs";
-import { sentryEnvironment, shouldIgnoreError } from "./sentry.shared";
+import {
+  scrubSentryBreadcrumb,
+  scrubSentryEvent,
+  sentryEnvironment,
+  shouldIgnoreError,
+} from "./sentry.shared";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -21,12 +26,8 @@ if (dsn) {
         return null;
       }
 
-      if (event.request) {
-        delete event.request.headers;
-        delete event.request.cookies;
-      }
-
-      return event;
+      return scrubSentryEvent(event);
     },
+    beforeBreadcrumb: scrubSentryBreadcrumb,
   });
 }

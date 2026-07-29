@@ -6,6 +6,8 @@ import {
   loadStoryPersistenceTarget,
   persistResolvedSlideMediaWithStatus,
 } from "@/lib/server/mapPopup/persistence";
+import { enforceSameOrigin } from "@/lib/server/security/requestOrigin";
+import { isTrustedMediaUrl } from "@/lib/security/mediaUrl";
 
 export const config = {
   api: {
@@ -51,10 +53,6 @@ function logApiError(error: unknown) {
   });
 }
 
-function isAllowedImageUrl(value: string) {
-  return /^https?:\/\//i.test(value) || value.startsWith("/supabase-storage/");
-}
-
 function setPersistenceHeaders(
   res: NextApiResponse,
   {
@@ -77,6 +75,10 @@ async function handler(
   res: NextApiResponse<PersistMediaResponse>,
 ) {
   const startedAt = Date.now();
+
+  if (!enforceSameOrigin(req, res)) {
+    return;
+  }
 
   if (
     !applyApiGuard(req, res, {
@@ -130,7 +132,11 @@ async function handler(
     return;
   }
 
-  if (!normalizedImageUrl || !isAllowedImageUrl(normalizedImageUrl)) {
+  if (
+    !normalizedImageUrl ||
+    normalizedImageUrl.length > 2_048 ||
+    !isTrustedMediaUrl(normalizedImageUrl)
+  ) {
     res.status(400).json({ error: "Invalid or missing imageUrl" });
     logApi(res.statusCode, startedAt);
     return;
@@ -143,7 +149,9 @@ async function handler(
       isAdmin: false,
       writeState: "error",
     });
-    res.status(403).json({ error: "Forbidden" });
+    res.status(adminAccess.isAuthenticated ? 403 : 401).json({
+      error: adminAccess.isAuthenticated ? "Forbidden" : "Unauthorized",
+    });
     logApi(res.statusCode, startedAt);
     return;
   }
@@ -226,6 +234,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["POST"],
+      limit: 30,
+      windowMs: 60_000,
       maxBodyBytes: 12 * 1024,
       keyPrefix: "map-popup-content-media",
     },

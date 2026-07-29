@@ -16,12 +16,12 @@ async function handler(
 ) {
   const { query } = req.body;
 
-  if (!query || typeof query !== "string") {
+  if (!query || typeof query !== "string" || query.trim().length > 160) {
     return res.status(400).json({ error: "Missing query" });
   }
 
   try {
-    const videos = await searchPexelsVideos(query);
+    const videos = await searchPexelsVideos(query.trim());
 
     if (!videos || videos.length === 0) {
       return res.status(200).json({ videos: [] });

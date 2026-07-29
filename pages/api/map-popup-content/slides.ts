@@ -6,6 +6,7 @@ import {
 } from "@/lib/server/mapPopup/persistence";
 import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
+import { enforceSameOrigin } from "@/lib/server/security/requestOrigin";
 
 export const config = {
   api: {
@@ -50,6 +51,10 @@ async function handler(
 ) {
   const startedAt = Date.now();
 
+  if (!enforceSameOrigin(req, res)) {
+    return;
+  }
+
   if (
     !applyApiGuard(req, res, {
       methods: ["POST"],
@@ -85,7 +90,9 @@ async function handler(
   try {
     const adminAccess = await resolveAdminAccess(req);
     if (!adminAccess.isAdmin) {
-      res.status(403).json({ error: "Forbidden" });
+      res.status(adminAccess.isAuthenticated ? 403 : 401).json({
+        error: adminAccess.isAuthenticated ? "Forbidden" : "Unauthorized",
+      });
       logApi(res.statusCode, startedAt);
       return;
     }
@@ -117,6 +124,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["POST"],
+      limit: 30,
+      windowMs: 60_000,
       maxBodyBytes: 8 * 1024,
       keyPrefix: "map-popup-content-slides",
     },

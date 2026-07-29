@@ -5,6 +5,7 @@ import { initRouteLogic } from "./initRouteLogic";
 import { getMapSvg } from "@/utils/storageMaps";
 import countryNames from "@/utils/country_names.json";
 import { useQuest1I18n } from "../i18n";
+import { sanitizeRichText, sanitizeSvg } from "@/lib/security/sanitize";
 
 const BAD_IDS = new Set([
   "btn-start",
@@ -98,18 +99,20 @@ export default function FlightMap({
     if (!racText) return;
 
     if (!type) {
-      racText.innerHTML = t.day3Flight.speech.selectType;
+      racText.innerHTML = sanitizeRichText(t.day3Flight.speech.selectType);
       return;
     }
 
     const ids = getCountriesOnRoute();
     if (!ids.length) {
-      racText.innerHTML = t.day3Flight.speech.overOcean;
+      racText.innerHTML = sanitizeRichText(t.day3Flight.speech.overOcean);
       return;
     }
 
     const names = ids.map((id) => getCountryLabel(id, lang)).join(", ");
-    racText.innerHTML = t.day3Flight.speech.overCountries.replace("{names}", names);
+    racText.innerHTML = sanitizeRichText(
+      t.day3Flight.speech.overCountries.replace("{names}", names),
+    );
   }, [getCountriesOnRoute, lang, racTextRef, t.day3Flight.speech.overCountries, t.day3Flight.speech.overOcean, t.day3Flight.speech.selectType]);
 
   const drawRoute = useCallback((type: "straight" | "arc" | "zigzag" | null) => {
@@ -161,11 +164,11 @@ export default function FlightMap({
     async function loadSvg() {
       const svgContent = (await getMapSvg("countries/countries_interactive.svg")) || "";
       if (svgContainerRef.current) {
-        svgContainerRef.current.innerHTML = svgContent;
+        svgContainerRef.current.innerHTML = sanitizeSvg(svgContent);
       }
       setSvgLoaded(true);
       if (racTextRef.current) {
-        racTextRef.current.innerHTML = t.day3Flight.speech.drawRoute;
+        racTextRef.current.innerHTML = sanitizeRichText(t.day3Flight.speech.drawRoute);
       }
     }
     loadSvg();

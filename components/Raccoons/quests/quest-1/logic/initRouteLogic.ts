@@ -1,4 +1,5 @@
 // initRouteLogic.ts
+import { sanitizeRichText } from "@/lib/security/sanitize";
 
 export interface RouteLogicParams {
   wrap: HTMLDivElement;
@@ -14,7 +15,9 @@ export interface RouteLogicParams {
 export function initRouteLogic(params: RouteLogicParams) {
   const { wrap, pinStart, pinEnd, racText, svalMk, start, sval, onStartMove } = params;
 
-  racText.innerHTML = "Енот: «Карта готова. Шпицберген отмечен кружочком!»";
+  racText.innerHTML = sanitizeRichText(
+    "Енот: «Карта готова. Шпицберген отмечен кружочком!»",
+  );
 
   // -------------------------------
   // POSITION PINS

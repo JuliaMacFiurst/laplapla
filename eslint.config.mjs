@@ -20,6 +20,26 @@ export default defineConfig([
       "react-hooks/static-components": "off",
     },
   },
+  {
+    files: [
+      "components/**/*.{ts,tsx}",
+      "hooks/**/*.{ts,tsx}",
+      "lib/client/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/lib/server", "@/lib/server/**"],
+              message: "Server-only modules must not be imported into client code.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     ".next/**",
     "out/**",

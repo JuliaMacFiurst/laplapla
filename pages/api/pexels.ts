@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
+import { fetchWithTimeout } from "@/lib/server/security/fetchWithTimeout";
 
 const TTL_MS = 60 * 60 * 1000;
 const MAX_PEXELS_QUERY_LENGTH = 160;
@@ -180,16 +181,16 @@ async function handler(
     });
 
     const [photoResponse, videoResponse] = await Promise.all([
-      fetch(`https://api.pexels.com/v1/search?${photoSearchParams.toString()}`, {
+      fetchWithTimeout(`https://api.pexels.com/v1/search?${photoSearchParams.toString()}`, {
         headers: {
           Authorization: apiKey,
         },
-      }),
-      fetch(`https://api.pexels.com/videos/search?${videoSearchParams.toString()}`, {
+      }, 6_000),
+      fetchWithTimeout(`https://api.pexels.com/videos/search?${videoSearchParams.toString()}`, {
         headers: {
           Authorization: apiKey,
         },
-      }),
+      }, 6_000),
     ]);
 
     if (!photoResponse.ok && !videoResponse.ok) {
@@ -259,6 +260,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET", "POST"],
+      limit: 30,
+      windowMs: 60_000,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "pexels",
     },

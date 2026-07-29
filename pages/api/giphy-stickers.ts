@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getMemoryCache, setMemoryCache } from "@/lib/server/memoryCache";
 import { withApiHandler } from "@/utils/apiHandler";
 import { applyApiGuard } from "@/utils/rateLimit";
+import { fetchWithTimeout } from "@/lib/server/security/fetchWithTimeout";
 
 const TTL_MS = 30 * 60 * 1000;
 const MAX_QUERY_LENGTH = 96;
@@ -172,8 +173,10 @@ async function fetchGiphyStickers(apiKey: string, query: string, limit: number, 
     searchParams.set("q", endpointQuery);
   }
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://api.giphy.com/v1/stickers/${endpoint}?${searchParams.toString()}`,
+    {},
+    6_000,
   );
 
   if (!response.ok) {
@@ -265,6 +268,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET", "POST"],
+      limit: STICKER_REQUEST_LIMIT_PER_HOUR,
+      windowMs: 60 * 60 * 1000,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "giphy-stickers",
     },

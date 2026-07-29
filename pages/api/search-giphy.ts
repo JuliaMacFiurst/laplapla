@@ -1,6 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { withApiHandler } from "@/utils/apiHandler";
+import { fetchWithTimeout } from "@/lib/server/security/fetchWithTimeout";
 
 export const config = {
   api: {
@@ -19,6 +20,11 @@ async function handler(
   if (!query || typeof query !== "string") {
     return res.status(400).json({ error: "Missing search query" });
   }
+  const normalizedQuery = query.trim().replace(/\s+/g, " ").slice(0, 160);
+  const normalizedOffset = Math.min(5_000, Math.max(0, Number(offset) || 0));
+  if (!normalizedQuery) {
+    return res.status(400).json({ error: "Missing search query" });
+  }
 
   const apiKey = process.env.GIPHY_API_KEY;
 
@@ -30,14 +36,16 @@ async function handler(
   try {
     const searchParams = new URLSearchParams({
       api_key: apiKey,
-      q: query,
-      limit: "50",
-      offset: String(offset),
+      q: normalizedQuery,
+      limit: "24",
+      offset: String(normalizedOffset),
       rating: "g",
     });
 
-    const response = await fetch(
-      `https://api.giphy.com/v1/gifs/search?${searchParams.toString()}`
+    const response = await fetchWithTimeout(
+      `https://api.giphy.com/v1/gifs/search?${searchParams.toString()}`,
+      {},
+      6_000,
     );
 
     if (!response.ok) {
@@ -54,7 +62,7 @@ async function handler(
 
     const totalCount = data?.pagination?.total_count ?? 0;
     const count = data?.pagination?.count ?? 0;
-    const nextOffset = offset + count;
+    const nextOffset = normalizedOffset + count;
 
     return res.status(200).json({
       gifs,

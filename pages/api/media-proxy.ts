@@ -7,9 +7,14 @@ import { applyApiGuard } from "@/utils/rateLimit";
 
 const ALLOWED_HOSTS = new Set([
   "images.pexels.com",
-  "pexels.com",
+  "videos.pexels.com",
   "media.giphy.com",
-  "giphy.com",
+  "i.giphy.com",
+  "media0.giphy.com",
+  "media1.giphy.com",
+  "media2.giphy.com",
+  "media3.giphy.com",
+  "media4.giphy.com",
   "upload.wikimedia.org",
   "media.laplapla.com",
   "cdn.pixabay.com",
@@ -66,14 +71,18 @@ function getRawUrl(req: NextApiRequest) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function parseAllowedUrl(rawUrl: string) {
+export function parseAllowedMediaProxyUrl(rawUrl: string) {
   try {
     const parsed = new URL(rawUrl);
     if (parsed.protocol !== "https:") {
       return { ok: false as const, reason: "invalid_protocol" };
     }
 
-    if (!ALLOWED_HOSTS.has(parsed.hostname)) {
+    if (
+      parsed.username ||
+      parsed.password ||
+      !ALLOWED_HOSTS.has(parsed.hostname.toLowerCase())
+    ) {
       return { ok: false as const, reason: "disallowed_host" };
     }
 
@@ -81,6 +90,42 @@ function parseAllowedUrl(rawUrl: string) {
   } catch {
     return { ok: false as const, reason: "invalid_url" };
   }
+}
+
+async function fetchAllowedMedia(
+  initialUrl: string,
+  signal: AbortSignal,
+  redirectsRemaining = 3,
+): Promise<Response> {
+  const parsed = parseAllowedMediaProxyUrl(initialUrl);
+  if (!parsed.ok) {
+    throw new Error("Blocked upstream redirect");
+  }
+
+  const response = await fetch(parsed.url, {
+    method: "GET",
+    redirect: "manual",
+    signal,
+  });
+
+  if (response.status >= 300 && response.status < 400) {
+    if (redirectsRemaining <= 0) {
+      throw new Error("Too many upstream redirects");
+    }
+
+    const location = response.headers.get("location");
+    if (!location) {
+      throw new Error("Invalid upstream redirect");
+    }
+
+    return fetchAllowedMedia(
+      new URL(location, parsed.url).toString(),
+      signal,
+      redirectsRemaining - 1,
+    );
+  }
+
+  return response;
 }
 
 function createSizeLimitStream() {
@@ -132,7 +177,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return;
   }
 
-  const parsedUrl = parseAllowedUrl(rawUrl);
+  const parsedUrl = parseAllowedMediaProxyUrl(rawUrl);
   if (!parsedUrl.ok) {
     logBlocked(parsedUrl.reason, rawUrl);
     res.status(400).end("Invalid media URL");
@@ -144,10 +189,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   const timeout = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const upstream = await fetch(parsedUrl.url, {
-      method: "GET",
-      signal: abortController.signal,
-    });
+    const upstream = await fetchAllowedMedia(
+      parsedUrl.url,
+      abortController.signal,
+    );
 
     if (!upstream.ok && upstream.status !== 206) {
       throw new Error(`Upstream fetch failed with status ${upstream.status}`);
@@ -164,6 +209,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     const contentType = upstream.headers.get("content-type");
+    if (
+      !contentType ||
+      !/^(image|video|audio)\//i.test(contentType)
+    ) {
+      logBlocked("invalid_content_type", parsedUrl.url);
+      res.status(415).end("Unsupported media type");
+      return;
+    }
     const acceptRanges = upstream.headers.get("accept-ranges");
     const contentRange = upstream.headers.get("content-range");
     const cacheControl = upstream.headers.get("cache-control");
@@ -232,7 +285,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 export default withApiHandler(
   {
     guard: {
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
+      methods: ["GET"],
+      limit: 30,
+      windowMs: 60_000,
       keyPrefix: "media-proxy",
     },
   },

@@ -72,19 +72,6 @@ function detectPlatform(): PWAInstallPlatform {
   };
 }
 
-function shouldRegisterServiceWorker() {
-  if (!canUseBrowser() || !("serviceWorker" in navigator)) {
-    return false;
-  }
-
-  if (process.env.NODE_ENV !== "production") {
-    return false;
-  }
-
-  const { hostname, protocol } = window.location;
-  return protocol === "https:" || hostname === "localhost" || hostname === "127.0.0.1";
-}
-
 export function usePWAInstall(): PWAInstallState {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
@@ -124,34 +111,9 @@ export function usePWAInstall(): PWAInstallState {
     window.addEventListener("appinstalled", handleAppInstalled);
     standaloneMedia?.addEventListener?.("change", handleDisplayModeChange);
 
-    const registerServiceWorker = () => {
-      if (shouldRegisterServiceWorker()) {
-        void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-        return;
-      }
-
-      if (process.env.NODE_ENV !== "production" && "serviceWorker" in navigator) {
-        void navigator.serviceWorker
-          .getRegistrations()
-          .then((registrations) =>
-            Promise.all(
-              registrations.map((registration) => registration.unregister()),
-            ),
-          )
-          .catch(() => undefined);
-      }
-    };
-
-    if (document.readyState === "complete") {
-      registerServiceWorker();
-    } else {
-      window.addEventListener("load", registerServiceWorker, { once: true });
-    }
-
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
-      window.removeEventListener("load", registerServiceWorker);
       standaloneMedia?.removeEventListener?.("change", handleDisplayModeChange);
     };
   }, []);

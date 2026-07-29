@@ -7,6 +7,10 @@ import {
   type AnalyticsProperties,
 } from "@/lib/analytics/events";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
+import {
+  applyApiGuard,
+  applyDistributedApiGuard,
+} from "@/utils/rateLimit";
 
 type AnalyticsEventResponse = { ok: true; status: "recorded" | "skipped" } | { error: string };
 
@@ -122,6 +126,20 @@ export default async function handler(
     return;
   }
 
+  const guardOptions = {
+    methods: ["POST"],
+    limit: 60,
+    windowMs: 60_000,
+    maxBodyBytes: MAX_BODY_BYTES,
+    keyPrefix: "analytics-event",
+  };
+  if (
+    !applyApiGuard(req, res, guardOptions) ||
+    !(await applyDistributedApiGuard(req, res, guardOptions))
+  ) {
+    return;
+  }
+
   let body: unknown;
   try {
     body = await readBody(req);
@@ -208,7 +226,12 @@ export default async function handler(
 
     res.status(200).json({ ok: true, status: "recorded" });
   } catch (error) {
-    console.warn("[analytics] failed to record event", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[analytics] failed to record event",
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    }
     res.status(200).json({ ok: true, status: "skipped" });
   }
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
 import seaNames from "@/utils/sea_names.json";
 import { useQuest1I18n } from "../i18n";
+import { sanitizeRichText, sanitizeSvg } from "@/lib/security/sanitize";
 
 function translateSea(id: string, lang: "ru" | "en" | "he") {
   const entry = (seaNames as any)[id];
@@ -30,7 +31,7 @@ export default function SeaMap({
     const timer = setInterval(() => {
       const rac = racTextRef.current;
       if (rac) {
-        rac.innerHTML = t.day3Sail.mapSpeech.startPrompt;
+        rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.startPrompt);
         clearInterval(timer);
         return;
       }
@@ -129,7 +130,7 @@ export default function SeaMap({
     if (!wrap || !rac) return;
 
     if (route.length < 2) {
-      rac.innerHTML = t.day3Sail.mapSpeech.routeTooShort;
+      rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.routeTooShort);
       return;
     }
 
@@ -156,7 +157,7 @@ export default function SeaMap({
     }
 
     const seas = [...touchedSeas].map(id => translateSea(id, lang)).join(", ");
-    rac.innerHTML = t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas);
+    rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas));
   }, [isNearTarget, lang, racTextRef, route, t.day3Sail.mapSpeech.routeThroughSeas, t.day3Sail.mapSpeech.routeTooShort]);
 
   // Универсальная проверка точки маршрута
@@ -181,7 +182,7 @@ export default function SeaMap({
 
     // Проверка суши
     if (!hit || !hit.id || hit.tagName.toLowerCase() !== "path" || hit.classList.contains("land")) {
-      rac.innerHTML = t.day3Sail.mapSpeech.landError;
+      rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.landError);
       return false;
     }
 
@@ -189,7 +190,7 @@ export default function SeaMap({
     if (isNearTarget(nx, ny)) {
       setDrawing(false);
       setRouteFinished(true);
-      rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
+      rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.routeComplete);
       evaluateRoute();
       return true;
     }
@@ -213,7 +214,7 @@ export default function SeaMap({
       setDrawing(false);
       setRouteFinished(true);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
+      if (rac) rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.routeComplete);
       evaluateRoute();
       return;
     }
@@ -223,7 +224,7 @@ export default function SeaMap({
       setDrawing(true);
       setRoute((prev) => [...prev, { x, y }]);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.continueRoute;
+      if (rac) rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.continueRoute);
       return;
     }
 
@@ -236,7 +237,7 @@ export default function SeaMap({
     setDrawing(true);
 
     const rac = racTextRef.current;
-    if (rac) rac.innerHTML = t.day3Sail.mapSpeech.guideToSpitsbergen;
+    if (rac) rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.guideToSpitsbergen);
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -250,7 +251,7 @@ export default function SeaMap({
       setDrawing(false);
       setRouteFinished(true);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
+      if (rac) rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.routeComplete);
       evaluateRoute();
       return;
     }
@@ -269,7 +270,7 @@ export default function SeaMap({
       setDrawing(false);
       setRouteFinished(true);
       const rac = racTextRef.current;
-      if (rac) rac.innerHTML = t.day3Sail.mapSpeech.routeComplete;
+      if (rac) rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.routeComplete);
       evaluateRoute();
       return;
     }
@@ -291,7 +292,7 @@ export default function SeaMap({
 
     const rac = racTextRef.current;
     if (rac) {
-      rac.innerHTML = t.day3Sail.mapSpeech.resetPrompt;
+      rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.resetPrompt);
     }
   }, [racTextRef, t.day3Sail.mapSpeech.resetPrompt]);
 
@@ -381,7 +382,7 @@ export default function SeaMap({
     async function loadSvg() {
       const svgContent = await getMapSvg("seas/seas-colored-bordered.svg");
       if (svgContainerRef.current && svgContent) {
-        svgContainerRef.current.innerHTML = svgContent;
+        svgContainerRef.current.innerHTML = sanitizeSvg(svgContent);
       }
       setSvgLoaded(true);
     }

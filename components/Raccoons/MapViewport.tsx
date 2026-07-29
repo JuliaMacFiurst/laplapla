@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { MutableRefObject, ReactNode } from "react";
+import { sanitizeSvg } from "@/lib/security/sanitize";
 
 type MapViewportProps = {
   svgContent: string | null;
@@ -51,7 +52,7 @@ export default function MapViewport({
         <div
           ref={svgHostRef}
           className="map-svg-host"
-          dangerouslySetInnerHTML={{ __html: svgContent || "" }}
+          dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
         />
       </div>
 

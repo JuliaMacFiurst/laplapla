@@ -13,6 +13,7 @@ import {
   SITE_SOCIAL_IMAGE_PATH,
   buildCoreIdentityJsonLd,
 } from "@/lib/identity";
+import { serializeJsonLd } from "@/lib/security/sanitize";
 
 export type SEOProps = {
   title: string;
@@ -106,7 +107,7 @@ export default function SEO({
       <script
         key="identity-jsonld"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(mergedJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(mergedJsonLd) }}
       />
     </Head>
   );

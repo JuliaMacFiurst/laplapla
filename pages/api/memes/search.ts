@@ -88,6 +88,8 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET", "POST"],
+      limit: 120,
+      windowMs: 60_000,
       maxBodyBytes: 16 * 1024,
       keyPrefix: "memes-search",
     },

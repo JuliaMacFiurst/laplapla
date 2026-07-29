@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { useQuest1I18n } from "./i18n";
+import { sanitizeRichText } from "@/lib/security/sanitize";
 
 export default function QuestTextBlocks({
   blocks,
@@ -20,7 +21,7 @@ export default function QuestTextBlocks({
               <p
                 key={paragraphIndex}
                 className="quest-p"
-                dangerouslySetInnerHTML={{ __html: paragraph }}
+                dangerouslySetInnerHTML={{ __html: sanitizeRichText(paragraph) }}
               />
             ))}
           </div>

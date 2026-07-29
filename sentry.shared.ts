@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
-import type { Event } from "@sentry/core";
+import type { Breadcrumb, Event } from "@sentry/core";
 
 const ABORT_MESSAGES = [
   "AbortError",
@@ -24,6 +24,86 @@ const EXTENSION_PATTERNS = [
 ];
 
 const IGNORED_STATUS_CODES = new Set(["400", "401", "403", "404"]);
+const SENSITIVE_KEY_PATTERN =
+  /authorization|cookie|token|secret|password|passwd|api[_-]?key|webhook|email|request[_-]?body/i;
+const BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi;
+const JWT_PATTERN = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g;
+const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+
+function scrubString(value: string) {
+  return value
+    .replace(BEARER_PATTERN, "Bearer [FILTERED]")
+    .replace(JWT_PATTERN, "[FILTERED_TOKEN]")
+    .replace(EMAIL_PATTERN, "[FILTERED_EMAIL]");
+}
+
+function scrubUnknown(value: unknown, depth = 0): unknown {
+  if (depth > 6) {
+    return "[FILTERED_DEPTH]";
+  }
+
+  if (typeof value === "string") {
+    return scrubString(value).slice(0, 2_000);
+  }
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 50).map((item) => scrubUnknown(item, depth + 1));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, 100)
+        .map(([key, nestedValue]) => [
+          key,
+          SENSITIVE_KEY_PATTERN.test(key)
+            ? "[FILTERED]"
+            : scrubUnknown(nestedValue, depth + 1),
+        ]),
+    );
+  }
+
+  return value;
+}
+
+function stripSensitiveQuery(urlValue: string | undefined) {
+  if (!urlValue) {
+    return urlValue;
+  }
+
+  try {
+    const url = new URL(urlValue, "https://www.laplapla.com");
+    for (const key of Array.from(url.searchParams.keys())) {
+      if (SENSITIVE_KEY_PATTERN.test(key)) {
+        url.searchParams.set(key, "[FILTERED]");
+      }
+    }
+    if (SENSITIVE_KEY_PATTERN.test(url.hash)) {
+      url.hash = "";
+    }
+    return urlValue.startsWith("http")
+      ? url.toString()
+      : `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return scrubString(urlValue);
+  }
+}
+
+export function scrubSentryEvent<T extends Event>(event: T): T {
+  const scrubbed = scrubUnknown(event) as T;
+  if (scrubbed.request) {
+    delete scrubbed.request.headers;
+    delete scrubbed.request.cookies;
+    delete scrubbed.request.data;
+    scrubbed.request.url = stripSensitiveQuery(scrubbed.request.url);
+    scrubbed.request.query_string = "[FILTERED]";
+  }
+  return scrubbed;
+}
+
+export function scrubSentryBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb {
+  return scrubUnknown(breadcrumb) as Breadcrumb;
+}
 
 export const sentryEnvironment =
   process.env.SENTRY_ENVIRONMENT ||

@@ -6,11 +6,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": [
-    "window-controls-overlay",
-    "standalone"
-  ],
-  "background_color": "#fff8ef",
+  "background_color": "#ffffff",
   "theme_color": "#fff8ef",
   "orientation": "any",
   "categories": [
@@ -33,13 +29,13 @@
       "src": "/favicon_io/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/favicon_io/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "screenshots": [
@@ -48,14 +44,35 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "LapLapLa learning dashboard"
+      "label": "LapLapLa creative and popular-science platform"
     },
     {
       "src": "/pwa/screenshot-narrow.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "LapLapLa mobile learning app"
+      "label": "LapLapLa creative tools on mobile"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Raccoon Maps",
+      "short_name": "Maps",
+      "description": "Explore interactive maps",
+      "url": "/raccoons?screen=maps"
+    },
+    {
+      "name": "Cat Studio",
+      "short_name": "Studio",
+      "description": "Open the creative studio",
+      "url": "/cats/studio"
+    },
+    {
+      "name": "Dog Drawing",
+      "short_name": "Draw",
+      "description": "Open drawing lessons",
+      "url": "/dog"
+    }
+  ],
+  "prefer_related_applications": false
 }

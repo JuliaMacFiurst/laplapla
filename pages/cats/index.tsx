@@ -19,6 +19,7 @@ import { buildStudioRoute } from "@/lib/studioRouting";
 import { trackEvent } from "@/lib/analytics/client";
 import type { StudioSlide } from "@/types/studio";
 import { getCatCategoryGroups, resolveCatCategory } from "@/lib/catCategories";
+import { sanitizeRichText } from "@/lib/security/sanitize";
 
 type CatRuntimeSlide = {
   text: string;
@@ -1112,7 +1113,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
 
                         <div
                           className="cat-slide-text"
-                          dangerouslySetInnerHTML={{ __html: slide.text }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeRichText(slide.text) }}
                         />
                         <div className="slideshow-refresh-button-row">
                           <button

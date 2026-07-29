@@ -2,7 +2,7 @@ import type { NextApiHandler, NextApiRequest, NextApiResponse } from "next";
 import * as Sentry from "@sentry/nextjs";
 import { sendDiscordErrorAlert } from "@/lib/monitoring/discordAlert";
 import { sentryEnvironment } from "@/sentry.shared";
-import { applyApiGuard } from "@/utils/rateLimit";
+import { applyApiGuard, applyDistributedApiGuard } from "@/utils/rateLimit";
 
 type ApiGuardOptions = {
   methods: string[];
@@ -104,6 +104,18 @@ export function withApiHandler<T = unknown>(
     res: NextApiResponse<T | { error: string }>,
   ) {
     if (!resolveGuardResult(req, res, options.guard)) {
+      return;
+    }
+
+    if (
+      typeof options.guard.limit === "number" &&
+      options.guard.limit > 0 &&
+      !(await applyDistributedApiGuard(req, res, {
+        limit: options.guard.limit,
+        windowMs: options.guard.windowMs,
+        keyPrefix: options.guard.keyPrefix,
+      }))
+    ) {
       return;
     }
 

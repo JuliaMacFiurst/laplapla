@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { createHash } from "node:crypto";
 
 type RateLimitEntry = {
   count: number;
@@ -36,6 +37,90 @@ function getClientIp(req: NextApiRequest) {
     req.socket.remoteAddress ||
     "unknown"
   );
+}
+
+function getDistributedRateLimitConfig() {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/+$/, "");
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  return url && token ? { url, token } : null;
+}
+
+function hashRateLimitIdentity(value: string) {
+  return createHash("sha256").update(value).digest("hex").slice(0, 32);
+}
+
+const DISTRIBUTED_RATE_LIMIT_SCRIPT = `
+local current = redis.call("INCR", KEYS[1])
+if current == 1 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+end
+local ttl = redis.call("PTTL", KEYS[1])
+return { current, ttl }
+`;
+
+export async function applyDistributedApiGuard(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  {
+    limit,
+    windowMs = DEFAULT_WINDOW_MS,
+    keyPrefix = "api",
+  }: Pick<RouteGuardOptions, "limit" | "windowMs" | "keyPrefix">,
+) {
+  const config = getDistributedRateLimitConfig();
+  if (!config) {
+    return true;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1_500);
+
+  try {
+    const key = `ratelimit:${keyPrefix}:${hashRateLimitIdentity(getClientIp(req))}`;
+    const response = await fetch(config.url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([
+        "EVAL",
+        DISTRIBUTED_RATE_LIMIT_SCRIPT,
+        "1",
+        key,
+        String(windowMs),
+      ]),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error("Distributed rate limit request failed");
+    }
+
+    const payload = await response.json() as { result?: [number, number] };
+    const count = Number(payload.result?.[0]);
+    const ttlMs = Math.max(1, Number(payload.result?.[1]) || windowMs);
+    const resetAt = Date.now() + ttlMs;
+
+    res.setHeader("X-RateLimit-Limit", String(limit));
+    res.setHeader("X-RateLimit-Remaining", String(Math.max(0, limit - count)));
+    res.setHeader("X-RateLimit-Reset", String(Math.ceil(resetAt / 1000)));
+
+    if (count > limit) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil(ttlMs / 1000))));
+      res.status(429).json({ error: "Too many requests" });
+      return false;
+    }
+
+    return true;
+  } catch {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[rate-limit] distributed store unavailable; using local guard");
+    }
+    return true;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function getBodySizeBytes(req: NextApiRequest) {

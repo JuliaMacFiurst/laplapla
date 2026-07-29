@@ -34,6 +34,7 @@ import { fontVariableClasses } from "@/lib/fonts";
 import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
 import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
+import PWAAppShell from "@/components/PWA/PWAAppShell";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { getActiveContentExitProperties, trackEvent, trackSessionStart } from "@/lib/analytics/client";
 
@@ -418,6 +419,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <div className={fontVariableClasses}>
+      <PWAAppShell lang={lang} />
       <ResponsiveViewportBridge />
       <LaplaplaDevtoolsBootstrap />
       <AnalyticsPageViewTracker lang={lang} />

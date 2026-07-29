@@ -1,28 +1,34 @@
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
-
-if (!PEXELS_API_KEY) {
-  throw new Error("PEXELS_API_KEY is not set in environment variables.");
-}
+import { fetchWithTimeout } from "@/lib/server/security/fetchWithTimeout";
 
 export async function searchPexelsVideos(
   query: string
 ): Promise<string[]> {
+  const apiKey = process.env.PEXELS_API_KEY;
+  if (!apiKey) {
+    return [];
+  }
+
+  const normalizedQuery = query.trim().replace(/\s+/g, " ").slice(0, 160);
+  if (!normalizedQuery) {
+    return [];
+  }
+
   const searchParams = new URLSearchParams({
-    query,
-    per_page: "40",
+    query: normalizedQuery,
+    per_page: "24",
   });
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://api.pexels.com/videos/search?${searchParams.toString()}`,
     {
       headers: {
-        Authorization: PEXELS_API_KEY!,
+        Authorization: apiKey,
       },
-    }
+    },
+    6_000,
   );
 
   if (!response.ok) {
-    console.error("Pexels API error:", response.statusText);
     return [];
   }
 

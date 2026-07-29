@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { sanitizeSvg } from "@/lib/security/sanitize";
 
 const PANEL_SVG_PATH = "/quests/assets/decorations/pilot-pannel.svg";
 
@@ -44,7 +45,7 @@ export default function InstrumentPanel({ onSwitch }: { onSwitch: (id: string) =
         const svgMarkup = await response.text();
         if (controller.signal.aborted) return;
 
-        root.innerHTML = svgMarkup;
+        root.innerHTML = sanitizeSvg(svgMarkup);
 
         const switches = root.querySelectorAll<HTMLElement>(`
           [data-switch="on"],

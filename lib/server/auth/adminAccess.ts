@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/server/supabase";
 
 type AdminAccessResult = {
   isAdmin: boolean;
+  isAuthenticated: boolean;
   userEmail: string | null;
 };
 
@@ -113,7 +114,7 @@ export async function resolveAdminAccess(req: NextApiRequest): Promise<AdminAcce
   const accessToken = extractBearerToken(req) ?? extractCookieAccessToken(req);
 
   if (!adminEmail || !accessToken) {
-    return { isAdmin: false, userEmail: null };
+    return { isAdmin: false, isAuthenticated: false, userEmail: null };
   }
 
   try {
@@ -127,10 +128,11 @@ export async function resolveAdminAccess(req: NextApiRequest): Promise<AdminAcce
     const isAdmin = Boolean(userEmail && userEmail === adminEmail);
     return {
       isAdmin,
+      isAuthenticated: Boolean(userEmail),
       userEmail,
     };
   } catch {
     warnInvalidTokenOnce(accessToken);
-    return { isAdmin: false, userEmail: null };
+    return { isAdmin: false, isAuthenticated: false, userEmail: null };
   }
 }

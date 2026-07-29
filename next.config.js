@@ -39,6 +39,7 @@ const contentSecurityPolicy = [
   "media-src 'self' data: blob: https:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",
+  ...(isProduction ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const securityHeaders = [
@@ -49,6 +50,10 @@ const securityHeaders = [
   {
     key: "X-Frame-Options",
     value: "SAMEORIGIN",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
   },
   {
     key: "Referrer-Policy",
@@ -72,6 +77,14 @@ const technicalNoIndexHeaders = [
   {
     key: "X-Robots-Tag",
     value: "noindex, nofollow",
+  },
+];
+
+const adminNoStoreHeaders = [
+  ...technicalNoIndexHeaders,
+  {
+    key: "Cache-Control",
+    value: "private, no-store, max-age=0",
   },
 ];
 
@@ -106,8 +119,40 @@ const nextConfig = {
     return [
       ...technicalNoIndexSources.map((source) => ({
         source,
-        headers: technicalNoIndexHeaders,
+        headers: source.startsWith("/api/")
+          ? technicalNoIndexHeaders
+          : adminNoStoreHeaders,
       })),
+      {
+        source: "/api/map-popup-content/:path*",
+        headers: adminNoStoreHeaders,
+      },
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
+      {
+        source: "/offline.html",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache",
+          },
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow",
+          },
+        ],
+      },
       {
         source: "/:path*",
         headers: securityHeaders,

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
+import { sanitizeSvg } from "@/lib/security/sanitize";
 
 const DEFAULT_VIEW_BOX = { width: 2000, height: 856 };
 const MIN_ZOOM = 1;
@@ -312,7 +313,7 @@ export default function MobileSvgDrawMap({
           <div
             ref={svgContainerRef}
             className="quest-mobile-svg-map-base"
-            dangerouslySetInnerHTML={{ __html: svgContent }}
+            dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
           />
         ) : (
           <div className="quest-mobile-svg-map-state quest-mobile-svg-map-empty">{emptyLabel}</div>
