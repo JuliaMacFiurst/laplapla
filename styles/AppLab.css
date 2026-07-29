@@ -35,11 +35,8 @@
   text-transform: uppercase;
 }
 
-.applab-hero h1 {
+.applab-hero .page-title {
   margin: 0;
-  font-size: clamp(3.4rem, 12vw, 7.5rem);
-  line-height: 0.9;
-  letter-spacing: -0.075em;
 }
 
 .applab-intro {
@@ -159,11 +156,6 @@
   display: inline-flex;
   align-self: flex-start;
   margin-top: 24px;
-  padding: 11px 18px;
-  border-radius: 999px;
-  color: #fff;
-  background: #172033;
-  font-weight: 800;
   text-decoration: none;
 }
 
@@ -175,11 +167,6 @@
   height: clamp(108px, 9vw, 132px);
   object-fit: contain;
   pointer-events: none;
-}
-
-.applab-open:hover,
-.applab-open:focus-visible {
-  background: #6750a4;
 }
 
 .applab-page[dir="rtl"] .applab-platforms,

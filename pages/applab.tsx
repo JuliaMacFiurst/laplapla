@@ -203,7 +203,7 @@ export default function AppLabPage() {
             {copy.back}
           </Link>
           <p className="applab-kicker">{copy.kicker}</p>
-          <h1>{copy.title}</h1>
+          <h1 className="page-title">LapLapLa AppLab</h1>
           <p className="applab-intro">{copy.intro}</p>
           <p className="applab-note">{copy.note}</p>
         </header>
@@ -236,7 +236,7 @@ export default function AppLabPage() {
               </div>
               {project.status === "available" && project.href ? (
                 <Link
-                  className="applab-open"
+                  className="applab-open feed-action-button"
                   href={buildLocalizedHref(project.href, lang)}
                 >
                   {copy.open}

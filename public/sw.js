@@ -11,6 +11,7 @@ const PRECACHE_URLS = [
   OFFLINE_PATH,
   "/laplapla-logo.webp",
   "/pwa/splash/generated/web/app-splash-logo-640.webp",
+  "/fonts/AmaticSC-Bold.ttf",
   "/favicon_io/site.webmanifest",
   "/favicon_io/android-chrome-192x192.png",
   "/favicon_io/android-chrome-512x512.png"
