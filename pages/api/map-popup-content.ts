@@ -61,7 +61,9 @@ export default withApiHandler(
   {
     guard: {
       methods: ["GET"],
-      limit: 30,
+      // Cached Supabase reads are used while navigating an interactive map.
+      // Expensive media search keeps its separate, stricter limiter.
+      limit: 240,
       keyPrefix: "map-popup-content",
     },
     cacheControl: "public, max-age=300, s-maxage=300, stale-while-revalidate=600",

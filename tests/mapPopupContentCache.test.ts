@@ -29,6 +29,12 @@ describe("map popup content cache", () => {
     expect(buildMapPopupCacheKey("country", "brazil", "ru")).toBe(
       "ru:country:brazil",
     );
+    expect(buildMapPopupCacheKey("river", "amazon", "ru")).not.toBe(
+      buildMapPopupCacheKey("river", "nile", "ru"),
+    );
+    expect(buildMapPopupCacheKey("river", "amazon", "ru")).not.toBe(
+      buildMapPopupCacheKey("river", "amazon", "he"),
+    );
   });
 
   it("deduplicates concurrent requests and reuses resolved content", async () => {
@@ -44,6 +50,24 @@ describe("map popup content cache", () => {
     expect(first).toBe(content);
     expect(second).toBe(content);
     expect(third).toBe(content);
+    expect(loader).toHaveBeenCalledTimes(1);
+  });
+
+  it("deduplicates intent prefetch and click consumers for the same entity", async () => {
+    let resolveLoader: ((value: MapPopupContent) => void) | undefined;
+    const loader = vi.fn(
+      () =>
+        new Promise<MapPopupContent>((resolve) => {
+          resolveLoader = resolve;
+        }),
+    );
+    const key = buildMapPopupCacheKey("river", "amazon", "ru");
+
+    const intentPrefetch = getCachedMapPopupContent(key, loader);
+    const clickLoad = getCachedMapPopupContent(key, loader);
+    resolveLoader?.({ ...content, type: "river", targetId: "amazon" });
+
+    await expect(Promise.all([intentPrefetch, clickLoad])).resolves.toHaveLength(2);
     expect(loader).toHaveBeenCalledTimes(1);
   });
 

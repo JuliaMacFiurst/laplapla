@@ -1,6 +1,10 @@
+const MAP_SVG_POLICY_VERSION = "2";
+
 export async function getMapSvg(path: string): Promise<string | null> {
   try {
-    const response = await fetch(`/api/map-svg?path=${encodeURIComponent(path)}`);
+    const response = await fetch(
+      `/api/map-svg?path=${encodeURIComponent(path)}&policy=${MAP_SVG_POLICY_VERSION}`,
+    );
     if (!response.ok) {
       console.error("❌ Не удалось загрузить карту:", path, response.status);
       return null;
@@ -14,5 +18,5 @@ export async function getMapSvg(path: string): Promise<string | null> {
 }
 
 export function getPublicMapUrl(path: string): string {
-  return `/api/map-svg?path=${encodeURIComponent(path)}`;
+  return `/api/map-svg?path=${encodeURIComponent(path)}&policy=${MAP_SVG_POLICY_VERSION}`;
 }

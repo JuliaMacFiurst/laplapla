@@ -70,19 +70,28 @@
   line-height: 1.25;
 }
 
-#countries-svg path {
-  stroke: violet;
+.country-map .country,
+.flag-map .country,
+.culture-map .country,
+.food-map .country {
+  stroke: #999;
   stroke-width: 1;
-  fill: transparent;
-  transition: fill 0.2s ease;
-}
-
-#countries-svg path:hover {
-  fill: rgba(238, 130, 238, 0.2); /* полупрозрачный фиолетовый */
+  fill: #fdc09f;
   cursor: pointer;
+  transition: fill 0.3s ease;
 }
 
-#countries-svg path[data-selected="true"] {
+.country-map .country:hover,
+.flag-map .country:hover,
+.culture-map .country:hover,
+.food-map .country:hover {
+  fill: url("#hoverGradient");
+}
+
+.country-map .country[data-selected="true"],
+.flag-map .country[data-selected="true"],
+.culture-map .country[data-selected="true"],
+.food-map .country[data-selected="true"] {
   fill: #e0d4f7 !important;
 }
 
@@ -112,6 +121,21 @@
   position: relative;
 }
 
+.map-svg-host svg:not(.river-map) path[id] {
+  cursor: pointer;
+  pointer-events: visiblePainted;
+}
+
+.map-svg-host .river-map path[id] {
+  cursor: pointer;
+  pointer-events: visibleStroke;
+}
+
+.map-svg-host [data-interaction-overlay="true"],
+.map-svg-host [data-interaction-overlay="true"] * {
+  pointer-events: none !important;
+}
+
 .map-loading-overlay {
   position: absolute;
   inset: 0;
@@ -138,7 +162,7 @@
   pointer-events: all;
 }
 
-#rivers-svg path {
+.river-map .river {
   stroke: #00BCD4;
   stroke-width: 1;
   fill: none;
@@ -146,12 +170,12 @@
   transition: stroke 0.3s ease;
 }
 
-#rivers-svg path:hover {
+.river-map .river:hover {
   stroke: #FF5722;
   stroke-width: 2;
 }
 
-#rivers-svg path[data-selected="true"] {
+.river-map .river[data-selected="true"] {
   fill: #e0d4f7 !important;
 }
 
@@ -837,17 +861,17 @@ svg path[data-selected="true"] {
   }
 }
 
-#countries-svg path {
+.country-map .country {
   outline: none;
   border: none;
 }
 
-#countries-svg path:focus {
+.country-map .country:focus {
   outline: none !important;
   border: none;
 }
 
-#countries-svg path:focus-visible {
+.country-map .country:focus-visible {
   outline: none !important;
 }
 
@@ -866,6 +890,33 @@ svg path[data-selected="true"] {
   align-items: center;
   justify-content: center;
   z-index: 2;
+}
+
+.map-popup-request-error {
+  position: fixed;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(92vw, 560px);
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: rgba(31, 41, 55, 0.94);
+  color: #fff;
+  transform: translateX(-50%);
+}
+
+.map-popup-request-error button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0.5rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  font-weight: 700;
 }
 
 .country-close-button.studio-button:active {

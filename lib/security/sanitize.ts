@@ -121,7 +121,18 @@ const SVG_GLOBAL_ATTRIBUTES = [
   "xmlns:xlink",
   "href",
   "xlink:href",
+  "style",
+  "data-*",
 ];
+
+const SAFE_SVG_PAINT =
+  /^(?:none|transparent|currentColor|inherit|black|silver|gray|white|maroon|red|purple|fuchsia|green|lime|olive|yellow|navy|blue|teal|aqua|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[-+%.,\d\s]+\)|url\(\s*#[A-Za-z_][\w:.-]*\s*\))$/i;
+const SAFE_SVG_NUMBER = /^[-+]?(?:\d+|\d*\.\d+)(?:e[-+]?\d+)?(?:px|pt|pc|mm|cm|in|em|rem|%)?$/i;
+const SAFE_SVG_NUMBER_LIST =
+  /^[-+]?(?:\d+|\d*\.\d+)(?:e[-+]?\d+)?(?:px|pt|pc|mm|cm|in|em|rem|%)?(?:[\s,]+[-+]?(?:\d+|\d*\.\d+)(?:e[-+]?\d+)?(?:px|pt|pc|mm|cm|in|em|rem|%)?)*$/i;
+const LOCAL_SVG_REFERENCE = /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/;
+const SVG_PAINT_ATTRIBUTES = new Set(["color", "fill", "stroke", "stop-color"]);
+const SVG_REFERENCE_ATTRIBUTES = new Set(["clip-path", "mask", "filter"]);
 
 const SVG_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: SVG_TAGS,
@@ -135,7 +146,48 @@ const SVG_OPTIONS: sanitizeHtml.IOptions = {
     lowerCaseTags: false,
     lowerCaseAttributeNames: false,
   },
+  allowedStyles: {
+    "*": {
+      color: [SAFE_SVG_PAINT],
+      display: [/^(?:inline|none)$/],
+      fill: [SAFE_SVG_PAINT],
+      "fill-opacity": [SAFE_SVG_NUMBER],
+      "fill-rule": [/^(?:nonzero|evenodd|inherit)$/],
+      marker: [/^none$/],
+      opacity: [SAFE_SVG_NUMBER],
+      overflow: [/^(?:visible|hidden)$/],
+      stroke: [SAFE_SVG_PAINT],
+      "stroke-dasharray": [SAFE_SVG_NUMBER_LIST, /^none$/],
+      "stroke-dashoffset": [SAFE_SVG_NUMBER],
+      "stroke-linecap": [/^(?:butt|round|square|inherit)$/],
+      "stroke-linejoin": [/^(?:miter|round|bevel|inherit)$/],
+      "stroke-opacity": [SAFE_SVG_NUMBER],
+      "stroke-width": [SAFE_SVG_NUMBER],
+      visibility: [/^(?:visible|hidden|collapse)$/],
+    },
+  },
   disallowedTagsMode: "discard",
+  transformTags: {
+    "*": (tagName, attribs) => {
+      const safeAttributes = { ...attribs };
+
+      for (const attribute of SVG_PAINT_ATTRIBUTES) {
+        const value = safeAttributes[attribute];
+        if (value && !SAFE_SVG_PAINT.test(value)) {
+          delete safeAttributes[attribute];
+        }
+      }
+
+      for (const attribute of SVG_REFERENCE_ATTRIBUTES) {
+        const value = safeAttributes[attribute];
+        if (value && value !== "none" && !LOCAL_SVG_REFERENCE.test(value)) {
+          delete safeAttributes[attribute];
+        }
+      }
+
+      return { tagName, attribs: safeAttributes };
+    },
+  },
   exclusiveFilter(frame) {
     if (frame.tag === "use") {
       const href = frame.attribs.href || frame.attribs["xlink:href"] || "";

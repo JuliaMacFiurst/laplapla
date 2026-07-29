@@ -21,8 +21,13 @@ import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import {
   buildMapPopupCacheKey,
   getCachedMapPopupContent,
+  invalidateMapPopupContent,
   updateCachedMapPopupContent,
 } from "@/lib/mapPopup/contentCache";
+import {
+  loadMapPopupContent,
+  MapPopupRequestError,
+} from "@/lib/mapPopup/client";
 import {
   getInitialSlideMediaStatus,
   hasResolvedSlideMedia,
@@ -33,6 +38,7 @@ import {
   type MapPopupMediaStatus,
 } from "@/lib/mapPopup/mediaLifecycle";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
+import { selectSmallestSvgHit } from "@/lib/mapSvgInteraction";
 import { supabase } from "@/lib/supabase";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
@@ -69,26 +75,6 @@ function markPopupPerformance(name: string) {
   ) {
     window.performance.mark(`raccoon-popup:${name}`);
   }
-}
-
-async function loadMapPopupContent(
-  type: InteractiveMapProps["type"],
-  targetId: string,
-  lang: string,
-): Promise<MapPopupContent | null> {
-  const response = await fetch(
-    `/api/map-popup-content?type=${encodeURIComponent(type)}&target_id=${encodeURIComponent(targetId)}&lang=${encodeURIComponent(lang)}`,
-  );
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`Failed to load popup content: ${response.status}`);
-  }
-
-  return (await response.json()) as MapPopupContent;
 }
 
 function splitTextToParagraphs(input: string | null | undefined): string[] {
@@ -557,6 +543,8 @@ export default function InteractiveMap({
   const [viewMode, setViewMode] = useState<"slides" | "video">("slides");
   const [toast, setToast] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [popupRequestError, setPopupRequestError] = useState<string | null>(null);
+  const [popupRetryNonce, setPopupRetryNonce] = useState(0);
   const [, setIsPreparingSlides] = useState(false);
   const [mediaStatusBySlideId, setMediaStatusBySlideId] = useState<
     Record<string, MapPopupMediaStatus>
@@ -578,6 +566,7 @@ export default function InteractiveMap({
   const mediaAttemptedRef = useRef(new Set<string>());
   const slideParseHydrationRef = useRef(new Set<string>());
   const mediaRequestVersionRef = useRef(new Map<string, number>());
+  const autoRetryAttemptedRef = useRef(new Set<string>());
 
   const lastSelectedPath = useRef<SVGPathElement | null>(null);
   const previewSelectedPathsRef = useRef<SVGPathElement[]>([]);
@@ -1021,6 +1010,17 @@ export default function InteractiveMap({
       // are evicted from the shared cache.
     });
   }, [lang, type]);
+
+  const retryPopupContent = useCallback(() => {
+    if (!selectedElement) {
+      return;
+    }
+
+    const cacheKey = buildMapPopupCacheKey(type, selectedElement, lang);
+    invalidateMapPopupContent(cacheKey);
+    setPopupRequestError(null);
+    setPopupRetryNonce((current) => current + 1);
+  }, [lang, selectedElement, type]);
 
   const closeSelection = useCallback((
     _reason: "outside" | "button" | "toggle" | "map-switch",
@@ -1831,12 +1831,14 @@ export default function InteractiveMap({
     }
 
     let isCancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const currentFetchId = ++fetchIdRef.current;
     mediaHydrationRef.current.clear();
     mediaAttemptedRef.current.clear();
     setMediaStatusBySlideId({});
     setManualRefreshSlideId(null);
     setPopupContent(null);
+    setPopupRequestError(null);
     setIsLoading(true);
     setIsPreparingSlides(false);
 
@@ -1955,13 +1957,52 @@ export default function InteractiveMap({
         markPopupPerformance("content-rendered");
       } catch (err) {
         if (!isCancelled) {
-          console.error("❌ Ошибка при загрузке popup-контента:", err);
+          if (process.env.NODE_ENV !== "production") {
+            console.error("❌ Ошибка при загрузке popup-контента:", err);
+          }
           if (currentFetchId === fetchIdRef.current) {
             const fallbackContent = buildFallbackContent();
             setPopupContent(fallbackContent);
             setMediaStatusBySlideId({
               [fallbackContent.slides[0].id]: "fallback",
             });
+
+            if (err instanceof MapPopupRequestError && err.status === 429) {
+              const retryAfterMs = err.retryAfterMs ?? 3_000;
+              const retrySeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+              setPopupRequestError(
+                lang === "ru"
+                  ? `Слишком много запросов. Повторяем через ${retrySeconds} сек.`
+                  : lang === "he"
+                    ? `יותר מדי בקשות. ננסה שוב בעוד ${retrySeconds} שניות.`
+                    : `Too many requests. Retrying in ${retrySeconds} sec.`,
+              );
+
+              const retryKey = buildMapPopupCacheKey(type, selectedElement, lang);
+              if (
+                retryAfterMs <= 10_000 &&
+                !autoRetryAttemptedRef.current.has(retryKey)
+              ) {
+                autoRetryAttemptedRef.current.add(retryKey);
+                retryTimer = setTimeout(() => {
+                  if (
+                    !isCancelled &&
+                    currentFetchId === fetchIdRef.current &&
+                    selectedElementRef.current === selectedElement
+                  ) {
+                    setPopupRetryNonce((current) => current + 1);
+                  }
+                }, retryAfterMs);
+              }
+            } else {
+              setPopupRequestError(
+                lang === "ru"
+                  ? "Не удалось загрузить данные. Попробуйте ещё раз."
+                  : lang === "he"
+                    ? "לא ניתן לטעון את הנתונים. נסו שוב."
+                    : "Could not load the data. Please try again.",
+              );
+            }
           }
         }
       } finally {
@@ -1975,8 +2016,18 @@ export default function InteractiveMap({
 
     return () => {
       isCancelled = true;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
     };
-  }, [emptyStateSlideText, isPopupOpen, lang, selectedElement, type]);
+  }, [
+    emptyStateSlideText,
+    isPopupOpen,
+    lang,
+    popupRetryNonce,
+    selectedElement,
+    type,
+  ]);
 
   useEffect(() => {
     const storyId = popupContent?.storyId;
@@ -2257,13 +2308,17 @@ export default function InteractiveMap({
     ) as SVGPathElement[];
     paths.forEach((path) => {
       path.style.cursor = "pointer";
-      path.style.pointerEvents = "visibleStroke";
-      if (type !== "river") {
-        path.style.stroke = "rgba(0, 0, 0, 0)";
-        path.style.strokeWidth = "10";
-      }
+      path.style.pointerEvents =
+        type === "river" ? "visibleStroke" : "visiblePainted";
       path.setAttribute("data-map-bound", "1");
     });
+
+    if (isDebugLogging) {
+      const sampleIds = paths.slice(0, 5).map((path) => path.id);
+      console.debug(
+        `[raccoon-map/bind] type=${type} interactive=${paths.length} sample=${sampleIds.join(",")}`,
+      );
+    }
 
     const getPathFromNode = (node: EventTarget | null) => {
       if (!(node instanceof Element)) {
@@ -2309,17 +2364,11 @@ export default function InteractiveMap({
         return getPathFromNode(event.target);
       }
 
-      return (
-        hits.slice().sort((a, b) => {
-          const aBox = a.getBBox();
-          const bBox = b.getBBox();
-          return aBox.width * aBox.height - bBox.width * bBox.height;
-        })[0] ?? null
-      );
+      return selectSmallestSvgHit(hits, (path) => path.getBBox());
     };
 
     const getPathFromPointerEvent = (event: MouseEvent) => {
-      if (type === "animal" || type === "weather") {
+      if (type === "animal" || type === "weather" || type === "physic") {
         return getBiomePathFromPointerEvent(event);
       }
 
@@ -2361,7 +2410,7 @@ export default function InteractiveMap({
     };
 
     const handleContainerMouseOver = (event: MouseEvent) => {
-      const path = getPathFromNode(event.target);
+      const path = getPathFromPointerEvent(event);
       if (!path || !mapContent.contains(path)) {
         return;
       }
@@ -2372,7 +2421,6 @@ export default function InteractiveMap({
       }
 
       applyHoverStyle(path);
-      prefetchSelection(path.id);
     };
 
     const handleContainerPointerDown = (event: PointerEvent) => {
@@ -2404,7 +2452,7 @@ export default function InteractiveMap({
     };
 
     const handleContainerMouseMove = (event: MouseEvent) => {
-      if (type !== "animal" && type !== "weather") {
+      if (type !== "animal" && type !== "weather" && type !== "physic") {
         return;
       }
 
@@ -2426,6 +2474,27 @@ export default function InteractiveMap({
 
     const handleContainerMouseLeave = () => {
       if (hoveredPathRef.current) {
+        clearHoverStyle(hoveredPathRef.current);
+      }
+    };
+
+    const handleDocumentMouseMove = (event: MouseEvent) => {
+      if (
+        type !== "animal" &&
+        type !== "weather" &&
+        type !== "physic"
+      ) {
+        return;
+      }
+
+      const rect = mapContent.getBoundingClientRect();
+      const isOutside =
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom;
+
+      if (isOutside && hoveredPathRef.current) {
         clearHoverStyle(hoveredPathRef.current);
       }
     };
@@ -2452,6 +2521,7 @@ export default function InteractiveMap({
     mapContent.addEventListener("pointerdown", handleContainerPointerDown);
     mapContent.addEventListener("focusin", handleContainerFocusIn);
     mapContent.addEventListener("click", handleContainerClick);
+    document.addEventListener("mousemove", handleDocumentMouseMove);
 
     syncInteractionOverlay();
 
@@ -2472,6 +2542,7 @@ export default function InteractiveMap({
       mapContent.removeEventListener("pointerdown", handleContainerPointerDown);
       mapContent.removeEventListener("focusin", handleContainerFocusIn);
       mapContent.removeEventListener("click", handleContainerClick);
+      document.removeEventListener("mousemove", handleDocumentMouseMove);
     };
   }, [
     applyHoverStyle,
@@ -3349,6 +3420,14 @@ export default function InteractiveMap({
           {toast}
         </div>
       )}
+      {isPopupOpen && popupRequestError ? (
+        <div className="map-popup-request-error" role="status" aria-live="polite">
+          <span>{popupRequestError}</span>
+          <button type="button" onClick={retryPopupContent}>
+            {lang === "ru" ? "Повторить" : lang === "he" ? "לנסות שוב" : "Retry"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

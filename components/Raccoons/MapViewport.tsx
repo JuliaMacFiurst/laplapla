@@ -1,6 +1,24 @@
 import Image from "next/image";
-import type { MutableRefObject, ReactNode } from "react";
-import { sanitizeSvg } from "@/lib/security/sanitize";
+import { memo, type MutableRefObject, type ReactNode } from "react";
+
+type MapSvgHostProps = {
+  svgContent: string | null;
+  svgHostRef: MutableRefObject<HTMLDivElement | null>;
+};
+
+const MapSvgHost = memo(function MapSvgHost({
+  svgContent,
+  svgHostRef,
+}: MapSvgHostProps) {
+  return (
+    <div
+      ref={svgHostRef}
+      className="map-svg-host"
+      // Map SVGs are sanitized at the trusted /api/map-svg boundary.
+      dangerouslySetInnerHTML={{ __html: svgContent || "" }}
+    />
+  );
+});
 
 type MapViewportProps = {
   svgContent: string | null;
@@ -49,11 +67,7 @@ export default function MapViewport({
         onTouchEnd={onTouchEnd}
         onDoubleClick={onDoubleClick}
       >
-        <div
-          ref={svgHostRef}
-          className="map-svg-host"
-          dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
-        />
+        <MapSvgHost svgContent={svgContent} svgHostRef={svgHostRef} />
       </div>
 
       {isMapLoading ? (
