@@ -2,7 +2,7 @@ export const en = {
   seo: {
     home: {
       title: "LapLapLa — science, stories, and creative experiments",
-      description: "LapLapLa is an interactive creative and popular-science platform for users aged 16 and over.",
+      description: "Cats explain complex ideas, capybaras tell stories from books, and raccoons show you the world through interactive stories and visual experiments.",
     },
     cats: {
       index: {
@@ -176,11 +176,9 @@ export const en = {
     },
     brand: {
       eyebrow: "LapLapLa homepage",
-      heading: "LapLapLa — a creative and popular-science platform for ages 16+",
-      intro:
-        "LapLapLa brings together interactive stories, games, maps, music, drawing, animation, books, and creative tools.",
-      audience:
-        "The platform is for users aged 16 and over: its characters make complex topics approachable through visual stories and creative experiments.",
+      heading: "Here, cats explain complex ideas, capybaras tell stories from books, and raccoons show you the world.",
+      intro: "Interactive stories, creative tools, and visual experiments.",
+      audience: "Explore science, books, art, music, and geography with the characters of LapLapLa.",
       sectionsTitle: "LapLapLa core sections",
       aboutLink: "About LapLapLa",
     },
@@ -924,7 +922,10 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
         searchError: "Failed to search books.",
       },
       loadingErrorTitle: "Loading Error",
-      storyError: "Failed to load story slides.",
+      storyLoading: "Loading story scenes…",
+      storyEmpty: "No story scenes are available yet.",
+      storyError: "Could not load the story scenes.",
+      storyRetry: "Try again",
       slideCounter: "Slide {current} of {total}",
       testTitle: "Book Quiz",
       noTests: "There is no quiz for this book yet.",

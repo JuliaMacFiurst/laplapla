@@ -1066,9 +1066,6 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       try {
         const explanation = await fetchExplanation(bookId, modeId);
         const nextSlides = prepareSlides(explanation.slides || []);
-        if (nextSlides.length === 0) {
-          throw new Error(t.storyError);
-        }
         await preloadInitialSlideMedia(nextSlides, 0);
         if (requestId !== requestRef.current) {
           return;
@@ -1080,6 +1077,9 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
           slideIndex: 0,
         }));
       } catch (loadError) {
+        if (requestId !== requestRef.current) {
+          return;
+        }
         if (isAbortError(loadError)) {
           return;
         }
@@ -1087,10 +1087,12 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         setSlides([]);
         setError(message);
       } finally {
-        setLoading(false);
+        if (requestId === requestRef.current) {
+          setLoading(false);
+        }
       }
     },
-    [clearMediaCache, currentBook, fetchExplanation, preloadInitialSlideMedia, selectedModeIdKey, t.errors.explanationGeneric, t.storyError, updateBookUiState],
+    [clearMediaCache, currentBook, fetchExplanation, preloadInitialSlideMedia, selectedModeIdKey, t.errors.explanationGeneric, updateBookUiState],
   );
 
   const fetchTests = useCallback(async (bookId: string | number, signal?: AbortSignal) => {
@@ -1202,9 +1204,6 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
       }
 
       const nextSlides = prepareSlides(explanation.slides || []);
-      if (nextSlides.length === 0) {
-        throw new Error(t.storyError);
-      }
 
       return {
         nextSlides,
@@ -1212,7 +1211,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
         resolvedModeId,
       };
     },
-    [explanationModes, fetchExplanation, fetchTests, loadModes, t.errors.noExplanations, t.errors.noModes, t.storyError],
+    [explanationModes, fetchExplanation, fetchTests, loadModes, t.errors.noExplanations, t.errors.noModes],
   );
 
   const loadBook = useCallback(
@@ -1304,7 +1303,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
           return;
         }
 
-        setCurrentBook(null);
+        setCurrentBook(book);
         setSlides([]);
         setTests([]);
         lastLoadedBookRef.current = null;
@@ -1386,6 +1385,18 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     setBookHistory((prev) => prev.slice(0, -1));
   }, [bookHistory, bookUiStateById, clearMediaCache, preloadInitialSlideMedia]);
 
+  const retryCurrentBook = useCallback(() => {
+    if (!currentBook || loading) {
+      return;
+    }
+
+    void loadBook(currentBook, selectedModeId, {
+      pushHistory: false,
+      forceReload: true,
+      preserveMediaCache: true,
+    });
+  }, [currentBook, loadBook, loading, selectedModeId]);
+
   const setCurrentBookSlideIndex = useCallback((slideIndex: number) => {
     if (!currentBook) {
       return;
@@ -1465,6 +1476,7 @@ export function useBook(t: CapybaraPageDict, lang: Lang, options?: UseBookOption
     loadRandomBook,
     loadBook,
     loadPreviousBook,
+    retryCurrentBook,
     loadExplanation,
     loadTests,
     preloadNextSlideMedia,

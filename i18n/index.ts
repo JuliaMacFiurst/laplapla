@@ -735,7 +735,10 @@ type DictionaryShape = {
         searchError: string;
       };
       loadingErrorTitle: string;
+      storyLoading: string;
+      storyEmpty: string;
       storyError: string;
+      storyRetry: string;
       slideCounter: string;
       testTitle: string;
       noTests: string;

@@ -7,6 +7,7 @@ import MobileBookScreen from "@/components/capybara/mobile/MobileBookScreen";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries, Lang } from "@/i18n";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
+import type { SlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -44,7 +45,8 @@ interface BookScreenProps {
   onOpenStandaloneBook?: (modeId?: string | number | null) => void;
   mobileVariant?: "feed" | "reader";
   isOpeningStudio?: boolean;
-  showEmptyError?: boolean;
+  slidesLoadStatus: SlidesLoadStatus;
+  onRetrySlides?: () => void;
   bottomNavigation?: ReactNode;
   t: CapybaraPageDict;
 }
@@ -74,7 +76,8 @@ export default function BookScreen({
   onOpenStandaloneBook,
   mobileVariant = "reader",
   isOpeningStudio = false,
-  showEmptyError,
+  slidesLoadStatus,
+  onRetrySlides,
   bottomNavigation,
   t,
 }: BookScreenProps) {
@@ -184,7 +187,8 @@ export default function BookScreen({
         onOpenStandaloneBook={onOpenStandaloneBook}
         variant={mobileVariant}
         isOpeningStudio={isOpeningStudio}
-        showEmptyError={showEmptyError}
+        slidesLoadStatus={slidesLoadStatus}
+        onRetrySlides={onRetrySlides}
         t={t}
       />
     );
@@ -223,7 +227,12 @@ export default function BookScreen({
           onFindNewImage={(slideIndex) => onFindNewImage(slideIndex, { bookTitle: book.title, modeLabel: selectedModeLabel })}
           isFindingNewImage={isFindingNewImage}
           textClassName="story-carousel-text"
-          emptyMessage={t.storyError}
+          loadStatus={slidesLoadStatus}
+          loadingMessage={t.storyLoading}
+          emptyMessage={t.storyEmpty}
+          errorMessage={t.storyError}
+          retryLabel={t.storyRetry}
+          onRetry={onRetrySlides}
           mediaCache={mediaCache}
           onPreloadNextSlide={onPreloadNextSlide}
         />

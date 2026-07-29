@@ -34,6 +34,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
     loadRandomBook,
     loadBook,
     loadPreviousBook,
+    retryCurrentBook,
     loadExplanation,
     hasPreviousBook,
     preloadNextSlideMedia,
@@ -789,6 +790,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             isFindingNewImage={refreshingSlideIndex === currentSlideIndex}
             mediaCache={mediaCache}
             onPreloadNextSlide={handlePreloadNextSlide}
+            onRetrySlides={retryCurrentBook}
             t={t}
           />
         )}

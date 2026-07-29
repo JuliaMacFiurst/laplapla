@@ -2,6 +2,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useAutoFontSize } from "@/hooks/useAutoFontSize";
 import { dictionaries, type Lang } from "@/i18n";
+import type { SlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 import type { CarouselStory } from "../types/types";
 import { fallbackImages } from "../constants";
 
@@ -29,7 +30,12 @@ interface StoryCarouselProps {
   onFindNewImage?: (slideIndex: number) => void | Promise<void>;
   isFindingNewImage?: boolean;
   textClassName?: string;
-  emptyMessage?: string;
+  loadStatus: SlidesLoadStatus;
+  loadingMessage: string;
+  emptyMessage: string;
+  errorMessage: string;
+  retryLabel: string;
+  onRetry?: () => void;
   mediaCache?: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide?: (slideIndex: number) => void;
 }
@@ -43,12 +49,16 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
   onFindNewImage,
   isFindingNewImage,
   textClassName,
+  loadStatus,
+  loadingMessage,
   emptyMessage,
+  errorMessage,
+  retryLabel,
+  onRetry,
   mediaCache,
   onPreloadNextSlide,
 }) => {
   const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
-  const [showError, setShowError] = useState(false);
   const [lockedMedia, setLockedMedia] = useState<SlideMedia | null>(null);
   const [isPortraitMedia, setIsPortraitMedia] = useState(false);
   const textRef = useAutoFontSize<HTMLParagraphElement>([
@@ -69,38 +79,33 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     onPreloadNextSlide?.(currentSlideIndex);
   }, [currentSlideIndex, mediaCache, onPreloadNextSlide, story.id]);
 
-  useEffect(() => {
-    if (story && story.slides && story.slides.length > 0) {
-      setShowError(false);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setShowError(true);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [story]);
-
-  if (!story || !story.slides || story.slides.length === 0) {
-    if (!showError) {
+  if (loadStatus !== "success" || !story?.slides?.length) {
+    if (loadStatus === "idle" || loadStatus === "loading") {
       return (
         <div className="story-wrapper story-wrapper-loading" style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
           <Image
             className="capybara-spinner"
             src="/spinners/capybara-spinner.webp"
-            alt={story?.title || emptyMessage || "illustration"}
+            alt={story?.title || loadingMessage}
             width={120}
             height={120}
             style={{ width: "120px", height: "120px", objectFit: "contain" }}
           />
+          <span className="sr-only">{loadingMessage}</span>
         </div>
       );
     }
 
     return (
       <div className="story-wrapper">
-        <p className="story-error">{emptyMessage || "Не удалось загрузить кадры истории."}</p>
+        <p className="story-error">
+          {loadStatus === "error" ? errorMessage : emptyMessage}
+        </p>
+        {loadStatus === "error" && onRetry ? (
+          <button type="button" className="feed-action-button" onClick={onRetry}>
+            {retryLabel}
+          </button>
+        ) : null}
       </div>
     );
   }

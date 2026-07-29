@@ -13,6 +13,7 @@ import Image from "next/image";
 import { fallbackImages } from "@/constants";
 import { dictionaries, type Lang } from "@/i18n";
 import type { CarouselStory } from "@/types/types";
+import type { SlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -37,10 +38,14 @@ interface MobileStoryCarouselProps {
   onSlideIndexChange?: (slideIndex: number) => void;
   onSwipeStateChange?: (isSwiping: boolean) => void;
   isFindingNewImage?: boolean;
-  emptyMessage?: string;
   mediaCache?: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide?: (slideIndex: number) => void;
-  showEmptyError?: boolean;
+  loadStatus: SlidesLoadStatus;
+  loadingMessage: string;
+  emptyMessage: string;
+  errorMessage: string;
+  retryLabel: string;
+  onRetry?: () => void;
 }
 
 const SWIPE_DISTANCE_THRESHOLD = 28;
@@ -57,10 +62,14 @@ export default function MobileStoryCarousel({
   initialSlideIndex = 0,
   onSlideIndexChange,
   onSwipeStateChange,
-  emptyMessage,
   mediaCache,
   onPreloadNextSlide,
-  showEmptyError,
+  loadStatus,
+  loadingMessage,
+  emptyMessage,
+  errorMessage,
+  retryLabel,
+  onRetry,
 }: MobileStoryCarouselProps) {
   const dict = t ?? dictionaries[lang]?.capybaras?.capybaraPage ?? dictionaries.ru.capybaras.capybaraPage;
   const slideCount = story.slides.length;
@@ -394,24 +403,32 @@ export default function MobileStoryCarousel({
     suppressClickRef.current = false;
   };
 
-  if (!story || !story.slides || story.slides.length === 0) {
-    if (!showEmptyError) {
+  if (loadStatus !== "success" || !story?.slides?.length) {
+    if (loadStatus === "idle" || loadStatus === "loading") {
       return (
         <div className="mobile-story-carousel mobile-story-carousel-loading">
           <Image
             className="capybara-spinner"
             src="/spinners/capybara-spinner.webp"
-            alt={story?.title || emptyMessage || "illustration"}
+            alt={story?.title || loadingMessage}
             width={120}
             height={120}
           />
+          <span className="sr-only">{loadingMessage}</span>
         </div>
       );
     }
 
     return (
       <div className="mobile-story-carousel">
-        <p className="story-error">{emptyMessage || "Не удалось загрузить кадры истории."}</p>
+        <p className="story-error">
+          {loadStatus === "error" ? errorMessage : emptyMessage}
+        </p>
+        {loadStatus === "error" && onRetry ? (
+          <button type="button" className="feed-action-button" onClick={onRetry}>
+            {retryLabel}
+          </button>
+        ) : null}
       </div>
     );
   }

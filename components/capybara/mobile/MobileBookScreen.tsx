@@ -6,6 +6,7 @@ import MobileModeTabs from "@/components/capybara/mobile/MobileModeTabs";
 import MobileStoryCarousel from "@/components/capybara/mobile/MobileStoryCarousel";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries, Lang } from "@/i18n";
+import type { SlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -43,7 +44,8 @@ interface MobileBookScreenProps {
   onOpenStandaloneBook?: (modeId?: string | number | null) => void;
   variant?: "feed" | "reader";
   isOpeningStudio?: boolean;
-  showEmptyError?: boolean;
+  slidesLoadStatus: SlidesLoadStatus;
+  onRetrySlides?: () => void;
   t: CapybaraPageDict;
 }
 
@@ -68,7 +70,8 @@ export default function MobileBookScreen({
   onOpenStandaloneBook,
   variant = "reader",
   isOpeningStudio = false,
-  showEmptyError,
+  slidesLoadStatus,
+  onRetrySlides,
   t,
 }: MobileBookScreenProps) {
   const normalizeQuizTest = (test: BookTest) => {
@@ -191,10 +194,14 @@ export default function MobileBookScreen({
             initialSlideIndex={currentSlideIndex}
             onSlideIndexChange={onSlideIndexChange}
             onSwipeStateChange={onSwipeStateChange}
-            emptyMessage={t.storyError}
             mediaCache={mediaCache}
             onPreloadNextSlide={onPreloadNextSlide}
-            showEmptyError={showEmptyError}
+            loadStatus={slidesLoadStatus}
+            loadingMessage={t.storyLoading}
+            emptyMessage={t.storyEmpty}
+            errorMessage={t.storyError}
+            retryLabel={t.storyRetry}
+            onRetry={onRetrySlides}
           />
         ) : (
           <button

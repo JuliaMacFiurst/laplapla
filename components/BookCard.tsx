@@ -1,6 +1,7 @@
 import BookScreen from "@/components/BookScreen";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries, Lang } from "@/i18n";
+import type { SlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 type SlideMedia = {
@@ -36,7 +37,8 @@ interface BookCardProps {
   onPreloadNextSlide: (slideIndex: number) => void;
   onOpenStandaloneBook?: (modeId?: string | number | null) => void;
   mobileVariant?: "feed" | "reader";
-  showEmptyError?: boolean;
+  slidesLoadStatus: SlidesLoadStatus;
+  onRetrySlides?: () => void;
   t: CapybaraPageDict;
 }
 
@@ -64,7 +66,8 @@ export default function BookCard({
   onPreloadNextSlide,
   onOpenStandaloneBook,
   mobileVariant,
-  showEmptyError,
+  slidesLoadStatus,
+  onRetrySlides,
   t,
 }: BookCardProps) {
   return (
@@ -93,7 +96,8 @@ export default function BookCard({
         onPreloadNextSlide={onPreloadNextSlide}
         onOpenStandaloneBook={onOpenStandaloneBook}
         mobileVariant={mobileVariant}
-        showEmptyError={showEmptyError}
+        slidesLoadStatus={slidesLoadStatus}
+        onRetrySlides={onRetrySlides}
         t={t}
       />
     </article>

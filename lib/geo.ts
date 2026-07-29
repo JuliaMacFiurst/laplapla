@@ -29,7 +29,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
   ru: {
     tagline: "Наука и творчество через истории, карты, музыку, рисование и анимацию.",
     summary:
-      "LapLapLa — интерактивная творческая и научно-популярная платформа Julia Noah Makhlin для людей старше 16 лет. Персонажи помогают исследовать науку, книги, искусство, музыку и географию через визуальные истории, интерактивные инструменты и творческие эксперименты.",
+      "В LapLapLa котики объясняют сложное, капибары рассказывают книги, а еноты показывают мир. Проект объединяет интерактивные истории, творческие инструменты и визуальные эксперименты.",
     audience:
       "Проект рассчитан на пользователей 16 лет и старше, которым нравятся понятные объяснения, визуальные истории и интерактивные творческие форматы.",
     author:
@@ -94,7 +94,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
   en: {
     tagline: "Science and creativity through stories, maps, music, drawing, and animation.",
     summary:
-      "LapLapLa is an interactive creative and popular-science platform by Julia Noah Makhlin for users aged 16 and over. Its characters help people explore science, books, art, music, and geography through visual stories, interactive tools, and creative experiments.",
+      "In LapLapLa, cats explain complex ideas, capybaras tell stories from books, and raccoons show you the world. The project brings together interactive stories, creative tools, and visual experiments.",
     audience:
       "The project is for users aged 16 and over who enjoy clear explanations, visual stories, and interactive creative formats.",
     author:
@@ -159,7 +159,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
   he: {
     tagline: "מדע ויצירה דרך סיפורים, מפות, מוזיקה, ציור ואנימציה.",
     summary:
-      "LapLapLa היא פלטפורמה אינטראקטיבית ליצירה ולמדע פופולרי מאת Julia Noah Makhlin, המיועדת לבני 16 ומעלה. הדמויות שלה מזמינות לחקור מדע, ספרים, אמנות, מוזיקה וגאוגרפיה באמצעות סיפורים חזותיים, כלים אינטראקטיביים וניסויים יצירתיים.",
+      "ב-LapLapLa חתולים מסבירים דברים מורכבים, קפיברות מספרות סיפורים מתוך ספרים ודביבונים מראים את העולם. הפרויקט משלב סיפורים אינטראקטיביים, כלים יצירתיים וניסויים חזותיים.",
     audience:
       "הפרויקט מיועד לבני 16 ומעלה שאוהבים הסברים ברורים, סיפורים חזותיים ופורמטים יצירתיים אינטראקטיביים.",
     author:

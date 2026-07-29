@@ -6,6 +6,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { useBook } from "@/hooks/useBook";
+import { resolveSlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
 import { buildLocalizedHref, buildLocalizedQuery } from "@/lib/i18n/routing";
@@ -61,6 +62,7 @@ export default function StandaloneBookScreenPages({
     showQuiz,
     loading,
     error,
+    retryCurrentBook,
     preloadNextSlideMedia,
     buildStudioSlides,
     refreshSlideMedia,
@@ -507,6 +509,13 @@ export default function StandaloneBookScreenPages({
       onPreloadNextSlide={(slideIndex) => {
         void preloadNextSlideMedia(slideIndex);
       }}
+      slidesLoadStatus={resolveSlidesLoadStatus({
+        hasBook: Boolean(currentBook),
+        loading,
+        error,
+        slideCount: slides.length,
+      })}
+      onRetrySlides={retryCurrentBook}
       isOpeningStudio={isOpeningStudio}
       bottomNavigation={bottomNavigation}
       t={t}

@@ -725,6 +725,11 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
                 currentSlideIndex={currentSlideIndex}
                 onSlideIndexChange={setCurrentSlideIndex}
                 textClassName="story-carousel-text"
+                loadStatus="success"
+                loadingMessage={dictionaries[currentLang].capybaras.capybaraPage.storyLoading}
+                emptyMessage={dictionaries[currentLang].capybaras.capybaraPage.storyEmpty}
+                errorMessage={dictionaries[currentLang].capybaras.capybaraPage.storyError}
+                retryLabel={dictionaries[currentLang].capybaras.capybaraPage.storyRetry}
                 mediaCache={mediaCache}
               />
 

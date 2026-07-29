@@ -9,6 +9,7 @@ import { useBook } from "@/hooks/useBook";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import { buildStudioHref } from "@/lib/studioRouting";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { resolveSlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book } from "@/types/types";
 
@@ -38,6 +39,7 @@ export default function StandaloneBookScreen({
     showQuiz,
     loading,
     error,
+    retryCurrentBook,
     preloadNextSlideMedia,
     buildStudioSlides,
     refreshSlideMedia,
@@ -128,6 +130,13 @@ export default function StandaloneBookScreen({
         onPreloadNextSlide={(slideIndex) => {
           void preloadNextSlideMedia(slideIndex);
         }}
+        slidesLoadStatus={resolveSlidesLoadStatus({
+          hasBook: Boolean(currentBook),
+          loading,
+          error,
+          slideCount: slides.length,
+        })}
+        onRetrySlides={retryCurrentBook}
         t={t}
       />
     </article>

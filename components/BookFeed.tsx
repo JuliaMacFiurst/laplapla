@@ -5,6 +5,7 @@ import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
+import { resolveSlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 import type { Book, BookFeedPreview, BookTest, ExplanationMode, Slide } from "@/types/types";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 
@@ -50,6 +51,7 @@ interface BookFeedProps {
   isFindingNewImage?: boolean;
   mediaCache: ReadonlyMap<number, SlideMedia>;
   onPreloadNextSlide: (slideIndex: number) => void;
+  onRetrySlides: () => void;
   t?: CapybaraPageDict;
 }
 
@@ -79,6 +81,7 @@ export default function BookFeed({
   isFindingNewImage,
   mediaCache,
   onPreloadNextSlide,
+  onRetrySlides,
   t,
 }: BookFeedProps) {
   const router = useRouter();
@@ -342,7 +345,7 @@ export default function BookFeed({
                 onPreloadNextSlide={() => {}}
                 onOpenStandaloneBook={() => void openStandaloneBook(panel.book, panel.plotMode)}
                 mobileVariant="feed"
-                showEmptyError={false}
+                slidesLoadStatus="success"
                 t={dict}
               />
             </div>
@@ -389,7 +392,13 @@ export default function BookFeed({
               mediaCache={mediaCache}
               onPreloadNextSlide={onPreloadNextSlide}
               onOpenStandaloneBook={(modeId) => void openStandaloneBook(book, modeId ?? selectedModeId)}
-              showEmptyError={Boolean(error && !loading && slides.length === 0)}
+              slidesLoadStatus={resolveSlidesLoadStatus({
+                hasBook: Boolean(book),
+                loading,
+                error,
+                slideCount: slides.length,
+              })}
+              onRetrySlides={onRetrySlides}
               t={dict}
             />
           </div>
