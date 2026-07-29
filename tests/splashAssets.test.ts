@@ -62,4 +62,14 @@ describe("generated splash assets", () => {
       "/pwa/splash/generated/web/app-splash-logo-640.webp",
     );
   });
+
+  it("serves the prebuilt splash directly without the Next image proxy", () => {
+    const component = fs.readFileSync(
+      path.join(root, "components/PWA/AppSplash.tsx"),
+      "utf8",
+    );
+    expect(component).toContain("<img");
+    expect(component).toContain("src={brand.splashPath}");
+    expect(component).not.toContain('from "next/image"');
+  });
 });

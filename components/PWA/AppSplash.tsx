@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { APP_BRAND, type AppBrand } from "@/lib/pwa/appBrand";
 
 type AppSplashProps = {
@@ -15,14 +14,16 @@ export default function AppSplash({ brand = APP_BRAND, visible }: AppSplashProps
       role={visible ? "status" : undefined}
       style={{ backgroundColor: brand.backgroundColor }}
     >
-      <Image
+      {/* The splash is generated, compressed and precached; bypass Next's runtime image proxy. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         className="app-splash__logo"
         src={brand.splashPath}
         alt=""
         width={168}
         height={168}
-        priority
-        unoptimized
+        decoding="sync"
+        fetchPriority="high"
       />
       <span className="app-splash__loader" aria-hidden="true" />
     </div>
