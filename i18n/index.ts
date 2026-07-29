@@ -127,7 +127,7 @@ type DictionaryShape = {
       capybaras: string;
       parrots: string;
       raccoons: string;
-      comingSoon: string;
+      appLab: string;
     };
     brand: {
       eyebrow: string;

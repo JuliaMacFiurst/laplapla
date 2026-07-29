@@ -194,11 +194,6 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
       title: t.quests.featuredTitle,
       subtitle: t.quests.featuredSubtitle,
     },
-    ...quests.upcoming.map((quest) => ({
-      ...quest,
-      title: t.quests.upcomingTitle,
-      subtitle: t.quests.upcomingSubtitle,
-    })),
   ];
 
   useEffect(() => {

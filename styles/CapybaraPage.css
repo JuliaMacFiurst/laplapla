@@ -276,6 +276,7 @@
 }
 
 .multi-filter-panel {
+  box-sizing: border-box;
   width: 100%;
   margin: 0.65rem auto;
   padding: 0.9rem 1rem 1rem;

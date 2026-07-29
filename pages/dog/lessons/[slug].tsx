@@ -293,6 +293,7 @@ function LessonPlayerDesktop() {
   const dict = dictionaries[lang] || dictionaries["ru"];
   const t = dict.dogs.dogLesson;
   const seo = dict.seo.dogs.lesson;
+  const showDevelopmentControls = process.env.NODE_ENV !== "production";
   const { slug } = router.query;
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -2803,23 +2804,25 @@ function LessonPlayerDesktop() {
                         >
                           🌈 {t.colorizeSketch}
                         </button>
-                        <button
-                          type="button"
-                          className={`lesson-mobile-action ${
-                            !isLessonComplete ? "is-locked" : ""
-                          }`}
-                          onClick={() => {
-                            if (!isLessonComplete) {
-                              handleLockedFillAction();
-                              return;
-                            }
-                            debugRenderRegions();
-                          }}
-                          aria-disabled={!isLessonComplete}
-                          title={!isLessonComplete ? fillLockedMessage : undefined}
-                        >
-                          🧪 {t.autoColorize}
-                        </button>
+                        {showDevelopmentControls ? (
+                          <button
+                            type="button"
+                            className={`lesson-mobile-action ${
+                              !isLessonComplete ? "is-locked" : ""
+                            }`}
+                            onClick={() => {
+                              if (!isLessonComplete) {
+                                handleLockedFillAction();
+                                return;
+                              }
+                              debugRenderRegions();
+                            }}
+                            aria-disabled={!isLessonComplete}
+                            title={!isLessonComplete ? fillLockedMessage : undefined}
+                          >
+                            🧪 {t.autoColorize}
+                          </button>
+                        ) : null}
                       </div>
                       {showColorizer ? (
                         <div className="lesson-mobile-color-picker lesson-mobile-color-picker-fill">
@@ -2891,20 +2894,6 @@ function LessonPlayerDesktop() {
                           onClick={openPuzzleMode}
                         >
                           🧩 {t.makePuzzle}
-                        </button>
-                        <button
-                          type="button"
-                          className="lesson-mobile-action"
-                          onClick={() => alert(t.comingSoon)}
-                        >
-                          🌊 {t.paintFlow}
-                        </button>
-                        <button
-                          type="button"
-                          className="lesson-mobile-action"
-                          onClick={() => alert(t.comingSoon)}
-                        >
-                          🎨 {t.mixPaints}
                         </button>
                       </div>
                     </div>
@@ -3113,16 +3102,18 @@ function LessonPlayerDesktop() {
                   🌈 {t.colorizeSketch}
                 </button>
 
-                <button
-                  className={`lesson-button lesson-button-colorize-auto ${
-                    currentStepIndex === lesson.steps.length - 1
-                      ? "active"
-                      : "disabled"
-                  }`}
-                  onClick={debugRenderRegions}
-                >
-                  🧪 {t.autoColorize}
-                </button>
+                {showDevelopmentControls ? (
+                  <button
+                    className={`lesson-button lesson-button-colorize-auto ${
+                      currentStepIndex === lesson.steps.length - 1
+                        ? "active"
+                        : "disabled"
+                    }`}
+                    onClick={debugRenderRegions}
+                  >
+                    🧪 {t.autoColorize}
+                  </button>
+                ) : null}
 
                 <button
                   className="lesson-button lesson-button-animate"
@@ -3144,28 +3135,6 @@ function LessonPlayerDesktop() {
                 onClick={openPuzzleMode}
               >
                 🧩 {t.makePuzzle}
-              </button>
-
-              <button
-                className="lesson-animation-button btn-blue"
-                onClick={() => {
-                  setFrankPose(getRandomPose([...FRANK_POSES]));
-                  setAnimationMenuOpen(false);
-                  alert(t.comingSoon);
-                }}
-              >
-                🌊 {t.paintFlow}
-              </button>
-
-              <button
-                className="lesson-animation-button btn-pink"
-                onClick={() => {
-                  setFrankPose(getRandomPose([...FRANK_POSES]));
-                  setAnimationMenuOpen(false);
-                  alert(t.comingSoon);
-                }}
-              >
-                🎨 {t.mixPaints}
               </button>
 
               <button

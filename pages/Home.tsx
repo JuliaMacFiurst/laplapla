@@ -276,13 +276,17 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
                 <div className="label">{t.sections.raccoons}</div>
               </Link>
 
-              <div className="card mystery-card">
+              <Link
+                className="card mystery-card"
+                href={buildLocalizedPublicPath("/applab", resolvedLang)}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
                 <div className="mystery-container">
                   <Image src="/images/paw.webp" alt="" className="paw" width={160} height={160} />
                   <Image src="/images/mystery.webp" alt="" className="curtain" width={320} height={320} />
                 </div>
-                <div className="label">{t.sections.comingSoon}</div>
-              </div>
+                <div className="label">{t.sections.appLab}</div>
+              </Link>
             </div>
           </section>
 

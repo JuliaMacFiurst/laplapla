@@ -13,12 +13,44 @@ import { cropAndConvert, preloadFFmpeg } from "@/lib/cropAndConvert";
 import { dictionaries, type Lang } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
-import MobileDesktopNotice from "@/components/MobileDesktopNotice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { buildStudioRoute } from "@/lib/studioRouting";
 import { trackEvent } from "@/lib/analytics/client";
 import type { StudioProject } from "@/types/studio";
+
+const EXPORT_ROUTE_FALLBACK = {
+  ru: {
+    title: "Открываем студию",
+    text: "Экспорт на телефоне и планшете доступен прямо в редакторе.",
+    action: "Вернуться в студию",
+    noProjectTitle: "Нет проекта для экспорта",
+    noProjectText: "Создайте или откройте историю в студии, а затем запустите экспорт из редактора.",
+  },
+  en: {
+    title: "Opening the studio",
+    text: "Phone and tablet export is available directly inside the editor.",
+    action: "Return to studio",
+    noProjectTitle: "No project to export",
+    noProjectText: "Create or open a story in the studio, then start export from the editor.",
+  },
+  he: {
+    title: "פותחים את הסטודיו",
+    text: "ייצוא בטלפון ובטאבלט זמין ישירות בתוך העורך.",
+    action: "חזרה לסטודיו",
+    noProjectTitle: "אין פרויקט לייצוא",
+    noProjectText: "צרו או פתחו סיפור בסטודיו, ואז הפעילו את הייצוא מתוך העורך.",
+  },
+} satisfies Record<
+  Lang,
+  {
+    title: string;
+    text: string;
+    action: string;
+    noProjectTitle: string;
+    noProjectText: string;
+  }
+>;
 
 async function copyTextToClipboard(text: string) {
   if (navigator.clipboard?.writeText && window.isSecureContext) {
@@ -70,6 +102,7 @@ export default function StudioExportPage() {
         : "desktop_recording";
 
   const [projectData, setProjectData] = useState<StudioProject | null>(null);
+  const [isProjectLoaded, setIsProjectLoaded] = useState(false);
   const [localizedExportPrompt, setLocalizedExportPrompt] = useState("");
   const [copyStatusText, setCopyStatusText] = useState("");
   const [resetSignal, setResetSignal] = useState(0);
@@ -95,18 +128,32 @@ export default function StudioExportPage() {
 
   useEffect(() => {
     async function init() {
-      const project = await loadProject("current-studio-project");
-      if (!project) return;
+      try {
+        const project = await loadProject("current-studio-project");
+        if (!project) return;
 
-      setProjectData(project);
-      setLocalizedExportPrompt(project.sourcePrompt ?? "");
+        setProjectData(project);
+        setLocalizedExportPrompt(project.sourcePrompt ?? "");
 
-      if (project.slides) {
-        setSlides(project.slides);
+        if (project.slides) {
+          setSlides(project.slides);
+        }
+      } finally {
+        setIsProjectLoaded(true);
       }
     }
-    init();
+    void init();
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady || !isMobile) {
+      return;
+    }
+
+    void router.replace(buildStudioRoute("cats", lang), undefined, {
+      locale: lang,
+    });
+  }, [isMobile, lang, router]);
 
   useEffect(() => {
     if (!projectData?.sourcePresetId) {
@@ -460,11 +507,46 @@ export default function StudioExportPage() {
     );
   }
 
-  if (isMobile) {
-    return <MobileDesktopNotice lang={lang} />;
+  if (isMobile || (isProjectLoaded && !slides.length)) {
+    const fallback = EXPORT_ROUTE_FALLBACK[lang];
+    const fallbackTitle = isMobile ? fallback.title : fallback.noProjectTitle;
+    const fallbackText = isMobile ? fallback.text : fallback.noProjectText;
+    return (
+      <>
+        <SEO title={seo.title} description={seo.description} path={seoPath} noindex />
+        <main className="mobile-desktop-notice" dir={lang === "he" ? "rtl" : "ltr"}>
+          <div className="mobile-desktop-notice__card">
+            <h1 className="mobile-desktop-notice__title">{fallbackTitle}</h1>
+            <p className="mobile-desktop-notice__text">{fallbackText}</p>
+            <button
+              type="button"
+              className="studio-button btn-mint"
+              onClick={() =>
+                void router.push(buildStudioRoute("cats", lang), undefined, {
+                  locale: lang,
+                })
+              }
+            >
+              {fallback.action}
+            </button>
+          </div>
+        </main>
+      </>
+    );
   }
 
-  if (!slides.length) return null;
+  if (!isProjectLoaded || !slides.length) {
+    return (
+      <>
+        <SEO title={seo.title} description={seo.description} path={seoPath} noindex />
+        <main className="mobile-desktop-notice" aria-busy="true">
+          <div className="mobile-desktop-notice__card">
+            <p className="mobile-desktop-notice__text">{t.preparing}</p>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

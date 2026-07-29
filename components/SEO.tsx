@@ -72,7 +72,7 @@ export default function SEO({
       <meta
         key="robots"
         name="robots"
-        content={noindex ? "noindex, follow" : "index, follow, max-image-preview:large"}
+        content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"}
       />
       <meta key="application-name" name="application-name" content={SITE_NAME} />
       <link key="canonical" rel="canonical" href={canonical} />

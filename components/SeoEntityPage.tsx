@@ -98,21 +98,21 @@ const OPEN_ON_MAP_LABEL: Record<Lang, string> = {
   he: "לפתוח במפה",
 };
 
-const COMING_SOON_COPY: Record<Lang, { title: string; body: string }> = {
+const EMPTY_STORY_COPY: Record<Lang, { title: string; body: string }> = {
   ru: {
-    title: "История скоро появится",
+    title: "Для этого места пока нет отдельной истории",
     body:
-      "Енотики уже собираются в путешествие, чтобы узнать побольше про это место. Скоро здесь появятся факты, картинки и визуальная история.",
+      "Вернитесь к интерактивной карте, чтобы выбрать другое место и продолжить исследование.",
   },
   en: {
-    title: "A story is coming soon",
+    title: "There is no standalone story for this place",
     body:
-      "The raccoons are getting ready for a new journey to learn more about this place. Facts, pictures, and a visual story will appear here soon.",
+      "Return to the interactive map, choose another place, and continue exploring.",
   },
   he: {
-    title: "הסיפור יופיע בקרוב",
+    title: "אין כרגע סיפור נפרד על המקום הזה",
     body:
-      "הדביבונים כבר מתכוננים למסע חדש כדי ללמוד יותר על המקום הזה. בקרוב יופיעו כאן עובדות, תמונות וסיפור חזותי.",
+      "חזרו למפה האינטראקטיבית, בחרו מקום אחר והמשיכו לחקור.",
   },
 };
 
@@ -287,8 +287,8 @@ export default function SeoEntityPage({
               boxShadow: "0 12px 30px rgba(234, 88, 12, 0.08)",
             }}
           >
-            <h2 style={{ marginBottom: "12px" }}>{COMING_SOON_COPY[currentLang].title}</h2>
-            <p style={{ margin: 0 }}>{COMING_SOON_COPY[currentLang].body}</p>
+            <h2 style={{ marginBottom: "12px" }}>{EMPTY_STORY_COPY[currentLang].title}</h2>
+            <p style={{ margin: 0 }}>{EMPTY_STORY_COPY[currentLang].body}</p>
             <div style={{ marginTop: "18px" }}>
               <Link
                 href={{

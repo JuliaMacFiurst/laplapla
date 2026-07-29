@@ -4,17 +4,17 @@ const content = {
   ru: {
     badge: "Только для десктопа",
     title: "Эта страница пока недоступна на мобильных устройствах",
-    text: "Сейчас этот раздел доступен только в десктопной версии сайта. Полный мобильный функционал появится в приложении LapLapLa уже в ближайшее время.",
+    text: "Этот рабочий экран предназначен для большого дисплея. На телефоне вернитесь в редактор и используйте доступные там инструменты.",
   },
   en: {
     badge: "Desktop only",
     title: "This page is not available on mobile yet",
-    text: "This section is currently available only in the desktop version of the site. Full mobile functionality will be released soon in the LapLapLa app.",
+    text: "This workspace is designed for a larger display. On a phone, return to the editor and use the tools available there.",
   },
   he: {
     badge: "למחשב בלבד",
     title: "העמוד הזה עדיין לא זמין במובייל",
-    text: "כרגע החלק הזה זמין רק בגרסת הדסקטופ של האתר. בקרוב תצא אפליקציית LapLapLa עם פונקציונליות מלאה למובייל.",
+    text: "סביבת העבודה הזו מיועדת למסך גדול. בטלפון, חזרו לעורך והשתמשו בכלים הזמינים בו.",
   },
 } satisfies Record<Lang, { badge: string; title: string; text: string }>;
 

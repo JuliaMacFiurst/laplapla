@@ -6,6 +6,7 @@ export const CORE_SITEMAP_PAGES = [
   { path: "/books/kladbishenskaya-kniga", priority: "0.78", changefreq: "monthly" },
   { path: "/parrots", priority: "0.84", changefreq: "weekly" },
   { path: "/raccoons", priority: "0.84", changefreq: "weekly" },
+  { path: "/applab", priority: "0.78", changefreq: "monthly" },
   { path: "/about", priority: "0.82", changefreq: "monthly" },
   { path: "/author", priority: "0.8", changefreq: "monthly" },
   { path: "/privacy", priority: "0.42", changefreq: "monthly" },

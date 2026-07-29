@@ -35,7 +35,7 @@ export function ShortsRow({ lang, items, onSelectVideo }: ShortsRowProps) {
   if (!shorts.length) {
     return (
       <div className="shorts-row-empty">
-        {t.emptyShorts ?? "Скоро здесь появятся видео"}
+        {t.emptyShorts ?? "Видеотека сейчас пуста"}
       </div>
     );
   }
