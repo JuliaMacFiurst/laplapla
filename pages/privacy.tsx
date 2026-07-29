@@ -24,11 +24,11 @@ export default function PrivacyPage() {
             },
             {
               h: "2. Information We Collect",
-              p: `We may collect minimal technical information such as browser type, device information, and usage analytics. We do not intentionally collect personal data from children without parental consent.`,
+              p: `We may collect minimal technical information such as browser type, device information, and usage analytics.`,
             },
             {
-              h: "3. Children’s Privacy",
-              p: `Children under 13 may use LapLapLa only with parental supervision. We do not knowingly collect personal data from children. If you believe a child has provided personal information, please contact us for removal.`,
+              h: "3. Age Requirement",
+              p: `The main LapLapLa service is intended for users aged 16 and over. It is not intended for users under the age of 16.`,
             },
             {
               h: "4. Third-Party Services",
@@ -55,11 +55,11 @@ export default function PrivacyPage() {
             },
             {
               h: "2. איזה מידע נאסף",
-              p: `ייתכן שנאסוף מידע טכני בסיסי כגון סוג דפדפן, מידע על מכשיר ונתוני שימוש כלליים. איננו אוספים ביודעין מידע אישי מילדים ללא הסכמת הורים.`,
+              p: `ייתכן שנאסוף מידע טכני בסיסי כגון סוג דפדפן, מידע על מכשיר ונתוני שימוש כלליים.`,
             },
             {
-              h: "3. פרטיות ילדים",
-              p: `ילדים מתחת לגיל 13 רשאים להשתמש בפלטפורמה בליווי הורה בלבד. אם אתם סבורים שנמסר מידע אישי של ילד ללא הסכמה, אנא פנו אלינו להסרה.`,
+              h: "3. דרישת גיל",
+              p: `השירות הראשי של LapLapLa מיועד למשתמשים בני 16 ומעלה ואינו מיועד למשתמשים מתחת לגיל 16.`,
             },
             {
               h: "4. שירותים מצד שלישי",
@@ -86,11 +86,11 @@ export default function PrivacyPage() {
             },
             {
               h: "2. Какие данные мы собираем",
-              p: `Мы можем собирать минимальную техническую информацию: тип браузера, устройство и общую статистику использования. Мы не собираем персональные данные детей без согласия родителей.`,
+              p: `Мы можем собирать минимальную техническую информацию: тип браузера, устройство и общую статистику использования.`,
             },
             {
-              h: "3. Конфиденциальность детей",
-              p: `Дети младше 13 лет могут пользоваться платформой только под присмотром родителей. Если вы считаете, что ребенок передал личные данные без согласия, свяжитесь с нами для их удаления.`,
+              h: "3. Возрастные требования",
+              p: `Основной сервис LapLapLa предназначен для пользователей 16 лет и старше и не предназначен для пользователей младше 16 лет.`,
             },
             {
               h: "4. Сторонние сервисы",

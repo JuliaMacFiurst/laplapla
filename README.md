@@ -1,6 +1,6 @@
 # LapLapLa / capybara_tales
 
-Интерактивный детский проект на `Next.js` с несколькими разделами: книги с капибарами, уроки рисования с собаками, музыкальный микшер с попугаями, карты с енотами, stories-конструктор и cat studio для сборки слайдов.
+Интерактивная творческая и научно-популярная платформа 16+ на `Next.js` с несколькими разделами: книги с капибарами, уроки рисования с собаками, музыкальный микшер с попугаями, карты с енотами, stories-конструктор и cat studio для сборки слайдов.
 
 Проект сейчас использует `Pages Router`. Основной стек: `Next.js`, `React`, `TypeScript`, `CSS`, `Supabase`.
 
@@ -138,7 +138,7 @@ npm run backup:all
 
 ## English
 
-`LapLapLa / capybara_tales` is a multi-section children’s interactive site built with `Next.js Pages Router`, `React`, `TypeScript`, `CSS`, and `Supabase`.
+`LapLapLa / capybara_tales` is a multi-section interactive creative and popular-science platform for users aged 16 and over, built with `Next.js Pages Router`, `React`, `TypeScript`, `CSS`, and `Supabase`.
 
 Current sections include:
 

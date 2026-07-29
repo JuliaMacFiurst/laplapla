@@ -1,13 +1,13 @@
 export const en = {
   seo: {
     home: {
-      title: "LapLapLa — learning through stories, games and animation",
-      description: "LapLapLa is an interactive learning platform for kids: cats explain, capybaras tell stories, raccoons explore the world.",
+      title: "LapLapLa — science, stories, and creative experiments",
+      description: "LapLapLa is an interactive creative and popular-science platform for users aged 16 and over.",
     },
     cats: {
       index: {
         title: "Cats Explain — simple answers to complex questions",
-        description: "Little cats explain complex topics for kids with short stories, pictures, and playful slides.",
+        description: "Cats explain complex topics through short stories, pictures, and playful slides.",
       },
       studio: {
         title: "Paw Studio — create your own video",
@@ -20,7 +20,7 @@ export const en = {
     },
     dogs: {
       index: {
-        title: "Dogs Draw — step-by-step drawing lessons for kids",
+        title: "Dogs Draw — step-by-step drawing lessons",
         description: "Choose a topic, open a lesson, and draw with the dogs step by step.",
       },
       lessons: {
@@ -35,12 +35,12 @@ export const en = {
       },
     },
     parrots: {
-      title: "Parrots Sing — music stories and rhythm games for kids",
+      title: "Parrots Sing — music stories and rhythm games",
       description: "Build your own chirp mix, hear stories about music styles, and explore rhythm with the parrots.",
     },
     capybaras: {
       index: {
-        title: "Capybaras Tell Stories — books and stories for kids",
+        title: "Capybaras Tell Stories — books and visual stories",
         description: "Pick a book, move through the story in slides, and take quizzes with the capybaras.",
       },
       createStory: {
@@ -55,7 +55,7 @@ export const en = {
     },
     raccoons: {
       index: {
-        title: "Raccoons Explore — interactive map and facts for kids",
+        title: "Raccoons Explore — interactive map and facts",
         description: "Explore countries, animals, rivers, and seas on an interactive map with raccoons.",
       },
       quest1: {
@@ -63,12 +63,12 @@ export const en = {
         description: "Join the raccoons on a big adventure and explore the northern route step by step.",
       },
       map: {
-        countryTitleSuffix: "country facts for kids",
-        animalTitleSuffix: "animal facts for kids",
-        riverTitleSuffix: "river facts for kids",
-        seaTitleSuffix: "sea facts for kids",
-        biomeTitleSuffix: "biome facts for kids",
-        descriptionSuffix: "interactive stories, maps, and facts for kids",
+        countryTitleSuffix: "country facts",
+        animalTitleSuffix: "animal facts",
+        riverTitleSuffix: "river facts",
+        seaTitleSuffix: "sea facts",
+        biomeTitleSuffix: "biome facts",
+        descriptionSuffix: "interactive stories, maps, and facts",
       },
     },
     about: {
@@ -104,7 +104,7 @@ export const en = {
       description: "Administrator sign-in page for protected LapLapLa tools.",
     },
     bedtimeStories: {
-      title: "Capybara Bedtime Stories — illustrated stories for kids",
+      title: "Capybara Bedtime Stories — illustrated evening stories",
       description: "Turn the pages of gentle illustrated bedtime stories with the capybaras.",
     },
   },
@@ -124,7 +124,7 @@ export const en = {
       ],
       quote: "What if we explain this through cats?..",
       platformTitle: "What LapLapLa is",
-      platformIntro: "LapLapLa is an interactive learning platform for children, teenagers, and adults.",
+      platformIntro: "LapLapLa is an interactive creative and popular-science platform for users aged 16 and over.",
       platformItems: [
         "cats explain complex topics in simple language",
         "capybaras tell book stories",
@@ -164,7 +164,7 @@ export const en = {
   },
   home: {
     title: "LapLapLa",
-    subtitle: "A hecking cute learning space for kids and grown-ups",
+    subtitle: "A delightfully curious lab for science and creativity",
     mobileHelper: "Choose what you want to explore 👇",
     sections: {
       cats: "Cats Explain",
@@ -176,11 +176,11 @@ export const en = {
     },
     brand: {
       eyebrow: "LapLapLa homepage",
-      heading: "LapLapLa — a learning platform for kids and grown-ups",
+      heading: "LapLapLa — a creative and popular-science platform for ages 16+",
       intro:
-        "LapLapLa brings together interactive stories, games, maps, music, drawing, animation, and book-based formats for children and grown-ups.",
+        "LapLapLa brings together interactive stories, games, maps, music, drawing, animation, books, and creative tools.",
       audience:
-        "The project helps children, parents, teachers, and curious adults explore complex topics through short visual explanations and playful learning scenarios.",
+        "The platform is for users aged 16 and over: its characters make complex topics approachable through visual stories and creative experiments.",
       sectionsTitle: "LapLapLa core sections",
       aboutLink: "About LapLapLa",
     },
@@ -659,152 +659,41 @@ export const en = {
     what: {
       title: "What is it",
       preview:
-        "LapLapLa is a learning space where kids and grown-ups don’t just discover new things, but learn to turn knowledge into creativity.",
+        "LapLapLa is an interactive creative and popular-science platform for users aged 16 and over.",
       full: `### What is LapLapLa 
 
+LapLapLa is an interactive creative and popular-science platform for users aged 16 and over.
 
-
-LapLapLa is a learning space for children and adults, created in a world where knowledge is no longer scarce and the way we access it has fundamentally changed.
-
-We live in a time when information is available instantly.  
-A child may not yet know how to read, but already knows how to scroll, search, watch, compare, and absorb vast amounts of information through video, images, and interactive environments. Often, children know more about the world than their parents did at the same age — simply because access to information has become effortless.
-
-And yet, education is still largely built around memorization.  
-In a world where any fact can be retrieved in seconds, knowledge alone is no longer an achievement.
-
-What truly matters now is something else:  
-the ability to understand, interpret, connect ideas, process information — and create something of your own from it.
-
-### Why this project matters
-
-LapLapLa grew out of a simple observation:  
-children already live in a world shaped by technology and artificial intelligence, but very few spaces help them learn how to interact with these tools calmly, thoughtfully, and consciously.
-
-AI today is neither magic nor a threat.  
-It is a natural tool for working with information, much like books, search engines, or calculators once were. The earlier a child learns to see AI as a helper rather than a source of ready-made answers, the more confident they will feel in the future.
-
-At the same time, it is essential not to lose what matters most — creativity.  
-As access to information becomes easier, the ability to turn knowledge into a drawing, a story, a video, music, or an idea becomes a core skill.
-
-LapLapLa does not aim to help children “know more.”  
-It creates an environment where they learn to think, ask questions, experiment, make mistakes, and create.
+Its characters help people explore science, books, art, music, and geography through visual stories, interactive tools, and creative experiments.
 
 ### The approach behind LapLapLa
 
-There is no pressure, grading, or race for results in LapLapLa.  
-What matters is not how many facts are remembered, but what a person does with what they’ve learned.
+LapLapLa combines clear explanations, visual storytelling, internet culture, playful mechanics, and tools for independent creativity.
 
-The project is built around:
+The project favors exploration over memorization, creativity over ready-made answers, and curiosity over pressure.
 
-- exploration instead of memorization
-
-
-- play instead of enforcement
-
-
-- creativity instead of correct answers
-
-
-
-AI is used as a tool:
-
-- for inspiration
-
-
-- for explanation
-
-
-- for expanding horizons
-
-
-
-but never as a replacement for thinking.
-
-### What it offers children
-
-For children, LapLapLa is a safe space where:
-
-- they can explore the world at their own pace
-
-
-- they may not yet read, but already learn to understand
-
-
-- any question is welcome
-
-
-- knowledge can be transformed into images and ideas
-
-
-
-It is a way to grow up in an information-rich world consciously, rather than passively.
-
-### What it offers adults
-
-For adults, LapLapLa provides:
-
-- a new perspective on learning and education
-
-
-- a way to be present in a child’s digital world
-
-
-- an understanding of how learning is changing, and why it will never be the same
-
-
-
-It is a space for shared exploration, not control.
+Technology and artificial intelligence may be used as tools for inspiration, explanation, and experimentation, but not as a replacement for independent thinking.
 
 ### Where the project is headed
 
-LapLapLa is a living project.  
-It will evolve, grow, and experiment with new formats and tools.
-
-But its direction remains clear:  
-to create an environment where knowledge becomes the starting point for creativity,  
-and technology becomes a natural extension of human thinking.`,
+LapLapLa will continue developing new stories, maps, music and art tools while keeping one clear direction: turning knowledge into a starting point for creativity.`,
     },
     forWho: {
       title: "Who it is for",
       preview:
-        "For kids and grown-ups who enjoy exploring, asking questions, and turning knowledge into ideas.",
+        "For people aged 16 and over who enjoy exploring, asking questions, and turning knowledge into ideas.",
       full: `### Who this project is for
 
-LapLapLa is designed for children and adults living in a world where information is more accessible than ever, yet meaning and direction still need to be discovered rather than given.
+The main LapLapLa platform is intended for users aged 16 and over.
 
-For children, it is a space where they can:
+It is for people who enjoy:
 
-- explore the world at their own pace, without pressure or expectations
+- popular-science explanations
+- books and visual stories
+- art, music, and geography
+- interactive tools and creative experiments
 
-
-- ask questions, even if they seem unusual or unfinished
-
-
-- learn to understand the world before they can fully read it
-
-
-- turn knowledge into drawings, stories, ideas, and play
-
-Here, the goal is not to meet external expectations,  
-but to experiment, make mistakes, and discover genuine curiosity.
-
-For adults, LapLapLa offers a chance to:
-
-- rethink learning and personal development
-
-
-- be present in a child’s digital world, not as control but as support
-
-
-- understand how the ways we learn are changing, and which skills truly matter
-
-This project is for those who are not looking for ready-made answers,  
-but want to learn how to think, connect ideas, and create something of their own —  
-together with children or alongside them.
-
-LapLapLa does not divide people by age or level of expertise.  
-It brings together those who value curiosity  
-even as the world becomes faster and more complex.`,
+The project is not intended for users under the age of 16.`,
     },
     author: {
       title: "Author",
@@ -846,12 +735,9 @@ And I truly hope it feels like a good place for you to be, too.
 I’m not a perfect parent.  
 My kids eat sweets, spend time on screens, don’t always listen, and sometimes the house is a mess — and yes, that can drive me crazy. We argue sometimes. That’s real life.
 
-This isn’t a place for “how to raise a perfect child” advice.
+This is not a parenting-advice project. That personal history explains where LapLapLa began, while the platform today is a creative and popular-science space for users aged 16 and over.
 
-But it *is* a place where it matters to me that kids feel interesting to be around —  
-and that they feel comfortable, curious, and safe here.
-
-LapLapLa grew out of personal experience, openness to change, and a wish to create a space where learning, play, trying things out, and making mistakes are all welcome — without pressure or fear.
+LapLapLa grew out of personal experience, openness to change, and a wish to create a space where curiosity, play, experimentation, and making mistakes are all welcome.
 
 I’m always open to conversation, and I’m genuinely excited to connect with the people who find their way here, so we can keep shaping this space together — slowly, thoughtfully, and at a human pace.`,
       image: "/images/about/my-photo.webp",
@@ -869,7 +755,7 @@ This means that the site includes materials and features that do not require dir
 Features that rely on AI generation (such as interactive creative tools, including AI-based coloring) require computing resources and cannot be provided for free. These features will become part of a subscription in the future.
 
 At the moment, the subscription itself is not yet active.  
-The project is developing gradually, and the main focus right now is to test the format, gather feedback, and understand what truly works and brings joy to both kids and adults.
+The project is developing gradually, and the main focus right now is to test the format, gather feedback, and understand what works for its audience of users aged 16 and over.
 
 If you’d like to experience LapLapLa in its fullest form, this will be possible through a subscription later on.  
 For now, you’re very welcome to explore the project, use the available materials, and be part of this space from the very beginning.`,
@@ -910,7 +796,7 @@ Just curiosity, humor, and the feeling that language is something alive — not 
 LapLapLa is a living project, and it’s important to me that it doesn’t grow in isolation.
 
 I’m open to collaborating with people and projects that share a similar mindset —  
-an interest in learning without pressure, respect for how kids think, a love for creativity, and a desire to explore new formats instead of relying on ready-made solutions.
+an interest in learning without pressure, respect for different ways of thinking, a love for creativity, and a desire to explore new formats instead of relying on ready-made solutions.
 
 Collaboration can take many forms:
 

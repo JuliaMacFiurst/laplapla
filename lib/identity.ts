@@ -31,9 +31,9 @@ const AUTHOR_JOB_TITLES: Record<Lang, string> = {
 };
 
 const ORGANIZATION_DESCRIPTIONS: Record<Lang, string> = {
-  ru: "LapLapLa — авторская образовательная платформа для детей и взрослых, созданная Julia Noah Makhlin.",
-  en: "LapLapLa is an author-led learning platform for children and grown-ups created by Julia Noah Makhlin.",
-  he: "LapLapLa היא פלטפורמת למידה לילדים ולמבוגרים שנוצרה על ידי Julia Noah Makhlin.",
+  ru: "LapLapLa — авторская интерактивная творческая и научно-популярная платформа для людей старше 16 лет, созданная Julia Noah Makhlin.",
+  en: "LapLapLa is an author-led interactive creative and popular-science platform for users aged 16 and over, created by Julia Noah Makhlin.",
+  he: "LapLapLa היא פלטפורמה אינטראקטיבית ליצירה ולמדע פופולרי לבני 16 ומעלה, שנוצרה על ידי Julia Noah Makhlin.",
 };
 
 export function getAuthorJobTitle(lang: Lang) {
@@ -73,7 +73,7 @@ export function buildCoreIdentityJsonLd(lang: Lang) {
       owns: organizationReference,
       affiliation: organizationReference,
       knowsAbout: [
-        "children's education",
+        "popular science",
         "creative learning",
         "AI-assisted learning",
         "web development",
@@ -103,12 +103,12 @@ export function buildCoreIdentityJsonLd(lang: Lang) {
       publisher: authorReference,
       mainEntityOfPage: `${BASE_URL}/`,
       knowsAbout: [
-        "children's education",
+        "popular science",
         "interactive learning",
         "creative learning",
         "visual explanations",
-        "stories for children",
-        "geography for children",
+        "visual storytelling",
+        "interactive geography",
       ],
     },
     {

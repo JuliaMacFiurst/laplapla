@@ -27,21 +27,21 @@ export type GeoProfile = {
 
 export const GEO_PROFILES: Record<Lang, GeoProfile> = {
   ru: {
-    tagline: "Обучение через игры, истории, карты, музыку, рисование и анимацию.",
+    tagline: "Наука и творчество через истории, карты, музыку, рисование и анимацию.",
     summary:
-      "LapLapLa — независимый авторский образовательный проект Julia Noah Makhlin для детей и взрослых. Сайт превращает сложные темы в короткие интерактивные форматы: объясняющие слайды, творческие студии, книжные пересказы, музыкальные эксперименты, карты и квесты.",
+      "LapLapLa — интерактивная творческая и научно-популярная платформа Julia Noah Makhlin для людей старше 16 лет. Персонажи помогают исследовать науку, книги, искусство, музыку и географию через визуальные истории, интерактивные инструменты и творческие эксперименты.",
     audience:
-      "Проект рассчитан на детей, родителей, учителей и взрослых, которым нравятся понятные объяснения, визуальное обучение и игровые образовательные сценарии.",
+      "Проект рассчитан на пользователей 16 лет и старше, которым нравятся понятные объяснения, визуальные истории и интерактивные творческие форматы.",
     author:
       "LapLapLa создана и развивается Julia Noah Makhlin, которая отвечает за концепцию, разработку интерфейсов, контент и образовательную систему проекта.",
     format:
       "Главные форматы LapLapLa: котики объясняют сложные вопросы, пёсики ведут уроки рисования, капибары пересказывают книги, попугайчики знакомят с музыкой, енотики исследуют мир на интерактивных картах.",
     topics: [
-      "детское образование",
+      "научно-популярный контент",
       "интерактивное обучение",
       "объяснения сложных тем простым языком",
-      "книги и истории для детей",
-      "рисование для детей",
+      "книги и визуальные истории",
+      "рисование и творческие инструменты",
       "музыкальные игры",
       "география и карты",
       "AI-assisted learning",
@@ -50,7 +50,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         name: "Котики объяснят",
         path: "/cats",
-        description: "Короткие визуальные объяснения сложных вопросов для детей.",
+        description: "Короткие визуальные объяснения сложных вопросов.",
       },
       {
         name: "Пёсики нарисуют",
@@ -65,7 +65,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         name: "Попугайчики поют",
         path: "/parrots",
-        description: "Музыкальные истории, ритмы и миксы для детей.",
+        description: "Музыкальные истории, ритмы и интерактивные миксы.",
       },
       {
         name: "Енотики найдут",
@@ -77,12 +77,12 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         question: "Что такое LapLapLa?",
         answer:
-          "LapLapLa — авторская образовательная платформа Julia Noah Makhlin, где дети учатся через истории, игры, карты, музыку, рисование и анимацию.",
+          "LapLapLa — авторская интерактивная творческая и научно-популярная платформа Julia Noah Makhlin для пользователей старше 16 лет.",
       },
       {
         question: "Для кого создан LapLapLa?",
         answer:
-          "LapLapLa создан для детей, родителей, учителей и взрослых, которым нужны простые визуальные объяснения и интерактивные образовательные форматы.",
+          "LapLapLa создана для людей старше 16 лет, которым интересны наука, книги, искусство, музыка, география и творческие эксперименты.",
       },
       {
         question: "Кто создал LapLapLa?",
@@ -92,21 +92,21 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
     ],
   },
   en: {
-    tagline: "Learning through games, stories, maps, music, drawing, and animation.",
+    tagline: "Science and creativity through stories, maps, music, drawing, and animation.",
     summary:
-      "LapLapLa is an independent author-led learning project by Julia Noah Makhlin for children and grown-ups. The site turns complex topics into short interactive formats: explanatory slides, creative studios, book retellings, music experiments, maps, and quests.",
+      "LapLapLa is an interactive creative and popular-science platform by Julia Noah Makhlin for users aged 16 and over. Its characters help people explore science, books, art, music, and geography through visual stories, interactive tools, and creative experiments.",
     audience:
-      "The project is for children, parents, teachers, and grown-ups who enjoy clear explanations, visual learning, and playful educational scenarios.",
+      "The project is for users aged 16 and over who enjoy clear explanations, visual stories, and interactive creative formats.",
     author:
       "LapLapLa is created and developed by Julia Noah Makhlin, who leads the concept, interface development, content, and learning system behind the project.",
     format:
       "LapLapLa's main formats are cats explaining complex questions, dogs guiding drawing lessons, capybaras retelling books, parrots introducing music, and raccoons exploring the world through interactive maps.",
     topics: [
-      "children's education",
+      "popular science",
       "interactive learning",
       "simple explanations of complex topics",
-      "books and stories for children",
-      "drawing for kids",
+      "books and visual stories",
+      "drawing and creative tools",
       "music games",
       "geography and maps",
       "AI-assisted learning",
@@ -115,7 +115,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         name: "Cats Explain",
         path: "/cats",
-        description: "Short visual explanations of complex questions for kids.",
+        description: "Short visual explanations of complex questions.",
       },
       {
         name: "Dogs Draw",
@@ -130,7 +130,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         name: "Parrots Sing",
         path: "/parrots",
-        description: "Music stories, rhythms, and playful mixes for children.",
+        description: "Music stories, rhythms, and interactive mixes.",
       },
       {
         name: "Raccoons Explore",
@@ -142,12 +142,12 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         question: "What is LapLapLa?",
         answer:
-          "LapLapLa is an author-led learning platform by Julia Noah Makhlin where children learn through stories, games, maps, music, drawing, and animation.",
+          "LapLapLa is an author-led interactive creative and popular-science platform by Julia Noah Makhlin for users aged 16 and over.",
       },
       {
         question: "Who is LapLapLa for?",
         answer:
-          "LapLapLa is for children, parents, teachers, and grown-ups who want simple visual explanations and interactive learning formats.",
+          "LapLapLa is for people aged 16 and over who are curious about science, books, art, music, geography, and creative experiments.",
       },
       {
         question: "Who created LapLapLa?",
@@ -157,21 +157,21 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
     ],
   },
   he: {
-    tagline: "למידה דרך משחקים, סיפורים, מפות, מוזיקה, ציור ואנימציה.",
+    tagline: "מדע ויצירה דרך סיפורים, מפות, מוזיקה, ציור ואנימציה.",
     summary:
-      "LapLapLa היא פלטפורמת למידה עצמאית של Julia Noah Makhlin לילדים ולמבוגרים. האתר הופך נושאים מורכבים לפורמטים אינטראקטיביים קצרים: שקופיות הסבר, אולפני יצירה, סיפורי ספרים, ניסויי מוזיקה, מפות ומשימות.",
+      "LapLapLa היא פלטפורמה אינטראקטיבית ליצירה ולמדע פופולרי מאת Julia Noah Makhlin, המיועדת לבני 16 ומעלה. הדמויות שלה מזמינות לחקור מדע, ספרים, אמנות, מוזיקה וגאוגרפיה באמצעות סיפורים חזותיים, כלים אינטראקטיביים וניסויים יצירתיים.",
     audience:
-      "הפרויקט מיועד לילדים, הורים, מורים ומבוגרים שאוהבים הסברים ברורים, למידה חזותית ותרחישי לימוד משחקיים.",
+      "הפרויקט מיועד לבני 16 ומעלה שאוהבים הסברים ברורים, סיפורים חזותיים ופורמטים יצירתיים אינטראקטיביים.",
     author:
       "LapLapLa נוצרה ומפותחת על ידי Julia Noah Makhlin, שמובילה את הקונספט, פיתוח הממשקים, התוכן ומערכת הלמידה של הפרויקט.",
     format:
       "הפורמטים המרכזיים של LapLapLa הם חתולים שמסבירים שאלות מורכבות, כלבים שמובילים שיעורי ציור, קפיברות שמספרות ספרים, תוכונים שמציגים מוזיקה ודביבונים שחוקרים את העולם דרך מפות אינטראקטיביות.",
     topics: [
-      "חינוך ילדים",
+      "מדע פופולרי",
       "למידה אינטראקטיבית",
       "הסברים פשוטים לנושאים מורכבים",
-      "ספרים וסיפורים לילדים",
-      "ציור לילדים",
+      "ספרים וסיפורים חזותיים",
+      "ציור וכלי יצירה",
       "משחקי מוזיקה",
       "גאוגרפיה ומפות",
       "AI-assisted learning",
@@ -180,7 +180,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         name: "חתולים מסבירים",
         path: "/cats",
-        description: "הסברים חזותיים קצרים לשאלות מורכבות לילדים.",
+        description: "הסברים חזותיים קצרים לשאלות מורכבות.",
       },
       {
         name: "כלבלבים מציירים",
@@ -195,7 +195,7 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         name: "תוכונים שרים",
         path: "/parrots",
-        description: "סיפורי מוזיקה, מקצבים ומיקסים משחקיים לילדים.",
+        description: "סיפורי מוזיקה, מקצבים ומיקסים אינטראקטיביים.",
       },
       {
         name: "דביבונים חוקרים",
@@ -207,12 +207,12 @@ export const GEO_PROFILES: Record<Lang, GeoProfile> = {
       {
         question: "מה זה LapLapLa?",
         answer:
-          "LapLapLa היא פלטפורמת למידה של Julia Noah Makhlin שבה ילדים לומדים דרך סיפורים, משחקים, מפות, מוזיקה, ציור ואנימציה.",
+          "LapLapLa היא פלטפורמה אינטראקטיבית ליצירה ולמדע פופולרי מאת Julia Noah Makhlin, המיועדת לבני 16 ומעלה.",
       },
       {
         question: "למי LapLapLa מיועדת?",
         answer:
-          "LapLapLa מיועדת לילדים, הורים, מורים ומבוגרים שרוצים הסברים חזותיים פשוטים ופורמטים אינטראקטיביים ללמידה.",
+          "LapLapLa מיועדת לבני 16 ומעלה שמתעניינים במדע, בספרים, באמנות, במוזיקה, בגאוגרפיה ובניסויים יצירתיים.",
       },
       {
         question: "מי יצרה את LapLapLa?",

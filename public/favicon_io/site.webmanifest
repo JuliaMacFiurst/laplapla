@@ -1,7 +1,7 @@
 {
   "name": "LapLapLa",
   "short_name": "LapLapLa",
-  "description": "LapLapLa is an interactive learning platform with stories, games, maps, music and drawing for children and grown-ups.",
+  "description": "LapLapLa is an interactive creative and popular-science platform for users aged 16 and over, with visual stories, books, art, music, maps and creative tools.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -15,8 +15,8 @@
   "orientation": "any",
   "categories": [
     "education",
-    "kids",
-    "games"
+    "entertainment",
+    "lifestyle"
   ],
   "icons": [
     {

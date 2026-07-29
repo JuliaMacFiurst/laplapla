@@ -102,17 +102,17 @@ const COMING_SOON_COPY: Record<Lang, { title: string; body: string }> = {
   ru: {
     title: "История скоро появится",
     body:
-      "Енотики уже собираются в путешествие, чтобы узнать побольше про это место. Скоро здесь появятся факты, картинки и история для детей.",
+      "Енотики уже собираются в путешествие, чтобы узнать побольше про это место. Скоро здесь появятся факты, картинки и визуальная история.",
   },
   en: {
     title: "A story is coming soon",
     body:
-      "The raccoons are getting ready for a new journey to learn more about this place. Facts, pictures, and a kid-friendly story will appear here soon.",
+      "The raccoons are getting ready for a new journey to learn more about this place. Facts, pictures, and a visual story will appear here soon.",
   },
   he: {
     title: "הסיפור יופיע בקרוב",
     body:
-      "הדביבונים כבר מתכוננים למסע חדש כדי ללמוד יותר על המקום הזה. בקרוב יופיעו כאן עובדות, תמונות וסיפור ידידותי לילדים.",
+      "הדביבונים כבר מתכוננים למסע חדש כדי ללמוד יותר על המקום הזה. בקרוב יופיעו כאן עובדות, תמונות וסיפור חזותי.",
   },
 };
 

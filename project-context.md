@@ -21,6 +21,8 @@ Current goal: ship a stable, safe public demo with mobile support where feasible
   - `useSledRunConfig` derives run config from the preparation state
 
 ### Product decisions already reflected in code
+- The main LapLapLa product is an interactive creative and popular-science platform for users aged 16 and over; it is not positioned as a product for young children.
+- Any future products intended for children must be released separately with their own package, manifest, store listing, privacy policy, data declarations, and content restrictions.
 - The project no longer uses Gemini generation in the current shipped flow.
 - The old AI coloring backend flow is not part of the active release scope.
 - Public demo behavior should rely on safe stored content, fixed assets, database-backed content, or server-controlled APIs.

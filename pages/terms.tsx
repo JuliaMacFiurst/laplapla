@@ -20,7 +20,7 @@ export default function TermsPage() {
           sections: [
             {
               h: "1. Acceptance of Terms",
-              p: `By using LapLapLa, you agree to these Terms of Service. If you are under 18, you must use this service with parental supervision. Children under 13 may use the platform only with parental consent.`,
+              p: `By using LapLapLa, you agree to these Terms of Service and confirm that you are at least 16 years old. The service is not intended for users under the age of 16.`,
             },
             {
               h: "2. User Content",
@@ -51,7 +51,7 @@ export default function TermsPage() {
           sections: [
             {
               h: "1. קבלת התנאים",
-              p: `בשימוש ב‑LapLapLa אתם מסכימים לתנאים אלו. משתמשים מתחת לגיל 18 חייבים להשתמש בשירות בליווי הורה. ילדים מתחת לגיל 13 רשאים להשתמש בפלטפורמה רק באישור הורים.`,
+              p: `בשימוש ב‑LapLapLa אתם מסכימים לתנאים אלו ומאשרים שמלאו לכם 16 שנים. השירות אינו מיועד למשתמשים מתחת לגיל 16.`,
             },
             {
               h: "2. תוכן משתמש",
@@ -82,7 +82,7 @@ export default function TermsPage() {
           sections: [
             {
               h: "1. Принятие условий",
-              p: `Используя LapLapLa, вы соглашаетесь с настоящими условиями. Пользователи младше 18 лет должны использовать сервис под присмотром родителей. Дети младше 13 лет могут пользоваться платформой только с согласия родителей.`,
+              p: `Используя LapLapLa, вы соглашаетесь с настоящими условиями и подтверждаете, что вам исполнилось 16 лет. Сервис не предназначен для пользователей младше 16 лет.`,
             },
             {
               h: "2. Пользовательский контент",
