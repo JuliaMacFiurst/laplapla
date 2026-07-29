@@ -57,6 +57,7 @@ const MapTabs = ({ selectedTab, setSelectedTab }: MapTabsProps) => {
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            data-map-tab={tab.id}
             onClick={() => setSelectedTab(tab.id)}
             className={`map-tab ${selectedTab === tab.id ? "active" : ""}`}
           >

@@ -33,7 +33,7 @@ export default function MapViewport({
   controls,
 }: MapViewportProps) {
   return (
-    <div className="map-container">
+    <div className="map-container" data-testid="raccoons-map-viewport">
       <div
         ref={mapContentRef}
         className={`map-content transition-opacity duration-700 ease-in-out ${

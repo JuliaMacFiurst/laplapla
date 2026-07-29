@@ -25,7 +25,21 @@
 .raccoons-search-block {
   width: 100%;
   max-width: 860px;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto;
+}
+
+.raccoons-map-layout {
+  display: grid;
+  grid-template-rows: auto minmax(0, auto);
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.raccoons-map-region {
+  min-width: 0;
+  min-height: 0;
 }
 
 .raccoons-search-form {
@@ -76,8 +90,9 @@
   position: relative;
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
-  overflow-y: visible;
+  min-width: 0;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .map-content {
@@ -154,8 +169,70 @@ svg path[data-selected="true"] {
   width: 100%;
   max-width: 1280px;
   box-sizing: border-box;
+  min-width: 0;
   overflow-x: clip;
   overflow-y: visible;
+}
+
+.map-popup-desktop-media-shell {
+  position: relative;
+  min-height: 180px;
+}
+
+.map-popup-desktop-media-shell .map-popup-slide-media {
+  aspect-ratio: 16 / 10;
+  object-fit: contain;
+  background: #f4f0f8;
+}
+
+.map-popup-media-skeleton {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(238, 233, 244, 0.9) 30%,
+      rgba(255, 255, 255, 0.95) 50%,
+      rgba(238, 233, 244, 0.9) 70%
+    );
+  background-size: 220% 100%;
+  animation: map-popup-media-shimmer 1.25s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.map-popup-media-error {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 3;
+  display: flex;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  background: #f7f4f8;
+  color: #5a4a5f;
+}
+
+.map-popup-media-error button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #d6b2ff;
+  color: #2f2140;
+  font-weight: 700;
+}
+
+@keyframes map-popup-media-shimmer {
+  to {
+    background-position-x: -220%;
+  }
 }
 
 
@@ -931,8 +1008,8 @@ body.raccoons-mobile-page .footer-stack {
 .raccoons-mobile-map-area {
   position: absolute;
   inset: 0;
-  padding-top: 56px;
-  padding-bottom: 78px;
+  padding-top: calc(68px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
 }
 
 .raccoons-mobile-map-area .world-map-wrapper {
@@ -956,7 +1033,7 @@ body.raccoons-mobile-page .footer-stack {
 
 .raccoons-mobile-floating-controls {
   position: absolute;
-  top: 8px;
+  top: calc(8px + env(safe-area-inset-top, 0px));
   left: 8px;
   right: 8px;
   z-index: 130;

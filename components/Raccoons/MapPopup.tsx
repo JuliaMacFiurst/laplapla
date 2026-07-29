@@ -91,6 +91,10 @@ export default function MapPopup({
   onOpenTextPage,
 }: MapPopupProps) {
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [mediaStateById, setMediaStateById] = useState<
+    Record<string, "loading" | "ready" | "error">
+  >({});
+  const [retryById, setRetryById] = useState<Record<string, number>>({});
 
   const effectiveSlides = useMemo<MapPopupSlide[]>(() => {
     if (loading || slides.length > 0) {
@@ -117,6 +121,31 @@ export default function MapPopup({
       setHasInteracted(false);
     }
   }, [isOpen, slides.length]);
+
+  const markMediaReady = (slideIndex: number) => {
+    const slide = viewerSlides[slideIndex];
+    if (!slide) {
+      return;
+    }
+
+    setMediaStateById((current) => ({ ...current, [slide.id]: "ready" }));
+
+    const nextSlide = viewerSlides[slideIndex + 1];
+    if (!nextSlide?.mediaUrl || typeof window === "undefined") {
+      return;
+    }
+
+    if (nextSlide.mediaType === "video") {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.src = nextSlide.mediaUrl;
+      return;
+    }
+
+    const image = new window.Image();
+    image.decoding = "async";
+    image.src = nextSlide.mediaUrl;
+  };
 
   return (
     <MobileSlideshowViewer
@@ -148,26 +177,82 @@ export default function MapPopup({
           return null;
         }
 
-        return slide.mediaType === "video" ? (
-          <video
-            key={`${slide.id}:${slide.mediaUrl}`}
-            src={slide.mediaUrl}
-            className="map-popup-mobile-media"
-            autoPlay={slideIndex === currentSlideIndex}
-            muted
-            loop
-            playsInline
-          />
-        ) : (
-          <Image
-            key={`${slide.id}:${slide.mediaUrl}`}
-            src={slide.mediaUrl}
-            alt={slide.text?.trim() || ""}
-            fill
-            unoptimized
-            sizes="100vw"
-            className="map-popup-mobile-media"
-          />
+        const isCurrent = slideIndex === currentSlideIndex;
+        const mediaState = mediaStateById[slide.id] || "loading";
+        const retryKey = retryById[slide.id] || 0;
+
+        return (
+          <>
+            {mediaState === "loading" && isCurrent ? (
+              <div className="map-popup-media-skeleton" aria-hidden="true" />
+            ) : null}
+            {mediaState === "error" && isCurrent ? (
+              <div className="map-popup-media-error" role="status">
+                <span>
+                  {lang === "ru"
+                    ? "Медиа не загрузилось."
+                    : lang === "he"
+                      ? "המדיה לא נטענה."
+                      : "Media could not be loaded."}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaStateById((current) => ({
+                      ...current,
+                      [slide.id]: "loading",
+                    }));
+                    setRetryById((current) => ({
+                      ...current,
+                      [slide.id]: (current[slide.id] || 0) + 1,
+                    }));
+                  }}
+                >
+                  {lang === "ru" ? "Повторить" : lang === "he" ? "לנסות שוב" : "Retry"}
+                </button>
+              </div>
+            ) : null}
+            {slide.mediaType === "video" ? (
+              <video
+                key={`${slide.id}:${slide.mediaUrl}:${retryKey}`}
+                src={slide.mediaUrl}
+                className="map-popup-mobile-media"
+                autoPlay={isCurrent}
+                muted
+                loop
+                playsInline
+                preload={isCurrent ? "auto" : "none"}
+                onLoadedData={() => markMediaReady(slideIndex)}
+                onError={() =>
+                  setMediaStateById((current) => ({
+                    ...current,
+                    [slide.id]: "error",
+                  }))
+                }
+              />
+            ) : (
+              <Image
+                key={`${slide.id}:${slide.mediaUrl}:${retryKey}`}
+                src={slide.mediaUrl}
+                alt={slide.text?.trim() || ""}
+                fill
+                unoptimized
+                priority={isCurrent}
+                loading={isCurrent ? "eager" : "lazy"}
+                fetchPriority={isCurrent ? "high" : "auto"}
+                decoding="async"
+                sizes="(max-width: 768px) 100vw, 720px"
+                className="map-popup-mobile-media"
+                onLoad={() => markMediaReady(slideIndex)}
+                onError={() =>
+                  setMediaStateById((current) => ({
+                    ...current,
+                    [slide.id]: "error",
+                  }))
+                }
+              />
+            )}
+          </>
         );
       }}
       renderSlideHeader={

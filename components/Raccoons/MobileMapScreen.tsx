@@ -178,6 +178,7 @@ export default function MobileMapScreen({
           {TAB_ORDER.map((tab) => (
             <button
               key={tab}
+              data-map-tab={tab}
               type="button"
               role="tab"
               aria-selected={activeTab === tab}

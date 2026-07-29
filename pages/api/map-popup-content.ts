@@ -34,11 +34,17 @@ async function handler(
   }
 
   try {
+    const startedAt = performance.now();
     const payload = await getMapPopupContent({
       type,
       targetId,
       lang: typeof lang === "string" && lang ? lang : "ru",
     });
+    const durationMs = performance.now() - startedAt;
+    res.setHeader(
+      "Server-Timing",
+      `map-popup-content;dur=${durationMs.toFixed(1)}`,
+    );
 
     if (!payload) {
       return res.status(404).json({ error: "Popup content not found" });

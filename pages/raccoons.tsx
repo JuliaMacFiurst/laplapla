@@ -469,7 +469,8 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
               </p>
             )}
           </div>
-          <div className="raccoons-search-block">
+          <div className="raccoons-map-layout">
+          <div className="raccoons-search-block" data-testid="raccoons-map-search">
             <form className="search-form raccoons-search-form" onSubmit={handleSearchSubmit}>
               <div className="search-input-wrapper">
                 <input
@@ -543,7 +544,10 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
               </div>
             ) : null}
           </div>
-          <MapWrapper type={activeTab} previewSelectedId={previewSelectedId} onUserSelect={handleMapUserSelect} />
+          <div className="raccoons-map-region" data-testid="raccoons-map-region">
+            <MapWrapper type={activeTab} previewSelectedId={previewSelectedId} onUserSelect={handleMapUserSelect} />
+          </div>
+          </div>
           <RaccoonKitchenSection lang={lang} recipes={recipes} />
           <QuestSection quests={localizedQuests} />
         </div>

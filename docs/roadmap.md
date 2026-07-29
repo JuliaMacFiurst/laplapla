@@ -248,6 +248,14 @@ This task remains important because it increases the value of user-created proje
 
 ## Done
 
+- [x] Raccoon Maps Popup Performance + Responsive Layout
+  - Дата завершения: 2026-07-29
+  - Подтверждённая причина: popup ждал последовательный подбор медиа для каждого из 8 слайдов и preload всей галереи; общий SVG viewport разрешал вертикальный visual overflow трансформированной карты.
+  - Что ускорено: popup shell открывается сразу, данные кешируются на 5 минут с дедупликацией in-flight запросов, hover/focus/pointerdown запускают безопасный prefetch, текущий слайд получает высокий приоритет, а следующий подготавливается после текущего; остальные тяжёлые медиа остаются ленивыми.
+  - Layout: поиск и карта объединены общим grid-layout, SVG обрезается внутри общего viewport, mobile safe-area и стабильный gap учтены для flags, cultures и food.
+  - Viewport tests: проверены 320×568, 360×640, 375×667, 390×844, 412×915, 430×932, 568×320, 844×390, 768×1024, 1024×768, 1280×720, 1366×768, 1440×900, 1920×1080 и 2560×1440; добавлены точные DOM-селекторы и тест общего layout-контракта.
+  - Проверки: typecheck, ESLint, 48 unit tests и production build прошли; production-like замер сократил первый визуальный media с десятков секунд до ~0.6 с, а фоновые media-search запросы — с 8 до 2 для текущего и следующего слайда.
+
 - [x] Product Analytics + Daily Discord Reports
   - Дата завершения: 2026-06-22
   - Кратко что сделано: добавлены Supabase `analytics_events`, tracking helper, `/api/analytics/event`, daily/weekly analytics reports, cleanup cron, отдельный `DISCORD_ANALYTICS_WEBHOOK_URL`, Vercel Cron и privacy-friendly фильтрация payload без IP/email/fingerprinting. В коде также есть тесты Discord analytics report.
