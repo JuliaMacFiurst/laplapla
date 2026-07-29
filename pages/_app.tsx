@@ -28,7 +28,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
 import { dictionaries, Lang } from "../i18n";
-import { buildLocalizedHref, buildLocalizedPublicPath, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { fontVariableClasses } from "@/lib/fonts";
 import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
@@ -493,7 +493,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                     {t.footer.about}
                   </a>
                   <a
-                    href={buildLocalizedHref("/terms", lang)}
+                    href={buildLocalizedPublicPath("/terms", lang)}
                     onClick={() =>
                       router.push(
                         { pathname: "/terms", query: buildLocalizedQuery(lang) },
@@ -505,7 +505,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                     {t.footer.terms}
                   </a>
                   <a
-                    href={buildLocalizedHref("/privacy", lang)}
+                    href={buildLocalizedPublicPath("/privacy", lang)}
                     onClick={() =>
                       router.push(
                         { pathname: "/privacy", query: buildLocalizedQuery(lang) },
@@ -517,7 +517,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                     {t.footer.privacy}
                   </a>
                   <a
-                    href={buildLocalizedHref("/licenses", lang)}
+                    href={buildLocalizedPublicPath("/licenses", lang)}
                     onClick={() =>
                       router.push(
                         { pathname: "/licenses", query: buildLocalizedQuery(lang) },

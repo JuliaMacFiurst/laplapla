@@ -1,7 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { buildCanonicalMapEntityPathFromUnknown, normalizeMapEntityType, normalizeSlug } from "@/lib/mapEntityRouting";
-import { buildLocalizedPublicPath, DEFAULT_LANG, isLang } from "@/lib/i18n/routing";
+import {
+  buildLegacyLangRedirect,
+  buildLocalizedPublicPath,
+  DEFAULT_LANG,
+  isLang,
+} from "@/lib/i18n/routing";
 
 const LEGACY_ENTITY_PREFIXES = new Set(["country", "animal", "river", "sea", "biome", "physic"]);
 const QUERY_TYPE_KEYS = ["type", "mapType", "target_type", "entityType"];
@@ -33,7 +38,7 @@ function redirectToCanonical(request: NextRequest, pathname: string, queryKeysTo
   }
 
   logDevRedirect(originalUrl, targetUrl);
-  return NextResponse.redirect(target, 301);
+  return NextResponse.redirect(target, 308);
 }
 
 export function proxy(request: NextRequest) {
@@ -50,6 +55,21 @@ export function proxy(request: NextRequest) {
     isStaticAsset(normalizedPathname)
   ) {
     return NextResponse.next();
+  }
+
+  const legacyLangDestination = buildLegacyLangRedirect(rawPathname, request.nextUrl.search);
+  if (legacyLangDestination) {
+    const target = new URL(request.url);
+    const [targetPathname, targetSearch = ""] = legacyLangDestination.split("?");
+    target.pathname = targetPathname || "/";
+    target.search = targetSearch ? `?${targetSearch}` : "";
+
+    const originalUrl = `${rawPathname}${request.nextUrl.search}`;
+    const targetUrl = `${target.pathname}${target.search}`;
+    if (originalUrl !== targetUrl) {
+      logDevRedirect(originalUrl, targetUrl);
+      return NextResponse.redirect(target, 308);
+    }
   }
 
   const segments = normalizedPathname.split("/").filter(Boolean);

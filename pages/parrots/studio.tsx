@@ -528,6 +528,7 @@ export function ParrotsStudioPageContent() {
           title={`${copy.title} — capybara_tales`}
           description={copy.subtitle}
           path={seoPath}
+          noindex
         />
         <MobilePortraitLock lang={lang} enabled={studioViewport.usesPhonePortraitLock && isMobile} />
         <style jsx global>{`
@@ -590,6 +591,7 @@ export function ParrotsStudioPageContent() {
         title={`${copy.title} — capybara_tales`}
         description={copy.subtitle}
         path={seoPath}
+        noindex
       />
       <MobilePortraitLock lang={lang} enabled={studioViewport.usesPhonePortraitLock && isMobile} />
       <main className={`parrot-studio-page ${lang === "he" ? "is-rtl" : ""}`}>

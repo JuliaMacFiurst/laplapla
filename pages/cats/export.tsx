@@ -468,7 +468,7 @@ export default function StudioExportPage() {
 
   return (
     <>
-      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <SEO title={seo.title} description={seo.description} path={seoPath} noindex />
       <div className="export-root">
       {!isFinished ? (
         <button

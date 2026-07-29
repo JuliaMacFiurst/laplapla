@@ -4,6 +4,7 @@ import type { Lang } from "@/i18n";
 
 const LANGS: Lang[] = ["ru", "en", "he"];
 export const DEFAULT_LANG: Lang = "ru";
+export const CANONICAL_LANGS: readonly Lang[] = LANGS;
 
 export const isLang = (value: unknown): value is Lang => {
   return typeof value === "string" && LANGS.includes(value as Lang);
@@ -51,8 +52,8 @@ const getLangFromStorage = (): Lang | null => {
 
 export const getCurrentLang = (router: Pick<NextRouter, "query" | "locale">): Lang => {
   return (
-    normalizeLang(router.query.lang) ??
     normalizeLang(router.locale) ??
+    normalizeLang(router.query.lang) ??
     getLangFromCookie() ??
     getLangFromStorage() ??
     DEFAULT_LANG
@@ -72,24 +73,26 @@ export const getRequestLang = (
 };
 
 export const buildLocalizedQuery = (
-  lang: Lang,
+  _lang: Lang,
   query?: Record<string, string | number | boolean | undefined>,
 ) => {
-  return {
-    ...(query ?? {}),
-    lang,
-  };
+  const nextQuery = { ...(query ?? {}) };
+  delete nextQuery.lang;
+  return nextQuery;
 };
 
 export const buildLocalizedHref = (href: string, lang: Lang): string => {
   const [pathWithQuery, hash = ""] = href.split("#");
   const [path, queryString = ""] = pathWithQuery.split("?");
+  const localizedPath = buildLocalizedPublicPath(path || "/", lang);
   const params = new URLSearchParams(queryString);
-  params.set("lang", lang);
+  params.delete("lang");
 
   const nextQuery = params.toString();
   const nextHash = hash ? `#${hash}` : "";
-  return nextQuery ? `${path}?${nextQuery}${nextHash}` : `${path}${nextHash}`;
+  return nextQuery
+    ? `${localizedPath}?${nextQuery}${nextHash}`
+    : `${localizedPath}${nextHash}`;
 };
 
 export const buildLocalizedAsPath = (asPath: string, lang: Lang): string => {
@@ -97,7 +100,7 @@ export const buildLocalizedAsPath = (asPath: string, lang: Lang): string => {
   const [path, queryString = ""] = pathWithQuery.split("?");
   const localizedPath = buildLocalizedPublicPath(path || "/", lang);
   const params = new URLSearchParams(queryString);
-  params.set("lang", lang);
+  params.delete("lang");
 
   const nextQuery = params.toString();
   const nextHash = hash ? `#${hash}` : "";
@@ -110,11 +113,49 @@ export const buildLocalizedPublicPath = (path: string, lang?: Lang): string => {
     ? "/"
     : `/${cleanPath.replace(/^\/+/, "").replace(/\/+$/, "")}`;
   const segments = normalizedPath.split("/").filter(Boolean);
-  const baseSegments = normalizeLang(segments[0]) ? segments.slice(1) : segments;
+  const baseSegments = [...segments];
+  while (normalizeLang(baseSegments[0])) {
+    baseSegments.shift();
+  }
   const resolvedLang = lang ?? DEFAULT_LANG;
   const localizedSegments = resolvedLang === DEFAULT_LANG
     ? baseSegments
     : [resolvedLang, ...baseSegments];
 
   return localizedSegments.length ? `/${localizedSegments.join("/")}` : "/";
+};
+
+export const buildCanonicalUrl = (origin: string, path: string, lang: Lang): string => {
+  const normalizedOrigin = origin.replace(/\/+$/, "");
+  const localizedPath = buildLocalizedPublicPath(path, lang);
+  return localizedPath === "/" ? normalizedOrigin : `${normalizedOrigin}${localizedPath}`;
+};
+
+export const buildHreflangLinks = (origin: string, path: string) => {
+  return [
+    ...CANONICAL_LANGS.map((lang) => ({
+      hrefLang: lang,
+      href: buildCanonicalUrl(origin, path, lang),
+    })),
+    {
+      hrefLang: "x-default",
+      href: buildCanonicalUrl(origin, path, DEFAULT_LANG),
+    },
+  ];
+};
+
+export const buildLegacyLangRedirect = (
+  pathname: string,
+  search: string,
+): string | null => {
+  const params = new URLSearchParams(search);
+  const legacyLang = normalizeLang(params.getAll("lang"));
+  if (!legacyLang) {
+    return null;
+  }
+
+  params.delete("lang");
+  const localizedPath = buildLocalizedPublicPath(pathname, legacyLang);
+  const nextSearch = params.toString();
+  return nextSearch ? `${localizedPath}?${nextSearch}` : localizedPath;
 };

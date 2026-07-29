@@ -320,7 +320,7 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
 
   return (
     <>
-      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <SEO title={seo.title} description={seo.description} path={seoPath} noindex />
       <MobilePortraitLock lang={lang} enabled={studioViewport.usesPhonePortraitLock && isMobile} />
       {usesTouchStudioLayout || isUnifiedMobileStudioRoute ? (
         isImportReady ? (

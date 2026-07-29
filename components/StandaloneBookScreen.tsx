@@ -8,6 +8,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { useBook } from "@/hooks/useBook";
 import { buildBookHref, buildBookModeHref } from "@/lib/books/shared";
 import { buildStudioHref } from "@/lib/studioRouting";
+import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import type { dictionaries, Lang } from "@/i18n";
 import type { Book } from "@/types/types";
 
@@ -55,12 +56,12 @@ export default function StandaloneBookScreen({
     closeCurrentBookQuiz();
     const mode = explanationModes.find((item) => String(item.id) === String(modeId));
     const nextHref = mode ? buildBookModeHref(book, mode) : buildBookHref(book);
-    void router.push(`${nextHref}?lang=${lang}`);
+    void router.push(buildLocalizedPublicPath(nextHref, lang));
   };
 
   const handleExplainMeaning = () => {
     closeCurrentBookQuiz();
-    void router.push(`/caps/stories/create?lang=${lang}`);
+    void router.push(buildLocalizedPublicPath("/caps/stories/create", lang));
   };
 
   const handleCreateVideo = async () => {

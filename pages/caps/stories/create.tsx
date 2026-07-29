@@ -448,7 +448,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
 
   return (
     <>
-      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <SEO title={seo.title} description={seo.description} path={seoPath} noindex />
       <div className="capybara-page-container story-generator-page">
         {isMobile ? (
           <div className="capybara-mobile-topbar story-generator-mobile-topbar">

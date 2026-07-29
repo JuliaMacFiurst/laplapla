@@ -68,6 +68,23 @@ const securityHeaders = [
     : []),
 ];
 
+const technicalNoIndexHeaders = [
+  {
+    key: "X-Robots-Tag",
+    value: "noindex, nofollow",
+  },
+];
+
+const technicalNoIndexSources = [
+  "/api/:path*",
+  "/admin-login",
+  "/studio",
+  "/cats/studio",
+  "/cats/export",
+  "/parrots/studio",
+  "/caps/stories/create",
+];
+
 const supabaseStorageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
 
 /** @type {import('next').NextConfig} */
@@ -87,6 +104,10 @@ const nextConfig = {
   },
   async headers() {
     return [
+      ...technicalNoIndexSources.map((source) => ({
+        source,
+        headers: technicalNoIndexHeaders,
+      })),
       {
         source: "/:path*",
         headers: securityHeaders,

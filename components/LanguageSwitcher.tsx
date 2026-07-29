@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Lang } from "../i18n";
-import { buildLocalizedAsPath, getCurrentLang } from "@/lib/i18n/routing";
+import { getCurrentLang } from "@/lib/i18n/routing";
 import { trackEvent } from "@/lib/analytics/client";
 
 const LANGS: { code: Lang; label: string }[] = [
@@ -26,14 +26,15 @@ export default function LanguageSwitcher() {
     }
 
     const isCapybaraPage = router.pathname === "/capybara";
-    const localizedAsPath = buildLocalizedAsPath(router.asPath, lang);
+    const nextQuery = { ...router.query };
+    delete nextQuery.lang;
 
     await router.replace(
       {
         pathname: router.pathname,
-        query: { ...router.query, lang },
+        query: nextQuery,
       },
-      isCapybaraPage ? localizedAsPath : undefined,
+      undefined,
       { locale: lang },
     );
 

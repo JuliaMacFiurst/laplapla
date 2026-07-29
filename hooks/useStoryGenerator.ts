@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Lang } from "@/i18n";
 import { fallbackImages } from "@/constants";
-import { buildLocalizedQuery } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import { findAlternativeSlideMedia } from "@/lib/client/slideMediaSearch";
 import {
@@ -706,7 +706,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     });
 
     sessionStorage.setItem("catsSlides", JSON.stringify(studioSlides));
-    window.location.assign(`/cats/studio?${new URLSearchParams(buildLocalizedQuery(lang)).toString()}`);
+    window.location.assign(buildLocalizedPublicPath("/cats/studio", lang));
   }, [draft.slideshow, lang, mediaCache]);
 
   const reset = useCallback(() => {

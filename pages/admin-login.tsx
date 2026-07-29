@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
-import { dictionaries } from "@/i18n";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { dictionaries, type Lang } from "@/i18n";
+import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { supabase } from "@/lib/supabase";
 
-function buildDefaultAdminTargetUrl(lang: string) {
+function buildDefaultAdminTargetUrl(lang: Lang) {
   const explicitSiteUrl =
     process.env["NEXT_PUBLIC_SITE_URL"] ||
     process.env["NEXT_PUBLIC_LAPLAPLA_SITE_URL"];
@@ -13,8 +13,7 @@ function buildDefaultAdminTargetUrl(lang: string) {
     typeof window !== "undefined"
       ? window.location.origin
       : explicitSiteUrl || "http://localhost:3000";
-  const targetUrl = new URL("/raccoons", origin);
-  targetUrl.searchParams.set("lang", lang);
+  const targetUrl = new URL(buildLocalizedPublicPath("/raccoons", lang), origin);
   return targetUrl.toString();
 }
 
@@ -201,7 +200,7 @@ export default function AdminLoginPage() {
 
   return (
     <>
-      <SEO title={seo.title} description={seo.description} path={seoPath} />
+      <SEO title={seo.title} description={seo.description} path={seoPath} noindex />
       <main
         style={{
           minHeight: "100vh",

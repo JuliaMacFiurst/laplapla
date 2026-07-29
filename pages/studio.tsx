@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import type { Lang } from "@/i18n";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { CatsStudioPageContent } from "@/pages/cats/studio";
 import { ParrotsStudioPageContent } from "@/pages/parrots/studio";
 
@@ -25,10 +25,9 @@ export default function StudioRouterPage() {
           pathname: "/dog/lessons/[slug]",
           query: {
             slug,
-            lang,
           },
         },
-        `/dog/lessons/${slug}?lang=${lang}`,
+        buildLocalizedPublicPath(`/dog/lessons/${slug}`, lang),
         { locale: lang },
       );
       return;
@@ -37,7 +36,7 @@ export default function StudioRouterPage() {
     void router.replace(
       {
         pathname: "/dog/lessons",
-        query: { lang },
+        query: {},
       },
       undefined,
       { locale: lang },

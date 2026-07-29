@@ -2,7 +2,12 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { BASE_URL } from "@/lib/config";
 import type { Lang } from "@/i18n";
-import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
+import {
+  buildCanonicalUrl,
+  buildHreflangLinks,
+  buildLocalizedPublicPath,
+  getCurrentLang,
+} from "@/lib/i18n/routing";
 import {
   SITE_NAME,
   SITE_SOCIAL_IMAGE_PATH,
@@ -21,6 +26,7 @@ export type SEOProps = {
     href: string;
   }>;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
+  noindex?: boolean;
 };
 
 function normalizePath(path: string) {
@@ -34,14 +40,7 @@ function normalizePath(path: string) {
 }
 
 function buildAlternateLinks(path: string) {
-  const normalizedPath = normalizePath(path);
-
-  return [
-    { hrefLang: "ru", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "ru")}` },
-    { hrefLang: "en", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "en")}` },
-    { hrefLang: "he", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "he")}` },
-    { hrefLang: "x-default", href: `${BASE_URL}${buildLocalizedPublicPath(normalizedPath, "ru")}` },
-  ];
+  return buildHreflangLinks(BASE_URL, normalizePath(path));
 }
 
 export default function SEO({
@@ -53,11 +52,12 @@ export default function SEO({
   canonicalOverride,
   alternates,
   jsonLd,
+  noindex = false,
 }: SEOProps) {
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
   const normalizedPath = buildLocalizedPublicPath(normalizePath(path), resolvedLang);
-  const canonical = canonicalOverride ?? `${BASE_URL}${normalizedPath === "/" ? "" : normalizedPath}`;
+  const canonical = canonicalOverride ?? buildCanonicalUrl(BASE_URL, normalizedPath, resolvedLang);
   const alternateLinks = alternates ?? buildAlternateLinks(path);
   const identityJsonLd = buildCoreIdentityJsonLd(resolvedLang);
   const pageJsonLd = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
@@ -69,7 +69,11 @@ export default function SEO({
     <Head>
       <title key="title">{title}</title>
       <meta key="description" name="description" content={description} />
-      <meta key="robots" name="robots" content="index, follow, max-image-preview:large" />
+      <meta
+        key="robots"
+        name="robots"
+        content={noindex ? "noindex, follow" : "index, follow, max-image-preview:large"}
+      />
       <meta key="application-name" name="application-name" content={SITE_NAME} />
       <link key="canonical" rel="canonical" href={canonical} />
       <link key="home" rel="home" href={BASE_URL} />

@@ -58,7 +58,7 @@ export default function LessonsPage() {
     <>
       <SEO title={seoTitle} description={seo.description} path={seoPath} />
       <main className="lessons-page">
-        <BackButton href={`/dog?lang=${lang}`}/>
+        <BackButton href="/dog"/>
         {categoryLabel ? (
           <p className="lessons-category-label">{categoryLabel}</p>
         ) : null}
