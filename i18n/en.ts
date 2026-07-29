@@ -176,7 +176,7 @@ export const en = {
     },
     brand: {
       eyebrow: "LapLapLa homepage",
-      heading: "Here, cats explain complex ideas, capybaras tell stories from books, and raccoons show you the world.",
+      heading: "Here we ask difficult questions and search for clear\u00a0answers.",
       intro: "Interactive stories, creative tools, and visual experiments.",
       audience: "Explore science, books, art, music, and geography with the characters of LapLapLa.",
       sectionsTitle: "LapLapLa core sections",
