@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 export const amatic = localFont({
   src: [
     {
-      path: "../assets/fonts/AmaticSC-Bold.ttf",
+      path: "../public/fonts/AmaticSC-Bold.ttf",
       weight: "700",
       style: "normal",
     },
