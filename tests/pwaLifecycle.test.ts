@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
@@ -17,6 +18,7 @@ const manifest = JSON.parse(
   icons: Array<{ sizes: string; purpose?: string }>;
 };
 const offline = fs.readFileSync(path.join(root, "public/offline.html"), "utf8");
+const offlineSplashPath = "/pwa/splash/generated/web/app-splash-logo-640.webp";
 
 describe("PWA lifecycle", () => {
   it("keeps API, admin, auth and Next data responses out of runtime caches", () => {
@@ -32,6 +34,21 @@ describe("PWA lifecycle", () => {
     expect(workerTemplate).not.toContain('caches.match("/")');
     expect(offline).toContain('id="retry"');
     expect(offline).toContain('window.addEventListener("online"');
+  });
+
+  it("uses the generated root-relative splash asset on the offline page", async () => {
+    expect(offline).toContain(`src="${offlineSplashPath}"`);
+    expect(offline).not.toMatch(/src="\/(?:ru|en|he)\/pwa\//);
+    expect(worker).toContain(`"${offlineSplashPath}"`);
+    expect(workerTemplate).toContain("isValidPrecacheResponse(url, response)");
+    expect(workerTemplate).toContain('contentType.startsWith("image/")');
+
+    const assetPath = path.join(root, "public", offlineSplashPath);
+    expect(fs.existsSync(assetPath)).toBe(true);
+    const metadata = await sharp(assetPath).metadata();
+    expect(metadata.format).toBe("webp");
+    expect(metadata.width).toBeGreaterThan(0);
+    expect(metadata.height).toBeGreaterThan(0);
   });
 
   it("waits for explicit user consent before activating an update", () => {

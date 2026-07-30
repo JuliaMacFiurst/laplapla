@@ -7,10 +7,12 @@ const PRECACHE = `${CACHE_PREFIX}precache-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
 const MEDIA_CACHE = `${CACHE_PREFIX}media-${VERSION}`;
 const OFFLINE_PATH = "__OFFLINE_PATH__";
+const LOGO_PATH = "__LOGO_PATH__";
+const SPLASH_PATH = "__SPLASH_PATH__";
 const PRECACHE_URLS = [
   OFFLINE_PATH,
-  "__LOGO_PATH__",
-  "__SPLASH_PATH__",
+  LOGO_PATH,
+  SPLASH_PATH,
   "/fonts/AmaticSC-Bold.ttf",
   "/favicon_io/site.webmanifest",
   "/favicon_io/android-chrome-192x192.png",
@@ -20,6 +22,23 @@ const MAX_MEDIA_ENTRIES = 80;
 
 function isCacheableResponse(response) {
   return Boolean(response && response.ok && response.type !== "opaque");
+}
+
+function isValidPrecacheResponse(url, response) {
+  if (!isCacheableResponse(response)) {
+    return false;
+  }
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  if ([LOGO_PATH, SPLASH_PATH].includes(url)) {
+    return contentType.startsWith("image/");
+  }
+  if (url.endsWith(".ttf")) {
+    return contentType.startsWith("font/") || contentType.includes("application/octet-stream");
+  }
+  if (url === OFFLINE_PATH) {
+    return contentType.includes("text/html");
+  }
+  return true;
 }
 
 function isPrivatePath(pathname) {
@@ -120,7 +139,7 @@ self.addEventListener("install", (event) => {
       await Promise.all(
         PRECACHE_URLS.map(async (url) => {
           const response = await fetch(url, { cache: "reload" });
-          if (!isCacheableResponse(response)) {
+          if (!isValidPrecacheResponse(url, response)) {
             throw new Error(`Unable to precache ${url}`);
           }
           await cache.put(url, response);
