@@ -20,8 +20,8 @@ export default function AppSplash({ brand = APP_BRAND, visible }: AppSplashProps
         className="app-splash__logo"
         src={brand.splashPath}
         alt=""
-        width={168}
-        height={168}
+        width={320}
+        height={320}
         decoding="sync"
         fetchPriority="high"
       />

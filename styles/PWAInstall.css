@@ -47,7 +47,7 @@
 }
 
 .app-splash__logo {
-  width: clamp(132px, 34vw, 190px);
+  width: min(82vw, 320px);
   height: auto;
   object-fit: contain;
 }

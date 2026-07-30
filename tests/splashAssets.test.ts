@@ -10,6 +10,8 @@ type GeneratedAsset = {
   path: string;
   width: number;
   height: number;
+  logoWidth: number;
+  logoHeight: number;
   logoCenterX: number;
   logoCenterY: number;
 };
@@ -54,6 +56,44 @@ describe("generated splash assets", () => {
       expect(metadata.format).toBe(asset.platform === "android" ? "png" : "webp");
       expect(metadata.width).toBe(asset.width);
       expect(metadata.height).toBe(asset.height);
+    }
+  });
+
+  it("keeps the canvas transparent without an edge-connected background", async () => {
+    for (const asset of report.generated) {
+      const { data, info } = await sharp(path.join(generatedRoot, asset.path))
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const alphaAt = (x: number, y: number) => data[(y * info.width + x) * 4 + 3];
+      const logoLeft = Math.floor(asset.logoCenterX - asset.logoWidth / 2);
+      const logoTop = Math.floor(asset.logoCenterY - asset.logoHeight / 2);
+      const logoRight = logoLeft + asset.logoWidth;
+      const logoBottom = logoTop + asset.logoHeight;
+      let transparentPixels = 0;
+      let nontransparentBackgroundPixels = 0;
+
+      for (let y = 0; y < info.height; y += 1) {
+        for (let x = 0; x < info.width; x += 1) {
+          const alpha = alphaAt(x, y);
+          if (alpha === 0) {
+            transparentPixels += 1;
+          }
+          if (
+            alpha !== 0 &&
+            (x < logoLeft || x >= logoRight || y < logoTop || y >= logoBottom)
+          ) {
+            nontransparentBackgroundPixels += 1;
+          }
+        }
+      }
+
+      expect(alphaAt(0, 0)).toBe(0);
+      expect(alphaAt(info.width - 1, 0)).toBe(0);
+      expect(alphaAt(0, info.height - 1)).toBe(0);
+      expect(alphaAt(info.width - 1, info.height - 1)).toBe(0);
+      expect(transparentPixels / (info.width * info.height)).toBeGreaterThan(0.7);
+      expect(nontransparentBackgroundPixels).toBe(0);
     }
   });
 

@@ -69,6 +69,15 @@ async function cacheFirst(request, cacheName) {
   return response;
 }
 
+async function precacheFirst(request) {
+  const cache = await caches.open(PRECACHE);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) {
+    return cached;
+  }
+  return fetch(request);
+}
+
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
@@ -153,6 +162,11 @@ self.addEventListener("fetch", (event) => {
     isPrivatePath(url.pathname) ||
     hasSensitiveRequestData(request)
   ) {
+    return;
+  }
+
+  if (PRECACHE_URLS.includes(url.pathname)) {
+    event.respondWith(precacheFirst(request));
     return;
   }
 
