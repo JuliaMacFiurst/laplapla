@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Lang } from "@/i18n";
 import AppSplash from "@/components/PWA/AppSplash";
 import { APP_BRAND } from "@/lib/pwa/appBrand";
+import { PWA_BOOT_READY_EVENT, type PwaBootState } from "@/lib/pwa/bootLifecycle";
 
 const UPDATE_COPY: Record<Lang, { title: (appName: string) => string; button: string }> = {
   ru: { title: (appName) => `Доступна новая версия ${appName}`, button: "Обновить" },
@@ -11,7 +12,6 @@ const UPDATE_COPY: Record<Lang, { title: (appName: string) => string; button: st
 
 const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 const MIN_SPLASH_MS = 320;
-const MAX_SPLASH_MS = 2400;
 
 function canRegisterServiceWorker() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
@@ -26,30 +26,19 @@ function canRegisterServiceWorker() {
 }
 
 export default function PWAAppShell({ lang }: { lang: Lang }) {
-  const [showSplash, setShowSplash] = useState(true);
+  const [bootState, setBootState] = useState<PwaBootState>("booting");
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
   const reloadStarted = useRef(false);
 
   useEffect(() => {
     const startedAt = performance.now();
-    let minimumTimer = 0;
-    const maximumTimer = window.setTimeout(() => setShowSplash(false), MAX_SPLASH_MS);
-
-    const hideSplash = () => {
-      const remaining = Math.max(0, MIN_SPLASH_MS - (performance.now() - startedAt));
-      minimumTimer = window.setTimeout(() => setShowSplash(false), remaining);
-    };
-
-    if (document.readyState === "complete") {
-      hideSplash();
-    } else {
-      window.addEventListener("load", hideSplash, { once: true });
-    }
+    document.documentElement.dataset.pwaBootState = "ready";
+    window.dispatchEvent(new Event(PWA_BOOT_READY_EVENT));
+    const remaining = Math.max(0, MIN_SPLASH_MS - (performance.now() - startedAt));
+    const minimumTimer = window.setTimeout(() => setBootState("ready"), remaining);
 
     return () => {
-      window.removeEventListener("load", hideSplash);
       window.clearTimeout(minimumTimer);
-      window.clearTimeout(maximumTimer);
     };
   }, []);
 
@@ -132,7 +121,7 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
 
   return (
     <>
-      <AppSplash visible={showSplash} />
+      <AppSplash visible={bootState === "booting"} />
       {waitingWorker ? (
         <aside className="pwa-update-toast" role="status" aria-live="polite">
           <span>{copy.title(APP_BRAND.appName)}</span>

@@ -20,6 +20,7 @@ const replacements = {
   __LOGO_PATH__: config.logoPath,
   __SPLASH_PATH__: config.splashPath,
   __OFFLINE_PATH__: config.offlinePath,
+  __NAVIGATION_TIMEOUT_MS__: config.navigationTimeoutMs,
 };
 
 let output = template;

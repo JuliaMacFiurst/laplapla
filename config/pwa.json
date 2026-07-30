@@ -1,7 +1,7 @@
 {
   "appId": "laplapla",
   "appName": "LapLapLa",
-  "cacheVersion": "2026.07.30.3",
+  "cacheVersion": "2026.07.30.4",
   "logoPath": "/laplapla-logo.webp",
   "splashMasterPath": "public/pwa/splash/laplapla-splash-master-1280.png",
   "splashVectorPath": "public/pwa/splash/laplapla-splash-master.svg",
@@ -9,5 +9,7 @@
   "splashLogoScale": 0.466,
   "backgroundColor": "#fff8ef",
   "themeColor": "#fff8ef",
-  "offlinePath": "/offline.html"
+  "offlinePath": "/offline.html",
+  "navigationTimeoutMs": 6000,
+  "bootDeadlineMs": 8000
 }

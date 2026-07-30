@@ -6,6 +6,7 @@ const CACHE_PREFIX = `${APP_ID}-pwa-`;
 const PRECACHE = `${CACHE_PREFIX}precache-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
 const MEDIA_CACHE = `${CACHE_PREFIX}media-${VERSION}`;
+const NAVIGATION_TIMEOUT_MS = __NAVIGATION_TIMEOUT_MS__;
 const OFFLINE_PATH = "__OFFLINE_PATH__";
 const LOGO_PATH = "__LOGO_PATH__";
 const SPLASH_PATH = "__SPLASH_PATH__";
@@ -117,17 +118,39 @@ async function staleWhileRevalidate(request, cacheName) {
   return network;
 }
 
+async function fetchNavigationWithTimeout(request) {
+  const controller = new AbortController();
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      reject(new Error("Navigation request timed out"));
+    }, NAVIGATION_TIMEOUT_MS);
+  });
+
+  try {
+    const response = await Promise.race([
+      fetch(request, { signal: controller.signal }),
+      timeout,
+    ]);
+    await Promise.race([response.clone().arrayBuffer(), timeout]);
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function navigationNetworkFirst(request) {
   try {
-    return await fetch(request);
+    return await fetchNavigationWithTimeout(request);
   } catch {
     const cache = await caches.open(PRECACHE);
     const offline = await cache.match(OFFLINE_PATH);
     return (
       offline ||
-      new Response(`${APP_NAME} is offline.`, {
+      new Response(`<!doctype html><title>${APP_NAME} is offline</title><p>${APP_NAME} is offline.</p>`, {
         status: 503,
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
+        headers: { "Content-Type": "text/html; charset=utf-8" },
       })
     );
   }

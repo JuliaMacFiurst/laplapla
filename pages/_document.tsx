@@ -1,5 +1,6 @@
 import { Head, Html, Main, NextScript } from "next/document";
 import { fontVariableClasses } from "@/lib/fonts";
+import { createPwaBootRecoveryScript } from "@/lib/pwa/bootLifecycle";
 
 export default function Document() {
   return (
@@ -17,6 +18,10 @@ export default function Document() {
       </Head>
       <body>
         <Main />
+        <script
+          id="pwa-boot-recovery"
+          dangerouslySetInnerHTML={{ __html: createPwaBootRecoveryScript() }}
+        />
         <NextScript />
       </body>
     </Html>

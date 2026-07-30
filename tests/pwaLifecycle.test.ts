@@ -31,6 +31,9 @@ describe("PWA lifecycle", () => {
   it("uses an explicit offline document only for failed navigations", () => {
     expect(workerTemplate).toContain('request.mode === "navigate"');
     expect(workerTemplate).toContain("navigationNetworkFirst(request)");
+    expect(workerTemplate).toContain("fetchNavigationWithTimeout(request)");
+    expect(workerTemplate).toContain("NAVIGATION_TIMEOUT_MS");
+    expect(workerTemplate).toContain("controller.abort()");
     expect(workerTemplate).not.toContain('caches.match("/")');
     expect(offline).toContain('id="retry"');
     expect(offline).toContain('window.addEventListener("online"');
