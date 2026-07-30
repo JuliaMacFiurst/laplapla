@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.laplapla.app",
+      "sha256_cert_fingerprints": [
+        "53:4E:3A:6A:44:D1:5F:AF:F8:60:FD:4F:9B:97:BB:F1:F4:2B:6B:48:6E:11:74:FB:CD:C4:EA:54:91:43:8C:4E",
+        "94:87:45:51:75:31:C3:C6:52:C6:1F:9C:CC:B3:D8:E6:95:4E:02:5C:0F:12:AB:AF:F6:4B:98:36:E9:AF:19:0D"
+      ]
+    }
+  }
+]
