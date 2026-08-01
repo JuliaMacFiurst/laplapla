@@ -17,6 +17,7 @@ export default function PrivacyPage() {
       case "en":
         return {
           title: "Privacy Policy",
+          lastUpdated: "Last updated: August 1, 2026.",
           sections: [
             {
               h: "1. Introduction",
@@ -87,7 +88,13 @@ export default function PrivacyPage() {
               ],
             },
             {
-              h: "11. Changes",
+              h: "11. User Rights and Data Deletion",
+              paragraphs: [
+                `You may contact us at juliamakhlinfiurst@gmail.com to request information about the processing of your data or to request the correction or deletion of applicable data. Because LapLapLa does not create accounts for regular users, locating pseudonymous analytics events may require your visitor UUID or other technical information that makes it possible to identify the relevant records. Some anonymized aggregate information cannot be linked to a specific user and therefore cannot be individually accessed, corrected, or deleted. Requests are handled in accordance with applicable law.`,
+              ],
+            },
+            {
+              h: "12. Changes",
               paragraphs: [
                 `We may update this Privacy Policy when the service or its data practices change. The current version is published on this page.`,
               ],
@@ -98,6 +105,7 @@ export default function PrivacyPage() {
       case "he":
         return {
           title: "מדיניות פרטיות",
+          lastUpdated: "עדכון אחרון: 1 באוגוסט 2026.",
           sections: [
             {
               h: "1. מבוא",
@@ -168,7 +176,13 @@ export default function PrivacyPage() {
               ],
             },
             {
-              h: "11. שינויים",
+              h: "11. זכויות המשתמש ומחיקת נתונים",
+              paragraphs: [
+                `ניתן לפנות אלינו בכתובת juliamakhlinfiurst@gmail.com כדי לבקש מידע על עיבוד הנתונים, או לבקש תיקון או מחיקה של נתונים רלוונטיים. מאחר ש‑LapLapLa אינה יוצרת חשבונות למשתמשים רגילים, איתור אירועי ניתוח פסאודונימיים עשוי לדרוש את UUID המבקר או מידע טכני אחר שמאפשר לזהות את הרשומות הרלוונטיות. חלק מהמידע המצטבר והאנונימי אינו ניתן לקישור למשתמש מסוים, ולכן לא ניתן לספק לגביו גישה, תיקון או מחיקה פרטניים. הבקשות יטופלו בהתאם לדין החל.`,
+              ],
+            },
+            {
+              h: "12. שינויים",
               paragraphs: [
                 `אנו עשויים לעדכן מדיניות זו כאשר השירות או אופן הטיפול בנתונים משתנים. הגרסה העדכנית מפורסמת בדף זה.`,
               ],
@@ -179,6 +193,7 @@ export default function PrivacyPage() {
       default:
         return {
           title: "Политика конфиденциальности",
+          lastUpdated: "Последнее обновление: 1 августа 2026 года.",
           sections: [
             {
               h: "1. Введение",
@@ -249,7 +264,13 @@ export default function PrivacyPage() {
               ],
             },
             {
-              h: "11. Изменения",
+              h: "11. Права пользователя и удаление данных",
+              paragraphs: [
+                `Вы можете обратиться к нам по адресу juliamakhlinfiurst@gmail.com, чтобы запросить информацию об обработке данных, исправление или удаление применимых данных. Поскольку LapLapLa не создаёт аккаунты обычных пользователей, для поиска псевдонимных аналитических событий может потребоваться UUID посетителя или другая техническая информация, позволяющая определить соответствующие записи. Некоторые обезличенные агрегированные сведения невозможно связать с конкретным пользователем, поэтому предоставить индивидуальный доступ к ним, исправить или удалить их невозможно. Запросы рассматриваются в соответствии с применимым законодательством.`,
+              ],
+            },
+            {
+              h: "12. Изменения",
               paragraphs: [
                 `Мы можем обновлять эту политику при изменении сервиса или способов обработки данных. Актуальная версия публикуется на этой странице.`,
               ],
@@ -263,7 +284,8 @@ export default function PrivacyPage() {
     <>
       <SEO title={seo.title} description={seo.description} path={seoPath} />
       <div className="legal-page" style={{ maxWidth: 900, margin: "0 auto", padding: "60px 20px" }}>
-        <h1 style={{ marginBottom: 32 }}>{content.title}</h1>
+        <h1 style={{ marginBottom: 12 }}>{content.title}</h1>
+        <p style={{ marginBottom: 32, opacity: 0.72 }}>{content.lastUpdated}</p>
 
         {content.sections.map((section, idx) => (
           <div key={idx} style={{ marginBottom: 32 }}>
