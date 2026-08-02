@@ -12,11 +12,11 @@ const HEALTH_CHECK_PATH = "__HEALTH_CHECK_PATH__";
 const HEALTH_CHECK_TIMEOUT_MS = __HEALTH_CHECK_TIMEOUT_MS__;
 const OFFLINE_PATH = "__OFFLINE_PATH__";
 const LOGO_PATH = "__LOGO_PATH__";
-const SPLASH_PATH = "__SPLASH_PATH__";
+const STATIC_ANIMATED_SPLASH_FALLBACK_PATH = "/pwa/splash/app-splash-logo-640.webp";
 const PRECACHE_URLS = [
   OFFLINE_PATH,
   LOGO_PATH,
-  SPLASH_PATH,
+  STATIC_ANIMATED_SPLASH_FALLBACK_PATH,
   "/fonts/AmaticSC-Bold.ttf",
   "/favicon_io/site.webmanifest",
   "/favicon_io/android-chrome-192x192.png",
@@ -33,7 +33,7 @@ function isValidPrecacheResponse(url, response) {
     return false;
   }
   const contentType = response.headers.get("content-type")?.toLowerCase() || "";
-  if ([LOGO_PATH, SPLASH_PATH].includes(url)) {
+  if ([LOGO_PATH, STATIC_ANIMATED_SPLASH_FALLBACK_PATH].includes(url)) {
     return contentType.startsWith("image/");
   }
   if (url.endsWith(".ttf")) {

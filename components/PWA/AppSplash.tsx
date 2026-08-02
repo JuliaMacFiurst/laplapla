@@ -1,7 +1,12 @@
 import { APP_BRAND, type AppBrand } from "@/lib/pwa/appBrand";
+import AnimatedAppSplash from "@/components/PWA/AnimatedAppSplash";
 
 type AppSplashProps = {
   brand?: AppBrand;
+  debugReplay?: {
+    animationKey: number;
+    onReplay: () => void;
+  };
   recoveryCopy: {
     title: string;
     message: string;
@@ -10,7 +15,14 @@ type AppSplashProps = {
   visible: boolean;
 };
 
-export default function AppSplash({ brand = APP_BRAND, recoveryCopy, visible }: AppSplashProps) {
+export default function AppSplash({
+  brand = APP_BRAND,
+  debugReplay,
+  recoveryCopy,
+  visible,
+}: AppSplashProps) {
+  const showDebugReplay = process.env.NODE_ENV === "development" ? debugReplay : undefined;
+
   return (
     <div
       className={`app-splash${visible ? " app-splash--visible" : ""}`}
@@ -19,18 +31,16 @@ export default function AppSplash({ brand = APP_BRAND, recoveryCopy, visible }: 
       role={visible ? "status" : undefined}
       style={{ backgroundColor: brand.backgroundColor }}
     >
-      {/* The splash is generated, compressed and precached; bypass Next's runtime image proxy. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className="app-splash__logo"
-        src={brand.splashPath}
-        alt=""
-        width={320}
-        height={320}
-        decoding="sync"
-        fetchPriority="high"
-      />
-      <span className="app-splash__loader" aria-hidden="true" />
+      <AnimatedAppSplash key={showDebugReplay?.animationKey ?? 0} />
+      {showDebugReplay ? (
+        <button
+          className="app-splash__debug-replay"
+          type="button"
+          onClick={showDebugReplay.onReplay}
+        >
+          Повторить анимацию
+        </button>
+      ) : null}
       <section
         id="pwa-boot-recovery-panel"
         className="app-splash__recovery"

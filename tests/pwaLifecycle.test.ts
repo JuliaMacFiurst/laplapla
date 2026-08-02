@@ -19,7 +19,7 @@ const manifest = JSON.parse(
 };
 const offline = fs.readFileSync(path.join(root, "public/offline.html"), "utf8");
 const pwaStyles = fs.readFileSync(path.join(root, "styles/PWAInstall.css"), "utf8");
-const offlineSplashPath = "/pwa/splash/generated/web/app-splash-logo-640.webp";
+const animatedSplashFallbackPath = "/pwa/splash/app-splash-logo-640.webp";
 
 describe("PWA lifecycle", () => {
   it("keeps API, admin, auth and Next data responses out of runtime caches", () => {
@@ -45,19 +45,28 @@ describe("PWA lifecycle", () => {
     expect(offline).toContain('#slow-network');
   });
 
-  it("uses the generated root-relative splash asset on the offline page", async () => {
-    expect(offline).toContain(`src="${offlineSplashPath}"`);
+  it("uses the exact root-relative static splash fallback on the offline page", async () => {
+    expect(offline).toContain(`src="${animatedSplashFallbackPath}"`);
     expect(offline).not.toMatch(/src="\/(?:ru|en|he)\/pwa\//);
-    expect(worker).toContain(`"${offlineSplashPath}"`);
+    expect(worker).toContain(`"${animatedSplashFallbackPath}"`);
     expect(workerTemplate).toContain("isValidPrecacheResponse(url, response)");
     expect(workerTemplate).toContain('contentType.startsWith("image/")');
 
-    const assetPath = path.join(root, "public", offlineSplashPath);
+    const assetPath = path.join(root, "public", animatedSplashFallbackPath);
     expect(fs.existsSync(assetPath)).toBe(true);
     const metadata = await sharp(assetPath).metadata();
     expect(metadata.format).toBe("webp");
     expect(metadata.width).toBeGreaterThan(0);
     expect(metadata.height).toBeGreaterThan(0);
+  });
+
+  it("precaches the exact static fallback used below the animated splash", async () => {
+    expect(workerTemplate).toContain(`"${animatedSplashFallbackPath}"`);
+    expect(worker).toContain(`"${animatedSplashFallbackPath}"`);
+    const assetPath = path.join(root, "public", animatedSplashFallbackPath);
+    expect(fs.existsSync(assetPath)).toBe(true);
+    const metadata = await sharp(assetPath).metadata();
+    expect(metadata).toMatchObject({ format: "webp", width: 640, height: 640 });
   });
 
   it("waits for explicit user consent before activating an update", () => {
@@ -110,7 +119,7 @@ describe("PWA lifecycle", () => {
     expect(worker).toContain('const APP_ID = "laplapla"');
     expect(worker).toContain('const OFFLINE_PATH = "/offline.html"');
     expect(worker).toContain(
-      '"/pwa/splash/generated/web/app-splash-logo-640.webp"',
+      '"/pwa/splash/app-splash-logo-640.webp"',
     );
   });
 });

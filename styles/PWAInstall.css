@@ -25,7 +25,7 @@
   inset: 0;
   z-index: 10000;
   display: grid;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto;
   place-content: center;
   justify-items: center;
   gap: 18px;
@@ -46,20 +46,146 @@
   transition-delay: 0s;
 }
 
-.app-splash__logo {
+.app-splash__visual {
+  position: relative;
   width: min(82vw, 320px);
-  height: auto;
-  object-fit: contain;
+  height: min(82vw, 320px);
+  isolation: isolate;
+  pointer-events: none;
 }
 
-.app-splash__loader {
-  width: 34px;
-  height: 34px;
-  border: 4px solid rgba(185, 143, 218, 0.25);
-  border-top-color: #b98fda;
-  border-radius: 50%;
-  animation: app-splash-spin 850ms linear infinite;
+.app-splash__logo-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
 }
+
+.app-splash__logo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: contain;
+  object-position: center;
+  transform-origin: center;
+  transition: opacity 130ms ease-out;
+}
+
+.app-splash__logo--static {
+  opacity: 1;
+}
+
+.app-splash__logo--animated {
+  opacity: 0;
+}
+
+.app-splash__logo--loaded {
+  opacity: 1;
+}
+
+.app-splash__logo--hidden {
+  opacity: 0;
+}
+
+.app-splash__glow,
+.app-splash__stars,
+.app-splash__confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.app-splash__glow {
+  z-index: 0;
+  inset: 11%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 208, 226, 0.48), rgba(255, 229, 183, 0.18) 50%, transparent 74%);
+  filter: blur(20px);
+  opacity: 0.25;
+}
+
+.app-splash__visual--animated .app-splash__glow {
+  animation: app-splash-glow-breathe 4.2s 3s ease-in-out infinite;
+}
+
+.app-splash__stars,
+.app-splash__confetti {
+  z-index: 3;
+  overflow: hidden;
+}
+
+.app-splash__star,
+.app-splash__confetti-piece {
+  position: absolute;
+  opacity: 0;
+  transform-origin: center;
+}
+
+.app-splash__star {
+  width: 18px;
+  height: 18px;
+  filter: drop-shadow(0 2px 3px rgba(132, 101, 116, 0.16));
+}
+
+.app-splash__visual--animated .app-splash__star {
+  animation: app-splash-star-pop 0.58s 2.78s cubic-bezier(0.2, 0.72, 0.3, 1) forwards;
+}
+
+.app-splash__star svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.app-splash__star-shape {
+  stroke: rgba(132, 101, 116, 0.22);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.app-splash__star-shape--cream { fill: #f6dfa0; }
+.app-splash__star-shape--peach { fill: #f3bea2; }
+.app-splash__star-shape--pink { fill: #efb6c9; }
+.app-splash__star-shape--aqua { fill: #addbd7; }
+
+.app-splash__star-highlight {
+  fill: rgba(255, 255, 255, 0.52);
+  transform: rotate(-18deg);
+  transform-origin: 9.2px 8.5px;
+}
+
+.app-splash__star--1 { top: 13%; left: 13%; width: 17px; height: 17px; animation-delay: 2.72s; }
+.app-splash__star--2 { top: 8%; right: 19%; width: 14px; height: 14px; animation-delay: 2.78s; }
+.app-splash__star--3 { top: 42%; right: 4%; width: 18px; height: 18px; animation-delay: 2.84s; }
+.app-splash__star--4 { bottom: 16%; left: 7%; width: 15px; height: 15px; animation-delay: 2.9s; }
+.app-splash__star--5 { bottom: 8%; right: 20%; width: 16px; height: 16px; animation-delay: 2.96s; }
+
+.app-splash__confetti-piece {
+  top: 44%;
+  left: 50%;
+  width: 6px;
+  height: 10px;
+  border-radius: 3px;
+  background: #eaa9bc;
+}
+
+.app-splash__visual--animated .app-splash__confetti-piece {
+  animation: app-splash-confetti-burst 1.28s 2.54s cubic-bezier(0.18, 0.7, 0.3, 1) forwards;
+}
+
+.app-splash__confetti-piece--1 { --confetti-x: -96px; --confetti-y: -86px; --confetti-r: -90deg; background: #eaa9bc; }
+.app-splash__confetti-piece--2 { --confetti-x: -58px; --confetti-y: -108px; --confetti-r: 76deg; background: #efd597; animation-delay: 2.6s; }
+.app-splash__confetti-piece--3 { --confetti-x: 4px; --confetti-y: -116px; --confetti-r: 125deg; background: #a8d5d2; animation-delay: 2.66s; }
+.app-splash__confetti-piece--4 { --confetti-x: 65px; --confetti-y: -104px; --confetti-r: 96deg; background: #c8acd8; animation-delay: 2.57s; }
+.app-splash__confetti-piece--5 { --confetti-x: 98px; --confetti-y: -58px; --confetti-r: 155deg; background: #efb493; animation-delay: 2.64s; }
+.app-splash__confetti-piece--6 { --confetti-x: -102px; --confetti-y: -38px; --confetti-r: -145deg; background: #a8d5d2; animation-delay: 2.7s; }
+.app-splash__confetti-piece--7 { --confetti-x: 88px; --confetti-y: 22px; --confetti-r: 112deg; background: #eaa9bc; animation-delay: 2.68s; }
+.app-splash__confetti-piece--8 { --confetti-x: -78px; --confetti-y: 26px; --confetti-r: -120deg; background: #efd597; animation-delay: 2.62s; }
 
 .app-splash__recovery {
   width: min(88vw, 520px);
@@ -98,10 +224,26 @@
   cursor: pointer;
 }
 
-[data-pwa-boot-state="degraded"] .app-splash__logo,
-[data-pwa-boot-state="degraded"] .app-splash__loader,
-[data-pwa-boot-state="failed"] .app-splash__logo,
-[data-pwa-boot-state="failed"] .app-splash__loader {
+.app-splash__debug-replay {
+  position: relative;
+  z-index: 4;
+  min-height: 44px;
+  padding: 9px 18px;
+  border: 1px solid rgba(185, 143, 218, 0.55);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #4f3f65;
+  font: 700 1.05rem var(--font-caveat), var(--font-amatic-sc), cursive;
+  box-shadow: 0 8px 20px rgba(86, 64, 118, 0.14);
+  cursor: pointer;
+}
+
+.app-splash__debug-replay:hover {
+  transform: translateY(-1px);
+}
+
+[data-pwa-boot-state="degraded"] .app-splash__visual,
+[data-pwa-boot-state="failed"] .app-splash__visual {
   display: none;
 }
 
@@ -142,21 +284,41 @@
   cursor: pointer;
 }
 
-@keyframes app-splash-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .app-splash {
     transition: none;
   }
 
-  .app-splash__loader {
+  .app-splash__glow {
     animation: none;
-    border-color: #b98fda;
+    opacity: 0.25;
   }
+
+  .app-splash__logo {
+    transition: none;
+  }
+
+  .app-splash__stars,
+  .app-splash__confetti {
+    display: none;
+  }
+}
+
+@keyframes app-splash-glow-breathe {
+  0%, 100% { opacity: 0.56; transform: scale(0.99); }
+  50% { opacity: 0.72; transform: scale(1.025); }
+}
+
+@keyframes app-splash-star-pop {
+  0% { opacity: 0; transform: scale(0.65) rotate(-5deg); }
+  72% { opacity: 0.88; transform: scale(1.05) rotate(2deg); }
+  100% { opacity: 0.82; transform: scale(1) rotate(0); }
+}
+
+@keyframes app-splash-confetti-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(0); }
+  22% { opacity: 0.76; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--confetti-x)), calc(-50% + var(--confetti-y))) scale(0.92) rotate(var(--confetti-r)); }
 }
 
 .pwa-install-banner__icon {

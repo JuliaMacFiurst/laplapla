@@ -103,13 +103,98 @@ describe("generated splash assets", () => {
     );
   });
 
-  it("serves the prebuilt splash directly without the Next image proxy", () => {
+  it("embeds the authored animated splash without the Next image proxy", () => {
     const component = fs.readFileSync(
+      path.join(root, "components/PWA/AnimatedAppSplash.tsx"),
+      "utf8",
+    );
+    expect(component).toContain("<object");
+    expect(component).toContain("/pwa/splash/laplapla-splash-animated.svg");
+    expect(component).toContain("/pwa/splash/app-splash-logo-640.webp");
+    expect(component).toContain("app-splash__logo-stage");
+    expect(component).toContain("app-splash__logo--static");
+    expect(component).toContain("app-splash__logo--animated");
+    expect(component).toContain("onLoad={showSvg}");
+    expect(component).toContain("onError={keepStaticFallback}");
+    expect(component).toContain("const SVG_LOAD_TIMEOUT_MS = 900");
+    expect(component).not.toContain('from "next/image"');
+  });
+
+  it("keeps the animated raster layers addressable and motion-safe", () => {
+    const animatedSvg = fs.readFileSync(
+      path.join(root, "public/pwa/splash/laplapla-splash-animated.svg"),
+      "utf8",
+    );
+
+    for (const id of [
+      "pink_paw",
+      "fingers",
+      "yellow_cat",
+      "whiskers",
+      "eyes",
+      "right_eye",
+      "left_eye",
+      "nose",
+    ]) {
+      expect(animatedSvg).toContain(`id="${id}"`);
+    }
+    expect(animatedSvg).toContain("transform-box: fill-box");
+    expect(animatedSvg).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(animatedSvg).toContain('id="eyes-animation"');
+    expect(animatedSvg).toContain('id="eye-blink-animation"');
+    expect(animatedSvg).toContain('id="nose-animation"');
+    expect(animatedSvg).toContain(
+      '<g id="nose" transform="matrix(1,0,0,1,222.186,-16.0272)">',
+    );
+    expect(animatedSvg).not.toMatch(/#(?:eyes|nose)\s*\{[^}]*transform:/);
+    expect(animatedSvg).not.toContain('id="background"');
+    expect(animatedSvg).not.toContain("fill:#fff8ef");
+    expect(animatedSvg).not.toContain("stroke-dashoffset");
+    expect(animatedSvg).toContain("data:image/webp;base64,");
+    expect(animatedSvg).not.toContain("data:image/png;base64,");
+  });
+
+  it("renders splash decorations outside the SVG", () => {
+    const component = fs.readFileSync(
+      path.join(root, "components/PWA/AnimatedAppSplash.tsx"),
+      "utf8",
+    );
+    const styles = fs.readFileSync(path.join(root, "styles/PWAInstall.css"), "utf8");
+
+    expect(component).toContain("app-splash__glow");
+    expect(component).toContain("SPARKLE_COLORS");
+    expect(component).toContain("app-splash__star-shape");
+    expect(component).not.toContain("★");
+    expect(component).toContain("length: 8");
+    expect(styles).toContain("app-splash-glow-breathe");
+    expect(styles).toContain("app-splash-star-pop");
+    expect(styles).toContain("app-splash-confetti-burst");
+    expect(styles).not.toMatch(/\.app-splash__logo\s*\{[^}]*background-image:/s);
+    expect(styles).toContain(".app-splash__logo-stage");
+    expect(styles).toContain("position: absolute");
+    expect(styles).toContain("object-fit: contain");
+    expect(styles).toContain("object-position: center");
+  });
+
+  it("keeps the development splash mounted long enough to replay the animation", () => {
+    const shell = fs.readFileSync(
+      path.join(root, "components/PWA/PWAAppShell.tsx"),
+      "utf8",
+    );
+    const appSplash = fs.readFileSync(
       path.join(root, "components/PWA/AppSplash.tsx"),
       "utf8",
     );
-    expect(component).toContain("<img");
-    expect(component).toContain("src={brand.splashPath}");
-    expect(component).not.toContain('from "next/image"');
+    const nextConfig = fs.readFileSync(path.join(root, "next.config.js"), "utf8");
+
+    expect(shell).toContain('process.env.NODE_ENV === "development"');
+    expect(shell).toContain('get("debugSplash") === "1"');
+    expect(shell).toContain("const DEBUG_SPLASH_MS = 6000");
+    expect(shell).toContain("const replaySplashAnimation = () =>");
+    expect(shell).toContain("window.clearTimeout(splashReadyTimer.current)");
+    expect(shell).toContain("setSplashAnimationKey((current) => current + 1)");
+    expect(nextConfig).toContain('"object-src \'self\'"');
+    expect(appSplash).toContain("key={showDebugReplay?.animationKey ?? 0}");
+    expect(appSplash).toContain("Повторить анимацию");
   });
 });
