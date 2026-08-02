@@ -43,7 +43,8 @@ function createNavigationHarness(
     console,
     fetch: networkFetch,
     setInterval,
-    setTimeout: (callback: () => void) => setTimeout(callback, 1),
+    setTimeout: (callback: () => void, timeoutMs: number) =>
+      setTimeout(callback, timeoutMs >= 20_000 ? 50 : 1),
     caches: {
       async open() {
         return {
@@ -99,7 +100,14 @@ describe("Service Worker navigation timeout", () => {
 
   it("aborts a hanging navigation and returns the precached offline document", async () => {
     const harness = createNavigationHarness(
-      (_request, init) =>
+      (request, init) =>
+        request === "/robots.txt"
+          ? new Promise((_resolve, reject) => {
+              init?.signal?.addEventListener("abort", () => reject(new Error("aborted")), {
+                once: true,
+              });
+            })
+          :
         new Promise((_resolve, reject) => {
           init?.signal?.addEventListener("abort", () => reject(new Error("aborted")), {
             once: true,
@@ -113,6 +121,45 @@ describe("Service Worker navigation timeout", () => {
     expect(await response.text()).toContain("Offline");
   });
 
+  it("keeps waiting for a slow navigation when the same-origin health check succeeds", async () => {
+    const slowNavigation = {
+      resolve: null as ((response: Response) => void) | null,
+    };
+    const harness = createNavigationHarness((request) => {
+      if (request === "/robots.txt") {
+        return Promise.resolve(new Response("ok", { status: 200 }));
+      }
+      return new Promise<Response>((resolve) => {
+        slowNavigation.resolve = resolve;
+      });
+    });
+    const responsePromise = harness.response();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    slowNavigation.resolve?.(
+      new Response("<!doctype html><title>Slow but online</title>", {
+        headers: { "Content-Type": "text/html" },
+      }),
+    );
+    const response = await responsePromise;
+
+    expect(harness.aborted).toBe(false);
+    expect(await response.text()).toContain("Slow but online");
+  });
+
+  it("returns a slow-network recovery redirect when navigation never completes but health succeeds", async () => {
+    const harness = createNavigationHarness((request) => {
+      if (request === "/robots.txt") {
+        return Promise.resolve(new Response("ok", { status: 200 }));
+      }
+      return new Promise<Response>(() => undefined);
+    });
+    const response = await harness.response();
+
+    expect(harness.aborted).toBe(true);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("https://www.laplapla.com/offline.html#slow-network");
+  });
+
   it("returns offline immediately for an explicit network failure", async () => {
     const harness = createNavigationHarness(async () => {
       throw new Error("offline");
@@ -122,17 +169,27 @@ describe("Service Worker navigation timeout", () => {
     expect(await response.text()).toContain("Offline");
   });
 
-  it("times out when navigation headers arrive but the HTML body never completes", async () => {
+  it("returns offline when navigation stalls and the health check also cannot complete", async () => {
     const harness = createNavigationHarness(
-      async () =>
-        new Response(
-          new ReadableStream({
-            start(controller) {
-              controller.enqueue(new TextEncoder().encode("<!doctype html>"));
-            },
-          }),
-          { headers: { "Content-Type": "text/html" } },
-        ),
+      (request, init) => {
+        if (request === "/robots.txt") {
+          return new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(new Error("aborted")), {
+              once: true,
+            });
+          });
+        }
+        return Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode("<!doctype html>"));
+              },
+            }),
+            { headers: { "Content-Type": "text/html" } },
+          ),
+        );
+      },
     );
     const response = await harness.response();
 
@@ -145,7 +202,9 @@ describe("Service Worker navigation timeout", () => {
       resolve: null as ((response: Response) => void) | null,
     };
     const harness = createNavigationHarness(
-      () =>
+      (request) => request === "/robots.txt"
+        ? Promise.reject(new Error("offline"))
+        :
         new Promise<Response>((resolve) => {
           lateNetwork.resolve = resolve;
         }),

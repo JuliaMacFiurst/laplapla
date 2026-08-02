@@ -2,10 +2,15 @@ import { APP_BRAND, type AppBrand } from "@/lib/pwa/appBrand";
 
 type AppSplashProps = {
   brand?: AppBrand;
+  recoveryCopy: {
+    title: string;
+    message: string;
+    retry: string;
+  };
   visible: boolean;
 };
 
-export default function AppSplash({ brand = APP_BRAND, visible }: AppSplashProps) {
+export default function AppSplash({ brand = APP_BRAND, recoveryCopy, visible }: AppSplashProps) {
   return (
     <div
       className={`app-splash${visible ? " app-splash--visible" : ""}`}
@@ -26,6 +31,18 @@ export default function AppSplash({ brand = APP_BRAND, visible }: AppSplashProps
         fetchPriority="high"
       />
       <span className="app-splash__loader" aria-hidden="true" />
+      <section
+        id="pwa-boot-recovery-panel"
+        className="app-splash__recovery"
+        aria-live="polite"
+        hidden
+      >
+        <h2>{recoveryCopy.title}</h2>
+        <p>{recoveryCopy.message}</p>
+        <button id="pwa-boot-retry" type="button">
+          {recoveryCopy.retry}
+        </button>
+      </section>
     </div>
   );
 }

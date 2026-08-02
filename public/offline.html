@@ -107,18 +107,24 @@
           ru: {
             title: "Сейчас нет подключения к Интернету",
             message: "Большинство функций LapLapLa используют онлайн-сервисы. Подключитесь к Интернету и попробуйте ещё раз.",
+            slowTitle: "Соединение работает слишком медленно",
+            slowMessage: "LapLapLa не удалось завершить загрузку. Проверьте качество соединения и попробуйте ещё раз.",
             retry: "Повторить попытку",
             checking: "Проверяем…"
           },
           en: {
             title: "There is no Internet connection",
             message: "Most LapLapLa features use online services. Connect to the Internet and try again.",
+            slowTitle: "The connection is too slow",
+            slowMessage: "LapLapLa could not finish loading. Check the connection quality and try again.",
             retry: "Try again",
             checking: "Checking…"
           },
           he: {
             title: "אין כרגע חיבור לאינטרנט",
             message: "רוב התכונות של LapLapLa משתמשות בשירותים מקוונים. התחברו לאינטרנט ונסו שוב.",
+            slowTitle: "החיבור איטי מדי",
+            slowMessage: "LapLapLa לא הצליחה להשלים את הטעינה. בדקו את איכות החיבור ונסו שוב.",
             retry: "ניסיון נוסף",
             checking: "בודקים…"
           }
@@ -126,16 +132,17 @@
         const language = (navigator.language || "ru").toLowerCase().split("-")[0];
         const lang = Object.prototype.hasOwnProperty.call(copy, language) ? language : "en";
         const text = copy[lang];
+        const slowNetwork = window.location.hash === "#slow-network";
         const button = document.getElementById("retry");
         document.documentElement.lang = lang;
         document.documentElement.dir = lang === "he" ? "rtl" : "ltr";
-        document.getElementById("offline-title").textContent = text.title;
-        document.getElementById("offline-message").textContent = text.message;
+        document.getElementById("offline-title").textContent = slowNetwork ? text.slowTitle : text.title;
+        document.getElementById("offline-message").textContent = slowNetwork ? text.slowMessage : text.message;
         button.textContent = text.retry;
         const retry = () => {
           button.disabled = true;
           button.textContent = text.checking;
-          window.location.reload();
+          window.location.replace("/");
           window.setTimeout(() => {
             button.disabled = false;
             button.textContent = text.retry;

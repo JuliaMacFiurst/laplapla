@@ -11,5 +11,9 @@
   "themeColor": "#fff8ef",
   "offlinePath": "/offline.html",
   "navigationTimeoutMs": 6000,
-  "bootDeadlineMs": 8000
+  "navigationRecoveryDeadlineMs": 30000,
+  "bootDeadlineMs": 8000,
+  "bootRecoveryDeadlineMs": 30000,
+  "healthCheckPath": "/robots.txt",
+  "healthCheckTimeoutMs": 3000
 }

@@ -2,12 +2,35 @@ import { useEffect, useRef, useState } from "react";
 import type { Lang } from "@/i18n";
 import AppSplash from "@/components/PWA/AppSplash";
 import { APP_BRAND } from "@/lib/pwa/appBrand";
-import { PWA_BOOT_READY_EVENT, type PwaBootState } from "@/lib/pwa/bootLifecycle";
+import {
+  PWA_BOOT_DIAGNOSTIC_KEY,
+  PWA_BOOT_READY_EVENT,
+  type PwaBootState,
+} from "@/lib/pwa/bootLifecycle";
+import { sentryDebugMessage } from "@/sentry.shared";
 
 const UPDATE_COPY: Record<Lang, { title: (appName: string) => string; button: string }> = {
   ru: { title: (appName) => `Доступна новая версия ${appName}`, button: "Обновить" },
   en: { title: (appName) => `A new version of ${appName} is available`, button: "Update" },
   he: { title: (appName) => `גרסה חדשה של ${appName} זמינה`, button: "עדכון" },
+};
+
+const BOOT_RECOVERY_COPY: Record<Lang, { title: string; message: string; retry: string }> = {
+  ru: {
+    title: "LapLapLa загружается дольше обычного",
+    message: "Соединение доступно, но запуск не завершился. Попробуйте загрузить приложение ещё раз.",
+    retry: "Повторить",
+  },
+  en: {
+    title: "LapLapLa is taking longer than usual",
+    message: "The connection is available, but startup did not finish. Try loading the app again.",
+    retry: "Try again",
+  },
+  he: {
+    title: "הטעינה של LapLapLa נמשכת יותר מהרגיל",
+    message: "החיבור זמין, אך ההפעלה לא הושלמה. נסו לטעון את היישום שוב.",
+    retry: "ניסיון נוסף",
+  },
 };
 
 const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
@@ -34,6 +57,33 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
     const startedAt = performance.now();
     document.documentElement.dataset.pwaBootState = "ready";
     window.dispatchEvent(new Event(PWA_BOOT_READY_EVENT));
+    try {
+      const diagnostic = window.sessionStorage.getItem(PWA_BOOT_DIAGNOSTIC_KEY);
+      if (diagnostic) {
+        const parsed = JSON.parse(diagnostic) as {
+          reason?: unknown;
+          duration_ms?: unknown;
+          online?: unknown;
+          health_check?: unknown;
+        };
+        const reason = typeof parsed.reason === "string" ? parsed.reason.slice(0, 80) : "unknown";
+        const duration = typeof parsed.duration_ms === "number"
+          ? Math.max(0, Math.min(120_000, Math.round(parsed.duration_ms)))
+          : 0;
+        const online = typeof parsed.online === "boolean" ? String(parsed.online) : "unknown";
+        const health = typeof parsed.health_check === "string"
+          ? parsed.health_check.slice(0, 40)
+          : "unknown";
+        sentryDebugMessage(
+          `pwa_boot_recovered reason=${reason} duration_ms=${duration} online=${online} health=${health}`,
+        );
+        window.sessionStorage.removeItem(PWA_BOOT_DIAGNOSTIC_KEY);
+      }
+    } catch {
+      try {
+        window.sessionStorage.removeItem(PWA_BOOT_DIAGNOSTIC_KEY);
+      } catch {}
+    }
     const remaining = Math.max(0, MIN_SPLASH_MS - (performance.now() - startedAt));
     const minimumTimer = window.setTimeout(() => setBootState("ready"), remaining);
 
@@ -90,7 +140,9 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
         void nextRegistration.update().catch(() => undefined);
         intervalId = window.setInterval(checkForUpdate, UPDATE_INTERVAL_MS);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        sentryDebugMessage("pwa_service_worker_registration_failed");
+      });
 
     const handleControllerChange = () => {
       if (reloadStarted.current) {
@@ -121,7 +173,10 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
 
   return (
     <>
-      <AppSplash visible={bootState === "booting"} />
+      <AppSplash
+        visible={bootState === "booting"}
+        recoveryCopy={BOOT_RECOVERY_COPY[lang]}
+      />
       {waitingWorker ? (
         <aside className="pwa-update-toast" role="status" aria-live="polite">
           <span>{copy.title(APP_BRAND.appName)}</span>

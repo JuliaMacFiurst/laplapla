@@ -61,6 +61,50 @@
   animation: app-splash-spin 850ms linear infinite;
 }
 
+.app-splash__recovery {
+  width: min(88vw, 520px);
+  text-align: center;
+  color: #302940;
+  font-family: var(--font-caveat), var(--font-amatic-sc), cursive;
+}
+
+.app-splash__recovery[hidden] {
+  display: none;
+}
+
+.app-splash__recovery h2 {
+  margin: 0 0 10px;
+  font-size: clamp(2rem, 7vw, 3rem);
+  line-height: 1;
+}
+
+.app-splash__recovery p {
+  margin: 0 auto 20px;
+  max-width: 460px;
+  font-size: clamp(1.15rem, 4vw, 1.4rem);
+  line-height: 1.25;
+}
+
+.app-splash__recovery button {
+  min-width: 180px;
+  min-height: 48px;
+  padding: 10px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fb7185, #f59e0b);
+  color: #fff;
+  font: 700 1.15rem var(--font-caveat), var(--font-amatic-sc), cursive;
+  box-shadow: inset 0 9px 0 rgba(255, 255, 255, 0.36), 0 10px 20px rgba(148, 163, 184, 0.16);
+  cursor: pointer;
+}
+
+[data-pwa-boot-state="degraded"] .app-splash__logo,
+[data-pwa-boot-state="degraded"] .app-splash__loader,
+[data-pwa-boot-state="failed"] .app-splash__logo,
+[data-pwa-boot-state="failed"] .app-splash__loader {
+  display: none;
+}
+
 .pwa-update-toast {
   position: fixed;
   z-index: 9998;
@@ -72,6 +116,7 @@
   justify-content: space-between;
   gap: 16px;
   width: min(680px, calc(100% - 24px));
+  box-sizing: border-box;
   margin-inline: auto;
   padding: 14px 16px;
   border: 2px solid rgba(179, 143, 219, 0.7);
@@ -82,6 +127,7 @@
   font-family: var(--font-caveat), var(--font-amatic-sc), cursive;
   font-size: clamp(1.12rem, 3.8vw, 1.35rem);
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .pwa-update-toast button {
@@ -296,6 +342,12 @@
     align-items: stretch;
     flex-direction: column;
     gap: 10px;
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top, 0px)) - max(24px, env(safe-area-inset-bottom, 0px)));
+    overflow-y: auto;
+  }
+
+  .pwa-update-toast button {
+    width: 100%;
   }
 
   .pwa-install-banner {

@@ -21,6 +21,9 @@ const replacements = {
   __SPLASH_PATH__: config.splashPath,
   __OFFLINE_PATH__: config.offlinePath,
   __NAVIGATION_TIMEOUT_MS__: config.navigationTimeoutMs,
+  __NAVIGATION_RECOVERY_DEADLINE_MS__: config.navigationRecoveryDeadlineMs,
+  __HEALTH_CHECK_PATH__: config.healthCheckPath,
+  __HEALTH_CHECK_TIMEOUT_MS__: config.healthCheckTimeoutMs,
 };
 
 let output = template;

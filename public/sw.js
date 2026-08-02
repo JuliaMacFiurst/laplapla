@@ -7,6 +7,9 @@ const PRECACHE = `${CACHE_PREFIX}precache-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
 const MEDIA_CACHE = `${CACHE_PREFIX}media-${VERSION}`;
 const NAVIGATION_TIMEOUT_MS = 6000;
+const NAVIGATION_RECOVERY_DEADLINE_MS = 30000;
+const HEALTH_CHECK_PATH = "/robots.txt";
+const HEALTH_CHECK_TIMEOUT_MS = 3000;
 const OFFLINE_PATH = "/offline.html";
 const LOGO_PATH = "/laplapla-logo.webp";
 const SPLASH_PATH = "/pwa/splash/generated/web/app-splash-logo-640.webp";
@@ -118,31 +121,67 @@ async function staleWhileRevalidate(request, cacheName) {
   return network;
 }
 
-async function fetchNavigationWithTimeout(request) {
-  const controller = new AbortController();
-  let timeoutId;
-  const timeout = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      controller.abort();
-      reject(new Error("Navigation request timed out"));
-    }, NAVIGATION_TIMEOUT_MS);
-  });
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
+async function checkSameOriginConnectivity() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
   try {
-    const response = await Promise.race([
-      fetch(request, { signal: controller.signal }),
-      timeout,
-    ]);
-    await Promise.race([response.clone().arrayBuffer(), timeout]);
-    return response;
+    const response = await fetch(HEALTH_CHECK_PATH, {
+      cache: "no-store",
+      credentials: "same-origin",
+      signal: controller.signal,
+    });
+    return response.ok;
+  } catch {
+    return false;
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
+async function fetchNavigationWithConnectivityCheck(request) {
+  const startedAt = Date.now();
+  const controller = new AbortController();
+  const network = fetch(request, { signal: controller.signal }).then(async (response) => {
+    await response.clone().arrayBuffer();
+    return response;
+  });
+  const initialResult = await Promise.race([
+    network.then((response) => ({ response })),
+    delay(NAVIGATION_TIMEOUT_MS).then(() => ({ timedOut: true })),
+  ]);
+
+  if ("response" in initialResult) {
+    return initialResult.response;
+  }
+
+  const reachable = await checkSameOriginConnectivity();
+  if (!reachable) {
+    controller.abort();
+    void network.catch(() => undefined);
+    throw new Error("Navigation failed connectivity check");
+  }
+
+  // The origin is reachable: keep waiting for the real document instead of
+  // misclassifying a slow mobile connection as offline. The wait remains
+  // bounded: a responsive recovery document replaces an endless native splash.
+  const remainingMs = Math.max(0, NAVIGATION_RECOVERY_DEADLINE_MS - (Date.now() - startedAt));
+  return Promise.race([
+    network,
+    delay(remainingMs).then(() => {
+      controller.abort();
+      void network.catch(() => undefined);
+      return Response.redirect(new URL(`${OFFLINE_PATH}#slow-network`, self.location.origin).href, 302);
+    }),
+  ]);
+}
+
 async function navigationNetworkFirst(request) {
   try {
-    return await fetchNavigationWithTimeout(request);
+    return await fetchNavigationWithConnectivityCheck(request);
   } catch {
     const cache = await caches.open(PRECACHE);
     const offline = await cache.match(OFFLINE_PATH);

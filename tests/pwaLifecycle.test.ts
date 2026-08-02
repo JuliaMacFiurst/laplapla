@@ -18,6 +18,7 @@ const manifest = JSON.parse(
   icons: Array<{ sizes: string; purpose?: string }>;
 };
 const offline = fs.readFileSync(path.join(root, "public/offline.html"), "utf8");
+const pwaStyles = fs.readFileSync(path.join(root, "styles/PWAInstall.css"), "utf8");
 const offlineSplashPath = "/pwa/splash/generated/web/app-splash-logo-640.webp";
 
 describe("PWA lifecycle", () => {
@@ -31,12 +32,17 @@ describe("PWA lifecycle", () => {
   it("uses an explicit offline document only for failed navigations", () => {
     expect(workerTemplate).toContain('request.mode === "navigate"');
     expect(workerTemplate).toContain("navigationNetworkFirst(request)");
-    expect(workerTemplate).toContain("fetchNavigationWithTimeout(request)");
+    expect(workerTemplate).toContain("fetchNavigationWithConnectivityCheck(request)");
     expect(workerTemplate).toContain("NAVIGATION_TIMEOUT_MS");
+    expect(workerTemplate).toContain("NAVIGATION_RECOVERY_DEADLINE_MS");
     expect(workerTemplate).toContain("controller.abort()");
+    expect(workerTemplate).toContain('const HEALTH_CHECK_PATH = "__HEALTH_CHECK_PATH__"');
+    expect(workerTemplate).toContain('cache: "no-store"');
     expect(workerTemplate).not.toContain('caches.match("/")');
     expect(offline).toContain('id="retry"');
     expect(offline).toContain('window.addEventListener("online"');
+    expect(offline).toContain('window.location.replace("/")');
+    expect(offline).toContain('#slow-network');
   });
 
   it("uses the generated root-relative splash asset on the offline page", async () => {
@@ -61,6 +67,17 @@ describe("PWA lifecycle", () => {
     );
     expect(installHandler).not.toContain("skipWaiting");
     expect(workerTemplate).toContain('event.data?.type === "SKIP_WAITING"');
+  });
+
+  it("keeps the update banner inside narrow mobile viewports", () => {
+    const updateToastStyles = pwaStyles.slice(
+      pwaStyles.indexOf(".pwa-update-toast {"),
+      pwaStyles.indexOf(".pwa-update-toast button"),
+    );
+    expect(updateToastStyles).toContain("box-sizing: border-box");
+    expect(updateToastStyles).toContain("overflow-wrap: anywhere");
+    expect(pwaStyles).toContain("max-height: calc(100dvh");
+    expect(pwaStyles).toContain(".pwa-update-toast button {\n    width: 100%;");
   });
 
   it("only deletes versioned LapLapLa caches", () => {
