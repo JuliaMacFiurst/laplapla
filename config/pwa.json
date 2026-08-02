@@ -1,7 +1,7 @@
 {
   "appId": "laplapla",
   "appName": "LapLapLa",
-  "cacheVersion": "2026.08.03.1",
+  "cacheVersion": "2026.08.03.2",
   "logoPath": "/laplapla-logo.webp",
   "splashMasterPath": "public/pwa/splash/laplapla-splash-master-1280.png",
   "splashVectorPath": "public/pwa/splash/laplapla-splash-master.svg",

@@ -33,6 +33,14 @@ describe("AnimatedAppSplash loading policy", () => {
     expect(source).not.toContain("svgTimedOut.current");
   });
 
+  it("starts the embedded CSS clock at the visible handoff", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "components/PWA/AnimatedAppSplash.tsx"),
+      "utf8",
+    );
+    expect(source).toContain('classList.add("splash-running")');
+  });
+
   it("returns testable static reasons", () => {
     expect(getStaticSplashReason(true)).toBe("reduced-motion");
     expect(getStaticSplashReason(false, { saveData: true })).toBe("saveData");

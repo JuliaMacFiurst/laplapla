@@ -69,10 +69,10 @@
       "path": "web/app-splash-logo-640.webp",
       "width": 640,
       "height": 640,
-      "logoWidth": 298,
-      "logoHeight": 297,
+      "logoWidth": 353,
+      "logoHeight": 353,
       "logoCenterX": 320,
-      "logoCenterY": 320.5
+      "logoCenterY": 320
     }
   ]
 }

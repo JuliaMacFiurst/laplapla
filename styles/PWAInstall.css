@@ -72,7 +72,7 @@
   object-fit: contain;
   object-position: center;
   transform-origin: center;
-  transition: opacity 130ms ease-out;
+  transition: opacity 110ms ease-out;
 }
 
 .app-splash__logo--static {

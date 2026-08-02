@@ -110,7 +110,7 @@ describe("generated splash assets", () => {
     );
     expect(component).toContain("<object");
     expect(component).toContain("/pwa/splash/laplapla-splash-animated.svg");
-    expect(component).toContain("/pwa/splash/app-splash-logo-640.webp");
+    expect(component).toContain("/pwa/splash/generated/web/app-splash-logo-640.webp");
     expect(component).toContain("app-splash__logo-stage");
     expect(component).toContain("app-splash__logo--static");
     expect(component).toContain("app-splash__logo--animated");
@@ -140,6 +140,10 @@ describe("generated splash assets", () => {
       expect(animatedSvg).toContain(`id="${id}"`);
     }
     expect(animatedSvg).toContain("transform-box: fill-box");
+    expect(animatedSvg).toContain('viewBox="-520 -520 2320 2320"');
+    expect(animatedSvg).toContain("svg:not(.splash-running)");
+    expect(animatedSvg).toContain("animation-play-state:paused");
+    expect(animatedSvg).toContain("animation:paw-reveal .84s .10s");
     expect(animatedSvg).toContain("@media (prefers-reduced-motion: reduce)");
     expect(animatedSvg).toContain('id="eyes-animation"');
     expect(animatedSvg).toContain('id="eye-blink-animation"');

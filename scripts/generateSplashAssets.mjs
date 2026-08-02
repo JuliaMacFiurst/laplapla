@@ -282,6 +282,34 @@ async function renderCenteredSquare(size, logoScale, destination) {
   };
 }
 
+async function renderHandoffSquare(size, destination) {
+  const approvedFallback = path.join(root, "public/pwa/splash/app-splash-logo-640.webp");
+  // Matches the measured Browser Helper output to Android's physical system
+  // splash size; this is intentionally smaller than the Android mask asset.
+  const handoffSize = Math.round(size * 353 / 640);
+  const resized = await sharp(approvedFallback)
+    .resize({ width: handoffSize, height: handoffSize, fit: "fill", kernel: sharp.kernel.lanczos3 })
+    .png()
+    .toBuffer();
+  const left = Math.round((size - handoffSize) / 2);
+  const top = Math.round((size - handoffSize) / 2);
+  await mkdir(path.dirname(destination), { recursive: true });
+  await sharp({
+    create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
+    .composite([{ input: resized, left, top }])
+    .webp({ lossless: true })
+    .toFile(destination);
+  return {
+    width: size,
+    height: size,
+    logoWidth: handoffSize,
+    logoHeight: handoffSize,
+    logoCenterX: size / 2,
+    logoCenterY: size / 2,
+  };
+}
+
 const generated = [];
 for (const target of androidTargets) {
   const relativePath = `android/drawable-${target.density}/splash.png`;
@@ -294,9 +322,8 @@ for (const target of androidTargets) {
 }
 
 const webRelativePath = "web/app-splash-logo-640.webp";
-const webMetrics = await renderCenteredSquare(
+const webMetrics = await renderHandoffSquare(
   640,
-  config.splashLogoScale,
   path.join(outputRoot, webRelativePath),
 );
 generated.push({ platform: "web", density: "responsive", path: webRelativePath, ...webMetrics });

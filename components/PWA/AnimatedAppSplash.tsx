@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useRef, useState } from "react";
 
 export const ANIMATED_SPLASH_PATH = "/pwa/splash/laplapla-splash-animated.svg";
-export const STATIC_SPLASH_PATH = "/pwa/splash/app-splash-logo-640.webp";
+export const STATIC_SPLASH_PATH = "/pwa/splash/generated/web/app-splash-logo-640.webp";
 export const SVG_LOAD_TIMEOUT_MS = 1400;
 export const DEBUG_SLOW_LOAD_MS = 1800;
 
@@ -136,7 +136,7 @@ export default function AnimatedAppSplash({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debugMode]);
 
-  const showSvg = () => {
+  const showSvg = (event: SyntheticEvent<HTMLObjectElement>) => {
     if (debugMode === "timeout") return;
     if (debugMode === "error") {
       failed.current = true;
@@ -146,6 +146,9 @@ export default function AnimatedAppSplash({
       report({ mode: "static", reason: "svg-error" });
       return;
     }
+    // The embedded CSS animation is paused while its raster layers load. Start
+    // its clock at the exact handoff frame instead of revealing it mid-motion.
+    event.currentTarget.contentDocument?.documentElement.classList.add("splash-running");
     logSplashTrace("SVG load");
     onTrace?.({ svg: "loaded" });
 
