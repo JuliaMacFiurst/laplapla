@@ -69,6 +69,13 @@ describe("PWA lifecycle", () => {
     expect(metadata).toMatchObject({ format: "webp", width: 640, height: 640 });
   });
 
+  it("precaches the animated SVG under the same versioned worker", () => {
+    expect(workerTemplate).toContain(
+      'const ANIMATED_SPLASH_PATH = "/pwa/splash/laplapla-splash-animated.svg"',
+    );
+    expect(worker).toContain('"/pwa/splash/laplapla-splash-animated.svg"');
+  });
+
   it("waits for explicit user consent before activating an update", () => {
     const installHandler = workerTemplate.slice(
       workerTemplate.indexOf('self.addEventListener("install"'),

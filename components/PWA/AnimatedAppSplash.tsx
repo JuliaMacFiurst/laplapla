@@ -2,62 +2,175 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const ANIMATED_SPLASH_PATH = "/pwa/splash/laplapla-splash-animated.svg";
-const STATIC_SPLASH_PATH = "/pwa/splash/app-splash-logo-640.webp";
-const SVG_LOAD_TIMEOUT_MS = 900;
+export const ANIMATED_SPLASH_PATH = "/pwa/splash/laplapla-splash-animated.svg";
+export const STATIC_SPLASH_PATH = "/pwa/splash/app-splash-logo-640.webp";
+export const SVG_LOAD_TIMEOUT_MS = 1400;
+export const DEBUG_SLOW_LOAD_MS = 1800;
+
 const SPARKLE_COLORS = ["cream", "peach", "pink", "aqua", "cream"] as const;
+
+export type SplashDebugMode = "animated" | "static" | "timeout" | "error" | "slow";
+export type SplashPresentation = {
+  mode: "animated" | "static";
+  reason: "svg-loaded" | "saveData" | "reduced-motion" | "slow-connection" | "svg-error" | "timeout" | "debug-static";
+};
+export type SplashTracePatch = {
+  mode?: "animated" | "static";
+  reason?: string;
+  svg?: "not-mounted" | "loading" | "loaded" | "visible" | "error";
+};
+
+export function logSplashTrace(message: string) {
+  if (typeof window === "undefined" || !isTraceHost(window.location.hostname)) return;
+  console.info(`[LapLapLa splash] ${message} t=${performance.now().toFixed(1)}ms`);
+}
+
+function isTraceHost(hostname: string) {
+  return process.env.NODE_ENV === "development" || hostname === "localhost" ||
+    hostname === "127.0.0.1" || hostname.endsWith(".vercel.app");
+}
 
 type NetworkConnection = {
   effectiveType?: string;
   saveData?: boolean;
 };
 
+export function getStaticSplashReason(
+  reducedMotion: boolean,
+  connection?: NetworkConnection,
+): SplashPresentation["reason"] | null {
+  if (reducedMotion) return "reduced-motion";
+  if (connection?.saveData === true) return "saveData";
+  if (connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g") {
+    return "slow-connection";
+  }
+  return null;
+}
+
 export function shouldSkipAnimatedSplash(
   reducedMotion: boolean,
   connection?: NetworkConnection,
 ) {
-  return Boolean(
-    reducedMotion ||
-    connection?.saveData ||
-    connection?.effectiveType === "slow-2g" ||
-    connection?.effectiveType === "2g",
-  );
+  return getStaticSplashReason(reducedMotion, connection) !== null;
 }
 
-export default function AnimatedAppSplash() {
-  const [mountSvg, setMountSvg] = useState(false);
+type AnimatedAppSplashProps = {
+  debugMode?: SplashDebugMode;
+  onPresentationReady?: (presentation: SplashPresentation) => void;
+  onTrace?: (patch: SplashTracePatch) => void;
+};
+
+export default function AnimatedAppSplash({
+  debugMode,
+  onPresentationReady,
+  onTrace,
+}: AnimatedAppSplashProps) {
+  // The normal path deliberately includes <object> on the first render, so its
+  // request is not delayed by an effect. Effects only opt out for explicit
+  // accessibility/data-saving signals and deterministic debug modes.
+  const [mountSvg, setMountSvg] = useState(debugMode !== "static");
   const [svgVisible, setSvgVisible] = useState(false);
-  const svgTimedOut = useRef(false);
   const timeoutId = useRef(0);
+  const delayedLoadId = useRef(0);
+  const failed = useRef(false);
+
+  const report = (presentation: SplashPresentation) => {
+    onPresentationReady?.(presentation);
+    onTrace?.({ mode: presentation.mode, reason: presentation.reason });
+    logSplashTrace(presentation.mode === "animated"
+      ? "selected mode: animated reason=svg-loaded"
+      : `selected mode: static reason=${presentation.reason}`);
+  };
 
   useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const connection = (navigator as Navigator & { connection?: NetworkConnection }).connection;
-    if (shouldSkipAnimatedSplash(reducedMotion, connection)) {
-      return;
-    }
-
-    setMountSvg(true);
-    timeoutId.current = window.setTimeout(() => {
-      svgTimedOut.current = true;
-      setSvgVisible(false);
-    }, SVG_LOAD_TIMEOUT_MS);
-
-    return () => window.clearTimeout(timeoutId.current);
+    logSplashTrace("WebP mounted");
   }, []);
 
-  const showSvg = () => {
-    if (svgTimedOut.current) {
+  useEffect(() => {
+    if (!mountSvg) {
+      onTrace?.({ svg: "not-mounted" });
       return;
     }
-    window.clearTimeout(timeoutId.current);
-    setSvgVisible(true);
+    logSplashTrace("SVG object mounted");
+    logSplashTrace("SVG request started");
+    onTrace?.({ svg: "loading" });
+  }, [mountSvg, onTrace]);
+
+  useEffect(() => {
+    if (debugMode === "static") {
+      setMountSvg(false);
+      report({ mode: "static", reason: "debug-static" });
+      return;
+    }
+
+    const forceAnimated = Boolean(debugMode);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const connection = (navigator as Navigator & { connection?: NetworkConnection }).connection;
+    logSplashTrace(`reduced motion: ${reducedMotion}`);
+    logSplashTrace(`saveData: ${connection?.saveData === true}`);
+    logSplashTrace(`effectiveType: ${connection?.effectiveType ?? "unknown"}`);
+    setMountSvg(true);
+    const staticReason = forceAnimated ? null : getStaticSplashReason(reducedMotion, connection);
+    if (staticReason) {
+      setMountSvg(false);
+      report({ mode: "static", reason: staticReason });
+      return;
+    }
+    const animatedReason = debugMode ? `debug-${debugMode}` : "normal-connection";
+    logSplashTrace(`selected mode: animated reason=${animatedReason}`);
+    onTrace?.({ mode: "animated", reason: animatedReason });
+
+    timeoutId.current = window.setTimeout(() => {
+      if (!failed.current && !svgVisible) {
+        // Keep the in-flight object alive. A cold TWA load that succeeds after
+        // this diagnostic threshold may still hand over to SVG while visible.
+        report({ mode: "static", reason: "timeout" });
+      }
+    }, SVG_LOAD_TIMEOUT_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId.current);
+      window.clearTimeout(delayedLoadId.current);
+    };
+    // svgVisible is intentionally read only by the timer created for this mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debugMode]);
+
+  const showSvg = () => {
+    if (debugMode === "timeout") return;
+    if (debugMode === "error") {
+      failed.current = true;
+      window.clearTimeout(timeoutId.current);
+      logSplashTrace("SVG error");
+      onTrace?.({ svg: "error" });
+      report({ mode: "static", reason: "svg-error" });
+      return;
+    }
+    logSplashTrace("SVG load");
+    onTrace?.({ svg: "loaded" });
+
+    const reveal = () => {
+      if (failed.current) return;
+      window.clearTimeout(timeoutId.current);
+      setSvgVisible(true);
+      logSplashTrace("SVG visible");
+      onTrace?.({ svg: "visible" });
+      report({ mode: "animated", reason: "svg-loaded" });
+    };
+    if (debugMode === "slow") {
+      delayedLoadId.current = window.setTimeout(reveal, DEBUG_SLOW_LOAD_MS);
+    } else {
+      reveal();
+    }
   };
 
   const keepStaticFallback = () => {
-    svgTimedOut.current = true;
+    failed.current = true;
     window.clearTimeout(timeoutId.current);
     setSvgVisible(false);
+    logSplashTrace("SVG error");
+    onTrace?.({ svg: "error" });
+    report({ mode: "static", reason: "svg-error" });
   };
 
   return (

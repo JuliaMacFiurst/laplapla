@@ -116,7 +116,8 @@ describe("generated splash assets", () => {
     expect(component).toContain("app-splash__logo--animated");
     expect(component).toContain("onLoad={showSvg}");
     expect(component).toContain("onError={keepStaticFallback}");
-    expect(component).toContain("const SVG_LOAD_TIMEOUT_MS = 900");
+    expect(component).toContain("const SVG_LOAD_TIMEOUT_MS = 1400");
+    expect(component).toContain("Keep the in-flight object alive");
     expect(component).not.toContain('from "next/image"');
   });
 
