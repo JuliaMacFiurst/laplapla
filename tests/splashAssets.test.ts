@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import pwaConfig from "@/config/pwa.json";
 
 type GeneratedAsset = {
-  platform: "android" | "web";
+  platform: "web";
   density: string;
   path: string;
   width: number;
@@ -28,18 +28,10 @@ const report = JSON.parse(
 ) as SplashReport;
 
 describe("generated splash assets", () => {
-  it("uses the configured master and creates every Android density", () => {
-    expect(report.source).toBe(pwaConfig.splashMasterPath);
-    expect(
-      report.generated
-        .filter((asset) => asset.platform === "android")
-        .map((asset) => [asset.density, asset.width]),
-    ).toEqual([
-      ["mdpi", 320],
-      ["hdpi", 480],
-      ["xhdpi", 640],
-      ["xxhdpi", 960],
-      ["xxxhdpi", 1280],
+  it("generates only the web handoff from the approved source", () => {
+    expect(report.source).toBe("public/pwa/splash/app-splash-logo-640.webp");
+    expect(report.generated.map((asset) => [asset.platform, asset.density, asset.width])).toEqual([
+      ["web", "responsive", 640],
     ]);
   });
 
@@ -53,7 +45,7 @@ describe("generated splash assets", () => {
   it("writes square files with their declared dimensions", async () => {
     for (const asset of report.generated) {
       const metadata = await sharp(path.join(generatedRoot, asset.path)).metadata();
-      expect(metadata.format).toBe(asset.platform === "android" ? "png" : "webp");
+      expect(metadata.format).toBe("webp");
       expect(metadata.width).toBe(asset.width);
       expect(metadata.height).toBe(asset.height);
     }
@@ -144,6 +136,10 @@ describe("generated splash assets", () => {
     expect(animatedSvg).toContain("svg:not(.splash-running)");
     expect(animatedSvg).toContain("animation-play-state:paused");
     expect(animatedSvg).toContain("animation:paw-reveal .84s .10s");
+    expect(animatedSvg).toContain("#pink_paw { opacity:1");
+    expect(animatedSvg).toContain(".finger-animation { opacity:1");
+    expect(animatedSvg).toContain("#yellow_cat, #whiskers, #eyes-animation, #nose-animation { opacity:1");
+    expect(animatedSvg).not.toContain("opacity:0; transform:translateY(100px)");
     expect(animatedSvg).toContain("@media (prefers-reduced-motion: reduce)");
     expect(animatedSvg).toContain('id="eyes-animation"');
     expect(animatedSvg).toContain('id="eye-blink-animation"');
@@ -181,25 +177,19 @@ describe("generated splash assets", () => {
     expect(styles).toContain("object-position: center");
   });
 
-  it("keeps the development splash mounted long enough to replay the animation", () => {
+  it("keeps deterministic splash modes isolated from production", () => {
     const shell = fs.readFileSync(
       path.join(root, "components/PWA/PWAAppShell.tsx"),
-      "utf8",
-    );
-    const appSplash = fs.readFileSync(
-      path.join(root, "components/PWA/AppSplash.tsx"),
       "utf8",
     );
     const nextConfig = fs.readFileSync(path.join(root, "next.config.js"), "utf8");
 
     expect(shell).toContain('process.env.NODE_ENV === "development"');
-    expect(shell).toContain('get("debugSplash") === "1"');
+    expect(shell).toContain('params.get("debugSplashMode")');
+    expect(shell).toContain('hostname.startsWith("laplapla-")');
     expect(shell).toContain("const DEBUG_SPLASH_MS = 6000");
-    expect(shell).toContain("const replaySplashAnimation = () =>");
-    expect(shell).toContain("window.clearTimeout(splashReadyTimer.current)");
-    expect(shell).toContain("setSplashAnimationKey((current) => current + 1)");
     expect(nextConfig).toContain('"object-src \'self\'"');
-    expect(appSplash).toContain("key={showDebugReplay?.animationKey ?? 0}");
-    expect(appSplash).toContain("Повторить анимацию");
+    expect(shell).not.toContain("debugSplashTrace");
+    expect(shell).not.toContain("replaySplashAnimation");
   });
 });

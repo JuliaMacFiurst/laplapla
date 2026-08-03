@@ -14,12 +14,6 @@ export type SplashPresentation = {
   mode: "animated" | "static";
   reason: "svg-loaded" | "saveData" | "reduced-motion" | "slow-connection" | "svg-error" | "timeout" | "debug-static";
 };
-export type SplashTracePatch = {
-  mode?: "animated" | "static";
-  reason?: string;
-  svg?: "not-mounted" | "loading" | "loaded" | "visible" | "error";
-};
-
 export function logSplashTrace(message: string) {
   if (typeof window === "undefined" || !isTraceHost(window.location.hostname)) return;
   console.info(`[LapLapLa splash] ${message} t=${performance.now().toFixed(1)}ms`);
@@ -27,7 +21,9 @@ export function logSplashTrace(message: string) {
 
 function isTraceHost(hostname: string) {
   return process.env.NODE_ENV === "development" || hostname === "localhost" ||
-    hostname === "127.0.0.1" || hostname.endsWith(".vercel.app");
+    hostname === "127.0.0.1" ||
+    (hostname.startsWith("laplapla-") &&
+      hostname.endsWith("-juliamacfiursts-projects.vercel.app"));
 }
 
 type NetworkConnection = {
@@ -57,13 +53,11 @@ export function shouldSkipAnimatedSplash(
 type AnimatedAppSplashProps = {
   debugMode?: SplashDebugMode;
   onPresentationReady?: (presentation: SplashPresentation) => void;
-  onTrace?: (patch: SplashTracePatch) => void;
 };
 
 export default function AnimatedAppSplash({
   debugMode,
   onPresentationReady,
-  onTrace,
 }: AnimatedAppSplashProps) {
   // The normal path deliberately includes <object> on the first render, so its
   // request is not delayed by an effect. Effects only opt out for explicit
@@ -76,7 +70,6 @@ export default function AnimatedAppSplash({
 
   const report = (presentation: SplashPresentation) => {
     onPresentationReady?.(presentation);
-    onTrace?.({ mode: presentation.mode, reason: presentation.reason });
     logSplashTrace(presentation.mode === "animated"
       ? "selected mode: animated reason=svg-loaded"
       : `selected mode: static reason=${presentation.reason}`);
@@ -88,13 +81,11 @@ export default function AnimatedAppSplash({
 
   useEffect(() => {
     if (!mountSvg) {
-      onTrace?.({ svg: "not-mounted" });
       return;
     }
     logSplashTrace("SVG object mounted");
     logSplashTrace("SVG request started");
-    onTrace?.({ svg: "loading" });
-  }, [mountSvg, onTrace]);
+  }, [mountSvg]);
 
   useEffect(() => {
     if (debugMode === "static") {
@@ -118,7 +109,6 @@ export default function AnimatedAppSplash({
     }
     const animatedReason = debugMode ? `debug-${debugMode}` : "normal-connection";
     logSplashTrace(`selected mode: animated reason=${animatedReason}`);
-    onTrace?.({ mode: "animated", reason: animatedReason });
 
     timeoutId.current = window.setTimeout(() => {
       if (!failed.current && !svgVisible) {
@@ -142,7 +132,6 @@ export default function AnimatedAppSplash({
       failed.current = true;
       window.clearTimeout(timeoutId.current);
       logSplashTrace("SVG error");
-      onTrace?.({ svg: "error" });
       report({ mode: "static", reason: "svg-error" });
       return;
     }
@@ -150,14 +139,12 @@ export default function AnimatedAppSplash({
     // its clock at the exact handoff frame instead of revealing it mid-motion.
     event.currentTarget.contentDocument?.documentElement.classList.add("splash-running");
     logSplashTrace("SVG load");
-    onTrace?.({ svg: "loaded" });
 
     const reveal = () => {
       if (failed.current) return;
       window.clearTimeout(timeoutId.current);
       setSvgVisible(true);
       logSplashTrace("SVG visible");
-      onTrace?.({ svg: "visible" });
       report({ mode: "animated", reason: "svg-loaded" });
     };
     if (debugMode === "slow") {
@@ -172,7 +159,6 @@ export default function AnimatedAppSplash({
     window.clearTimeout(timeoutId.current);
     setSvgVisible(false);
     logSplashTrace("SVG error");
-    onTrace?.({ svg: "error" });
     report({ mode: "static", reason: "svg-error" });
   };
 

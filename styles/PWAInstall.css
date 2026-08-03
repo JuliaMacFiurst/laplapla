@@ -224,39 +224,6 @@
   cursor: pointer;
 }
 
-.app-splash__debug-replay {
-  position: relative;
-  z-index: 4;
-  min-height: 44px;
-  padding: 9px 18px;
-  border: 1px solid rgba(185, 143, 218, 0.55);
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.86);
-  color: #4f3f65;
-  font: 700 1.05rem var(--font-caveat), var(--font-amatic-sc), cursive;
-  box-shadow: 0 8px 20px rgba(86, 64, 118, 0.14);
-  cursor: pointer;
-}
-
-.app-splash__debug-replay:hover {
-  transform: translateY(-1px);
-}
-
-.app-splash-trace {
-  position: fixed;
-  z-index: 10002;
-  top: max(10px, env(safe-area-inset-top, 0px));
-  left: max(10px, env(safe-area-inset-left, 0px));
-  padding: 8px 10px;
-  border: 1px solid rgba(47, 41, 64, 0.28);
-  border-radius: 8px;
-  background: rgba(255, 248, 239, 0.94);
-  color: #302940;
-  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
 [data-pwa-boot-state="degraded"] .app-splash__visual,
 [data-pwa-boot-state="failed"] .app-splash__visual {
   display: none;

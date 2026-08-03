@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Lang } from "@/i18n";
 import AppSplash from "@/components/PWA/AppSplash";
 import { APP_BRAND } from "@/lib/pwa/appBrand";
@@ -12,7 +12,6 @@ import {
   logSplashTrace,
   type SplashDebugMode,
   type SplashPresentation,
-  type SplashTracePatch,
 } from "@/components/PWA/AnimatedAppSplash";
 
 const UPDATE_COPY: Record<Lang, { title: (appName: string) => string; button: string }> = {
@@ -41,7 +40,7 @@ const BOOT_RECOVERY_COPY: Record<Lang, { title: string; message: string; retry: 
 
 const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 const MIN_STATIC_SPLASH_MS = 700;
-const MIN_ANIMATED_VISIBLE_MS = 900;
+const MIN_ANIMATED_VISIBLE_MS = 800;
 const SPLASH_SAFETY_LIMIT_MS = 3200;
 const DEBUG_SPLASH_MS = 6000;
 
@@ -54,7 +53,8 @@ export function isSplashDebugHost(hostname: string) {
     process.env.NODE_ENV === "development" ||
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
-    hostname.endsWith(".vercel.app")
+    (hostname.startsWith("laplapla-") &&
+      hostname.endsWith("-juliamacfiursts-projects.vercel.app"))
   );
 }
 
@@ -65,11 +65,7 @@ export function getSplashDebugMode(search: string, hostname: string): SplashDebu
   if (requested && DEBUG_SPLASH_MODES.has(requested as SplashDebugMode)) {
     return requested as SplashDebugMode;
   }
-  return params.get("debugSplash") === "1" ? "animated" : undefined;
-}
-
-export function getSplashTraceEnabled(search: string, hostname: string) {
-  return isSplashDebugHost(hostname) && new URLSearchParams(search).get("debugSplashTrace") === "1";
+  return undefined;
 }
 
 function getDisplayMode() {
@@ -93,13 +89,7 @@ function canRegisterServiceWorker() {
 
 export default function PWAAppShell({ lang }: { lang: Lang }) {
   const [bootState, setBootState] = useState<PwaBootState>("booting");
-  const [debugSplashEnabled, setDebugSplashEnabled] = useState(false);
   const [debugSplashMode, setDebugSplashMode] = useState<SplashDebugMode>();
-  const [showTraceBadge, setShowTraceBadge] = useState(false);
-  const [trace, setTrace] = useState({
-    mode: "pending", visible: true, svg: "loading", ready: false, reason: "initial",
-  });
-  const [splashAnimationKey, setSplashAnimationKey] = useState(0);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
   const reloadStarted = useRef(false);
   const splashReadyTimer = useRef(0);
@@ -113,16 +103,13 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
     splashStartedAt.current = startedAt;
     const selectedDebugMode = getSplashDebugMode(window.location.search, window.location.hostname);
     const shouldDebugSplash = Boolean(selectedDebugMode);
-    setDebugSplashEnabled(shouldDebugSplash);
     setDebugSplashMode(selectedDebugMode);
-    setShowTraceBadge(getSplashTraceEnabled(window.location.search, window.location.hostname));
     logSplashTrace("shell mounted");
     logSplashTrace("initial visible: true");
     logSplashTrace(`display mode: ${getDisplayMode()}`);
     document.documentElement.dataset.pwaBootState = "ready";
     window.dispatchEvent(new Event(PWA_BOOT_READY_EVENT));
     appReady.current = true;
-    setTrace((current) => ({ ...current, ready: true }));
     logSplashTrace("app-ready received");
     if (pendingPresentation.current) {
       const pending = pendingPresentation.current;
@@ -169,7 +156,6 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     if (bootState === "ready") {
-      setTrace((current) => ({ ...current, visible: false }));
       logSplashTrace("splash hidden");
     }
   }, [bootState]);
@@ -251,15 +237,6 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
     waitingWorker?.postMessage({ type: "SKIP_WAITING" });
   };
 
-  const replaySplashAnimation = () => {
-    window.clearTimeout(splashReadyTimer.current);
-    setBootState("booting");
-    splashStartedAt.current = performance.now();
-    setTrace((current) => ({ ...current, visible: true, svg: "loading", reason: "replay" }));
-    setSplashAnimationKey((current) => current + 1);
-    splashReadyTimer.current = window.setTimeout(() => setBootState("ready"), DEBUG_SPLASH_MS);
-  };
-
   const handlePresentationReady = (presentation: SplashPresentation) => {
     if (!appReady.current) {
       pendingPresentation.current = presentation;
@@ -296,10 +273,6 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
     }, remaining);
   };
 
-  const updateSplashTrace = useCallback((patch: SplashTracePatch) => {
-    setTrace((current) => ({ ...current, ...patch }));
-  }, []);
-
   const copy = UPDATE_COPY[lang];
 
   return (
@@ -307,23 +280,9 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
       <AppSplash
         visible={bootState === "booting"}
         recoveryCopy={BOOT_RECOVERY_COPY[lang]}
-        debugReplay={debugSplashEnabled ? {
-          animationKey: splashAnimationKey,
-          onReplay: replaySplashAnimation,
-        } : undefined}
         debugMode={debugSplashMode}
         onPresentationReady={handlePresentationReady}
-        onTrace={updateSplashTrace}
       />
-      {showTraceBadge ? (
-        <aside className="app-splash-trace" aria-live="polite">
-          <div>mode: {trace.mode}</div>
-          <div>visible: {String(trace.visible)}</div>
-          <div>svg: {trace.svg}</div>
-          <div>ready: {String(trace.ready)}</div>
-          <div>reason: {trace.reason}</div>
-        </aside>
-      ) : null}
       {waitingWorker ? (
         <aside className="pwa-update-toast" role="status" aria-live="polite">
           <span>{copy.title(APP_BRAND.appName)}</span>

@@ -1,13 +1,9 @@
 import { APP_BRAND, type AppBrand } from "@/lib/pwa/appBrand";
 import AnimatedAppSplash from "@/components/PWA/AnimatedAppSplash";
-import type { SplashDebugMode, SplashPresentation, SplashTracePatch } from "@/components/PWA/AnimatedAppSplash";
+import type { SplashDebugMode, SplashPresentation } from "@/components/PWA/AnimatedAppSplash";
 
 type AppSplashProps = {
   brand?: AppBrand;
-  debugReplay?: {
-    animationKey: number;
-    onReplay: () => void;
-  };
   recoveryCopy: {
     title: string;
     message: string;
@@ -16,20 +12,15 @@ type AppSplashProps = {
   visible: boolean;
   debugMode?: SplashDebugMode;
   onPresentationReady?: (presentation: SplashPresentation) => void;
-  onTrace?: (patch: SplashTracePatch) => void;
 };
 
 export default function AppSplash({
   brand = APP_BRAND,
-  debugReplay,
   recoveryCopy,
   visible,
   debugMode,
   onPresentationReady,
-  onTrace,
 }: AppSplashProps) {
-  const showDebugReplay = debugReplay;
-
   return (
     <div
       className={`app-splash${visible ? " app-splash--visible" : ""}`}
@@ -39,20 +30,9 @@ export default function AppSplash({
       style={{ backgroundColor: brand.backgroundColor }}
     >
       <AnimatedAppSplash
-        key={showDebugReplay?.animationKey ?? 0}
         debugMode={debugMode}
         onPresentationReady={onPresentationReady}
-        onTrace={onTrace}
       />
-      {showDebugReplay ? (
-        <button
-          className="app-splash__debug-replay"
-          type="button"
-          onClick={showDebugReplay.onReplay}
-        >
-          Повторить анимацию
-        </button>
-      ) : null}
       <section
         id="pwa-boot-recovery-panel"
         className="app-splash__recovery"

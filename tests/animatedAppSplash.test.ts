@@ -5,7 +5,7 @@ import {
   getStaticSplashReason,
   shouldSkipAnimatedSplash,
 } from "@/components/PWA/AnimatedAppSplash";
-import { getSplashDebugMode, getSplashTraceEnabled } from "@/components/PWA/PWAAppShell";
+import { getSplashDebugMode } from "@/components/PWA/PWAAppShell";
 
 describe("AnimatedAppSplash loading policy", () => {
   it.each([
@@ -48,15 +48,12 @@ describe("AnimatedAppSplash loading policy", () => {
   });
 
   it("only enables query debug modes on development or preview hosts", () => {
+    const previewHost = "laplapla-test-juliamacfiursts-projects.vercel.app";
     for (const mode of ["animated", "static", "slow", "timeout", "error"] as const) {
-      expect(getSplashDebugMode(`?debugSplashMode=${mode}`, "example.vercel.app")).toBe(mode);
+      expect(getSplashDebugMode(`?debugSplashMode=${mode}`, previewHost)).toBe(mode);
     }
     expect(getSplashDebugMode("?debugSplashMode=error", "www.laplapla.com")).toBeUndefined();
-    expect(getSplashDebugMode("?debugSplash=1", "localhost")).toBe("animated");
-  });
-
-  it("only enables the visual trace badge on preview hosts", () => {
-    expect(getSplashTraceEnabled("?debugSplashTrace=1", "example.vercel.app")).toBe(true);
-    expect(getSplashTraceEnabled("?debugSplashTrace=1", "www.laplapla.com")).toBe(false);
+    expect(getSplashDebugMode("?debugSplashMode=animated", "localhost")).toBe("animated");
+    expect(getSplashDebugMode("?debugSplashMode=animated", "example.vercel.app")).toBeUndefined();
   });
 });

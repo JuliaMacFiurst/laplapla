@@ -1,68 +1,10 @@
 {
-  "source": "public/pwa/splash/laplapla-splash-master-1280.png",
-  "sourceFormat": "png",
-  "sourceSha256": "50f7ce5a28d9d7797c6b40d72a537d7027be0e59ed4e1eb114fc3a55f360dfc2",
-  "sourceWidth": 1254,
-  "sourceHeight": 1254,
-  "trimmedLogoWidth": 583,
-  "trimmedLogoHeight": 581,
-  "backgroundColor": "#fff8ef",
+  "source": "public/pwa/splash/app-splash-logo-640.webp",
+  "sourceFormat": "webp",
+  "sourceSha256": "8ecc18550a76f55643817294237b9efdcd6e6b6cf1a50967ee7190fda16bcf54",
+  "sourceWidth": 640,
+  "sourceHeight": 640,
   "generated": [
-    {
-      "platform": "android",
-      "density": "mdpi",
-      "path": "android/drawable-mdpi/splash.png",
-      "width": 320,
-      "height": 320,
-      "logoWidth": 149,
-      "logoHeight": 148,
-      "logoCenterX": 160.5,
-      "logoCenterY": 160
-    },
-    {
-      "platform": "android",
-      "density": "hdpi",
-      "path": "android/drawable-hdpi/splash.png",
-      "width": 480,
-      "height": 480,
-      "logoWidth": 224,
-      "logoHeight": 223,
-      "logoCenterX": 240,
-      "logoCenterY": 240.5
-    },
-    {
-      "platform": "android",
-      "density": "xhdpi",
-      "path": "android/drawable-xhdpi/splash.png",
-      "width": 640,
-      "height": 640,
-      "logoWidth": 298,
-      "logoHeight": 297,
-      "logoCenterX": 320,
-      "logoCenterY": 320.5
-    },
-    {
-      "platform": "android",
-      "density": "xxhdpi",
-      "path": "android/drawable-xxhdpi/splash.png",
-      "width": 960,
-      "height": 960,
-      "logoWidth": 447,
-      "logoHeight": 445,
-      "logoCenterX": 480.5,
-      "logoCenterY": 480.5
-    },
-    {
-      "platform": "android",
-      "density": "xxxhdpi",
-      "path": "android/drawable-xxxhdpi/splash.png",
-      "width": 1280,
-      "height": 1280,
-      "logoWidth": 596,
-      "logoHeight": 594,
-      "logoCenterX": 640,
-      "logoCenterY": 640
-    },
     {
       "platform": "web",
       "density": "responsive",
