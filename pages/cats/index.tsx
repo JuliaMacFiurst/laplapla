@@ -20,6 +20,7 @@ import { trackEvent } from "@/lib/analytics/client";
 import type { StudioSlide } from "@/types/studio";
 import { getCatCategoryGroups, resolveCatCategory } from "@/lib/catCategories";
 import { sanitizeRichText } from "@/lib/security/sanitize";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 type CatRuntimeSlide = {
   text: string;
@@ -1073,13 +1074,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
             <div className="slide-container">
               {lang !== "ru" && activePreset?.translated === false ? <TranslationWarning lang={lang} /> : null}
               {loading ? (
-                <div className="cat-spinner-wrapper">
-                  <Image
-                    src="/spinners/CatSpinner.svg"
-                    alt="Котик думает..."
-                    width={64}
-                    height={64}
-                  />
+                <div className="cat-spinner-wrapper" role="status" aria-live="polite">
+                  <LapLapLaSpinner size="md" decorative />
                   <p className="cat-spinner-text">{t.thinkingLong}</p>
                 </div>
               ) : (

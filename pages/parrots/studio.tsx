@@ -15,6 +15,7 @@ import type { StudioSlide } from "@/types/studio";
 import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
 import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { trackEvent } from "@/lib/analytics/client";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 const StudioRoot = dynamic(() => import("@/components/studio/StudioRoot"), { ssr: false });
 
@@ -577,7 +578,10 @@ export function ParrotsStudioPageContent() {
                 color: "#4b331b",
               }}
             >
-              {copy.loading}
+              <div className="laplapla-loading-stack" role="status" aria-live="polite">
+                <LapLapLaSpinner size="lg" decorative />
+                <p>{copy.loading}</p>
+              </div>
             </div>
           </main>
         )}
@@ -615,7 +619,10 @@ export function ParrotsStudioPageContent() {
               initialTracks={initialTracks}
             />
           ) : (
-            <div className="parrot-studio-page__loading">{copy.loading}</div>
+            <div className="parrot-studio-page__loading laplapla-loading-stack" role="status" aria-live="polite">
+              <LapLapLaSpinner size="md" decorative />
+              <p>{copy.loading}</p>
+            </div>
           )}
         </section>
       </main>

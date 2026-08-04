@@ -1,0 +1,27 @@
+.laplapla-spinner {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.laplapla-spinner__image {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.laplapla-loading-stack {
+  display: flex;
+  min-height: inherit;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.laplapla-loading-stack > p {
+  margin: 0;
+}

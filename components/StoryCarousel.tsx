@@ -5,6 +5,7 @@ import { dictionaries, type Lang } from "@/i18n";
 import type { SlidesLoadStatus } from "@/lib/bookSlidesLoadState";
 import type { CarouselStory } from "../types/types";
 import { fallbackImages } from "../constants";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -83,15 +84,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     if (loadStatus === "idle" || loadStatus === "loading") {
       return (
         <div className="story-wrapper story-wrapper-loading" style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <Image
-            className="capybara-spinner"
-            src="/spinners/capybara-spinner.webp"
-            alt={story?.title || loadingMessage}
-            width={120}
-            height={120}
-            style={{ width: "120px", height: "120px", objectFit: "contain" }}
-          />
-          <span className="sr-only">{loadingMessage}</span>
+          <LapLapLaSpinner size="xl" label={loadingMessage} />
         </div>
       );
     }
@@ -145,13 +138,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({
     if (!currentSlide || !hasMedia) {
       return (
         <div className="story-media-placeholder">
-          <Image
-            className="capybara-spinner"
-            src="/spinners/capybara-spinner.webp"
-            alt={currentSlideAlt}
-            width={120}
-            height={120}
-          />
+          <LapLapLaSpinner size="xl" decorative />
         </div>
       );
     }

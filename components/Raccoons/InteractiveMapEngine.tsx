@@ -9,6 +9,7 @@ import {
   type SetStateAction,
 } from "react";
 import Image from "next/image";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
@@ -3364,14 +3365,7 @@ export default function InteractiveMap({
               ) : isPopupOpen ? (
                 isPopupLoading ? (
                   <div className="map-popup-loading-state" role="status" aria-live="polite">
-                    <Image
-                      src="/spinners/CatSpinner.svg"
-                      alt=""
-                      width={56}
-                      height={56}
-                      aria-hidden="true"
-                      className="map-popup-loading-spinner"
-                    />
+                    <LapLapLaSpinner size="md" decorative className="map-popup-loading-spinner" />
                     <p>{t.loading}</p>
                   </div>
                 ) : (

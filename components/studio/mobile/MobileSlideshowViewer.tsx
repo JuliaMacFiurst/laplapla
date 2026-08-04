@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, type ReactNode } from "react";
 import { StudioSlideMedia } from "@/components/studio/StudioPreviewPlayer";
 import type { Lang } from "@/i18n";
 import type { StudioSlide } from "@/types/studio";
 import { sanitizeRichText } from "@/lib/security/sanitize";
 import SwipeLayer from "./SwipeLayer";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 interface MobileSlideshowViewerProps {
   isOpen: boolean;
@@ -119,14 +119,8 @@ export default function MobileSlideshowViewer({
 
       <div className="mobile-slideshow-body">
         {loading ? (
-          <div className="mobile-slideshow-loading">
-            <Image
-              src="/spinners/CatSpinner.svg"
-              alt=""
-              width={64}
-              height={64}
-              aria-hidden="true"
-            />
+          <div className="mobile-slideshow-loading" role="status" aria-live="polite">
+            <LapLapLaSpinner size="md" decorative />
             <p>{loadingLabel}</p>
           </div>
         ) : (

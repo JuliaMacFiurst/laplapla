@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { dictionaries, Lang } from "@/i18n";
 import { devInfo, devLog } from "@/utils/devLog";
 import { toStudioMediaUrl } from "@/lib/studioMediaProxy";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 interface MediaPickerModalProps {
   lang: Lang;
@@ -810,7 +811,17 @@ export default function MediaPickerModal({
             paddingBottom: activeHasMore ? "12px" : "0",
           } : undefined}
         >
-          {loading && <p style={isMobile ? { width: "100%", color: "#fff" } : undefined}>{t.loading}</p>}
+          {loading ? (
+            <div
+              className="laplapla-loading-stack"
+              role="status"
+              aria-live="polite"
+              style={isMobile ? { width: "100%", color: "#fff" } : undefined}
+            >
+              <LapLapLaSpinner size="sm" decorative />
+              <p>{t.loading}</p>
+            </div>
+          ) : null}
           {!loading && searchError ? (
             <p style={isMobile ? { width: "100%", color: "#fff" } : undefined}>{searchError}</p>
           ) : null}

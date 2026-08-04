@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
 import { sanitizeSvg } from "@/lib/security/sanitize";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 const DEFAULT_VIEW_BOX = { width: 2000, height: 856 };
 const MIN_ZOOM = 1;
@@ -308,7 +309,10 @@ export default function MobileSvgDrawMap({
     >
       <div className="quest-mobile-svg-map-content" style={transformStyle}>
         {loading ? (
-          <div className="quest-mobile-svg-map-state">{loadingLabel}</div>
+          <div className="quest-mobile-svg-map-state laplapla-loading-stack" role="status" aria-live="polite">
+            <LapLapLaSpinner size="md" decorative />
+            <span>{loadingLabel}</span>
+          </div>
         ) : svgContent ? (
           <div
             ref={svgContainerRef}

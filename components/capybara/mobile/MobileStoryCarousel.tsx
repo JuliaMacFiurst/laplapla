@@ -14,6 +14,7 @@ import { fallbackImages } from "@/constants";
 import { dictionaries, type Lang } from "@/i18n";
 import type { CarouselStory } from "@/types/types";
 import type { SlidesLoadStatus } from "@/lib/bookSlidesLoadState";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 type CapybaraPageDict = (typeof dictionaries)["ru"]["capybaras"]["capybaraPage"];
 
@@ -407,14 +408,7 @@ export default function MobileStoryCarousel({
     if (loadStatus === "idle" || loadStatus === "loading") {
       return (
         <div className="mobile-story-carousel mobile-story-carousel-loading">
-          <Image
-            className="capybara-spinner"
-            src="/spinners/capybara-spinner.webp"
-            alt={story?.title || loadingMessage}
-            width={120}
-            height={120}
-          />
-          <span className="sr-only">{loadingMessage}</span>
+          <LapLapLaSpinner size="xl" label={loadingMessage} />
         </div>
       );
     }

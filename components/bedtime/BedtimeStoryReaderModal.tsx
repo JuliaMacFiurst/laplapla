@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { BedtimeStory } from "@/lib/bedtimeStories";
 import type { Lang } from "@/i18n";
 import { trackEvent } from "@/lib/analytics/client";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 type ReaderUi = {
   close: string;
@@ -134,7 +135,13 @@ export default function BedtimeStoryReaderModal({
         </header>
 
         <div className="bedtime-reader-page" aria-busy={isPageLoading}>
-          {isPageLoading ? <span className="bedtime-reader-page-loader" aria-hidden="true" /> : null}
+          {isPageLoading ? (
+            <LapLapLaSpinner
+              size="sm"
+              label={lang === "ru" ? "Загрузка страницы…" : lang === "he" ? "העמוד נטען…" : "Loading page…"}
+              className="bedtime-reader-page-loader"
+            />
+          ) : null}
           <Image
             src={story.pageUrls[pageIndex]}
             alt={`${story.title}: ${counter}`}

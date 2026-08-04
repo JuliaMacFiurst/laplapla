@@ -11,6 +11,7 @@ import MobileVideoViewer, { type VideoItem as MobileViewerVideoItem } from "./Mo
 
 import type { VideoCategoryKey, VideoItem } from "../../content/videos";
 import { VideoPlayer } from "./VideoPlayer";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 const MOBILE_VIDEO_CARD_COLORS = ["pink", "lilac", "mint", "peach", "sky", "lemon"] as const;
 
@@ -227,7 +228,12 @@ export function VideoSection({
   const closePlayer = () => setActivePlaylist(null);
 
   if (loading) {
-    return <div className="video-section">{t.mobileSectionTitle ?? "Loading…"}</div>;
+    return (
+      <div className="video-section laplapla-loading-stack" role="status" aria-live="polite">
+        <LapLapLaSpinner size="md" decorative />
+        <p>{t.mobileSectionTitle ?? "Loading…"}</p>
+      </div>
+    );
   }
 
   if (mobileMode) {

@@ -457,7 +457,7 @@ export default function StandaloneBookScreenPages({
   if (loading && !currentBook) {
     return (
       <div className="loading-spinner-container">
-        <LoadingSpinner />
+        <LoadingSpinner size="lg" label={t.storyLoading} />
       </div>
     );
   }
@@ -600,7 +600,8 @@ export default function StandaloneBookScreenPages({
                   {renderSearchFilters()}
 
                   {searchLoading ? (
-                    <div className="loading-spinner-container">
+                    <div className="loading-spinner-container laplapla-loading-stack" role="status" aria-live="polite">
+                      <LoadingSpinner size="sm" decorative />
                       <div className="search-results-status">{t.search.title}</div>
                     </div>
                   ) : null}
@@ -677,7 +678,8 @@ export default function StandaloneBookScreenPages({
           {renderSearchFilters()}
 
           {searchLoading ? (
-            <div className="loading-spinner-container">
+            <div className="loading-spinner-container laplapla-loading-stack" role="status" aria-live="polite">
+              <LoadingSpinner size="sm" decorative />
               <div className="search-results-status">{t.search.title}</div>
             </div>
           ) : null}

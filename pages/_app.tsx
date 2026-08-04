@@ -23,6 +23,7 @@ import '../styles/Replay.css'
 import '../styles/PWAInstall.css';
 import '../styles/BedtimeStories.css';
 import '../styles/AppLab.css';
+import '../styles/LoadingSpinner.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";

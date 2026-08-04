@@ -300,7 +300,7 @@ export default function BookFeed({
     >
       {(isMobileFeed ? mobilePreviewLoading && mobilePanels.length === 0 : loading && !book) ? (
         <div className="loading-spinner-container">
-          <LoadingSpinner />
+          <LoadingSpinner size="lg" label={dict.storyLoading} />
         </div>
       ) : null}
 

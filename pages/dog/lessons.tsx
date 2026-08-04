@@ -5,6 +5,7 @@ import BackButton from '../../components/BackButton';
 import SEO from "@/components/SEO";
 import { dictionaries, Lang } from "../../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 interface Lesson {
   id: string;
@@ -65,7 +66,10 @@ export default function LessonsPage() {
         <h1 className="lessons-title page-title">{t.chooseLesson}</h1>
         <div className="lessons-grid">
           {isLoading ? (
-            <div className="lessons-empty-state">{loadingLessonsLabel}</div>
+            <div className="lessons-empty-state laplapla-loading-stack" role="status" aria-live="polite">
+              <LapLapLaSpinner size="md" decorative />
+              <span>{loadingLessonsLabel}</span>
+            </div>
           ) : null}
           {lessons.map((lesson) => (
             <div key={lesson.id} className="lesson-card">

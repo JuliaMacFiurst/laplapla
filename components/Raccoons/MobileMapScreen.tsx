@@ -3,6 +3,7 @@ import MapWrapper from "@/components/Raccoons/MapWrapper";
 import { dictionaries, type Lang } from "@/i18n";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import type { EntitySearchResult } from "@/components/Raccoons/types";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 type MapTab = "country" | "river" | "sea" | "physic" | "flag" | "animal" | "culture" | "weather" | "food";
 
@@ -134,7 +135,8 @@ export default function MobileMapScreen({
             </form>
 
             {searchLoading ? (
-              <div className="raccoons-mobile-search-results search-results-panel">
+              <div className="raccoons-mobile-search-results search-results-panel laplapla-loading-stack" role="status" aria-live="polite">
+                <LapLapLaSpinner size="sm" decorative />
                 <div className="search-results-status">{searchUi.button}...</div>
               </div>
             ) : null}

@@ -196,19 +196,9 @@
   z-index: 2;
   top: 50%;
   left: 50%;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
-  border: 3px solid rgba(255, 255, 255, 0.18);
-  border-top-color: #b9d8ff;
-  border-radius: 50%;
-  animation: bedtime-reader-spin 800ms linear infinite;
-}
-
-@keyframes bedtime-reader-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
 }
 
 .bedtime-reader-controls {

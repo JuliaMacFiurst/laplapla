@@ -341,36 +341,7 @@
 
   width: 160px;
   height: 160px;
-
-  background-image: url("/spinners/game-spinner.webp");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-
   pointer-events: none; /* чтобы не блокировал игру */
-
-  animation: spinnerPulse 1.6s ease-in-out infinite,
-             spinnerRotate 2.4s linear infinite;
-}
-
-@keyframes spinnerRotate {
-  from {
-    transform: translateX(-50%) rotate(0deg);
-  }
-  to {
-    transform: translateX(-50%) rotate(360deg);
-  }
-}
-
-@keyframes spinnerPulse {
-  0%, 100% {
-    opacity: 0.85;
-    filter: drop-shadow(0 0 6px rgba(80, 200, 120, 0.4));
-  }
-  50% {
-    opacity: 1;
-    filter: drop-shadow(0 0 14px rgba(80, 200, 120, 0.8));
-  }
 }
 
 .clothes-conveyor {

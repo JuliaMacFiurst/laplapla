@@ -18,6 +18,7 @@ import { getRecipeCardImage, getRecipeExportImage, loadActiveRecipes, type Recip
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import MobileMapScreen from "@/components/Raccoons/MobileMapScreen";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 import MobileQuestSelectScreen from "@/components/Raccoons/MobileQuestSelectScreen";
 import type { EntitySearchResult } from "@/components/Raccoons/types";
 import { trackEvent } from "@/lib/analytics/client";
@@ -498,7 +499,8 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
             </form>
 
             {searchLoading ? (
-              <div className="raccoons-search-results search-results-panel">
+              <div className="raccoons-search-results search-results-panel laplapla-loading-stack" role="status" aria-live="polite">
+                <LapLapLaSpinner size="sm" decorative />
                 <div className="search-results-status">{searchUi.button}...</div>
               </div>
             ) : null}

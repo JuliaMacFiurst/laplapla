@@ -11,6 +11,7 @@ import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedAsPath, buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 export default function CapybaraPage({ lang }: { lang: Lang }) {
   const router = useRouter();
@@ -731,7 +732,8 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             </button>
 
             {searchLoading ? (
-              <div className="loading-spinner-container">
+              <div className="loading-spinner-container laplapla-loading-stack" role="status" aria-live="polite">
+                <LapLapLaSpinner size="sm" decorative />
                 <div className="search-results-status">{t.search.title}</div>
               </div>
             ) : null}

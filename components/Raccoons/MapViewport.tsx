@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { memo, type MutableRefObject, type ReactNode } from "react";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 type MapSvgHostProps = {
   svgContent: string | null;
@@ -72,14 +72,7 @@ export default function MapViewport({
 
       {isMapLoading ? (
         <div className="map-loading-overlay" role="status" aria-live="polite">
-          <Image
-            src="/spinners/CatSpinner.svg"
-            alt=""
-            width={64}
-            height={64}
-            aria-hidden="true"
-            unoptimized
-          />
+          <LapLapLaSpinner size="lg" decorative />
         </div>
       ) : null}
 

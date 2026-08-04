@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReplayEngine } from "./ReplayEngine";
 import type { ReplayActionGroup, ReplayRegionData } from "./types";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 type Props = {
   actionGroups: ReplayActionGroup[];
@@ -251,7 +252,10 @@ export default function ReplayCanvas({
 
       {busy ? (
         <div className="replay-saving-overlay" role="status" aria-live="polite">
-          <div className="replay-saving-overlay__panel">{savingLabel}</div>
+          <div className="replay-saving-overlay__panel laplapla-loading-stack">
+            <LapLapLaSpinner size="md" decorative />
+            <span>{savingLabel}</span>
+          </div>
         </div>
       ) : null}
     </div>

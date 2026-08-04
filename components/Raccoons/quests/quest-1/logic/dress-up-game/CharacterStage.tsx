@@ -8,6 +8,7 @@ import { loadClothesForCharacter } from "./loadClothesForCharacter";
 import type { CharacterResult, DressUpSeason, DressedItem } from "@/types/types";
 import { useQuest1I18n } from "../../i18n";
 import { devLog, devWarn } from "@/utils/devLog";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 export default function CharacterStage({
   characters,
@@ -328,14 +329,11 @@ export default function CharacterStage({
         {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
         {!timerRunning &&
           (characterLoading ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/spinners/game-spinner.webp"
-                alt="loading"
-                className="dressup-spinner"
-              />
-            </>
+            <LapLapLaSpinner
+              size={160}
+              label={t.day5Heat.loadingCharacters}
+              className="dressup-spinner"
+            />
           ) : (
             <button onClick={startGame} className="dressup-start-btn" />
           ))}
@@ -343,14 +341,11 @@ export default function CharacterStage({
         {!timerRunning &&
           dressedItems.length > 0 &&
           (characterLoading ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/spinners/game-spinner.webp"
-                alt="loading"
-                className="dressup-spinner"
-              />
-            </>
+            <LapLapLaSpinner
+              size={160}
+              label={t.day5Heat.loadingCharacters}
+              className="dressup-spinner"
+            />
           ) : (
             <button
               className="dressup-restart-btn"

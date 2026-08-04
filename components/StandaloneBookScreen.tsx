@@ -88,7 +88,7 @@ export default function StandaloneBookScreen({
   if (loading && !currentBook) {
     return (
       <div className="loading-spinner-container">
-        <LoadingSpinner />
+        <LoadingSpinner size="lg" label={t.storyLoading} />
       </div>
     );
   }

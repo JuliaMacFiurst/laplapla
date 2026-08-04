@@ -1,13 +1,49 @@
+type SpinnerSize = "xs" | "sm" | "md" | "lg" | "xl" | number;
 
+type LoadingSpinnerProps = {
+  className?: string;
+  size?: SpinnerSize;
+  label?: string;
+  decorative?: boolean;
+};
 
+const SIZE_BY_NAME: Record<Exclude<SpinnerSize, number>, number> = {
+  xs: 206,
+  sm: 206,
+  md: 206,
+  lg: 206,
+  xl: 206,
+};
 
-const LoadingSpinner: React.FC = () => {
+export const LapLapLaSpinner = ({
+  className = "",
+  size = "md",
+  label = "Загрузка…",
+  decorative = false,
+}: LoadingSpinnerProps) => {
+  const pixelSize = typeof size === "number" ? Math.max(28, size) : SIZE_BY_NAME[size];
+
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <div className="w-20 h-20 border-8 border-dashed border-pink-400 border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-6 text-2xl text-pink-500 font-semibold">Капибары готовят сказки...</p>
+    <div
+      className={`laplapla-spinner ${className}`.trim()}
+      role={decorative ? undefined : "status"}
+      aria-live={decorative ? undefined : "polite"}
+    >
+      {/* The SVG owns its animation and must stay an external image resource. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className="laplapla-spinner__image"
+        src="/spinners/laplapla-spinner.svg"
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        width={pixelSize}
+        height={pixelSize}
+        style={{ width: pixelSize, height: pixelSize }}
+      />
+      {!decorative ? <span className="sr-only">{label}</span> : null}
     </div>
   );
 };
 
-export default LoadingSpinner;
+export default LapLapLaSpinner;

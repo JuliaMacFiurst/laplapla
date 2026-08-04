@@ -11,6 +11,7 @@ import {
 } from "@/lib/dogs/artGallerySlides";
 import { dictionaries, Lang } from "../i18n/index";
 import type { StudioSlide } from "@/types/studio";
+import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 
 interface ArtGalleryModalProps {
   categorySlug: string;
@@ -169,7 +170,10 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
       {!isArtworkTranslated && lang !== "ru" ? <TranslationWarning lang={lang} /> : null}
 
       {loading ? (
-        <p className="art-gallery-empty">{t.loadingGallery}</p>
+        <div className="art-gallery-empty laplapla-loading-stack" role="status" aria-live="polite">
+          <LapLapLaSpinner size="md" decorative />
+          <p>{t.loadingGallery}</p>
+        </div>
       ) : currentSlide ? (
         <div className="art-gallery-slideshow">
           <div className="art-gallery-stage">
