@@ -338,6 +338,8 @@ type DictionaryShape = {
     subcategorySelectionLabel: string;
     changeCategory: string;
     questionsTitle: string;
+    subcategoriesTitle: string;
+    closeSubcategories: string;
     categoryResultsCount: string;
     loadMoreQuestions: string;
     thinkingShort: string;

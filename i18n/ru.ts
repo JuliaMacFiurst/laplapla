@@ -300,6 +300,8 @@ export const ru = {
     subcategorySelectionLabel: "Подкатегория",
     changeCategory: "Изменить категорию",
     questionsTitle: "Вопросы",
+    subcategoriesTitle: "Подкатегории",
+    closeSubcategories: "Скрыть подкатегории",
     categoryResultsCount: "Показано {shown} из {total}",
     loadMoreQuestions: "Показать ещё 3",
     thinkingShort: "Котики думают...",

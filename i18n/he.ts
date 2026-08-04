@@ -470,6 +470,8 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
     subcategorySelectionLabel: "תת־קטגוריה",
     changeCategory: "שינוי קטגוריה",
     questionsTitle: "שאלות",
+    subcategoriesTitle: "תתי־קטגוריות",
+    closeSubcategories: "הסתרת תתי־קטגוריות",
     categoryResultsCount: "מוצגים {shown} מתוך {total}",
     loadMoreQuestions: "להציג עוד 3",
     thinkingShort: "החתולים חושבים...",

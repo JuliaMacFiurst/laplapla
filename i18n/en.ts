@@ -300,6 +300,8 @@ export const en = {
     subcategorySelectionLabel: "Subcategory",
     changeCategory: "Change category",
     questionsTitle: "Questions",
+    subcategoriesTitle: "Subcategories",
+    closeSubcategories: "Hide subcategories",
     categoryResultsCount: "Showing {shown} of {total}",
     loadMoreQuestions: "Show 3 more",
     thinkingShort: "The cats are thinking...",

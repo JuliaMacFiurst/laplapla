@@ -22,6 +22,7 @@ type FilterGroup = {
   selectedValues: string[];
   onToggle: (value: string) => void;
   onSubcategoryToggle?: (categoryValue: string, subcategoryValue: string) => void;
+  onOptionActivated?: (value: string, hasSubcategories: boolean, wasSelected: boolean) => void;
 };
 
 interface MultiSelectFilterPanelProps {
@@ -34,6 +35,9 @@ interface MultiSelectFilterPanelProps {
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   contentId?: string;
+  inlineSubcategories?: boolean;
+  subcategoriesLabel?: string;
+  closeSubcategoriesLabel?: string;
 }
 
 export default function MultiSelectFilterPanel({
@@ -46,6 +50,9 @@ export default function MultiSelectFilterPanel({
   expanded,
   onExpandedChange,
   contentId,
+  inlineSubcategories = false,
+  subcategoriesLabel = "Подкатегории",
+  closeSubcategoriesLabel = "Закрыть подкатегории",
 }: MultiSelectFilterPanelProps) {
   const visibleGroups = groups.filter((group) => group.options.length > 0);
   const hasSelections = visibleGroups.some((group) => group.selectedValues.length > 0);
@@ -70,7 +77,7 @@ export default function MultiSelectFilterPanel({
   }
 
   return (
-    <section className={`multi-filter-panel ${className}`.trim()}>
+    <section className={`multi-filter-panel ${inlineSubcategories ? "multi-filter-inline-subcategories" : ""} ${className}`.trim()}>
       <div className="multi-filter-panel-head">
         <button
           type="button"
@@ -123,8 +130,19 @@ export default function MultiSelectFilterPanel({
                     <button
                       type="button"
                       className={`multi-filter-chip ${isSelected ? "multi-filter-chip-active" : ""}`}
-                      onClick={() => group.onToggle(option.value)}
+                      onClick={() => {
+                        if (hasSubcategories) {
+                          if (!isSelected) {
+                            group.onToggle(option.value);
+                          }
+                          setOpenSubcategoryValue((current) => current === option.value ? null : option.value);
+                        } else {
+                          group.onToggle(option.value);
+                        }
+                        group.onOptionActivated?.(option.value, hasSubcategories, isSelected);
+                      }}
                       aria-pressed={isSelected}
+                      aria-expanded={hasSubcategories ? isSubcategoryOpen : undefined}
                     >
                       {option.icon ? (
                         <span className="multi-filter-chip-icon" aria-hidden="true">{option.icon}</span>
@@ -141,7 +159,7 @@ export default function MultiSelectFilterPanel({
                       <button
                         type="button"
                         className="multi-filter-subcategory-trigger"
-                        aria-label={`Подкатегории: ${option.label}`}
+                        aria-label={`${subcategoriesLabel}: ${option.label}`}
                         aria-expanded={isSubcategoryOpen}
                         onClick={(event) => {
                           event.stopPropagation();
@@ -152,23 +170,23 @@ export default function MultiSelectFilterPanel({
                       </button>
                     ) : null}
 
-                    {hasSubcategories && isSubcategoryOpen ? (
+                    {hasSubcategories && isSubcategoryOpen && !inlineSubcategories ? (
                       <button
                         type="button"
                         className="multi-filter-subcategory-scrim"
-                        aria-label="Закрыть подкатегории"
+                        aria-label={closeSubcategoriesLabel}
                         onClick={() => setOpenSubcategoryValue(null)}
                       />
                     ) : null}
 
                     {hasSubcategories ? (
-                      <div className="multi-filter-subcategory-popover" role="dialog" aria-label={`Подкатегории: ${option.label}`}>
+                      <div className="multi-filter-subcategory-popover" role="region" aria-label={`${subcategoriesLabel}: ${option.label}`}>
                         <div className="multi-filter-subcategory-head">
-                          <span>Подкатегории</span>
+                          <span>{subcategoriesLabel} · {option.label}</span>
                           <button
                             type="button"
                             className="multi-filter-subcategory-close"
-                            aria-label="Закрыть"
+                            aria-label={closeSubcategoriesLabel}
                             onClick={() => setOpenSubcategoryValue(null)}
                           >
                             ×

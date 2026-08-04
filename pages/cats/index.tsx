@@ -193,6 +193,24 @@ export default function CatPage({ lang }: { lang: Lang }) {
     }
   }, [selectedSubcategories]);
 
+  const handleCategoryActivated = useCallback((
+    _category: string,
+    hasSubcategories: boolean,
+    wasSelected: boolean,
+  ) => {
+    if (hasSubcategories || wasSelected) {
+      return;
+    }
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => {
+      questionResultsRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }, 0);
+  }, []);
+
   const categoryOptionGroups = useMemo(() => {
     const categoryCounts = new Map<string, {
       key: string;
@@ -271,8 +289,9 @@ export default function CatPage({ lang }: { lang: Lang }) {
         selectedValues: selectedCategories,
         onToggle: toggleCategory,
         onSubcategoryToggle: toggleSubcategory,
+        onOptionActivated: handleCategoryActivated,
       })),
-    [categoryOptionGroups, selectedCategories, toggleCategory, toggleSubcategory],
+    [categoryOptionGroups, handleCategoryActivated, selectedCategories, toggleCategory, toggleSubcategory],
   );
 
   const selectedCategoryLabels = useMemo(
@@ -991,6 +1010,9 @@ export default function CatPage({ lang }: { lang: Lang }) {
           expanded={isCategoryPanelExpanded}
           onExpandedChange={setIsCategoryPanelExpanded}
           contentId={`cats-category-options-${mode}`}
+          inlineSubcategories
+          subcategoriesLabel={t.subcategoriesTitle}
+          closeSubcategoriesLabel={t.closeSubcategories}
         />
 
         {!isCategoryPanelExpanded && selectedCategoryLabels.length > 0 ? (
