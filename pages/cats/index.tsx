@@ -154,6 +154,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
+  const [isCategoryPanelExpanded, setIsCategoryPanelExpanded] = useState(true);
   const [isDesktopSearchFocused, setIsDesktopSearchFocused] = useState(false);
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false);
   const lastResolvedTextPresetKeyRef = useRef<string | null>(null);
@@ -161,6 +162,8 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const trackedQuestionProgressKeyRef = useRef(new Set<string>());
   const maxTrackedSlideIndexRef = useRef(-1);
   const slideScrollWrapperRef = useRef<HTMLDivElement | null>(null);
+  const questionResultsRef = useRef<HTMLElement | null>(null);
+  const shouldScrollToQuestionsRef = useRef(false);
 
   const presetsForLang = useMemo(
     () => availablePresets.filter((preset) => preset.lang === lang),
@@ -177,13 +180,18 @@ export default function CatPage({ lang }: { lang: Lang }) {
   }, []);
 
   const toggleSubcategory = useCallback((category: string, subcategory: string) => {
+    const isSelecting = !selectedSubcategories.includes(subcategory);
     setSelectedCategories((current) => current.includes(category) ? current : [...current, category]);
     setSelectedSubcategories((current) =>
       current.includes(subcategory)
         ? current.filter((item) => item !== subcategory)
         : [...current, subcategory],
     );
-  }, []);
+    if (isSelecting) {
+      shouldScrollToQuestionsRef.current = true;
+      setIsCategoryPanelExpanded(false);
+    }
+  }, [selectedSubcategories]);
 
   const categoryOptionGroups = useMemo(() => {
     const categoryCounts = new Map<string, {
@@ -265,6 +273,26 @@ export default function CatPage({ lang }: { lang: Lang }) {
         onSubcategoryToggle: toggleSubcategory,
       })),
     [categoryOptionGroups, selectedCategories, toggleCategory, toggleSubcategory],
+  );
+
+  const selectedCategoryLabels = useMemo(
+    () => categoryOptionGroups.flatMap((group) =>
+      group.options
+        .filter((option) => selectedCategories.includes(option.value))
+        .map((option) => option.label),
+    ),
+    [categoryOptionGroups, selectedCategories],
+  );
+
+  const selectedSubcategoryLabels = useMemo(
+    () => categoryOptionGroups.flatMap((group) =>
+      group.options.flatMap((option) =>
+        option.subcategories
+          ?.filter((subcategory) => selectedSubcategories.includes(subcategory.value))
+          .map((subcategory) => subcategory.label) ?? [],
+      ),
+    ),
+    [categoryOptionGroups, selectedSubcategories],
   );
 
   const filteredPresetsForLang = useMemo(() => {
@@ -377,6 +405,27 @@ export default function CatPage({ lang }: { lang: Lang }) {
   useEffect(() => {
     setVisibleCategoryPresetCount(CAT_CATEGORY_PRESET_INCREMENT);
   }, [categoryFilterKey, lang]);
+
+  useEffect(() => {
+    if (
+      !shouldScrollToQuestionsRef.current ||
+      isCategoryPanelExpanded ||
+      selectedSubcategories.length === 0
+    ) {
+      return;
+    }
+
+    shouldScrollToQuestionsRef.current = false;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => {
+      questionResultsRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }, reduceMotion ? 0 : 240);
+
+    return () => window.clearTimeout(timer);
+  }, [isCategoryPanelExpanded, selectedSubcategories]);
 
   useEffect(() => {
     setSelectedCategories((current) => {
@@ -939,7 +988,34 @@ export default function CatPage({ lang }: { lang: Lang }) {
           onClear={clearCategories}
           className={`cats-category-panel cats-category-panel-${mode}`}
           groups={availableCategoryGroups}
+          expanded={isCategoryPanelExpanded}
+          onExpandedChange={setIsCategoryPanelExpanded}
+          contentId={`cats-category-options-${mode}`}
         />
+
+        {!isCategoryPanelExpanded && selectedCategoryLabels.length > 0 ? (
+          <div className="cats-category-selection-summary" aria-live="polite">
+            <div className="cats-category-selection-copy">
+              <span>
+                <strong>{t.categorySelectionLabel}:</strong> {selectedCategoryLabels.join(", ")}
+              </span>
+              {selectedSubcategoryLabels.length > 0 ? (
+                <span>
+                  <strong>{t.subcategorySelectionLabel}:</strong> {selectedSubcategoryLabels.join(", ")}
+                </span>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="cats-change-category-button"
+              onClick={() => setIsCategoryPanelExpanded(true)}
+              aria-expanded={false}
+              aria-controls={`cats-category-options-${mode}`}
+            >
+              {t.changeCategory}
+            </button>
+          </div>
+        ) : null}
 
         {isFocused && searchResults.length > 0 ? (
           <div className="cats-search-results search-results-panel">
@@ -966,34 +1042,43 @@ export default function CatPage({ lang }: { lang: Lang }) {
     <div className="cats-mobile-entry">
       {error ? <p className="error-message">{error}</p> : null}
       {renderSearchBlock("mobile")}
-      <div className="cats-mobile-trigger-list">
-        {visibleQuestionPresets.map((item) => (
-          <button
-            key={`${item.kind}:${item.id}`}
-            type="button"
-            className="example-button cats-mobile-trigger"
-            onClick={() => {
-              void openMobilePreset(item);
-            }}
-          >
-            <span className="cats-mobile-trigger-label">{item.prompt}</span>
-          </button>
-        ))}
-      </div>
-      {isCategoryFiltered ? (
-        <div className="cats-category-results-footer cats-category-results-footer-mobile">
-          <span className="cats-category-results-count">{categoryResultsLabel}</span>
-          {hasMoreCategoryPresets ? (
+      <section
+        ref={questionResultsRef}
+        className="cats-question-results cats-question-results-mobile"
+        aria-labelledby="cats-question-results-title-mobile"
+      >
+        <h2 id="cats-question-results-title-mobile" className="cats-question-results-title">
+          {t.questionsTitle}
+        </h2>
+        <div className="cats-mobile-trigger-list">
+          {visibleQuestionPresets.map((item) => (
             <button
+              key={`${item.kind}:${item.id}`}
               type="button"
-              className="cats-load-more-questions"
-              onClick={loadMoreCategoryPresets}
+              className="example-button cats-mobile-trigger"
+              onClick={() => {
+                void openMobilePreset(item);
+              }}
             >
-              {t.loadMoreQuestions}
+              <span className="cats-mobile-trigger-label">{item.prompt}</span>
             </button>
-          ) : null}
+          ))}
         </div>
-      ) : null}
+        {isCategoryFiltered ? (
+          <div className="cats-category-results-footer cats-category-results-footer-mobile">
+            <span className="cats-category-results-count">{categoryResultsLabel}</span>
+            {hasMoreCategoryPresets ? (
+              <button
+                type="button"
+                className="cats-load-more-questions"
+                onClick={loadMoreCategoryPresets}
+              >
+                {t.loadMoreQuestions}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
       <div className="cats-mobile-slideshow-intro">
         <span className="cats-mobile-slideshow-intro-title">{t.mobileIntroTitle}</span>
         <span className="cats-mobile-slideshow-intro-text">{t.mobileIntroText}</span>
@@ -1027,33 +1112,42 @@ export default function CatPage({ lang }: { lang: Lang }) {
             <CorePageLinks current="cats" lang={lang} related={["book", "parrots", "raccoons"]} />
             {renderSearchBlock("desktop")}
 
-            <div className="example-buttons">
-              {visibleQuestionPresets.map((item) => (
-                <button
-                  key={`${item.kind}:${item.id}`}
-                  className="example-button"
-                  onClick={() => {
-                    applyPreset(item);
-                  }}
-                >
-                  {item.prompt}
-                </button>
-              ))}
-            </div>
-            {isCategoryFiltered ? (
-              <div className="cats-category-results-footer">
-                <span className="cats-category-results-count">{categoryResultsLabel}</span>
-                {hasMoreCategoryPresets ? (
+            <section
+              ref={questionResultsRef}
+              className="cats-question-results"
+              aria-labelledby="cats-question-results-title-desktop"
+            >
+              <h2 id="cats-question-results-title-desktop" className="cats-question-results-title">
+                {t.questionsTitle}
+              </h2>
+              <div className="example-buttons">
+                {visibleQuestionPresets.map((item) => (
                   <button
-                    type="button"
-                    className="cats-load-more-questions"
-                    onClick={loadMoreCategoryPresets}
+                    key={`${item.kind}:${item.id}`}
+                    className="example-button"
+                    onClick={() => {
+                      applyPreset(item);
+                    }}
                   >
-                    {t.loadMoreQuestions}
+                    {item.prompt}
                   </button>
-                ) : null}
+                ))}
               </div>
-            ) : null}
+              {isCategoryFiltered ? (
+                <div className="cats-category-results-footer">
+                  <span className="cats-category-results-count">{categoryResultsLabel}</span>
+                  {hasMoreCategoryPresets ? (
+                    <button
+                      type="button"
+                      className="cats-load-more-questions"
+                      onClick={loadMoreCategoryPresets}
+                    >
+                      {t.loadMoreQuestions}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
 
             {error && <p className="error-message">{error}</p>}
 

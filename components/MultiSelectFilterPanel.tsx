@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 
 type FilterSubcategory = {
   value: string;
@@ -31,6 +31,9 @@ interface MultiSelectFilterPanelProps {
   onClear: () => void;
   className?: string;
   defaultExpanded?: boolean;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+  contentId?: string;
 }
 
 export default function MultiSelectFilterPanel({
@@ -40,11 +43,27 @@ export default function MultiSelectFilterPanel({
   onClear,
   className = "",
   defaultExpanded = true,
+  expanded,
+  onExpandedChange,
+  contentId,
 }: MultiSelectFilterPanelProps) {
   const visibleGroups = groups.filter((group) => group.options.length > 0);
   const hasSelections = visibleGroups.some((group) => group.selectedValues.length > 0);
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const generatedContentId = useId();
+  const resolvedContentId = contentId ?? `multi-filter-content-${generatedContentId.replace(/:/g, "")}`;
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const isExpanded = expanded ?? internalExpanded;
   const [openSubcategoryValue, setOpenSubcategoryValue] = useState<string | null>(null);
+
+  const setExpanded = (nextExpanded: boolean) => {
+    if (expanded === undefined) {
+      setInternalExpanded(nextExpanded);
+    }
+    if (!nextExpanded) {
+      setOpenSubcategoryValue(null);
+    }
+    onExpandedChange?.(nextExpanded);
+  };
 
   if (visibleGroups.length === 0) {
     return null;
@@ -56,8 +75,9 @@ export default function MultiSelectFilterPanel({
         <button
           type="button"
           className="multi-filter-toggle-button"
-          onClick={() => setIsExpanded((current) => !current)}
+          onClick={() => setExpanded(!isExpanded)}
           aria-expanded={isExpanded}
+          aria-controls={resolvedContentId}
         >
           <span className="multi-filter-panel-title">{title}</span>
           <span
@@ -79,8 +99,14 @@ export default function MultiSelectFilterPanel({
         </button>
       </div>
 
-      {isExpanded ? (
-        visibleGroups.map((group) => (
+      <div
+        id={resolvedContentId}
+        className={`multi-filter-panel-content ${isExpanded ? "multi-filter-panel-content-expanded" : ""}`}
+        aria-hidden={!isExpanded}
+        inert={!isExpanded ? true : undefined}
+      >
+        <div className="multi-filter-panel-content-inner">
+          {visibleGroups.map((group) => (
           <div key={group.id} className="multi-filter-group">
             <div className="multi-filter-group-label">{group.label}</div>
             <div className="multi-filter-chip-grid">
@@ -174,8 +200,9 @@ export default function MultiSelectFilterPanel({
               })}
             </div>
           </div>
-        ))
-      ) : null}
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

@@ -305,6 +305,15 @@ This task remains important because it increases the value of user-created proje
 
 ## Done
 
+- [x] Cats Categories Responsive Layout + Question Discovery UX
+  - Дата завершения: 2026-08-04
+  - Исправлены переносы названий категорий и подкатегорий: слова остаются целыми в русской, английской и ивритской локалях.
+  - Раздел категорий адаптирован для mobile, tablet и desktop без горизонтального overflow и обрезания подписей.
+  - После выбора подкатегории категории плавно сворачиваются, выбранные значения остаются в компактной сводке, а заметная локализованная кнопка позволяет вернуться к выбору.
+  - Пользователь автоматически попадает к заголовку вопросов; учтены fixed header, RTL и `prefers-reduced-motion`.
+  - Логика данных, фильтрация, API и Supabase не менялись.
+  - Проверки: typecheck, ESLint, 162 unit tests, production build и browser matrix из 13 размеров для RU/EN/HE прошли.
+
 - [x] LapLapLa Google Play v1.0 User Scope + AppLab
   - Дата завершения: 2026-07-29
   - Зафиксирован пользовательский состав бесплатной версии 1.0 и отдельно перечислены скрытые и отложенные функции.
