@@ -1,8 +1,39 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveCatCategory } from "../lib/catCategories";
+import { resolveCatCategory, splitLocalizedCategoryLabel } from "../lib/catCategories";
 
 describe("cat category taxonomy", () => {
+  it("splits localized compound category labels", () => {
+    expect(splitLocalizedCategoryLabel("Когнитивная лингвистика и Антропология", "ru")).toEqual({
+      first: "Когнитивная лингвистика",
+      second: "Антропология",
+    });
+    expect(splitLocalizedCategoryLabel("Cognitive Linguistics and Anthropology", "en")).toEqual({
+      first: "Cognitive Linguistics",
+      second: "Anthropology",
+    });
+    expect(splitLocalizedCategoryLabel("בלשנות קוגניטיבית ואנתרופולוגיה", "he")).toEqual({
+      first: "בלשנות קוגניטיבית",
+      second: "אנתרופולוגיה",
+    });
+    expect(splitLocalizedCategoryLabel("Neurobiology", "en")).toEqual({
+      first: "Neurobiology",
+      second: null,
+    });
+  });
+
+  it("uses the localized first part for dynamic category labels", () => {
+    const source = {
+      category: "Когнитивная лингвистика и Антропология",
+      categoryKey: "custom:когнитивная-лингвистика",
+    };
+
+    expect(resolveCatCategory({ ...source, categoryLabel: "Cognitive Linguistics and Anthropology" }, "en")?.label)
+      .toBe("Cognitive Linguistics");
+    expect(resolveCatCategory({ ...source, categoryLabel: "בלשנות קוגניטיבית ואנתרופולוגיה" }, "he")?.label)
+      .toBe("בלשנות קוגניטיבית");
+  });
+
   it("uses the first part of mixed labels as the category root", () => {
     expect(resolveCatCategory({ category: "История и Искусство" }, "ru")?.key).toBe("history");
     expect(resolveCatCategory({ category: "Искусство и История" }, "ru")?.key).toBe("art");

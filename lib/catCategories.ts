@@ -336,6 +336,40 @@ function capitalizeCategoryLabel(value: string) {
   return trimmed ? trimmed.charAt(0).toLocaleUpperCase() + trimmed.slice(1) : "";
 }
 
+export type LocalizedCategoryLabelParts = {
+  first: string;
+  second: string | null;
+};
+
+/**
+ * Splits a localized compound category at its first conjunction.
+ * Hebrew conjunction `ו` is attached to the second part, unlike Russian and English.
+ */
+export function splitLocalizedCategoryLabel(value: unknown, lang: Lang): LocalizedCategoryLabelParts {
+  const label = String(value ?? "").trim();
+  if (!label) {
+    return { first: "", second: null };
+  }
+
+  const separator = lang === "he"
+    ? /\s+ו(?=[\p{L}\p{N}])/u
+    : lang === "en"
+      ? /\s+and\s+/i
+      : /\s+и\s+/i;
+  const match = separator.exec(label);
+
+  if (!match || match.index === 0) {
+    return { first: label, second: null };
+  }
+
+  const first = label.slice(0, match.index).trim();
+  const second = label.slice(match.index + match[0].length).trim();
+
+  return first && second
+    ? { first, second }
+    : { first: label, second: null };
+}
+
 function splitMixedCategoryParts(normalizedText: string) {
   return normalizedText
     .split(/\s+(?:и|and|&)\s+/i)
@@ -466,13 +500,14 @@ export function getCatCategoryMeta(key: string, lang: Lang, dynamicLabel?: strin
 
   if (!category && key.startsWith(DYNAMIC_CATEGORY_KEY_PREFIX)) {
     const labelFromKey = denormalizeCategorySlug(key);
-    const normalizedDynamicLabel = normalizeCategoryText(dynamicLabel || labelFromKey);
+    const localizedLabel = splitLocalizedCategoryLabel(dynamicLabel || labelFromKey, lang).first;
+    const normalizedDynamicLabel = normalizeCategoryText(localizedLabel || labelFromKey);
     const groupKey = inferDynamicCategoryGroup(normalizedDynamicLabel);
     const group = GROUP_BY_KEY.get(groupKey)!;
 
     return {
       key,
-      label: capitalizeCategoryLabel(labelFromKey),
+      label: capitalizeCategoryLabel(localizedLabel || labelFromKey),
       groupKey,
       groupLabel: getLabel(group.labels, lang),
       icon: "＋",
