@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isParrotExportComplete } from "@/lib/parrots/exportDiagnostics";
 
 type Props = {
   title: string;
@@ -44,7 +45,7 @@ export default function SavePanel({
   onClearAll,
 }: Props) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const isExportComplete = isSaved && Boolean(exportUrl);
+  const isExportComplete = isParrotExportComplete(isSaved, exportUrl);
 
   return (
     <div className="save-panel">
@@ -122,6 +123,8 @@ export default function SavePanel({
           margin: 0;
           color: #ffb4ab;
           font-weight: 700;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
         }
 
         .save-panel__copy p {

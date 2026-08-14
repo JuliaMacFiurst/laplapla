@@ -22,6 +22,11 @@ import {
   saveParrotStudioDraft,
 } from "@/lib/parrots/studioDraftStorage";
 import { deleteVoiceBlob, loadVoiceBlob, saveVoiceBlob } from "@/lib/studioStorage";
+import {
+  readParrotExportDiagnostic,
+  runParrotExportStage,
+  runParrotExportSyncStage,
+} from "@/lib/parrots/exportDiagnostics";
 
 type Mode = "loops" | "voice" | "effects" | "mix" | "save";
 type PreviewKey = keyof VoiceEffectsState | keyof LoopEffectState | "speed";
@@ -135,6 +140,24 @@ const createCompositionSnapshot = (styleSlug: string, composition: CompositionSt
     voice: composition.voice,
     mix: composition.mix,
   });
+
+function readExportRuntimeSummary() {
+  if (typeof window === "undefined") return "runtime=server";
+
+  try {
+    const offlineContextName = typeof window.OfflineAudioContext === "function"
+      ? window.OfflineAudioContext.name || "available"
+      : "unavailable";
+    return [
+      `viewport=${window.innerWidth}x${window.innerHeight}`,
+      `dpr=${window.devicePixelRatio}`,
+      `offlineAudio=${offlineContextName}`,
+      `ua=${window.navigator?.userAgent ?? "unavailable"}`,
+    ].join("; ");
+  } catch (error) {
+    return `runtime-details-unavailable=${error instanceof Error ? error.message : String(error)}`;
+  }
+}
 
 const getVoiceGainMultiplier = (effects: VoiceEffectsState) =>
   effects.whisper ? 0.72 : effects.mega ? 1.22 : 1;
@@ -1219,10 +1242,17 @@ export default function ParrotStudioRoot({
       projectSaved = true;
       const durationSec = 30;
       const sampleRate = 44100;
-      const offlineContext = new OfflineAudioContext(2, sampleRate * durationSec, sampleRate);
-      const outputGain = offlineContext.createGain();
-      outputGain.gain.value = 0.92;
-      outputGain.connect(offlineContext.destination);
+      const offlineContext = runParrotExportSyncStage(
+        "create-offline-context",
+        null,
+        () => new OfflineAudioContext(2, sampleRate * durationSec, sampleRate),
+      );
+      const outputGain = runParrotExportSyncStage("prepare-sources", null, () => {
+        const gain = offlineContext.createGain();
+        gain.gain.value = 0.92;
+        gain.connect(offlineContext.destination);
+        return gain;
+      });
 
       const activeLoopDefs = preset.loops.filter((loop) => {
         const selectedIndex = composition.loopSelections[loop.id];
@@ -1236,81 +1266,130 @@ export default function ParrotStudioRoot({
         const variant = loop.variants[selectedIndex] ?? loop.variants[0];
         if (!variant?.src) return;
 
-        const response = await fetch(variant.src);
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = await offlineContext.decodeAudioData(arrayBuffer.slice(0));
-        const source = offlineContext.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
+        const response = await runParrotExportStage("fetch-audio", variant.src, async () => {
+          const result = await fetch(variant.src);
+          if (!result.ok) throw new Error(`HTTP ${result.status} ${result.statusText}`.trim());
+          return result;
+        });
+        const arrayBuffer = await runParrotExportStage(
+          "read-array-buffer",
+          variant.src,
+          () => response.arrayBuffer(),
+        );
+        const buffer = await runParrotExportStage(
+          "decode-audio",
+          variant.src,
+          () => offlineContext.decodeAudioData(arrayBuffer.slice(0)),
+        );
         const loopFx = composition.effects.loops.byLoop[loop.id] ?? {
           echo: false,
           reverb: false,
           boost: false,
           soft: false,
         };
-        source.playbackRate.value = composition.effects.loops.speed ? 1.12 : 1;
+        runParrotExportSyncStage("prepare-sources", variant.src, () => {
+          const source = offlineContext.createBufferSource();
+          source.buffer = buffer;
+          source.loop = true;
+          source.playbackRate.value = composition.effects.loops.speed ? 1.12 : 1;
 
-        const gain = offlineContext.createGain();
-        gain.gain.value =
-          Math.min(
-            1,
-            (composition.mix.loopsVolume / Math.max(activeLoopDefs.length, 1)) *
-              (loopFx.boost ? 1.35 : loopFx.soft ? 0.72 : 1),
-          );
+          const gain = offlineContext.createGain();
+          gain.gain.value =
+            Math.min(
+              1,
+              (composition.mix.loopsVolume / Math.max(activeLoopDefs.length, 1)) *
+                (loopFx.boost ? 1.35 : loopFx.soft ? 0.72 : 1),
+            );
 
-        source.connect(gain);
-        connectLoopEffects(offlineContext, gain, outputGain, loopFx);
-        source.start(0);
+          source.connect(gain);
+          connectLoopEffects(offlineContext, gain, outputGain, loopFx);
+          source.start(0);
+        });
       }));
 
       const loadAudioArrayBuffer = async (src: string) => {
         if (src.startsWith("blob:")) {
-          if (!recordedVoiceBlobRef.current) {
-            throw new Error("Recorded voice blob is missing for offline render");
-          }
-          return recordedVoiceBlobRef.current.arrayBuffer();
+          return runParrotExportStage(
+            "read-array-buffer",
+            src,
+            () => {
+              if (!recordedVoiceBlobRef.current) {
+                throw new Error("Recorded voice blob is missing for offline render");
+              }
+              return recordedVoiceBlobRef.current.arrayBuffer();
+            },
+          );
         }
 
-        const response = await fetch(src);
-        return response.arrayBuffer();
+        const response = await runParrotExportStage("fetch-audio", src, async () => {
+          const result = await fetch(src);
+          if (!result.ok) throw new Error(`HTTP ${result.status} ${result.statusText}`.trim());
+          return result;
+        });
+        return runParrotExportStage("read-array-buffer", src, () => response.arrayBuffer());
       };
 
       if (composition.voice.audioUrl) {
-        const voiceBufferSource = offlineContext.createBufferSource();
-        const voiceArrayBuffer = await loadAudioArrayBuffer(composition.voice.audioUrl);
-        const voiceBuffer = await offlineContext.decodeAudioData(voiceArrayBuffer.slice(0));
-        voiceBufferSource.buffer = voiceBuffer;
+        const voiceUrl = composition.voice.audioUrl;
+        const voiceArrayBuffer = await loadAudioArrayBuffer(voiceUrl);
+        const voiceBuffer = await runParrotExportStage(
+          "decode-audio",
+          voiceUrl,
+          () => offlineContext.decodeAudioData(voiceArrayBuffer.slice(0)),
+        );
         let voicePlaybackRate = 1;
         if (composition.effects.voice.child) voicePlaybackRate *= 1.2;
         if (composition.effects.voice.robot) voicePlaybackRate *= 1.08;
         if (composition.effects.voice.mega) voicePlaybackRate *= 0.86;
         if (composition.effects.voice.whisper) voicePlaybackRate *= 1.03;
-        voiceBufferSource.playbackRate.value = voicePlaybackRate;
+        runParrotExportSyncStage("prepare-sources", voiceUrl, () => {
+          const voiceBufferSource = offlineContext.createBufferSource();
+          voiceBufferSource.buffer = voiceBuffer;
+          voiceBufferSource.playbackRate.value = voicePlaybackRate;
 
-        const voiceGain = offlineContext.createGain();
-        const voiceGainMultiplier = composition.effects.voice.whisper ? 0.72 : composition.effects.voice.mega ? 1.22 : 1;
-        voiceGain.gain.value = Math.min(1.5, composition.mix.voiceVolume * voiceGainMultiplier);
+          const voiceGain = offlineContext.createGain();
+          const voiceGainMultiplier = composition.effects.voice.whisper ? 0.72 : composition.effects.voice.mega ? 1.22 : 1;
+          voiceGain.gain.value = Math.min(1.5, composition.mix.voiceVolume * voiceGainMultiplier);
 
-        voiceBufferSource.connect(voiceGain);
-        connectVoiceEffects(offlineContext, voiceGain, outputGain, composition.effects.voice);
-        voiceBufferSource.start(0);
+          voiceBufferSource.connect(voiceGain);
+          connectVoiceEffects(offlineContext, voiceGain, outputGain, composition.effects.voice);
+          voiceBufferSource.start(0);
+        });
       }
 
-      const renderedBuffer = await offlineContext.startRendering();
-      const wavBlob = bufferToWavBlob(renderedBuffer);
-      const nextUrl = URL.createObjectURL(wavBlob);
+      const renderPromise = runParrotExportSyncStage(
+        "start-render",
+        null,
+        () => offlineContext.startRendering(),
+      );
+      const renderedBuffer = await runParrotExportStage(
+        "complete-render",
+        null,
+        () => renderPromise,
+      );
+      const wavBlob = runParrotExportSyncStage(
+        "encode-audio",
+        null,
+        () => bufferToWavBlob(renderedBuffer),
+      );
+      const nextUrl = runParrotExportSyncStage(
+        "create-object-url",
+        null,
+        () => URL.createObjectURL(wavBlob),
+      );
 
-      if (renderedMixUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(renderedMixUrl);
-      }
-
+      runParrotExportSyncStage("finalize-export", null, () => {
+        if (renderedMixUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(renderedMixUrl);
+        }
+        const anchor = document.createElement("a");
+        anchor.href = nextUrl;
+        anchor.download = `parrot-mix-${selectedStyleSlug}-30s.wav`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      });
       setRenderedMixUrl(nextUrl);
-      const anchor = document.createElement("a");
-      anchor.href = nextUrl;
-      anchor.download = `parrot-mix-${selectedStyleSlug}-30s.wav`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
       trackEvent("studio_export_completed", {
         section: "parrots",
         studio_type: "parrots",
@@ -1326,19 +1405,25 @@ export default function ParrotStudioRoot({
       });
     } catch (error) {
       console.error("Failed to render parrot studio mix", error);
-      setSaveError(
-        projectSaved
-          ? lang === "ru"
-            ? "Проект сохранён, но аудиофайл не удалось создать. Попробуйте экспорт ещё раз."
-            : lang === "he"
-              ? "הפרויקט נשמר, אך לא ניתן היה ליצור את קובץ השמע. נסו לייצא שוב."
-              : "The project was saved, but the audio file could not be created. Try exporting again."
-          : lang === "ru"
-            ? "Не удалось сохранить проект. Попробуйте ещё раз."
-            : lang === "he"
-              ? "לא ניתן היה לשמור את הפרויקט. נסו שוב."
-              : "The project could not be saved. Please try again.",
-      );
+      const diagnostic = readParrotExportDiagnostic(error);
+      const diagnosticDetails = diagnostic
+        ? `\nStage: ${diagnostic.stage}` +
+          `\nAsset: ${diagnostic.assetUrl ?? "none"}` +
+          `\nError: ${diagnostic.errorName}: ${diagnostic.errorMessage}` +
+          `\nRuntime: ${readExportRuntimeSummary()}`
+        : "";
+      const failureMessage = projectSaved
+        ? lang === "ru"
+          ? "Проект сохранён, но аудиофайл не удалось создать. Попробуйте экспорт ещё раз."
+          : lang === "he"
+            ? "הפרויקט נשמר, אך לא ניתן היה ליצור את קובץ השמע. נסו לייצא שוב."
+            : "The project was saved, but the audio file could not be created. Try exporting again."
+        : lang === "ru"
+          ? "Не удалось сохранить проект. Попробуйте ещё раз."
+          : lang === "he"
+            ? "לא ניתן היה לשמור את הפרויקט. נסו שוב."
+            : "The project could not be saved. Please try again.";
+      setSaveError(failureMessage + (projectSaved ? diagnosticDetails : ""));
       trackEvent("studio_export_failed", {
         section: "parrots",
         studio_type: "parrots",
