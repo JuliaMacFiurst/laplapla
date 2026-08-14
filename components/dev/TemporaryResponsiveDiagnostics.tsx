@@ -47,9 +47,9 @@ function readRuntimeValues() {
     const pointerCoarse = safeMediaQuery("(pointer: coarse)");
     const pointerFine = safeMediaQuery("(pointer: fine)");
     const hoverNone = safeMediaQuery("(hover: none)");
-    const usesTouchPrimaryInput = pointerCoarse === null || hoverNone === null
-      ? null
-      : pointerCoarse && hoverNone;
+    // TEMP_RESPONSIVE_DIAGNOSTICS: mirror the production classifier, where a
+    // coarse primary pointer is sufficient even if hover is also reported.
+    const usesTouchPrimaryInput = pointerCoarse;
 
     let deviceClass: "mobile" | "tablet" | "desktop" | null = null;
     if (usesTouchPrimaryInput !== null && classifierWidth !== null && shortestSide !== null && widestSide !== null) {
@@ -61,9 +61,12 @@ function readRuntimeValues() {
     }
 
     const mobileWidthQuery = safeMediaQuery(`(max-width: ${MOBILE_MAX_WIDTH}px)`);
-    const useIsMobileEquivalent = mobileWidthQuery === null || innerWidth === null || innerHeight === null || usesTouchPrimaryInput === null
+    const useIsMobileTouchInput = pointerCoarse === null || hoverNone === null
       ? null
-      : mobileWidthQuery || (usesTouchPrimaryInput && Math.min(innerWidth, innerHeight) <= MOBILE_MAX_WIDTH);
+      : pointerCoarse && hoverNone;
+    const useIsMobileEquivalent = mobileWidthQuery === null || innerWidth === null || innerHeight === null || useIsMobileTouchInput === null
+      ? null
+      : mobileWidthQuery || (useIsMobileTouchInput && Math.min(innerWidth, innerHeight) <= MOBILE_MAX_WIDTH);
     const userAgentData = safeRead(() => {
       const value = (window.navigator as Navigator & { userAgentData?: { toJSON?: () => unknown } }).userAgentData;
       if (!value) return null;

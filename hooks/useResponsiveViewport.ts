@@ -19,6 +19,33 @@ const MOBILE_MAX_WIDTH = 767;
 const TABLET_MAX_WIDTH = 1199;
 const COARSE_TABLET_MAX_WIDTH = 1600;
 
+type ResponsiveClassifierInput = {
+  width: number;
+  height: number;
+  isCoarsePointer: boolean;
+  isNoHover: boolean;
+};
+
+export function classifyResponsiveViewport({
+  width,
+  height,
+  isCoarsePointer,
+}: ResponsiveClassifierInput) {
+  const shortestSide = Math.min(width, height);
+  const widestSide = Math.max(width, height);
+  // A coarse primary pointer remains touch-primary even when a browser reports
+  // hover capability (for example, an Android WebView with stylus support).
+  const usesTouchPrimaryInput = isCoarsePointer;
+  const deviceClass: ResponsiveDeviceClass =
+    usesTouchPrimaryInput && width <= MOBILE_MAX_WIDTH
+      ? "mobile"
+      : usesTouchPrimaryInput && shortestSide <= TABLET_MAX_WIDTH && widestSide <= COARSE_TABLET_MAX_WIDTH
+        ? "tablet"
+        : "desktop";
+
+  return { usesTouchPrimaryInput, shortestSide, widestSide, deviceClass };
+}
+
 const SSR_VIEWPORT: ResponsiveViewportState = {
   width: 0,
   height: 0,
@@ -38,17 +65,9 @@ function readViewport(): ResponsiveViewportState {
 
   const width = Math.round(window.visualViewport?.width ?? window.innerWidth);
   const height = Math.round(window.visualViewport?.height ?? window.innerHeight);
-  const shortestSide = Math.min(width, height);
-  const widestSide = Math.max(width, height);
   const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
   const isNoHover = window.matchMedia("(hover: none)").matches;
-  const usesTouchPrimaryInput = isCoarsePointer && isNoHover;
-  const deviceClass: ResponsiveDeviceClass =
-    usesTouchPrimaryInput && width <= MOBILE_MAX_WIDTH
-      ? "mobile"
-      : usesTouchPrimaryInput && shortestSide <= TABLET_MAX_WIDTH && widestSide <= COARSE_TABLET_MAX_WIDTH
-        ? "tablet"
-        : "desktop";
+  const { deviceClass } = classifyResponsiveViewport({ width, height, isCoarsePointer, isNoHover });
   const standaloneNavigator = "standalone" in window.navigator
     ? Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
     : false;
