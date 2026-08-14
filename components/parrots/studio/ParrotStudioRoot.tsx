@@ -23,6 +23,8 @@ import {
 } from "@/lib/parrots/studioDraftStorage";
 import { deleteVoiceBlob, loadVoiceBlob, saveVoiceBlob } from "@/lib/studioStorage";
 import {
+  fetchAndDecodeParrotExportAudio,
+  fetchParrotExportAudio,
   probeParrotAudioFetch,
   readParrotExportDiagnostic,
   runParrotExportStage,
@@ -1273,20 +1275,9 @@ export default function ParrotStudioRoot({
         const variant = loop.variants[selectedIndex] ?? loop.variants[0];
         if (!variant?.src) return;
 
-        const response = await runParrotExportStage("fetch-audio", variant.src, async () => {
-          const result = await fetch(variant.src);
-          if (!result.ok) throw new Error(`HTTP ${result.status} ${result.statusText}`.trim());
-          return result;
-        });
-        const arrayBuffer = await runParrotExportStage(
-          "read-array-buffer",
+        const buffer = await fetchAndDecodeParrotExportAudio(
           variant.src,
-          () => response.arrayBuffer(),
-        );
-        const buffer = await runParrotExportStage(
-          "decode-audio",
-          variant.src,
-          () => offlineContext.decodeAudioData(arrayBuffer.slice(0)),
+          (data) => offlineContext.decodeAudioData(data),
         );
         const loopFx = composition.effects.loops.byLoop[loop.id] ?? {
           echo: false,
@@ -1329,7 +1320,7 @@ export default function ParrotStudioRoot({
         }
 
         const response = await runParrotExportStage("fetch-audio", src, async () => {
-          const result = await fetch(src);
+          const result = await fetchParrotExportAudio(src);
           if (!result.ok) throw new Error(`HTTP ${result.status} ${result.statusText}`.trim());
           return result;
         });

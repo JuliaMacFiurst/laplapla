@@ -92,6 +92,32 @@ export function isParrotExportComplete(isProjectSaved: boolean, exportUrl: strin
   return isProjectSaved && Boolean(exportUrl);
 }
 
+export function fetchParrotExportAudio(assetUrl: string, fetchImpl: typeof fetch = fetch) {
+  return fetchImpl(assetUrl, { cache: "no-store" });
+}
+
+export async function fetchAndDecodeParrotExportAudio<T>(
+  assetUrl: string,
+  decodeAudioData: (data: ArrayBuffer) => Promise<T>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<T> {
+  const response = await runParrotExportStage("fetch-audio", assetUrl, async () => {
+    const result = await fetchParrotExportAudio(assetUrl, fetchImpl);
+    if (!result.ok) throw new Error(`HTTP ${result.status} ${result.statusText}`.trim());
+    return result;
+  });
+  const arrayBuffer = await runParrotExportStage(
+    "read-array-buffer",
+    assetUrl,
+    () => response.arrayBuffer(),
+  );
+  return runParrotExportStage(
+    "decode-audio",
+    assetUrl,
+    () => decodeAudioData(arrayBuffer.slice(0)),
+  );
+}
+
 export async function probeParrotAudioFetch(
   assetUrl: string,
   fetchImpl: typeof fetch = fetch,
