@@ -16,6 +16,7 @@ type Props = {
   confirmClearBody: string;
   confirmClearConfirmLabel: string;
   confirmClearCancelLabel: string;
+  errorMessage: string | null;
   onRender: () => void;
   onListen: () => void;
   onClearAll: () => void;
@@ -37,6 +38,7 @@ export default function SavePanel({
   confirmClearBody,
   confirmClearConfirmLabel,
   confirmClearCancelLabel,
+  errorMessage,
   onRender,
   onListen,
   onClearAll,
@@ -57,6 +59,8 @@ export default function SavePanel({
       <button type="button" className="save-panel__secondary" onClick={onListen} disabled={!exportUrl || isRendering}>
         {listenLabel}
       </button>
+
+      {errorMessage ? <p className="save-panel__error" role="alert">{errorMessage}</p> : null}
 
       <div className="save-panel__danger">
         <span>{dangerousZoneLabel}</span>
@@ -111,6 +115,12 @@ export default function SavePanel({
           display: block;
           color: #fff4e8;
           font-size: 1rem;
+        }
+
+        .save-panel__error {
+          margin: 0;
+          color: #ffb4ab;
+          font-weight: 700;
         }
 
         .save-panel__copy p {

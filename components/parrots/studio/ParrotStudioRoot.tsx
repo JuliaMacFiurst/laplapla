@@ -16,6 +16,12 @@ import ParrotGuide from "./ParrotGuide";
 import SavePanel from "./SavePanel";
 import ParrotStoryOverlay from "./ParrotStoryOverlay";
 import { trackEvent } from "@/lib/analytics/client";
+import {
+  loadParrotStudioDraft,
+  removeParrotStudioDraft,
+  saveParrotStudioDraft,
+} from "@/lib/parrots/studioDraftStorage";
+import { deleteVoiceBlob, loadVoiceBlob, saveVoiceBlob } from "@/lib/studioStorage";
 
 type Mode = "loops" | "voice" | "effects" | "mix" | "save";
 type PreviewKey = keyof VoiceEffectsState | keyof LoopEffectState | "speed";
@@ -61,6 +67,14 @@ type CompositionState = {
     loopsVolume: number;
     voiceVolume: number;
   };
+};
+
+type PersistedParrotStudioDraft = {
+  selectedStyleSlug?: string;
+  composition?: CompositionState;
+  savedCompositionSnapshot?: string | null;
+  storySlidesCount?: number;
+  hasSavedVoice?: boolean;
 };
 
 type StorySlide = {
@@ -110,6 +124,17 @@ const createEmptyLoopEffects = (loops: ParrotStyleInstrument[]) =>
   }, {});
 
 const SESSION_STORAGE_KEY = "parrot-studio-mobile-v1";
+const SAVED_VOICE_BLOB_KEY = "parrot-studio-mobile-saved-voice-v1";
+
+const createCompositionSnapshot = (styleSlug: string, composition: CompositionState) =>
+  JSON.stringify({
+    styleSlug,
+    activeLoops: composition.activeLoops,
+    loopSelections: composition.loopSelections,
+    effects: composition.effects,
+    voice: composition.voice,
+    mix: composition.mix,
+  });
 
 const getVoiceGainMultiplier = (effects: VoiceEffectsState) =>
   effects.whisper ? 0.72 : effects.mega ? 1.22 : 1;
@@ -176,6 +201,7 @@ export default function ParrotStudioRoot({
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const [renderedMixUrl, setRenderedMixUrl] = useState<string | null>(null);
   const [savedCompositionSnapshot, setSavedCompositionSnapshot] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const renderedMixAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const audioMapRef = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -304,15 +330,7 @@ export default function ParrotStudioRoot({
     [preset?.slides, storySlides],
   );
   const compositionSnapshot = useMemo(
-    () =>
-      JSON.stringify({
-        styleSlug: selectedStyleSlug,
-        activeLoops: composition.activeLoops,
-        loopSelections: composition.loopSelections,
-        effects: composition.effects,
-        voice: composition.voice,
-        mix: composition.mix,
-      }),
+    () => createCompositionSnapshot(selectedStyleSlug, composition),
     [composition, selectedStyleSlug],
   );
   const isSaved = Boolean(savedCompositionSnapshot && savedCompositionSnapshot === compositionSnapshot);
@@ -332,28 +350,56 @@ export default function ParrotStudioRoot({
     hasRestoredSessionRef.current = true;
 
     try {
-      const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (!raw) return;
-
-      const parsed = JSON.parse(raw) as {
-        selectedStyleSlug?: string;
-        composition?: CompositionState;
-        savedCompositionSnapshot?: string | null;
-      };
+      const persistedDraft = loadParrotStudioDraft<PersistedParrotStudioDraft>(window.localStorage);
+      const parsed = persistedDraft ?? (() => {
+        const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+        return raw ? JSON.parse(raw) as PersistedParrotStudioDraft : null;
+      })();
 
       if (!parsed?.composition) return;
 
       shouldSkipNextPresetInitRef.current = true;
+      const restoredStyleSlug = parsed.selectedStyleSlug ?? initialStyleSlug;
       if (parsed.selectedStyleSlug) {
         setSelectedStyleSlug(parsed.selectedStyleSlug);
       }
       setComposition(parsed.composition);
       setSavedCompositionSnapshot(parsed.savedCompositionSnapshot ?? null);
       setIsCompositionPlaying(false);
+
+      if (parsed.hasSavedVoice) {
+        void loadVoiceBlob(SAVED_VOICE_BLOB_KEY)
+          .then((blob) => {
+            if (!blob) throw new Error("Saved parrot voice recording is missing");
+            const audioUrl = URL.createObjectURL(blob);
+            recordedVoiceBlobRef.current = blob;
+            setComposition((current) => {
+              const restoredComposition = {
+                ...current,
+                voice: { audioUrl },
+              };
+              setSavedCompositionSnapshot(createCompositionSnapshot(
+                restoredStyleSlug,
+                restoredComposition,
+              ));
+              return restoredComposition;
+            });
+          })
+          .catch((error) => {
+            console.error("Failed to restore saved parrot voice", error);
+            setSaveError(
+              lang === "ru"
+                ? "Не удалось восстановить сохранённый голос."
+                : lang === "he"
+                  ? "לא ניתן היה לשחזר את הקול השמור."
+                  : "The saved voice recording could not be restored.",
+            );
+          });
+      }
     } catch (error) {
       console.error("Failed to restore parrot studio session", error);
     }
-  }, []);
+  }, [initialStyleSlug, lang]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -601,17 +647,32 @@ export default function ParrotStudioRoot({
     });
   };
 
-  const handleSave = () => {
-    const payload = {
-      styleSlug: selectedStyleSlug,
-      activeLoops: composition.activeLoops,
-      effects: composition.effects,
-      voice: composition.voice,
-      mix: composition.mix,
-      storySlidesCount: storySlides?.length ?? 0,
-    };
+  const handleSave = async () => {
+    if (typeof window === "undefined") {
+      throw new Error("Parrot studio persistence is unavailable outside the browser");
+    }
 
-    console.log("parrot-studio-save", payload);
+    const nextSavedSnapshot = compositionSnapshot;
+    const hasRecordedVoice = Boolean(composition.voice.audioUrl?.startsWith("blob:"));
+    if (hasRecordedVoice) {
+      if (!recordedVoiceBlobRef.current) {
+        throw new Error("Recorded voice data is unavailable for persistence");
+      }
+      await saveVoiceBlob(SAVED_VOICE_BLOB_KEY, recordedVoiceBlobRef.current);
+    } else {
+      await deleteVoiceBlob(SAVED_VOICE_BLOB_KEY);
+    }
+
+    saveParrotStudioDraft(window.localStorage, {
+      selectedStyleSlug,
+      composition: hasRecordedVoice
+        ? { ...composition, voice: { audioUrl: null } }
+        : composition,
+      savedCompositionSnapshot: nextSavedSnapshot,
+      storySlidesCount: storySlides?.length ?? 0,
+      hasSavedVoice: hasRecordedVoice,
+    });
+    setSavedCompositionSnapshot(nextSavedSnapshot);
   };
 
   const toggleVoiceEffect = (effect: keyof VoiceEffectsState) => {
@@ -1137,6 +1198,7 @@ export default function ParrotStudioRoot({
 
   const renderThirtySecondMix = async () => {
     setIsRenderingSave(true);
+    setSaveError(null);
     trackEvent("studio_export_started", {
       section: "parrots",
       studio_type: "parrots",
@@ -1152,6 +1214,7 @@ export default function ParrotStudioRoot({
     });
 
     try {
+      await handleSave();
       const durationSec = 30;
       const sampleRate = 44100;
       const offlineContext = new OfflineAudioContext(2, sampleRate * durationSec, sampleRate);
@@ -1240,14 +1303,12 @@ export default function ParrotStudioRoot({
       }
 
       setRenderedMixUrl(nextUrl);
-      handleSave();
       const anchor = document.createElement("a");
       anchor.href = nextUrl;
       anchor.download = `parrot-mix-${selectedStyleSlug}-30s.wav`;
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
-      setSavedCompositionSnapshot(compositionSnapshot);
       trackEvent("studio_export_completed", {
         section: "parrots",
         studio_type: "parrots",
@@ -1263,6 +1324,14 @@ export default function ParrotStudioRoot({
       });
     } catch (error) {
       console.error("Failed to render parrot studio mix", error);
+      setSavedCompositionSnapshot(null);
+      setSaveError(
+        lang === "ru"
+          ? "Не удалось сохранить микс. Попробуйте ещё раз."
+          : lang === "he"
+            ? "לא ניתן היה לשמור את המיקס. נסו שוב."
+            : "The mix could not be saved. Please try again.",
+      );
       trackEvent("studio_export_failed", {
         section: "parrots",
         studio_type: "parrots",
@@ -1319,6 +1388,29 @@ export default function ParrotStudioRoot({
 
     setRenderedMixUrl(null);
     setSavedCompositionSnapshot(null);
+    setSaveError(null);
+    try {
+      removeParrotStudioDraft(window.localStorage);
+      void deleteVoiceBlob(SAVED_VOICE_BLOB_KEY).catch((error) => {
+        console.error("Failed to remove saved parrot voice", error);
+        setSaveError(
+          lang === "ru"
+            ? "Не удалось удалить сохранённый голос."
+            : lang === "he"
+              ? "לא ניתן היה למחוק את הקול השמור."
+              : "The saved voice recording could not be removed.",
+        );
+      });
+    } catch (error) {
+      console.error("Failed to remove saved parrot studio draft", error);
+      setSaveError(
+        lang === "ru"
+          ? "Не удалось удалить сохранённый микс."
+          : lang === "he"
+            ? "לא ניתן היה למחוק את המיקס השמור."
+            : "The saved mix could not be removed.",
+      );
+    }
     setComposition({
       activeMode: "save",
       activeLoops: [],
@@ -1589,6 +1681,7 @@ export default function ParrotStudioRoot({
             confirmClearBody={uiCopy.save.confirmBody}
             confirmClearConfirmLabel={uiCopy.save.confirm}
             confirmClearCancelLabel={uiCopy.save.cancel}
+            errorMessage={saveError}
             onRender={() => void renderThirtySecondMix()}
             onListen={handleListenRenderedMix}
             onClearAll={handleClearAll}
