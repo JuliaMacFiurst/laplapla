@@ -23,6 +23,7 @@ import {
 } from "@/lib/parrots/studioDraftStorage";
 import { deleteVoiceBlob, loadVoiceBlob, saveVoiceBlob } from "@/lib/studioStorage";
 import {
+  probeParrotAudioFetch,
   readParrotExportDiagnostic,
   runParrotExportStage,
   runParrotExportSyncStage,
@@ -148,10 +149,16 @@ function readExportRuntimeSummary() {
     const offlineContextName = typeof window.OfflineAudioContext === "function"
       ? window.OfflineAudioContext.name || "available"
       : "unavailable";
+    const serviceWorkerController = window.navigator?.serviceWorker?.controller;
     return [
+      `href=${window.location.href}`,
+      `origin=${window.location.origin}`,
+      `documentOrigin=${document.location.origin}`,
       `viewport=${window.innerWidth}x${window.innerHeight}`,
       `dpr=${window.devicePixelRatio}`,
       `offlineAudio=${offlineContextName}`,
+      `serviceWorkerControlled=${Boolean(serviceWorkerController)}`,
+      `serviceWorkerScript=${serviceWorkerController?.scriptURL ?? "none"}`,
       `ua=${window.navigator?.userAgent ?? "unavailable"}`,
     ].join("; ");
   } catch (error) {
@@ -1406,11 +1413,18 @@ export default function ParrotStudioRoot({
     } catch (error) {
       console.error("Failed to render parrot studio mix", error);
       const diagnostic = readParrotExportDiagnostic(error);
+      const fetchProbe = diagnostic?.stage === "fetch-audio" && diagnostic.assetUrl
+        ? await probeParrotAudioFetch(diagnostic.assetUrl)
+        : null;
       const diagnosticDetails = diagnostic
         ? `\nStage: ${diagnostic.stage}` +
           `\nAsset: ${diagnostic.assetUrl ?? "none"}` +
           `\nError: ${diagnostic.errorName}: ${diagnostic.errorMessage}` +
-          `\nRuntime: ${readExportRuntimeSummary()}`
+          `\nRuntime: ${readExportRuntimeSummary()}` +
+          (fetchProbe
+            ? `\nHEAD probe: ${JSON.stringify(fetchProbe[0])}` +
+              `\nGET probe: ${JSON.stringify(fetchProbe[1])}`
+            : "")
         : "";
       const failureMessage = projectSaved
         ? lang === "ru"
