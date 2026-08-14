@@ -1199,6 +1199,7 @@ export default function ParrotStudioRoot({
   const renderThirtySecondMix = async () => {
     setIsRenderingSave(true);
     setSaveError(null);
+    let projectSaved = false;
     trackEvent("studio_export_started", {
       section: "parrots",
       studio_type: "parrots",
@@ -1215,6 +1216,7 @@ export default function ParrotStudioRoot({
 
     try {
       await handleSave();
+      projectSaved = true;
       const durationSec = 30;
       const sampleRate = 44100;
       const offlineContext = new OfflineAudioContext(2, sampleRate * durationSec, sampleRate);
@@ -1324,13 +1326,18 @@ export default function ParrotStudioRoot({
       });
     } catch (error) {
       console.error("Failed to render parrot studio mix", error);
-      setSavedCompositionSnapshot(null);
       setSaveError(
-        lang === "ru"
-          ? "Не удалось сохранить микс. Попробуйте ещё раз."
-          : lang === "he"
-            ? "לא ניתן היה לשמור את המיקס. נסו שוב."
-            : "The mix could not be saved. Please try again.",
+        projectSaved
+          ? lang === "ru"
+            ? "Проект сохранён, но аудиофайл не удалось создать. Попробуйте экспорт ещё раз."
+            : lang === "he"
+              ? "הפרויקט נשמר, אך לא ניתן היה ליצור את קובץ השמע. נסו לייצא שוב."
+              : "The project was saved, but the audio file could not be created. Try exporting again."
+          : lang === "ru"
+            ? "Не удалось сохранить проект. Попробуйте ещё раз."
+            : lang === "he"
+              ? "לא ניתן היה לשמור את הפרויקט. נסו שוב."
+              : "The project could not be saved. Please try again.",
       );
       trackEvent("studio_export_failed", {
         section: "parrots",

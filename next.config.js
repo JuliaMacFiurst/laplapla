@@ -8,6 +8,7 @@ const connectSrc = [
   "https://*.supabase.co",
   "https://api.giphy.com",
   "https://api.pexels.com",
+  "https://media.laplapla.com",
 ];
 
 if (sentryDsn) {

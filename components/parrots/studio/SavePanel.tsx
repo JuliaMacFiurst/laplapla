@@ -44,6 +44,7 @@ export default function SavePanel({
   onClearAll,
 }: Props) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const isExportComplete = isSaved && Boolean(exportUrl);
 
   return (
     <div className="save-panel">
@@ -52,8 +53,8 @@ export default function SavePanel({
         <p>{subtitle}</p>
       </div>
 
-      <button type="button" className="save-panel__primary" onClick={onRender} disabled={isRendering || isSaved}>
-        {isRendering ? loadingLabel : isSaved ? savedLabel : exportLabel}
+      <button type="button" className="save-panel__primary" onClick={onRender} disabled={isRendering || isExportComplete}>
+        {isRendering ? loadingLabel : isExportComplete ? savedLabel : exportLabel}
       </button>
 
       <button type="button" className="save-panel__secondary" onClick={onListen} disabled={!exportUrl || isRendering}>
