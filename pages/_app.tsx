@@ -38,6 +38,8 @@ import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
 import PWAAppShell from "@/components/PWA/PWAAppShell";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { getActiveContentExitProperties, trackEvent, trackSessionStart } from "@/lib/analytics/client";
+// TEMP_RESPONSIVE_DIAGNOSTICS: remove this import and the render below after device testing.
+import TemporaryResponsiveDiagnostics from "@/components/dev/TemporaryResponsiveDiagnostics";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -422,6 +424,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     <div className={fontVariableClasses}>
       <PWAAppShell lang={lang} />
       <ResponsiveViewportBridge />
+      {/* TEMP_RESPONSIVE_DIAGNOSTICS: enabled only with ?responsiveDiagnostics=1. */}
+      <TemporaryResponsiveDiagnostics />
       <LaplaplaDevtoolsBootstrap />
       <AnalyticsPageViewTracker lang={lang} />
       <Head>
