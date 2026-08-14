@@ -1,10 +1,13 @@
-import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode, useEffect, useRef, useState } from "react";
 
 // TEMP_RESPONSIVE_DIAGNOSTICS: remove this file after the S25 Ultra investigation.
 const DIAGNOSTICS_QUERY_PARAM = "responsiveDiagnostics";
 const MOBILE_MAX_WIDTH = 767;
 const TABLET_MAX_WIDTH = 1199;
 const COARSE_TABLET_MAX_WIDTH = 1600;
+const GLOBAL_TRIGGER_TAP_COUNT = 7;
+const GLOBAL_TRIGGER_WINDOW_MS = 5000;
+const GLOBAL_TRIGGER_SIZE_PX = 80;
 
 type DiagnosticValue = boolean | number | string | null;
 
@@ -152,10 +155,10 @@ class DiagnosticErrorBoundary extends Component<{ children: ReactNode }, { faile
 function DiagnosticPanel() {
   const [mounted, setMounted] = useState(false);
   const [enabled, setEnabled] = useState(false);
-  const [closed, setClosed] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [report, setReport] = useState<ReturnType<typeof readRuntimeValues>>(null);
   const [copyStatus, setCopyStatus] = useState("Copy");
+  const globalTriggerTapTimes = useRef<number[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -171,7 +174,52 @@ function DiagnosticPanel() {
   }, []);
 
   useEffect(() => {
-    if (!mounted || !enabled || closed || typeof window === "undefined") return;
+    if (!mounted || typeof document === "undefined") return;
+
+    // TEMP_RESPONSIVE_DIAGNOSTICS: seven taps in the top-left 80x80 area toggle
+    // the panel from the highest shared application level in the current WebView.
+    const handleGlobalTriggerTap = (event: MouseEvent) => {
+      try {
+        if (
+          event.clientX < 0 ||
+          event.clientY < 0 ||
+          event.clientX > GLOBAL_TRIGGER_SIZE_PX ||
+          event.clientY > GLOBAL_TRIGGER_SIZE_PX
+        ) {
+          return;
+        }
+
+        const now = Date.now();
+        globalTriggerTapTimes.current = [...globalTriggerTapTimes.current.filter(
+          (timestamp) => now - timestamp <= GLOBAL_TRIGGER_WINDOW_MS,
+        ), now];
+
+        if (globalTriggerTapTimes.current.length >= GLOBAL_TRIGGER_TAP_COUNT) {
+          globalTriggerTapTimes.current = [];
+          // The first six taps remain completely untouched. Consume only the
+          // completed hidden gesture so it cannot activate underlying UI.
+          event.preventDefault();
+          event.stopPropagation();
+          setEnabled((current) => !current);
+          setMinimized(false);
+          console.info("TEMP_RESPONSIVE_DIAGNOSTICS toggled by global corner taps");
+        }
+      } catch (error) {
+        console.error("TEMP_RESPONSIVE_DIAGNOSTICS global trigger failed", error);
+      }
+    };
+
+    try {
+      document.addEventListener("click", handleGlobalTriggerTap, { capture: true });
+      return () => document.removeEventListener("click", handleGlobalTriggerTap, { capture: true });
+    } catch (error) {
+      console.error("TEMP_RESPONSIVE_DIAGNOSTICS global listener initialization failed", error);
+      return;
+    }
+  }, [mounted]);
+
+  useEffect(() => {
+    if (!mounted || !enabled || typeof window === "undefined") return;
 
     try {
       const sync = () => setReport(readRuntimeValues());
@@ -193,9 +241,9 @@ function DiagnosticPanel() {
       console.error("TEMP_RESPONSIVE_DIAGNOSTICS refresh initialization failed", error);
       return;
     }
-  }, [closed, enabled, mounted]);
+  }, [enabled, mounted]);
 
-  if (!mounted || !enabled || closed || !report) return null;
+  if (!mounted || !enabled || !report) return null;
 
   let reportJson = "Unable to serialize diagnostics";
   try {
@@ -253,7 +301,7 @@ function DiagnosticPanel() {
         <button type="button" onClick={() => setMinimized((value) => !value)}>
           {minimized ? "Open" : "Min"}
         </button>
-        <button type="button" onClick={() => setClosed(true)} aria-label="Close diagnostics">×</button>
+        <button type="button" onClick={() => setEnabled(false)} aria-label="Close diagnostics">×</button>
       </div>
       {!minimized && (
         <pre style={{ maxHeight: "calc(55vh - 40px)", margin: "8px 0 0", overflow: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
