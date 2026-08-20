@@ -25,8 +25,6 @@ import { deleteVoiceBlob, loadVoiceBlob, saveVoiceBlob } from "@/lib/studioStora
 import {
   fetchAndDecodeParrotExportAudio,
   fetchParrotExportAudio,
-  probeParrotAudioFetch,
-  readParrotExportDiagnostic,
   runParrotExportStage,
   runParrotExportSyncStage,
 } from "@/lib/parrots/exportDiagnostics";
@@ -143,30 +141,6 @@ const createCompositionSnapshot = (styleSlug: string, composition: CompositionSt
     voice: composition.voice,
     mix: composition.mix,
   });
-
-function readExportRuntimeSummary() {
-  if (typeof window === "undefined") return "runtime=server";
-
-  try {
-    const offlineContextName = typeof window.OfflineAudioContext === "function"
-      ? window.OfflineAudioContext.name || "available"
-      : "unavailable";
-    const serviceWorkerController = window.navigator?.serviceWorker?.controller;
-    return [
-      `href=${window.location.href}`,
-      `origin=${window.location.origin}`,
-      `documentOrigin=${document.location.origin}`,
-      `viewport=${window.innerWidth}x${window.innerHeight}`,
-      `dpr=${window.devicePixelRatio}`,
-      `offlineAudio=${offlineContextName}`,
-      `serviceWorkerControlled=${Boolean(serviceWorkerController)}`,
-      `serviceWorkerScript=${serviceWorkerController?.scriptURL ?? "none"}`,
-      `ua=${window.navigator?.userAgent ?? "unavailable"}`,
-    ].join("; ");
-  } catch (error) {
-    return `runtime-details-unavailable=${error instanceof Error ? error.message : String(error)}`;
-  }
-}
 
 const getVoiceGainMultiplier = (effects: VoiceEffectsState) =>
   effects.whisper ? 0.72 : effects.mega ? 1.22 : 1;
@@ -1403,20 +1377,6 @@ export default function ParrotStudioRoot({
       });
     } catch (error) {
       console.error("Failed to render parrot studio mix", error);
-      const diagnostic = readParrotExportDiagnostic(error);
-      const fetchProbe = diagnostic?.stage === "fetch-audio" && diagnostic.assetUrl
-        ? await probeParrotAudioFetch(diagnostic.assetUrl)
-        : null;
-      const diagnosticDetails = diagnostic
-        ? `\nStage: ${diagnostic.stage}` +
-          `\nAsset: ${diagnostic.assetUrl ?? "none"}` +
-          `\nError: ${diagnostic.errorName}: ${diagnostic.errorMessage}` +
-          `\nRuntime: ${readExportRuntimeSummary()}` +
-          (fetchProbe
-            ? `\nHEAD probe: ${JSON.stringify(fetchProbe[0])}` +
-              `\nGET probe: ${JSON.stringify(fetchProbe[1])}`
-            : "")
-        : "";
       const failureMessage = projectSaved
         ? lang === "ru"
           ? "Проект сохранён, но аудиофайл не удалось создать. Попробуйте экспорт ещё раз."
@@ -1428,7 +1388,7 @@ export default function ParrotStudioRoot({
           : lang === "he"
             ? "לא ניתן היה לשמור את הפרויקט. נסו שוב."
             : "The project could not be saved. Please try again.";
-      setSaveError(failureMessage + (projectSaved ? diagnosticDetails : ""));
+      setSaveError(failureMessage);
       trackEvent("studio_export_failed", {
         section: "parrots",
         studio_type: "parrots",

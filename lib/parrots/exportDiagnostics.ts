@@ -17,18 +17,6 @@ export type ParrotExportDiagnostic = {
   errorMessage: string;
 };
 
-export type ParrotFetchProbeAttempt = {
-  method: "HEAD" | "GET";
-  succeeded: boolean;
-  status: number | null;
-  statusText: string | null;
-  responseType: string | null;
-  responseUrl: string | null;
-  redirected: boolean | null;
-  errorName: string | null;
-  errorMessage: string | null;
-};
-
 export class ParrotExportStageError extends Error {
   readonly diagnostic: ParrotExportDiagnostic;
   readonly originalError: unknown;
@@ -116,48 +104,4 @@ export async function fetchAndDecodeParrotExportAudio<T>(
     assetUrl,
     () => decodeAudioData(arrayBuffer.slice(0)),
   );
-}
-
-export async function probeParrotAudioFetch(
-  assetUrl: string,
-  fetchImpl: typeof fetch = fetch,
-): Promise<ParrotFetchProbeAttempt[]> {
-  const runAttempt = async (method: "HEAD" | "GET"): Promise<ParrotFetchProbeAttempt> => {
-    try {
-      const response = await fetchImpl(assetUrl, { method, cache: "no-store" });
-      if (method === "GET") {
-        try {
-          await response.body?.cancel();
-        } catch {
-          // The response metadata is still useful when body cancellation is unsupported.
-        }
-      }
-      return {
-        method,
-        succeeded: true,
-        status: response.status,
-        statusText: response.statusText,
-        responseType: response.type,
-        responseUrl: response.url,
-        redirected: response.redirected,
-        errorName: null,
-        errorMessage: null,
-      };
-    } catch (error) {
-      const details = getErrorDetails(error);
-      return {
-        method,
-        succeeded: false,
-        status: null,
-        statusText: null,
-        responseType: null,
-        responseUrl: null,
-        redirected: null,
-        errorName: details.errorName,
-        errorMessage: details.errorMessage,
-      };
-    }
-  };
-
-  return [await runAttempt("HEAD"), await runAttempt("GET")];
 }

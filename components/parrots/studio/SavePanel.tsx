@@ -45,44 +45,7 @@ export default function SavePanel({
   onClearAll,
 }: Props) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  // TEMP_PARROT_EXPORT_DIAGNOSTICS: remove with the temporary export diagnostics.
-  const [diagnosticCopyStatus, setDiagnosticCopyStatus] = useState("Copy diagnostics");
   const isExportComplete = isParrotExportComplete(isSaved, exportUrl);
-
-  const copyDiagnostics = async () => {
-    if (!errorMessage || typeof document === "undefined") return;
-
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(errorMessage);
-        setDiagnosticCopyStatus("Copied");
-        return;
-      }
-    } catch {
-      // Fall through to the selection-based copy path used by older WebViews.
-    }
-
-    const textarea = document.createElement("textarea");
-    textarea.value = errorMessage;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    textarea.style.top = "0";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-
-    try {
-      textarea.focus();
-      textarea.select();
-      textarea.setSelectionRange(0, textarea.value.length);
-      const copied = typeof document.execCommand === "function" && document.execCommand("copy");
-      setDiagnosticCopyStatus(copied ? "Copied" : "Copy failed");
-    } catch {
-      setDiagnosticCopyStatus("Copy failed");
-    } finally {
-      textarea.remove();
-    }
-  };
 
   return (
     <div className="save-panel">
@@ -99,17 +62,7 @@ export default function SavePanel({
         {listenLabel}
       </button>
 
-      {/* TEMP_PARROT_EXPORT_DIAGNOSTICS: mobile-safe scroll/copy surface. */}
-      {errorMessage ? (
-        <section className="save-panel__diagnostic" aria-label="Temporary export diagnostics">
-          <div className="save-panel__diagnostic-actions">
-            <button type="button" onClick={() => void copyDiagnostics()}>
-              {diagnosticCopyStatus}
-            </button>
-          </div>
-          <pre className="save-panel__error" role="alert">{errorMessage}</pre>
-        </section>
-      ) : null}
+      {errorMessage ? <p className="save-panel__error" role="alert">{errorMessage}</p> : null}
 
       <div className="save-panel__danger">
         <span>{dangerousZoneLabel}</span>
@@ -166,45 +119,10 @@ export default function SavePanel({
           font-size: 1rem;
         }
 
-        .save-panel__diagnostic {
-          max-height: min(58dvh, 520px);
-          overflow-y: auto;
-          overscroll-behavior: contain;
-          -webkit-overflow-scrolling: touch;
-          scroll-padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
-          padding: 0 0 calc(104px + env(safe-area-inset-bottom, 0px));
-          border-radius: 16px;
-          background: rgba(30, 8, 12, 0.42);
-        }
-
-        .save-panel__diagnostic-actions {
-          position: sticky;
-          top: 0;
-          z-index: 1;
-          display: flex;
-          justify-content: flex-end;
-          padding: 0.55rem;
-          background: rgba(30, 8, 12, 0.94);
-        }
-
-        .save-panel__diagnostic-actions button {
-          min-height: 40px;
-          border: 1px solid rgba(255, 180, 171, 0.55);
-          border-radius: 12px;
-          padding: 0.45rem 0.7rem;
-          background: #fff0ed;
-          color: #551a16;
-          font-weight: 800;
-        }
-
         .save-panel__error {
           margin: 0;
-          padding: 0.7rem;
           color: #ffb4ab;
           font-weight: 700;
-          font: inherit;
-          white-space: pre-wrap;
-          overflow-wrap: anywhere;
         }
 
         .save-panel__copy p {
