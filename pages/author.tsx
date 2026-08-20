@@ -63,7 +63,7 @@ export default function AuthorPage() {
       <SEO title={seo.title} description={seo.description} path="/author" type="profile" jsonLd={[pageJsonLd, webPageJsonLd]} />
       <main className="about-page author-identity-page" dir={lang === "he" ? "rtl" : "ltr"}>
         <div className="home-wrapper">
-          <section className="author-identity-hero" itemScope itemType="https://schema.org/Person">
+          <section className="author-identity-hero author-identity-hero-desktop" itemScope itemType="https://schema.org/Person">
             <p className="author-identity-eyebrow">{t.eyebrow}</p>
             <h1 itemProp="name">{t.title}</h1>
             <div className="author-identity-intro" itemProp="description">
@@ -74,6 +74,30 @@ export default function AuthorPage() {
             <Link className="author-identity-about-link" href={buildLocalizedPublicPath("/about", lang)}>
               {t.aboutProjectLink}
             </Link>
+            <meta itemProp="url" content={authorUrl} />
+            <meta itemProp="jobTitle" content="Creator, founder, developer and author of LapLapLa" />
+            <span itemProp="worksFor" itemScope itemType="https://schema.org/Organization">
+              <meta itemProp="name" content={SITE_NAME} />
+              <meta itemProp="url" content={BASE_URL} />
+            </span>
+          </section>
+
+          <section className="author-identity-hero author-identity-hero-mobile" itemScope itemType="https://schema.org/Person">
+            <p className="author-identity-eyebrow">{t.mobileHero.eyebrow}</p>
+            <h1 itemProp="name">{t.mobileHero.title}</h1>
+            <div className="author-identity-intro" itemProp="description">
+              {t.mobileHero.body.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+            <div className="author-identity-cta-group">
+              <Link className="author-identity-cta-link" href={buildLocalizedPublicPath("/applab", lang)}>
+                {t.mobileHero.appLabCta}
+              </Link>
+              <a className="author-identity-cta-link" href="mailto:juliamakhlinfiurst@gmail.com">
+                {t.mobileHero.contactCta}
+              </a>
+            </div>
             <meta itemProp="url" content={authorUrl} />
             <meta itemProp="jobTitle" content="Creator, founder, developer and author of LapLapLa" />
             <span itemProp="worksFor" itemScope itemType="https://schema.org/Organization">

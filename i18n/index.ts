@@ -279,6 +279,13 @@ type DictionaryShape = {
       youtube: string;
       authorshipTitle: string;
       authorshipParagraphs: string[];
+      mobileHero: {
+        eyebrow: string;
+        title: string;
+        body: string[];
+        appLabCta: string;
+        contactCta: string;
+      };
     };
   };
 

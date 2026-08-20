@@ -160,6 +160,17 @@ export const en = {
         "LapLapLa was created and is developed by Julia Noah Makhlin as an independent author-led project.",
         "I work on the platform concept, interface development, content creation, and the educational system behind the project.",
       ],
+      mobileHero: {
+        eyebrow: "Creator & Developer",
+        title: "JULIA NOAH MAKHLIN",
+        body: [
+          "I create LapLapLa and am growing it into LapLapLa AppLab — an independent studio where ideas become web and mobile applications.",
+          "I’m interested in products that are genuinely useful and enjoyable to use, from educational experiments to tools for everyday life. I design interfaces, shape product logic, and build applications from the first idea to a working product.",
+          "LapLapLa keeps growing, and I’m open to new projects, collaborations, and partnerships.",
+        ],
+        appLabCta: "LapLapLa AppLab →",
+        contactCta: "Contact me →",
+      },
     },
   },
   home: {
