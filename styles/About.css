@@ -355,20 +355,6 @@
   padding: 26px;
 }
 
-.author-identity-section blockquote {
-  margin: 18px 0 0;
-  padding: 16px 18px;
-  border-left: 4px solid #c67be7;
-  background: #fff8fb;
-  border-radius: 12px;
-  font-weight: 700;
-}
-
-[dir="rtl"] .author-identity-section blockquote {
-  border-left: 0;
-  border-right: 4px solid #c67be7;
-}
-
 .author-identity-about-link {
   display: inline-flex;
   margin-top: 4px;
@@ -430,14 +416,6 @@
 }
 
 @media (max-width: 760px) {
-  .author-identity-hero-desktop {
-    display: none;
-  }
-
-  .author-identity-hero-mobile {
-    display: block;
-  }
-
   .author-identity-hero {
     padding: 24px;
   }

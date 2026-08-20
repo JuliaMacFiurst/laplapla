@@ -256,13 +256,13 @@ type DictionaryShape = {
 
   identity: {
     authorPage: {
-      eyebrow: string;
-      title: string;
-      intro: string;
-      aboutProjectLink: string;
-      whoTitle: string;
-      whoParagraphs: string[];
-      quote: string;
+      hero: {
+        eyebrow: string;
+        title: string;
+        body: string[];
+        appLabCta: string;
+        contactCta: string;
+      };
       platformTitle: string;
       platformIntro: string;
       platformItems: string[];
@@ -279,13 +279,6 @@ type DictionaryShape = {
       youtube: string;
       authorshipTitle: string;
       authorshipParagraphs: string[];
-      mobileHero: {
-        eyebrow: string;
-        title: string;
-        body: string[];
-        appLabCta: string;
-        contactCta: string;
-      };
     };
   };
 

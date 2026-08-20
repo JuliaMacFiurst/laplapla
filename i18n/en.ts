@@ -111,18 +111,17 @@ export const en = {
 
   identity: {
     authorPage: {
-      eyebrow: "Author and platform creator",
-      title: "Julia Noah Makhlin",
-      intro:
-        "I create LapLapLa, a learning platform where complex ideas are explained through stories, memes, illustrations, animation, and a little creative chaos.\n\nI like turning learning into an adventure: maps can tell stories, cats can explain science, capybaras can help people fall in love with books, and knowledge can feel less like a lesson and more like a curious journey.",
-      aboutProjectLink: "Learn more about the project",
-      whoTitle: "Who is behind LapLapLa",
-      whoParagraphs: [
-        "My name is Julia Noah Makhlin. I am the author, founder, and developer of LapLapLa.",
-        "This is an independent author-led project that I build myself: from ideas and scripts to interfaces, animations, texts, and platform architecture.",
-        "LapLapLa grew out of a love for creativity, internet culture, education, and odd questions that usually begin with:",
-      ],
-      quote: "What if we explain this through cats?..",
+      hero: {
+        eyebrow: "Creator & Developer",
+        title: "JULIA NOAH MAKHLIN",
+        body: [
+          "I create LapLapLa and am growing it into LapLapLa AppLab — an independent studio where ideas become web and mobile applications.",
+          "I’m interested in products that are genuinely useful and enjoyable to use, from educational experiments to tools for everyday life. I design interfaces, shape product logic, and build applications from the first idea to a working product.",
+          "LapLapLa keeps growing, and I’m open to new projects, collaborations, and partnerships.",
+        ],
+        appLabCta: "LapLapLa AppLab →",
+        contactCta: "Contact me →",
+      },
       platformTitle: "What LapLapLa is",
       platformIntro: "LapLapLa is an interactive creative and popular-science platform for users aged 16 and over.",
       platformItems: [
@@ -160,17 +159,6 @@ export const en = {
         "LapLapLa was created and is developed by Julia Noah Makhlin as an independent author-led project.",
         "I work on the platform concept, interface development, content creation, and the educational system behind the project.",
       ],
-      mobileHero: {
-        eyebrow: "Creator & Developer",
-        title: "JULIA NOAH MAKHLIN",
-        body: [
-          "I create LapLapLa and am growing it into LapLapLa AppLab — an independent studio where ideas become web and mobile applications.",
-          "I’m interested in products that are genuinely useful and enjoyable to use, from educational experiments to tools for everyday life. I design interfaces, shape product logic, and build applications from the first idea to a working product.",
-          "LapLapLa keeps growing, and I’m open to new projects, collaborations, and partnerships.",
-        ],
-        appLabCta: "LapLapLa AppLab →",
-        contactCta: "Contact me →",
-      },
     },
   },
   home: {
