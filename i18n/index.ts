@@ -632,6 +632,31 @@ type DictionaryShape = {
       erase: string;
 
       loadingLesson: string;
+      drawingTools: string;
+      thin: string;
+      thick: string;
+      resetZoom: string;
+      brightness: string;
+      artistAdvice: string;
+      chooseColor: string;
+      closeArtistAdvice: string;
+      closeColorMenu: string;
+      currentColor: string;
+      white: string;
+      black: string;
+      howToPlay: string;
+      closeManual: string;
+      manualTitle: string;
+      manualLead: string;
+      manualDrawTitle: string;
+      manualDrawText: string;
+      manualColorTitle: string;
+      manualColorText: string;
+      manualPuzzleTitle: string;
+      manualPuzzleText: string;
+      manualSaveTitle: string;
+      manualSaveText: string;
+      manualDone: string;
     };
     artGalleryModal: {
       artGalleryTitle: string;

@@ -3,11 +3,27 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { devLog } from "@/utils/devLog";
 import { PuzzleEngine } from "./PuzzleEngine";
+import {
+  clampPuzzleGroupDelta,
+  getPuzzleMinimumVisible,
+} from "@/lib/puzzleDragBounds";
 
 type Props = {
   sourceCanvas: HTMLCanvasElement;
   traySelector?: string;
 };
+
+export function mapPuzzleClientPoint(
+  clientX: number,
+  clientY: number,
+  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
+  canvasSize: { width: number; height: number },
+) {
+  return {
+    x: (clientX - rect.left) * (canvasSize.width / rect.width),
+    y: (clientY - rect.top) * (canvasSize.height / rect.height),
+  };
+}
 
 const getAudio = (
   ref: MutableRefObject<HTMLAudioElement | null>,
@@ -137,12 +153,29 @@ export default function PuzzleCanvas({
 
     function getCanvasPoint(clientX: number, clientY: number) {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY,
-      };
+      return mapPuzzleClientPoint(clientX, clientY, rect, canvas);
+    }
+
+    function getSafeDragDelta(group: any[], dx: number, dy: number) {
+      const rect = canvas.getBoundingClientRect();
+      return clampPuzzleGroupDelta(
+        group,
+        { dx, dy },
+        canvas,
+        getPuzzleMinimumVisible(canvas, rect),
+      );
+    }
+
+    function movePieceCenteredAt(piece: any, x: number, y: number) {
+      const requestedX = x - piece.canvas.width / 2;
+      const requestedY = y - piece.canvas.height / 2;
+      const delta = getSafeDragDelta(
+        [piece],
+        requestedX - piece.x,
+        requestedY - piece.y,
+      );
+      piece.x += delta.dx;
+      piece.y += delta.dy;
     }
 
     function handleGlobalPointerMove(e: PointerEvent) {
@@ -160,8 +193,7 @@ export default function PuzzleCanvas({
 
       // dragging from tray → center piece under cursor
       if (dragSourceRef.current === "tray") {
-        piece.x = pos.x - piece.canvas.width / 2;
-        piece.y = pos.y - piece.canvas.height / 2;
+        movePieceCenteredAt(piece, pos.x, pos.y);
       }
 
       // dragging from board → keep original grab offset
@@ -177,9 +209,10 @@ export default function PuzzleCanvas({
         const dx = targetX - piece.x;
         const dy = targetY - piece.y;
 
+        const safeDelta = getSafeDragDelta(group, dx, dy);
         group.forEach((p) => {
-          p.x += dx;
-          p.y += dy;
+          p.x += safeDelta.dx;
+          p.y += safeDelta.dy;
         });
       }
     }
@@ -208,8 +241,9 @@ export default function PuzzleCanvas({
 
       if (insideBoard) {
         // place piece where user dropped it
-        piece.x = pos.x - piece.canvas.width / 2;
-        piece.y = pos.y - piece.canvas.height / 2;
+        if (dragSourceRef.current === "tray") {
+          movePieceCenteredAt(piece, pos.x, pos.y);
+        }
 
         const wasLocked = piece.locked;
         engine.trySnap(piece);
@@ -639,13 +673,7 @@ export default function PuzzleCanvas({
 
   function getPointerPos(clientX: number, clientY: number) {
     const rect = canvasRef.current!.getBoundingClientRect();
-    const scaleX = canvasRef.current!.width / rect.width;
-    const scaleY = canvasRef.current!.height / rect.height;
-
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
-    };
+    return mapPuzzleClientPoint(clientX, clientY, rect, canvasRef.current!);
   }
 
   function handlePointerDown(e: React.PointerEvent) {
@@ -704,9 +732,18 @@ export default function PuzzleCanvas({
     const dx = targetX - piece.x;
     const dy = targetY - piece.y;
 
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const safeDelta = clampPuzzleGroupDelta(
+      group,
+      { dx, dy },
+      canvas,
+      getPuzzleMinimumVisible(canvas, rect),
+    );
     group.forEach((p) => {
-      p.x += dx;
-      p.y += dy;
+      p.x += safeDelta.dx;
+      p.y += safeDelta.dy;
     });
   }
 
@@ -772,6 +809,7 @@ export default function PuzzleCanvas({
   return (
     <div
       className="lesson-puzzle-wrapper"
+      data-testid="dog-lesson-puzzle-wrapper"
       style={{
         width: "100%",
         display: "flex",
@@ -783,6 +821,7 @@ export default function PuzzleCanvas({
       {/* Puzzle board */}
       <canvas
         ref={canvasRef}
+        data-testid="dog-lesson-puzzle-canvas"
         width={512}
         height={512}
         onPointerDown={handlePointerDown}

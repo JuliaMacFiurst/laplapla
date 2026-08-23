@@ -35,6 +35,15 @@ import type {
   ReplayRegionData,
 } from "@/components/Dogs/Replay/types";
 import { trackEvent } from "@/lib/analytics/client";
+import {
+  type CanvasViewport,
+  mapClientPointToCanvas,
+  updateViewportFromPinch,
+} from "@/lib/dogLessonMobileViewport";
+import {
+  getMobileHueDarkness,
+  mobileBrightnessToDarkness,
+} from "@/lib/dogLessonMobileColor";
 
 type Lesson = {
   id?: string;
@@ -340,13 +349,23 @@ function LessonPlayerDesktop() {
   const [mobileBrushColor, setMobileBrushColor] = useState<MobileColorState>(
     () => hexToHsl("#000000"),
   );
+  const [mobileCanvasViewport, setMobileCanvasViewport] = useState<CanvasViewport>({
+    scale: 1,
+    x: 0,
+    y: 0,
+  });
+  const [mobileSizePopover, setMobileSizePopover] = useState<
+    "brush" | "eraser" | null
+  >(null);
+  const [showMobileOnboarding, setShowMobileOnboarding] = useState(false);
   const [replayAutoExport, setReplayAutoExport] = useState<
     "video" | "gif" | null
   >(null);
   const [artworkSaved, setArtworkSaved] = useState(false);
   const [hasCompletedFirstColoring, setHasCompletedFirstColoring] = useState(false);
-  const [mobileFibiAdviceReady, setMobileFibiAdviceReady] = useState(false);
   const [mobileFibiFact, setMobileFibiFact] = useState("");
+  const [showMobileFibiOverlay, setShowMobileFibiOverlay] = useState(false);
+  const [showMobileColorSheet, setShowMobileColorSheet] = useState(false);
   const [replayExportDone, setReplayExportDone] = useState<{
     video: boolean;
     gif: boolean;
@@ -379,6 +398,19 @@ function LessonPlayerDesktop() {
   const colorCanvasRef = useRef<HTMLCanvasElement>(null);
   const pawOverlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const puzzleSourceCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mobileArtworkViewportRef = useRef<HTMLDivElement | null>(null);
+  const mobileArtworkStageRef = useRef<HTMLDivElement | null>(null);
+  const mobileBrushToolRef = useRef<HTMLDivElement | null>(null);
+  const mobileEraserToolRef = useRef<HTMLDivElement | null>(null);
+  const mobileViewportPointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const mobilePinchRef = useRef<{
+    initial: CanvasViewport;
+    distance: number;
+    center: { x: number; y: number };
+  } | null>(null);
+  const mobileViewportGestureRef = useRef(false);
+  const cancelActiveDrawingForViewportRef = useRef<(() => void) | null>(null);
+  const hasChosenMobileHueRef = useRef(false);
   const replayCommittedGroupsRef = useRef<ReplayActionGroup[]>([]);
   const replayRedoGroupsRef = useRef<ReplayActionGroup[]>([]);
   const replayCurrentGroupRef = useRef<ReplayActionGroup | null>(null);
@@ -523,18 +555,6 @@ function LessonPlayerDesktop() {
       : lang === "en"
         ? "Place colorful paws on the canvas, then tap the button."
         : "Расставь цветные лапки на холсте и нажми на кнопку.";
-  const fibiGalleryHint =
-    lang === "he"
-      ? "אני יודעת הרבה על אמנים! לחצו על הכפתור פתח גלריה."
-      : lang === "en"
-        ? "I know a lot about artists! Tap Open Gallery."
-        : "А я знаю много о художниках! Нажми на кнопку Открыть Галерею.";
-  const fibiAdviceButtonLabel =
-    lang === "he"
-      ? "טיפ של אמן"
-      : lang === "en"
-        ? "Artist tip"
-        : "Совет художника";
   const replayDoneLabel =
     lang === "he"
       ? "נשמר"
@@ -886,6 +906,39 @@ function LessonPlayerDesktop() {
   }, [usesTouchLessonLayout]);
 
   useEffect(() => {
+    if (!usesTouchLessonLayout || !lesson) return;
+    const key = `dog-lesson-onboarding:v1:${lang}`;
+    setShowMobileOnboarding(window.localStorage.getItem(key) !== "1");
+  }, [lang, lesson, usesTouchLessonLayout]);
+
+  useEffect(() => {
+    if (animationMode === "puzzle" || animationMode === "replay") {
+      setMobileCanvasViewport({ scale: 1, x: 0, y: 0 });
+      mobileViewportPointersRef.current.clear();
+      mobilePinchRef.current = null;
+      mobileViewportGestureRef.current = false;
+      setMobileSizePopover(null);
+    }
+  }, [animationMode]);
+
+  useEffect(() => {
+    if (!mobileSizePopover) return;
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const anchor = mobileSizePopover === "brush"
+        ? mobileBrushToolRef.current
+        : mobileEraserToolRef.current;
+      if (anchor?.contains(event.target as Node)) return;
+      setMobileSizePopover(null);
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointerDown);
+    };
+  }, [mobileSizePopover]);
+
+  useEffect(() => {
     if (!mobileFillTooltip) return;
 
     const timeoutId = window.setTimeout(() => {
@@ -896,23 +949,15 @@ function LessonPlayerDesktop() {
   }, [mobileFillTooltip]);
 
   useEffect(() => {
-    const lessonFinished = lesson
-      ? currentStepIndex === lesson.steps.length - 1
-      : false;
-    const shouldShowMobileFibi = usesTouchLessonLayout && lessonFinished;
-    if (!shouldShowMobileFibi) {
-      setMobileFibiAdviceReady(false);
-      setMobileFibiFact("");
-      return;
-    }
-
-    setMobileFibiFact("");
-    const timerId = window.setTimeout(() => {
-      setMobileFibiAdviceReady(true);
-    }, 900);
-
-    return () => window.clearTimeout(timerId);
-  }, [currentStepIndex, usesTouchLessonLayout, lesson]);
+    if (!showMobileFibiOverlay && !showMobileColorSheet) return;
+    const closeOverlay = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setShowMobileFibiOverlay(false);
+      setShowMobileColorSheet(false);
+    };
+    window.addEventListener("keydown", closeOverlay);
+    return () => window.removeEventListener("keydown", closeOverlay);
+  }, [showMobileColorSheet, showMobileFibiOverlay]);
 
   useEffect(() => {
     if (!lesson || currentStepIndex < 0) {
@@ -1589,16 +1634,35 @@ function LessonPlayerDesktop() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    let strokeHistoryCaptured = false;
+
+    const captureStrokeHistory = () => {
+      if (strokeHistoryCaptured) return;
+      strokeHistoryCaptured = true;
+      setHasUnsavedChanges(true);
+      setRedoStack([]);
+      setUndoStack((prev) => {
+        const drawing = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const colorCanvas = colorCanvasRef.current;
+        const pawCanvas = pawOverlayCanvasRef.current;
+        const color = colorCanvas?.getContext("2d")?.getImageData(
+          0, 0, canvas.width, canvas.height,
+        ) ?? drawing;
+        const paw = pawCanvas?.getContext("2d")?.getImageData(
+          0, 0, canvas.width, canvas.height,
+        ) ?? drawing;
+        return [...prev, { drawing, color, paw, seeds: [...seedsRef.current] }]
+          .slice(-HISTORY_LIMIT);
+      });
+    };
 
     const getCoordinates = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-
-      return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY,
-      };
+      return mapClientPointToCanvas(
+        { x: clientX, y: clientY },
+        rect,
+        canvas,
+      );
     };
 
     const draw = (e: PointerEvent) => {
@@ -1612,6 +1676,7 @@ function LessonPlayerDesktop() {
       }
 
       e.preventDefault();
+      captureStrokeHistory();
       // user is dragging → switch cursor to pencil
       if (!isDrawingState) {
         setIsDrawingState(true);
@@ -1902,40 +1967,13 @@ function LessonPlayerDesktop() {
     const startDrawing = (e: PointerEvent) => {
       if (!ctx) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (mobileViewportGestureRef.current) return;
       e.preventDefault();
-      setHasUnsavedChanges(true);
-
-      // новое действие → очищаем redo
-      setRedoStack([]);
-      setUndoStack((prev) => {
-        const drawing = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        const colorCanvas = colorCanvasRef.current;
-        const pawCanvas = pawOverlayCanvasRef.current;
-
-        const color = colorCanvas
-          ? colorCanvas
-              .getContext("2d")!
-              .getImageData(0, 0, canvas.width, canvas.height)
-          : drawing;
-
-        const paw = pawCanvas
-          ? pawCanvas
-              .getContext("2d")!
-              .getImageData(0, 0, canvas.width, canvas.height)
-          : drawing;
-
-        const next = [
-          ...prev,
-          {
-            drawing,
-            color,
-            paw,
-            seeds: [...seedsRef.current],
-          },
-        ];
-        return next.slice(-HISTORY_LIMIT);
-      });
+      strokeHistoryCaptured = false;
+      // Preserve the existing desktop history timing. Mobile waits for the
+      // first real move so a second finger can turn the contact into a pinch
+      // without adding an empty undo snapshot.
+      if (!usesTouchLessonLayout) captureStrokeHistory();
       isDrawing.current = true;
       activePointerIdRef.current = e.pointerId;
       pointerMovedRef.current = false;
@@ -2000,7 +2038,7 @@ function LessonPlayerDesktop() {
       if (shouldPlaceColorSeed && pointerStartRef.current) {
         discardReplayGroup();
         placeColorSeedAt(pointerStartRef.current.x, pointerStartRef.current.y);
-      } else if (wasDrawing) {
+      } else if (wasDrawing && strokeHistoryCaptured) {
         appendReplayAction({ type: "strokeEnd" });
         commitReplayGroup();
       } else {
@@ -2011,6 +2049,24 @@ function LessonPlayerDesktop() {
       pointerMovedRef.current = false;
     };
 
+    cancelActiveDrawingForViewportRef.current = () => {
+      if (!isDrawing.current) return;
+      isDrawing.current = false;
+      activePointerIdRef.current = null;
+      setIsDrawingState(false);
+      ctx.beginPath();
+      lastPointRef.current = null;
+      lastReplayStrokePointRef.current = null;
+      pointerStartRef.current = null;
+      pointerMovedRef.current = false;
+      if (strokeHistoryCaptured) {
+        appendReplayAction({ type: "strokeEnd" });
+        commitReplayGroup();
+      } else {
+        discardReplayGroup();
+      }
+    };
+
     canvas.addEventListener("pointerdown", startDrawing);
     canvas.addEventListener("pointermove", draw);
     canvas.addEventListener("pointerup", endDrawing);
@@ -2018,6 +2074,7 @@ function LessonPlayerDesktop() {
     canvas.addEventListener("pointerleave", endDrawing);
 
     return () => {
+      cancelActiveDrawingForViewportRef.current = null;
       canvas.removeEventListener("pointerdown", startDrawing);
       canvas.removeEventListener("pointermove", draw);
       canvas.removeEventListener("pointerup", endDrawing);
@@ -2033,6 +2090,7 @@ function LessonPlayerDesktop() {
     isDrawingState,
     placeColorSeedAt,
     showColorizer,
+    usesTouchLessonLayout,
   ]);
 
   // --- Добавляем случайные позы для Фрэнка и Фиби ---
@@ -2394,10 +2452,101 @@ function LessonPlayerDesktop() {
       const next = {
         ...prev,
         hue,
+        darkness: getMobileHueDarkness({
+          currentDarkness: prev.darkness,
+          hasChosenHue: hasChosenMobileHueRef.current,
+        }),
       };
+      hasChosenMobileHueRef.current = true;
       setBrushColor(buildColorFromState(next));
       return next;
     });
+  };
+
+  const resetMobileCanvasViewport = () => {
+    setMobileCanvasViewport({ scale: 1, x: 0, y: 0 });
+  };
+
+  const getViewportGestureGeometry = () => {
+    const points = Array.from(mobileViewportPointersRef.current.values());
+    if (points.length < 2) return null;
+    const [a, b] = points;
+    return {
+      distance: Math.hypot(a.x - b.x, a.y - b.y),
+      center: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+    };
+  };
+
+  const handleMobileViewportPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (
+      !usesTouchLessonLayout ||
+      event.pointerType === "mouse" ||
+      animationMode === "puzzle" ||
+      animationMode === "replay"
+    ) return;
+
+    const viewport = mobileArtworkViewportRef.current;
+    if (!viewport) return;
+    const rect = viewport.getBoundingClientRect();
+    mobileViewportPointersRef.current.set(event.pointerId, {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+
+    const geometry = getViewportGestureGeometry();
+    if (!geometry) return;
+    mobileViewportGestureRef.current = true;
+    cancelActiveDrawingForViewportRef.current?.();
+    mobilePinchRef.current = {
+      initial: mobileCanvasViewport,
+      distance: geometry.distance,
+      center: geometry.center,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handleMobileViewportPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!mobileViewportPointersRef.current.has(event.pointerId)) return;
+    const viewport = mobileArtworkViewportRef.current;
+    const stage = mobileArtworkStageRef.current;
+    if (!viewport || !stage) return;
+    const rect = viewport.getBoundingClientRect();
+    mobileViewportPointersRef.current.set(event.pointerId, {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+    if (!mobileViewportGestureRef.current || !mobilePinchRef.current) return;
+
+    const geometry = getViewportGestureGeometry();
+    if (!geometry) return;
+    event.preventDefault();
+    setMobileCanvasViewport(updateViewportFromPinch({
+      initial: mobilePinchRef.current.initial,
+      initialDistance: mobilePinchRef.current.distance,
+      initialCenter: mobilePinchRef.current.center,
+      distance: geometry.distance,
+      center: geometry.center,
+      viewport: { width: viewport.clientWidth, height: viewport.clientHeight },
+      stage: { width: stage.offsetWidth, height: stage.offsetHeight },
+    }));
+  };
+
+  const handleMobileViewportPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    mobileViewportPointersRef.current.delete(event.pointerId);
+    if (mobileViewportPointersRef.current.size < 2) {
+      mobilePinchRef.current = null;
+    }
+    if (mobileViewportPointersRef.current.size === 0) {
+      window.setTimeout(() => {
+        mobileViewportGestureRef.current = false;
+      }, 0);
+    }
+  };
+
+  const dismissMobileOnboarding = () => {
+    window.localStorage.setItem(`dog-lesson-onboarding:v1:${lang}`, "1");
+    setShowMobileOnboarding(false);
   };
 
   return (
@@ -2415,7 +2564,23 @@ function LessonPlayerDesktop() {
           <h1 className="lessons-title page-title">{lesson.title}</h1>
           {!usesTouchLessonLayout && !isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
           {usesTouchLessonLayout ? (
-            <div className={`lesson-mobile-shell ${lang === "he" ? "lesson-mobile-shell--hebrew" : ""}`}>
+            <div className={`lesson-mobile-shell ${lang === "he" ? "lesson-mobile-shell--hebrew" : ""} ${isLessonComplete ? "lesson-mobile-shell--complete" : ""} ${animationMode === "puzzle" ? "lesson-mobile-shell--puzzle" : ""}`}>
+              {showMobileOnboarding ? (
+                <div className="lesson-mobile-onboarding" role="dialog" aria-modal="true" aria-labelledby="dog-lesson-onboarding-title">
+                  <div className="lesson-mobile-onboarding-card">
+                    <button type="button" className="lesson-mobile-onboarding-close" onClick={dismissMobileOnboarding} aria-label={t.closeManual}>✕</button>
+                    <h2 id="dog-lesson-onboarding-title">{t.manualTitle}</h2>
+                    <p className="lesson-mobile-onboarding-lead">{t.manualLead}</p>
+                    <ol>
+                      <li><span>✏️</span><div><strong>{t.manualDrawTitle}</strong><p>{t.manualDrawText}</p></div></li>
+                      <li><span>🎨</span><div><strong>{t.manualColorTitle}</strong><p>{t.manualColorText}</p></div></li>
+                      <li><span>🧩</span><div><strong>{t.manualPuzzleTitle}</strong><p>{t.manualPuzzleText}</p></div></li>
+                      <li><span>💾</span><div><strong>{t.manualSaveTitle}</strong><p>{t.manualSaveText}</p></div></li>
+                    </ol>
+                    <button type="button" className="lesson-mobile-onboarding-done" onClick={dismissMobileOnboarding}>{t.manualDone}</button>
+                  </div>
+                </div>
+              ) : null}
               <div className="lesson-mobile-topbar">
                 <div className="lesson-mobile-topbar-main">
                   <div className="lesson-mobile-action-row">
@@ -2429,24 +2594,29 @@ function LessonPlayerDesktop() {
                     </button>
                     <button
                       type="button"
-                      className="lesson-mobile-primary"
-                      onClick={handleAdvanceLesson}
+                      className="lesson-mobile-help"
+                      onClick={() => setShowMobileOnboarding(true)}
+                      aria-label={t.howToPlay}
                     >
-                      {!hasStarted
-                        ? t.startLesson
-                        : isLessonComplete
-                          ? t.repeatLesson
-                          : `${t.nextStep} 🐾`}
+                      ?
                     </button>
-                    {isLessonComplete ? (
-                      <button
-                        type="button"
-                        className="lesson-mobile-gallery"
-                        onClick={() => setShowGallery(true)}
-                      >
-                        🖼 {t.openGallery}
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      className="lesson-mobile-gallery"
+                      onClick={() => setShowGallery(true)}
+                    >
+                      🖼 {t.openGallery}
+                    </button>
+                    <button
+                      type="button"
+                      className="lesson-mobile-artist-advice"
+                      onClick={() => {
+                        setMobileFibiFact(getRandomArtFact(lang));
+                        setShowMobileFibiOverlay(true);
+                      }}
+                    >
+                      🎨 {t.artistAdvice}
+                    </button>
                   </div>
                   <div className="lesson-mobile-frank">
                     <Image
@@ -2460,48 +2630,152 @@ function LessonPlayerDesktop() {
                       {frankSpeech}
                     </div>
                   </div>
-                  {isLessonComplete ? (
-                    <div className="lesson-mobile-fibi">
-                    <Image
-                      src="/dog/fibi.webp"
-                      alt={t.fibiName}
-                      className="lesson-mobile-fibi-avatar"
-                      width={84}
-                      height={84}
-                    />
-                    <div className="lesson-mobile-fibi-bubble">
-                        {mobileFibiAdviceReady ? (
-                          <>
-                            {mobileFibiFact ? (
-                              <div className="lesson-mobile-fibi-fact">{mobileFibiFact}</div>
-                            ) : null}
-                            <button
-                              type="button"
-                              className="lesson-mobile-fibi-advice"
-                              onClick={() => setMobileFibiFact(getRandomArtFact(lang))}
-                            >
-                              {fibiAdviceButtonLabel}
-                            </button>
-                          </>
-                        ) : (
-                          fibiGalleryHint
-                        )}
-                    </div>
-                  </div>
-                  ) : null}
                 </div>
               </div>
 
+              {showMobileFibiOverlay ? (
+                <div
+                  className="lesson-mobile-overlay lesson-mobile-fibi-overlay"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={t.artistAdvice}
+                  onPointerDown={(event) => {
+                    if (event.target === event.currentTarget) setShowMobileFibiOverlay(false);
+                  }}
+                >
+                  <div className="lesson-mobile-fibi-card">
+                    <button
+                      type="button"
+                      className="lesson-mobile-overlay-close"
+                      onClick={() => setShowMobileFibiOverlay(false)}
+                      aria-label={t.closeArtistAdvice}
+                    >
+                      ✕
+                    </button>
+                    <Image src="/dog/fibi.webp" alt={t.fibiName} width={128} height={128} />
+                    <div className="lesson-mobile-fibi-bubble">{mobileFibiFact}</div>
+                  </div>
+                </div>
+              ) : null}
+
+              {showMobileColorSheet ? (
+                <div
+                  className="lesson-mobile-overlay lesson-mobile-color-overlay"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={t.chooseColor}
+                  onPointerDown={(event) => {
+                    if (event.target === event.currentTarget) setShowMobileColorSheet(false);
+                  }}
+                >
+                  <div className="lesson-mobile-color-sheet">
+                    <button
+                      type="button"
+                      className="lesson-mobile-overlay-close"
+                      onClick={() => setShowMobileColorSheet(false)}
+                      aria-label={t.closeColorMenu}
+                    >
+                      ✕
+                    </button>
+                    <h2>{t.chooseColor}</h2>
+                    <div className="lesson-mobile-color-sheet-preview" style={{ background: brushColor }} aria-label={`${t.currentColor}: ${brushColor}`} />
+                    <div className="lesson-mobile-color-sheet-quick">
+                      {[
+                        { label: t.white, hex: "#ffffff" },
+                        { label: t.black, hex: "#000000" },
+                      ].map((quickColor) => (
+                        <button
+                          key={quickColor.hex}
+                          type="button"
+                          className="lesson-mobile-quick-color"
+                          style={{ background: quickColor.hex }}
+                          onClick={() => {
+                            setBrushColor(quickColor.hex);
+                            setMobileBrushColor(hexToHsl(quickColor.hex));
+                            hasChosenMobileHueRef.current = false;
+                          }}
+                          aria-label={quickColor.label}
+                        />
+                      ))}
+                    </div>
+                    <div
+                      className="lesson-mobile-color-wheel lesson-mobile-color-wheel-sheet"
+                      onTouchStart={updateBrushColorFromClientPoint}
+                      onTouchMove={(event) => {
+                        event.preventDefault();
+                        updateBrushColorFromClientPoint(event);
+                      }}
+                    />
+                    <label className="lesson-mobile-color-sheet-field">
+                      <span>{t.brightness}</span>
+                      <input
+                        type="range"
+                        min="18"
+                        max="100"
+                        value={100 - mobileBrushColor.darkness}
+                        aria-label={t.brightness}
+                        onChange={(event) => {
+                          const darkness = mobileBrightnessToDarkness(Number(event.target.value));
+                          setMobileBrushColor((prev) => {
+                            const next = { ...prev, darkness };
+                            setBrushColor(buildColorFromState(next));
+                            return next;
+                          });
+                        }}
+                      />
+                    </label>
+                    <label className="lesson-mobile-color-sheet-field">
+                      <span>{t.opacity}</span>
+                      <input type="range" min={0.05} max={1} step={0.05} value={brushOpacity} onChange={(event) => setBrushOpacity(Number(event.target.value))} />
+                    </label>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="lesson-mobile-workspace" data-testid="dog-lesson-mobile-workspace">
+              {hasStarted && animationMode !== "puzzle" && animationMode !== "replay" ? (
+                <div className="lesson-mobile-canvas-controls">
+                  {showColorizer ? (
+                    <button type="button" className="lesson-mobile-colorize-cta lesson-mobile-colorize-cta-contextual" onClick={handleColorize}>
+                      🌈 {t.colorizeSketch}
+                    </button>
+                  ) : null}
+                  <div className="lesson-mobile-tool-row">
+                    <div className="lesson-mobile-primary-tools" aria-label={t.drawingTools}>
+                      <div ref={mobileBrushToolRef} className="lesson-mobile-tool-anchor">
+                        <button type="button" className={`lesson-mobile-tool-button ${!isEraser ? "active" : ""}`} onClick={() => { setIsEraser(false); setMobileSizePopover("brush"); }} aria-label={t.brush} aria-pressed={!isEraser} aria-expanded={mobileSizePopover === "brush"}>🖌️</button>
+                        {mobileSizePopover === "brush" ? (
+                          <div className="lesson-mobile-size-popover" role="group" aria-label={t.brushSize}>
+                            <span>{t.thin}</span><input type="range" min={1} max={20} value={brushSize} aria-label={t.brushSize} onChange={(event) => setBrushSize(Number(event.target.value))} /><span>{t.thick}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div ref={mobileEraserToolRef} className="lesson-mobile-tool-anchor">
+                        <button type="button" className={`lesson-mobile-tool-button ${isEraser ? "active" : ""}`} onClick={() => { setIsEraser(true); setMobileSizePopover("eraser"); }} aria-label={t.eraser} aria-pressed={isEraser} aria-expanded={mobileSizePopover === "eraser"}>🧽</button>
+                        {mobileSizePopover === "eraser" ? (
+                          <div className="lesson-mobile-size-popover" role="group" aria-label={t.brushSize}>
+                            <span>{t.thin}</span><input type="range" min={1} max={20} value={brushSize} aria-label={t.brushSize} onChange={(event) => setBrushSize(Number(event.target.value))} /><span>{t.thick}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <button type="button" className="lesson-mobile-history-button" onClick={handleUndo} disabled={undoStack.length === 0} aria-label={t.undo}><Image src="/dog/backward.png" alt="" aria-hidden="true" width={30} height={30} /></button>
+                      <button type="button" className="lesson-mobile-history-button" onClick={handleRedo} disabled={redoStack.length === 0} aria-label={t.redo}><Image src="/dog/forward.png" alt="" aria-hidden="true" width={30} height={30} /></button>
+                      {mobileCanvasViewport.scale > 1.01 ? <button type="button" className="lesson-mobile-tool-button lesson-mobile-zoom-reset" onClick={resetMobileCanvasViewport} aria-label={t.resetZoom}>1×</button> : null}
+                    </div>
+                    <button type="button" className="lesson-mobile-color-button" onClick={() => setShowMobileColorSheet(true)} aria-label={t.chooseColor} aria-expanded={showMobileColorSheet}>
+                      <span style={{ background: brushColor }} />
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <div
                 className={`lesson-mobile-stage ${
-                  mobilePanel === "coloring" && showColorizer
-                    ? "lesson-mobile-stage-raised"
-                    : animationMode === "puzzle"
+                  animationMode === "puzzle"
                       ? "lesson-mobile-stage-puzzle"
                       : ""
                 }`}
               >
-                <div className="lesson-canvas-wrapper lesson-canvas-wrapper-mobile">
+                <div data-testid="dog-lesson-mobile-canvas-shell" className="lesson-canvas-wrapper lesson-canvas-wrapper-mobile">
                   {!hasStarted && (
                     <button
                       id="start-button-mobile"
@@ -2519,6 +2793,23 @@ function LessonPlayerDesktop() {
                     </button>
                   )}
 
+                  <div
+                    ref={mobileArtworkViewportRef}
+                    className="lesson-mobile-artwork-viewport"
+                    data-testid="dog-lesson-mobile-artwork-viewport"
+                    onPointerDownCapture={handleMobileViewportPointerDown}
+                    onPointerMoveCapture={handleMobileViewportPointerMove}
+                    onPointerUpCapture={handleMobileViewportPointerEnd}
+                    onPointerCancelCapture={handleMobileViewportPointerEnd}
+                  >
+                  <div
+                    ref={mobileArtworkStageRef}
+                    className="lesson-mobile-artwork-stage"
+                    data-testid="dog-lesson-mobile-artwork-stage"
+                    style={{
+                      transform: `translate(${mobileCanvasViewport.x}px, ${mobileCanvasViewport.y}px) scale(${mobileCanvasViewport.scale})`,
+                    }}
+                  >
                   {!showColorizer && (
                     <canvas
                       id="lesson-canvas-mobile"
@@ -2559,10 +2850,12 @@ function LessonPlayerDesktop() {
                         : "url('/dog/pencile.png') 0 32, auto",
                     }}
                   />
+                  </div>
+                  </div>
 
                   {animationMode === "puzzle" ? (
-                    <div className="lesson-puzzle-mode lesson-puzzle-mode-mobile">
-                      <div className="lesson-puzzle-board lesson-puzzle-board-mobile">
+                    <div className="lesson-puzzle-mode lesson-puzzle-mode-mobile" data-testid="dog-lesson-mobile-puzzle-mode">
+                      <div className="lesson-puzzle-board lesson-puzzle-board-mobile" data-testid="dog-lesson-mobile-puzzle-board">
                         <PuzzleCanvas
                           sourceCanvas={puzzleSourceCanvasRef.current!}
                           traySelector=".lesson-puzzle-tray-inner-mobile-active"
@@ -2603,53 +2896,24 @@ function LessonPlayerDesktop() {
                     </div>
                   ) : null}
 
-                  {animationMode !== "puzzle" && animationMode !== "replay" ? (
-                    <div className="lesson-mobile-canvas-topbar">
-                      {hasStarted ? (
-                        <div className="lesson-mobile-history-controls" aria-label="History controls">
-                          <button
-                            type="button"
-                            className="lesson-mobile-history-button"
-                            onClick={handleUndo}
-                            disabled={undoStack.length === 0}
-                            aria-label={t.undo}
-                          >
-                            <Image src="/dog/backward.png" alt="" aria-hidden="true" width={24} height={24} />
-                          </button>
-                          <button
-                            type="button"
-                            className="lesson-mobile-history-button"
-                            onClick={handleRedo}
-                            disabled={redoStack.length === 0}
-                            aria-label={t.redo}
-                          >
-                            <Image src="/dog/forward.png" alt="" aria-hidden="true" width={24} height={24} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div />
-                      )}
-                      {showColorizer ? (
-                        <div className="lesson-mobile-canvas-topbar-center">
-                          <button
-                            type="button"
-                            className="lesson-mobile-colorize-cta"
-                            onClick={handleColorize}
-                          >
-                            🌈 {t.colorizeSketch}
-                          </button>
-                        </div>
-                      ) : null}
-                      <div className="lesson-step-counter lesson-step-counter-mobile">
-                        {currentStepIndex >= 0 ? (
-                          <p>
-                            <strong>{currentStepIndex + 1}</strong> {t.stepOf} {lesson.steps.length}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
+              </div>
+                {hasStarted && animationMode !== "puzzle" && animationMode !== "replay" ? (
+                  <div className="lesson-mobile-progress-row" data-testid="dog-lesson-mobile-progress">
+                    <div className="lesson-step-counter lesson-step-counter-mobile">
+                      <p>
+                        <strong>{currentStepIndex + 1}</strong> {t.stepOf} {lesson.steps.length}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="lesson-mobile-progress-next"
+                      onClick={handleAdvanceLesson}
+                    >
+                      {isLessonComplete ? t.repeatLesson : `${t.nextStep} 🐾`}
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
               <div className={`lesson-mobile-panel-shell ${mobilePanel ? "open" : ""}`}>
@@ -2692,89 +2956,6 @@ function LessonPlayerDesktop() {
                           <option value="neon">{t.brushNeon}</option>
                           <option value="watercolor">{t.brushWatercolor}</option>
                         </select>
-                      </div>
-                      <div className="lesson-mobile-field lesson-mobile-field-inline">
-                        <label>{t.brushColor}</label>
-                        <button
-                          type="button"
-                          className="lesson-mobile-chip"
-                          onClick={() => setIsEraser((prev) => !prev)}
-                        >
-                          {isEraser ? t.brush : t.eraser}
-                        </button>
-                      </div>
-                      <div className="lesson-mobile-color-picker">
-                        <div className="lesson-mobile-color-picker__header">
-                          <div className="lesson-mobile-color-picker__title">Color</div>
-                          <div className="lesson-mobile-color-picker__meta">
-                            {[
-                              { label: "White", hex: "#ffffff" },
-                              { label: "Black", hex: "#000000" },
-                            ].map((quickColor) => (
-                              <button
-                                key={quickColor.hex}
-                                type="button"
-                                aria-label={quickColor.label}
-                                onClick={() => {
-                                  setBrushColor(quickColor.hex);
-                                  setMobileBrushColor(hexToHsl(quickColor.hex));
-                                }}
-                                className="lesson-mobile-quick-color"
-                                style={{ background: quickColor.hex }}
-                              />
-                            ))}
-                            <div
-                              className="lesson-mobile-color-preview"
-                              style={{ background: brushColor }}
-                            />
-                          </div>
-                        </div>
-                        <div
-                          className="lesson-mobile-color-wheel"
-                          onTouchStart={updateBrushColorFromClientPoint}
-                          onTouchMove={(e) => {
-                            e.preventDefault();
-                            updateBrushColorFromClientPoint(e);
-                          }}
-                        />
-                        <label className="lesson-mobile-field">
-                          <span>Darkness</span>
-                          <input
-                            type="range"
-                            min="0"
-                            max="82"
-                            value={mobileBrushColor.darkness}
-                            onChange={(e) => {
-                              const darkness = Number(e.target.value);
-                              setMobileBrushColor((prev) => {
-                                const next = { ...prev, darkness };
-                                setBrushColor(buildColorFromState(next));
-                                return next;
-                              });
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <div className="lesson-mobile-field">
-                        <label>{t.brushSize}</label>
-                        <input
-                          type="range"
-                          min={1}
-                          max={20}
-                          value={brushSize}
-                          onChange={(e) => setBrushSize(Number(e.target.value))}
-                        />
-                      </div>
-                      <div className="lesson-mobile-field">
-                        <label>{t.opacity}</label>
-                        <input
-                          type="range"
-                          min={0.05}
-                          max={1}
-                          step={0.05}
-                          value={brushOpacity}
-                          onChange={(e) => setBrushOpacity(Number(e.target.value))}
-                        />
                       </div>
                     </div>
                   ) : null}
@@ -2824,64 +3005,6 @@ function LessonPlayerDesktop() {
                           </button>
                         ) : null}
                       </div>
-                      {showColorizer ? (
-                        <div className="lesson-mobile-color-picker lesson-mobile-color-picker-fill">
-                          <div className="lesson-mobile-color-picker__header">
-                            <span className="lesson-mobile-color-picker__title">
-                              {t.brushColor}
-                            </span>
-                            <div className="lesson-mobile-color-picker__meta">
-                              {[
-                                { label: "White", hex: "#ffffff" },
-                                { label: "Black", hex: "#000000" },
-                              ].map((quickColor) => (
-                                <button
-                                  key={quickColor.hex}
-                                  type="button"
-                                  className="lesson-mobile-quick-color"
-                                  style={{ background: quickColor.hex }}
-                                  onClick={() => {
-                                    setBrushColor(quickColor.hex);
-                                    setMobileBrushColor(hexToHsl(quickColor.hex));
-                                  }}
-                                  aria-label={quickColor.label}
-                                />
-                              ))}
-                              <button
-                                type="button"
-                                className="lesson-mobile-color-preview"
-                                style={{ background: brushColor }}
-                                aria-label={`Current color ${brushColor}`}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className="lesson-mobile-color-wheel"
-                            onTouchStart={updateBrushColorFromClientPoint}
-                            onTouchMove={(e) => {
-                              e.preventDefault();
-                              updateBrushColorFromClientPoint(e);
-                            }}
-                          />
-                          <label className="lesson-mobile-field">
-                            <span>Darkness</span>
-                            <input
-                              type="range"
-                              min="0"
-                              max="82"
-                              value={mobileBrushColor.darkness}
-                              onChange={(e) => {
-                                const darkness = Number(e.target.value);
-                                setMobileBrushColor((prev) => {
-                                  const next = { ...prev, darkness };
-                                  setBrushColor(buildColorFromState(next));
-                                  return next;
-                                });
-                              }}
-                            />
-                          </label>
-                        </div>
-                      ) : null}
                     </div>
                   ) : null}
 
