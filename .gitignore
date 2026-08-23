@@ -56,3 +56,5 @@ public/tmp/
 storage-backup/
 supabase-*.sql
 backups/
+
+artifacts/
