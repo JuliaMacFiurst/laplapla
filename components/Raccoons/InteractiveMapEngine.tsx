@@ -40,6 +40,10 @@ import {
 } from "@/lib/mapPopup/mediaLifecycle";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import {
+  getMobileTouchTolerance,
+  getRadialTouchSampleOffsets,
+  isMobileTouchTapEligible,
+  selectMobileProximityTarget,
   selectFirstInteractiveViewportHit,
   selectSmallestSvgHit,
 } from "@/lib/mapSvgInteraction";
@@ -50,19 +54,17 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import MapViewport from "@/components/Raccoons/MapViewport";
 import MapPopup from "@/components/Raccoons/MapPopup";
+import {
+  clampMobileZoom,
+  clampMobilePanPosition,
+  getMobileMaxZoom,
+  getMobilePanBounds,
+  type RaccoonMapType,
+} from "@/lib/raccoonMapZoom";
 
 interface InteractiveMapProps {
   svgPath: string;
-  type:
-    | "country"
-    | "river"
-    | "sea"
-    | "physic"
-    | "flag"
-    | "animal"
-    | "culture"
-    | "weather"
-    | "food";
+  type: RaccoonMapType;
   popupFormatter: (id: string) => string;
   styleClass: string;
   previewSelectedId?: string | null;
@@ -612,6 +614,12 @@ export default function InteractiveMap({
   const pinchYRef = useRef(0);
   const pinchCenterRef = useRef({ x: 0, y: 0 });
   const isPinchingRef = useRef(false);
+  const mobileTapRef = useRef<{
+    x: number;
+    y: number;
+    eligible: boolean;
+    endedAt: number;
+  } | null>(null);
 
   const popupSlides = useMemo(() => popupContent?.slides ?? [], [popupContent]);
   const selectedFlagUrl =
@@ -1443,48 +1451,33 @@ export default function InteractiveMap({
     const containerRect = container.getBoundingClientRect();
 
     const viewBox = svg.viewBox.baseVal;
-    if (!viewBox || viewBox.width <= 0 || viewBox.height <= 0) {
+    const layoutWidth = svg.clientWidth || viewBox.width || svg.width.baseVal.value;
+    const layoutHeight = svg.clientHeight || viewBox.height || svg.height.baseVal.value;
+    if (layoutWidth <= 0 || layoutHeight <= 0) {
       return null;
     }
     // SVG viewBox values are internal coordinates, not CSS pixels. Clamp against
     // the rendered SVG viewport so maps with small viewBoxes do not get pinned.
-    const layoutWidth = svg.clientWidth || viewBox.width;
-    const layoutHeight = svg.clientHeight || viewBox.height;
-    const svgWidth = layoutWidth * nextZoom;
-    const svgHeight = layoutHeight * nextZoom;
-
-    let minX = containerRect.width - svgWidth;
-    let maxX = 0;
-    let minY = containerRect.height - svgHeight;
-    let maxY = 0;
-
-    if (minX > maxX) {
-      const centerX = (minX + maxX) / 2;
-      minX = centerX;
-      maxX = centerX;
-    }
-
-    if (minY > maxY) {
-      const centerY = (minY + maxY) / 2;
-      minY = centerY;
-      maxY = centerY;
-    }
-
-    return { minX, maxX, minY, maxY };
+    return getMobilePanBounds({
+      viewportWidth: containerRect.width,
+      viewportHeight: containerRect.height,
+      contentWidth: layoutWidth,
+      contentHeight: layoutHeight,
+      zoom: nextZoom,
+    });
   }, [isMobile]);
 
   const applyHardClamp = (nextZoom = zoomRef.current) => {
     const bounds = getPanBounds(nextZoom);
     if (!bounds) return;
 
-    currentXRef.current = Math.min(
-      bounds.maxX,
-      Math.max(bounds.minX, currentXRef.current),
+    const clamped = clampMobilePanPosition(
+      currentXRef.current,
+      currentYRef.current,
+      bounds,
     );
-    currentYRef.current = Math.min(
-      bounds.maxY,
-      Math.max(bounds.minY, currentYRef.current),
-    );
+    currentXRef.current = clamped.x;
+    currentYRef.current = clamped.y;
 
     applyMapTransform(currentXRef.current, currentYRef.current, nextZoom);
   };
@@ -1512,8 +1505,10 @@ export default function InteractiveMap({
     }
 
     mapContent.style.transformOrigin = "0 0";
-    mapContent.style.transform = `translate3d(${nextX}px, ${nextY}px, 0) scale(${nextZoom})`;
-  }, []);
+    mapContent.style.transform = isMobile
+      ? `translate(${nextX}px, ${nextY}px) scale(${nextZoom})`
+      : `translate3d(${nextX}px, ${nextY}px, 0) scale(${nextZoom})`;
+  }, [isMobile]);
 
   // --- Helper to reset the map view to the safe initial view ---
   const resetMapView = () => {
@@ -1523,8 +1518,16 @@ export default function InteractiveMap({
 
     if (!mapContent || !container || !svg) return;
 
-    const viewBox = svg.viewBox.baseVal;
-    if (!viewBox || viewBox.width <= 0 || viewBox.height <= 0) return;
+    const nativeViewBox = svg.viewBox.baseVal;
+    const hasViewBox = nativeViewBox.width > 0 && nativeViewBox.height > 0;
+    if (!hasViewBox && !isMobile) return;
+    const viewBox = hasViewBox
+      ? nativeViewBox
+      : {
+          width: svg.width.baseVal.value || svg.clientWidth,
+          height: svg.height.baseVal.value || svg.clientHeight,
+        };
+    if (viewBox.width <= 0 || viewBox.height <= 0) return;
 
     const zoom = zoomRef.current;
 
@@ -1691,6 +1694,7 @@ export default function InteractiveMap({
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     lastTouchDragAtRef.current = Date.now();
+    mobileTapRef.current = null;
 
     if (e.touches.length === 2) {
       const [touchA, touchB] = [e.touches[0], e.touches[1]];
@@ -1704,7 +1708,7 @@ export default function InteractiveMap({
 
       const centerX = (touchA.clientX + touchB.clientX) / 2;
       const centerY = (touchA.clientY + touchB.clientY) / 2;
-      const rect = mapContentRef.current?.getBoundingClientRect();
+      const rect = mapContentRef.current?.parentElement?.getBoundingClientRect();
       pinchCenterRef.current = rect
         ? {
             x: centerX - rect.left,
@@ -1742,11 +1746,12 @@ export default function InteractiveMap({
 
       const rawZoom =
         pinchZoomRef.current * (distance / pinchDistanceRef.current);
-      const maxZoom = type === "river" ? 6 : 4;
+      const maxZoom = getMobileMaxZoom(type);
 
-      const nextZoom = Math.min(
+      const nextZoom = clampMobileZoom(
+        rawZoom,
+        mobileMinZoomRef.current,
         maxZoom,
-        Math.max(mobileMinZoomRef.current, rawZoom),
       );
       const scaleRatio = nextZoom / pinchZoomRef.current;
 
@@ -1793,6 +1798,7 @@ export default function InteractiveMap({
 
     if (isPinchingRef.current && e.touches.length < 2) {
       isPinchingRef.current = false;
+      mobileTapRef.current = null;
       applyHardClamp(zoomRef.current);
       setZoom(zoomRef.current);
       return;
@@ -1801,10 +1807,25 @@ export default function InteractiveMap({
     isDraggingRef.current = false;
     applyHardClamp(zoomRef.current);
 
+    const endedTouch = e.changedTouches[0];
+    mobileTapRef.current =
+      isMobileTouchTapEligible({
+        isMobile,
+        moved: movedDuringDragRef.current,
+        pinching: isPinchingRef.current,
+      }) && endedTouch
+        ? {
+            x: endedTouch.clientX,
+            y: endedTouch.clientY,
+            eligible: true,
+            endedAt: Date.now(),
+          }
+        : null;
+
     if (isMobile && !movedDuringDragRef.current) {
       const now = Date.now();
       if (now - lastTapTsRef.current < 280) {
-        const maxZoom = type === "river" ? 6 : 4;
+        const maxZoom = getMobileMaxZoom(type);
 
         const nextZoom =
           zoomRef.current >= 2
@@ -2440,6 +2461,57 @@ export default function InteractiveMap({
       return candidates[0] ?? null;
     };
 
+    const getMobileProximityPath = (event: MouseEvent) => {
+      const tolerance = getMobileTouchTolerance(type);
+      const tap = mobileTapRef.current;
+      if (
+        !isMobile ||
+        tolerance <= 0 ||
+        !tap?.eligible ||
+        Date.now() - tap.endedAt > 800 ||
+        Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > 4 ||
+        typeof document.elementsFromPoint !== "function"
+      ) {
+        return null;
+      }
+
+      const candidates = new Map<
+        SVGPathElement,
+        { target: SVGPathElement; distance: number; area: number }
+      >();
+
+      for (const offset of getRadialTouchSampleOffsets(tolerance)) {
+        const elements = document.elementsFromPoint(
+          tap.x + offset.x,
+          tap.y + offset.y,
+        );
+        const path = selectFirstInteractiveViewportHit(
+          elements,
+          (element) => element.closest("path[id]") as SVGPathElement | null,
+          (candidate) =>
+            isInteractivePath(candidate) &&
+            mapContent.contains(candidate) &&
+            !candidate.closest('[data-interaction-overlay="true"]'),
+        );
+        if (!path) continue;
+
+        const existing = candidates.get(path);
+        if (!existing || offset.distance < existing.distance) {
+          const rect = path.getBoundingClientRect();
+          candidates.set(path, {
+            target: path,
+            distance: offset.distance,
+            area: Math.max(0, rect.width) * Math.max(0, rect.height),
+          });
+        }
+      }
+
+      return selectMobileProximityTarget(
+        Array.from(candidates.values()),
+        tolerance,
+      );
+    };
+
     const handleContainerMouseOver = (event: MouseEvent) => {
       const path = getPathFromPointerEvent(event);
       if (!path || !mapContent.contains(path)) {
@@ -2531,15 +2603,16 @@ export default function InteractiveMap({
     };
 
     const handleContainerClick = (event: MouseEvent) => {
-      const path = getPathFromPointerEvent(event);
-      if (!path || !mapContent.contains(path)) {
+      if (didDragRef.current) {
+        didDragRef.current = false;
+        mobileTapRef.current = null;
         return;
       }
 
-      if (didDragRef.current) {
-        didDragRef.current = false;
-        return;
-      }
+      const exactPath = getPathFromPointerEvent(event);
+      const path = exactPath ?? getMobileProximityPath(event);
+      mobileTapRef.current = null;
+      if (!path || !mapContent.contains(path)) return;
 
       onUserSelect?.(path.id);
       openSelection(path, path.id);
@@ -2585,6 +2658,7 @@ export default function InteractiveMap({
     prefetchSelection,
     svgContent,
     syncInteractionOverlay,
+    isMobile,
     type,
   ]);
 
@@ -2777,6 +2851,7 @@ export default function InteractiveMap({
         isMapLoading={isMapLoading}
         mapContentRef={mapContentRef}
         svgHostRef={svgHostRef}
+        isMobile={isMobile}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -2789,7 +2864,9 @@ export default function InteractiveMap({
               <button
                 type="button"
                 onClick={() => {
-                  const maxZoom = type === "river" ? 6 : 4;
+                  const maxZoom = isMobile
+                    ? getMobileMaxZoom(type)
+                    : type === "river" ? 6 : 4;
                   const nextZoom = Math.min(zoomRef.current * 1.2, maxZoom);
                   const clamped = clampMobilePosition(
                     currentXRef.current,

@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 
 const worldMapCss = readFileSync("styles/WorldMap.css", "utf8");
 const raccoonsPage = readFileSync("pages/raccoons.tsx", "utf8");
+const mapEngine = readFileSync(
+  "components/Raccoons/InteractiveMapEngine.tsx",
+  "utf8",
+);
 
 describe("raccoon map shared responsive layout", () => {
   it("keeps search controls and the map in one document-flow layout", () => {
@@ -17,6 +21,21 @@ describe("raccoon map shared responsive layout", () => {
   it("clips transformed SVG artwork inside the shared map viewport", () => {
     expect(worldMapCss).toMatch(
       /\.map-container\s*\{[\s\S]*overflow:\s*hidden;[\s\S]*isolation:\s*isolate;/,
+    );
+  });
+
+  it("does not force mobile SVG maps into a persistent composited texture", () => {
+    expect(worldMapCss).toMatch(
+      /\.map-content--mobile\s*\{[\s\S]*will-change:\s*auto;/,
+    );
+  });
+
+  it("keeps the desktop transform branch and selected-country styling unchanged", () => {
+    expect(mapEngine).toContain(
+      ": `translate3d(${nextX}px, ${nextY}px, 0) scale(${nextZoom})`",
+    );
+    expect(worldMapCss).toMatch(
+      /\.country-map \.country\[data-selected="true"\][\s\S]*fill:\s*#e0d4f7 !important;/,
     );
   });
 

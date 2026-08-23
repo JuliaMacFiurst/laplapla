@@ -117,6 +117,12 @@
   touch-action: none;
 }
 
+/* Mobile SVGs must be repainted at the current scale instead of being kept as
+   a permanently promoted texture. Desktop keeps its existing compositor hint. */
+.map-content--mobile {
+  will-change: auto;
+}
+
 .map-svg-host {
   position: relative;
 }

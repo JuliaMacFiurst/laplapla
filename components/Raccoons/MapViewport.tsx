@@ -34,6 +34,7 @@ type MapViewportProps = {
   onTouchEnd: (event: React.TouchEvent<HTMLDivElement>) => void;
   onDoubleClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
   controls?: ReactNode;
+  isMobile: boolean;
 };
 
 export default function MapViewport({
@@ -50,12 +51,13 @@ export default function MapViewport({
   onTouchEnd,
   onDoubleClick,
   controls,
+  isMobile,
 }: MapViewportProps) {
   return (
     <div className="map-container" data-testid="raccoons-map-viewport">
       <div
         ref={mapContentRef}
-        className={`map-content transition-opacity duration-700 ease-in-out ${
+        className={`map-content ${isMobile ? "map-content--mobile" : ""} transition-opacity duration-700 ease-in-out ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
         onMouseDown={onMouseDown}
