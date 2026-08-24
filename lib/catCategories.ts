@@ -440,6 +440,15 @@ function resolvePrimaryMixedCategoryKey(mixedParts: string[]) {
     findPrimaryRootCategoryDefinition(primaryPart);
 
   if (matchedPrimaryCategory) {
+    // Philosophy compounds are frequently new disciplines. A fuzzy substring
+    // match (for example "искусств" inside "искусственный") must not swallow
+    // the whole new category into the broad philosophy bucket.
+    const hasNonCanonicalPhilosophyPart = matchedPrimaryCategory.key === "mind-society" &&
+      mixedParts.slice(1).some((part) => !findExactCategoryDefinition(part));
+    if (hasNonCanonicalPhilosophyPart) {
+      const fullSlug = buildCategorySlug(mixedParts.join(" и "));
+      return fullSlug ? `${DYNAMIC_CATEGORY_KEY_PREFIX}${fullSlug}` : matchedPrimaryCategory.key;
+    }
     return matchedPrimaryCategory.key;
   }
 
@@ -471,6 +480,12 @@ function findCategoryDefinition(normalizedText: string, mixedParts = splitMixedC
 }
 
 function inferDynamicCategoryGroup(normalizedText: string): CatCategoryGroupKey {
+  const firstPart = splitMixedCategoryParts(normalizedText)[0] || normalizedText;
+  const primaryCategory = findExactCategoryDefinition(firstPart) || findPrimaryRootCategoryDefinition(firstPart);
+  if (primaryCategory) {
+    return primaryCategory.groupKey;
+  }
+
   const matchedCategory = findIncludedCategoryDefinition(normalizedText);
   if (matchedCategory) {
     return matchedCategory.groupKey;
@@ -500,7 +515,13 @@ export function getCatCategoryMeta(key: string, lang: Lang, dynamicLabel?: strin
 
   if (!category && key.startsWith(DYNAMIC_CATEGORY_KEY_PREFIX)) {
     const labelFromKey = denormalizeCategorySlug(key);
-    const localizedLabel = splitLocalizedCategoryLabel(dynamicLabel || labelFromKey, lang).first;
+    const suppliedLabel = dynamicLabel || labelFromKey;
+    const dynamicKeySlug = key.slice(DYNAMIC_CATEGORY_KEY_PREFIX.length);
+    const keyMatchesFullLabel = buildCategorySlug(normalizeCategoryText(suppliedLabel)) === dynamicKeySlug;
+    const keyRepresentsFullCompound = /(?:^|-)и(?:-|$)|(?:^|-)and(?:-|$)/.test(dynamicKeySlug);
+    const localizedLabel = keyMatchesFullLabel || keyRepresentsFullCompound
+      ? suppliedLabel
+      : splitLocalizedCategoryLabel(suppliedLabel, lang).first;
     const normalizedDynamicLabel = normalizeCategoryText(localizedLabel || labelFromKey);
     const groupKey = inferDynamicCategoryGroup(normalizedDynamicLabel);
     const group = GROUP_BY_KEY.get(groupKey)!;

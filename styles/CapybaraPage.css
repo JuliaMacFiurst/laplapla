@@ -3094,16 +3094,65 @@
 
   .search-overlay {
     align-items: flex-start;
-    padding: calc(max(18px, env(safe-area-inset-top)) + 52px) 0 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding:
+      calc(max(18px, env(safe-area-inset-top)) + 52px)
+      0
+      max(12px, env(safe-area-inset-bottom));
     background: rgba(255, 245, 251, 0.42);
   }
 
   .search-overlay-panel {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
     padding: 0 0.9rem;
   }
 
   .search-overlay-card {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     gap: 0.7rem;
+  }
+
+  .search-overlay-card > .search-form-expanded {
+    flex: 0 0 auto;
+  }
+
+  .search-overlay .book-search-filter-panel {
+    min-height: 0;
+    max-height: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .search-overlay .book-search-filter-panel .multi-filter-panel-head {
+    flex: 0 0 auto;
+  }
+
+  .search-overlay .book-search-filter-panel .multi-filter-panel-content-expanded {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .search-overlay .book-search-filter-panel .multi-filter-panel-content-inner {
+    min-height: 0;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    scrollbar-gutter: stable;
   }
 
   .search-form-expanded {

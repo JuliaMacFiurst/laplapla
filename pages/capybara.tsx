@@ -7,6 +7,7 @@ import { useBook } from "@/hooks/useBook";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
 import { buildBookHref, buildBookModeHref, findExplanationModeBySegment, getBookPathSlug, getExplanationModeSegment } from "@/lib/books/shared";
+import { groupBookGenres } from "@/lib/books/filters";
 import type { Book } from "@/types/types";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedAsPath, buildLocalizedHref, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
@@ -486,13 +487,13 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
           selectedValues: selectedAgeCategories,
           onToggle: toggleAgeCategory,
         },
-        {
-          id: "book-genre",
-          label: t.search.genre,
-          options: genreOptions,
+        ...groupBookGenres(genreOptions).map((group) => ({
+          id: `book-genre-${group.key}`,
+          label: `${t.search.genre} · ${group.label}`,
+          options: group.options,
           selectedValues: selectedGenreIds,
           onToggle: toggleGenreId,
-        },
+        })),
       ]}
     />
   );

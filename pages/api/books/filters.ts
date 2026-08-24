@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { buildBookAgeCategories, type AgeCategoryOption, type BookGenreOption } from "@/lib/books/filters";
+import { resolveBookGenre } from "@/lib/books/categoryTaxonomy";
 import type { Lang } from "@/i18n";
 import { getRequestLang } from "@/lib/i18n/routing";
 import type { Book } from "@/types/types";
@@ -10,9 +11,7 @@ type BooksFiltersResponse = {
   genres: BookGenreOption[];
 };
 
-type RawCategoryRow = Record<string, unknown>;
-
-const BOOK_CATEGORY_TRANSLATIONS: Record<string, Record<Lang, string>> = {
+const LEGACY_BOOK_CATEGORY_TRANSLATIONS: Record<string, Record<Lang, string>> = {
   kids: {
     ru: "Детские",
     en: "Children's",
@@ -83,83 +82,15 @@ const BOOK_CATEGORY_TRANSLATIONS: Record<string, Record<Lang, string>> = {
     en: "Drama",
     he: "דרמה",
   },
+  "magicheskij-realizm": { ru: "Магический реализм", en: "Magical realism", he: "ריאליזם מאגי" },
+  fantastika: { ru: "Фантастика", en: "Speculative fiction", he: "ספרות ספקולטיבית" },
+  mistika: { ru: "Мистика", en: "Supernatural fiction", he: "ספרות על-טבעית" },
+  "temnoe-fentezi": { ru: "Тёмное фэнтези", en: "Dark fantasy", he: "פנטזיה אפלה" },
+  skazka: { ru: "Сказка", en: "Fairy tale", he: "אגדה" },
+  "portalnoe-fentezi": { ru: "Портальное фэнтези", en: "Portal fantasy", he: "פנטזיית מעבר" },
+  "detskaya-klassika": { ru: "Детская классика", en: "Children's classics", he: "קלאסיקה לילדים" },
+  "nauchnaya-fantastika": { ru: "Научная фантастика", en: "Science fiction", he: "מדע בדיוני" },
 };
-
-function getTrimmedString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function getRecord(value: unknown) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
-}
-
-function getLocalizedRowField(row: RawCategoryRow, lang: Lang, field: string) {
-  const directCandidates = [
-    row[`${field}_${lang}`],
-    row[`${field}${lang.toUpperCase()}`],
-    row[`${field}${lang[0].toUpperCase()}${lang.slice(1)}`],
-  ];
-
-  for (const candidate of directCandidates) {
-    const value = getTrimmedString(candidate);
-    if (value) {
-      return value;
-    }
-  }
-
-  const translations =
-    getRecord(row.translations) ??
-    getRecord(row.translation) ??
-    getRecord(row.locale_labels) ??
-    getRecord(row.localized_labels);
-  const localizedEntry = getRecord(translations?.[lang]);
-  const nestedValue =
-    getTrimmedString(localizedEntry?.[field]) ||
-    getTrimmedString(translations?.[`${field}_${lang}`]) ||
-    getTrimmedString(translations?.[lang]);
-
-  return nestedValue;
-}
-
-function getCategoryLabel(row: RawCategoryRow, lang: Lang) {
-  const slug = getTrimmedString(row.slug);
-  const knownTranslation = BOOK_CATEGORY_TRANSLATIONS[slug]?.[lang];
-  if (knownTranslation) {
-    return knownTranslation;
-  }
-
-  for (const field of ["title", "name", "label", "category"]) {
-    const localizedValue = getLocalizedRowField(row, lang, field);
-    if (localizedValue) {
-      return localizedValue;
-    }
-  }
-
-  const candidates = [row.title, row.name, row.label, row.category, row.slug];
-  const label = candidates.find((value) => typeof value === "string" && value.trim());
-  return typeof label === "string" ? label.trim() : "";
-}
-
-function getCategoryValue(row: RawCategoryRow) {
-  const slug = getTrimmedString(row.slug);
-  if (slug) {
-    return slug;
-  }
-
-  const category = getTrimmedString(row.category);
-  if (category) {
-    return category;
-  }
-
-  const id = row.id;
-  if (typeof id === "string" || typeof id === "number") {
-    return String(id);
-  }
-
-  return getTrimmedString(row.label);
-}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<BooksFiltersResponse | { error: string }>) {
   if (req.method !== "GET") {
@@ -186,19 +117,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const ageCategories = buildBookAgeCategories(books);
     const genres = (Array.isArray(categoryRows) ? categoryRows : [])
       .map((row) => {
-        const label = getCategoryLabel(row as RawCategoryRow, lang);
-        const value = getCategoryValue(row as RawCategoryRow);
-        if (!label || !value) {
-          return null;
-        }
-
-        return {
-          value,
-          label,
-        };
+        const genre = resolveBookGenre(row as Record<string, unknown>, lang);
+        if (!genre || !genre.isFallback) return genre;
+        const legacyLabel = LEGACY_BOOK_CATEGORY_TRANSLATIONS[genre.value]?.[lang];
+        return legacyLabel ? { ...genre, label: legacyLabel, isFallback: false } : genre;
       })
       .filter((genre): genre is BookGenreOption => Boolean(genre))
-      .sort((left, right) => left.label.localeCompare(right.label, lang, { sensitivity: "base" }));
+      .sort((left, right) => left.groupOrder - right.groupOrder || left.order - right.order || left.label.localeCompare(right.label, lang));
 
     return res.status(200).json({ ageCategories, genres });
   } catch (error) {

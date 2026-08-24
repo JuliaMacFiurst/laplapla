@@ -16,7 +16,43 @@ export type AgeCategoryOption = {
 export type BookGenreOption = {
   value: string;
   label: string;
+  groupKey: string;
+  groupLabel: string;
+  groupOrder: number;
+  order: number;
+  isFallback: boolean;
 };
+
+export type BookGenreGroup = {
+  key: string;
+  label: string;
+  order: number;
+  options: BookGenreOption[];
+};
+
+export function groupBookGenres(genres: BookGenreOption[]): BookGenreGroup[] {
+  const groups = new Map<string, BookGenreGroup>();
+
+  for (const genre of genres) {
+    const group = groups.get(genre.groupKey) ?? {
+      key: genre.groupKey,
+      label: genre.groupLabel,
+      order: genre.groupOrder,
+      options: [],
+    };
+    group.options.push(genre);
+    groups.set(genre.groupKey, group);
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      options: group.options.sort((left, right) =>
+        left.order - right.order || left.label.localeCompare(right.label),
+      ),
+    }))
+    .sort((left, right) => left.order - right.order || left.label.localeCompare(right.label));
+}
 
 const AGE_RANGE_PATTERN = /(\d{1,2})(?:\s*[-–—]\s*(\d{1,2}))?/g;
 const FIXED_AGE_BUCKETS: AgeRange[] = [

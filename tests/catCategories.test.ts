@@ -97,4 +97,27 @@ describe("cat category taxonomy", () => {
     expect(resolveCatCategory({ category: "Спелеология и Геология" }, "ru")?.key).toBe("custom:спелеология");
     expect(resolveCatCategory({ category: "Спелеология и Физиология" }, "ru")?.label).toBe("Спелеология");
   });
+
+  it("keeps Philosophy and AI reachable through its canonical category in every locale", () => {
+    const source = {
+      category: "Философия и искусственный интеллект",
+      categoryKey: "custom:философия-и-искусственный-интеллект",
+    };
+
+    expect(resolveCatCategory({ ...source, categoryLabel: "Философия и искусственный интеллект" }, "ru"))
+      .toMatchObject({ key: "custom:философия-и-искусственный-интеллект", label: "Философия и искусственный интеллект", groupKey: "human" });
+    expect(resolveCatCategory({ ...source, categoryLabel: "Philosophy & Artificial Intelligence" }, "en"))
+      .toMatchObject({ key: "custom:философия-и-искусственный-интеллект", label: "Philosophy & Artificial Intelligence", groupKey: "human" });
+    expect(resolveCatCategory({ ...source, categoryLabel: "פילוסופיה ובינה מלאכותית" }, "he"))
+      .toMatchObject({ key: "custom:философия-и-искусственный-интеллект", label: "פילוסופיה ובינה מלאכותית", groupKey: "human" });
+  });
+
+  it("makes every categorized searchable preset resolvable by taxonomy", () => {
+    const searchablePresets = [
+      { category: "Физика и математика", lang: "ru" as const },
+      { category: "Philosophy and Artificial Intelligence", lang: "en" as const },
+      { category: "קטגוריה חדשה", lang: "he" as const },
+    ];
+    expect(searchablePresets.every((preset) => resolveCatCategory(preset, preset.lang) !== null)).toBe(true);
+  });
 });
