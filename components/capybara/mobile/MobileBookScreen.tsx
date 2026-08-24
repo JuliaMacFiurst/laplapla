@@ -233,7 +233,7 @@ export default function MobileBookScreen({
               )}
               <div className="mobile-story-text">
                 <p className="mobile-story-text-copy">{firstSlide?.text || t.storyError}</p>
-                <span className="mobile-book-preview-hint">Открыть слайды</span>
+                <span className="mobile-book-preview-hint">{t.openSlides}</span>
               </div>
             </div>
           </button>

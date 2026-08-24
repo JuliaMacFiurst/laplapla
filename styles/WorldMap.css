@@ -1144,7 +1144,13 @@ body.raccoons-mobile-page .footer-stack {
   position: absolute;
   inset: 0;
   z-index: 145;
-  padding: calc(max(18px, env(safe-area-inset-top, 0)) + 52px) 10px 88px;
+  box-sizing: border-box;
+  padding:
+    calc(max(18px, env(safe-area-inset-top, 0px)) + 52px)
+    max(10px, env(safe-area-inset-right, 0px))
+    88px
+    max(10px, env(safe-area-inset-left, 0px));
+  overflow-x: hidden;
   background: linear-gradient(180deg, rgba(255, 245, 251, 0.32), rgba(255, 255, 255, 0));
   pointer-events: auto;
 }
@@ -1152,20 +1158,38 @@ body.raccoons-mobile-page .footer-stack {
 .raccoons-mobile-search-panel {
   display: grid;
   gap: 10px;
-  width: 100%;
+  width: min(560px, 100%);
   max-width: 560px;
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
 }
 
 .raccoons-mobile-search-form {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: clamp(0.35rem, 2vw, 0.65rem);
   margin: 0;
+}
+
+.raccoons-mobile-search-form .search-input-expanded {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .raccoons-mobile-search-results {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   max-height: min(58dvh, 440px);
   margin: 0;
   padding: 0.85rem;
+  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   border-radius: 1.35rem;
@@ -1176,8 +1200,49 @@ body.raccoons-mobile-page .footer-stack {
 }
 
 .raccoons-mobile-search-result-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-size: 1.4rem;
   line-height: 1.1;
+}
+
+.raccoons-mobile-search-more-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: min(100%, 240px);
+  max-width: 240px;
+  min-width: 0;
+  min-height: 44px;
+  height: auto;
+  margin-block: 0.25rem 0;
+  margin-inline: auto;
+  padding-block: 0.7rem;
+  padding-inline: 1.25rem;
+  box-sizing: border-box;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+@media (max-width: 767px) {
+  .seo-entity-story-prose,
+  .seo-entity-empty-copy {
+    font-family: var(--font-varela-round), system-ui, sans-serif;
+    font-size: 1.1875rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .seo-entity-section-title {
+    font-size: 1.55rem;
+    line-height: 1.25;
+  }
 }
 
 .raccoons-mobile-bottom-controls {

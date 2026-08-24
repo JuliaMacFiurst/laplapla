@@ -287,8 +287,12 @@ export default function SeoEntityPage({
               boxShadow: "0 12px 30px rgba(234, 88, 12, 0.08)",
             }}
           >
-            <h2 style={{ marginBottom: "12px" }}>{EMPTY_STORY_COPY[currentLang].title}</h2>
-            <p style={{ margin: 0 }}>{EMPTY_STORY_COPY[currentLang].body}</p>
+            <h2 className="seo-entity-section-title" style={{ marginBottom: "12px" }}>
+              {EMPTY_STORY_COPY[currentLang].title}
+            </h2>
+            <p className="seo-entity-empty-copy" style={{ margin: 0 }}>
+              {EMPTY_STORY_COPY[currentLang].body}
+            </p>
             <div style={{ marginTop: "18px" }}>
               <Link
                 href={{
@@ -325,7 +329,9 @@ export default function SeoEntityPage({
 
           return (
             <section key={sectionKey} style={{ marginBottom: "32px" }}>
-              <h2 style={{ marginBottom: "14px" }}>{SECTION_LABELS[sectionKey][currentLang]}</h2>
+              <h2 className="seo-entity-section-title" style={{ marginBottom: "14px" }}>
+                {SECTION_LABELS[sectionKey][currentLang]}
+              </h2>
               {stories.map((story) => {
                 const storyBlocks = getStoryBlocks(story, title);
 
@@ -385,7 +391,7 @@ export default function SeoEntityPage({
                     }
 
                     return (
-                      <p key={block.id} style={{ margin: "0 0 12px" }}>
+                      <p className="seo-entity-story-prose" key={block.id} style={{ margin: "0 0 12px" }}>
                         {block.text}
                       </p>
                     );

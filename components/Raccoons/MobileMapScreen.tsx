@@ -163,7 +163,11 @@ export default function MobileMapScreen({
                       </button>
                     ))}
                     {hasMoreResults ? (
-                      <button type="button" className="search-button" onClick={onShowMoreResults}>
+                      <button
+                        type="button"
+                        className="search-button raccoons-mobile-search-more-button"
+                        onClick={onShowMoreResults}
+                      >
                         {searchUi.showMore}
                       </button>
                     ) : null}

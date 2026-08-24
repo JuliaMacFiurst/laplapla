@@ -746,6 +746,7 @@ type DictionaryShape = {
       subtitle: string;
       feedKicker: string;
       scrollHint: string;
+      openSlides: string;
       navigation: {
         previousBook: string;
         nextBook: string;

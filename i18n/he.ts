@@ -927,6 +927,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
       subtitle: "בחרו ספר וקפצו ישר לסיפור.",
       feedKicker: "פיד ספרים",
       scrollHint: "החלק למעלה או גלול למטה כדי לפתוח את הספר הבא.",
+      openSlides: "פתיחת השקופיות",
       navigation: {
         previousBook: "הספר הקודם",
         nextBook: "הספר הבא",
