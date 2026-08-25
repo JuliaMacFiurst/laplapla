@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type TouchEvent } from "react";
 import MapWrapper from "@/components/Raccoons/MapWrapper";
 import { dictionaries, type Lang } from "@/i18n";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -45,6 +45,9 @@ const TAB_ORDER: MapTab[] = [
   "food",
 ];
 
+const ONBOARDING_DISMISSED_KEY = "laplapla:raccoons-onboarding-dismissed";
+const ONBOARDING_SWIPE_THRESHOLD = 40;
+
 export default function MobileMapScreen({
   lang,
   activeTab,
@@ -67,7 +70,59 @@ export default function MobileMapScreen({
 }: MobileMapScreenProps) {
   const t = dictionaries[lang].raccoons;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(true);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const onboardingTouchStartX = useRef<number | null>(null);
   const exploreLabel = lang === "ru" ? "Исследовать" : lang === "he" ? "לחקור" : "Explore";
+
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(ONBOARDING_DISMISSED_KEY) === "1") {
+        setIsOnboardingOpen(false);
+      }
+    } catch {
+      // Storage can be unavailable in privacy modes; the guide remains usable.
+    }
+  }, []);
+
+  const closeOnboarding = () => {
+    setIsOnboardingOpen(false);
+    try {
+      window.sessionStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
+    } catch {
+      // Closing the guide must still work when storage is unavailable.
+    }
+  };
+
+  const reopenOnboarding = () => {
+    setIsOnboardingOpen(true);
+    try {
+      window.sessionStorage.removeItem(ONBOARDING_DISMISSED_KEY);
+    } catch {
+      // Reopening the guide must not depend on storage.
+    }
+  };
+
+  const handleOnboardingTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    onboardingTouchStartX.current = event.touches[0]?.clientX ?? null;
+    event.stopPropagation();
+  };
+
+  const handleOnboardingTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const startX = onboardingTouchStartX.current;
+    const endX = event.changedTouches[0]?.clientX;
+    onboardingTouchStartX.current = null;
+    event.stopPropagation();
+    if (startX == null || endX == null) return;
+
+    const deltaX = startX - endX;
+    if (Math.abs(deltaX) < ONBOARDING_SWIPE_THRESHOLD) return;
+    setOnboardingStep((current) => (
+      deltaX > 0
+        ? Math.min(current + 1, t.onboarding.steps.length - 1)
+        : Math.max(current - 1, 0)
+    ));
+  };
 
   return (
     <main className="raccoons-mobile-screen" dir={lang === "he" ? "rtl" : "ltr"}>
@@ -97,6 +152,72 @@ export default function MobileMapScreen({
           {exploreLabel}
         </button>
       </div>
+
+      {isOnboardingOpen ? (
+        <header
+          className="raccoons-mobile-semantic-header raccoons-mobile-onboarding"
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="raccoons-mobile-onboarding-title-row">
+            <h1>{t.page.title}</h1>
+            <button
+              type="button"
+              className="raccoons-mobile-onboarding-close"
+              onClick={closeOnboarding}
+              aria-label={t.onboarding.close}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+          <div
+            className="raccoons-mobile-onboarding-viewport"
+            onTouchStart={handleOnboardingTouchStart}
+            onTouchMove={(event) => event.stopPropagation()}
+            onTouchEnd={handleOnboardingTouchEnd}
+          >
+            <div
+              className="raccoons-mobile-onboarding-track"
+              style={{ transform: `translateX(-${onboardingStep * 100}%)` }}
+            >
+              {t.onboarding.steps.map((step, index) => (
+                <section
+                  key={step.title}
+                  className="raccoons-mobile-onboarding-step"
+                  dir={lang === "he" ? "rtl" : "ltr"}
+                  data-onboarding-step={index + 1}
+                >
+                  <h2>{step.title}</h2>
+                  <p>{step.body}</p>
+                </section>
+              ))}
+            </div>
+          </div>
+          <div className="raccoons-mobile-onboarding-dots" dir="ltr">
+            {t.onboarding.steps.map((step, index) => (
+              <button
+                key={step.title}
+                type="button"
+                className={`raccoons-mobile-onboarding-dot ${index === onboardingStep ? "is-active" : ""}`}
+                onClick={() => setOnboardingStep(index)}
+                aria-label={`${t.onboarding.stepLabel} ${index + 1}: ${step.title}`}
+                aria-current={index === onboardingStep ? "step" : undefined}
+              >
+                <span aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </header>
+      ) : (
+        <button
+          type="button"
+          className="raccoons-mobile-onboarding-reopen"
+          onClick={reopenOnboarding}
+          aria-label={t.onboarding.reopen}
+        >
+          <span aria-hidden="true">?</span>
+        </button>
+      )}
 
       <div className="raccoons-mobile-map-area">
         <MapWrapper

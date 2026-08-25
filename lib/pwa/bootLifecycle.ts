@@ -40,6 +40,12 @@ export function createPwaBootRecoveryScript() {
 
       const showRecovery = (reason) => {
         root.dataset.pwaBootState = "degraded";
+        const splash = document.querySelector(".app-splash");
+        if (splash) {
+          splash.classList.add("app-splash--visible");
+          splash.setAttribute("aria-hidden", "false");
+          splash.setAttribute("role", "status");
+        }
         const recovery = document.getElementById("pwa-boot-recovery-panel");
         if (recovery) {
           recovery.hidden = false;
@@ -119,7 +125,7 @@ export function createPwaBootRecoveryScript() {
 
       window.addEventListener(readyEvent, markReady, { once: true });
       const deadline = window.setTimeout(async () => {
-        if (ready || !document.querySelector(".app-splash--visible")) {
+        if (ready) {
           return;
         }
 
@@ -135,7 +141,7 @@ export function createPwaBootRecoveryScript() {
         }
 
         recoveryDeadline = window.setTimeout(() => {
-          if (!ready && document.querySelector(".app-splash--visible")) {
+          if (!ready) {
             showRecovery("boot-deadline-exceeded-online");
           }
         }, Math.max(0, recoveryDeadlineMs - (Date.now() - startedAt)));

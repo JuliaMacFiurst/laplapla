@@ -69,10 +69,19 @@ export function getSplashDebugMode(search: string, hostname: string): SplashDebu
 }
 
 function getDisplayMode() {
-  if (window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone) return "standalone";
+  if (shouldShowStartupSplash(
+    window.matchMedia("(display-mode: standalone)").matches,
+    Boolean((navigator as Navigator & { standalone?: boolean }).standalone),
+  )) return "standalone";
   // Web APIs do not reliably distinguish a Chrome Custom Tab from a browser tab.
   return "browser/custom-tab";
+}
+
+export function shouldShowStartupSplash(
+  standaloneDisplayMode: boolean,
+  navigatorStandalone: boolean,
+) {
+  return standaloneDisplayMode || navigatorStandalone;
 }
 
 function canRegisterServiceWorker() {
@@ -88,7 +97,9 @@ function canRegisterServiceWorker() {
 }
 
 export default function PWAAppShell({ lang }: { lang: Lang }) {
-  const [bootState, setBootState] = useState<PwaBootState>("booting");
+  // SSR and ordinary browser navigation must expose the page immediately.
+  // Standalone/TWA clients opt into the startup splash after hydration.
+  const [bootState, setBootState] = useState<PwaBootState>("ready");
   const [debugSplashMode, setDebugSplashMode] = useState<SplashDebugMode>();
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
   const reloadStarted = useRef(false);
@@ -103,9 +114,13 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
     splashStartedAt.current = startedAt;
     const selectedDebugMode = getSplashDebugMode(window.location.search, window.location.hostname);
     const shouldDebugSplash = Boolean(selectedDebugMode);
+    const shouldShowSplash = getDisplayMode() === "standalone" || shouldDebugSplash;
     setDebugSplashMode(selectedDebugMode);
+    if (shouldShowSplash) {
+      setBootState("booting");
+    }
     logSplashTrace("shell mounted");
-    logSplashTrace("initial visible: true");
+    logSplashTrace(`initial visible: ${shouldShowSplash}`);
     logSplashTrace(`display mode: ${getDisplayMode()}`);
     document.documentElement.dataset.pwaBootState = "ready";
     window.dispatchEvent(new Event(PWA_BOOT_READY_EVENT));
@@ -143,10 +158,12 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
         window.sessionStorage.removeItem(PWA_BOOT_DIAGNOSTIC_KEY);
       } catch {}
     }
-    safetyTimer.current = window.setTimeout(
-      () => setBootState("ready"),
-      shouldDebugSplash ? DEBUG_SPLASH_MS : SPLASH_SAFETY_LIMIT_MS,
-    );
+    if (shouldShowSplash) {
+      safetyTimer.current = window.setTimeout(
+        () => setBootState("ready"),
+        shouldDebugSplash ? DEBUG_SPLASH_MS : SPLASH_SAFETY_LIMIT_MS,
+      );
+    }
 
     return () => {
       window.clearTimeout(splashReadyTimer.current);

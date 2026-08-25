@@ -5,7 +5,10 @@ import {
   getStaticSplashReason,
   shouldSkipAnimatedSplash,
 } from "@/components/PWA/AnimatedAppSplash";
-import { getSplashDebugMode } from "@/components/PWA/PWAAppShell";
+import {
+  getSplashDebugMode,
+  shouldShowStartupSplash,
+} from "@/components/PWA/PWAAppShell";
 
 describe("AnimatedAppSplash loading policy", () => {
   it.each([
@@ -55,5 +58,22 @@ describe("AnimatedAppSplash loading policy", () => {
     expect(getSplashDebugMode("?debugSplashMode=error", "www.laplapla.com")).toBeUndefined();
     expect(getSplashDebugMode("?debugSplashMode=animated", "localhost")).toBe("animated");
     expect(getSplashDebugMode("?debugSplashMode=animated", "example.vercel.app")).toBeUndefined();
+  });
+
+  it("shows the startup splash only for a standalone display mode", () => {
+    expect(shouldShowStartupSplash(false, false)).toBe(false);
+    expect(shouldShowStartupSplash(true, false)).toBe(true);
+    expect(shouldShowStartupSplash(false, true)).toBe(true);
+  });
+
+  it("uses a non-blocking initial PWA shell state for ordinary web SSR", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "components/PWA/PWAAppShell.tsx"),
+      "utf8",
+    );
+    expect(source).toContain('useState<PwaBootState>("ready")');
+    expect(source).toContain('const shouldShowSplash = getDisplayMode() === "standalone"');
+    expect(source).toContain('setBootState("booting")');
+    expect(source).toContain('visible={bootState === "booting"}');
   });
 });

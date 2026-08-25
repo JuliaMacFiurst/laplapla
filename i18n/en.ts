@@ -1019,6 +1019,25 @@ LapLapLa grows through dialogue, not through a fixed master plan.`,
       slidesTranslationNotice:
         "Slide translations are not available yet. You can use your browser's built-in translator for now. Translated slides will appear later.",
     },
+    onboarding: {
+      close: "Close guide",
+      reopen: "Open guide",
+      stepLabel: "Step",
+      steps: [
+        {
+          title: "Explore the maps",
+          body: "Choose a map type below to discover the world from different angles. Zoom in to reach smaller places, tap map objects, or use the search icon to find in-depth stories about countries and other parts of the world.",
+        },
+        {
+          title: "Create a slideshow",
+          body: "Found a story you like? Open it in Cats Studio, build a slideshow, and export the finished result to your phone.",
+        },
+        {
+          title: "Keep exploring",
+          body: "Tap “Explore” for recipes from different countries and the first geography quest. Enjoy the journey!",
+        },
+      ],
+    },
     tabs: {
       country: "Countries",
       river: "Rivers",

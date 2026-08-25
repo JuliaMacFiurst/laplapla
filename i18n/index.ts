@@ -831,6 +831,16 @@ type DictionaryShape = {
       guideAlt: string;
       slidesTranslationNotice?: string;
     };
+    onboarding: {
+      close: string;
+      reopen: string;
+      stepLabel: string;
+      steps: readonly [
+        { title: string; body: string },
+        { title: string; body: string },
+        { title: string; body: string },
+      ];
+    };
     tabs: {
       country: string;
       river: string;

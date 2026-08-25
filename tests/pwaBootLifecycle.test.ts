@@ -27,6 +27,7 @@ function createBootHarness(options?: {
     healthPath: null as string | null,
     healthCache: null as string | null,
     recoveryHidden: true,
+    recoverySplashVisible: false,
   };
 
   class HarnessElement {
@@ -52,6 +53,14 @@ function createBootHarness(options?: {
     set hidden(value: boolean) {
       state.recoveryHidden = value;
     },
+  };
+  const splash = {
+    classList: {
+      add(value: string) {
+        if (value === "app-splash--visible") state.recoverySplashVisible = true;
+      },
+    },
+    setAttribute() {},
   };
 
   const addListener = (
@@ -98,7 +107,8 @@ function createBootHarness(options?: {
       addListener(documentListeners, type, listener);
     },
     querySelector(selector: string) {
-      return selector === ".app-splash--visible" ? {} : null;
+      if (selector === ".app-splash") return splash;
+      return selector === ".app-splash--visible" && state.recoverySplashVisible ? splash : null;
     },
     getElementById(id: string) {
       return id === "pwa-boot-recovery-panel" ? recovery : null;
@@ -208,6 +218,7 @@ describe("PWA boot recovery", () => {
 
     expect(harness.state.bootState).toBe("degraded");
     expect(harness.state.recoveryHidden).toBe(false);
+    expect(harness.state.recoverySplashVisible).toBe(true);
     expect(harness.state.replacedWith).toBeNull();
   });
 
@@ -224,6 +235,7 @@ describe("PWA boot recovery", () => {
     expect(second.state.reloads).toBe(0);
     expect(second.state.bootState).toBe("degraded");
     expect(second.state.recoveryHidden).toBe(false);
+    expect(second.state.recoverySplashVisible).toBe(true);
   });
 
   it("clears the chunk retry marker after a successful boot", () => {
