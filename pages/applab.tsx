@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 
 import SEO from "@/components/SEO";
+import AdSlot from "@/components/ads/AdSlot";
 import type { Lang } from "@/i18n";
 import {
   buildLocalizedHref,
@@ -255,6 +256,7 @@ export default function AppLabPage() {
             </article>
           ))}
         </section>
+        <AdSlot placement="applab-bottom" />
       </main>
     </>
   );

@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
+import { Fragment } from "react";
 import SEO from "@/components/SEO";
+import AdSlot from "@/components/ads/AdSlot";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildCanonicalMapEntityPath, type CanonicalMapEntityType } from "@/lib/mapEntityRouting";
@@ -238,6 +240,18 @@ export default function SeoEntityPage({
   const seoDescription = `${title} — ${mapSeo.descriptionSuffix}`;
   const seoPath = buildCanonicalMapEntityPath(entityType, slug);
   const mapTab = entityType === "biome" ? "physic" : entityType;
+  const populatedSections = SECTION_ORDER.filter((sectionKey) => groupedStories[sectionKey].length > 0);
+  const articleTextLength = populatedSections.reduce(
+    (sectionTotal, sectionKey) => sectionTotal + groupedStories[sectionKey].reduce(
+      (storyTotal, story) => storyTotal + getStoryBlocks(story, title).reduce(
+        (blockTotal, block) => blockTotal + (block.type === "paragraph" ? block.text.length : 0),
+        0,
+      ),
+      0,
+    ),
+    0,
+  );
+  const inContentSectionIndex = Math.max(0, Math.floor(populatedSections.length / 2) - 1);
 
   useEffect(() => {
     const eventName = entityType === "country" ? "country_opened" : "content_open";
@@ -321,14 +335,12 @@ export default function SeoEntityPage({
           </section>
         ) : null}
 
-        {hasAnyStories ? SECTION_ORDER.map((sectionKey) => {
+        {hasAnyStories ? populatedSections.map((sectionKey, sectionIndex) => {
           const stories = groupedStories[sectionKey];
-          if (!stories.length) {
-            return null;
-          }
 
           return (
-            <section key={sectionKey} style={{ marginBottom: "32px" }}>
+            <Fragment key={sectionKey}>
+            <section style={{ marginBottom: "32px" }}>
               <h2 className="seo-entity-section-title" style={{ marginBottom: "14px" }}>
                 {SECTION_LABELS[sectionKey][currentLang]}
               </h2>
@@ -400,8 +412,14 @@ export default function SeoEntityPage({
                 );
               })}
             </section>
+            {articleTextLength >= 1800 && sectionIndex === inContentSectionIndex ? (
+              <AdSlot placement="raccoon-article-content" />
+            ) : null}
+            </Fragment>
           );
         }) : null}
+
+        {hasAnyStories ? <AdSlot placement="raccoon-article-bottom" /> : null}
 
         <div style={{ marginTop: "40px" }}>
           <Link

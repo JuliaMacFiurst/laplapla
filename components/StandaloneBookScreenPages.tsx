@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/router";
 import BookScreen from "@/components/BookScreen";
+import AdSlot from "@/components/ads/AdSlot";
 import ErrorMessage from "@/components/ErrorMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
@@ -713,6 +714,7 @@ export default function StandaloneBookScreenPages({
           <article className="book-card">{bookContent}</article>
         </section>
       )}
+      {!showQuiz ? <AdSlot placement="capybara-book-content" /> : null}
     </>
   );
 }

@@ -4,6 +4,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useEffect, useRef, type CSSProperties } from "react";
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
+import AdSlot from "@/components/ads/AdSlot";
 import { BASE_URL } from "@/lib/config";
 import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
@@ -475,6 +476,8 @@ export default function RaccoonRecipePage({
               </div>
             </section>
           ) : null}
+
+          <AdSlot placement="raccoon-recipe-bottom" />
 
           <section className="recipe-hidden-seo">
             <CorePageLinks current="raccoons" lang={lang} related={["home", "cats", "book"]} />

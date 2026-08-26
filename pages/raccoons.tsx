@@ -10,6 +10,7 @@ import MapWrapper from "@/components/Raccoons/MapWrapper";
 import MapTabs from "@/components/Raccoons/MapTabs";
 import { RaccoonGuide } from "@/components/Raccoons/RaccoonGuide";
 import { QuestSection } from "@/components/Raccoons/QuestSection";
+import AdSlot from "@/components/ads/AdSlot";
 import type { Quest } from "@/components/Raccoons/QuestSection";
 import { quests } from "@/utils/quests.config";
 import { dictionaries, type Lang } from "@/i18n";
@@ -546,7 +547,9 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
           </div>
           </div>
           <RaccoonKitchenSection lang={lang} recipes={recipes} />
+          {recipes.length > 0 ? <AdSlot placement="raccoon-kitchen-bottom" /> : null}
           <QuestSection quests={localizedQuests} />
+          <AdSlot placement="raccoon-quests-bottom" />
         </div>
       </main>
     </>

@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import { dictionaries, Lang } from "../../i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { LapLapLaSpinner } from "@/components/LoadingSpinner";
+import AdSlot from "@/components/ads/AdSlot";
 
 interface Lesson {
   id: string;
@@ -109,6 +110,7 @@ export default function LessonsPage() {
             <div className="lessons-empty-state">{noLessonsLabel}</div>
           ) : null}
         </div>
+        <AdSlot placement="dogs-lessons-bottom" />
       </main>
     </>
   );

@@ -2,6 +2,7 @@ import type { GetStaticProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
+import AdSlot from "@/components/ads/AdSlot";
 import SEO from "@/components/SEO";
 import { dictionaries, Lang } from "../i18n";
 import { buildLocalizedQuery, DEFAULT_LANG, getCurrentLang, isLang } from "@/lib/i18n/routing";
@@ -111,6 +112,7 @@ export default function DogPage({ lang: providedLang }: { lang?: Lang }) {
           </button>
         ))}
       </div>
+      <AdSlot placement="dogs-category-bottom" />
       </main>
     </>
   );

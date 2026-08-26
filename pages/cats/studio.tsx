@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import CatsLayout from "@/components/Cats/CatsLayout";
 import SEO from "@/components/SEO";
+import AdSlot from "@/components/ads/AdSlot";
 import { Lang, dictionaries } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
@@ -373,6 +374,7 @@ export function CatsStudioPageContent({ lang: providedLang }: { lang?: Lang }) {
           />
         </CatsLayout>
       )}
+      <AdSlot placement="cats-story-studio-bottom" />
     </>
   );
 }

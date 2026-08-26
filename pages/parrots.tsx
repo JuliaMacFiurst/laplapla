@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
 import { trackEvent } from "@/lib/analytics/client";
 import SEO from "@/components/SEO";
+import AdSlot from "@/components/ads/AdSlot";
 import ParrotMixer, { type MusicConfig } from "../components/ParrotMixer";
 import ParrotStoryCard, { type Slide as ParrotSlide } from "../components/ParrotStoryCard";
 import ParrotMobileExperience from "@/components/parrots/mobile/ParrotMobileExperience";
@@ -251,6 +252,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             onOpenPreset={handleOpenPresetStudio}
             imageForPreset={(id) => imageForPreset(id, styleRecords.find((item) => item.id === id)?.iconUrl)}
           />
+          <AdSlot placement="parrots-style-bottom" />
           <style jsx global>{`
             .parrots-page {
               padding-left: 0;
@@ -378,6 +380,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
               </button>
             ))}
           </div>
+          <AdSlot placement="parrots-style-bottom" />
         </div>
 
         <div
@@ -415,6 +418,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             />
           </div>
         </div>
+        <AdSlot placement="parrots-mixer-bottom" />
         <style jsx global>{`
           /* Preset buttons row */
           .style-presets-row { display: flex; flex-wrap: wrap; justify-content: center; }

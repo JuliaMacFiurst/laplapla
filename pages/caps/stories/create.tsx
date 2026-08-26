@@ -5,6 +5,7 @@ import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
 import MobileStoryComposer from "@/components/caps/mobile/MobileStoryComposer";
 import MobileGeneratedStoryViewer from "@/components/caps/mobile/MobileGeneratedStoryViewer";
 import SEO from "@/components/SEO";
+import AdSlot from "@/components/ads/AdSlot";
 import StoryCarousel from "@/components/StoryCarousel";
 import TranslationWarning from "@/components/TranslationWarning";
 import { dictionaries, type Lang } from "@/i18n";
@@ -753,6 +754,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
           ) : null}
         </section>
         )}
+        <AdSlot placement="capybara-story-create-bottom" />
         </main>
       </div>
     </>

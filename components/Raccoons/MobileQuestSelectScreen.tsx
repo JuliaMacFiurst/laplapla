@@ -4,6 +4,7 @@ import type { Lang } from "@/i18n";
 import { dictionaries } from "@/i18n";
 import { buildLocalizedHref } from "@/lib/i18n/routing";
 import type { Quest } from "@/components/Raccoons/QuestSection";
+import AdSlot from "@/components/ads/AdSlot";
 import { getRecipeCardImage, getRecipeExportImage, type Recipe } from "@/lib/recipes";
 
 type MobileQuestSelectScreenProps = {
@@ -137,6 +138,7 @@ export default function MobileQuestSelectScreen({
               );
             })}
           </section>
+          <AdSlot placement="raccoon-quests-bottom" />
         </section>
 
         <section className="raccoons-mobile-adventure-panel raccoons-mobile-kitchen-panel" aria-labelledby="raccoons-mobile-kitchen-title">
@@ -177,6 +179,7 @@ export default function MobileQuestSelectScreen({
               );
             })}
           </div>
+          {recipes.length > 0 ? <AdSlot placement="raccoon-kitchen-bottom" /> : null}
         </section>
       </div>
     </main>

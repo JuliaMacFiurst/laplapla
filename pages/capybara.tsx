@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import BookFeed from "@/components/BookFeed";
 import MultiSelectFilterPanel from "@/components/MultiSelectFilterPanel";
 import SEO from "@/components/SEO";
+import AdSlot from "@/components/ads/AdSlot";
 import { useBook } from "@/hooks/useBook";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import type { AgeCategoryOption, BookGenreOption } from "@/lib/books/filters";
@@ -797,6 +798,7 @@ export default function CapybaraPage({ lang }: { lang: Lang }) {
             t={t}
           />
         )}
+        <AdSlot placement="capybara-library-bottom" />
       </main>
       </div>
     </>

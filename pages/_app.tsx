@@ -10,6 +10,7 @@ import '../styles/ArtGalleryModal.css';
 import '../styles/ParrotMixer.css';
 import '../styles/WorldMap.css'
 import '../styles/Quests.css';
+import '../styles/Ads.css';
 import '../styles/Dress-up-game.css'
 import '../styles/QuestCarousel.css';
 import '../styles/Dog-sled-game.css';
