@@ -36,12 +36,14 @@ function isPlayableForLang(item: VideoItem, lang: Lang) {
 
 function toMobileViewerVideo(item: VideoItem, lang: Lang): MobileViewerVideoItem {
   const title = item.title?.[lang] ?? item.title?.en ?? item.id;
+  const youtubeId = item.youtubeId ?? "";
 
   return {
     id: item.id,
     title,
     description: item.durationLabel,
-    videoUrl: `https://www.youtube-nocookie.com/embed/${item.youtubeId}`,
+    youtubeId,
+    thumbnailUrl: `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`,
   };
 }
 
@@ -332,6 +334,7 @@ export function VideoSection({
             onClose={() => setActiveMobileVideoIndex(null)}
             closeLabel={t.closeViewer}
             hintLabel={t.mobileViewerHint}
+            labels={t.mobilePlayer}
           />
         ) : null}
       </section>

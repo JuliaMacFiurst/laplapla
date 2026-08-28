@@ -667,6 +667,15 @@ export const en = {
     mobilePopularTitle: "Random videos",
     mobileViewerHint: "Swipe up and down like TikTok",
     closeViewer: "Close video",
+    mobilePlayer: {
+      loading: "Loading video…",
+      failed: "This video could not be opened here.",
+      openYouTube: "Open in YouTube",
+      play: "Play video",
+      pause: "Pause video",
+      soundOn: "Turn sound on",
+      soundOff: "Turn sound off",
+    },
     categories: {
       all: "All",
       science: "Science",

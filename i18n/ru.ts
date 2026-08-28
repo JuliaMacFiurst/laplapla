@@ -515,6 +515,15 @@ export const ru = {
     mobilePopularTitle: "Случайные видео",
     mobileViewerHint: "Листай вверх и вниз, как в TikTok",
     closeViewer: "Закрыть видео",
+    mobilePlayer: {
+      loading: "Загружаем видео…",
+      failed: "Не удалось открыть видео здесь.",
+      openYouTube: "Открыть в YouTube",
+      play: "Воспроизвести видео",
+      pause: "Поставить видео на паузу",
+      soundOn: "Включить звук",
+      soundOff: "Выключить звук",
+    },
     categories: {
       all: "Все",
       science: "Наука",

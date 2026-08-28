@@ -1,12 +1,24 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export type VideoItem = {
   id: string;
   title: string;
   description?: string;
-  videoUrl: string;
+  youtubeId: string;
+  thumbnailUrl: string;
+};
+
+type PlayerLabels = {
+  loading: string;
+  failed: string;
+  openYouTube: string;
+  play: string;
+  pause: string;
+  soundOn: string;
+  soundOff: string;
 };
 
 type Props = {
@@ -15,6 +27,7 @@ type Props = {
   onClose: () => void;
   closeLabel?: string;
   hintLabel?: string;
+  labels: PlayerLabels;
 };
 
 const SWIPE_THRESHOLD = 50;
@@ -31,12 +44,27 @@ function wrapIndex(index: number, length: number) {
   return ((index % length) + length) % length;
 }
 
-function buildEmbedUrl(videoUrl: string, autoplay: boolean) {
-  const separator = videoUrl.includes("?") ? "&" : "?";
-  return `${videoUrl}${separator}autoplay=${autoplay ? 1 : 0}&mute=1&controls=0&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
+function buildEmbedUrl(youtubeId: string) {
+  const params = new URLSearchParams({
+    autoplay: "1",
+    mute: "1",
+    controls: "0",
+    playsinline: "1",
+    rel: "0",
+    modestbranding: "1",
+    enablejsapi: "1",
+  });
+
+  if (typeof window !== "undefined") {
+    params.set("origin", window.location.origin);
+  }
+
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}?${params.toString()}`;
 }
 
-function postYoutubeCommand(iframe: HTMLIFrameElement | null, func: "playVideo" | "pauseVideo") {
+type YoutubeCommand = "playVideo" | "pauseVideo" | "mute" | "unMute";
+
+function postYoutubeCommand(iframe: HTMLIFrameElement | null, func: YoutubeCommand) {
   if (!iframe?.contentWindow) {
     return;
   }
@@ -47,7 +75,7 @@ function postYoutubeCommand(iframe: HTMLIFrameElement | null, func: "playVideo" 
       func,
       args: [],
     }),
-    "*"
+    "https://www.youtube-nocookie.com"
   );
 }
 
@@ -57,6 +85,7 @@ export default function MobileVideoViewer({
   onClose,
   closeLabel = "Close video",
   hintLabel,
+  labels,
 }: Props) {
   const [currentIndex, setCurrentIndex] = useState(() =>
     clampIndex(initialIndex, Math.max(0, videos.length - 1))
@@ -64,11 +93,14 @@ export default function MobileVideoViewer({
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [playerState, setPlayerState] = useState<"loading" | "ready" | "failed">("loading");
   const [viewportHeight, setViewportHeight] = useState(0);
 
   const startYRef = useRef(0);
   const isAnimatingRef = useRef(false);
-  const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({});
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const readyTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     setCurrentIndex(clampIndex(initialIndex, Math.max(0, videos.length - 1)));
@@ -155,16 +187,61 @@ export default function MobileVideoViewer({
   }, [currentIndex, videos]);
 
   useEffect(() => {
-    renderRange.forEach((entry) => {
-      const iframe = iframeRefs.current[entry.key];
+    setPlayerState("loading");
+    setIsPlaying(true);
+    setIsMuted(true);
 
-      if (entry.offset === 0 && isPlaying) {
-        postYoutubeCommand(iframe, "playVideo");
-      } else {
-        postYoutubeCommand(iframe, "pauseVideo");
+    readyTimeoutRef.current = window.setTimeout(() => {
+      setPlayerState((current) => current === "ready" ? current : "failed");
+    }, 15000);
+
+    const handleYoutubeMessage = (event: MessageEvent) => {
+      if (event.origin !== "https://www.youtube-nocookie.com" || event.source !== iframeRef.current?.contentWindow) {
+        return;
       }
+
+      let payload: { event?: string; info?: unknown } | null = null;
+      try {
+        payload = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+      } catch {
+        return;
+      }
+
+      if (payload?.event === "onReady") {
+        if (readyTimeoutRef.current !== null) window.clearTimeout(readyTimeoutRef.current);
+        setPlayerState("ready");
+        postYoutubeCommand(iframeRef.current, "playVideo");
+      } else if (payload?.event === "onError") {
+        if (readyTimeoutRef.current !== null) window.clearTimeout(readyTimeoutRef.current);
+        setPlayerState("failed");
+      }
+    };
+
+    window.addEventListener("message", handleYoutubeMessage);
+    return () => {
+      window.removeEventListener("message", handleYoutubeMessage);
+      if (readyTimeoutRef.current !== null) window.clearTimeout(readyTimeoutRef.current);
+      readyTimeoutRef.current = null;
+    };
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (playerState !== "ready") return;
+    postYoutubeCommand(iframeRef.current, isPlaying ? "playVideo" : "pauseVideo");
+  }, [isPlaying, playerState]);
+
+  const registerYoutubeListeners = () => {
+    const playerWindow = iframeRef.current?.contentWindow;
+    if (!playerWindow) return;
+
+    ["onReady", "onError"].forEach((eventName) => {
+      playerWindow.postMessage(JSON.stringify({ event: "listening", id: activeVideo.id }), "https://www.youtube-nocookie.com");
+      playerWindow.postMessage(
+        JSON.stringify({ event: "command", func: "addEventListener", args: [eventName] }),
+        "https://www.youtube-nocookie.com"
+      );
     });
-  }, [currentIndex, isPlaying, renderRange]);
+  };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     if (isAnimatingRef.current) {
@@ -201,8 +278,8 @@ export default function MobileVideoViewer({
 
     if (nextIndex !== currentIndex) {
       isAnimatingRef.current = true;
+      if (playerState === "ready") postYoutubeCommand(iframeRef.current, "pauseVideo");
       setCurrentIndex(nextIndex);
-      setIsPlaying(true);
       window.setTimeout(() => {
         isAnimatingRef.current = false;
       }, 360);
@@ -254,25 +331,77 @@ export default function MobileVideoViewer({
 
             return (
               <article key={entry.key} className="mobile-video-viewer-slide">
-                <iframe
-                  ref={(node) => {
-                    iframeRefs.current[entry.key] = node;
-                  }}
-                  className="mobile-video-viewer-frame"
-                  src={buildEmbedUrl(entry.video.videoUrl, isActive)}
-                  title={entry.video.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="eager"
-                />
-                <button
-                  type="button"
-                  className="mobile-video-viewer-surface"
-                  onClick={() => {
-                    setIsPlaying((current) => !current);
-                  }}
-                  aria-label={isPlaying ? "Pause video" : "Play video"}
-                />
+                {isActive && playerState !== "failed" ? (
+                  <iframe
+                    key={entry.video.youtubeId}
+                    ref={iframeRef}
+                    className="mobile-video-viewer-frame"
+                    src={buildEmbedUrl(entry.video.youtubeId)}
+                    title={entry.video.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="eager"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    onLoad={registerYoutubeListeners}
+                    onError={() => setPlayerState("failed")}
+                  />
+                ) : (
+                  <Image
+                    className="mobile-video-viewer-preview"
+                    src={entry.video.thumbnailUrl}
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    unoptimized
+                    priority={false}
+                  />
+                )}
+
+                {isActive && playerState === "loading" ? (
+                  <div className="mobile-video-viewer-status" role="status">{labels.loading}</div>
+                ) : null}
+
+                {isActive && playerState === "failed" ? (
+                  <div className="mobile-video-viewer-fallback" role="alert">
+                    <p>{labels.failed}</p>
+                    <a
+                      href={`https://www.youtube.com/watch?v=${encodeURIComponent(entry.video.youtubeId)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {labels.openYouTube}
+                    </a>
+                  </div>
+                ) : null}
+
+                {isActive && playerState !== "failed" ? (
+                  <button
+                    type="button"
+                    className="mobile-video-viewer-surface"
+                    onClick={() => setIsPlaying((current) => !current)}
+                    aria-label={isPlaying ? labels.pause : labels.play}
+                    disabled={playerState !== "ready"}
+                  />
+                ) : null}
+
+                {isActive && playerState === "ready" ? (
+                  <div className="mobile-video-viewer-controls">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextMuted = !isMuted;
+                        postYoutubeCommand(iframeRef.current, nextMuted ? "mute" : "unMute");
+                        if (!nextMuted) postYoutubeCommand(iframeRef.current, "playVideo");
+                        setIsMuted(nextMuted);
+                        setIsPlaying(true);
+                      }}
+                      aria-label={isMuted ? labels.soundOn : labels.soundOff}
+                    >
+                      <span aria-hidden="true">{isMuted ? "🔇" : "🔊"}</span>
+                      {isMuted ? labels.soundOn : labels.soundOff}
+                    </button>
+                  </div>
+                ) : null}
 
                 <div className="mobile-video-viewer-overlay">
                   <h3 className="mobile-video-viewer-title">{entry.video.title}</h3>

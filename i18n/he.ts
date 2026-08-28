@@ -826,6 +826,15 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
     mobilePopularTitle: "סרטונים אקראיים",
     mobileViewerHint: "החליקו למעלה ולמטה כמו בטיקטוק",
     closeViewer: "סגור סרטון",
+    mobilePlayer: {
+      loading: "הסרטון נטען…",
+      failed: "לא ניתן לפתוח את הסרטון כאן.",
+      openYouTube: "פתיחה ב-YouTube",
+      play: "הפעלת הסרטון",
+      pause: "השהיית הסרטון",
+      soundOn: "הפעלת קול",
+      soundOff: "השתקת קול",
+    },
     categories: {
       all: "הכל",
       science: "מדע",

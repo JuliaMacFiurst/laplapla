@@ -300,6 +300,15 @@ type DictionaryShape = {
     mobilePopularTitle: string;
     mobileViewerHint: string;
     closeViewer: string;
+    mobilePlayer: {
+      loading: string;
+      failed: string;
+      openYouTube: string;
+      play: string;
+      pause: string;
+      soundOn: string;
+      soundOff: string;
+    };
 
     categories: {
       science: string;
