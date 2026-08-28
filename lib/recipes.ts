@@ -1,6 +1,10 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
 import { listR2Objects } from "@/lib/r2";
+import {
+  getRecipeRaccoonStickerPrefix,
+  isRaccoonStickerObjectKey,
+} from "@/lib/recipeStickerObjects";
 import type { Lang } from "@/i18n";
 
 export type RecipeStep = {
@@ -189,9 +193,6 @@ export function getRecipeStickerPackFileName(recipe: Pick<Recipe, "country_targe
   return `${targetId || "recipe"}_raccoons_laplapla`;
 }
 
-const isRaccoonAssetName = (value: string) =>
-  value.split("/").filter(Boolean).pop()?.toLowerCase().includes("raccoon") ?? false;
-
 export async function loadRecipeRaccoonStickerUrls(recipe: Recipe) {
   const stickerSetKey = recipe.sticker_set_key?.trim();
   const fallbackUrls = getRecipeRaccoonStickerAssets(recipe)
@@ -203,9 +204,9 @@ export async function loadRecipeRaccoonStickerUrls(recipe: Recipe) {
   }
 
   try {
-    const objects = await listR2Objects(`stickers/raccoon-stickers/${stickerSetKey}/`);
+    const objects = await listR2Objects(getRecipeRaccoonStickerPrefix(stickerSetKey));
     const urls = objects
-      .filter((item) => isRaccoonAssetName(item.key))
+      .filter((item) => isRaccoonStickerObjectKey(item.key))
       .map((item) => item.url)
       .filter(Boolean);
 
