@@ -14,6 +14,7 @@ import { buildStudioRoute } from "@/lib/studioRouting";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStyles } from "@/lib/parrots/client";
 import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/parrots/catalog";
+import TranslationWarning from "@/components/TranslationWarning";
 
 type ExportSlide = {
   text: string;
@@ -404,6 +405,10 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             />
           </div>
           <div className="parrots-section parrots-story-section" style={{ width: "100%" }}>
+            {preset?.translation ? (
+              <TranslationWarning lang={lang} translation={preset.translation} />
+            ) : null}
+            <div lang={preset?.translation?.native === false ? "ru" : undefined}>
             <ParrotStoryCard
               lang={lang}
               styleSlug={activeId}
@@ -416,6 +421,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
               onOpenStudio={handleOpenStudio}
               ui={t.story}
             />
+            </div>
           </div>
         </div>
         <AdSlot placement="parrots-mixer-bottom" />

@@ -716,7 +716,10 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
 
           {draft.error ? <p className="story-generator-error">{draft.error}</p> : null}
           {isCompleted ? (
-            <section className="story-result-card">
+            <section
+              className="story-result-card"
+              lang={draft.mode === "user_story" && currentLang !== "ru" && !activeUserStoryTranslated ? "ru" : undefined}
+            >
               {draft.mode === "user_story" && currentLang !== "ru" && !activeUserStoryTranslated ? (
                 <TranslationWarning lang={currentLang} subject="story" />
               ) : null}

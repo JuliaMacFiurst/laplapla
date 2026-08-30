@@ -1,5 +1,10 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
-import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
+import {
+  getContentTranslationMetadata,
+  getTranslationPayload,
+  getTranslationPayloadMap,
+  type ContentTranslationMetadata,
+} from "@/lib/contentTranslations";
 import { listR2Objects } from "@/lib/r2";
 import {
   getRecipeRaccoonStickerPrefix,
@@ -52,6 +57,7 @@ export type Recipe = {
   is_active: boolean | null;
   updated_at: string | null;
   created_at: string | null;
+  translation?: ContentTranslationMetadata;
 };
 
 const RECIPE_SELECT = [
@@ -260,20 +266,32 @@ function applyRecipeTranslation(recipe: Recipe, translation: unknown): Recipe {
 
 export async function translateRecipeForLang(recipe: Recipe, lang: Lang) {
   if (lang === "ru") {
-    return recipe;
+    return { ...recipe, translation: getContentTranslationMetadata(lang, false) };
   }
 
   const translation = await getTranslationPayload("recipe", recipe.id, lang);
-  return applyRecipeTranslation(recipe, translation);
+  return {
+    ...applyRecipeTranslation(recipe, translation),
+    translation: getContentTranslationMetadata(lang, Boolean(translation)),
+  };
 }
 
 export async function translateRecipesForLang(recipes: Recipe[], lang: Lang) {
   if (lang === "ru" || recipes.length === 0) {
-    return recipes;
+    return recipes.map((recipe) => ({
+      ...recipe,
+      translation: getContentTranslationMetadata(lang, false),
+    }));
   }
 
   const translationMap = await getTranslationPayloadMap("recipe", recipes.map((recipe) => recipe.id), lang);
-  return recipes.map((recipe) => applyRecipeTranslation(recipe, translationMap.get(String(recipe.id))));
+  return recipes.map((recipe) => {
+    const translation = translationMap.get(String(recipe.id));
+    return {
+      ...applyRecipeTranslation(recipe, translation),
+      translation: getContentTranslationMetadata(lang, Boolean(translation)),
+    };
+  });
 }
 
 export async function loadActiveRecipes(limit = 24, lang: Lang = "ru") {

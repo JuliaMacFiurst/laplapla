@@ -10,6 +10,7 @@ import {
 } from "react";
 import Image from "next/image";
 import { LapLapLaSpinner } from "@/components/LoadingSpinner";
+import TranslationWarning from "@/components/TranslationWarning";
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
@@ -2965,6 +2966,10 @@ export default function InteractiveMap({
             <div className="map-text">
               {popupContent ? (
                 <>
+                  {popupContent.translation ? (
+                    <TranslationWarning lang={lang} translation={popupContent.translation} />
+                  ) : null}
+                  <div lang={popupContent.translation?.native === false ? "ru" : undefined}>
                   {viewMode === "video"
                     ? (() => {
                         const youtubeId =
@@ -3438,6 +3443,7 @@ export default function InteractiveMap({
                           </>
                         );
                       })()}
+                  </div>
                 </>
               ) : isPopupOpen ? (
                 isPopupLoading ? (

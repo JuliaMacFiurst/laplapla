@@ -37,4 +37,5 @@ export type MapPopupContent = {
   slides: MapPopupSlide[];
   video?: MapPopupVideo | null;
   source: "map_story_slides" | "legacy_map_stories" | "content_translations";
+  translation?: import("@/lib/contentTranslationMetadata").ContentTranslationMetadata;
 };

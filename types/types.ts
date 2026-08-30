@@ -35,6 +35,8 @@ export interface Book {
   year?: string | number | null;
   age_group?: string | number | null;
   description?: string | null;
+  translated?: boolean;
+  translation?: import("@/lib/contentTranslationMetadata").ContentTranslationMetadata;
   cover_url?: string | null;
   category?: string | null;
   category_id?: string | number | null;

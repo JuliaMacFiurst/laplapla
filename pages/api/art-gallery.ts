@@ -48,11 +48,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
 
     const selectedArtwork = { id: selectedArtworkId };
-    const { content, translated } = await getTranslatedContent("artwork", selectedArtwork.id, getRequestLang(req));
+    const { content, translated, translation } = await getTranslatedContent("artwork", selectedArtwork.id, getRequestLang(req));
     const artwork = content as Artwork;
 
     return res.status(200).json({
       translated,
+      translation,
       artwork: {
         ...artwork,
         image_url: Array.isArray(artwork.image_url)

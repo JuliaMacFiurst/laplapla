@@ -18,6 +18,45 @@ const normalizeLang = (value: unknown): Lang | null => {
   return isLang(value) ? value : null;
 };
 
+type LanguageResolutionInput = {
+  pathname?: string | null;
+  routerLocale?: unknown;
+  queryLang?: unknown;
+  cookieLang?: unknown;
+  storedLang?: unknown;
+  legacyStoredLang?: unknown;
+};
+
+export const getExplicitLocaleFromPath = (pathname: string | null | undefined): Lang | null => {
+  const firstSegment = pathname?.split("?")[0]?.split("#")[0]?.split("/").filter(Boolean)[0];
+  const lang = normalizeLang(firstSegment);
+  return lang === "en" || lang === "he" ? lang : null;
+};
+
+export const resolveLanguage = ({
+  pathname,
+  routerLocale,
+  queryLang,
+  cookieLang,
+  storedLang,
+  legacyStoredLang,
+}: LanguageResolutionInput): Lang => {
+  const explicitPathLang = getExplicitLocaleFromPath(pathname);
+  const normalizedRouterLocale = normalizeLang(routerLocale);
+
+  return (
+    explicitPathLang ??
+    normalizeLang(queryLang) ??
+    (normalizedRouterLocale === "en" || normalizedRouterLocale === "he"
+      ? normalizedRouterLocale
+      : null) ??
+    normalizeLang(cookieLang) ??
+    normalizeLang(storedLang) ??
+    normalizeLang(legacyStoredLang) ??
+    DEFAULT_LANG
+  );
+};
+
 const normalizeAcceptLanguage = (value: unknown): Lang | null => {
   if (typeof value !== "string") return null;
 
@@ -42,22 +81,37 @@ const getLangFromCookie = (): Lang | null => {
   return normalizeLang(value);
 };
 
-const getLangFromStorage = (): Lang | null => {
-  if (typeof window === "undefined") return null;
+const getLangsFromStorage = (): { storedLang: Lang | null; legacyStoredLang: Lang | null } => {
+  if (typeof window === "undefined") {
+    return { storedLang: null, legacyStoredLang: null };
+  }
 
   const laplaplaLang = window.localStorage.getItem("laplapla_lang");
   const legacyLang = window.localStorage.getItem("lang");
-  return normalizeLang(laplaplaLang) ?? normalizeLang(legacyLang);
+  return {
+    storedLang: normalizeLang(laplaplaLang),
+    legacyStoredLang: normalizeLang(legacyLang),
+  };
 };
 
 export const getCurrentLang = (router: Pick<NextRouter, "query" | "locale">): Lang => {
-  return (
-    normalizeLang(router.locale) ??
-    normalizeLang(router.query.lang) ??
-    getLangFromCookie() ??
-    getLangFromStorage() ??
-    DEFAULT_LANG
-  );
+  const storage = getLangsFromStorage();
+  return resolveLanguage({
+    pathname: typeof window === "undefined" ? null : window.location.pathname,
+    routerLocale: router.locale,
+    queryLang: router.query.lang,
+    cookieLang: getLangFromCookie(),
+    storedLang: storage.storedLang,
+    legacyStoredLang: storage.legacyStoredLang,
+  });
+};
+
+export const persistLanguagePreference = (lang: Lang) => {
+  if (typeof document === "undefined" || typeof window === "undefined") return;
+
+  document.cookie = `laplapla_lang=${lang}; path=/; max-age=31536000; SameSite=Lax`;
+  window.localStorage.setItem("laplapla_lang", lang);
+  window.localStorage.setItem("lang", lang);
 };
 
 export const getRequestLang = (

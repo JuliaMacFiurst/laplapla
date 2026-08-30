@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { fallbackImages } from "@/constants";
 import BookQuiz from "@/components/BookQuiz";
 import MobileModeTabs from "@/components/capybara/mobile/MobileModeTabs";
+import TranslationWarning from "@/components/TranslationWarning";
 import MobileStoryCarousel from "@/components/capybara/mobile/MobileStoryCarousel";
 import type { Book, BookTest, ExplanationMode, Slide } from "@/types/types";
 import type { dictionaries, Lang } from "@/i18n";
@@ -163,7 +164,13 @@ export default function MobileBookScreen({
     `/images/capybaras/${fallbackImages[fallbackIndex]}`;
 
   return (
-    <div className={`mobile-book-screen ${isReader ? "mobile-book-screen-reader" : "mobile-book-screen-feed"}`}>
+    <div
+      className={`mobile-book-screen ${isReader ? "mobile-book-screen-reader" : "mobile-book-screen-feed"}`}
+      lang={book.translation?.native === false ? "ru" : undefined}
+    >
+      {book.translation ? (
+        <TranslationWarning lang={lang} subject="book" translation={book.translation} />
+      ) : null}
       <div className="mobile-book-header">
         <div className="mobile-book-header-copy">
           <h2 className="mobile-book-title">{book.title}</h2>

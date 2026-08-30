@@ -198,7 +198,9 @@ export default function BookScreen({
     <>
       <div className="book-card-head">
         <div className="book-card-heading">
-          {lang !== "ru" && book.translated === false ? <TranslationWarning lang={lang} subject="book" /> : null}
+          {book.translation ? (
+            <TranslationWarning lang={lang} subject="book" translation={book.translation} />
+          ) : null}
           <h2 className="book-card-title">{book.title}</h2>
           {book.author ? <p className="book-card-author">{String(book.author)}</p> : null}
           {hasSecondaryMeta ? (
@@ -217,7 +219,7 @@ export default function BookScreen({
         />
       </div>
 
-      <div className="book-card-body">
+      <div className="book-card-body" lang={book.translation?.native === false ? "ru" : undefined}>
         <StoryCarousel
           story={story}
           lang={lang}

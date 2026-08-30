@@ -5,6 +5,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import AdSlot from "@/components/ads/AdSlot";
+import TranslationWarning from "@/components/TranslationWarning";
 import { BASE_URL } from "@/lib/config";
 import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
@@ -325,11 +326,15 @@ export default function RaccoonRecipePage({
       <main
         className="raccoon-recipe-page"
         dir={lang === "he" ? "rtl" : "ltr"}
+        lang={recipe.translation?.native === false ? "ru" : undefined}
         style={{
           "--recipe-gradient-from": recipe.gradient_from || "#fff3bf",
           "--recipe-gradient-to": recipe.gradient_to || "#ffd8a8",
         } as CSSProperties}
       >
+        {recipe.translation ? (
+          <TranslationWarning lang={lang} translation={recipe.translation} />
+        ) : null}
         <nav className="recipe-top-nav" aria-label="breadcrumb">
           <Link href={`${buildLocalizedPublicPath("/raccoons", lang)}#kitchen`} className="recipe-back-link">
             {ui.back}

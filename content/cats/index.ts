@@ -10,6 +10,7 @@ import { CAT_PRESETS_HE } from "./presets/he";
 import { CAT_TEXT_PRESETS_RU } from "./presets-text/ru";
 import { CAT_TEXT_PRESETS_EN } from "./presets-text/en";
 import { CAT_TEXT_PRESETS_HE } from "./presets-text/he";
+import type { ContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 
 // -----------------------------------------------------------------------------
 // Shared types
@@ -30,6 +31,7 @@ export type CatPreset = {
   prompt: string;     // question shown to the child
   slides: CatPresetSlide[];
   translated?: boolean;
+  translation?: ContentTranslationMetadata;
   category?: string | null;
   categoryKey?: string | null;
   categoryLabel?: string | null;
@@ -41,6 +43,7 @@ export type CatTextPreset = {
   prompt: string;     // вопрос
   texts: string[];    // ТОЛЬКО тексты слайдов
   translated?: boolean;
+  translation?: ContentTranslationMetadata;
   category?: string | null;
   categoryKey?: string | null;
   categoryLabel?: string | null;

@@ -8,6 +8,7 @@ import { paintRegionFast } from "@/utils/paintRegionFast";
 import { drawLapLapLaWatermark } from "@/utils/drawLapLapLaWatermark";
 import { getRandomArtFact } from "@/lib/artFacts/getRandomArtFact";
 import TranslationWarning from "@/components/TranslationWarning";
+import type { ContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import { devLog } from "@/utils/devLog";
@@ -309,7 +310,7 @@ function LessonPlayerDesktop() {
   const seoPath = router.asPath.split("#")[0]?.split("?")[0] || "/dog/lessons";
   const seoTitle = lesson?.title ? `${lesson.title} — ${seo.titleSuffix}` : seo.defaultTitle;
   const seoDescription = seo.defaultDescription;
-  const [isLessonTranslated, setIsLessonTranslated] = useState(true);
+  const [lessonTranslation, setLessonTranslation] = useState<ContentTranslationMetadata | null>(null);
   // --- Состояния для галереи ---
   const [showGallery, setShowGallery] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1);
@@ -1499,7 +1500,12 @@ function LessonPlayerDesktop() {
 
     const fetchLesson = async () => {
       const response = await fetch(`/api/dog-lesson?slug=${encodeURIComponent(slug)}&lang=${lang}`);
-      const payload = await response.json() as { lesson?: Lesson; translated?: boolean; error?: string };
+      const payload = await response.json() as {
+        lesson?: Lesson;
+        translated?: boolean;
+        translation?: ContentTranslationMetadata;
+        error?: string;
+      };
 
       if (!response.ok || !payload.lesson) {
         console.error("Ошибка загрузки урока:", payload.error);
@@ -1530,7 +1536,7 @@ function LessonPlayerDesktop() {
         language: lang,
         total_steps: translatedLesson.steps.length,
       });
-      setIsLessonTranslated(Boolean(payload.translated));
+      setLessonTranslation(payload.translation ?? null);
       setBrushSize(5);
       setHasUnsavedChanges(false);
       setColorSeedCount(0);
@@ -2560,9 +2566,11 @@ function LessonPlayerDesktop() {
           />
         ) : null}
         {lesson ? (
-          <div>
+          <div lang={lessonTranslation?.native === false ? "ru" : undefined}>
           <h1 className="lessons-title page-title">{lesson.title}</h1>
-          {!usesTouchLessonLayout && !isLessonTranslated && lang !== "ru" && <TranslationWarning lang={lang} />}
+          {lessonTranslation ? (
+            <TranslationWarning lang={lang} translation={lessonTranslation} />
+          ) : null}
           {usesTouchLessonLayout ? (
             <div className={`lesson-mobile-shell ${lang === "he" ? "lesson-mobile-shell--hebrew" : ""} ${isLessonComplete ? "lesson-mobile-shell--complete" : ""} ${animationMode === "puzzle" ? "lesson-mobile-shell--puzzle" : ""}`}>
               {showMobileOnboarding ? (

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { buildCanonicalMapEntityPathFromUnknown, normalizeMapEntityType, normalizeSlug } from "@/lib/mapEntityRouting";
+import { getLanguageRestoreRedirect } from "@/lib/i18n/languageRestore";
 import {
   buildLegacyLangRedirect,
   buildLocalizedPublicPath,
@@ -70,6 +71,17 @@ export function proxy(request: NextRequest) {
       logDevRedirect(originalUrl, targetUrl);
       return NextResponse.redirect(target, 308);
     }
+  }
+
+  const languageRestoreDestination = getLanguageRestoreRedirect(
+    rawPathname,
+    request.cookies.get("laplapla_lang")?.value,
+  );
+  if (languageRestoreDestination) {
+    const target = new URL(request.url);
+    target.pathname = languageRestoreDestination;
+    logDevRedirect(rawPathname, target.pathname);
+    return NextResponse.redirect(target, 307);
   }
 
   const segments = normalizedPathname.split("/").filter(Boolean);

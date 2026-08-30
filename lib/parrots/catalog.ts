@@ -1,4 +1,5 @@
 import type { Lang } from "@/i18n";
+import { getContentTranslationMetadata, type ContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 import { getMusicStyle } from "@/content/parrots/musicStyles";
 import {
   PARROT_PRESETS,
@@ -38,6 +39,7 @@ export type ParrotStyleRecord = {
   searchGenre: string;
   loops: ParrotStyleInstrument[];
   slides: ParrotStyleSlide[];
+  translation?: ContentTranslationMetadata;
 };
 
 export function mapParrotLoopToStyleInstrument(loop: ParrotLoop): ParrotStyleInstrument {
@@ -70,6 +72,7 @@ export function mapParrotPresetToStyleRecord(
     searchGenre: preset.searchGenre,
     loops: preset.loops.map(mapParrotLoopToStyleInstrument),
     slides: localizedStyle?.slides ?? [],
+    translation: getContentTranslationMetadata(lang, true),
   };
 }
 

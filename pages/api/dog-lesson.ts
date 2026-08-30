@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ error: 'Lesson not found' });
   }
 
-  const { content, translated } = await getTranslatedContent('lesson', lessonRow.id, getRequestLang(req));
+  const { content, translated, translation } = await getTranslatedContent('lesson', lessonRow.id, getRequestLang(req));
   const lesson = content as Record<string, unknown>;
 
   if (Array.isArray(lesson.steps)) {
@@ -57,6 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   res.status(200).json({
     translated,
+    translation,
     lesson,
   });
 }

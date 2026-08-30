@@ -10,6 +10,7 @@ import {
   type ParrotStyleVariant,
 } from "@/lib/parrots/catalog";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
+import { getContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 
 type ParrotMusicStyleRow = {
   id: string;
@@ -366,6 +367,7 @@ function mapStyle(
       ...slide,
       text: isolateMixedBidiText(slide.text, lang),
     })),
+    translation: getContentTranslationMetadata(lang, Boolean(translation)),
   };
 }
 

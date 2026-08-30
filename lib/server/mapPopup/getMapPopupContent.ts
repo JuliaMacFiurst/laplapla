@@ -1,5 +1,10 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
-import { getTranslationPayloadByContentIds, type TranslationPayload } from "@/lib/contentTranslations";
+import {
+  getContentTranslationMetadata,
+  getTranslationPayloadByContentIds,
+  type TranslationPayload,
+} from "@/lib/contentTranslations";
+import type { Lang } from "@/i18n";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import { generateStorySlides } from "@/lib/server/mapPopup/persistence";
 import type { MapPopupContent, MapPopupSlide, MapPopupType } from "@/types/mapPopup";
@@ -354,6 +359,7 @@ export async function getMapPopupContent({
       };
     })(),
     source,
+    translation: getContentTranslationMetadata(lang as Lang, Boolean(translation)),
   };
 
   devLog(

@@ -31,7 +31,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Head from 'next/head';
 import Script from "next/script";
 import { dictionaries, Lang } from "../i18n";
-import { buildLocalizedPublicPath, buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, buildLocalizedQuery, getCurrentLang, persistLanguagePreference } from "@/lib/i18n/routing";
 import { fontVariableClasses } from "@/lib/fonts";
 import { supabase } from "@/lib/supabase";
 import { LAPLAPLA_YOUTUBE_URL } from "@/lib/identity";
@@ -395,11 +395,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     setLang(detectedLang);
 
-    // Persist to cookie
-    document.cookie = `laplapla_lang=${detectedLang}; path=/; max-age=31536000`;
-    window.localStorage.setItem("laplapla_lang", detectedLang);
-    // Backward compatibility with older pages that still read `lang`
-    window.localStorage.setItem("lang", detectedLang);
+    persistLanguagePreference(detectedLang);
 
     // Set dir globally
     document.documentElement.lang = detectedLang;

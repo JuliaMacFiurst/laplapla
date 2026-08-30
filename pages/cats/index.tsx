@@ -1187,8 +1187,10 @@ export default function CatPage({ lang }: { lang: Lang }) {
               {t.randomQuestion}
             </button>
 
-            <div className="slide-container">
-              {lang !== "ru" && activePreset?.translated === false ? <TranslationWarning lang={lang} /> : null}
+            <div className="slide-container" lang={activePreset?.translation?.native === false ? "ru" : undefined}>
+              {activePreset?.translation ? (
+                <TranslationWarning lang={lang} translation={activePreset.translation} />
+              ) : null}
               {loading ? (
                 <div className="cat-spinner-wrapper" role="status" aria-live="polite">
                   <LapLapLaSpinner size="md" decorative />

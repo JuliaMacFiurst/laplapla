@@ -12,6 +12,7 @@ import {
 import { dictionaries, Lang } from "../i18n/index";
 import type { StudioSlide } from "@/types/studio";
 import { LapLapLaSpinner } from "@/components/LoadingSpinner";
+import type { ContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 
 interface ArtGalleryModalProps {
   categorySlug: string;
@@ -33,7 +34,7 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
   const [refreshingSlideIndex, setRefreshingSlideIndex] = useState<number | null>(
     null,
   );
-  const [isArtworkTranslated, setIsArtworkTranslated] = useState(true);
+  const [artworkTranslation, setArtworkTranslation] = useState<ContentTranslationMetadata | null>(null);
   const fallbackHints = useMemo(
     () => ["yorkshire terrier", "yorkie", "dog"],
     [],
@@ -54,6 +55,7 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
       const payload = (await response.json()) as {
         artwork: Artwork | null;
         translated: boolean;
+        translation: ContentTranslationMetadata;
         error?: string;
       };
 
@@ -62,7 +64,7 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
       }
 
       setArtwork(payload.artwork);
-      setIsArtworkTranslated(payload.translated);
+      setArtworkTranslation(payload.translation);
       setUsedArtworkIds((current) =>
         current.includes(payload.artwork!.id)
           ? current
@@ -167,7 +169,7 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
         &times;
       </button>
       <h2 className="art-gallery-title">{t.artGalleryTitle}</h2>
-      {!isArtworkTranslated && lang !== "ru" ? <TranslationWarning lang={lang} /> : null}
+      {artworkTranslation ? <TranslationWarning lang={lang} translation={artworkTranslation} /> : null}
 
       {loading ? (
         <div className="art-gallery-empty laplapla-loading-stack" role="status" aria-live="polite">
@@ -175,7 +177,7 @@ const ArtGalleryModal = ({ categorySlug, onClose }: ArtGalleryModalProps) => {
           <p>{t.loadingGallery}</p>
         </div>
       ) : currentSlide ? (
-        <div className="art-gallery-slideshow">
+        <div className="art-gallery-slideshow" lang={artworkTranslation?.native === false ? "ru" : undefined}>
           <div className="art-gallery-stage">
             <button
               type="button"

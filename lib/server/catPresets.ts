@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Lang } from "@/i18n";
 import { normalizeCatCategoryKey } from "@/lib/catCategories";
 import { isolateMixedBidiText } from "@/lib/i18n/bidi";
+import { getContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 
 type CatPresetKind = "full" | "text";
 
@@ -132,6 +133,7 @@ function mapDbPresetToRuntimePreset(
     lang,
     prompt,
     translated,
+    translation: getContentTranslationMetadata(lang, Boolean(translation)),
     category: fallbackCategory || null,
     categoryKey: categoryKey || null,
     categoryLabel: categoryLabel || null,
@@ -179,6 +181,7 @@ function getHardcodedCatPresetsForLang(lang: Lang) {
       return {
         ...preset,
         translated: true,
+        translation: getContentTranslationMetadata(lang, true),
         category: fallbackCategory || null,
         categoryKey: normalizeCatCategoryKey(fallbackCategory) || null,
         categoryLabel: fallbackCategory || null,

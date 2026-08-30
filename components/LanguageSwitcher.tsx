@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Lang } from "../i18n";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { getCurrentLang, persistLanguagePreference } from "@/lib/i18n/routing";
 import { trackEvent } from "@/lib/analytics/client";
 
 const LANGS: { code: Lang; label: string }[] = [
@@ -19,11 +19,7 @@ export default function LanguageSwitcher() {
   }, [router]);
 
   const switchLang = async (lang: Lang) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("laplapla_lang", lang);
-      window.localStorage.setItem("lang", lang);
-      document.cookie = `laplapla_lang=${lang}; path=/; max-age=31536000`;
-    }
+    persistLanguagePreference(lang);
 
     const isCapybaraPage = router.pathname === "/capybara";
     const nextQuery = { ...router.query };

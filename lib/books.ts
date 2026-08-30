@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
+import { getContentTranslationMetadata, getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
 import { devLog } from "@/utils/devLog";
 import type { Lang } from "@/i18n";
 import type { Book, ExplanationMode } from "@/types/types";
@@ -129,12 +129,13 @@ const normalizeModeKey = (value: unknown) => {
   return MODE_ALIASES[normalized] || normalized;
 };
 
-const applyBookTranslation = (book: Book, translation: unknown): Book => {
+const applyBookTranslation = (book: Book, translation: unknown, lang: Lang): Book => {
   const record = asRecord(translation);
   if (!record) {
     return {
       ...book,
       translated: false,
+      translation: getContentTranslationMetadata(lang, false),
     };
   }
 
@@ -144,6 +145,7 @@ const applyBookTranslation = (book: Book, translation: unknown): Book => {
     author: typeof record.author === "string" && record.author.trim() ? record.author : book.author,
     description: typeof record.description === "string" && record.description.trim() ? record.description : book.description,
     translated: true,
+    translation: getContentTranslationMetadata(lang, true),
   };
 };
 
@@ -152,20 +154,25 @@ export async function translateBookForLang(book: Book, lang: Lang): Promise<Book
     return {
       ...book,
       translated: true,
+      translation: getContentTranslationMetadata(lang, false),
     };
   }
 
   const translation = await getTranslationPayload("book", book.id, lang);
-  return applyBookTranslation(book, translation);
+  return applyBookTranslation(book, translation, lang);
 }
 
 export async function translateBooksForLang(books: Book[], lang: Lang): Promise<Book[]> {
   if (lang === "ru" || books.length === 0) {
-    return books.map((book) => ({ ...book, translated: true }));
+    return books.map((book) => ({
+      ...book,
+      translated: true,
+      translation: getContentTranslationMetadata(lang, false),
+    }));
   }
 
   const translationMap = await getTranslationPayloadMap("book", books.map((book) => book.id), lang);
-  return books.map((book) => applyBookTranslation(book, translationMap.get(String(book.id))));
+  return books.map((book) => applyBookTranslation(book, translationMap.get(String(book.id)), lang));
 }
 
 export async function findBookBySlug(rawSlug: string, lang: Lang = "ru"): Promise<Book | null> {

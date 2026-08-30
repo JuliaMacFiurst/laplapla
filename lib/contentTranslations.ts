@@ -1,4 +1,11 @@
 import { supabase } from "@/lib/supabase/client";
+import type { Lang } from "@/i18n";
+import {
+  getContentTranslationMetadata,
+  type ContentTranslationMetadata,
+} from "@/lib/contentTranslationMetadata";
+export { getContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
+export type { ContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 
 export type ContentType =
   | "lesson"
@@ -352,7 +359,7 @@ function applyTranslation<T extends ContentType>(
 export async function getTranslationPayload<T extends ContentType>(
   contentType: T,
   contentId: string | number,
-  lang: string,
+  lang: Lang,
 ): Promise<TranslationPayload | null> {
   return getTranslationPayloadByContentIds(contentType, [contentId], lang);
 }
@@ -420,8 +427,12 @@ export async function getTranslationPayloadMap<T extends ContentType>(
 export async function getTranslatedContent<T extends ContentType>(
   contentType: T,
   contentId: string | number,
-  lang: string,
-): Promise<{ content: ContentByType[T]; translated: boolean }> {
+  lang: Lang,
+): Promise<{
+  content: ContentByType[T];
+  translated: boolean;
+  translation: ContentTranslationMetadata;
+}> {
   const { data: baseContent, error: baseError } = await supabase
     .from(BASE_TABLES[contentType])
     .select("*")
@@ -433,35 +444,45 @@ export async function getTranslatedContent<T extends ContentType>(
   }
 
   if (!lang || lang === "ru") {
+    const translation = getContentTranslationMetadata("ru", false);
     return {
       content: baseContent as ContentByType[T],
-      translated: true,
+      translated: translation.native,
+      translation,
     };
   }
 
   const translation = await getTranslationPayload(contentType, contentId, lang);
 
   if (!translation) {
+    const metadata = getContentTranslationMetadata(lang, false);
     return {
       content: baseContent as ContentByType[T],
-      translated: false,
+      translated: metadata.native,
+      translation: metadata,
     };
   }
 
+  const metadata = getContentTranslationMetadata(lang, true);
   return {
     content: applyTranslation(
       contentType,
       baseContent as ContentByType[T],
       translation,
     ),
-    translated: true,
+    translated: metadata.native,
+    translation: metadata,
   };
 }
 
 export async function getTranslatedContents<T extends ContentType>(
   contentType: T,
   contentIds: Array<string | number>,
-  lang: string,
-): Promise<Array<{ content: ContentByType[T]; translated: boolean }>> {
+  lang: Lang,
+): Promise<Array<{
+  content: ContentByType[T];
+  translated: boolean;
+  translation: ContentTranslationMetadata;
+}>> {
   return Promise.all(contentIds.map((contentId) => getTranslatedContent(contentType, contentId, lang)));
 }
