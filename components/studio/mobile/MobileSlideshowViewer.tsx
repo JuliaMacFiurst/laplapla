@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { StudioSlideMedia } from "@/components/studio/StudioPreviewPlayer";
 import type { Lang } from "@/i18n";
 import type { StudioSlide } from "@/types/studio";
@@ -23,6 +23,7 @@ interface MobileSlideshowViewerProps {
   editInStudioLabel: string;
   closeLabel: string;
   topLeftActionLabel?: string;
+  topLeftActionPendingLabel?: string;
   onClose: () => void;
   onIndexChange: (nextIndex: number) => void;
   onInteract: () => void;
@@ -34,6 +35,24 @@ interface MobileSlideshowViewerProps {
   className?: string;
   renderSlideHeader?: (slide: StudioSlide, slideIndex: number) => ReactNode;
   renderSlideMedia?: (slide: StudioSlide, slideIndex: number) => ReactNode;
+}
+
+export async function runSingleFlightAction(
+  lock: MutableRefObject<boolean>,
+  setPending: (pending: boolean) => void,
+  action: () => Promise<void> | void,
+): Promise<boolean> {
+  if (lock.current) return false;
+
+  lock.current = true;
+  setPending(true);
+  try {
+    await action();
+    return true;
+  } finally {
+    lock.current = false;
+    setPending(false);
+  }
 }
 
 export default function MobileSlideshowViewer({
@@ -49,6 +68,7 @@ export default function MobileSlideshowViewer({
   editInStudioLabel,
   closeLabel,
   topLeftActionLabel,
+  topLeftActionPendingLabel,
   onClose,
   onIndexChange,
   onInteract,
@@ -61,6 +81,9 @@ export default function MobileSlideshowViewer({
   renderSlideHeader,
   renderSlideMedia,
 }: MobileSlideshowViewerProps) {
+  const [isTopLeftActionPending, setIsTopLeftActionPending] = useState(false);
+  const topLeftActionLock = useRef(false);
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -97,12 +120,22 @@ export default function MobileSlideshowViewer({
           <button
             type="button"
             className="mobile-slideshow-top-left-action"
+            disabled={isTopLeftActionPending}
+            aria-busy={isTopLeftActionPending}
             onClick={() => {
               onInteract();
-              void onTopLeftAction?.();
+              if (onTopLeftAction) {
+                void runSingleFlightAction(
+                  topLeftActionLock,
+                  setIsTopLeftActionPending,
+                  onTopLeftAction,
+                );
+              }
             }}
           >
-            {topLeftActionLabel}
+            {isTopLeftActionPending
+              ? topLeftActionPendingLabel || topLeftActionLabel
+              : topLeftActionLabel}
           </button>
         ) : (
           <span aria-hidden="true" />

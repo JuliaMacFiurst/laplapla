@@ -1098,6 +1098,7 @@ LapLapLa растёт через диалог, а не по заранее за�
       showOnMap: "Показать на карте",
       watchOnYoutube: "Показать видео",
       openTextPage: "Открыть текст",
+      openTextPageLoading: "Открываем…",
       openCatsEditor: "Открыть в редакторе котиков",
       openGoogleMaps: "Открыть на большой Google карте",
       contentNotReady: "Для этого места контент пока не готов.",

@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Lang } from "@/i18n";
+import {
+  getContentTranslationMetadata,
+  type ContentTranslationMetadata,
+} from "@/lib/contentTranslationMetadata";
 import { fallbackImages } from "@/constants";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
@@ -70,6 +74,7 @@ type ApprovedUserStoryResponse = {
   heroName: string;
   slides: StorySlide[];
   translated: boolean;
+  translation: ContentTranslationMetadata;
 };
 
 const CAPYBARA_WEBM = buildSupabaseStorageUrl("characters/cats/cap-paw.webm");
@@ -300,6 +305,9 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const [heroOptions, setHeroOptions] = useState<StoryHeroOption[]>([]);
   const [template, setTemplate] = useState<NormalizedStoryTemplate | null>(null);
   const [activeUserStoryTranslated, setActiveUserStoryTranslated] = useState(true);
+  const [activeUserStoryTranslation, setActiveUserStoryTranslation] = useState<ContentTranslationMetadata>(
+    () => getContentTranslationMetadata(lang, lang === "ru"),
+  );
   const [mediaCache, setMediaCache] = useState<Map<number, SlideMedia>>(new Map());
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isCapybaraAnimating, setIsCapybaraAnimating] = useState(false);
@@ -413,6 +421,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
   const loadUserStory = useCallback(async (submissionId: string) => {
     setTemplate(null);
     setActiveUserStoryTranslated(lang === "ru");
+    setActiveUserStoryTranslation(getContentTranslationMetadata(lang, false));
     setDraft((prev) => ({
       ...prev,
       error: null,
@@ -426,6 +435,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     try {
       const userStory = await loadApprovedUserStory(submissionId, lang);
       setActiveUserStoryTranslated(userStory.translated);
+      setActiveUserStoryTranslation(userStory.translation);
       setDraft((prev) => ({
         ...prev,
         mode: "user_story",
@@ -462,6 +472,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     setTemplate(null);
     if (!option) {
       setActiveUserStoryTranslated(lang === "ru");
+      setActiveUserStoryTranslation(getContentTranslationMetadata(lang, false));
       setDraft((prev) => ({
         ...prev,
         selectedTemplateId: null,
@@ -476,6 +487,11 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     }
 
     setActiveUserStoryTranslated(option.type === "user_story" ? Boolean(option.translated ?? lang === "ru") : true);
+    setActiveUserStoryTranslation(
+      option.type === "user_story"
+        ? option.translation ?? getContentTranslationMetadata(lang, Boolean(option.translated ?? lang === "ru"))
+        : getContentTranslationMetadata(lang, true),
+    );
 
     if (option.type === "template") {
       setDraft((prev) => ({
@@ -742,6 +758,7 @@ export function useStoryGenerator(lang: Lang, texts: StoryTexts) {
     template,
     templateIntroChoices,
     activeUserStoryTranslated,
+    activeUserStoryTranslation,
     heroOptions,
     texts,
     beginCustomFlow,

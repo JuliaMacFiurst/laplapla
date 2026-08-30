@@ -1,10 +1,14 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import {
-  getContentTranslationMetadata,
   getTranslationPayload,
   getTranslationPayloadMap,
-  type ContentTranslationMetadata,
 } from "@/lib/contentTranslations";
+import {
+  getContentTranslationMetadata,
+  needsTranslationFallback,
+  sequenceNeedsTranslationFallback,
+  type ContentTranslationMetadata,
+} from "@/lib/contentTranslationMetadata";
 import { listR2Objects } from "@/lib/r2";
 import {
   getRecipeRaccoonStickerPrefix,
@@ -264,6 +268,31 @@ function applyRecipeTranslation(recipe: Recipe, translation: unknown): Recipe {
   };
 }
 
+function recipeUsesRussianFallback(recipe: Recipe, translation: unknown) {
+  const payload = translation && typeof translation === "object" && !Array.isArray(translation)
+    ? translation as Partial<Recipe>
+    : null;
+  if (!payload) return true;
+
+  return [
+    [recipe.title, payload.title],
+    [recipe.description, payload.description],
+    [recipe.country, payload.country],
+    [recipe.fact, payload.fact],
+    [recipe.raccoon_caption, payload.raccoon_caption],
+    [recipe.cooking_time, payload.cooking_time],
+    [recipe.raccoon_advice, payload.raccoon_advice],
+    [recipe.serving_instructions, payload.serving_instructions],
+    [recipe.laplapla_interaction_caption, payload.laplapla_interaction_caption],
+  ].some(([source, translated]) => needsTranslationFallback(source, translated)) ||
+    sequenceNeedsTranslationFallback(recipe.ingredients, payload.ingredients) ||
+    sequenceNeedsTranslationFallback(recipe.cooking_steps, payload.cooking_steps, (step) =>
+      typeof step === "object" && step !== null && "text" in step
+        ? (step as RecipeStep).text
+        : undefined,
+    );
+}
+
 export async function translateRecipeForLang(recipe: Recipe, lang: Lang) {
   if (lang === "ru") {
     return { ...recipe, translation: getContentTranslationMetadata(lang, false) };
@@ -272,7 +301,11 @@ export async function translateRecipeForLang(recipe: Recipe, lang: Lang) {
   const translation = await getTranslationPayload("recipe", recipe.id, lang);
   return {
     ...applyRecipeTranslation(recipe, translation),
-    translation: getContentTranslationMetadata(lang, Boolean(translation)),
+    translation: getContentTranslationMetadata(
+      lang,
+      Boolean(translation),
+      recipeUsesRussianFallback(recipe, translation),
+    ),
   };
 }
 
@@ -289,7 +322,11 @@ export async function translateRecipesForLang(recipes: Recipe[], lang: Lang) {
     const translation = translationMap.get(String(recipe.id));
     return {
       ...applyRecipeTranslation(recipe, translation),
-      translation: getContentTranslationMetadata(lang, Boolean(translation)),
+      translation: getContentTranslationMetadata(
+        lang,
+        Boolean(translation),
+        recipeUsesRussianFallback(recipe, translation),
+      ),
     };
   });
 }

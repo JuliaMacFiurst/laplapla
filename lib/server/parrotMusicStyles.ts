@@ -10,7 +10,10 @@ import {
   type ParrotStyleVariant,
 } from "@/lib/parrots/catalog";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
-import { getContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
+import {
+  getContentTranslationMetadata,
+  needsTranslationFallback,
+} from "@/lib/contentTranslationMetadata";
 
 type ParrotMusicStyleRow = {
   id: string;
@@ -354,6 +357,28 @@ function mapStyle(
       : normalizeText(translation?.title) || fallbackTitle;
   const localizedDescription =
     lang === "ru" ? fallbackDescription : normalizeText(translation?.description) || fallbackDescription;
+  const usesRussianFallback = lang !== "ru" && Boolean(translation) && (
+    (!options?.rawTitles && needsTranslationFallback(fallbackTitle, translation?.title)) ||
+    needsTranslationFallback(fallbackDescription, translation?.description) ||
+    sortedSlides.some((slide, index) => {
+      const translatedSlides = Array.isArray(translation?.slides) ? translation.slides : [];
+      const translatedSlide = translatedSlides.find((item) =>
+        normalizeOrder(item.order) === normalizeOrder(slide.slide_order),
+      ) ?? translatedSlides[index];
+      return needsTranslationFallback(slide.text, translatedSlide?.text);
+    }) ||
+    presets.some((preset) => {
+      const presetKey = normalizeText(preset.preset_key);
+      const translatedPreset = getTranslatedPreset(translation, presetKey);
+      if (needsTranslationFallback(preset.title, translatedPreset?.title)) return true;
+      return variantsByPresetId.get(preset.id)?.some((variant) =>
+        needsTranslationFallback(
+          variant.title,
+          getTranslatedVariantTitle(translatedPreset, normalizeText(variant.variant_key) || variant.id),
+        ),
+      ) ?? false;
+    })
+  );
 
   return {
     id: slug,
@@ -367,7 +392,7 @@ function mapStyle(
       ...slide,
       text: isolateMixedBidiText(slide.text, lang),
     })),
-    translation: getContentTranslationMetadata(lang, Boolean(translation)),
+    translation: getContentTranslationMetadata(lang, Boolean(translation), usesRussianFallback),
   };
 }
 

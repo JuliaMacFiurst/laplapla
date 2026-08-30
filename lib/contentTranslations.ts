@@ -2,6 +2,9 @@ import { supabase } from "@/lib/supabase/client";
 import type { Lang } from "@/i18n";
 import {
   getContentTranslationMetadata,
+  hasContent,
+  needsTranslationFallback,
+  sequenceNeedsTranslationFallback,
   type ContentTranslationMetadata,
 } from "@/lib/contentTranslationMetadata";
 export { getContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
@@ -212,17 +215,20 @@ function parseTranslationPayload(value: unknown): TranslationPayload | null {
     : null;
 }
 
+const translatedOrBase = <T>(translated: T | undefined, base: T): T =>
+  hasContent(translated) ? translated as T : base;
+
 function applyLessonTranslation(base: LessonContent, translation: TranslationPayload): LessonContent {
   const translatedSteps = Array.isArray(base.steps)
     ? base.steps.map((step, index) => ({
         ...step,
-        frank: translation.steps_frank?.[index] ?? step.frank,
+        frank: translatedOrBase(translation.steps_frank?.[index], step.frank),
       }))
     : base.steps;
 
   return {
     ...base,
-    title: translation.title ?? base.title,
+    title: translatedOrBase(translation.title, base.title),
     steps: translatedSteps,
   };
 }
@@ -233,7 +239,7 @@ function applyMapStoryTranslation(
 ): MapStoryContent {
   return {
     ...base,
-    content: translation.content ?? base.content,
+    content: translatedOrBase(translation.content, base.content),
   };
 }
 
@@ -243,8 +249,8 @@ function applyArtworkTranslation(
 ): ArtworkContent {
   return {
     ...base,
-    title: translation.title ?? base.title,
-    description: translation.description ?? base.description,
+    title: translatedOrBase(translation.title, base.title),
+    description: translatedOrBase(translation.description, base.description),
   };
 }
 
@@ -254,9 +260,9 @@ function applyBookTranslation(
 ): BookContent {
   return {
     ...base,
-    title: translation.title ?? base.title,
-    author: translation.author ?? base.author,
-    description: translation.description ?? base.description,
+    title: translatedOrBase(translation.title, base.title),
+    author: translatedOrBase(translation.author, base.author),
+    description: translatedOrBase(translation.description, base.description),
   };
 }
 
@@ -266,20 +272,20 @@ function applyRecipeTranslation(
 ): RecipeContent {
   return {
     ...base,
-    title: translation.title ?? base.title,
-    description: translation.description ?? base.description,
-    country: translation.country ?? base.country,
-    ingredients: translation.ingredients ?? base.ingredients,
-    fact: translation.fact ?? base.fact,
-    raccoon_caption: translation.raccoon_caption ?? base.raccoon_caption,
-    cooking_time: translation.cooking_time ?? base.cooking_time,
-    cooking_steps: translation.cooking_steps ?? base.cooking_steps,
-    raccoon_advice: translation.raccoon_advice ?? base.raccoon_advice,
-    serving_instructions: translation.serving_instructions ?? base.serving_instructions,
+    title: translatedOrBase(translation.title, base.title),
+    description: translatedOrBase(translation.description, base.description),
+    country: translatedOrBase(translation.country, base.country),
+    ingredients: translatedOrBase(translation.ingredients, base.ingredients),
+    fact: translatedOrBase(translation.fact, base.fact),
+    raccoon_caption: translatedOrBase(translation.raccoon_caption, base.raccoon_caption),
+    cooking_time: translatedOrBase(translation.cooking_time, base.cooking_time),
+    cooking_steps: translatedOrBase(translation.cooking_steps, base.cooking_steps),
+    raccoon_advice: translatedOrBase(translation.raccoon_advice, base.raccoon_advice),
+    serving_instructions: translatedOrBase(translation.serving_instructions, base.serving_instructions),
     laplapla_interaction_caption:
-      translation.laplapla_interaction_caption ?? base.laplapla_interaction_caption,
-    hashtags: translation.hashtags ?? base.hashtags,
-    pinterest_description: translation.pinterest_description ?? base.pinterest_description,
+      translatedOrBase(translation.laplapla_interaction_caption, base.laplapla_interaction_caption),
+    hashtags: translatedOrBase(translation.hashtags, base.hashtags),
+    pinterest_description: translatedOrBase(translation.pinterest_description, base.pinterest_description),
   };
 }
 
@@ -289,9 +295,9 @@ function applyStoryTemplateTranslation(
 ): StoryTemplateContent {
   return {
     ...base,
-    title: translation.title ?? base.title,
-    hero_name: translation.hero_name ?? base.hero_name,
-    hero: translation.hero_name ?? base.hero,
+    title: translatedOrBase(translation.title, base.title),
+    hero_name: translatedOrBase(translation.hero_name, base.hero_name),
+    hero: translatedOrBase(translation.hero_name, base.hero),
   };
 }
 
@@ -301,8 +307,8 @@ function applyStorySubmissionTranslation(
 ): StorySubmissionContent {
   return {
     ...base,
-    hero_name: translation.hero_name ?? base.hero_name,
-    assembled_story: translation.assembled_story ?? base.assembled_story,
+    hero_name: translatedOrBase(translation.hero_name, base.hero_name),
+    assembled_story: translatedOrBase(translation.assembled_story, base.assembled_story),
   };
 }
 
@@ -312,7 +318,7 @@ function applyCatPresetTranslation(
 ): CatPresetContent {
   return {
     ...base,
-    prompt: translation.prompt ?? base.prompt,
+    prompt: translatedOrBase(translation.prompt, base.prompt),
   };
 }
 
@@ -322,9 +328,79 @@ function applyParrotMusicStyleTranslation(
 ): ParrotMusicStyleContent {
   return {
     ...base,
-    title: translation.title ?? base.title,
-    description: translation.description ?? base.description,
+    title: translatedOrBase(translation.title, base.title),
+    description: translatedOrBase(translation.description, base.description),
   };
+}
+
+function usesRussianFallback(
+  contentType: ContentType,
+  base: ContentByType[ContentType],
+  translation: TranslationPayload,
+) {
+  switch (contentType) {
+    case "lesson": {
+      const lesson = base as LessonContent;
+      return needsTranslationFallback(lesson.title, translation.title) ||
+        sequenceNeedsTranslationFallback(lesson.steps, translation.steps_frank, (step) =>
+          typeof step === "object" && step !== null && "frank" in step
+            ? (step as LessonStep).frank
+            : step,
+        );
+    }
+    case "artwork": {
+      const artwork = base as ArtworkContent;
+      return needsTranslationFallback(artwork.title, translation.title) ||
+        needsTranslationFallback(artwork.description, translation.description);
+    }
+    case "book": {
+      const book = base as BookContent;
+      return needsTranslationFallback(book.title, translation.title) ||
+        needsTranslationFallback(book.author, translation.author) ||
+        needsTranslationFallback(book.description, translation.description);
+    }
+    case "recipe": {
+      const recipe = base as RecipeContent;
+      return [
+        [recipe.title, translation.title],
+        [recipe.description, translation.description],
+        [recipe.country, translation.country],
+        [recipe.fact, translation.fact],
+        [recipe.raccoon_caption, translation.raccoon_caption],
+        [recipe.cooking_time, translation.cooking_time],
+        [recipe.raccoon_advice, translation.raccoon_advice],
+        [recipe.serving_instructions, translation.serving_instructions],
+        [recipe.laplapla_interaction_caption, translation.laplapla_interaction_caption],
+      ].some(([source, translated]) => needsTranslationFallback(source, translated)) ||
+        sequenceNeedsTranslationFallback(recipe.ingredients, translation.ingredients) ||
+        sequenceNeedsTranslationFallback(recipe.cooking_steps, translation.cooking_steps, (step) =>
+          typeof step === "object" && step !== null && "text" in step
+            ? (step as RecipeStep).text
+            : undefined,
+        );
+    }
+    case "map_story":
+      return needsTranslationFallback((base as MapStoryContent).content, translation.content);
+    case "story_template": {
+      const story = base as StoryTemplateContent;
+      return needsTranslationFallback(story.title, translation.title) ||
+        needsTranslationFallback(story.hero_name ?? story.hero, translation.hero_name);
+    }
+    case "story_submission": {
+      const story = base as StorySubmissionContent;
+      return needsTranslationFallback(story.hero_name, translation.hero_name) ||
+        needsTranslationFallback(story.assembled_story, translation.assembled_story);
+    }
+    case "cat_preset":
+      return needsTranslationFallback((base as CatPresetContent).prompt, translation.prompt);
+    case "parrot_music_style": {
+      const style = base as ParrotMusicStyleContent;
+      return needsTranslationFallback(style.title, translation.title) ||
+        needsTranslationFallback(style.description, translation.description);
+    }
+    default:
+      return false;
+  }
 }
 
 function applyTranslation<T extends ContentType>(
@@ -463,7 +539,11 @@ export async function getTranslatedContent<T extends ContentType>(
     };
   }
 
-  const metadata = getContentTranslationMetadata(lang, true);
+  const metadata = getContentTranslationMetadata(
+    lang,
+    true,
+    usesRussianFallback(contentType, baseContent as ContentByType[ContentType], translation),
+  );
   return {
     content: applyTranslation(
       contentType,

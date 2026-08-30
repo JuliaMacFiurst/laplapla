@@ -52,6 +52,7 @@ export type StoryTemplateSummary = {
   title: string;
   heroName: string;
   translated?: boolean;
+  translation?: import("@/lib/contentTranslationMetadata").ContentTranslationMetadata;
 };
 
 export type StoryHeroOption =
@@ -61,12 +62,14 @@ export type StoryHeroOption =
       title: string;
       heroName: string;
       translated?: boolean;
+      translation?: import("@/lib/contentTranslationMetadata").ContentTranslationMetadata;
     }
   | {
       type: "user_story";
       id: string;
       heroName: string;
       translated?: boolean;
+      translation?: import("@/lib/contentTranslationMetadata").ContentTranslationMetadata;
     };
 
 type NormalizedChoice = {
@@ -90,6 +93,7 @@ export type NormalizedStoryTemplate = {
   heroName: string;
   steps: Record<StoryStepKey, NormalizedStep>;
   translated?: boolean;
+  translation?: import("@/lib/contentTranslationMetadata").ContentTranslationMetadata;
 };
 
 const makeKeywords = (text: string) => extractSlideConcepts(text);

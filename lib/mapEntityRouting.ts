@@ -1,4 +1,6 @@
 import type { MapPopupType } from "@/types/mapPopup";
+import type { Lang } from "@/i18n";
+import { buildLocalizedHref } from "@/lib/i18n/routing";
 
 export type CanonicalMapEntityType = "country" | "animal" | "river" | "sea" | "biome";
 
@@ -86,6 +88,14 @@ export function normalizeSlug(input: string): string {
     .replace(/[^\p{L}\p{N}-]+/gu, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+export function buildMapTextPageHref(
+  type: MapPopupType,
+  targetId: string,
+  lang: Lang,
+): string {
+  return buildLocalizedHref(`/map/${type}/${normalizeSlug(targetId)}`, lang);
 }
 
 export function normalizeMapEntityType(input: string): CanonicalMapEntityType | null {

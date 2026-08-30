@@ -888,6 +888,7 @@ type DictionaryShape = {
       showOnMap: string;
       watchOnYoutube: string;
       openTextPage: string;
+      openTextPageLoading: string;
       openCatsEditor: string;
       openGoogleMaps: string;
       contentNotReady: string;

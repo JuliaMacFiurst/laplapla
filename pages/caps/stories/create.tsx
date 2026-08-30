@@ -259,7 +259,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
     previewText,
     template,
     templateIntroChoices,
-    activeUserStoryTranslated,
+    activeUserStoryTranslation,
     heroOptions,
     beginCustomFlow,
     beginTemplateFlow,
@@ -530,7 +530,7 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
               selectedHeroOption={selectedHeroOption}
               heroPreviewMap={heroPreviewMap}
               heroSearchQuery={heroSearchQuery}
-              activeUserStoryTranslated={activeUserStoryTranslated}
+              activeUserStoryTranslation={activeUserStoryTranslation}
               getHeroCardMeta={getHeroCardMeta}
               makeHeroPreviewKey={makeHeroPreviewKey}
               setHeroSearchQuery={setHeroSearchQuery}
@@ -718,10 +718,10 @@ export default function CreateCapybaraStoryPage({ lang }: { lang: Lang }) {
           {isCompleted ? (
             <section
               className="story-result-card"
-              lang={draft.mode === "user_story" && currentLang !== "ru" && !activeUserStoryTranslated ? "ru" : undefined}
+              lang={draft.mode === "user_story" && activeUserStoryTranslation.native === false ? "ru" : undefined}
             >
-              {draft.mode === "user_story" && currentLang !== "ru" && !activeUserStoryTranslated ? (
-                <TranslationWarning lang={currentLang} subject="story" />
+              {draft.mode === "user_story" ? (
+                <TranslationWarning lang={currentLang} subject="story" translation={activeUserStoryTranslation} />
               ) : null}
               <StoryCarousel
                 story={carouselStory}

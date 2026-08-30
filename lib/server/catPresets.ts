@@ -3,7 +3,10 @@ import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Lang } from "@/i18n";
 import { normalizeCatCategoryKey } from "@/lib/catCategories";
 import { isolateMixedBidiText } from "@/lib/i18n/bidi";
-import { getContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
+import {
+  getContentTranslationMetadata,
+  needsTranslationFallback,
+} from "@/lib/contentTranslationMetadata";
 
 type CatPresetKind = "full" | "text";
 
@@ -128,12 +131,25 @@ function mapDbPresetToRuntimePreset(
   const translatedCategory = lang === "ru" ? fallbackCategory : normalizeText(translation?.category);
   const categoryKey = normalizeCatCategoryKey(fallbackCategory);
   const categoryLabel = isolateMixedBidiText(translatedCategory || fallbackCategory, lang);
+  const usesRussianFallback = lang !== "ru" && Boolean(translation) && (
+    needsTranslationFallback(fallbackPrompt, translation?.prompt) ||
+    needsTranslationFallback(fallbackCategory, translation?.category) ||
+    sortedSlides.some((slide, index) => {
+      const translatedSlides = Array.isArray(translation?.slides)
+        ? translation.slides as CatPresetTranslatedSlide[]
+        : [];
+      const translatedSlide = translatedSlides.find((item) =>
+        normalizeOrder(item.order) === normalizeOrder(slide.slide_order),
+      ) ?? translatedSlides[index];
+      return needsTranslationFallback(slide.text, translatedSlide?.text);
+    })
+  );
   const common = {
     id: `db:${preset.id}`,
     lang,
     prompt,
     translated,
-    translation: getContentTranslationMetadata(lang, Boolean(translation)),
+    translation: getContentTranslationMetadata(lang, Boolean(translation), usesRussianFallback),
     category: fallbackCategory || null,
     categoryKey: categoryKey || null,
     categoryLabel: categoryLabel || null,

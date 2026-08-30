@@ -14,9 +14,9 @@ import TranslationWarning from "@/components/TranslationWarning";
 import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import { dictionaries } from "@/i18n";
-import { buildLocalizedHref, getCurrentLang } from "@/lib/i18n/routing";
+import { getCurrentLang } from "@/lib/i18n/routing";
 import { buildStudioRoute } from "@/lib/studioRouting";
-import { normalizeSlug } from "@/lib/mapEntityRouting";
+import { buildMapTextPageHref, normalizeSlug } from "@/lib/mapEntityRouting";
 import type { MapPopupContent } from "@/types/mapPopup";
 import { buildStudioSlidesFromCapybaraSlides } from "@/lib/capybaraStudioSlides";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
@@ -1231,7 +1231,7 @@ export default function InteractiveMap({
     }
   };
 
-  const handleOpenTextPage = () => {
+  const handleOpenTextPage = async () => {
     const targetId = (
       popupContent?.targetId ||
       selectedElementRef.current ||
@@ -1244,8 +1244,8 @@ export default function InteractiveMap({
       return;
     }
 
-    void router.push(
-      buildLocalizedHref(`/map/${type}/${normalizeSlug(targetId)}`, lang),
+    await router.push(
+      buildMapTextPageHref(type, targetId, lang),
       undefined,
       { locale: lang },
     );
@@ -3491,6 +3491,7 @@ export default function InteractiveMap({
           showOnMapLabel={t.showOnMap}
           watchYoutubeLabel={t.watchOnYoutube}
           openTextPageLabel={t.openTextPage}
+          openTextPageLoadingLabel={t.openTextPageLoading}
           canWatchYoutube={Boolean(
             popupContent?.video?.youtubeUrl || popupContent?.video?.youtubeId,
           )}

@@ -1080,6 +1080,7 @@ LapLapLa גדלה דרך דיאלוג, לא לפי תוכנית סגורה מר�
       showOnMap: "להציג על המפה",
       watchOnYoutube: "לצפות ב-YouTube",
       openTextPage: "לפתוח טקסט",
+      openTextPageLoading: "פותחים…",
       openCatsEditor: "לפתוח בעורך החתולים",
       openGoogleMaps: "לפתוח ב-Google Maps הגדולה",
       contentNotReady: "התוכן עבור המקום הזה עדיין לא מוכן.",

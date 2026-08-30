@@ -2,6 +2,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import CapybaraTypingAnimation from "@/components/CapybaraTypingAnimation";
 import TranslationWarning from "@/components/TranslationWarning";
+import type { ContentTranslationMetadata } from "@/lib/contentTranslationMetadata";
 import type { Lang } from "@/i18n";
 import type { StoryHeroOption, StoryStepKey } from "@/lib/story/story-shared";
 
@@ -55,7 +56,7 @@ interface MobileStoryComposerProps {
   selectedHeroOption: StoryHeroOption | null;
   heroPreviewMap: Record<string, string>;
   heroSearchQuery: string;
-  activeUserStoryTranslated: boolean;
+  activeUserStoryTranslation: ContentTranslationMetadata;
   getHeroCardMeta: (option: StoryHeroOption) => string;
   makeHeroPreviewKey: (heroName: string) => string;
   setHeroSearchQuery: (value: string) => void;
@@ -83,7 +84,7 @@ export default function MobileStoryComposer({
   selectedHeroOption,
   heroPreviewMap,
   heroSearchQuery,
-  activeUserStoryTranslated,
+  activeUserStoryTranslation,
   getHeroCardMeta,
   makeHeroPreviewKey,
   setHeroSearchQuery,
@@ -179,8 +180,8 @@ export default function MobileStoryComposer({
               </button>
             ) : null}
 
-            {draft.mode === "user_story" && currentLangNeedsTranslationWarning(lang, activeUserStoryTranslated) ? (
-              <TranslationWarning lang={lang} subject="story" />
+            {draft.mode === "user_story" ? (
+              <TranslationWarning lang={lang} subject="story" translation={activeUserStoryTranslation} />
             ) : null}
           </>
         ) : null}
@@ -310,8 +311,4 @@ export default function MobileStoryComposer({
       ) : null}
     </div>
   );
-}
-
-function currentLangNeedsTranslationWarning(lang: Lang, activeUserStoryTranslated: boolean) {
-  return lang !== "ru" && !activeUserStoryTranslated;
 }

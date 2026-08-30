@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { Fragment } from "react";
 import SEO from "@/components/SEO";
+import TranslationWarning from "@/components/TranslationWarning";
 import AdSlot from "@/components/ads/AdSlot";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
@@ -337,19 +338,33 @@ export default function SeoEntityPage({
 
         {hasAnyStories ? populatedSections.map((sectionKey, sectionIndex) => {
           const stories = groupedStories[sectionKey];
+          const fallbackStory = currentLang === "ru"
+            ? undefined
+            : stories.find((story) =>
+                story.translation?.requestedLanguage !== "ru" &&
+                story.translation?.hasRussianFallback === true,
+              );
 
           return (
             <Fragment key={sectionKey}>
-            <section style={{ marginBottom: "32px" }}>
+            <section data-map-section={sectionKey} style={{ marginBottom: "32px" }}>
               <h2 className="seo-entity-section-title" style={{ marginBottom: "14px" }}>
                 {SECTION_LABELS[sectionKey][currentLang]}
               </h2>
+              {fallbackStory?.translation ? (
+                <TranslationWarning lang={currentLang} translation={fallbackStory.translation} />
+              ) : null}
               {stories.map((story) => {
                 const storyBlocks = getStoryBlocks(story, title);
+                const storyIsFullyRussian =
+                  story.translation?.native === false &&
+                  story.translation.sourceLanguage === "ru";
 
                 return (
                   <article
                     key={`${sectionKey}:${story.storyId ?? story.targetId}`}
+                    data-map-story={`${sectionKey}:${story.storyId ?? story.targetId}`}
+                    lang={storyIsFullyRussian ? "ru" : undefined}
                     style={{ marginBottom: "24px", overflow: "hidden" }}
                   >
                     {storyBlocks.map((block, index) => {

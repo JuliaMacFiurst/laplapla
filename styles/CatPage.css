@@ -1047,7 +1047,8 @@ html[dir="rtl"] .cat-slide {
 .mobile-slideshow-top-left-action {
   border: none;
   border-radius: 999px;
-  min-height: 34px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.9);
   color: rgba(61, 42, 79, 0.86);
@@ -1055,6 +1056,28 @@ html[dir="rtl"] .cat-slide {
   font-size: 1.05rem;
   letter-spacing: 0.03em;
   box-shadow: 0 6px 14px rgba(17, 17, 17, 0.08);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.mobile-slideshow-top-left-action:hover {
+  background: #ffffff;
+}
+
+.mobile-slideshow-top-left-action:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 2px 7px rgba(17, 17, 17, 0.12);
+}
+
+.mobile-slideshow-top-left-action:focus-visible {
+  outline: 3px solid #7c3aed;
+  outline-offset: 2px;
+}
+
+.mobile-slideshow-top-left-action:disabled {
+  cursor: wait;
+  opacity: 0.78;
 }
 
 .mobile-slideshow-close {

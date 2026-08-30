@@ -33,6 +33,7 @@ type MapPopupProps = {
   showOnMapLabel: string;
   watchYoutubeLabel: string;
   openTextPageLabel: string;
+  openTextPageLoadingLabel: string;
   canWatchYoutube: boolean;
   flagImageUrl?: string | null;
   flagLabel?: string | null;
@@ -42,7 +43,7 @@ type MapPopupProps = {
   onEditInStudio: () => void;
   onShowOnMap: () => void;
   onWatchYoutube: () => void;
-  onOpenTextPage: () => void;
+  onOpenTextPage: () => Promise<void> | void;
 };
 
 function toViewerSlides(slides: MapPopupSlide[]): StudioSlide[] {
@@ -79,6 +80,7 @@ export default function MapPopup({
   showOnMapLabel,
   watchYoutubeLabel,
   openTextPageLabel,
+  openTextPageLoadingLabel,
   canWatchYoutube,
   flagImageUrl,
   flagLabel,
@@ -164,6 +166,7 @@ export default function MapPopup({
       closeLabel={closeLabel}
       className="map-popup-mobile-viewer"
       topLeftActionLabel={openTextPageLabel}
+      topLeftActionPendingLabel={openTextPageLoadingLabel}
       onClose={onClose}
       onIndexChange={onIndexChange}
       onInteract={() => setHasInteracted(true)}

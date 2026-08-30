@@ -4,6 +4,7 @@ import {
   getTranslationPayloadByContentIds,
   type TranslationPayload,
 } from "@/lib/contentTranslations";
+import { hasContent } from "@/lib/contentTranslationMetadata";
 import type { Lang } from "@/i18n";
 import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import { generateStorySlides } from "@/lib/server/mapPopup/persistence";
@@ -331,6 +332,10 @@ export async function getMapPopupContent({
     : slides.length > 0
       ? "map_story_slides"
       : "legacy_map_stories";
+  const usesRussianFallback = Boolean(translation) && (
+    (!translatedSlides && baseSlides.some((slide) => hasContent(slide.text))) ||
+    (!translatedContent && hasContent(baseStory.content))
+  );
 
   const payload: MapPopupContent = {
     storyId: baseStory.id,
@@ -359,7 +364,11 @@ export async function getMapPopupContent({
       };
     })(),
     source,
-    translation: getContentTranslationMetadata(lang as Lang, Boolean(translation)),
+    translation: getContentTranslationMetadata(
+      lang as Lang,
+      Boolean(translation),
+      usesRussianFallback,
+    ),
   };
 
   devLog(

@@ -1,4 +1,9 @@
 import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
+import {
+  getContentTranslationMetadata,
+  needsTranslationFallback,
+  type ContentTranslationMetadata,
+} from "@/lib/contentTranslationMetadata";
 import { supabase } from "@/lib/supabase";
 import type { Lang } from "@/i18n";
 import {
@@ -271,7 +276,11 @@ export async function loadStoryTemplateSummaries(lang: Lang = "ru"): Promise<Sto
   });
 
   if (lang === "ru" || baseTemplates.length === 0) {
-    return baseTemplates.map((item) => ({ ...item, translated: true }));
+    return baseTemplates.map((item) => ({
+      ...item,
+      translated: true,
+      translation: getContentTranslationMetadata(lang, false),
+    }));
   }
 
   const translationMap = await getTranslationPayloadMap("story_template", baseTemplates.map((item) => item.id), lang);
@@ -284,6 +293,10 @@ export async function loadStoryTemplateSummaries(lang: Lang = "ru"): Promise<Sto
       title: firstText(record?.title, record?.name, record?.hero_name) || item.title,
       heroName: firstText(record?.hero_name, record?.hero, record?.character_name, record?.title) || item.heroName,
       translated: Boolean(record),
+      translation: getContentTranslationMetadata(lang, Boolean(record), Boolean(record) && (
+        needsTranslationFallback(item.title, record?.title ?? record?.name ?? record?.hero_name) ||
+        needsTranslationFallback(item.heroName, record?.hero_name ?? record?.hero ?? record?.character_name ?? record?.title)
+      )),
     };
   });
 }
@@ -309,7 +322,11 @@ export async function loadApprovedUserStories(lang: Lang = "ru"): Promise<Extrac
   });
 
   if (lang === "ru" || baseStories.length === 0) {
-    return baseStories.map((item) => ({ ...item, translated: true }));
+    return baseStories.map((item) => ({
+      ...item,
+      translated: true,
+      translation: getContentTranslationMetadata(lang, false),
+    }));
   }
 
   const translationMap = await getTranslationPayloadMap("story_submission", baseStories.map((item) => item.id), lang);
@@ -321,6 +338,11 @@ export async function loadApprovedUserStories(lang: Lang = "ru"): Promise<Extrac
       ...item,
       heroName: firstText(record?.hero_name, record?.title) || item.heroName,
       translated: Boolean(record),
+      translation: getContentTranslationMetadata(
+        lang,
+        Boolean(record),
+        Boolean(record) && needsTranslationFallback(item.heroName, record?.hero_name ?? record?.title),
+      ),
     };
   });
 }
@@ -329,6 +351,7 @@ type ApprovedUserStoryRecord = {
   heroName: string;
   slides: StorySlide[];
   translated: boolean;
+  translation: ContentTranslationMetadata;
 };
 
 export async function loadApprovedUserStory(submissionId: string, lang: Lang = "ru"): Promise<ApprovedUserStoryRecord> {
@@ -361,6 +384,14 @@ export async function loadApprovedUserStory(submissionId: string, lang: Lang = "
     ) || "Capybara",
     slides: parseUserStoryToSlides(assembledStory),
     translated: lang === "ru" ? true : Boolean(translationRecord),
+    translation: getContentTranslationMetadata(
+      lang,
+      Boolean(translationRecord),
+      Boolean(translationRecord) && (
+        needsTranslationFallback(record.hero_name, translationRecord?.hero_name) ||
+        needsTranslationFallback(record.assembled_story, translationRecord?.assembled_story)
+      ),
+    ),
   };
 }
 
@@ -482,11 +513,39 @@ export async function loadStoryTemplate(templateId: string, lang: Lang = "ru"): 
     return {
       ...normalizedTemplate,
       translated: true,
+      translation: getContentTranslationMetadata(lang, false),
     };
   }
 
   const translation = await getTranslationPayload("story_template", templateId, lang);
-  return applyStoryTemplateTranslation(normalizedTemplate, translation);
+  const translatedTemplate = applyStoryTemplateTranslation(normalizedTemplate, translation);
+  const translationRecord = isRecord(translation) ? translation : null;
+  return {
+    ...translatedTemplate,
+    translation: getContentTranslationMetadata(lang, Boolean(translation), Boolean(translation) && (
+      needsTranslationFallback(normalizedTemplate.title, firstText(translationRecord?.title, translationRecord?.name)) ||
+      needsTranslationFallback(normalizedTemplate.heroName, firstText(
+        translationRecord?.hero_name,
+        translationRecord?.hero,
+        translationRecord?.character_name,
+        translationRecord?.title,
+      )) ||
+      STORY_STEP_KEYS.some((key) => {
+        const baseStep = normalizedTemplate.steps[key];
+        const translatedStep = getStoryTemplateStepTranslation(translationRecord, key);
+        return needsTranslationFallback(baseStep.title, translatedStep?.title ?? translatedStep?.name ?? translatedStep?.prompt) ||
+          needsTranslationFallback(baseStep.narration, translatedStep?.narration ?? translatedStep?.text ?? translatedStep?.content) ||
+          baseStep.choices.some((choice, index) => {
+            const translatedChoices = asArray(translatedStep?.choices).filter(isRecord);
+            const choiceRecord = translatedChoices.find((item) =>
+              normalizeChoiceIndex(item.choice_index ?? item.index ?? item.position) === choice.index,
+            ) || translatedChoices[index] || null;
+            return needsTranslationFallback(choice.text, choiceRecord?.text ?? choiceRecord?.title ?? choiceRecord?.label) ||
+              needsTranslationFallback(choice.fragments, choiceRecord?.fragments);
+          });
+      })
+    )),
+  };
 }
 
 const clampChoiceIndex = (value: number | undefined): StoryChoiceIndex => {

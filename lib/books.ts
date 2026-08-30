@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
-import { getContentTranslationMetadata, getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
+import { getTranslationPayload, getTranslationPayloadMap } from "@/lib/contentTranslations";
+import {
+  getContentTranslationMetadata,
+  needsTranslationFallback,
+} from "@/lib/contentTranslationMetadata";
 import { devLog } from "@/utils/devLog";
 import type { Lang } from "@/i18n";
 import type { Book, ExplanationMode } from "@/types/types";
@@ -145,7 +149,11 @@ const applyBookTranslation = (book: Book, translation: unknown, lang: Lang): Boo
     author: typeof record.author === "string" && record.author.trim() ? record.author : book.author,
     description: typeof record.description === "string" && record.description.trim() ? record.description : book.description,
     translated: true,
-    translation: getContentTranslationMetadata(lang, true),
+    translation: getContentTranslationMetadata(lang, true, [
+      [book.title, record.title],
+      [book.author, record.author],
+      [book.description, record.description],
+    ].some(([source, translated]) => needsTranslationFallback(source, translated))),
   };
 };
 
