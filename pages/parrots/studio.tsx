@@ -16,6 +16,7 @@ import MobilePortraitLock from "@/components/mobile/MobilePortraitLock";
 import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { trackEvent } from "@/lib/analytics/client";
 import { LapLapLaSpinner } from "@/components/LoadingSpinner";
+import { resolveParrotStudioEntryStyle } from "@/lib/parrots/studioDraftStorage";
 
 const StudioRoot = dynamic(() => import("@/components/studio/StudioRoot"), { ssr: false });
 
@@ -235,6 +236,7 @@ export function ParrotsStudioPageContent() {
   const [initialTracks, setInitialTracks] = useState<Track[] | undefined>(undefined);
   const [isImportReady, setIsImportReady] = useState(false);
   const [styleSlug, setStyleSlug] = useState(fallbackPresets[0]?.id ?? "lofi");
+  const [hasExplicitInitialStyle, setHasExplicitInitialStyle] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -312,21 +314,45 @@ export function ParrotsStudioPageContent() {
     const bootstrapImport = async () => {
       try {
         const styleFromQuery = typeof router.query.style === "string" ? router.query.style : null;
+        const availableStyleIds = styleRecords.map((preset) => preset.id);
+        const fallbackStyleSlug = styleRecords[0]?.id || "lofi";
         const stored = sessionStorage.getItem("parrot_import");
         if (!stored) {
-          if (styleFromQuery && styleRecords.some((preset) => preset.id === styleFromQuery)) {
-            setStyleSlug(styleFromQuery);
+          const entryStyle = resolveParrotStudioEntryStyle(
+            availableStyleIds,
+            styleFromQuery,
+            null,
+            fallbackStyleSlug,
+          );
+          if (entryStyle.hasExplicitInitialStyle) {
+            setStyleSlug(entryStyle.styleSlug);
+            setHasExplicitInitialStyle(true);
           }
           return;
         }
 
         const parsed = JSON.parse(stored) as ParrotImportPayload;
         if (parsed?.type !== "parrot_import") {
-          if (styleFromQuery && styleRecords.some((preset) => preset.id === styleFromQuery)) {
-            setStyleSlug(styleFromQuery);
+          const entryStyle = resolveParrotStudioEntryStyle(
+            availableStyleIds,
+            styleFromQuery,
+            null,
+            fallbackStyleSlug,
+          );
+          if (entryStyle.hasExplicitInitialStyle) {
+            setStyleSlug(entryStyle.styleSlug);
+            setHasExplicitInitialStyle(true);
           }
           return;
         }
+
+        const importStyleSlug = parsed.musicConfig?.styleSlug || parsed.styleSlug;
+        const entryStyle = resolveParrotStudioEntryStyle(
+          availableStyleIds,
+          styleFromQuery,
+          importStyleSlug,
+          fallbackStyleSlug,
+        );
 
         const mappedSlides = Array.isArray(parsed.slides)
           ? parsed.slides.map((slide) => ({
@@ -354,13 +380,8 @@ export function ParrotsStudioPageContent() {
 
         setInitialSlides(mappedSlides);
         setInitialTracks(parsed.tracks ?? buildTracksFromParrotImport(parsed, styleRecords));
-        setStyleSlug(
-          styleFromQuery ||
-          parsed.musicConfig?.styleSlug ||
-          parsed.styleSlug ||
-          styleRecords[0]?.id ||
-          "lofi",
-        );
+        setStyleSlug(entryStyle.styleSlug);
+        setHasExplicitInitialStyle(entryStyle.hasExplicitInitialStyle);
         sessionStorage.removeItem("parrot_import");
       } catch {
         console.error("Failed to bootstrap parrot studio import");
@@ -547,6 +568,7 @@ export function ParrotsStudioPageContent() {
           <ParrotStudioRoot
             lang={lang}
             initialStyleSlug={styleSlug}
+            hasExplicitInitialStyle={hasExplicitInitialStyle}
             presets={styleRecords}
             expectedStudioType={router.pathname === "/studio" ? "parrot" : undefined}
             storySlides={(initialSlides ?? []).map((slide) => ({
@@ -556,6 +578,7 @@ export function ParrotsStudioPageContent() {
             }))}
             onClose={handleCloseMobileStudio}
             onSwitchLanguage={handleSwitchMobileLanguage}
+            onStyleChange={setStyleSlug}
             onOpenStory={openCatsStudioFromMobile}
           />
         ) : (

@@ -11,6 +11,8 @@ type Props = {
   exportLabel: string;
   savedLabel: string;
   listenLabel: string;
+  stopLabel: string;
+  isListening: boolean;
   clearLabel: string;
   dangerousZoneLabel: string;
   confirmClearTitle: string;
@@ -33,6 +35,8 @@ export default function SavePanel({
   exportLabel,
   savedLabel,
   listenLabel,
+  stopLabel,
+  isListening,
   clearLabel,
   dangerousZoneLabel,
   confirmClearTitle,
@@ -59,7 +63,7 @@ export default function SavePanel({
       </button>
 
       <button type="button" className="save-panel__secondary" onClick={onListen} disabled={!exportUrl || isRendering}>
-        {listenLabel}
+        {isListening ? stopLabel : listenLabel}
       </button>
 
       {errorMessage ? <p className="save-panel__error" role="alert">{errorMessage}</p> : null}

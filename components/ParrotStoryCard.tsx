@@ -8,6 +8,7 @@ import { AMATIC_FONT_FAMILY } from "@/lib/fonts";
 import { mapWithConcurrency } from "@/lib/media/slideMedia";
 import { buildParrotMediaQueries } from "@/lib/parrotStoryMedia";
 import { devDebug } from "@/utils/devLog";
+import { buildGoogleSearchUrl, buildYouTubeSearchUrl } from "@/lib/parrots/externalSearchUrls";
 
 type Props = {
   lang: "ru" | "en" | "he";
@@ -36,7 +37,10 @@ export type Slide = {
 };
 
 const openGoogle = (q: string) =>
-  window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank");
+  window.open(buildGoogleSearchUrl(q), "_blank");
+
+const openYouTube = (q: string) =>
+  window.open(buildYouTubeSearchUrl(q), "_blank");
 
 type MediaType = "gif" | "image" | "video";
 
@@ -665,7 +669,7 @@ export default function ParrotStoryCard({
             {ui.externalPrompt}
           </h4>
           <button
-            onClick={() => openGoogle(searchArtist + " site:youtube.com")}
+            onClick={() => openYouTube(searchArtist)}
             className="external-link-button artist story-card-text"
           >
             {ui.aboutArtist}
