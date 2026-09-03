@@ -17,6 +17,7 @@ import { useStudioViewportMode } from "@/hooks/useResponsiveViewport";
 import { trackEvent } from "@/lib/analytics/client";
 import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 import { resolveParrotStudioEntryStyle } from "@/lib/parrots/studioDraftStorage";
+import { prepareParrotStudioLanguageSwitch } from "@/lib/parrots/studioLanguage";
 
 const StudioRoot = dynamic(() => import("@/components/studio/StudioRoot"), { ssr: false });
 
@@ -530,12 +531,11 @@ export function ParrotsStudioPageContent() {
   };
 
   const handleSwitchMobileLanguage = (nextLang: "ru" | "en" | "he") => {
+    const languageSwitch = prepareParrotStudioLanguageSwitch(nextLang, styleSlug);
     void router.push(
-      buildStudioRoute("parrot", nextLang, {
-        style: styleSlug,
-      }),
+      languageSwitch.route,
       undefined,
-      { locale: nextLang },
+      { locale: languageSwitch.locale },
     );
   };
 

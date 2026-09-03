@@ -25,6 +25,7 @@ import {
 import { deleteVoiceBlob, loadVoiceBlob, saveVoiceBlob } from "@/lib/studioStorage";
 import { buildGoogleSearchUrl, buildYouTubeSearchUrl } from "@/lib/parrots/externalSearchUrls";
 import { createParrotPlaybackOwnership } from "@/lib/parrots/playbackOwnership";
+import { shouldResetParrotCompositionForStyle } from "@/lib/parrots/studioLanguage";
 import {
   fetchAndDecodeParrotExportAudio,
   fetchParrotExportAudio,
@@ -236,6 +237,7 @@ export default function ParrotStudioRoot({
   const ownedVoiceBlobUrlRef = useRef<string | null>(null);
   const recordedVoiceBlobRef = useRef<Blob | null>(null);
   const hasRestoredSessionRef = useRef(false);
+  const initializedStyleSlugRef = useRef<string | null>(null);
   const shouldSkipNextPresetInitRef = useRef(false);
   const hasPushedHistoryRef = useRef(false);
   const preset = useMemo(
@@ -476,6 +478,11 @@ export default function ParrotStudioRoot({
   }, [isLanguageMenuOpen, isStyleMenuOpen]);
 
   useEffect(() => {
+    if (!shouldResetParrotCompositionForStyle(initializedStyleSlugRef.current, preset.id)) {
+      return;
+    }
+    initializedStyleSlugRef.current = preset.id;
+
     if (shouldSkipNextPresetInitRef.current) {
       shouldSkipNextPresetInitRef.current = false;
       return;

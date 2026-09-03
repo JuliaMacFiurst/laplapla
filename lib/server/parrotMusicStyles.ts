@@ -14,6 +14,10 @@ import {
   getContentTranslationMetadata,
   needsTranslationFallback,
 } from "@/lib/contentTranslationMetadata";
+import {
+  getParrotInstrumentDisplayLabel,
+  getParrotVariantDisplayLabel,
+} from "@/lib/parrots/instrumentLabels";
 
 type ParrotMusicStyleRow = {
   id: string;
@@ -231,6 +235,8 @@ function mapVariant(
   row: ParrotMusicStyleVariantRow,
   lang: Lang,
   translatedPreset: ReturnType<typeof getTranslatedPreset>,
+  presetKey: string,
+  fallbackPresetLabel: string,
 ): ParrotStyleVariant | null {
   const id = normalizeText(row.variant_key) || row.id;
   const src = resolveParrotAudioUrl(row.audio_url);
@@ -240,8 +246,12 @@ function mapVariant(
   }
 
   const fallbackLabel = normalizeText(row.title);
-  const translatedLabel =
-    lang === "ru" ? fallbackLabel : getTranslatedVariantTitle(translatedPreset, id) || fallbackLabel;
+  const translatedVariantLabel = getTranslatedVariantTitle(translatedPreset, id);
+  const translatedLabel = lang === "ru"
+    ? fallbackLabel
+    : needsTranslationFallback(fallbackLabel, translatedVariantLabel)
+      ? getParrotVariantDisplayLabel(lang, presetKey, fallbackPresetLabel, fallbackLabel)
+      : translatedVariantLabel;
 
   return {
     id,
@@ -264,12 +274,15 @@ function mapPreset(
   }
 
   const translatedPreset = lang === "ru" ? null : getTranslatedPreset(translation, presetKey);
+  const translatedPresetLabel = normalizeText(translatedPreset?.title);
   const localizedLabel = lang === "ru"
     ? label
-    : normalizeText(translatedPreset?.title) || label;
+    : needsTranslationFallback(label, translatedPresetLabel)
+      ? getParrotInstrumentDisplayLabel(lang, presetKey, label)
+      : translatedPresetLabel;
 
   const mappedVariants = variants
-    .map((variant) => mapVariant(variant, lang, translatedPreset))
+    .map((variant) => mapVariant(variant, lang, translatedPreset, presetKey, label))
     .filter((variant): variant is ParrotStyleVariant => Boolean(variant));
 
   if (mappedVariants.length === 0) {
