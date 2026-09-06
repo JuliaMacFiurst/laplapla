@@ -8,6 +8,7 @@ import {
   AD_PLACEMENTS,
   AD_PREVIEW_ENABLED,
   ADS_ENABLED,
+  isAdPlacementEligible,
   type AdPlacement,
 } from "@/lib/ads/config";
 
@@ -19,8 +20,15 @@ describe("advertising infrastructure production safety", () => {
 
   it("renders zero DOM for every configured placement while advertising is disabled", () => {
     for (const placement of Object.keys(AD_PLACEMENTS) as AdPlacement[]) {
-      expect(renderToStaticMarkup(<AdSlot placement={placement} />)).toBe("");
+      expect(renderToStaticMarkup(<AdSlot placement={placement} pageAdsEligible />)).toBe("");
     }
+  });
+
+  it("uses a default-deny placement whitelist and requires page eligibility", () => {
+    expect(isAdPlacementEligible("raccoon-recipe-bottom", true)).toBe(true);
+    expect(isAdPlacementEligible("raccoon-recipe-bottom", false)).toBe(false);
+    expect(isAdPlacementEligible("raccoon-article-bottom", true)).toBe(false);
+    expect(isAdPlacementEligible("dogs-category-bottom", true)).toBe(false);
   });
 
   it("contains no real publisher IDs, slot IDs, or AdSense network URLs", () => {

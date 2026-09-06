@@ -38,4 +38,9 @@ export type MapPopupContent = {
   video?: MapPopupVideo | null;
   source: "map_story_slides" | "legacy_map_stories" | "content_translations";
   translation?: import("@/lib/contentTranslationMetadata").ContentTranslationMetadata;
+  publication?: {
+    isApproved: boolean;
+    storyStatus: string | null;
+    needsRewrite: boolean;
+  };
 };

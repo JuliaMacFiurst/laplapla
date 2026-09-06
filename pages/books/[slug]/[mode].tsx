@@ -22,16 +22,6 @@ type Props = {
   modeSegment: string;
 };
 
-const MODE_FALLBACK_LABELS: Record<string, Record<Lang, string>> = {
-  plot: { ru: "Сюжет", en: "Plot", he: "עלילה" },
-  idea: { ru: "Главная идея", en: "Main idea", he: "רעיון מרכזי" },
-  ending: { ru: "Смысл финала", en: "Ending meaning", he: "משמעות הסיום" },
-  characters: { ru: "Персонажи", en: "Characters", he: "דמויות" },
-  philosophy: { ru: "Философия", en: "Philosophy", he: "פילוסופיה" },
-  conflicts: { ru: "Конфликты", en: "Conflicts", he: "קונפליקטים" },
-  "20-seconds": { ru: "Книга за 20 секунд", en: "Book in 20 seconds", he: "ספר ב-20 שניות" },
-};
-
 const BACK_TO_FEED_LABEL: Record<Lang, string> = {
   ru: "Назад к ленте книг",
   en: "Back to books feed",
@@ -122,8 +112,6 @@ function BookReaderBottomNavigation({
   );
 }
 
-const getModeLabel = (modeSegment: string, lang: Lang) => MODE_FALLBACK_LABELS[modeSegment]?.[lang] || modeSegment;
-
 const loadBookNeighbors = async (book: Book, lang: Lang) => {
   const { translateBooksForLang } = await import("@/lib/books");
   const supabase = createServerSupabaseClient();
@@ -162,9 +150,13 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
     return { notFound: true };
   }
 
-  const { previousBook, nextBook } = await loadBookNeighbors(book, lang);
   const resolvedMode = findExplanationModeBySegment(modes, mode);
-  const currentModeLabel = resolvedMode ? getLocalizedExplanationModeLabel(resolvedMode, lang) : getModeLabel(mode, lang);
+  if (!resolvedMode) {
+    return { notFound: true };
+  }
+
+  const { previousBook, nextBook } = await loadBookNeighbors(book, lang);
+  const currentModeLabel = getLocalizedExplanationModeLabel(resolvedMode, lang);
 
   return {
     props: {

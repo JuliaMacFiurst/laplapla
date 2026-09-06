@@ -482,7 +482,7 @@ export default function RaccoonRecipePage({
             </section>
           ) : null}
 
-          <AdSlot placement="raccoon-recipe-bottom" />
+        <AdSlot placement="raccoon-recipe-bottom" pageAdsEligible />
 
           <section className="recipe-hidden-seo">
             <CorePageLinks current="raccoons" lang={lang} related={["home", "cats", "book"]} />

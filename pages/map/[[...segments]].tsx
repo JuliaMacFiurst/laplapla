@@ -8,6 +8,8 @@ import {
 } from "@/lib/mapEntityRouting";
 import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { loadSeoEntityPageData, resolveCanonicalEntityRouteBySlug } from "@/lib/server/seoEntityPage";
+import { loadMapRouteLocaleEligibility } from "@/lib/server/mapSeoEligibility";
+import type { ContentEligibility } from "@/lib/seo/contentEligibility";
 import type { Lang } from "@/i18n";
 
 type Props = {
@@ -18,6 +20,8 @@ type Props = {
   lang: Lang;
   hasAnyStories: boolean;
   rawTargetId: string;
+  eligibility: ContentEligibility;
+  eligibleLocales: Lang[];
 };
 
 function readFirstQueryValue(value: string | string[] | undefined) {
@@ -140,6 +144,28 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
       }
 
       const rawTargetId = pageData.rawTargetId || slug;
+      let routeEligibility: Awaited<ReturnType<typeof loadMapRouteLocaleEligibility>>;
+      try {
+        routeEligibility = await loadMapRouteLocaleEligibility(entityType, rawTargetId);
+      } catch (error) {
+        console.error("[content-eligibility] map eligibility lookup failed; defaulting to noindex", {
+          entityType,
+          slug,
+          lang,
+          error,
+        });
+        const denied = {
+          indexEligible: false,
+          sitemapEligible: false,
+          localeEligible: false,
+          adsEligible: false,
+          reason: "incomplete-content" as const,
+        };
+        routeEligibility = {
+          eligibility: { ru: denied, en: denied, he: denied },
+          eligibleLocales: [],
+        };
+      }
 
       return {
         props: {
@@ -150,6 +176,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
           lang,
           hasAnyStories,
           rawTargetId,
+          eligibility: routeEligibility.eligibility[lang],
+          eligibleLocales: routeEligibility.eligibleLocales,
         },
       };
     }
@@ -174,6 +202,8 @@ export default function MapEntityPage({
   lang,
   hasAnyStories,
   rawTargetId,
+  eligibility,
+  eligibleLocales,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <SeoEntityPage
@@ -184,6 +214,8 @@ export default function MapEntityPage({
       lang={lang}
       hasAnyStories={hasAnyStories}
       rawTargetId={rawTargetId}
+      eligibility={eligibility}
+      eligibleLocales={eligibleLocales}
     />
   );
 }

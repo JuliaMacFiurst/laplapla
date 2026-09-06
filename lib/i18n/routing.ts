@@ -198,6 +198,22 @@ export const buildHreflangLinks = (origin: string, path: string) => {
   ];
 };
 
+export const buildEligibleHreflangLinks = (
+  origin: string,
+  path: string,
+  eligibleLangs: readonly Lang[],
+) => {
+  const uniqueLangs = CANONICAL_LANGS.filter((lang) => eligibleLangs.includes(lang));
+  const defaultLang = uniqueLangs.includes(DEFAULT_LANG) ? DEFAULT_LANG : uniqueLangs[0];
+  const links = uniqueLangs.map((lang) => ({
+    hrefLang: lang,
+    href: buildCanonicalUrl(origin, path, lang),
+  }));
+  return defaultLang
+    ? [...links, { hrefLang: "x-default", href: buildCanonicalUrl(origin, path, defaultLang) }]
+    : links;
+};
+
 export const buildLegacyLangRedirect = (
   pathname: string,
   search: string,

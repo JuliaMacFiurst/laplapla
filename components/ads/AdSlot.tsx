@@ -9,9 +9,10 @@ import {
 
 type AdSlotProps = {
   placement: AdPlacement;
+  pageAdsEligible?: boolean;
 };
 
-export default function AdSlot({ placement }: AdSlotProps) {
+export default function AdSlot({ placement, pageAdsEligible = false }: AdSlotProps) {
   const slotRef = useRef<HTMLModElement>(null);
   const [isUnfilled, setIsUnfilled] = useState(false);
   const config = AD_PLACEMENTS[placement];
@@ -32,7 +33,7 @@ export default function AdSlot({ placement }: AdSlotProps) {
     return () => observer.disconnect();
   }, [canRenderRealAd]);
 
-  if (!canRenderAdPlacement(placement)) return null;
+  if (!canRenderAdPlacement(placement, pageAdsEligible)) return null;
 
   if (isPreview) {
     return (

@@ -1,9 +1,9 @@
 import { normalizeSiteUrl } from "@/lib/config";
 import type { Lang } from "@/i18n";
-import { buildCanonicalUrl, buildHreflangLinks } from "@/lib/i18n/routing";
-import { buildCanonicalMapEntityPath } from "@/lib/mapEntityRouting";
+import { buildCanonicalUrl, buildEligibleHreflangLinks, buildHreflangLinks } from "@/lib/i18n/routing";
 import { loadRecipeSitemapPaths } from "@/lib/recipes";
-import { loadSeoRouteSlugs } from "@/lib/server/seoEntityPage";
+import { loadEligibleMapRoutes, type EligibleMapRoute } from "@/lib/server/mapSeoEligibility";
+import { buildMapSitemapEntries } from "@/lib/seo/mapSitemapEligibility";
 import {
   CORE_SITEMAP_PAGES,
   sitemapContainsOnlyCanonicalPublicUrls,
@@ -23,8 +23,10 @@ function buildAbsoluteUrl(baseUrl: string, path: string, lang: Lang) {
   return buildCanonicalUrl(baseUrl, path, lang);
 }
 
-function buildAlternateTags(baseUrl: string, path: string) {
-  const alternates = buildHreflangLinks(baseUrl, path);
+function buildAlternateTags(baseUrl: string, path: string, eligibleLangs?: readonly Lang[]) {
+  const alternates = eligibleLangs
+    ? buildEligibleHreflangLinks(baseUrl, path, eligibleLangs)
+    : buildHreflangLinks(baseUrl, path);
 
   return alternates
     .map(
@@ -39,14 +41,15 @@ type SitemapEntry = {
   path: string;
   priority?: string;
   changefreq?: string;
+  eligibleLangs?: readonly Lang[];
 };
 
 function buildSitemapXml(entries: SitemapEntry[], baseUrl: string) {
   const body = entries
-    .map(({ url, path, priority, changefreq }) => {
+    .map(({ url, path, priority, changefreq, eligibleLangs }) => {
       const changefreqTag = changefreq ? `\n    <changefreq>${changefreq}</changefreq>` : "";
       const priorityTag = priority ? `\n    <priority>${priority}</priority>` : "";
-      const alternateTags = buildAlternateTags(baseUrl, path);
+      const alternateTags = buildAlternateTags(baseUrl, path, eligibleLangs);
       return `  <url>\n    <loc>${escapeXml(url)}</loc>\n${alternateTags}${changefreqTag}${priorityTag}\n  </url>`;
     })
     .join("\n");
@@ -57,16 +60,9 @@ function buildSitemapXml(entries: SitemapEntry[], baseUrl: string) {
 export async function generateSitemapXml() {
   const baseUrl = normalizeSiteUrl(process.env["NEXT_PUBLIC_SITE_URL"]);
   const recipePaths = await loadRecipeSitemapPaths();
-  let mapEntityPaths: string[] = [];
+  let mapRoutes: EligibleMapRoute[] = [];
   try {
-    const mapSlugs = await loadSeoRouteSlugs();
-    mapEntityPaths = (
-      Object.entries(mapSlugs) as Array<
-        [Parameters<typeof buildCanonicalMapEntityPath>[0], string[]]
-      >
-    ).flatMap(([type, slugs]) =>
-      slugs.map((slug) => buildCanonicalMapEntityPath(type, slug)),
-    );
+    mapRoutes = await loadEligibleMapRoutes();
   } catch (error) {
     console.error("[sitemap] failed to load map entity routes", error);
   }
@@ -75,24 +71,23 @@ export async function generateSitemapXml() {
     priority: "0.72",
     changefreq: "weekly",
   }));
-  const mapEntries = mapEntityPaths.map((path) => ({
-    path,
-    priority: "0.68",
-    changefreq: "monthly",
-  }));
   const uniqueEntries = Array.from(
     new Map(
-      [...CORE_SITEMAP_PAGES, ...recipeEntries, ...mapEntries].map((entry) => [entry.path, entry]),
+      [...CORE_SITEMAP_PAGES, ...recipeEntries].map((entry) => [entry.path, entry]),
     ).values(),
   );
-  const entries = uniqueEntries.flatMap(({ path, priority, changefreq }) =>
-    SITEMAP_LANGS.map((lang) => ({
-      path,
-      url: buildAbsoluteUrl(baseUrl, path, lang),
-      priority,
-      changefreq,
-    })),
-  );
+  const entries = [
+    ...uniqueEntries.flatMap(({ path, priority, changefreq }) =>
+      SITEMAP_LANGS.map((lang) => ({
+        path,
+        url: buildAbsoluteUrl(baseUrl, path, lang),
+        priority,
+        changefreq,
+        eligibleLangs: undefined,
+      })),
+    ),
+    ...buildMapSitemapEntries(mapRoutes, baseUrl),
+  ];
 
   const xml = buildSitemapXml(entries, baseUrl);
   if (!sitemapContainsOnlyCanonicalPublicUrls(xml)) {

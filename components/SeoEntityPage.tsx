@@ -8,7 +8,10 @@ import TranslationWarning from "@/components/TranslationWarning";
 import AdSlot from "@/components/ads/AdSlot";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
+import { buildEligibleHreflangLinks } from "@/lib/i18n/routing";
 import { buildCanonicalMapEntityPath, type CanonicalMapEntityType } from "@/lib/mapEntityRouting";
+import { BASE_URL } from "@/lib/config";
+import type { ContentEligibility } from "@/lib/seo/contentEligibility";
 import { trackEvent } from "@/lib/analytics/client";
 import type { MapPopupContent } from "@/types/mapPopup";
 
@@ -33,6 +36,8 @@ type Props = {
   lang?: Lang;
   hasAnyStories?: boolean;
   rawTargetId: string;
+  eligibility: ContentEligibility;
+  eligibleLocales: Lang[];
 };
 
 const SECTION_LABELS: Record<keyof GroupedStories, Record<Lang, string>> = {
@@ -224,6 +229,8 @@ export default function SeoEntityPage({
   lang,
   hasAnyStories = true,
   rawTargetId,
+  eligibility,
+  eligibleLocales,
 }: Props) {
   const router = useRouter();
   const currentLang = lang ?? getCurrentLang(router);
@@ -240,6 +247,7 @@ export default function SeoEntityPage({
   const seoTitle = `${title} — ${titleSuffixByType[entityType]}`;
   const seoDescription = `${title} — ${mapSeo.descriptionSuffix}`;
   const seoPath = buildCanonicalMapEntityPath(entityType, slug);
+  const seoAlternates = buildEligibleHreflangLinks(BASE_URL, seoPath, eligibleLocales);
   const mapTab = entityType === "biome" ? "physic" : entityType;
   const populatedSections = SECTION_ORDER.filter((sectionKey) => groupedStories[sectionKey].length > 0);
   const articleTextLength = populatedSections.reduce(
@@ -279,7 +287,14 @@ export default function SeoEntityPage({
 
   return (
     <>
-      <SEO title={seoTitle} description={seoDescription} path={seoPath} type="article" />
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        path={seoPath}
+        type="article"
+        noindex={!eligibility.indexEligible}
+        alternates={seoAlternates}
+      />
       <main
         dir={dir}
         style={{
@@ -427,14 +442,16 @@ export default function SeoEntityPage({
                 );
               })}
             </section>
-            {articleTextLength >= 1800 && sectionIndex === inContentSectionIndex ? (
-              <AdSlot placement="raccoon-article-content" />
+            {eligibility.adsEligible && articleTextLength >= 1800 && sectionIndex === inContentSectionIndex ? (
+              <AdSlot placement="raccoon-article-content" pageAdsEligible />
             ) : null}
             </Fragment>
           );
         }) : null}
 
-        {hasAnyStories ? <AdSlot placement="raccoon-article-bottom" /> : null}
+        {hasAnyStories && eligibility.adsEligible ? (
+          <AdSlot placement="raccoon-article-bottom" pageAdsEligible />
+        ) : null}
 
         <div style={{ marginTop: "40px" }}>
           <Link

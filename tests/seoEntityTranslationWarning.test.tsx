@@ -9,7 +9,11 @@ vi.mock("next/router", () => ({
   useRouter: () => ({ query: {}, locale: "en", asPath: "/en/map/country/russia" }),
 }));
 
-vi.mock("@/components/SEO", () => ({ default: () => null }));
+vi.mock("@/components/SEO", () => ({
+  default: ({ noindex, alternates }: { noindex?: boolean; alternates?: Array<{ hrefLang: string }> }) => (
+    <i data-testid="seo" data-noindex={String(Boolean(noindex))} data-alternates={alternates?.map((item) => item.hrefLang).join(",")} />
+  ),
+}));
 vi.mock("@/components/ads/AdSlot", () => ({ default: () => null }));
 
 const emptyGroups = (): GroupedStories => ({
@@ -46,7 +50,12 @@ function story(
   };
 }
 
-function renderPage(lang: Lang, groupedStories: GroupedStories) {
+function renderPage(
+  lang: Lang,
+  groupedStories: GroupedStories,
+  indexEligible = true,
+  eligibleLocales: Lang[] = [lang],
+) {
   return renderToStaticMarkup(
     <SeoEntityPage
       entityType="country"
@@ -55,6 +64,8 @@ function renderPage(lang: Lang, groupedStories: GroupedStories) {
       groupedStories={groupedStories}
       lang={lang}
       rawTargetId="Russia"
+      eligibility={{ indexEligible, sitemapEligible: indexEligible, localeEligible: indexEligible, adsEligible: indexEligible }}
+      eligibleLocales={eligibleLocales}
     />,
   );
 }
@@ -67,6 +78,15 @@ function sectionMarkup(markup: string, section: keyof GroupedStories) {
 }
 
 describe("SeoEntityPage section translation warnings", () => {
+  it("keeps fallback content visible while marking the page noindex and limiting hreflang", () => {
+    const groups = emptyGroups();
+    groups.country = [story("country", "country", "en", false, true)];
+    const markup = renderPage("en", groups, false, ["ru"]);
+    expect(markup).toContain("country content");
+    expect(markup).toContain('data-noindex="true"');
+    expect(markup).toContain('data-alternates="ru,x-default"');
+  });
+
   it("shows warnings only for fallback culture and food sections", () => {
     const groups = emptyGroups();
     groups.country = [story("country", "country", "en", true, false)];

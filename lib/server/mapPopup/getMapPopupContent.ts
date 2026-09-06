@@ -23,6 +23,9 @@ type MapStoryRow = {
   youtube_url_ru?: string | null;
   youtube_url_he?: string | null;
   youtube_url_en?: string | null;
+  is_approved?: boolean | null;
+  story_status?: string | null;
+  needs_rewrite?: boolean | null;
 };
 
 type MapStorySlideRow = {
@@ -112,7 +115,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
       const { data, error } = await supabase
         .from("map_stories")
         .select(
-          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en",
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite",
         )
         .eq("type", type)
         .eq("target_id", candidateTargetId)
@@ -132,7 +135,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
       const { data, error } = await supabase
         .from("map_stories")
         .select(
-          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en",
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite",
         )
         .eq("type", type)
         .eq("language", language)
@@ -153,7 +156,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
       const { data, error } = await supabase
         .from("map_stories")
         .select(
-          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en",
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite",
         )
         .eq("type", type)
         .eq("language", language)
@@ -369,6 +372,11 @@ export async function getMapPopupContent({
       Boolean(translation),
       usesRussianFallback,
     ),
+    publication: {
+      isApproved: baseStory.is_approved === true,
+      storyStatus: typeof baseStory.story_status === "string" ? baseStory.story_status : null,
+      needsRewrite: baseStory.needs_rewrite === true,
+    },
   };
 
   devLog(
