@@ -853,6 +853,29 @@ I’d be very happy to connect.
 
 LapLapLa grows through dialogue, not through a fixed master plan.`,
     },
+    editorial: {
+      title: "How we create materials",
+      preview: "How LapLapLa prepares, edits, and reviews materials, uses sources, and works with AI tools.",
+      full: `### How we create materials
+
+LapLapLa creates interactive and editorial materials that help people explore a subject, prepare a dish, or reach a clear creative outcome.
+
+### Editorial approach
+
+Materials are assembled, structured, and edited for LapLapLa. They may pass a separate editorial selection before entering the indexable or advertising surface.
+
+### Use of AI tools
+
+AI tools may assist research, drafting, translation, structuring, and creative generation in some workflows. AI output is not treated as an automatically verified fact and does not remove LapLapLa’s editorial responsibility.
+
+### Sources
+
+Factual materials should rely on verifiable sources where appropriate. A page shows source links only when those sources are genuinely stored with the material; missing sources are not replaced with automatically generated links.
+
+### Reporting an error
+
+If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@gmail.com.`,
+    },
   },
   parrots: {
     page: {

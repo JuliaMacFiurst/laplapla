@@ -10,6 +10,7 @@ import { parseMapStoryContentToSlides } from "@/lib/mapPopup/slideParser";
 import { generateStorySlides } from "@/lib/server/mapPopup/persistence";
 import type { MapPopupContent, MapPopupSlide, MapPopupType } from "@/types/mapPopup";
 import { devLog } from "@/utils/devLog";
+import { normalizeEditorialSources } from "@/lib/editorial/trust";
 
 type MapStoryRow = {
   id: string | number;
@@ -26,6 +27,11 @@ type MapStoryRow = {
   is_approved?: boolean | null;
   story_status?: string | null;
   needs_rewrite?: boolean | null;
+  updated_at?: string | null;
+  source_validated_at?: string | null;
+  source_validation_status?: string | null;
+  story_sources?: unknown;
+  auto_generated?: boolean | null;
 };
 
 type MapStorySlideRow = {
@@ -115,7 +121,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
       const { data, error } = await supabase
         .from("map_stories")
         .select(
-          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite",
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite, updated_at, source_validated_at, source_validation_status, story_sources, auto_generated",
         )
         .eq("type", type)
         .eq("target_id", candidateTargetId)
@@ -135,7 +141,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
       const { data, error } = await supabase
         .from("map_stories")
         .select(
-          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite",
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite, updated_at, source_validated_at, source_validation_status, story_sources, auto_generated",
         )
         .eq("type", type)
         .eq("language", language)
@@ -156,7 +162,7 @@ async function loadStory(type: MapPopupType, targetId: string, lang: string): Pr
       const { data, error } = await supabase
         .from("map_stories")
         .select(
-          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite",
+          "id, type, target_id, language, content, images, audio_url, google_maps_url, youtube_url_ru, youtube_url_he, youtube_url_en, is_approved, story_status, needs_rewrite, updated_at, source_validated_at, source_validation_status, story_sources, auto_generated",
         )
         .eq("type", type)
         .eq("language", language)
@@ -376,6 +382,12 @@ export async function getMapPopupContent({
       isApproved: baseStory.is_approved === true,
       storyStatus: typeof baseStory.story_status === "string" ? baseStory.story_status : null,
       needsRewrite: baseStory.needs_rewrite === true,
+      updatedAt: typeof baseStory.updated_at === "string" ? baseStory.updated_at : null,
+      sourceValidatedAt: typeof baseStory.source_validated_at === "string" ? baseStory.source_validated_at : null,
+      sourceValidationStatus:
+        typeof baseStory.source_validation_status === "string" ? baseStory.source_validation_status : null,
+      sources: normalizeEditorialSources(baseStory.story_sources),
+      aiAssisted: baseStory.auto_generated === true,
     },
   };
 

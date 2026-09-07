@@ -6,6 +6,7 @@ import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import AdSlot from "@/components/ads/AdSlot";
 import TranslationWarning from "@/components/TranslationWarning";
+import PublisherTrustBlock from "@/components/editorial/PublisherTrustBlock";
 import { BASE_URL } from "@/lib/config";
 import { buildLocalizedPublicPath, isLang } from "@/lib/i18n/routing";
 import { dictionaries, type Lang } from "@/i18n";
@@ -482,7 +483,9 @@ export default function RaccoonRecipePage({
             </section>
           ) : null}
 
-        <AdSlot placement="raccoon-recipe-bottom" pageAdsEligible />
+          <PublisherTrustBlock lang={lang} updatedAt={recipe.updated_at} />
+
+          <AdSlot placement="raccoon-recipe-bottom" pageAdsEligible />
 
           <section className="recipe-hidden-seo">
             <CorePageLinks current="raccoons" lang={lang} related={["home", "cats", "book"]} />

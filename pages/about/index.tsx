@@ -12,6 +12,7 @@ const ABOUT_ICONS: Record<string, string> = {
   access: "/icons/about-icons/chest.webp",
   language: "/icons/about-icons/lang.webp",
   collaboration: "/icons/about-icons/paws.webp",
+  editorial: "/icons/about-icons/paws.webp",
 };
 
 export default function AboutPage() {
@@ -58,6 +59,7 @@ export default function AboutPage() {
               </article>
             ))}
           </section>
+
         </div>
       </main>
     </>

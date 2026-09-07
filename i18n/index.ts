@@ -252,6 +252,11 @@ type DictionaryShape = {
       preview: string;
       full: string;
     };
+    editorial: {
+      title: string;
+      preview: string;
+      full: string;
+    };
   };
 
   identity: {
@@ -918,6 +923,7 @@ export const ABOUT_SECTIONS = [
   "access",
   "language",
   "collaboration",
+  "editorial",
 ] as const;
 
 export type AboutSectionKey = (typeof ABOUT_SECTIONS)[number];

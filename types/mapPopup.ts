@@ -42,5 +42,10 @@ export type MapPopupContent = {
     isApproved: boolean;
     storyStatus: string | null;
     needsRewrite: boolean;
+    updatedAt: string | null;
+    sourceValidatedAt: string | null;
+    sourceValidationStatus: string | null;
+    sources: import("@/lib/editorial/trust").EditorialSource[];
+    aiAssisted: boolean;
   };
 };

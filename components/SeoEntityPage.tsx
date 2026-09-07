@@ -14,6 +14,8 @@ import { BASE_URL } from "@/lib/config";
 import type { ContentEligibility } from "@/lib/seo/contentEligibility";
 import { trackEvent } from "@/lib/analytics/client";
 import type { MapPopupContent } from "@/types/mapPopup";
+import PublisherTrustBlock from "@/components/editorial/PublisherTrustBlock";
+import { dedupeEditorialSources, getLatestEditorialDate } from "@/lib/editorial/trust";
 
 export type SeoEntityType = CanonicalMapEntityType;
 
@@ -261,6 +263,14 @@ export default function SeoEntityPage({
     0,
   );
   const inContentSectionIndex = Math.max(0, Math.floor(populatedSections.length / 2) - 1);
+  const renderedStories = populatedSections.flatMap((sectionKey) => groupedStories[sectionKey]);
+  const editorialUpdatedAt = getLatestEditorialDate(
+    renderedStories.map((story) => story.publication?.updatedAt),
+  );
+  const editorialSources = dedupeEditorialSources(
+    renderedStories.flatMap((story) => story.publication?.sources || []),
+  );
+  const aiAssisted = renderedStories.some((story) => story.publication?.aiAssisted === true);
 
   useEffect(() => {
     const eventName = entityType === "country" ? "country_opened" : "content_open";
@@ -448,6 +458,15 @@ export default function SeoEntityPage({
             </Fragment>
           );
         }) : null}
+
+        {eligibility.indexEligible ? (
+          <PublisherTrustBlock
+            lang={currentLang}
+            updatedAt={editorialUpdatedAt}
+            sources={editorialSources}
+            aiAssisted={aiAssisted}
+          />
+        ) : null}
 
         {hasAnyStories && eligibility.adsEligible ? (
           <AdSlot placement="raccoon-article-bottom" pageAdsEligible />

@@ -1,0 +1,67 @@
+.block {
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 28px 0 8px;
+  padding: 16px 0 0;
+  border-top: 1px solid rgba(71, 85, 105, 0.22);
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.heading {
+  margin: 0 0 6px;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.details,
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.details a,
+.sources a,
+.methodology {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(71, 85, 105, 0.45);
+  text-underline-offset: 3px;
+}
+
+.sourcesWrap,
+.aiNote {
+  margin-top: 8px;
+}
+
+.sourcesLabel {
+  margin: 0 0 3px;
+  font-weight: 600;
+}
+
+.sourcePublisher {
+  color: #64748b;
+}
+
+.aiNote {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .block {
+    margin-top: 24px;
+    font-size: 0.82rem;
+  }
+
+  .details,
+  .sources {
+    gap: 3px 10px;
+  }
+}

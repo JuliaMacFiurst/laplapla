@@ -222,6 +222,7 @@
 
 .about-full-content {
   margin-top: 32px;
+  overflow-wrap: anywhere;
 
   max-width: 720px;
   margin-left: auto;
@@ -253,6 +254,11 @@
 
   color: #f6b6d8;
   font-size: 18px;
+}
+
+[dir="rtl"] .about-full-content h3::before {
+  right: -24px;
+  left: auto;
 }
 
 /* Чтобы текст красиво обтекал */

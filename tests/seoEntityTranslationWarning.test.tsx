@@ -47,6 +47,16 @@ function story(
       native,
       hasRussianFallback,
     ),
+    publication: {
+      isApproved: true,
+      storyStatus: "ready",
+      needsRewrite: false,
+      updatedAt: "2026-09-04T00:00:00.000Z",
+      sourceValidatedAt: null,
+      sourceValidationStatus: "not_checked",
+      sources: [],
+      aiAssisted: false,
+    },
   };
 }
 
@@ -85,6 +95,16 @@ describe("SeoEntityPage section translation warnings", () => {
     expect(markup).toContain("country content");
     expect(markup).toContain('data-noindex="true"');
     expect(markup).toContain('data-alternates="ru,x-default"');
+    expect(markup).not.toContain("data-publisher-trust");
+  });
+
+  it("shows the publisher trust layer only on an eligible map article", () => {
+    const groups = emptyGroups();
+    groups.country = [story("country", "country", "en", true, false)];
+    const markup = renderPage("en", groups, true, ["en"]);
+    expect(markup).toContain("data-publisher-trust");
+    expect(markup).toContain("Edited for publication");
+    expect(markup).not.toContain("Sources</p>");
   });
 
   it("shows warnings only for fallback culture and food sections", () => {
