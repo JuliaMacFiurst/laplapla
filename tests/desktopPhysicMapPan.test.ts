@@ -73,3 +73,37 @@ describe("desktop physic map zoom and pan", () => {
     expect(getMobileTouchTolerance("physic")).toBe(0);
   });
 });
+
+describe("desktop Animals/Biomes bounds", () => {
+  const animalGeometry: DesktopPhysicMapGeometry = {
+    viewportWidth: 1248,
+    viewportHeight: 612,
+    svgLeft: 0,
+    svgTop: 0,
+    svgWidth: 1119,
+    svgHeight: 608,
+  };
+
+  it("never lets a large animal-map drag hide the entire SVG", () => {
+    for (const position of [
+      { x: -10000, y: -10000 },
+      { x: 10000, y: 10000 },
+    ]) {
+      const clamped = clampDesktopPhysicMapPosition(position, 4, animalGeometry);
+      const left = clamped.x;
+      const top = clamped.y;
+      const visibleWidth = Math.min(animalGeometry.viewportWidth, left + animalGeometry.svgWidth * 4) - Math.max(0, left);
+      const visibleHeight = Math.min(animalGeometry.viewportHeight, top + animalGeometry.svgHeight * 4) - Math.max(0, top);
+      expect(visibleWidth).toBeGreaterThanOrEqual(animalGeometry.viewportWidth * 0.2 - 1e-9);
+      expect(visibleHeight).toBeGreaterThanOrEqual(animalGeometry.viewportHeight * 0.2 - 1e-9);
+    }
+  });
+
+  it("returns a far-panned animal map to a valid centered minimum", () => {
+    const position = getDesktopPhysicPositionAfterZoomOut(
+      { x: -10000, y: 10000 }, 4, 1, animalGeometry,
+    );
+    expect(position.x).toBeCloseTo((1248 - 1119) / 2);
+    expect(position.y).toBeCloseTo((612 - 608) / 2);
+  });
+});

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { en } from "../i18n/en";
 import { he } from "../i18n/he";
 import { ru } from "../i18n/ru";
+import { dictionaries } from "../i18n";
 
 const mobileBookScreen = readFileSync(
   "components/capybara/mobile/MobileBookScreen.tsx",
@@ -49,11 +50,16 @@ describe("mobile scoped fixes", () => {
 
     for (const dictionary of [ru, en, he]) {
       expect(dictionary.raccoons.page.title.trim().length).toBeGreaterThan(0);
+      expect(dictionary.raccoons.onboarding.close.trim().length).toBeGreaterThan(0);
+      expect(dictionary.raccoons.onboarding.reopen.trim().length).toBeGreaterThan(0);
       expect(dictionary.raccoons.onboarding.steps).toHaveLength(3);
       for (const step of dictionary.raccoons.onboarding.steps) {
         expect(step.title.trim().length).toBeGreaterThan(5);
         expect(step.body.trim().length).toBeGreaterThan(50);
       }
+    }
+    for (const lang of ["ru", "en", "he"] as const) {
+      expect(dictionaries[lang].raccoons.onboarding.close.trim().length).toBeGreaterThan(0);
     }
   });
 

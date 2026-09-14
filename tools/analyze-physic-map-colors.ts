@@ -1,5 +1,6 @@
 /** Offline diagnostic only. Never imported by the map runtime.
- * Run: node --import tsx tools/analyze-physic-map-colors.ts [--input path/to/sanitized.svg] [--check]
+ * Run with --input path/to/sanitized.svg or --url https://host/api/map-svg?...
+ * Use --help for examples; --check verifies previously generated outputs.
  */
 import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -10,8 +11,6 @@ import {
   type Box, type Graph,
 } from "./physicMapColorCore";
 
-const SOURCE_URL = "/api/map-svg?path=physic%2Fwonders_colored.svg&policy=2";
-const DEFAULT_INPUT = "generated/physic-map-source-snapshot.svg";
 const OUTPUT_DIR = "generated";
 const RASTER_SCALE = 2;
 // 3/800 of map width: roughly 2.4–3.8 CSS px at common 640–1024 px map widths.
@@ -26,6 +25,55 @@ type PathRecord = {
   continent: boolean; island: boolean; islandGroup: boolean; instanceKey: string;
 };
 type Mask = { bits: Uint32Array; expanded: Uint32Array };
+
+const USAGE = `Usage:
+  node --import tsx tools/analyze-physic-map-colors.ts --input ./map.svg [--check]
+  node --import tsx tools/analyze-physic-map-colors.ts --url 'http://localhost:3000/api/map-svg?path=physic%2Fwonders_colored.svg&policy=2' [--check]
+
+Provide exactly one input source. --url makes an HTTP(S) request; no network request
+occurs with --input. --check compares results with existing generated outputs.
+The input SVG is hashed in memory and is never saved as a source snapshot.`;
+
+function parseInputArgs(args: string[]): { input?: string; url?: string; check: boolean; help: boolean } {
+  let input: string | undefined;
+  let url: string | undefined;
+  let check = false;
+  let help = false;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--help" || arg === "-h") help = true;
+    else if (arg === "--check") check = true;
+    else if (arg === "--input" || arg === "--url") {
+      const value = args[++i];
+      if (!value || value.startsWith("--")) throw new Error(`${arg} requires a value.\n\n${USAGE}`);
+      if (arg === "--input") {
+        if (input) throw new Error(`--input may only be provided once.\n\n${USAGE}`);
+        input = value;
+      } else {
+        if (url) throw new Error(`--url may only be provided once.\n\n${USAGE}`);
+        url = value;
+      }
+    } else throw new Error(`Unknown argument: ${arg}.\n\n${USAGE}`);
+  }
+  if (!help && Number(Boolean(input)) + Number(Boolean(url)) !== 1) {
+    throw new Error(`Provide exactly one of --input or --url.\n\n${USAGE}`);
+  }
+  return { input, url, check, help };
+}
+
+async function readSource(args: ReturnType<typeof parseInputArgs>): Promise<{ bytes: Buffer; source: string }> {
+  if (args.input) {
+    const source = path.resolve(args.input);
+    return { bytes: await readFile(source), source };
+  }
+  const source = new URL(args.url!);
+  if (source.protocol !== "http:" && source.protocol !== "https:") {
+    throw new Error("--url must use HTTP or HTTPS");
+  }
+  const response = await fetch(source);
+  if (!response.ok) throw new Error(`SVG download failed: HTTP ${response.status} ${response.statusText}`);
+  return { bytes: Buffer.from(await response.arrayBuffer()), source: source.toString() };
+}
 
 function xmlDecode(value: string): string {
   return value.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (_, entity: string) => {
@@ -179,10 +227,12 @@ function previewHtml(svg: string, svgSha256: string, records: PathRecord[], colo
 }
 
 async function main(): Promise<void> {
-  const inputArg = process.argv.indexOf("--input");
-  if (inputArg >= 0 && !process.argv[inputArg + 1]) throw new Error("--input requires a path");
-  const inputPath = path.resolve(inputArg >= 0 ? process.argv[inputArg + 1] : DEFAULT_INPUT);
-  const svgBytes = await readFile(inputPath);
+  const args = parseInputArgs(process.argv.slice(2));
+  if (args.help) {
+    console.log(USAGE);
+    return;
+  }
+  const { bytes: svgBytes, source } = await readSource(args);
   const svg = svgBytes.toString("utf8");
   const svgSha256 = createHash("sha256").update(svgBytes).digest("hex");
   const { records, viewBox } = parseSvg(svg);
@@ -232,7 +282,7 @@ async function main(): Promise<void> {
   const duplicates = [...byId.entries()].filter(([, list]) => list.length > 1).sort(([a], [b]) => a.localeCompare(b, "en"));
   const colorCounts = Object.fromEntries(PALETTE.map((color) => [color, [...colors.values()].filter((value) => value === color).length]));
   const output = {
-    svgSha256, source: SOURCE_URL, viewBox, palette: PALETTE,
+    svgSha256, source, viewBox, palette: PALETTE,
     config: { neighborMargin: NEIGHBOR_MARGIN, rasterScale: RASTER_SCALE, alphaThreshold: ALPHA_THRESHOLD, colorSpace: "OKLab", colorDistanceThreshold: COLOR_DISTANCE_THRESHOLD },
     stats: { totalPaths: records.length, targetPaths: targets.length, island: targets.filter((p) => p.island).length,
       islandGroup: targets.filter((p) => p.islandGroup).length, vertices: graph.size, edges: edges.length,
@@ -250,7 +300,7 @@ async function main(): Promise<void> {
       compound: record.compound, continent: record.continent,
     })),
   };
-  const report = `# Physical map color analysis\n\nSVG SHA-256: \`${svgSha256}\`  \nSource: \`${SOURCE_URL}\`\n\n` +
+  const report = `# Physical map color analysis\n\nSVG SHA-256: \`${svgSha256}\`  \nSource: \`${source}\`\n\n` +
     `## Graph\n\n| Metric | Value |\n|---|---:|\n| All paths | ${records.length} |\n| Target paths | ${targets.length} |\n| Island | ${output.stats.island} |\n| Island group | ${output.stats.islandGroup} |\n| Excluded paths | ${output.excludedPaths.length} |\n| Vertices | ${graph.size} |\n| Bbox candidates | ${bboxCandidates} |\n| Geometry-confirmed edges | ${edges.length} |\n| Average degree | ${output.stats.averageDegree.toFixed(2)} |\n| Maximum degree | ${maxDegree} |\n| Connected components | ${output.stats.connectedComponents} |\n\n` +
     `Neighbor margin: ${NEIGHBOR_MARGIN} viewBox units (${(100 * NEIGHBOR_MARGIN / viewBox.width).toFixed(3)}% of width); raster: ${RASTER_SCALE}×; transparent-pixel threshold: ${ALPHA_THRESHOLD}; horizontal wrap: enabled. Bboxes only prefilter; dilated filled pixels confirm edges. One complete path is one vertex, including all its evenodd subpaths.\n\n` +
     `## Palette usage\n\n| HEX | Paths |\n|---|---:|\n${PALETTE.map((color) => `| ${color} | ${colorCounts[color]} |`).join("\n")}\n\n` +
@@ -272,7 +322,7 @@ async function main(): Promise<void> {
     ["physic-map-color-report.md", report],
     ["physic-map-color-preview.html", htmlText],
   ] as const;
-  if (process.argv.includes("--check")) {
+  if (args.check) {
     for (const [name, expected] of files) {
       const actual = await readFile(path.join(OUTPUT_DIR, name), "utf8");
       if (actual !== expected) throw new Error(`Non-deterministic or stale output: ${name}`);
@@ -281,7 +331,10 @@ async function main(): Promise<void> {
     for (const [name, content] of files) await writeFile(path.join(OUTPUT_DIR, name), content);
   }
   console.log(JSON.stringify({ svgSha256, ...output.stats, colorCounts, outputDir: OUTPUT_DIR,
-    mode: process.argv.includes("--check") ? "verified" : "generated" }, null, 2));
+    mode: args.check ? "verified" : "generated" }, null, 2));
 }
 
-main().catch((error: unknown) => { console.error(error); process.exitCode = 1; });
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});

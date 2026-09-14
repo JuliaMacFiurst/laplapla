@@ -13,9 +13,9 @@ const MOBILE_MAX_ZOOM: Record<RaccoonMapType, number> = {
   country: 16,
   river: 12,
   sea: 16,
-  physic: 12,
+  physic: 128,
   flag: 16,
-  animal: 12,
+  animal: 192,
   culture: 16,
   weather: 12,
   food: 16,
@@ -65,6 +65,54 @@ export function getMobilePanBounds(params: {
   }
 
   return { minX, maxX, minY, maxY };
+}
+
+/** Allow the first and last map pixels to reach the viewport center at deep zoom. */
+export function getMobilePhysicPanBounds(params: {
+  viewportWidth: number;
+  viewportHeight: number;
+  contentWidth: number;
+  contentHeight: number;
+  zoom: number;
+}) {
+  const bounds = getMobilePanBounds(params);
+  const horizontalInset = Math.min(
+    params.viewportWidth / 2,
+    Math.max(0, (params.contentWidth * params.zoom - params.viewportWidth) / 2),
+  );
+  const verticalInset = Math.min(
+    params.viewportHeight / 2,
+    Math.max(0, (params.contentHeight * params.zoom - params.viewportHeight) / 2),
+  );
+  return {
+    minX: bounds.minX - horizontalInset,
+    maxX: bounds.maxX + horizontalInset,
+    minY: bounds.minY - verticalInset,
+    maxY: bounds.maxY + verticalInset,
+  };
+}
+
+export function getMobilePhysicPositionAfterZoom(
+  position: { x: number; y: number },
+  oldZoom: number,
+  newZoom: number,
+  anchor: { x: number; y: number },
+) {
+  const ratio = newZoom / oldZoom;
+  return {
+    x: anchor.x - (anchor.x - position.x) * ratio,
+    y: anchor.y - (anchor.y - position.y) * ratio,
+  };
+}
+
+export function getMobilePhysicDoubleTapZoom(
+  currentZoom: number,
+  minZoom: number,
+  maxZoom: number,
+): number {
+  return currentZoom >= maxZoom - 1e-9
+    ? minZoom
+    : Math.min(maxZoom, currentZoom * 1.6);
 }
 
 export function clampMobilePanPosition(

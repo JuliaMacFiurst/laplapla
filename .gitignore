@@ -58,3 +58,12 @@ supabase-*.sql
 backups/
 
 artifacts/
+
+# Local physical-map analysis inputs and re-creatable outputs
+/generated/physic-map-source-snapshot.svg
+/generated/physic-map-colors.json
+/generated/physic-map-color-report.md
+/generated/physic-map-color-preview.html
+/generated/physic-map-layer-overlaps.json
+/generated/physic-map-layer-report.md
+/generated/physic-map-layer-preview.html
