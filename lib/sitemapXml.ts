@@ -8,6 +8,7 @@ import {
   CORE_SITEMAP_PAGES,
   sitemapContainsOnlyCanonicalPublicUrls,
 } from "@/lib/sitemapPolicy";
+import { getPublicProductSlugs } from "@/lib/shop/catalog";
 
 const SITEMAP_LANGS: Lang[] = ["ru", "en", "he"];
 
@@ -76,8 +77,16 @@ export async function generateSitemapXml() {
       [...CORE_SITEMAP_PAGES, ...recipeEntries].map((entry) => [entry.path, entry]),
     ).values(),
   );
+  
+  const shopProductPaths = getPublicProductSlugs().map((slug) => `/shop/${slug}`);
+  const shopProductEntries = shopProductPaths.map((path) => ({
+    path,
+    priority: "0.85",
+    changefreq: "weekly",
+  }));
+
   const entries = [
-    ...uniqueEntries.flatMap(({ path, priority, changefreq }) =>
+    ...[...uniqueEntries, ...shopProductEntries].flatMap(({ path, priority, changefreq }) =>
       SITEMAP_LANGS.map((lang) => ({
         path,
         url: buildAbsoluteUrl(baseUrl, path, lang),

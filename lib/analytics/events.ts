@@ -40,6 +40,8 @@ export const ANALYTICS_EVENT_NAMES = [
   "project_created",
   "short_opened",
   "story_downloaded",
+  "shop_view",
+  "product_view",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENT_NAMES)[number];
@@ -53,6 +55,7 @@ export const ANALYTICS_ENTITY_TYPES = [
   "studio_project",
   "video",
   "short",
+  "shop_product",
 ] as const;
 
 export type AnalyticsEntityType = (typeof ANALYTICS_ENTITY_TYPES)[number];
@@ -72,6 +75,7 @@ export type AnalyticsSection =
   | "bedtime_stories"
   | "books"
   | "map"
+  | "shop"
   | "legal"
   | "other";
 
@@ -159,10 +163,12 @@ export const ANALYTICS_EVENT_LABELS: Record<AnalyticsEventName, string> = {
   story_completed: "Stories completed",
   recipe_opened: "Recipes viewed",
   map_opened: "Maps opened",
-  video_exported: "Videos exported",
+  video_exported: "Video exported",
   project_created: "Projects created",
   short_opened: "Shorts opened",
-  story_downloaded: "Story downloads",
+  story_downloaded: "Stories downloaded",
+  shop_view: "Shop viewed",
+  product_view: "Shop product viewed",
 };
 
 export function isAnalyticsEventName(value: unknown): value is AnalyticsEventName {

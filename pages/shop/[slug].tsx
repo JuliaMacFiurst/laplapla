@@ -6,11 +6,23 @@ import { ShopComingSoon } from "@/components/shop/ShopComingSoon";
 import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
 
+import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics/client";
+
 export default function ShopProductPage() {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const dict = dictionaries[lang];
   const { navTitle, hubDescription } = dict.shop;
+
+  useEffect(() => {
+    trackEvent("product_view", {
+      section: "shop",
+      content_type: "shop_product",
+      content_slug: typeof router.query.slug === "string" ? router.query.slug : undefined,
+      language: lang,
+    });
+  }, [lang, router.query.slug]);
 
   return (
     <>
