@@ -46,8 +46,17 @@ import {
   isMobileTouchTapEligible,
   selectMobileProximityTarget,
   selectFirstInteractiveViewportHit,
-  selectSmallestSvgHit,
 } from "@/lib/mapSvgInteraction";
+import {
+  applyPhysicMapStyling,
+  classifyPhysicPath,
+  selectBiomeSvgHit,
+} from "@/lib/physicMapStyling";
+import {
+  clampDesktopPhysicMapPosition,
+  getDesktopPhysicPositionAfterZoomOut,
+  type DesktopPhysicMapGeometry,
+} from "@/lib/desktopPhysicMapPan";
 import { supabase } from "@/lib/supabase";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
@@ -602,6 +611,7 @@ export default function InteractiveMap({
   const startYRef = useRef(0);
   const currentXRef = useRef(0);
   const currentYRef = useRef(0);
+  const desktopPhysicDragGeometryRef = useRef<DesktopPhysicMapGeometry | null>(null);
   const movedDuringDragRef = useRef(false);
   const didDragRef = useRef(false);
   const pointerStartClientXRef = useRef(0);
@@ -1144,6 +1154,9 @@ export default function InteractiveMap({
         svgElement.classList.add(`${type}-map`);
         svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
         svgElement.style.overflow = "visible";
+        if (type === "physic") {
+          applyPhysicMapStyling(svgElement as SVGSVGElement);
+        }
         setSvgContent(svgElement.outerHTML);
       } else {
         setSvgContent(text);
@@ -1495,6 +1508,28 @@ export default function InteractiveMap({
     };
   }, [getPanBounds, softClamp]);
 
+  const getDesktopPhysicMapGeometry = () => {
+    if (isMobile || type !== "physic" || zoomRef.current <= 0) return null;
+    const container = mapContentRef.current?.parentElement;
+    const svg = svgHostRef.current?.querySelector("svg");
+    if (!container || !svg || svg.viewBox.baseVal.width <= 0) return null;
+
+    const viewport = container.getBoundingClientRect();
+    const renderedSvg = svg.getBoundingClientRect();
+    const zoom = zoomRef.current;
+    if (viewport.width <= 0 || viewport.height <= 0 ||
+        renderedSvg.width <= 0 || renderedSvg.height <= 0) return null;
+
+    return {
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+      svgLeft: (renderedSvg.left - viewport.left - currentXRef.current) / zoom,
+      svgTop: (renderedSvg.top - viewport.top - currentYRef.current) / zoom,
+      svgWidth: renderedSvg.width / zoom,
+      svgHeight: renderedSvg.height / zoom,
+    };
+  };
+
   const applyMapTransform = useCallback((
     nextX = currentXRef.current,
     nextY = currentYRef.current,
@@ -1505,11 +1540,34 @@ export default function InteractiveMap({
       return;
     }
 
+    // Developer-only comparison: keep the same SVG viewport geometry while
+    // rendering the vector at its zoomed CSS size instead of scaling the wrapper.
+    const realSizePhysicExperiment = !isMobile && type === "physic" &&
+      process.env.NODE_ENV !== "production" &&
+      new URLSearchParams(window.location.search).get("physicSvgZoom") === "size";
+    const svgHost = svgHostRef.current;
+    const container = mapContent.parentElement;
+    if (realSizePhysicExperiment) {
+      const viewBox = svgHost?.querySelector("svg")?.viewBox.baseVal;
+      if (svgHost) svgHost.style.width = `${mapContent.clientWidth * nextZoom}px`;
+      if (viewBox?.width && viewBox.height) {
+        mapContent.style.height = `${mapContent.clientWidth * 0.8 * viewBox.height / viewBox.width}px`;
+      }
+      // Prevent zoom controls from scrolling the oversized SVG inside its viewport.
+      if (container) container.style.overflow = "clip";
+    } else if (!isMobile || svgHost?.style.width || mapContent.style.height) {
+      if (svgHost) svgHost.style.width = "";
+      mapContent.style.height = "";
+      if (container) container.style.overflow = "";
+    }
+
     mapContent.style.transformOrigin = "0 0";
-    mapContent.style.transform = isMobile
+    mapContent.style.transform = realSizePhysicExperiment
+      ? `translate3d(${nextX}px, ${nextY}px, 0)`
+      : isMobile
       ? `translate(${nextX}px, ${nextY}px) scale(${nextZoom})`
       : `translate3d(${nextX}px, ${nextY}px, 0) scale(${nextZoom})`;
-  }, [isMobile]);
+  }, [isMobile, type]);
 
   // --- Helper to reset the map view to the safe initial view ---
   const resetMapView = () => {
@@ -1659,6 +1717,7 @@ export default function InteractiveMap({
     pointerStartClientYRef.current = e.clientY;
     startXRef.current = e.clientX - currentXRef.current;
     startYRef.current = e.clientY - currentYRef.current;
+    desktopPhysicDragGeometryRef.current = getDesktopPhysicMapGeometry();
     if (mapContentRef.current) {
       mapContentRef.current.style.cursor = "grabbing";
     }
@@ -1680,7 +1739,10 @@ export default function InteractiveMap({
     }
     const nextX = e.clientX - startXRef.current;
     const nextY = e.clientY - startYRef.current;
-    const clamped = clampMobilePosition(nextX, nextY, zoomRef.current);
+    const geometry = desktopPhysicDragGeometryRef.current;
+    const clamped = geometry
+      ? clampDesktopPhysicMapPosition({ x: nextX, y: nextY }, zoomRef.current, geometry)
+      : clampMobilePosition(nextX, nextY, zoomRef.current);
     currentXRef.current = clamped.x;
     currentYRef.current = clamped.y;
     applyMapTransform(clamped.x, clamped.y, zoomRef.current);
@@ -1688,6 +1750,7 @@ export default function InteractiveMap({
 
   const handleMouseUp = () => {
     isDraggingRef.current = false;
+    desktopPhysicDragGeometryRef.current = null;
     if (mapContentRef.current) {
       mapContentRef.current.style.cursor = "grab";
     }
@@ -2374,10 +2437,14 @@ export default function InteractiveMap({
       return point.matrixTransform(ctm.inverse());
     };
 
-    const getBiomePathFromPointerEvent = (event: MouseEvent) => {
+    const getBiomePathFromPointerEvent = (event: MouseEvent, diagnostic = false) => {
       const svgPoint = getSvgPointFromEvent(event);
       if (!svgPoint) {
-        return getPathFromNode(event.target);
+        const fallback = getPathFromNode(event.target);
+        if (diagnostic && type === "physic" && process.env.NODE_ENV === "development") {
+          console.debug(`[physic] no SVG CTM; selected: ${fallback?.id ?? "none"} (event-target fallback)`);
+        }
+        return fallback;
       }
 
       const paths = Array.from(svg.querySelectorAll("path[id]")).filter(
@@ -2391,14 +2458,25 @@ export default function InteractiveMap({
         }
       });
 
-      if (hits.length === 0) {
-        return getPathFromNode(event.target);
+      const result = selectBiomeSvgHit(
+        type === "physic" ? "physic" : "weather",
+        hits,
+        (path) => path.getBBox(),
+      );
+      const selected = result.selected ?? getPathFromNode(event.target);
+      if (diagnostic && type === "physic" && process.env.NODE_ENV === "development") {
+        console.groupCollapsed("[physic] SVG hits");
+        hits.forEach((path, index) => {
+          console.debug(`${index + 1}. ${path.id} [${classifyPhysicPath(path.id)}]`);
+        });
+        console.debug(`selected: ${selected?.id ?? "none"}`);
+        console.debug(`reason: ${result.selected ? result.reason : "event-target fallback"}`);
+        console.groupEnd();
       }
-
-      return selectSmallestSvgHit(hits, (path) => path.getBBox());
+      return selected;
     };
 
-    const getPathFromPointerEvent = (event: MouseEvent) => {
+    const getPathFromPointerEvent = (event: MouseEvent, diagnostic = false) => {
       if (type === "animal") {
         if (typeof document.elementsFromPoint !== "function") {
           return getPathFromNode(event.target);
@@ -2422,7 +2500,7 @@ export default function InteractiveMap({
       }
 
       if (type === "weather" || type === "physic") {
-        return getBiomePathFromPointerEvent(event);
+        return getBiomePathFromPointerEvent(event, diagnostic);
       }
 
       if (typeof document.elementsFromPoint !== "function") {
@@ -2610,7 +2688,10 @@ export default function InteractiveMap({
         return;
       }
 
-      const exactPath = getPathFromPointerEvent(event);
+      const exactPath = getPathFromPointerEvent(
+        event,
+        type === "physic" && process.env.NODE_ENV === "development",
+      );
       const path = exactPath ?? getMobileProximityPath(event);
       mobileTapRef.current = null;
       if (!path || !mapContent.contains(path)) return;
@@ -2869,11 +2950,15 @@ export default function InteractiveMap({
                     ? getMobileMaxZoom(type)
                     : type === "river" ? 6 : 4;
                   const nextZoom = Math.min(zoomRef.current * 1.2, maxZoom);
-                  const clamped = clampMobilePosition(
-                    currentXRef.current,
-                    currentYRef.current,
-                    nextZoom,
-                  );
+                  const geometry = getDesktopPhysicMapGeometry();
+                  const clamped = geometry
+                    ? clampDesktopPhysicMapPosition(
+                        { x: currentXRef.current, y: currentYRef.current }, nextZoom, geometry)
+                    : clampMobilePosition(
+                        currentXRef.current,
+                        currentYRef.current,
+                        nextZoom,
+                      );
                   zoomRef.current = nextZoom;
                   setZoom(nextZoom);
                   currentXRef.current = clamped.x;
@@ -2891,11 +2976,19 @@ export default function InteractiveMap({
                     zoomRef.current / 1.2,
                     isMobile ? mobileMinZoomRef.current : 1,
                   );
-                  const clamped = clampMobilePosition(
-                    currentXRef.current,
-                    currentYRef.current,
-                    nextZoom,
-                  );
+                  const geometry = getDesktopPhysicMapGeometry();
+                  const clamped = geometry
+                    ? getDesktopPhysicPositionAfterZoomOut(
+                        { x: currentXRef.current, y: currentYRef.current },
+                        zoomRef.current,
+                        nextZoom,
+                        geometry,
+                      )
+                    : clampMobilePosition(
+                        currentXRef.current,
+                        currentYRef.current,
+                        nextZoom,
+                      );
                   zoomRef.current = nextZoom;
                   setZoom(nextZoom);
                   currentXRef.current = clamped.x;
