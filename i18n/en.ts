@@ -1116,6 +1116,16 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
       initialPrompt: "Click any place on the map and I'll show you prepared material about it.",
     },
   },
+  shop: {
+    navTitle: "Shop",
+    hubTitle: "LapLapLa Shop",
+    hubDescription: "A shop of ready-made adventures, games, and knowledge kits.",
+    comingSoonTitle: "Preparing the first collections",
+    comingSoonText: "Printable kits, quests, and interactive adventures will appear here soon.",
+    exploreFreeContent: "Explore the free magazine meanwhile",
+    buy: "Buy",
+    free: "Free",
+  },
   footer: {
     home: "LapLapLa Home",
     about: "About LapLapLa",

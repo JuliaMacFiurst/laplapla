@@ -902,6 +902,17 @@ type DictionaryShape = {
     };
   };
 
+  shop: {
+    navTitle: string;
+    hubTitle: string;
+    hubDescription: string;
+    comingSoonTitle: string;
+    comingSoonText: string;
+    exploreFreeContent: string;
+    buy: string;
+    free: string;
+  };
+
   footer: {
     home: string;
     about: string;

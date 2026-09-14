@@ -1111,6 +1111,16 @@ LapLapLa יוצרת תכנים אינטראקטיביים ועריכתיים ש�
       initialPrompt: "לחצו על כל מקום במפה ואציג לכם חומר מוכן עליו.",
     },
   },
+  shop: {
+    navTitle: "חנות",
+    hubTitle: "חנות LapLapLa",
+    hubDescription: "חנות של הרפתקאות מוכנות, משחקים וערכות ידע.",
+    comingSoonTitle: "מכינים את האוספים הראשונים",
+    comingSoonText: "ערכות הדפסה, קווסטים והרפתקאות אינטראקטיביות יופיעו כאן בקרוב.",
+    exploreFreeContent: "בינתיים, אפשר לקרוא במגזין החינמי",
+    buy: "לקנות",
+    free: "חינם",
+  },
   footer: {
     home: "דף הבית של LapLapLa",
     about: "על LapLapLa",
