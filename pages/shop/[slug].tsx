@@ -1,8 +1,7 @@
-import React from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { TopBar } from "@/components/TopBar";
+import TopBar from "@/components/TopBar";
 import { ShopComingSoon } from "@/components/shop/ShopComingSoon";
 import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
@@ -20,7 +19,7 @@ export default function ShopProductPage() {
         <meta name="description" content={hubDescription} />
       </Head>
 
-      <TopBar />
+      <TopBar lang={lang} />
 
       <main className="ShopPage-main">
         {/* Real product rendering will go here later */}
@@ -30,7 +29,7 @@ export default function ShopProductPage() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async () => {
   return {
     props: {},
   };

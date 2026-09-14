@@ -1,4 +1,4 @@
-import React from "react";
+
 import Link from "next/link";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
