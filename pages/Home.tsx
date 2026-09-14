@@ -7,6 +7,7 @@ import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "../i18n";
 import { VideoSection } from "../components/video/VideoSection";
+import { ShopSpotlight } from "@/components/shop/ShopSpotlight";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
@@ -308,6 +309,8 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
               </Link>
             </div>
           </section>
+
+          <ShopSpotlight lang={resolvedLang} />
 
           <HomepageRetentionBlocks lang={resolvedLang} retention={retention} />
 

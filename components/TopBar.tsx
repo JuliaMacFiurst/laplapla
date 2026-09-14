@@ -116,8 +116,29 @@ export default function TopBar({ lang }: TopBarProps) {
         <div aria-hidden />
       )}
 
-      {/* Правая зона — язык */}
+      {/* Правая зона — магазин и язык */}
       <div className="top-bar-actions">
+        <Link
+          href={buildLocalizedPublicPath("/shop", lang)}
+          className="top-bar-shop-link"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            textDecoration: "none",
+            color: "var(--color-text, #333)",
+            fontWeight: 600,
+            marginRight: lang === "he" ? 0 : "1rem",
+            marginLeft: lang === "he" ? "1rem" : 0,
+            padding: "0.25rem 0.75rem",
+            backgroundColor: "var(--color-accent-light, rgba(255,122,89,0.1))",
+            borderRadius: "9999px",
+            transition: "transform 0.2s ease, opacity 0.2s ease"
+          }}
+          aria-label={dictionaries[lang].shop.navTitle}
+        >
+          <span aria-hidden="true" style={{ marginRight: lang === "he" ? 0 : "0.35rem", marginLeft: lang === "he" ? "0.35rem" : 0 }}>🛍️</span>
+          <span className="top-bar-shop-text">{dictionaries[lang].shop.navTitle}</span>
+        </Link>
         <LanguageSwitcher />
       </div>
     </div>

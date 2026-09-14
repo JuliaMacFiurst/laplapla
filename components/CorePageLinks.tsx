@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 
-export type CorePageKey = "home" | "cats" | "dog" | "book" | "parrots" | "raccoons";
+export type CorePageKey = "home" | "cats" | "dog" | "book" | "parrots" | "raccoons" | "shop";
 
 const CORE_PAGE_PATHS: Record<CorePageKey, string> = {
   home: "/",
@@ -12,6 +12,7 @@ const CORE_PAGE_PATHS: Record<CorePageKey, string> = {
   book: "/capybara",
   parrots: "/parrots",
   raccoons: "/raccoons",
+  shop: "/shop",
 };
 
 const CORE_PAGE_LABELS: Record<Lang, Record<CorePageKey, string>> = {
@@ -22,6 +23,7 @@ const CORE_PAGE_LABELS: Record<Lang, Record<CorePageKey, string>> = {
     book: "Кладбищенская книга",
     parrots: "Попугайчики поют",
     raccoons: "Енотики найдут",
+    shop: "Лапковая лавка",
   },
   en: {
     home: "LapLapLa Home",
@@ -30,6 +32,7 @@ const CORE_PAGE_LABELS: Record<Lang, Record<CorePageKey, string>> = {
     book: "The Graveyard Book",
     parrots: "Parrots Sing",
     raccoons: "Raccoons Explore",
+    shop: "LapLapLa Shop",
   },
   he: {
     home: "דף הבית של LapLapLa",
@@ -38,6 +41,7 @@ const CORE_PAGE_LABELS: Record<Lang, Record<CorePageKey, string>> = {
     book: "ספר בית הקברות",
     parrots: "תוכונים שרים",
     raccoons: "דביבונים חוקרים",
+    shop: "חנות LapLapLa",
   },
 };
 
