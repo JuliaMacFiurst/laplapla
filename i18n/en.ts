@@ -1116,15 +1116,52 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
       initialPrompt: "Click any place on the map and I'll show you prepared material about it.",
     },
   },
+  topBar: {
+    signIn: "Sign in",
+  },
   shop: {
     navTitle: "Shop",
-    hubTitle: "LapLapLa Shop",
+    hubTitle: "LapLapLa Adventures",
     hubDescription: "A shop of ready-made adventures, games, and knowledge kits.",
     comingSoonTitle: "Preparing the first collections",
     comingSoonText: "Printable kits, quests, and interactive adventures will appear here soon.",
-    exploreFreeContent: "Explore the free magazine meanwhile",
+    exploreFreeContent: "Explore the free materials meanwhile",
     buy: "Buy",
     free: "Free",
+
+    interest: {
+      title: "Start with what sparks your curiosity",
+      intro: "A favorite show, a curious science fact, a trip, a celebration, art, a mystery, or a night in together — any spark of interest can lead to an adventure.",
+      formats: "LapLapLa turns those sparks into quizzes, quests, games, comics, experiments, and creative challenges for kids, teens, and adults.",
+      manifesto: "We don't hide lessons inside entertainment. We start with what draws you in — and open up a whole new world from there.",
+      examples: [
+        { from: "🎬 A favorite show", to: "quiz" },
+        { from: "🎉 A birthday", to: "quest" },
+        { from: "🚗 A long drive", to: "game" },
+        { from: "🧠 Math", to: "challenge" },
+        { from: "🗣️ Speech", to: "speech game" },
+        { from: "🎄 A holiday", to: "themed adventure" },
+        { from: "🐾 LapLapLa", to: "collectible comic" },
+      ],
+    },
+
+    conceptCards: {
+      solve: { title: "🔎 Solve", desc: "Detective stories, logic quests, and puzzles for curious minds." },
+      create: { title: "🎨 Create", desc: "Creative kits, coloring pages, crafts, and workshops." },
+      explore: { title: "🧪 Explore", desc: "Fascinating experiments and stories about how the world works." },
+      together: { title: "🛋️ Do together", desc: "Games for family nights and groups of friends." },
+    },
+
+    howItWorks: {
+      title: "How it will work",
+      step1: "1. Choose an adventure",
+      step2: "2. Download the materials",
+      step3: "3. Play and explore",
+    },
+    tryNow: "Things to try right now:",
+    freeQuest: "Free quest",
+    questDestination: "A journey to Spitsbergen",
+    seeStore: "Visit the shop",
   },
   footer: {
     home: "LapLapLa Home",

@@ -6,11 +6,9 @@ import { useRouter } from "next/router";
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "../i18n";
-import { VideoSection } from "../components/video/VideoSection";
 import { ShopSpotlight } from "@/components/shop/ShopSpotlight";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { BASE_URL } from "@/lib/config";
 import { GEO_PROFILES, buildHomeGeoJsonLd } from "@/lib/geo";
 import type { HomepageRetentionData } from "@/lib/homeRetention";
@@ -183,8 +181,6 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
   const isMobile = useIsMobile(767);
-  const responsiveViewport = useResponsiveViewport();
-  const usesTouchHomeLayout = isMobile || responsiveViewport.deviceClass === "tablet";
 
   const t = useMemo(() => dictionaries[resolvedLang].home, [resolvedLang]);
   const seo = dictionaries[resolvedLang].seo.home;
@@ -310,19 +306,10 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
             </div>
           </section>
 
-          <ShopSpotlight lang={resolvedLang} />
-
           <HomepageRetentionBlocks lang={resolvedLang} retention={retention} />
 
-          <section className={isMobile ? "home-mobile-screen home-mobile-screen-video" : undefined}>
-            <VideoSection lang={resolvedLang} mobileMode={usesTouchHomeLayout ? "shorts" : undefined} />
-          </section>
+          <ShopSpotlight lang={resolvedLang} />
 
-          {usesTouchHomeLayout ? (
-            <section className="home-mobile-screen home-mobile-screen-video home-mobile-screen-video-gallery">
-              <VideoSection lang={resolvedLang} mobileMode="videos" />
-            </section>
-          ) : null}
         </div>
       </div>
     </>

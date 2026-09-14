@@ -118,27 +118,43 @@ export default function TopBar({ lang }: TopBarProps) {
 
       {/* Правая зона — магазин и язык */}
       <div className="top-bar-actions">
-        <Link
-          href={buildLocalizedPublicPath("/shop", lang)}
-          className="top-bar-shop-link"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            textDecoration: "none",
-            color: "var(--color-text, #333)",
-            fontWeight: 600,
-            marginRight: lang === "he" ? 0 : "1rem",
-            marginLeft: lang === "he" ? "1rem" : 0,
-            padding: "0.25rem 0.75rem",
-            backgroundColor: "var(--color-accent-light, rgba(255,122,89,0.1))",
-            borderRadius: "9999px",
-            transition: "transform 0.2s ease, opacity 0.2s ease"
-          }}
-          aria-label={dictionaries[lang].shop.navTitle}
-        >
-          <span aria-hidden="true" style={{ marginRight: lang === "he" ? 0 : "0.35rem", marginLeft: lang === "he" ? "0.35rem" : 0 }}>🛍️</span>
-          <span className="top-bar-shop-text">{dictionaries[lang].shop.navTitle}</span>
-        </Link>
+        <div className="top-bar-auth-zone" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <button 
+            className="top-bar-signin"
+            onClick={() => alert("Sign in is coming soon")}
+            aria-label={dictionaries[lang].topBar.signIn}
+            style={{ 
+              background: "none", 
+              border: "none", 
+              cursor: "pointer", 
+              fontWeight: 600, 
+              color: "var(--color-text, #333)",
+              fontSize: "0.9rem"
+            }}
+          >
+            {dictionaries[lang].topBar.signIn}
+          </button>
+          
+          <Link
+            href={buildLocalizedPublicPath("/shop", lang)}
+            className="top-bar-cart"
+            aria-label={dictionaries[lang].shop.navTitle}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none",
+              color: "var(--color-text, #333)",
+              background: "var(--color-surface, #fff)",
+              borderRadius: "50%",
+              width: "36px",
+              height: "36px",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+            }}
+          >
+            <span aria-hidden="true" style={{ fontSize: "1.1rem" }}>🛒</span>
+          </Link>
+        </div>
         <LanguageSwitcher />
       </div>
     </div>

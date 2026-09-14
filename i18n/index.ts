@@ -902,6 +902,10 @@ type DictionaryShape = {
     };
   };
 
+  topBar: {
+    signIn: string;
+  };
+
   shop: {
     navTitle: string;
     hubTitle: string;
@@ -911,6 +915,32 @@ type DictionaryShape = {
     exploreFreeContent: string;
     buy: string;
     free: string;
+
+    interest: {
+      title: string;
+      intro: string;
+      formats: string;
+      manifesto: string;
+      examples: { from: string; to: string }[];
+    };
+
+    conceptCards: {
+      solve: { title: string; desc: string };
+      create: { title: string; desc: string };
+      explore: { title: string; desc: string };
+      together: { title: string; desc: string };
+    };
+
+    howItWorks: {
+      title: string;
+      step1: string;
+      step2: string;
+      step3: string;
+    };
+    tryNow: string;
+    freeQuest: string;
+    questDestination: string;
+    seeStore: string;
   };
 
   footer: {

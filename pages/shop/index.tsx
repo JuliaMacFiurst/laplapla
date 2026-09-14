@@ -1,7 +1,6 @@
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import TopBar from "@/components/TopBar";
 import { ShopComingSoon } from "@/components/shop/ShopComingSoon";
 import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
@@ -28,8 +27,6 @@ export default function ShopIndexPage() {
         <title>{`${navTitle} | LapLapLa`}</title>
         <meta name="description" content={hubDescription} />
       </Head>
-
-      <TopBar lang={lang} />
 
       <main className="ShopPage-main">
         <ShopComingSoon />
