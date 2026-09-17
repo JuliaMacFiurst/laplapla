@@ -16,6 +16,11 @@ export function QuestPage({ definition, locale, children }: QuestPageProps) {
       data-page-type={definition.type}
       data-print-order={definition.printOrder}
       data-printable={definition.printable ? "true" : "false"}
+      data-side={"side" in definition ? definition.side : undefined}
+      data-pair-id={"pairId" in definition ? definition.pairId : undefined}
+      data-duplex-mode={
+        "duplexMode" in definition ? definition.duplexMode : undefined
+      }
       dir={locale === "he" ? "rtl" : "ltr"}
       lang={locale}
       aria-label={definition.title?.[locale]}

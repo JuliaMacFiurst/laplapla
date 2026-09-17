@@ -50,6 +50,19 @@ export type SoundCase001SoundCardAssetId = Extract<
 const UNCONFIGURED_SOURCE = { status: "unconfigured" } as const;
 const SOUND_CARD_PUBLIC_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-01-sound-crocodile/sound-cards";
+const UNKNOWN_SOUND_PUBLIC_BASE_URL =
+  "https://media.laplapla.com/quests/sound-case-001/stage-01-sound-crocodile/unknown-sound";
+
+type SupplementalSoundCardAssetPath =
+  | "assets/stage-1-unknown-sound-parrot.webp"
+  | "backs/stage-1-sound-card-back.webp";
+
+const externalSoundCardAsset = (
+  path: SoundCardAssetFileName | SupplementalSoundCardAssetPath,
+) => ({
+  status: "external" as const,
+  url: `${SOUND_CARD_PUBLIC_BASE_URL}/${path}`,
+});
 
 type SoundCardAssetFileName =
   | "stage-1-sound-card-01-ketchup.webp"
@@ -66,8 +79,14 @@ type SoundCardAssetFileName =
   | "stage-1-sound-card-12-rake-asphalt.webp";
 
 const soundCardSource = (fileName: SoundCardAssetFileName) => ({
+  ...externalSoundCardAsset(fileName),
+});
+
+const unknownSoundAudioSource = (
+  fileName: "unknown-sound-001-master.mp3",
+) => ({
   status: "external" as const,
-  url: `${SOUND_CARD_PUBLIC_BASE_URL}/${fileName}`,
+  url: `${UNKNOWN_SOUND_PUBLIC_BASE_URL}/audio/${fileName}`,
 });
 
 export const SOUND_CASE_001_ASSET_MANIFEST = {
@@ -76,7 +95,9 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "sound-lab-parrot": {
       id: "sound-lab-parrot",
       kind: "visual",
-      source: UNCONFIGURED_SOURCE,
+      source: externalSoundCardAsset(
+        "assets/stage-1-unknown-sound-parrot.webp",
+      ),
     },
     "case-cover-decoration": {
       id: "case-cover-decoration",
@@ -146,7 +167,9 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "stage-1-card-back": {
       id: "stage-1-card-back",
       kind: "visual",
-      source: UNCONFIGURED_SOURCE,
+      source: externalSoundCardAsset(
+        "backs/stage-1-sound-card-back.webp",
+      ),
     },
     "stage-1-unknown-sound-visual": {
       id: "stage-1-unknown-sound-visual",
@@ -156,7 +179,7 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "stage-1-unknown-recording": {
       id: "stage-1-unknown-recording",
       kind: "audio",
-      source: UNCONFIGURED_SOURCE,
+      source: unknownSoundAudioSource("unknown-sound-001-master.mp3"),
     },
   },
 } satisfies SoundCase001AssetManifest;

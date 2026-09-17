@@ -8,11 +8,53 @@ export type QuestPersonalization = {
   participants: string[];
 };
 
-export function createQuestPersonalization(locale: Lang): QuestPersonalization {
+export function createQuestPersonalization(
+  locale: Lang,
+  initial?: {
+    leadName?: string;
+    participants?: readonly string[];
+  },
+): QuestPersonalization {
   return {
     locale,
-    leadName: "",
-    participants: [],
+    leadName: initial?.leadName ?? "",
+    participants: (initial?.participants ?? []).slice(
+      0,
+      MAX_QUEST_PARTICIPANTS,
+    ),
+  };
+}
+
+export function updateQuestParticipant(
+  personalization: QuestPersonalization,
+  index: number,
+  name: string,
+): QuestPersonalization {
+  if (index < 0 || index >= personalization.participants.length) {
+    return personalization;
+  }
+
+  return {
+    ...personalization,
+    participants: personalization.participants.map((participant, participantIndex) =>
+      participantIndex === index ? name : participant,
+    ),
+  };
+}
+
+export function removeQuestParticipant(
+  personalization: QuestPersonalization,
+  index: number,
+): QuestPersonalization {
+  if (index < 0 || index >= personalization.participants.length) {
+    return personalization;
+  }
+
+  return {
+    ...personalization,
+    participants: personalization.participants.filter(
+      (_, participantIndex) => participantIndex !== index,
+    ),
   };
 }
 

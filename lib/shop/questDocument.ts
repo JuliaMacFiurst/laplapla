@@ -1,8 +1,19 @@
 import type { LocalizedString } from "./types";
 import type { SoundCase001VisualAssetId } from "./quests/sound-case-001/assets";
 import type {
-  SoundCardSheetSelection,
+  SoundCardDuplexMode,
+  SoundCardFullBackSelection,
+  SoundCardFullSheetSelection,
+  SoundCardPartialBackSelection,
+  SoundCardPartialSheetSelection,
 } from "./quests/sound-case-001/soundCards";
+import type { UnknownSoundCardDefinition } from "./quests/sound-case-001/unknownSoundCard";
+import {
+  SOUND_CARD_BACK_SHEET_1,
+  SOUND_CARD_BACK_SHEET_2,
+  SOUND_CARD_DUPLEX_MODE,
+} from "./quests/sound-case-001/soundCards";
+import { SOUND_CASE_001_UNKNOWN_SOUND_CARD } from "./quests/sound-case-001/unknownSoundCard";
 
 type QuestPageDefinitionBase<TType extends string> = {
   id: string;
@@ -18,10 +29,46 @@ export type CaseCoverPageDefinition = QuestPageDefinitionBase<"case-cover"> & {
 };
 
 export type SoundCardsPageDefinition = QuestPageDefinitionBase<"sound-cards"> & {
-  cardIds: SoundCardSheetSelection;
-  sheetNumber: 1 | 2;
   sheetCount: 2;
-};
+  side: "front";
+  pairId: SoundCardSheetPairId;
+  duplexMode: SoundCardDuplexMode;
+} & (
+    | {
+        sheetNumber: 1;
+        cardIds: SoundCardFullSheetSelection;
+        unknownSoundCard?: never;
+      }
+    | {
+        sheetNumber: 2;
+        cardIds: SoundCardPartialSheetSelection;
+        unknownSoundCard: UnknownSoundCardDefinition;
+      }
+  );
+
+export type SoundCardSheetPairId =
+  | "sound-cards-sheet-1"
+  | "sound-cards-sheet-2";
+
+export type SoundCardBacksPageDefinition =
+  QuestPageDefinitionBase<"sound-card-backs"> & {
+    sheetCount: 2;
+    side: "back";
+    pairId: SoundCardSheetPairId;
+    duplexMode: SoundCardDuplexMode;
+    backAssetId: "stage-1-card-back";
+  } & (
+      | {
+          sheetNumber: 1;
+          cards: SoundCardFullBackSelection;
+          unknownSoundCard?: never;
+        }
+      | {
+          sheetNumber: 2;
+          cards: SoundCardPartialBackSelection;
+          unknownSoundCard: UnknownSoundCardDefinition;
+        }
+    );
 
 /**
  * Discriminated union for printable document definitions.
@@ -32,7 +79,8 @@ export type SoundCardsPageDefinition = QuestPageDefinitionBase<"sound-cards"> & 
  */
 export type QuestPageDefinition =
   | CaseCoverPageDefinition
-  | SoundCardsPageDefinition;
+  | SoundCardsPageDefinition
+  | SoundCardBacksPageDefinition;
 
 export type QuestPageType = QuestPageDefinition["type"];
 
@@ -65,25 +113,59 @@ export const SOUND_CASE_001_PAGES = [
       "sound-card-04",
       "sound-card-05",
       "sound-card-06",
+      "sound-card-07",
+      "sound-card-08",
+      "sound-card-09",
     ],
     sheetNumber: 1,
     sheetCount: 2,
+    side: "front",
+    pairId: "sound-cards-sheet-1",
+    duplexMode: SOUND_CARD_DUPLEX_MODE,
+  },
+  {
+    id: "sound-case-001-sound-card-backs-1",
+    type: "sound-card-backs",
+    printOrder: 3,
+    printable: true,
+    cards: SOUND_CARD_BACK_SHEET_1,
+    backAssetId: "stage-1-card-back",
+    sheetNumber: 1,
+    sheetCount: 2,
+    side: "back",
+    pairId: "sound-cards-sheet-1",
+    duplexMode: SOUND_CARD_DUPLEX_MODE,
   },
   {
     id: "sound-case-001-sound-cards-2",
     type: "sound-cards",
-    printOrder: 3,
+    printOrder: 4,
     printable: true,
     cardIds: [
-      "sound-card-07",
-      "sound-card-08",
-      "sound-card-09",
       "sound-card-10",
       "sound-card-11",
       "sound-card-12",
     ],
     sheetNumber: 2,
     sheetCount: 2,
+    side: "front",
+    pairId: "sound-cards-sheet-2",
+    duplexMode: SOUND_CARD_DUPLEX_MODE,
+    unknownSoundCard: SOUND_CASE_001_UNKNOWN_SOUND_CARD,
+  },
+  {
+    id: "sound-case-001-sound-card-backs-2",
+    type: "sound-card-backs",
+    printOrder: 5,
+    printable: true,
+    cards: SOUND_CARD_BACK_SHEET_2,
+    backAssetId: "stage-1-card-back",
+    sheetNumber: 2,
+    sheetCount: 2,
+    side: "back",
+    pairId: "sound-cards-sheet-2",
+    duplexMode: SOUND_CARD_DUPLEX_MODE,
+    unknownSoundCard: SOUND_CASE_001_UNKNOWN_SOUND_CARD,
   },
 ] satisfies readonly QuestPageDefinition[];
 

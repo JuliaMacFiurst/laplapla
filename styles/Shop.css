@@ -1037,7 +1037,7 @@
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  padding: 6mm 15mm;
+  padding: 6mm 7mm;
   background: #fff;
   color: #29252e;
   font-family: var(--font-nunito, "Nunito", system-ui, sans-serif);
@@ -1060,10 +1060,11 @@
 
 .quest-sound-cards-sheet__grid {
   display: grid;
-  grid-template-columns: repeat(2, 64mm);
+  grid-template-columns: repeat(3, 64mm);
   grid-template-rows: repeat(3, 84mm);
-  gap: 2mm 6mm;
+  gap: 2mm;
   justify-content: center;
+  direction: ltr;
 }
 
 .quest-sound-card-cut-area {
@@ -1113,39 +1114,132 @@
 }
 
 .quest-sound-card {
+  --card-accent: #347d79;
+  --card-tint: #eef8f6;
+  --card-keyline: #d8dfde;
   box-sizing: border-box;
   display: grid;
-  grid-template-rows: 7mm 35mm minmax(0, 1fr) 9mm;
+  grid-template-rows: 8.5mm minmax(0, 1fr) auto 8.5mm;
   width: 60mm;
   height: 80mm;
   overflow: hidden;
-  border: 0.35mm solid #514453;
-  border-radius: 3mm;
+  border: 1.1mm solid var(--card-accent);
+  border-radius: 3.2mm;
   background: #fff;
+  box-shadow: inset 0 0 0 0.22mm var(--card-keyline);
+}
+
+.quest-sound-card--accent-cyan {
+  --card-accent: #2e8792;
+  --card-tint: #edf9fa;
+  --card-keyline: #cde1e3;
+}
+
+.quest-sound-card--accent-green {
+  --card-accent: #478365;
+  --card-tint: #eff8f2;
+  --card-keyline: #d0e1d6;
+}
+
+.quest-sound-card--accent-orange {
+  --card-accent: #bd6d2d;
+  --card-tint: #fff5ea;
+  --card-keyline: #ead7c5;
+}
+
+.quest-sound-card--accent-coral {
+  --card-accent: #bd6157;
+  --card-tint: #fff1ef;
+  --card-keyline: #ead1cd;
+}
+
+.quest-sound-card--accent-blue {
+  --card-accent: #4b78a2;
+  --card-tint: #eff5fb;
+  --card-keyline: #d0dce7;
+}
+
+.quest-sound-card--accent-yellow {
+  --card-accent: #9b7a25;
+  --card-tint: #fff9e8;
+  --card-keyline: #e5dcc1;
+}
+
+.quest-sound-card--accent-amber {
+  --card-accent: #a46431;
+  --card-tint: #fff4e9;
+  --card-keyline: #e6d4c5;
+}
+
+.quest-sound-card--accent-violet {
+  --card-accent: #796399;
+  --card-tint: #f6f1fb;
+  --card-keyline: #dbd1e7;
+}
+
+.quest-sound-card--accent-red {
+  --card-accent: #ad4e59;
+  --card-tint: #fff0f2;
+  --card-keyline: #e5ccd0;
+}
+
+.quest-sound-card--accent-teal {
+  --card-accent: #337e76;
+  --card-tint: #edf8f6;
+  --card-keyline: #cce0dc;
+}
+
+.quest-sound-card--accent-indigo {
+  --card-accent: #58699a;
+  --card-tint: #f1f3fa;
+  --card-keyline: #d2d7e7;
+}
+
+.quest-sound-card--accent-magenta {
+  --card-accent: #955679;
+  --card-tint: #faf0f6;
+  --card-keyline: #e2cfda;
 }
 
 .quest-sound-card__header {
   display: flex;
+  direction: ltr;
   justify-content: space-between;
   align-items: center;
-  padding-inline: 3mm;
-  border-block-end: 0.25mm solid #c9ded8;
-  color: #58445c;
-  font-size: 2.45mm;
+  padding: 0.7mm 1.6mm 0.7mm 2mm;
+  border-block-end: 0.25mm solid var(--card-keyline);
+  background: var(--card-tint);
+  color: var(--card-accent);
+  font-size: 2.55mm;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
-.quest-sound-card__header bdi:last-child {
+.quest-sound-card__label {
+  display: flex;
+  gap: 1.6mm;
+  align-items: center;
+  min-width: 0;
+}
+
+.quest-sound-card__number {
   display: grid;
-  width: 5.5mm;
-  height: 5.5mm;
+  width: 6.6mm;
+  height: 6.6mm;
   place-items: center;
-  border: 0.25mm solid #6c9b8f;
-  border-radius: 50%;
-  color: #315f57;
-  font-size: 2.7mm;
+  flex: 0 0 auto;
+  border: 0.45mm solid var(--card-accent);
+  border-radius: 2mm;
+  background: #fff;
+  color: var(--card-accent);
+  font-size: 3.35mm;
+  font-weight: 950;
   letter-spacing: 0;
+  line-height: 1;
+}
+
+.quest-sound-card--special .quest-sound-card__number {
+  box-shadow: 0 0 0 0.45mm var(--card-tint);
 }
 
 .quest-sound-card__illustration {
@@ -1156,13 +1250,39 @@
   background: #fff;
 }
 
+.quest-sound-card__illustration::before,
+.quest-sound-card__illustration::after {
+  position: absolute;
+  z-index: 0;
+  width: 4mm;
+  height: 0.35mm;
+  background: var(--card-accent);
+  box-shadow: 1mm -1.25mm 0 -0.06mm var(--card-accent),
+    1mm 1.25mm 0 -0.06mm var(--card-accent);
+  content: "";
+  opacity: 0.28;
+}
+
+.quest-sound-card__illustration::before {
+  inset-block-start: 4mm;
+  inset-inline-start: 2.2mm;
+  transform: rotate(-18deg);
+}
+
+.quest-sound-card__illustration::after {
+  inset-inline-end: 2.2mm;
+  inset-block-end: 4mm;
+  transform: rotate(-18deg);
+}
+
 .quest-sound-card__illustration img {
   position: absolute;
-  inset-block-start: 1.5mm;
-  inset-inline-start: 3mm;
+  z-index: 1;
+  inset-block-start: 0.2mm;
+  inset-inline-start: 0.5mm;
   display: block;
-  width: calc(100% - 6mm);
-  height: calc(100% - 1.5mm);
+  width: calc(100% - 1mm);
+  height: calc(100% - 0.4mm);
   object-fit: contain;
   object-position: center;
   transform: none;
@@ -1175,8 +1295,8 @@
   min-height: 0;
   flex-direction: column;
   justify-content: center;
-  padding: 1.5mm 3.2mm 1mm;
-  border-block-start: 0.2mm solid #eee9ee;
+  padding: 1.1mm 2mm 1mm;
+  border-block-start: 0.22mm solid var(--card-keyline);
   background: #fff;
   text-align: center;
 }
@@ -1184,58 +1304,621 @@
 .quest-sound-card__prompt h2 {
   margin: 0;
   color: #2f2931;
-  font-size: 3.25mm;
-  font-weight: 850;
-  line-height: 1.12;
+  font-family: var(--font-nunito, "Nunito", system-ui, sans-serif);
+  font-size: 4.6mm;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.04;
+}
+
+.quest-sound-card:not([lang="he"]) .quest-sound-card__prompt h2 {
+  text-transform: uppercase;
+}
+
+.quest-sound-card--title-long .quest-sound-card__prompt h2 {
+  font-size: 4.05mm;
+  line-height: 1.05;
+}
+
+.quest-sound-card--title-extra-long .quest-sound-card__prompt h2 {
+  font-size: 3.7mm;
+  line-height: 1.06;
 }
 
 .quest-sound-card__modifier {
   align-self: center;
-  margin: 1mm 0 0;
-  padding: 0.55mm 1.5mm;
-  border: 0.2mm solid #d4c0d1;
+  margin: 0.9mm 0 0;
+  padding: 0.65mm 1.6mm;
+  border: 0.3mm solid var(--card-accent);
   border-radius: 999px;
-  color: #704e70;
-  font-size: 2.25mm;
-  font-weight: 750;
-  line-height: 1.15;
+  background: var(--card-tint);
+  color: var(--card-accent);
+  font-size: 2.15mm;
+  font-weight: 850;
+  line-height: 1.1;
 }
 
 .quest-sound-card__footer {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0 1.5mm;
+  gap: 0.4mm 1.4mm;
   align-items: center;
-  padding: 1mm 2.5mm;
-  border-block-start: 0.25mm solid #ddd7de;
-  color: #514b54;
-  font-size: 1.95mm;
-  font-weight: 700;
-  line-height: 1.12;
+  padding: 0.9mm 2mm 1mm;
+  border-block-start: 0.35mm solid var(--card-accent);
+  background: linear-gradient(90deg, var(--card-tint) 0 8mm, #fff 8mm 100%);
+  color: #454047;
+  font-size: 2.15mm;
+  font-weight: 750;
+  line-height: 1.1;
 }
 
 .quest-sound-card__footer bdi {
   grid-column: 1 / -1;
-  color: #767078;
-  font-size: 1.55mm;
-  font-weight: 850;
-  letter-spacing: 0.1em;
+  color: var(--card-accent);
+  font-size: 1.75mm;
+  font-weight: 900;
+  letter-spacing: 0.12em;
   text-align: end;
 }
 
 .quest-sound-card__wave {
-  color: #4c897c;
-  font-size: 2.7mm;
-  letter-spacing: -0.12em;
+  display: inline-flex;
+  height: 4mm;
+  gap: 0.45mm;
+  align-items: center;
+  color: var(--card-accent);
+  direction: ltr;
+}
+
+.quest-sound-card__wave i {
+  display: block;
+  width: 0.45mm;
+  height: 1.5mm;
+  border-radius: 99px;
+  background: currentColor;
+}
+
+.quest-sound-card__wave i:nth-child(2),
+.quest-sound-card__wave i:nth-child(4) {
+  height: 2.7mm;
+}
+
+.quest-sound-card__wave i:nth-child(3) {
+  height: 3.7mm;
+}
+
+.quest-sound-card__wave--compact {
+  height: 3mm;
+  gap: 0.35mm;
+}
+
+.quest-sound-card__wave--compact i {
+  width: 0.35mm;
+  height: 1.1mm;
+}
+
+.quest-sound-card__wave--compact i:nth-child(2),
+.quest-sound-card__wave--compact i:nth-child(4) {
+  height: 2mm;
+}
+
+.quest-sound-card__wave--compact i:nth-child(3) {
+  height: 2.8mm;
 }
 
 .quest-page-frame[dir="rtl"] .quest-sound-card__prompt h2 {
-  font-size: 3.35mm;
-  line-height: 1.16;
+  font-size: 4.35mm;
+  line-height: 1.08;
+  text-transform: none;
+}
+
+.quest-page-frame[dir="rtl"] .quest-sound-card--title-long .quest-sound-card__prompt h2 {
+  font-size: 4mm;
+}
+
+.quest-page-frame[dir="rtl"] .quest-sound-card--title-extra-long .quest-sound-card__prompt h2 {
+  font-size: 3.75mm;
 }
 
 .quest-page-frame[dir="rtl"] .quest-sound-card__footer bdi {
   text-align: start;
+}
+
+/* Stage 01 · duplex backs and the separate UNKNOWN SOUND physical object */
+
+.quest-sound-card-back,
+.quest-unknown-sound-card {
+  box-sizing: border-box;
+  width: 60mm;
+  height: 80mm;
+  overflow: hidden;
+  border-radius: 3.2mm;
+}
+
+.quest-sound-card-back {
+  background: #fff;
+}
+
+.quest-sound-card-back img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.quest-unknown-sound-card {
+  --unknown-cyan: #63d8df;
+  --unknown-yellow: #f2ce54;
+  position: relative;
+  color: #f7fbfc;
+  font-family: var(--font-nunito, "Nunito", system-ui, sans-serif);
+  background:
+    radial-gradient(circle at 85% 12%, rgba(99, 216, 223, 0.12), transparent 25%),
+    linear-gradient(145deg, #15191e, #080a0d 72%);
+}
+
+.quest-unknown-sound-card--front {
+  display: grid;
+  grid-template-rows: auto auto 4mm 25mm auto auto minmax(0, 1fr);
+  gap: 0.65mm;
+  padding: 2.5mm 2.8mm 2.2mm;
+  border: 1.1mm solid #202930;
+  box-shadow: inset 0 0 0 0.25mm rgba(99, 216, 223, 0.65);
+}
+
+.quest-unknown-sound-card__header {
+  display: flex;
+  direction: ltr;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--unknown-cyan);
+  font-size: 1.7mm;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.quest-unknown-sound-card--front h2 {
+  margin: 0.7mm 0 0;
+  color: #fff;
+  font-size: 4.7mm;
+  font-weight: 950;
+  letter-spacing: 0.015em;
+  line-height: 0.98;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.quest-unknown-sound-card--front h2 > span {
+  display: block;
+}
+
+.quest-unknown-sound-card--front[lang="he"] h2 {
+  font-size: 4.4mm;
+  line-height: 1.02;
+  text-transform: none;
+}
+
+.quest-unknown-sound-card__wave {
+  display: flex;
+  direction: ltr;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75mm;
+  color: var(--unknown-cyan);
+}
+
+.quest-unknown-sound-card__wave i {
+  display: block;
+  width: 0.45mm;
+  height: 1.4mm;
+  border-radius: 99px;
+  background: currentColor;
+}
+
+.quest-unknown-sound-card__wave i:nth-child(2),
+.quest-unknown-sound-card__wave i:nth-child(6) { height: 2.4mm; }
+.quest-unknown-sound-card__wave i:nth-child(3),
+.quest-unknown-sound-card__wave i:nth-child(5) { height: 3.4mm; }
+.quest-unknown-sound-card__wave i:nth-child(4) { height: 4mm; }
+
+.quest-unknown-sound-card__qr-reserved {
+  position: relative;
+  box-sizing: border-box;
+  width: 25mm;
+  height: 25mm;
+  justify-self: center;
+  border: 0.35mm solid #dce3e7;
+  background: #fff;
+}
+
+.quest-unknown-sound-card__listen {
+  display: flex;
+  direction: ltr;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5mm;
+  color: var(--unknown-yellow);
+  font-size: 2.8mm;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.quest-unknown-sound-card__listen span {
+  width: 0;
+  height: 0;
+  border-block: 1.5mm solid transparent;
+  border-inline-start: 2.4mm solid var(--unknown-yellow);
+}
+
+.quest-unknown-sound-card__question {
+  margin: 0;
+  color: #fff;
+  font-size: 2.6mm;
+  font-weight: 850;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.quest-unknown-sound-card__lower {
+  display: grid;
+  direction: ltr;
+  grid-template-columns: 15mm minmax(0, 1fr);
+  gap: 1.2mm;
+  align-items: end;
+  min-height: 0;
+  border-block-start: 0.25mm solid rgba(99, 216, 223, 0.4);
+}
+
+.quest-unknown-sound-card__lower img {
+  display: block;
+  width: 15mm;
+  height: 15mm;
+  align-self: end;
+  object-fit: contain;
+}
+
+.quest-unknown-sound-card__lower p {
+  margin: 0 0 0.7mm;
+  color: #c7d0d5;
+  font-size: 1.55mm;
+  font-weight: 750;
+  line-height: 1.18;
+}
+
+.quest-unknown-sound-card__lower p:last-child {
+  margin: 0;
+  color: var(--unknown-cyan);
+  font-weight: 900;
+}
+
+.quest-unknown-sound-card--back {
+  display: grid;
+  grid-template-rows: auto 7mm 1fr auto;
+  place-items: center;
+  padding: 4mm;
+  border: 1.1mm solid #202930;
+  box-shadow: inset 0 0 0 0.25mm rgba(99, 216, 223, 0.65);
+}
+
+.quest-unknown-sound-card__back-brand,
+.quest-unknown-sound-card__back-lab {
+  color: var(--unknown-cyan);
+  font-size: 2mm;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+
+.quest-unknown-sound-card__back-lab {
+  color: #c9d2d6;
+  font-size: 1.8mm;
+}
+
+.quest-unknown-sound-card__question-mark {
+  color: #f7fbfc;
+  font-size: 39mm;
+  font-weight: 950;
+  line-height: 0.8;
+  text-shadow: 1.3mm 1.3mm 0 rgba(99, 216, 223, 0.32);
+}
+
+/* Internal Quest Print Lab. Screen diagnostics never affect document flow. */
+
+.quest-print-lab {
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: #e9eaed;
+  direction: ltr;
+}
+
+.quest-print-lab__toolbar {
+  width: min(100%, 1280px);
+  margin: 0 auto 1.5rem;
+  padding: 1rem;
+  border: 1px solid #c9cbd0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(38, 40, 45, 0.12);
+  color: #292b30;
+  font-family: system-ui, sans-serif;
+}
+
+.quest-print-lab__identity {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin-bottom: 0.85rem;
+}
+
+.quest-print-lab__identity strong {
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
+.quest-print-lab__identity span {
+  color: #696c73;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.quest-print-lab__identity .quest-print-lab__print-guidance {
+  margin-inline-start: auto;
+  color: #344b63;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+}
+
+.quest-print-lab__controls {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 0.8fr) minmax(300px, 1.4fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.quest-print-lab__toolbar label,
+.quest-print-lab__toolbar fieldset {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.quest-print-lab__toolbar input,
+.quest-print-lab__toolbar button {
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #b9bbc1;
+  border-radius: 7px;
+  background: #fff;
+  color: #25272b;
+  font: inherit;
+}
+
+.quest-print-lab__toolbar button {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.quest-print-lab__locale > div {
+  display: flex;
+}
+
+.quest-print-lab__locale button {
+  min-width: 48px;
+  border-radius: 0;
+}
+
+.quest-print-lab__locale button:first-child {
+  border-radius: 7px 0 0 7px;
+}
+
+.quest-print-lab__locale button:last-child {
+  border-radius: 0 7px 7px 0;
+}
+
+.quest-print-lab__locale button + button {
+  margin-inline-start: -1px;
+}
+
+.quest-print-lab__toolbar button[aria-pressed="true"] {
+  border-color: #9a3446;
+  background: #fff0f2;
+  color: #86293a;
+}
+
+.quest-print-lab__participant-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.quest-print-lab__participant {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+}
+
+.quest-print-lab__participant input {
+  border-radius: 7px 0 0 7px;
+}
+
+.quest-print-lab__participant button {
+  margin-inline-start: -1px;
+  padding: 0;
+  border-radius: 0 7px 7px 0;
+  color: #8a3041;
+  font-size: 1.1rem;
+}
+
+.quest-print-lab__add-participant {
+  justify-self: start;
+  margin-top: 0.2rem;
+}
+
+.quest-print-lab__add-participant:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.quest-print-lab__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+  padding-top: 1.15rem;
+}
+
+.quest-print-lab__document {
+  overflow-x: auto;
+  padding: 0.5rem 0 3rem;
+}
+
+.quest-print-lab__document .quest-document {
+  gap: 1.5rem;
+}
+
+.quest-print-lab__document .quest-page-frame {
+  outline: 1px solid #d1d2d6;
+  outline-offset: 0;
+  box-shadow: 0 12px 34px rgba(35, 37, 42, 0.18);
+}
+
+.quest-print-lab--xray .quest-page-frame {
+  position: relative;
+  outline: 3px solid #d7354f;
+  outline-offset: 3px;
+}
+
+.quest-print-lab--xray .quest-page-frame::before,
+.quest-print-lab--xray .quest-page-frame::after,
+.quest-print-lab--xray .quest-sound-card::after,
+.quest-print-lab--xray .quest-sound-card-back::after,
+.quest-print-lab--xray .quest-unknown-sound-card::after,
+.quest-print-lab--xray .quest-sound-card-cut-area::after,
+.quest-print-lab--xray .quest-unknown-sound-card__qr-reserved::after {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.quest-print-lab--xray .quest-page-frame::before {
+  content: "";
+  inset: 5mm;
+  border: 1px dashed rgba(215, 53, 79, 0.85);
+}
+
+.quest-print-lab--xray .quest-page-frame::after {
+  content:
+    "page id: " attr(data-page-id) "\A"
+    "type: " attr(data-page-type) " · printOrder: " attr(data-print-order) "\A"
+    "side: " attr(data-side) " · pair: " attr(data-pair-id) "\A"
+    "duplex: " attr(data-duplex-mode) "\A"
+    "printable: " attr(data-printable) " · locale: " attr(lang) " · dir: " attr(dir) "\A"
+    "overflow: " attr(data-lab-overflow);
+  inset-block-start: 6mm;
+  inset-inline-start: 6mm;
+  max-width: 78%;
+  padding: 1.5mm 2mm;
+  border: 1px solid #d7354f;
+  border-radius: 1mm;
+  background: rgba(255, 255, 255, 0.94);
+  color: #a51e35;
+  font: 700 2.2mm/1.35 ui-monospace, monospace;
+  white-space: pre-wrap;
+}
+
+.quest-print-lab--xray .quest-page-frame[data-lab-overflow="true"] {
+  outline-color: #ff1f1f;
+  box-shadow: inset 0 0 0 3px rgba(255, 31, 31, 0.65);
+}
+
+.quest-print-lab--xray .quest-page-frame[data-lab-overflow="true"]::after {
+  content:
+    "⚠ OVERFLOW DETECTED\A"
+    "page id: " attr(data-page-id) "\A"
+    "type: " attr(data-page-type) " · printOrder: " attr(data-print-order) "\A"
+    "side: " attr(data-side) " · pair: " attr(data-pair-id) " · duplex: " attr(data-duplex-mode) "\A"
+    "printable: " attr(data-printable) " · locale: " attr(lang) " · dir: " attr(dir);
+  background: rgba(255, 236, 238, 0.97);
+}
+
+.quest-print-lab--xray .quest-sound-card-cut-area {
+  outline: 1px dashed rgba(31, 111, 194, 0.85);
+  outline-offset: -1px;
+}
+
+.quest-print-lab--xray .quest-sound-card-cut-area::after {
+  content:
+    "slot " attr(data-slot) " · front " attr(data-front-slot) " → back " attr(data-back-slot) "\A"
+    "pair: " attr(data-pair-id);
+  inset-block-end: 1mm;
+  inset-inline: 1mm;
+  padding: 0.5mm 0.8mm;
+  background: rgba(232, 243, 255, 0.94);
+  color: #155d9f;
+  font: 700 1.45mm/1.2 ui-monospace, monospace;
+  white-space: pre-wrap;
+}
+
+.quest-print-lab--xray .quest-sound-card {
+  position: relative;
+  outline: 2px solid rgba(19, 139, 102, 0.9);
+  outline-offset: -2px;
+}
+
+.quest-print-lab--xray .quest-sound-card-back,
+.quest-print-lab--xray .quest-unknown-sound-card {
+  position: relative;
+  outline: 2px solid rgba(19, 139, 102, 0.9);
+  outline-offset: -2px;
+}
+
+.quest-print-lab--xray .quest-sound-card::after {
+  content:
+    attr(data-sound-card-id) " · 60 × 80 mm\A"
+    "asset: " attr(data-asset-id) " · " attr(data-asset-status);
+  inset-block-start: 8mm;
+  inset-inline: 1.5mm;
+  padding: 0.8mm 1mm;
+  border-radius: 0.8mm;
+  background: rgba(232, 255, 247, 0.94);
+  color: #086849;
+  font: 700 1.7mm/1.25 ui-monospace, monospace;
+  text-align: start;
+  white-space: pre-wrap;
+}
+
+.quest-print-lab--xray .quest-sound-card-back::after,
+.quest-print-lab--xray .quest-unknown-sound-card::after {
+  content:
+    attr(data-physical-object-id) attr(data-sound-card-id) " · 60 × 80 mm\A"
+    "role: " attr(data-rendering-role) "\A"
+    "asset: " attr(data-asset-id) " · " attr(data-asset-status);
+  inset-block-start: 8mm;
+  inset-inline: 1.5mm;
+  padding: 0.8mm 1mm;
+  border-radius: 0.8mm;
+  background: rgba(232, 255, 247, 0.94);
+  color: #086849;
+  font: 700 1.7mm/1.25 ui-monospace, monospace;
+  text-align: start;
+  white-space: pre-wrap;
+}
+
+.quest-print-lab--xray .quest-unknown-sound-card__qr-reserved::after {
+  content: "QR RESERVED AREA · 25 × 25 mm";
+  inset: 1mm;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #b02f48;
+  color: #8d2438;
+  font: 700 1.6mm/1.2 ui-monospace, monospace;
+  text-align: center;
 }
 
 .quest-case-cover__header h1 {
@@ -1395,6 +2078,10 @@
     display: none !important;
   }
 
+  .quest-print-lab__toolbar {
+    display: none !important;
+  }
+
   .app-layout,
   .quest-builder-shell,
   .quest-document-print-host,
@@ -1442,6 +2129,34 @@
     background: #fff !important;
   }
 
+  .quest-print-lab,
+  .quest-print-lab__document {
+    display: block !important;
+    width: 210mm !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .quest-print-lab--xray .quest-page-frame,
+  .quest-print-lab--xray .quest-sound-card-cut-area,
+  .quest-print-lab--xray .quest-sound-card,
+  .quest-print-lab__document .quest-page-frame {
+    outline: 0 !important;
+  }
+
+  .quest-print-lab--xray .quest-page-frame::before,
+  .quest-print-lab--xray .quest-page-frame::after,
+  .quest-print-lab--xray .quest-sound-card::after,
+  .quest-print-lab--xray .quest-sound-card-back::after,
+  .quest-print-lab--xray .quest-unknown-sound-card::after,
+  .quest-print-lab--xray .quest-sound-card-cut-area::after,
+  .quest-print-lab--xray .quest-unknown-sound-card__qr-reserved::after {
+    display: none !important;
+    content: none !important;
+  }
+
   .quest-sound-cards-sheet,
   .quest-sound-card-cut-area,
   .quest-sound-card,
@@ -1450,6 +2165,12 @@
   }
 
   .quest-sound-card {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .quest-sound-card-back,
+  .quest-unknown-sound-card {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }

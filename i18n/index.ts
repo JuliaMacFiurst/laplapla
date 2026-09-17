@@ -1018,6 +1018,53 @@ type DictionaryShape = {
           "hand-megaphone": string;
         };
       };
+      unknownSoundCard: {
+        title: string;
+        numberPrefix: string;
+        listenAction: string;
+        question: string;
+        evidenceLines: readonly [string, string, string];
+        actionLines: readonly [string, string, string];
+      };
+      unknownSoundScene: {
+        pageTitle: string;
+        metaDescription: string;
+        stageLabel: string;
+        title: string;
+        numberPrefix: string;
+        parrotLabel: string;
+        arrivalLines: readonly [string, string, string, string, string];
+        playAction: string;
+        pauseAction: string;
+        resumeAction: string;
+        replayAction: string;
+        loadingAction: string;
+        progressLabel: string;
+        audioError: string;
+        retryAction: string;
+        guessQuestion: string;
+        guessInstruction: string;
+        guessOptions: {
+          animal: string;
+          machine: string;
+          instrument: string;
+          "natural-phenomenon": string;
+          "no-idea": string;
+        };
+        confirmGuess: string;
+        guessRecordedTitle: string;
+        guessRecordedBody: string;
+        clueAction: string;
+        evidenceLabel: string;
+        clueTitle: string;
+        clueLines: readonly [string, string, string];
+        parrotAfterClueLines: readonly [string, string, string, string, string];
+        leadNameSuffix: string;
+        leadFallback: string;
+        investigateFurther: string;
+        finalTitle: string;
+        finalBody: string;
+      };
     };
   };
 

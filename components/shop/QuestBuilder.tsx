@@ -4,6 +4,8 @@ import {
   MAX_QUEST_PARTICIPANTS,
   addQuestParticipant,
   createQuestPersonalization,
+  removeQuestParticipant,
+  updateQuestParticipant,
 } from "@/lib/shop/questPersonalization";
 import { QuestDocument } from "./QuestDocument";
 import { QuestPreview } from "./QuestPreview";
@@ -23,19 +25,13 @@ export function QuestBuilder({ interfaceLang }: { interfaceLang: Lang }) {
     personalization.participants.length < MAX_QUEST_PARTICIPANTS;
 
   const updateParticipant = (index: number, name: string) => {
-    setPersonalization((current) => ({
-      ...current,
-      participants: current.participants.map((participant, participantIndex) =>
-        participantIndex === index ? name : participant,
-      ),
-    }));
+    setPersonalization((current) =>
+      updateQuestParticipant(current, index, name),
+    );
   };
 
   const removeParticipant = (index: number) => {
-    setPersonalization((current) => ({
-      ...current,
-      participants: current.participants.filter((_, participantIndex) => participantIndex !== index),
-    }));
+    setPersonalization((current) => removeQuestParticipant(current, index));
   };
 
   return (

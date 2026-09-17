@@ -1,17 +1,44 @@
 import type { Lang } from "@/i18n";
 import { dictionaries } from "@/i18n";
 import type { SoundCardDefinition } from "@/lib/shop/quests/sound-case-001/soundCards";
+import type { SoundCardSheetSlot } from "@/lib/shop/quests/sound-case-001/soundCards";
+import type { UnknownSoundCardDefinition } from "@/lib/shop/quests/sound-case-001/unknownSoundCard";
+import { SoundCardCutArea } from "./SoundCardCutArea";
+import { UnknownSoundCardFront } from "./UnknownSoundCard";
 
 export type PrintableSoundCard = {
   card: SoundCardDefinition;
   illustrationUrl: string;
+  slot: SoundCardSheetSlot;
 };
+
+export type PrintableUnknownSoundCard = {
+  definition: UnknownSoundCardDefinition;
+  parrotUrl: string;
+};
+
+function SoundWaveMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <span
+      className={`quest-sound-card__wave${compact ? " quest-sound-card__wave--compact" : ""}`}
+      aria-hidden="true"
+    >
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
 
 type SoundCardsPageProps = {
   cards: readonly PrintableSoundCard[];
   locale: Lang;
   sheetNumber: 1 | 2;
   sheetCount: 2;
+  pairId: string;
+  unknownSoundCard?: PrintableUnknownSoundCard;
 };
 
 export function SoundCardsPage({
@@ -19,6 +46,8 @@ export function SoundCardsPage({
   locale,
   sheetNumber,
   sheetCount,
+  pairId,
+  unknownSoundCard,
 }: SoundCardsPageProps) {
   const text = dictionaries[locale].shop.soundCase.soundCards;
 
@@ -33,16 +62,31 @@ export function SoundCardsPage({
       </header>
 
       <div className="quest-sound-cards-sheet__grid">
-        {cards.map(({ card, illustrationUrl }) => (
-          <div className="quest-sound-card-cut-area" key={card.id}>
-            <i className="quest-sound-card-cut-mark quest-sound-card-cut-mark--tl" aria-hidden="true" />
-            <i className="quest-sound-card-cut-mark quest-sound-card-cut-mark--tr" aria-hidden="true" />
-            <i className="quest-sound-card-cut-mark quest-sound-card-cut-mark--bl" aria-hidden="true" />
-            <i className="quest-sound-card-cut-mark quest-sound-card-cut-mark--br" aria-hidden="true" />
-            <article className="quest-sound-card" data-sound-card-id={card.id}>
+        {cards.map(({ card, illustrationUrl, slot }) => (
+          <SoundCardCutArea
+            key={card.id}
+            slot={slot}
+            frontSlot={slot}
+            pairId={pairId}
+          >
+            <article
+              className={`quest-sound-card quest-sound-card--accent-${card.accent} quest-sound-card--title-${card.titleSize}${card.modifier ? " quest-sound-card--special" : ""}`}
+              data-sound-card-id={card.id}
+              data-asset-id={card.illustrationAssetId}
+              data-asset-status="resolved"
+              data-card-accent={card.accent}
+              data-title-size={card.titleSize}
+              dir={locale === "he" ? "rtl" : "ltr"}
+              lang={locale}
+            >
               <header className="quest-sound-card__header">
-                <bdi dir="ltr">SOUND CARD</bdi>
-                <bdi dir="ltr">{String(card.number).padStart(2, "0")}</bdi>
+                <span className="quest-sound-card__label">
+                  <bdi dir="ltr">SOUND CARD</bdi>
+                  <SoundWaveMark compact />
+                </span>
+                <bdi className="quest-sound-card__number" dir="ltr">
+                  {String(card.number).padStart(2, "0")}
+                </bdi>
               </header>
 
               <div className="quest-sound-card__illustration">
@@ -60,13 +104,27 @@ export function SoundCardsPage({
               </div>
 
               <footer className="quest-sound-card__footer">
-                <span className="quest-sound-card__wave" aria-hidden="true">⌁⌁⌁</span>
+                <SoundWaveMark />
                 <span>{text.footerInstruction}</span>
                 <bdi dir="ltr">PARROT SOUND LAB</bdi>
               </footer>
             </article>
-          </div>
+          </SoundCardCutArea>
         ))}
+        {unknownSoundCard ? (
+          <SoundCardCutArea
+            slot={unknownSoundCard.definition.frontSlot}
+            frontSlot={unknownSoundCard.definition.frontSlot}
+            backSlot={unknownSoundCard.definition.backSlot}
+            pairId={pairId}
+          >
+            <UnknownSoundCardFront
+              definition={unknownSoundCard.definition}
+              locale={locale}
+              parrotUrl={unknownSoundCard.parrotUrl}
+            />
+          </SoundCardCutArea>
+        ) : null}
       </div>
     </section>
   );
