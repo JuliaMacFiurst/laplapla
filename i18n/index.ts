@@ -941,6 +941,84 @@ type DictionaryShape = {
     freeQuest: string;
     questDestination: string;
     seeStore: string;
+    catalogTitle: string;
+    catalogIntro: string;
+    prototypeBadge: string;
+
+    soundCase: {
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      description: string;
+      highlights: string[];
+      createCta: string;
+      preparationNote: string;
+      builder: {
+        title: string;
+        intro: string;
+        languageLabel: string;
+        leadLabel: string;
+        leadPlaceholder: string;
+        leadRequired: string;
+        participantsLabel: string;
+        participantPlaceholder: string;
+        addParticipant: string;
+        removeParticipant: string;
+        participantLimit: string;
+      };
+      preview: {
+        eyebrow: string;
+        personalizedForPrefix: string;
+        namePlaceholder: string;
+        teamHeading: string;
+        includedTitle: string;
+        includedItems: string[];
+        howItWorksTitle: string;
+        howItWorksSteps: string[];
+        requirementsTitle: string;
+        requirements: string[];
+        preparationLabel: string;
+        preparationTime: string;
+        playLabel: string;
+        playTime: string;
+        adventureMapTitle: string;
+        adventureStages: string[];
+        buyAction: string;
+        buyUnavailable: string;
+      };
+      caseCover: {
+        kicker: string;
+        leadHeading: string;
+        teamHeading: string;
+        participantsEmpty: string;
+        namePlaceholder: string;
+        storyLines: string[];
+        assignment: string;
+        caseNumber: string;
+      };
+      soundCards: {
+        footerInstruction: string;
+        titles: {
+          ketchup: string;
+          sneezeCat: string;
+          snortingLaugh: string;
+          tinyAngryDog: string;
+          selfScaredSnore: string;
+          hiccupHorse: string;
+          singingRooster: string;
+          operaLego: string;
+          bassSeagull: string;
+          evilGoat: string;
+          throatSinging: string;
+          rakeAsphalt: string;
+        };
+        modifiers: {
+          reverse: string;
+          "nose-pinched": string;
+          "hand-megaphone": string;
+        };
+      };
+    };
   };
 
   footer: {
