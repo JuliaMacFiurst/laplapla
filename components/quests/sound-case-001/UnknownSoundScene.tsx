@@ -13,6 +13,7 @@ import {
   getUnknownSoundProgress,
   reduceUnknownSoundScene,
 } from "@/lib/shop/quests/sound-case-001/unknownSoundScene";
+import type { UnknownSoundGuess } from "@/lib/shop/quests/sound-case-001/unknownSoundScene";
 import {
   loadUnknownSoundProgress,
   saveUnknownSoundProgress,
@@ -30,7 +31,16 @@ type UnknownSoundSceneProps = {
   lang: Lang;
   audioUrl: string;
   parrotUrl: string;
+  backgroundUrl: string;
   personalization?: QuestPersonalization;
+};
+
+const UNKNOWN_SOUND_GUESS_EMOJI: Record<UnknownSoundGuess, string> = {
+  animal: "🐾",
+  machine: "⚙️",
+  instrument: "🎵",
+  "natural-phenomenon": "🌿",
+  "no-idea": "🤷",
 };
 
 function SignalWave({ playing }: { playing: boolean }) {
@@ -57,6 +67,7 @@ export function UnknownSoundScene({
   lang,
   audioUrl,
   parrotUrl,
+  backgroundUrl,
   personalization,
 }: UnknownSoundSceneProps) {
   const text = dictionaries[lang].shop.soundCase.unknownSoundScene;
@@ -69,6 +80,16 @@ export function UnknownSoundScene({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const helpDialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const openHelp = () => {
+      const dialog = helpDialogRef.current;
+      if (dialog && !dialog.open) dialog.showModal();
+    };
+    window.addEventListener("laplapla:unknown-sound-help", openHelp);
+    return () => window.removeEventListener("laplapla:unknown-sound-help", openHelp);
+  }, []);
 
   useEffect(() => {
     const restored = loadUnknownSoundProgress(window.localStorage);
@@ -142,6 +163,12 @@ export function UnknownSoundScene({
       dir={lang === "he" ? "rtl" : "ltr"}
       lang={lang}
     >
+      <div
+        className="unknown-sound-scene__studio-background"
+        style={{ backgroundImage: `url("${backgroundUrl}")` }}
+        aria-hidden="true"
+      />
+      <div className="unknown-sound-scene__studio-overlay" aria-hidden="true" />
       <div className="unknown-sound-scene__ambient" aria-hidden="true" />
 
       <section className="unknown-sound-scene__panel">
@@ -165,7 +192,7 @@ export function UnknownSoundScene({
         {scene.phase === "ready" ? (
           <section className="unknown-sound-scene__speech unknown-sound-scene__arrival">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={parrotUrl} alt="" />
+            <img src={parrotUrl} alt="" aria-hidden="true" />
             <div>
               <h2>{text.parrotLabel}</h2>
               {text.arrivalLines.map((line) => (
@@ -173,6 +200,16 @@ export function UnknownSoundScene({
               ))}
             </div>
           </section>
+        ) : null}
+
+        {scene.phase === "guessing" || scene.phase === "guess-recorded" ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="unknown-sound-scene__companion"
+            src={parrotUrl}
+            alt=""
+            aria-hidden="true"
+          />
         ) : null}
 
         <section className="unknown-sound-scene__player" aria-label={text.progressLabel}>
@@ -244,10 +281,15 @@ export function UnknownSoundScene({
                 <button
                   type="button"
                   key={guess}
+                  data-guess={guess}
                   aria-pressed={scene.selectedGuess === guess}
                   onClick={() => dispatch({ type: "guess-selected", guess })}
                 >
-                  {text.guessOptions[guess]}
+                  <span className="unknown-sound-scene__guess-emoji" aria-hidden="true">
+                    {UNKNOWN_SOUND_GUESS_EMOJI[guess]}
+                  </span>
+                  <span>{text.guessOptions[guess]}</span>
+                  <span className="unknown-sound-scene__guess-check" aria-hidden="true">✓</span>
                 </button>
               ))}
             </div>
@@ -291,7 +333,7 @@ export function UnknownSoundScene({
 
             <section className="unknown-sound-scene__speech unknown-sound-scene__after-clue">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={parrotUrl} alt="" />
+              <img src={parrotUrl} alt="" aria-hidden="true" />
               <div>
                 <h2>{text.parrotLabel}</h2>
                 {text.parrotAfterClueLines.map((line) => (
@@ -318,6 +360,33 @@ export function UnknownSoundScene({
           </div>
         ) : null}
       </section>
+
+      <dialog
+        ref={helpDialogRef}
+        className="unknown-sound-scene__help"
+        aria-labelledby="unknown-sound-help-title"
+        dir={lang === "he" ? "rtl" : "ltr"}
+      >
+        <button
+          className="unknown-sound-scene__help-close"
+          type="button"
+          onClick={() => helpDialogRef.current?.close()}
+          aria-label={text.helpClose}
+          autoFocus
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+        <span className="unknown-sound-scene__help-signal" aria-hidden="true">?</span>
+        <h2 id="unknown-sound-help-title">{text.helpTitle}</h2>
+        <p>
+          {text.helpBrandPrefix}
+          <bdi dir="ltr">PARROT SOUND LAB</bdi>
+          {text.helpBrandSuffix}
+        </p>
+        {text.helpLines.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </dialog>
     </main>
   );
 }

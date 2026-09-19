@@ -1,5 +1,4 @@
 import type { LocalizedString } from "./types";
-import type { SoundCase001VisualAssetId } from "./quests/sound-case-001/assets";
 import type {
   SoundCardDuplexMode,
   SoundCardFullBackSelection,
@@ -8,12 +7,18 @@ import type {
   SoundCardPartialSheetSelection,
 } from "./quests/sound-case-001/soundCards";
 import type { UnknownSoundCardDefinition } from "./quests/sound-case-001/unknownSoundCard";
+import type { IntroCardDefinition } from "./quests/sound-case-001/introCard";
 import {
   SOUND_CARD_BACK_SHEET_1,
   SOUND_CARD_BACK_SHEET_2,
   SOUND_CARD_DUPLEX_MODE,
 } from "./quests/sound-case-001/soundCards";
 import { SOUND_CASE_001_UNKNOWN_SOUND_CARD } from "./quests/sound-case-001/unknownSoundCard";
+import { SOUND_CASE_001_INTRO_CARD } from "./quests/sound-case-001/introCard";
+import {
+  SOUND_CASE_001_CARD_BOX_DIELINE_ID,
+  type SoundCase001CardBoxDielineId,
+} from "./quests/sound-case-001/cardBox";
 
 type QuestPageDefinitionBase<TType extends string> = {
   id: string;
@@ -21,11 +26,6 @@ type QuestPageDefinitionBase<TType extends string> = {
   printOrder: number;
   printable: boolean;
   title?: LocalizedString;
-};
-
-export type CaseCoverPageDefinition = QuestPageDefinitionBase<"case-cover"> & {
-  /** Optional decoration slot resolved from the quest asset manifest by the renderer. */
-  decorationAssetId?: SoundCase001VisualAssetId;
 };
 
 export type SoundCardsPageDefinition = QuestPageDefinitionBase<"sound-cards"> & {
@@ -43,6 +43,7 @@ export type SoundCardsPageDefinition = QuestPageDefinitionBase<"sound-cards"> & 
         sheetNumber: 2;
         cardIds: SoundCardPartialSheetSelection;
         unknownSoundCard: UnknownSoundCardDefinition;
+        introCard: IntroCardDefinition;
       }
   );
 
@@ -67,8 +68,15 @@ export type SoundCardBacksPageDefinition =
           sheetNumber: 2;
           cards: SoundCardPartialBackSelection;
           unknownSoundCard: UnknownSoundCardDefinition;
+          introCard: IntroCardDefinition;
         }
     );
+
+export type Stage1CardBoxPageDefinition =
+  QuestPageDefinitionBase<"stage-1-card-box"> & {
+    side: "single";
+    dielineId: SoundCase001CardBoxDielineId;
+  };
 
 /**
  * Discriminated union for printable document definitions.
@@ -78,9 +86,9 @@ export type SoundCardBacksPageDefinition =
  * document configuration.
  */
 export type QuestPageDefinition =
-  | CaseCoverPageDefinition
   | SoundCardsPageDefinition
-  | SoundCardBacksPageDefinition;
+  | SoundCardBacksPageDefinition
+  | Stage1CardBoxPageDefinition;
 
 export type QuestPageType = QuestPageDefinition["type"];
 
@@ -90,21 +98,9 @@ export type QuestPageDefinitionByType = {
 
 export const SOUND_CASE_001_PAGES = [
   {
-    id: "sound-case-001-case-cover",
-    type: "case-cover",
-    printOrder: 1,
-    printable: true,
-    decorationAssetId: "case-cover-decoration",
-    title: {
-      ru: "Обложка дела",
-      en: "Case cover",
-      he: "שער התיק",
-    },
-  },
-  {
     id: "sound-case-001-sound-cards-1",
     type: "sound-cards",
-    printOrder: 2,
+    printOrder: 1,
     printable: true,
     cardIds: [
       "sound-card-01",
@@ -126,7 +122,7 @@ export const SOUND_CASE_001_PAGES = [
   {
     id: "sound-case-001-sound-card-backs-1",
     type: "sound-card-backs",
-    printOrder: 3,
+    printOrder: 2,
     printable: true,
     cards: SOUND_CARD_BACK_SHEET_1,
     backAssetId: "stage-1-card-back",
@@ -139,7 +135,7 @@ export const SOUND_CASE_001_PAGES = [
   {
     id: "sound-case-001-sound-cards-2",
     type: "sound-cards",
-    printOrder: 4,
+    printOrder: 3,
     printable: true,
     cardIds: [
       "sound-card-10",
@@ -152,11 +148,12 @@ export const SOUND_CASE_001_PAGES = [
     pairId: "sound-cards-sheet-2",
     duplexMode: SOUND_CARD_DUPLEX_MODE,
     unknownSoundCard: SOUND_CASE_001_UNKNOWN_SOUND_CARD,
+    introCard: SOUND_CASE_001_INTRO_CARD,
   },
   {
     id: "sound-case-001-sound-card-backs-2",
     type: "sound-card-backs",
-    printOrder: 5,
+    printOrder: 4,
     printable: true,
     cards: SOUND_CARD_BACK_SHEET_2,
     backAssetId: "stage-1-card-back",
@@ -166,6 +163,20 @@ export const SOUND_CASE_001_PAGES = [
     pairId: "sound-cards-sheet-2",
     duplexMode: SOUND_CARD_DUPLEX_MODE,
     unknownSoundCard: SOUND_CASE_001_UNKNOWN_SOUND_CARD,
+    introCard: SOUND_CASE_001_INTRO_CARD,
+  },
+  {
+    id: "sound-case-001-stage-1-card-box",
+    type: "stage-1-card-box",
+    printOrder: 5,
+    printable: true,
+    side: "single",
+    dielineId: SOUND_CASE_001_CARD_BOX_DIELINE_ID,
+    title: {
+      ru: "Коробочка для карточек этапа 01",
+      en: "Stage 01 card box",
+      he: "קופסת קלפים לשלב 01",
+    },
   },
 ] satisfies readonly QuestPageDefinition[];
 

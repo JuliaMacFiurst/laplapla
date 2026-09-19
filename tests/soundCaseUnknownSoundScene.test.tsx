@@ -35,7 +35,10 @@ const audioUrl = requireQuestAssetUrl(
   SOUND_CASE_001_ASSET_MANIFEST.assets["stage-1-unknown-recording"],
 );
 const parrotUrl = requireQuestAssetUrl(
-  SOUND_CASE_001_ASSET_MANIFEST.assets["sound-lab-parrot"],
+  SOUND_CASE_001_ASSET_MANIFEST.assets["unknown-sound-digital-parrot"],
+);
+const backgroundUrl = requireQuestAssetUrl(
+  SOUND_CASE_001_ASSET_MANIFEST.assets["unknown-sound-studio-background"],
 );
 
 describe("Sound Case #001 UNKNOWN SOUND digital scene", () => {
@@ -49,6 +52,17 @@ describe("Sound Case #001 UNKNOWN SOUND digital scene", () => {
     expect(
       SOUND_CASE_001_ASSET_MANIFEST.assets["stage-1-unknown-recording"].kind,
     ).toBe("audio");
+    expect(parrotUrl).toBe(
+      "https://media.laplapla.com/quests/sound-case-001/stage-01-sound-crocodile/sound-cards/assets/stage-1-unknown-sound-parrot-2.webp",
+    );
+    expect(backgroundUrl).toBe(
+      "https://media.laplapla.com/quests/sound-case-001/stage-01-sound-crocodile/sound-cards/backgrounds/stage-1-unknown-sound-sound-lab.webp",
+    );
+    expect(
+      requireQuestAssetUrl(
+        SOUND_CASE_001_ASSET_MANIFEST.assets["sound-lab-parrot"],
+      ),
+    ).toContain("stage-1-unknown-sound-parrot.webp");
 
     const routeSource = readFileSync(
       `${process.cwd()}/pages/quests/sound-case-001/stage-01/unknown-sound.tsx`,
@@ -65,6 +79,7 @@ describe("Sound Case #001 UNKNOWN SOUND digital scene", () => {
         lang: "ru",
         audioUrl,
         parrotUrl,
+        backgroundUrl,
       }),
     );
 
@@ -124,8 +139,22 @@ describe("Sound Case #001 UNKNOWN SOUND digital scene", () => {
     for (const lang of ["ru", "en", "he"] as const) {
       const text = dictionaries[lang].shop.soundCase.unknownSoundScene;
       expect(Object.keys(text.guessOptions)).toHaveLength(5);
-      expect(JSON.stringify(text)).not.toMatch(/correct|incorrect|правильный ответ|неправильный ответ/i);
+      expect(JSON.stringify(text.guessOptions)).not.toMatch(
+        /correct|incorrect|правильный ответ|неправильный ответ/i,
+      );
     }
+  });
+
+  it("keeps semantic guess ids while giving every theory one shared emoji mapping", () => {
+    const componentSource = readFileSync(
+      `${process.cwd()}/components/quests/sound-case-001/UnknownSoundScene.tsx`,
+      "utf8",
+    );
+    expect(componentSource).toContain("UNKNOWN_SOUND_GUESS_EMOJI");
+    for (const emoji of ["🐾", "⚙️", "🎵", "🌿", "🤷"]) {
+      expect(componentSource).toContain(emoji);
+    }
+    expect(componentSource).toContain("data-guess={guess}");
   });
 
   it("persists only confirmed progress and restores the clue deterministically", () => {
@@ -190,9 +219,11 @@ describe("Sound Case #001 UNKNOWN SOUND digital scene", () => {
       expect(text.audioError).toBeTruthy();
       expect(text.retryAction).toBeTruthy();
       expect(text.finalTitle).toBeTruthy();
+      expect(text.helpTitle).toBeTruthy();
+      expect(text.helpLines).toHaveLength(2);
 
       const html = renderToStaticMarkup(
-        createElement(UnknownSoundScene, { lang, audioUrl, parrotUrl }),
+        createElement(UnknownSoundScene, { lang, audioUrl, parrotUrl, backgroundUrl }),
       );
       expect(html).toContain(lang === "he" ? 'dir="rtl"' : 'dir="ltr"');
       expect(html).toContain('<bdi dir="ltr">001</bdi>');
@@ -208,6 +239,28 @@ describe("Sound Case #001 UNKNOWN SOUND digital scene", () => {
     expect(componentSource).toContain("text.leadFallback");
     expect(componentSource).not.toContain("{ИМЯ}");
     expect(componentSource).not.toContain("UnknownSoundPersonalization");
+  });
+
+  it("exposes localized non-spoiler help through the existing global header", () => {
+    const topBarSource = readFileSync(
+      `${process.cwd()}/components/TopBar.tsx`,
+      "utf8",
+    );
+    expect(topBarSource).toContain("top-bar--unknown-sound");
+    expect(topBarSource).toContain("top-bar-signin");
+    expect(topBarSource).toContain("top-bar-cart");
+    expect(topBarSource).toContain("<LanguageSwitcher />");
+    expect(topBarSource).toContain("top-bar-quest-help");
+    expect(topBarSource).toContain("laplapla:unknown-sound-help");
+
+    for (const lang of ["ru", "en", "he"] as const) {
+      const help = dictionaries[lang].shop.soundCase.unknownSoundScene;
+      expect(help.helpAriaLabel).toBeTruthy();
+      expect(help.helpClose).toBeTruthy();
+      expect(`${help.helpBrandPrefix}${JSON.stringify(help.helpLines)}`).not.toMatch(
+        /singing dunes|booming dunes|kelso|desert|sand|дюн|песок|пустын|חול|דיונה/i,
+      );
+    }
   });
 
   it("has localized failure/retry UI and no next-level navigation", () => {

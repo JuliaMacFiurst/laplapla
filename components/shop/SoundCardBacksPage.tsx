@@ -2,9 +2,12 @@ import type {
   SoundCardBackPlacement,
   SoundCardDuplexMode,
 } from "@/lib/shop/quests/sound-case-001/soundCards";
+import { dictionaries, type Lang } from "@/i18n";
 import type { UnknownSoundCardDefinition } from "@/lib/shop/quests/sound-case-001/unknownSoundCard";
 import { SoundCardCutArea } from "./SoundCardCutArea";
 import { UnknownSoundCardBack } from "./UnknownSoundCard";
+import type { IntroCardDefinition } from "@/lib/shop/quests/sound-case-001/introCard";
+import { IntroCardBack } from "./IntroCard";
 
 type SoundCardBacksPageProps = {
   cards: readonly SoundCardBackPlacement[];
@@ -14,7 +17,9 @@ type SoundCardBacksPageProps = {
   sheetCount: 2;
   pairId: string;
   duplexMode: SoundCardDuplexMode;
+  locale: Lang;
   unknownSoundCard?: UnknownSoundCardDefinition;
+  introCard?: IntroCardDefinition;
 };
 
 export function SoundCardBacksPage({
@@ -25,8 +30,14 @@ export function SoundCardBacksPage({
   sheetCount,
   pairId,
   duplexMode,
+  locale,
   unknownSoundCard,
+  introCard,
 }: SoundCardBacksPageProps) {
+  const guidance = dictionaries[locale].shop.soundCase.soundCardBacks;
+  const frontIdentity = `SOUND CARDS ${sheetNumber}/${sheetCount}`;
+  const backIdentity = `SOUND CARD BACKS ${sheetNumber}/${sheetCount}`;
+
   return (
     <section
       className="quest-sound-cards-sheet quest-sound-card-backs-sheet"
@@ -72,7 +83,35 @@ export function SoundCardBacksPage({
             <UnknownSoundCardBack definition={unknownSoundCard} />
           </SoundCardCutArea>
         ) : null}
+        {introCard ? (
+          <SoundCardCutArea
+            slot={introCard.backSlot}
+            frontSlot={introCard.frontSlot}
+            backSlot={introCard.backSlot}
+            pairId={pairId}
+          >
+            <IntroCardBack definition={introCard} locale={locale} />
+          </SoundCardCutArea>
+        ) : null}
       </div>
+
+      <aside
+        className="quest-sound-card-backs-sheet__manual-guide"
+        data-duplex-pairing-guide="true"
+        dir={locale === "he" ? "rtl" : "ltr"}
+      >
+        <div className="quest-sound-card-backs-sheet__warning">
+          <strong>{guidance.backSide}</strong>
+          <bdi dir="ltr">{backIdentity}</bdi>
+        </div>
+        <p className="quest-sound-card-backs-sheet__pairing">
+          <span>{guidance.frontLabel}:</span>{" "}
+          <bdi dir="ltr">{frontIdentity}</bdi>
+          <span aria-hidden="true"> → </span>
+          <span>{guidance.backLabel}:</span>{" "}
+          <bdi dir="ltr">{backIdentity}</bdi>
+        </p>
+      </aside>
     </section>
   );
 }

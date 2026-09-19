@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+  width="152mm"
+  height="142mm"
+  viewBox="0 0 152 142"
+  role="img"
+  aria-labelledby="title desc">
+  <title id="title">Stage 01 sound card tuck box dieline</title>
+  <desc id="desc">One-piece tuck box dieline with solid cut lines and dashed fold lines.</desc>
+
+  <g id="artwork" fill="none">
+    <g id="front-panel" />
+    <g id="back-panel" />
+    <g id="left-panel" />
+    <g id="right-panel" />
+    <g id="top-panel" />
+    <g id="bottom-panel" />
+  </g>
+
+  <g id="fold-guides"
+    fill="none"
+    stroke="#777"
+    stroke-width="0.2"
+    stroke-dasharray="2 1.5"
+    vector-effect="non-scaling-stroke">
+    <!-- Body panel folds: glue | side | front | side | back -->
+    <path d="M10 32V114 M19 32V114 M81 32V114 M90 32V114" />
+
+    <!-- Top flap hinges. The second back-panel fold forms the tuck tongue. -->
+    <path d="M10 32H19 M81 32H90 M90 32H152 M90 23H152" />
+
+    <!-- Bottom flap hinges. The second front-panel fold forms the tuck tongue. -->
+    <path d="M10 114H152 M19 123H81" />
+  </g>
+
+  <g id="cut-guides"
+    fill="none"
+    stroke="#111"
+    stroke-width="0.3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    vector-effect="non-scaling-stroke">
+    <!-- Tapered glue flap outer edge -->
+    <path d="M10 32L0 36V110L10 114" />
+
+    <!-- Top left dust flap -->
+    <path d="M10 32V23L19 20V32" />
+
+    <!-- Front panel open edge -->
+    <path d="M19 32H81" />
+
+    <!-- Top right dust flap -->
+    <path d="M81 32V20L90 23V32" />
+
+    <!-- Top tuck flap and back-panel outside edge -->
+    <path d="M90 32V7L95 0H147L152 7V114" />
+
+    <!-- Bottom back receiving flap -->
+    <path d="M152 114V123L146 128H96L90 123V114" />
+
+    <!-- Bottom right dust flap -->
+    <path d="M90 114V128L81 132V114" />
+
+    <!-- Bottom main tuck flap -->
+    <path d="M81 114V136L75 142H25L19 136V114" />
+
+    <!-- Bottom left dust flap -->
+    <path d="M19 114V132L10 128V114" />
+  </g>
+</svg>

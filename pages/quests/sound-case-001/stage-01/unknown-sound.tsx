@@ -18,7 +18,10 @@ export default function UnknownSoundPage({ lang }: UnknownSoundPageProps) {
     SOUND_CASE_001_ASSET_MANIFEST.assets["stage-1-unknown-recording"],
   );
   const parrotUrl = requireQuestAssetUrl(
-    SOUND_CASE_001_ASSET_MANIFEST.assets["sound-lab-parrot"],
+    SOUND_CASE_001_ASSET_MANIFEST.assets["unknown-sound-digital-parrot"],
+  );
+  const backgroundUrl = requireQuestAssetUrl(
+    SOUND_CASE_001_ASSET_MANIFEST.assets["unknown-sound-studio-background"],
   );
 
   return (
@@ -33,6 +36,7 @@ export default function UnknownSoundPage({ lang }: UnknownSoundPageProps) {
         lang={lang}
         audioUrl={audioUrl}
         parrotUrl={parrotUrl}
+        backgroundUrl={backgroundUrl}
       />
     </>
   );

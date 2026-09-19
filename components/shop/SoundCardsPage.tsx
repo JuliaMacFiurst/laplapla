@@ -5,6 +5,8 @@ import type { SoundCardSheetSlot } from "@/lib/shop/quests/sound-case-001/soundC
 import type { UnknownSoundCardDefinition } from "@/lib/shop/quests/sound-case-001/unknownSoundCard";
 import { SoundCardCutArea } from "./SoundCardCutArea";
 import { UnknownSoundCardFront } from "./UnknownSoundCard";
+import type { IntroCardDefinition } from "@/lib/shop/quests/sound-case-001/introCard";
+import { IntroCardFront } from "./IntroCard";
 
 export type PrintableSoundCard = {
   card: SoundCardDefinition;
@@ -14,6 +16,11 @@ export type PrintableSoundCard = {
 
 export type PrintableUnknownSoundCard = {
   definition: UnknownSoundCardDefinition;
+  parrotUrl: string;
+};
+
+export type PrintableIntroCard = {
+  definition: IntroCardDefinition;
   parrotUrl: string;
 };
 
@@ -39,6 +46,8 @@ type SoundCardsPageProps = {
   sheetCount: 2;
   pairId: string;
   unknownSoundCard?: PrintableUnknownSoundCard;
+  introCard?: PrintableIntroCard;
+  leadName: string;
 };
 
 export function SoundCardsPage({
@@ -48,11 +57,31 @@ export function SoundCardsPage({
   sheetCount,
   pairId,
   unknownSoundCard,
+  introCard,
+  leadName,
 }: SoundCardsPageProps) {
   const text = dictionaries[locale].shop.soundCase.soundCards;
+  const guidance = dictionaries[locale].shop.soundCase.soundCardBacks;
 
   return (
-    <section className="quest-sound-cards-sheet">
+    <section className="quest-sound-cards-sheet quest-sound-cards-sheet--front">
+      <div
+        className="quest-sound-cards-sheet__front-orientation"
+        data-page-orientation-guide="front-top-edge"
+        dir={locale === "he" ? "rtl" : "ltr"}
+      >
+        <strong>
+          <span aria-hidden="true">↑</span>{" "}
+          {guidance.frontTopEdge}{" "}
+          <span aria-hidden="true">↑</span>
+        </strong>
+        <span>
+          {guidance.frontSideLabel}{" "}
+          <span aria-hidden="true">•</span>{" "}
+          {guidance.sheetLabel} <bdi dir="ltr">{sheetNumber}</bdi>
+        </span>
+      </div>
+
       <header className="quest-sound-cards-sheet__header" dir="ltr">
         <bdi dir="ltr">LAP LAP LA ADVENTURES</bdi>
         <span aria-hidden="true">·</span>
@@ -122,6 +151,21 @@ export function SoundCardsPage({
               definition={unknownSoundCard.definition}
               locale={locale}
               parrotUrl={unknownSoundCard.parrotUrl}
+            />
+          </SoundCardCutArea>
+        ) : null}
+        {introCard ? (
+          <SoundCardCutArea
+            slot={introCard.definition.frontSlot}
+            frontSlot={introCard.definition.frontSlot}
+            backSlot={introCard.definition.backSlot}
+            pairId={pairId}
+          >
+            <IntroCardFront
+              definition={introCard.definition}
+              locale={locale}
+              leadName={leadName}
+              parrotUrl={introCard.parrotUrl}
             />
           </SoundCardCutArea>
         ) : null}

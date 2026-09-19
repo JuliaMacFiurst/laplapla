@@ -16,6 +16,8 @@ export default function TopBar({ lang }: TopBarProps) {
   const router = useRouter();
   const isHome = router.pathname === "/";
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
+  const isUnknownSoundScene =
+    router.pathname === "/quests/sound-case-001/stage-01/unknown-sound";
   const isMobile = useIsMobile();
 
   const [menuHover, setMenuHover] = useState(false);
@@ -56,8 +58,15 @@ export default function TopBar({ lang }: TopBarProps) {
     );
   };
 
+  const openUnknownSoundHelp = () => {
+    window.dispatchEvent(new Event("laplapla:unknown-sound-help"));
+  };
+
   return (
-    <div className="top-bar">
+    <div
+      className={`top-bar${isUnknownSoundScene ? " top-bar--unknown-sound" : ""}`}
+      data-quest-header={isUnknownSoundScene ? "unknown-sound" : undefined}
+    >
       {/* Левая/основная зона */}
       {isHome ? (
         <div className="top-bar-home-menu-cluster">
@@ -132,7 +141,12 @@ export default function TopBar({ lang }: TopBarProps) {
               fontSize: "0.9rem"
             }}
           >
-            {dictionaries[lang].topBar.signIn}
+            {isUnknownSoundScene ? (
+              <span className="top-bar-signin-icon" aria-hidden="true">↪</span>
+            ) : null}
+            <span className="top-bar-signin-label">
+              {dictionaries[lang].topBar.signIn}
+            </span>
           </button>
           
           <Link
@@ -154,6 +168,16 @@ export default function TopBar({ lang }: TopBarProps) {
           >
             <span aria-hidden="true" style={{ fontSize: "1.1rem" }}>🛒</span>
           </Link>
+          {isUnknownSoundScene ? (
+            <button
+              className="top-bar-quest-help"
+              type="button"
+              onClick={openUnknownSoundHelp}
+              aria-label={dictionaries[lang].shop.soundCase.unknownSoundScene.helpAriaLabel}
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+          ) : null}
         </div>
         <LanguageSwitcher />
       </div>

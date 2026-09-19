@@ -988,13 +988,32 @@ type DictionaryShape = {
       };
       caseCover: {
         kicker: string;
+        printLabTitle: string;
+        printLabGuidance: string;
         leadHeading: string;
         teamHeading: string;
         participantsEmpty: string;
         namePlaceholder: string;
-        storyLines: string[];
+        dossierIntroPrefix: string;
+        dossierIntroSuffix: string;
+        dossierStatuses: Array<{
+          label: string;
+          value: string;
+        }>;
         assignment: string;
+        parrotLabel: string;
+        parrotGreeting: string;
+        parrotLines: string[];
+        parrotCallout: string;
+        gameHeading: string;
+        gameFlow: string;
+        gameRules: [string, string, string, string];
+        groupNotes: [string, string];
+        transition: string;
         caseNumber: string;
+      };
+      introCard: {
+        storyLines: readonly [string, string, string, string, string];
       };
       soundCards: {
         footerInstruction: string;
@@ -1018,9 +1037,54 @@ type DictionaryShape = {
           "hand-megaphone": string;
         };
       };
+      soundCardBacks: {
+        printHelpTitle: string;
+        frontTopEdge: string;
+        frontSideLabel: string;
+        sheetLabel: string;
+        backSide: string;
+        notNewSheet: string;
+        frontLabel: string;
+        backLabel: string;
+        autoTitle: string;
+        autoPrintPrefix: string;
+        autoPrintSuffix: string;
+        autoSettingsLabel: string;
+        autoSettings: readonly [string, string, string, string, string];
+        autoResult: string;
+        manualTitle: string;
+        manualIntro: string;
+        stepLabel: string;
+        pageLabel: string;
+        manualPrintOnly: string;
+        manualSameSheet: string;
+        manualAlreadyMarked: string;
+        manualReinsertWithTest: string;
+        manualRepeat: string;
+        feedWarning: string;
+        testTitle: string;
+        testIntro: string;
+        testSteps: readonly [string, string, string, string, string];
+        testCheckLabel: string;
+        testChecks: readonly [string, string];
+        testResult: string;
+      };
+      cardBox: {
+        title: string;
+        stageNumber: string;
+        legendLabel: string;
+        cutLabel: string;
+        foldLabel: string;
+        svgAlt: string;
+        assemblyTitle: string;
+        assemblySteps: readonly [string, string, string, string];
+        printNote: string;
+        printLabGuidance: string;
+      };
       unknownSoundCard: {
         title: string;
         numberPrefix: string;
+        qrAccessLabel: string;
         listenAction: string;
         question: string;
         evidenceLines: readonly [string, string, string];
@@ -1064,6 +1128,12 @@ type DictionaryShape = {
         investigateFurther: string;
         finalTitle: string;
         finalBody: string;
+        helpAriaLabel: string;
+        helpTitle: string;
+        helpBrandPrefix: string;
+        helpBrandSuffix: string;
+        helpLines: readonly [string, string];
+        helpClose: string;
       };
     };
   };

@@ -7,6 +7,8 @@ import type {
 
 export type SoundCase001AssetEntries = {
   readonly "sound-lab-parrot": QuestVisualAsset<"sound-lab-parrot">;
+  readonly "unknown-sound-digital-parrot": QuestVisualAsset<"unknown-sound-digital-parrot">;
+  readonly "unknown-sound-studio-background": QuestVisualAsset<"unknown-sound-studio-background">;
   readonly "case-cover-decoration": QuestVisualAsset<"case-cover-decoration">;
   readonly "stage-1-sound-card-01-ketchup": QuestVisualAsset<"stage-1-sound-card-01-ketchup">;
   readonly "stage-1-sound-card-02-sneeze-cat": QuestVisualAsset<"stage-1-sound-card-02-sneeze-cat">;
@@ -55,6 +57,8 @@ const UNKNOWN_SOUND_PUBLIC_BASE_URL =
 
 type SupplementalSoundCardAssetPath =
   | "assets/stage-1-unknown-sound-parrot.webp"
+  | "assets/stage-1-unknown-sound-parrot-2.webp"
+  | "backgrounds/stage-1-unknown-sound-sound-lab.webp"
   | "backs/stage-1-sound-card-back.webp";
 
 const externalSoundCardAsset = (
@@ -97,6 +101,20 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
       kind: "visual",
       source: externalSoundCardAsset(
         "assets/stage-1-unknown-sound-parrot.webp",
+      ),
+    },
+    "unknown-sound-digital-parrot": {
+      id: "unknown-sound-digital-parrot",
+      kind: "visual",
+      source: externalSoundCardAsset(
+        "assets/stage-1-unknown-sound-parrot-2.webp",
+      ),
+    },
+    "unknown-sound-studio-background": {
+      id: "unknown-sound-studio-background",
+      kind: "visual",
+      source: externalSoundCardAsset(
+        "backgrounds/stage-1-unknown-sound-sound-lab.webp",
       ),
     },
     "case-cover-decoration": {

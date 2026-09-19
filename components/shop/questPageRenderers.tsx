@@ -1,16 +1,13 @@
 import type { ReactNode } from "react";
-import { CaseCoverPage } from "./CaseCoverPage";
 import { SoundCardsPage } from "./SoundCardsPage";
 import { SoundCardBacksPage } from "./SoundCardBacksPage";
+import { Stage1CardBoxPage } from "./Stage1CardBoxPage";
 import type {
   QuestPageDefinitionByType,
   QuestPageType,
 } from "@/lib/shop/questDocument";
 import type { QuestPersonalization } from "@/lib/shop/questPersonalization";
-import {
-  getOptionalQuestAssetUrl,
-  requireQuestAssetUrl,
-} from "@/lib/shop/questAssets";
+import { requireQuestAssetUrl } from "@/lib/shop/questAssets";
 import type { SoundCase001AssetManifest } from "@/lib/shop/quests/sound-case-001/assets";
 import {
   getSoundCardsByIds,
@@ -32,20 +29,6 @@ type QuestPageRendererRegistry = {
 };
 
 const questPageRenderers: QuestPageRendererRegistry = {
-  "case-cover": ({ definition, context }) => {
-    const decoration = definition.decorationAssetId
-      ? context.assetManifest.assets[definition.decorationAssetId]
-      : undefined;
-
-    return (
-      <CaseCoverPage
-        personalization={context.personalization}
-        decorationUrl={
-          decoration ? getOptionalQuestAssetUrl(decoration) : undefined
-        }
-      />
-    );
-  },
   "sound-cards": ({ definition, context }) => {
     const cards = getSoundCardsByIds(definition.cardIds).map((card, index) => ({
       card,
@@ -64,6 +47,14 @@ const questPageRenderers: QuestPageRendererRegistry = {
           ),
         }
       : undefined;
+    const introCard = "introCard" in definition
+      ? {
+          definition: definition.introCard,
+          parrotUrl: requireQuestAssetUrl(
+            context.assetManifest.assets[definition.introCard.parrotAssetId],
+          ),
+        }
+      : undefined;
 
     return (
       <SoundCardsPage
@@ -73,6 +64,8 @@ const questPageRenderers: QuestPageRendererRegistry = {
         sheetNumber={definition.sheetNumber}
         sheetCount={definition.sheetCount}
         unknownSoundCard={unknownSoundCard}
+        introCard={introCard}
+        leadName={context.personalization.leadName}
       />
     );
   },
@@ -87,7 +80,17 @@ const questPageRenderers: QuestPageRendererRegistry = {
       sheetCount={definition.sheetCount}
       pairId={definition.pairId}
       duplexMode={definition.duplexMode}
+      locale={context.personalization.locale}
       unknownSoundCard={definition.unknownSoundCard}
+      introCard={"introCard" in definition ? definition.introCard : undefined}
+    />
+  ),
+  "stage-1-card-box": ({ context }) => (
+    <Stage1CardBoxPage
+      personalization={context.personalization}
+      parrotUrl={requireQuestAssetUrl(
+        context.assetManifest.assets["sound-lab-parrot"],
+      )}
     />
   ),
 };

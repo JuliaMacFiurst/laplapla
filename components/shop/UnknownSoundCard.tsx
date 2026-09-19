@@ -55,8 +55,15 @@ export function UnknownSoundCardFront({
       <div
         className="quest-unknown-sound-card__qr-reserved"
         data-qr-reserved="true"
-        aria-hidden="true"
-      />
+        data-qr-destination={definition.qrDestination}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className="quest-unknown-sound-card__qr"
+          src={definition.qrAssetPath}
+          alt={text.qrAccessLabel}
+        />
+      </div>
 
       <div className="quest-unknown-sound-card__listen">
         <span aria-hidden="true" />
@@ -68,8 +75,12 @@ export function UnknownSoundCardFront({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={parrotUrl} alt="" />
         <div dir={locale === "he" ? "rtl" : "ltr"}>
-          <p>{text.evidenceLines.join(" ")}</p>
-          <p>{text.actionLines.join(" ")}</p>
+          <p className="quest-unknown-sound-card__evidence">
+            {text.evidenceLines.join(" ")}
+          </p>
+          <p className="quest-unknown-sound-card__action">
+            {text.actionLines.join(" ")}
+          </p>
         </div>
       </div>
     </article>
