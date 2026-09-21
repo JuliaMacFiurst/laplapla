@@ -2,6 +2,11 @@ import type { ReactNode } from "react";
 import { SoundCardsPage } from "./SoundCardsPage";
 import { SoundCardBacksPage } from "./SoundCardBacksPage";
 import { Stage1CardBoxPage } from "./Stage1CardBoxPage";
+import {
+  Stage2BoxPage,
+  Stage2ClueBackPage,
+  Stage2VibratingCardsPage,
+} from "./Stage2PrintablePages";
 import type {
   QuestPageDefinitionByType,
   QuestPageType,
@@ -13,6 +18,9 @@ import {
   getSoundCardsByIds,
   getSoundCardSheetSlot,
 } from "@/lib/shop/quests/sound-case-001/soundCards";
+import {
+  getStage2FrontCards,
+} from "@/lib/shop/quests/sound-case-001/vibratingCards";
 
 export type QuestPageRenderContext = {
   personalization: QuestPersonalization;
@@ -93,6 +101,26 @@ const questPageRenderers: QuestPageRendererRegistry = {
       )}
     />
   ),
+  "stage-2-vibrating-cards": ({ definition, context }) => {
+    const cards = getStage2FrontCards(definition.locale).map((card) => ({
+      card,
+      illustrationUrl: requireQuestAssetUrl(
+        context.assetManifest.assets[card.illustrationAssetId],
+      ),
+    }));
+    return <Stage2VibratingCardsPage cards={cards} clue={definition.clue} locale={definition.locale} />;
+  },
+  "stage-2-clue-back": ({ definition }) => (
+    <Stage2ClueBackPage clue={definition.clue} locale={definition.locale} />
+  ),
+  "stage-2-box": ({ definition, context }) => {
+    return (
+      <Stage2BoxPage
+        locale={definition.locale}
+        parrotUrl={requireQuestAssetUrl(context.assetManifest.assets["stage-2-parrot"])}
+      />
+    );
+  },
 };
 
 export function renderQuestPageDefinition<TType extends QuestPageType>(

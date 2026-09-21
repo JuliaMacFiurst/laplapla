@@ -112,7 +112,12 @@ describe("Sound Case catalog safety", () => {
 describe("Sound Case document configuration", () => {
   it("registers every printable page type in the exhaustive renderer", () => {
     expectTypeOf<QuestPageType>().toEqualTypeOf<
-      "sound-cards" | "sound-card-backs" | "stage-1-card-box"
+      | "sound-cards"
+      | "sound-card-backs"
+      | "stage-1-card-box"
+      | "stage-2-vibrating-cards"
+      | "stage-2-clue-back"
+      | "stage-2-box"
     >();
 
     const definition = SOUND_CASE_001_PAGES[0];
@@ -383,7 +388,7 @@ describe("Sound Case asset manifest", () => {
     >();
 
     expect(SOUND_CASE_001_ASSET_MANIFEST.questId).toBe("sound-case-001");
-    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(19);
+    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(45);
     expect(SOUND_CASE_001_ASSET_MANIFEST.assets).not.toHaveProperty(
       "stage-1-sound-card-illustration",
     );

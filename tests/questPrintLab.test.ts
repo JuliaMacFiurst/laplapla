@@ -33,7 +33,8 @@ describe("internal Quest Print Lab", () => {
 
     expect(routeSource).toContain('import { QuestPrintLab }');
     expect(labSource).toContain('import { QuestDocument } from "./QuestDocument"');
-    expect(labSource).toContain("pages={SOUND_CASE_001_PAGES}");
+    expect(labSource).toContain("pages={selectedPages}");
+    expect(labSource).toContain("getSoundCase001Stage2Pages");
     expect(labSource).toContain("assetManifest={SOUND_CASE_001_ASSET_MANIFEST}");
     expect(labSource).not.toContain("CaseCoverPage");
     expect(labSource).not.toContain('from "./SoundCardsPage"');
@@ -43,6 +44,26 @@ describe("internal Quest Print Lab", () => {
     expect(labSource).not.toContain("PrintLabPersonalization");
     expect(labSource).not.toContain("SoundCasePreviewNames");
   });
+
+  it.each(["ru", "en", "he"] as const)(
+    "makes Stage 02 discoverable and renders its real %s printable model in the shared lab",
+    (locale) => {
+      const html = renderToStaticMarkup(createElement(QuestPrintLab, {
+        initialStage: "02",
+        initialPersonalization: { locale, leadName: "Maya", participants: [] },
+      }));
+
+      expect(html).toContain('data-stage-selector="true"');
+      expect(html).toContain("STAGE 01");
+      expect(html).toContain("STAGE 02");
+      expect(html).toContain("VIBRATING CARDS");
+      expect(html).toContain('aria-label="Открыть STAGE 02 — Vibrating Cards" aria-pressed="true"');
+      expect(html.match(/data-page-id=/g)).toHaveLength(3);
+      expect(html).toContain('data-page-type="stage-2-vibrating-cards"');
+      expect(html).toContain('data-page-type="stage-2-clue-back"');
+      expect(html).toContain('data-page-type="stage-2-box"');
+    },
+  );
 
   it("defaults X-Ray to OFF and renders every current printable page", () => {
     const html = renderToStaticMarkup(createElement(QuestPrintLab));

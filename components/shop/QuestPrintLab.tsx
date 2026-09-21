@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { dictionaries, type Lang } from "@/i18n";
 import {
   SOUND_CASE_001_PAGES,
+  getSoundCase001Stage2Pages,
   getPrintableQuestPages,
   type QuestPageDefinition,
   type Stage1CardBoxPageDefinition,
@@ -28,6 +29,7 @@ const DEFAULT_FIXTURE = createQuestPersonalization("ru", {
 
 type QuestPrintLabProps = {
   initialPersonalization?: QuestPersonalization;
+  initialStage?: "01" | "02";
 };
 
 export type QuestPrintLabDuplexPair = {
@@ -105,8 +107,10 @@ const SOUND_CASE_001_CARD_BOX_PAGE = getQuestPrintLabCardBoxPage(
 
 export function QuestPrintLab({
   initialPersonalization = DEFAULT_FIXTURE,
+  initialStage = "01",
 }: QuestPrintLabProps) {
   const [personalization, setPersonalization] = useState(initialPersonalization);
+  const [stage, setStage] = useState<"01" | "02">(initialStage);
   const [xRayEnabled, setXRayEnabled] = useState(false);
   const [printHelpOpen, setPrintHelpOpen] = useState(false);
   const documentHostRef = useRef<HTMLDivElement>(null);
@@ -114,8 +118,13 @@ export function QuestPrintLab({
     dictionaries[personalization.locale].shop.soundCase.soundCardBacks;
   const cardBoxGuidance =
     dictionaries[personalization.locale].shop.soundCase.cardBox;
+  const stage2Guidance =
+    dictionaries[personalization.locale].shop.soundCase.stage02.printHelp;
   const [firstPair, secondPair] = SOUND_CASE_001_DUPLEX_PAIRS;
   const cardPageRange = `${firstPair.frontPageNumber}–${secondPair.backPageNumber}`;
+  const selectedPages = stage === "01"
+    ? SOUND_CASE_001_PAGES
+    : getSoundCase001Stage2Pages(personalization.locale);
 
   useEffect(() => {
     const host = documentHostRef.current;
@@ -160,7 +169,7 @@ export function QuestPrintLab({
       resizeObserver?.disconnect();
       clearMeasurements();
     };
-  }, [personalization, xRayEnabled]);
+  }, [personalization, stage, xRayEnabled]);
 
   return (
     <main
@@ -173,6 +182,30 @@ export function QuestPrintLab({
           <span>Sound Case #001</span>
         </header>
 
+        <fieldset className="quest-print-lab__stage-picker" data-stage-selector="true">
+          <legend>Выберите printable-этап</legend>
+          <div>
+            <button
+              type="button"
+              aria-label="Открыть STAGE 01 — Sound Cards"
+              aria-pressed={stage === "01"}
+              onClick={() => setStage("01")}
+            >
+              <strong>STAGE 01</strong>
+              <span>SOUND CARDS</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Открыть STAGE 02 — Vibrating Cards"
+              aria-pressed={stage === "02"}
+              onClick={() => setStage("02")}
+            >
+              <strong>STAGE 02</strong>
+              <span>VIBRATING CARDS</span>
+            </button>
+          </div>
+        </fieldset>
+
         <section
           className="quest-print-lab__print-help"
           dir={personalization.locale === "he" ? "rtl" : "ltr"}
@@ -184,7 +217,7 @@ export function QuestPrintLab({
             aria-controls="quest-print-lab-print-help-content"
             onClick={() => setPrintHelpOpen((open) => !open)}
           >
-            <span>{printGuidance.printHelpTitle}</span>
+            <span>{stage === "01" ? printGuidance.printHelpTitle : stage2Guidance.title}</span>
             <span aria-hidden="true">{printHelpOpen ? "▴" : "▾"}</span>
           </button>
           <div
@@ -192,6 +225,7 @@ export function QuestPrintLab({
             className="quest-print-lab__print-help-content"
             hidden={!printHelpOpen}
           >
+          {stage === "01" ? (
           <section className="quest-print-lab__duplex-help" aria-label={printGuidance.manualTitle}>
           <details className="quest-print-lab__duplex-scenario" data-duplex-scenario="auto">
             <summary>{printGuidance.autoTitle}</summary>
@@ -313,6 +347,24 @@ export function QuestPrintLab({
             <span>{cardBoxGuidance.printNote}</span>
           </aside>
           </section>
+          ) : (
+            <section className="quest-print-lab__duplex-help" aria-label={stage2Guidance.title} data-stage-2-print-help="true">
+              <p className="quest-print-lab__duplex-result">{stage2Guidance.summary}</p>
+              <details className="quest-print-lab__duplex-scenario" data-duplex-scenario="stage-2-duplex" open>
+                <summary>{stage2Guidance.duplexTitle}</summary>
+                <div className="quest-print-lab__duplex-scenario-body">
+                  <ol>{stage2Guidance.duplexSteps.map((step) => <li key={step}>{step}</li>)}</ol>
+                </div>
+              </details>
+              <details className="quest-print-lab__duplex-scenario" data-duplex-scenario="stage-2-single" open>
+                <summary>{stage2Guidance.singleTitle}</summary>
+                <div className="quest-print-lab__duplex-scenario-body">
+                  <ol>{stage2Guidance.singleSteps.map((step) => <li key={step}>{step}</li>)}</ol>
+                  <strong>{stage2Guidance.actualSize}</strong>
+                </div>
+              </details>
+            </section>
+          )}
           </div>
         </section>
 
@@ -412,7 +464,7 @@ export function QuestPrintLab({
       <div className="quest-print-lab__document" ref={documentHostRef}>
         <QuestDocument
           personalization={personalization}
-          pages={SOUND_CASE_001_PAGES}
+          pages={selectedPages}
           assetManifest={SOUND_CASE_001_ASSET_MANIFEST}
         />
       </div>

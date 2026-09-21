@@ -1,4 +1,5 @@
 import type { LocalizedString } from "./types";
+import type { Lang } from "@/i18n";
 import type {
   SoundCardDuplexMode,
   SoundCardFullBackSelection,
@@ -19,6 +20,10 @@ import {
   SOUND_CASE_001_CARD_BOX_DIELINE_ID,
   type SoundCase001CardBoxDielineId,
 } from "./quests/sound-case-001/cardBox";
+import {
+  SOUND_CASE_001_STAGE_2_BOX_DIELINE_ID,
+  SOUND_CASE_001_STAGE_2_CLUE_CARD,
+} from "./quests/sound-case-001/vibratingCards";
 
 type QuestPageDefinitionBase<TType extends string> = {
   id: string;
@@ -78,6 +83,32 @@ export type Stage1CardBoxPageDefinition =
     dielineId: SoundCase001CardBoxDielineId;
   };
 
+export type Stage2VibratingCardsPageDefinition =
+  QuestPageDefinitionBase<"stage-2-vibrating-cards"> & {
+    side: "front";
+    pairId: "stage-2-clue-sheet";
+    duplexMode: SoundCardDuplexMode;
+    locale: Lang;
+    clue: typeof SOUND_CASE_001_STAGE_2_CLUE_CARD;
+  };
+
+export type Stage2ClueBackPageDefinition =
+  QuestPageDefinitionBase<"stage-2-clue-back"> & {
+    side: "back";
+    pairId: "stage-2-clue-sheet";
+    duplexMode: SoundCardDuplexMode;
+    locale: Lang;
+    clue: typeof SOUND_CASE_001_STAGE_2_CLUE_CARD;
+  };
+
+export type Stage2BoxPageDefinition =
+  QuestPageDefinitionBase<"stage-2-box"> & {
+    side: "single";
+    locale: Lang;
+    dielineId: typeof SOUND_CASE_001_STAGE_2_BOX_DIELINE_ID;
+    includesOverflowVibratingCard: boolean;
+  };
+
 /**
  * Discriminated union for printable document definitions.
  *
@@ -88,7 +119,10 @@ export type Stage1CardBoxPageDefinition =
 export type QuestPageDefinition =
   | SoundCardsPageDefinition
   | SoundCardBacksPageDefinition
-  | Stage1CardBoxPageDefinition;
+  | Stage1CardBoxPageDefinition
+  | Stage2VibratingCardsPageDefinition
+  | Stage2ClueBackPageDefinition
+  | Stage2BoxPageDefinition;
 
 export type QuestPageType = QuestPageDefinition["type"];
 
@@ -179,6 +213,50 @@ export const SOUND_CASE_001_PAGES = [
     },
   },
 ] satisfies readonly QuestPageDefinition[];
+
+export function getSoundCase001Stage2Pages(
+  locale: Lang,
+): readonly QuestPageDefinition[] {
+  return [
+    {
+      id: `sound-case-001-stage-2-vibrating-cards-${locale}`,
+      type: "stage-2-vibrating-cards",
+      printOrder: 1,
+      printable: true,
+      side: "front",
+      pairId: "stage-2-clue-sheet",
+      duplexMode: SOUND_CARD_DUPLEX_MODE,
+      locale,
+      clue: SOUND_CASE_001_STAGE_2_CLUE_CARD,
+    },
+    {
+      id: `sound-case-001-stage-2-clue-back-${locale}`,
+      type: "stage-2-clue-back",
+      printOrder: 2,
+      printable: true,
+      side: "back",
+      pairId: "stage-2-clue-sheet",
+      duplexMode: SOUND_CARD_DUPLEX_MODE,
+      locale,
+      clue: SOUND_CASE_001_STAGE_2_CLUE_CARD,
+    },
+    {
+      id: `sound-case-001-stage-2-box-${locale}`,
+      type: "stage-2-box",
+      printOrder: 3,
+      printable: true,
+      side: "single",
+      locale,
+      dielineId: SOUND_CASE_001_STAGE_2_BOX_DIELINE_ID,
+      includesOverflowVibratingCard: false,
+      title: {
+        ru: "Коробочка для дрожащих карточек",
+        en: "Vibrating Cards box",
+        he: "קופסה לקלפים הרועדים",
+      },
+    },
+  ];
+}
 
 export function getPrintableQuestPages(
   pages: readonly QuestPageDefinition[],

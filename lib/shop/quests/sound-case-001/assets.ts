@@ -5,7 +5,7 @@ import type {
   QuestVisualAsset,
 } from "../../questAssets";
 
-export type SoundCase001AssetEntries = {
+type SoundCase001Stage1AssetEntries = {
   readonly "sound-lab-parrot": QuestVisualAsset<"sound-lab-parrot">;
   readonly "unknown-sound-digital-parrot": QuestVisualAsset<"unknown-sound-digital-parrot">;
   readonly "unknown-sound-studio-background": QuestVisualAsset<"unknown-sound-studio-background">;
@@ -25,6 +25,41 @@ export type SoundCase001AssetEntries = {
   readonly "stage-1-card-back": QuestVisualAsset<"stage-1-card-back">;
   readonly "stage-1-unknown-sound-visual": QuestVisualAsset<"stage-1-unknown-sound-visual">;
   readonly "stage-1-unknown-recording": QuestAudioAsset<"stage-1-unknown-recording">;
+};
+
+export type SoundCase001Stage2VibrationCardAssetId =
+  | "stage-2-vibration-card-ru-01-vi"
+  | "stage-2-vibration-card-ru-02-b"
+  | "stage-2-vibration-card-ru-03-ra"
+  | "stage-2-vibration-card-ru-04-tsi"
+  | "stage-2-vibration-card-ru-05-ya"
+  | "stage-2-vibration-card-ru-06-pe"
+  | "stage-2-vibration-card-ru-07-s"
+  | "stage-2-vibration-card-ru-08-ka"
+  | "stage-2-vibration-card-en-a"
+  | "stage-2-vibration-card-en-b"
+  | "stage-2-vibration-card-en-d"
+  | "stage-2-vibration-card-en-n"
+  | "stage-2-vibration-card-en-on"
+  | "stage-2-vibration-card-en-ra"
+  | "stage-2-vibration-card-en-s"
+  | "stage-2-vibration-card-en-ti"
+  | "stage-2-vibration-card-en-vi"
+  | "stage-2-vibration-card-he-01-t"
+  | "stage-2-vibration-card-he-02-nu"
+  | "stage-2-vibration-card-he-03-d"
+  | "stage-2-vibration-card-he-04-ot"
+  | "stage-2-vibration-card-he-05-ba"
+  | "stage-2-vibration-card-he-06-h"
+  | "stage-2-vibration-card-he-07-o"
+  | "stage-2-vibration-card-he-08-l";
+
+export type SoundCase001Stage2VisualAssetId =
+  | SoundCase001Stage2VibrationCardAssetId
+  | "stage-2-parrot";
+
+export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
+  readonly [TId in SoundCase001Stage2VisualAssetId]: QuestVisualAsset<TId>;
 };
 
 export type SoundCase001AssetManifest = QuestAssetManifest<
@@ -54,6 +89,8 @@ const SOUND_CARD_PUBLIC_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-01-sound-crocodile/sound-cards";
 const UNKNOWN_SOUND_PUBLIC_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-01-sound-crocodile/unknown-sound";
+const STAGE_2_PUBLIC_BASE_URL =
+  "https://media.laplapla.com/quests/sound-case-001/stage-02-vibrating-cards";
 
 type SupplementalSoundCardAssetPath =
   | "assets/stage-1-unknown-sound-parrot.webp"
@@ -91,6 +128,11 @@ const unknownSoundAudioSource = (
 ) => ({
   status: "external" as const,
   url: `${UNKNOWN_SOUND_PUBLIC_BASE_URL}/audio/${fileName}`,
+});
+
+const stage2VisualSource = (path: string) => ({
+  status: "external" as const,
+  url: `${STAGE_2_PUBLIC_BASE_URL}/${path}`,
 });
 
 export const SOUND_CASE_001_ASSET_MANIFEST = {
@@ -198,6 +240,110 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
       id: "stage-1-unknown-recording",
       kind: "audio",
       source: unknownSoundAudioSource("unknown-sound-001-master.mp3"),
+    },
+    "stage-2-vibration-card-ru-01-vi": {
+      id: "stage-2-vibration-card-ru-01-vi", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-01-vi.webp"),
+    },
+    "stage-2-vibration-card-ru-02-b": {
+      id: "stage-2-vibration-card-ru-02-b", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-02-b.webp"),
+    },
+    "stage-2-vibration-card-ru-03-ra": {
+      id: "stage-2-vibration-card-ru-03-ra", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-03-ra.webp"),
+    },
+    "stage-2-vibration-card-ru-04-tsi": {
+      id: "stage-2-vibration-card-ru-04-tsi", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-04-tsi.webp"),
+    },
+    "stage-2-vibration-card-ru-05-ya": {
+      id: "stage-2-vibration-card-ru-05-ya", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-05-ya.webp"),
+    },
+    "stage-2-vibration-card-ru-06-pe": {
+      id: "stage-2-vibration-card-ru-06-pe", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-06-pe.webp"),
+    },
+    "stage-2-vibration-card-ru-07-s": {
+      id: "stage-2-vibration-card-ru-07-s", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-07-s.webp"),
+    },
+    "stage-2-vibration-card-ru-08-ka": {
+      id: "stage-2-vibration-card-ru-08-ka", kind: "visual",
+      source: stage2VisualSource("cards/rus/stage-2-vibration-card-08-ka.webp"),
+    },
+    "stage-2-vibration-card-en-a": {
+      id: "stage-2-vibration-card-en-a", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-a.webp"),
+    },
+    "stage-2-vibration-card-en-b": {
+      id: "stage-2-vibration-card-en-b", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-b.webp"),
+    },
+    "stage-2-vibration-card-en-d": {
+      id: "stage-2-vibration-card-en-d", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-d.webp"),
+    },
+    "stage-2-vibration-card-en-n": {
+      id: "stage-2-vibration-card-en-n", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-n.webp"),
+    },
+    "stage-2-vibration-card-en-on": {
+      id: "stage-2-vibration-card-en-on", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-on.webp"),
+    },
+    "stage-2-vibration-card-en-ra": {
+      id: "stage-2-vibration-card-en-ra", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-ra.webp"),
+    },
+    "stage-2-vibration-card-en-s": {
+      id: "stage-2-vibration-card-en-s", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-s.webp"),
+    },
+    "stage-2-vibration-card-en-ti": {
+      id: "stage-2-vibration-card-en-ti", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-ti.webp"),
+    },
+    "stage-2-vibration-card-en-vi": {
+      id: "stage-2-vibration-card-en-vi", kind: "visual",
+      source: stage2VisualSource("cards/eng/stage-2-vibration-card-vi.webp"),
+    },
+    "stage-2-vibration-card-he-01-t": {
+      id: "stage-2-vibration-card-he-01-t", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-01-t.webp"),
+    },
+    "stage-2-vibration-card-he-02-nu": {
+      id: "stage-2-vibration-card-he-02-nu", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-02-nu.webp"),
+    },
+    "stage-2-vibration-card-he-03-d": {
+      id: "stage-2-vibration-card-he-03-d", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-03-d.webp"),
+    },
+    "stage-2-vibration-card-he-04-ot": {
+      id: "stage-2-vibration-card-he-04-ot", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-04-ot.webp"),
+    },
+    "stage-2-vibration-card-he-05-ba": {
+      id: "stage-2-vibration-card-he-05-ba", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-05-ba.webp"),
+    },
+    "stage-2-vibration-card-he-06-h": {
+      id: "stage-2-vibration-card-he-06-h", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-06-h.webp"),
+    },
+    "stage-2-vibration-card-he-07-o": {
+      id: "stage-2-vibration-card-he-07-o", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-07-o.webp"),
+    },
+    "stage-2-vibration-card-he-08-l": {
+      id: "stage-2-vibration-card-he-08-l", kind: "visual",
+      source: stage2VisualSource("cards/he/stage-2-vibration-card-08-l.webp"),
+    },
+    "stage-2-parrot": {
+      id: "stage-2-parrot", kind: "visual",
+      source: stage2VisualSource("assets/parrot.webp"),
     },
   },
 } satisfies SoundCase001AssetManifest;

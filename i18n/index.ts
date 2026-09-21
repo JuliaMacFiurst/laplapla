@@ -1081,6 +1081,44 @@ type DictionaryShape = {
         printNote: string;
         printLabGuidance: string;
       };
+      stage02: {
+        title: string;
+        stageLabel: string;
+        intro: {
+          parrotLabel: string;
+          speech: readonly [string, string, string, string];
+          challenge: string;
+          task: string;
+        };
+        clue: {
+          title: string;
+          backWarning: readonly [string, string, string];
+          cta: string;
+          qrAccessLabel: string;
+        };
+        box: {
+          title: string;
+          rulesHeading: string;
+          rules: readonly [string, string, string, string, string, string, string];
+          warning: string;
+          legendLabel: string;
+          cutLabel: string;
+          foldLabel: string;
+          svgAlt: string;
+          assemblyTitle: string;
+          assemblySteps: readonly [string, string, string, string];
+          printNote: string;
+        };
+        printHelp: {
+          title: string;
+          summary: string;
+          duplexTitle: string;
+          duplexSteps: readonly [string, string, string];
+          singleTitle: string;
+          singleSteps: readonly [string, string];
+          actualSize: string;
+        };
+      };
       unknownSoundCard: {
         title: string;
         numberPrefix: string;
