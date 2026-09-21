@@ -126,8 +126,12 @@
 
 .bedtime-reader {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   width: min(920px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   height: min(94vh, 1040px);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -142,6 +146,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 58px;
   padding: 8px 14px;
   box-sizing: border-box;
@@ -152,13 +158,13 @@
 }
 
 .bedtime-reader-header h2 {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  overflow: hidden;
   font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
   font-size: 1.8rem;
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 
 .bedtime-reader-close,
@@ -183,6 +189,7 @@
 
 .bedtime-reader-page {
   position: relative;
+  min-width: 0;
   min-height: 0;
   background: #0b1121;
 }
@@ -206,7 +213,8 @@
 }
 
 .bedtime-reader-controls span {
-  min-width: min(220px, 48vw);
+  flex: 0 1 220px;
+  min-width: 0;
   text-align: center;
   font-weight: 800;
 }

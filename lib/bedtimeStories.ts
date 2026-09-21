@@ -7,6 +7,7 @@ type BedtimeStoryRow = {
   title: unknown;
   cover_image_url: string | null;
   exported_image_urls: unknown;
+  slides?: unknown;
   created_at: string | null;
 };
 
@@ -19,7 +20,7 @@ export type BedtimeStory = {
   createdAt: string | null;
 };
 
-const FALLBACK_LANGS: Lang[] = ["ru", "en", "he"];
+const TITLE_FALLBACK_LANGS: Lang[] = ["ru", "en", "he"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -39,7 +40,7 @@ function getLocalizedTitle(value: unknown, lang: Lang, slug: string) {
   }
 
   if (isRecord(value)) {
-    for (const candidateLang of [lang, ...FALLBACK_LANGS]) {
+    for (const candidateLang of [lang, ...TITLE_FALLBACK_LANGS]) {
       const candidate = value[candidateLang];
       if (typeof candidate === "string" && candidate.trim()) {
         return candidate.trim();
@@ -50,39 +51,79 @@ function getLocalizedTitle(value: unknown, lang: Lang, slug: string) {
   return humanizeSlug(slug);
 }
 
-function pageNumber(key: string) {
-  const match = key.match(/(\d+)(?!.*\d)/);
-  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+export function isNonRussianUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  return /\/(?:en|he)\//i.test(url);
 }
 
-export function getLocalizedBedtimeStoryPages(value: unknown, lang: Lang) {
-  if (!isRecord(value)) {
-    return { assetLang: lang, pageUrls: [] as string[] };
-  }
+export function getLocalizedBedtimeStoryPages(
+  value: unknown,
+  lang: Lang,
+  legacyFallback?: {
+    slides?: unknown;
+    cover_image_url?: string | null;
+  },
+) {
+  const pageUrls: string[] = [];
 
-  for (const candidateLang of [lang, ...FALLBACK_LANGS]) {
-    const entries = Object.entries(value)
-      .filter(([key, url]) => key.startsWith(`${candidateLang}-`) && typeof url === "string" && url.trim())
-      .sort(([left], [right]) => pageNumber(left) - pageNumber(right));
-
-    if (entries.length > 0) {
-      return {
-        assetLang: candidateLang,
-        pageUrls: entries.map(([, url]) => String(url)),
-      };
+  if (isRecord(value)) {
+    // Read canonical pages in numeric order, starting at 01. Never use another language.
+    for (let page = 1; page <= 999; page += 1) {
+      const key = `${lang}-${String(page).padStart(2, "0")}`;
+      const url = value[key];
+      if (typeof url !== "string" || !url.trim()) break;
+      pageUrls.push(url.trim());
     }
   }
 
-  return { assetLang: lang, pageUrls: [] as string[] };
+  // Legacy fallback strictly for Russian when no exported_image_urls exist for "ru-"
+  if (pageUrls.length === 0 && lang === "ru") {
+    if (Array.isArray(legacyFallback?.slides) && legacyFallback.slides.length > 0) {
+      const legacyUrls: string[] = [];
+      for (let i = 0; i < legacyFallback.slides.length; i++) {
+        const slide = legacyFallback.slides[i];
+        let url = isRecord(slide) && typeof slide.image_url === "string" ? slide.image_url.trim() : "";
+        if (isNonRussianUrl(url)) {
+          url = "";
+        }
+        if (i === 0 && !url && legacyFallback?.cover_image_url && !isNonRussianUrl(legacyFallback.cover_image_url)) {
+          url = legacyFallback.cover_image_url.trim();
+        }
+        if (url) {
+          legacyUrls.push(url);
+        }
+      }
+      if (legacyUrls.length > 0) {
+        pageUrls.push(...legacyUrls);
+      }
+    } else if (legacyFallback?.cover_image_url && !isNonRussianUrl(legacyFallback.cover_image_url)) {
+      pageUrls.push(legacyFallback.cover_image_url.trim());
+    }
+  }
+
+  return { assetLang: lang, pageUrls };
 }
 
-export function getBedtimeStoryPreviewUrl(firstPageUrl: string | undefined, fallback: string | null) {
-  return firstPageUrl || fallback || "";
+export function getBedtimeStoryPreviewUrl(
+  firstPageUrl: string | undefined,
+  fallback: string | null = null,
+  lang: Lang = "ru",
+) {
+  if (firstPageUrl && firstPageUrl.trim()) {
+    return firstPageUrl.trim();
+  }
+  if (lang === "ru" && fallback && fallback.trim() && !isNonRussianUrl(fallback)) {
+    return fallback.trim();
+  }
+  return "";
 }
 
 export function normalizeBedtimeStory(row: BedtimeStoryRow, lang: Lang): BedtimeStory | null {
-  const { pageUrls } = getLocalizedBedtimeStoryPages(row.exported_image_urls, lang);
-  const previewUrl = getBedtimeStoryPreviewUrl(pageUrls[0], row.cover_image_url);
+  const { pageUrls } = getLocalizedBedtimeStoryPages(row.exported_image_urls, lang, {
+    slides: row.slides,
+    cover_image_url: row.cover_image_url,
+  });
+  const previewUrl = getBedtimeStoryPreviewUrl(pageUrls[0], row.cover_image_url, lang);
 
   if (!previewUrl || pageUrls.length === 0) {
     return null;
@@ -102,7 +143,7 @@ export async function loadBedtimeStories(lang: Lang): Promise<BedtimeStory[]> {
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase
     .from("bedtime_stories")
-    .select("id, slug, title, cover_image_url, exported_image_urls, created_at")
+    .select("id, slug, title, cover_image_url, exported_image_urls, slides, created_at")
     .eq("status", "exported")
     .order("created_at", { ascending: false });
 
