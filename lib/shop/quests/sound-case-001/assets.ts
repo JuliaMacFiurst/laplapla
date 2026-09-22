@@ -4,6 +4,7 @@ import type {
   QuestAudioAsset,
   QuestVisualAsset,
 } from "../../questAssets";
+import type { DistractorId } from "./humanEqualizerGame";
 
 type SoundCase001Stage1AssetEntries = {
   readonly "sound-lab-parrot": QuestVisualAsset<"sound-lab-parrot">;
@@ -58,8 +59,12 @@ export type SoundCase001Stage2VisualAssetId =
   | SoundCase001Stage2VibrationCardAssetId
   | "stage-2-parrot";
 
+export type SoundCase001Stage3DistractorAssetId = `stage-3-distractor-${DistractorId}`;
+
 export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
   readonly [TId in SoundCase001Stage2VisualAssetId]: QuestVisualAsset<TId>;
+} & {
+  readonly [TId in SoundCase001Stage3DistractorAssetId]: QuestAudioAsset<TId>;
 };
 
 export type SoundCase001AssetManifest = QuestAssetManifest<
@@ -91,6 +96,30 @@ const UNKNOWN_SOUND_PUBLIC_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-01-sound-crocodile/unknown-sound";
 const STAGE_2_PUBLIC_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-02-vibrating-cards";
+const STAGE_3_AUDIO_BASE_URL =
+  "https://media.laplapla.com/quests/sound-case-001/stage-03-human-equalizer/audio";
+
+export const STAGE_3_DISTRACTOR_FILES = {
+  "cartoon-sneeze": "mixkit-cartoon-sneeze-747.mp3",
+  "clown-horn": "mixkit-clown-horn-at-circus-715.mp3",
+  "squeaky-toy": "mixkit-clown-squeaky-toy-2816.mp3",
+  cow: "mixkit-cow-moo-in-the-barn-1751.mp3",
+  "flute-whistle": "mixkit-flute-toy-whistle-2812.mp3",
+  splat: "mixkit-funny-cartoon-fast-splat-2889.mp3",
+  "metal-smash": "mixkit-heavy-sword-smashes-metal-2795.mp3",
+  "cartoon-laugh": "mixkit-laughing-cartoon-creature-414.mp3",
+  rattle: "mixkit-rattle-toy-shaking-2824.mp3",
+  duck: "mixkit-rubber-duck-squeak-1014.mp3",
+  "rubber-squeak": "mixkit-rubber-squeaking-1009.mp3",
+  trombone: "mixkit-sad-game-over-trombone-471.mp3",
+  "human-sneeze": "mixkit-sick-man-sneeze-2213.mp3",
+  "spinning-whistle": "mixkit-spinning-whistle-toy-2647.mp3",
+} as const satisfies Record<DistractorId, string>;
+
+const stage3DistractorSource = (fileName: typeof STAGE_3_DISTRACTOR_FILES[DistractorId]) => ({
+  status: "external" as const,
+  url: `${STAGE_3_AUDIO_BASE_URL}/${fileName}`,
+});
 
 type SupplementalSoundCardAssetPath =
   | "assets/stage-1-unknown-sound-parrot.webp"
@@ -344,6 +373,62 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "stage-2-parrot": {
       id: "stage-2-parrot", kind: "visual",
       source: stage2VisualSource("assets/parrot.webp"),
+    },
+    "stage-3-distractor-cow": {
+      id: "stage-3-distractor-cow", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES.cow),
+    },
+    "stage-3-distractor-duck": {
+      id: "stage-3-distractor-duck", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES.duck),
+    },
+    "stage-3-distractor-cartoon-sneeze": {
+      id: "stage-3-distractor-cartoon-sneeze", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["cartoon-sneeze"]),
+    },
+    "stage-3-distractor-clown-horn": {
+      id: "stage-3-distractor-clown-horn", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["clown-horn"]),
+    },
+    "stage-3-distractor-squeaky-toy": {
+      id: "stage-3-distractor-squeaky-toy", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["squeaky-toy"]),
+    },
+    "stage-3-distractor-flute-whistle": {
+      id: "stage-3-distractor-flute-whistle", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["flute-whistle"]),
+    },
+    "stage-3-distractor-splat": {
+      id: "stage-3-distractor-splat", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES.splat),
+    },
+    "stage-3-distractor-metal-smash": {
+      id: "stage-3-distractor-metal-smash", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["metal-smash"]),
+    },
+    "stage-3-distractor-cartoon-laugh": {
+      id: "stage-3-distractor-cartoon-laugh", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["cartoon-laugh"]),
+    },
+    "stage-3-distractor-rattle": {
+      id: "stage-3-distractor-rattle", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES.rattle),
+    },
+    "stage-3-distractor-rubber-squeak": {
+      id: "stage-3-distractor-rubber-squeak", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["rubber-squeak"]),
+    },
+    "stage-3-distractor-trombone": {
+      id: "stage-3-distractor-trombone", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES.trombone),
+    },
+    "stage-3-distractor-human-sneeze": {
+      id: "stage-3-distractor-human-sneeze", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["human-sneeze"]),
+    },
+    "stage-3-distractor-spinning-whistle": {
+      id: "stage-3-distractor-spinning-whistle", kind: "audio",
+      source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["spinning-whistle"]),
     },
   },
 } satisfies SoundCase001AssetManifest;

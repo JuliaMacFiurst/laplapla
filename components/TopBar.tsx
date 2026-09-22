@@ -18,6 +18,8 @@ export default function TopBar({ lang }: TopBarProps) {
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
   const isUnknownSoundScene =
     router.pathname === "/quests/sound-case-001/stage-01/unknown-sound";
+  const isDarkSoundCaseScene = isUnknownSoundScene ||
+    router.pathname === "/quests/sound-case-001/stage-03/equalizer";
   const isMobile = useIsMobile();
 
   const [menuHover, setMenuHover] = useState(false);
@@ -64,8 +66,8 @@ export default function TopBar({ lang }: TopBarProps) {
 
   return (
     <div
-      className={`top-bar${isUnknownSoundScene ? " top-bar--unknown-sound" : ""}`}
-      data-quest-header={isUnknownSoundScene ? "unknown-sound" : undefined}
+      className={`top-bar${isDarkSoundCaseScene ? " top-bar--unknown-sound" : ""}`}
+      data-quest-header={isUnknownSoundScene ? "unknown-sound" : isDarkSoundCaseScene ? "sound-case" : undefined}
     >
       {/* Левая/основная зона */}
       {isHome ? (
@@ -141,7 +143,7 @@ export default function TopBar({ lang }: TopBarProps) {
               fontSize: "0.9rem"
             }}
           >
-            {isUnknownSoundScene ? (
+            {isDarkSoundCaseScene ? (
               <span className="top-bar-signin-icon" aria-hidden="true">↪</span>
             ) : null}
             <span className="top-bar-signin-label">
