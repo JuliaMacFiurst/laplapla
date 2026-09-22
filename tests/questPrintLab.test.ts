@@ -35,6 +35,7 @@ describe("internal Quest Print Lab", () => {
     expect(labSource).toContain('import { QuestDocument } from "./QuestDocument"');
     expect(labSource).toContain("pages={selectedPages}");
     expect(labSource).toContain("getSoundCase001Stage2Pages");
+    expect(labSource).toContain("getSoundCase001Stage4Pages");
     expect(labSource).toContain("assetManifest={SOUND_CASE_001_ASSET_MANIFEST}");
     expect(labSource).not.toContain("CaseCoverPage");
     expect(labSource).not.toContain('from "./SoundCardsPage"');
@@ -64,6 +65,22 @@ describe("internal Quest Print Lab", () => {
       expect(html).toContain('data-page-type="stage-2-box"');
     },
   );
+
+  it.each(["ru", "en", "he"] as const)("renders Stage 04 %s in the shared Print Lab", (locale) => {
+    const html = renderToStaticMarkup(createElement(QuestPrintLab, {
+      initialStage: "04",
+      initialPersonalization: { locale, leadName: "Maya", participants: [] },
+    }));
+    expect(html).toContain("STAGE 04");
+    expect(html).toContain("BROKEN RHYTHM");
+    expect(html).toContain('aria-label="Открыть STAGE 04 — Broken Rhythm" aria-pressed="true"');
+    expect(html.match(/data-page-id=/g)).toHaveLength(8);
+    expect(html).not.toContain('data-page-type="stage-4-rules"');
+    expect(html).toContain('data-page-type="stage-4-box-rules"');
+    expect(html).toContain('data-rules-side="front"');
+    expect(html).toContain('data-rules-side="back"');
+    expect(html.match(/data-duplex-side=/g)).toHaveLength(8);
+  });
 
   it("defaults X-Ray to OFF and renders every current printable page", () => {
     const html = renderToStaticMarkup(createElement(QuestPrintLab));

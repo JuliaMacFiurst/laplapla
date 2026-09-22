@@ -3,6 +3,7 @@ import { dictionaries, type Lang } from "@/i18n";
 import {
   SOUND_CASE_001_PAGES,
   getSoundCase001Stage2Pages,
+  getSoundCase001Stage4Pages,
   getPrintableQuestPages,
   type QuestPageDefinition,
   type Stage1CardBoxPageDefinition,
@@ -29,7 +30,7 @@ const DEFAULT_FIXTURE = createQuestPersonalization("ru", {
 
 type QuestPrintLabProps = {
   initialPersonalization?: QuestPersonalization;
-  initialStage?: "01" | "02";
+  initialStage?: "01" | "02" | "04";
 };
 
 export type QuestPrintLabDuplexPair = {
@@ -110,7 +111,7 @@ export function QuestPrintLab({
   initialStage = "01",
 }: QuestPrintLabProps) {
   const [personalization, setPersonalization] = useState(initialPersonalization);
-  const [stage, setStage] = useState<"01" | "02">(initialStage);
+  const [stage, setStage] = useState<"01" | "02" | "04">(initialStage);
   const [xRayEnabled, setXRayEnabled] = useState(false);
   const [printHelpOpen, setPrintHelpOpen] = useState(false);
   const documentHostRef = useRef<HTMLDivElement>(null);
@@ -120,11 +121,12 @@ export function QuestPrintLab({
     dictionaries[personalization.locale].shop.soundCase.cardBox;
   const stage2Guidance =
     dictionaries[personalization.locale].shop.soundCase.stage02.printHelp;
+  const stage4Guidance = dictionaries[personalization.locale].shop.soundCase.stage04.print;
   const [firstPair, secondPair] = SOUND_CASE_001_DUPLEX_PAIRS;
   const cardPageRange = `${firstPair.frontPageNumber}–${secondPair.backPageNumber}`;
-  const selectedPages = stage === "01"
-    ? SOUND_CASE_001_PAGES
-    : getSoundCase001Stage2Pages(personalization.locale);
+  const selectedPages = stage === "01" ? SOUND_CASE_001_PAGES
+    : stage === "02" ? getSoundCase001Stage2Pages(personalization.locale)
+    : getSoundCase001Stage4Pages(personalization.locale);
 
   useEffect(() => {
     const host = documentHostRef.current;
@@ -203,6 +205,15 @@ export function QuestPrintLab({
               <strong>STAGE 02</strong>
               <span>VIBRATING CARDS</span>
             </button>
+            <button
+              type="button"
+              aria-label="Открыть STAGE 04 — Broken Rhythm"
+              aria-pressed={stage === "04"}
+              onClick={() => setStage("04")}
+            >
+              <strong>STAGE 04</strong>
+              <span>BROKEN RHYTHM</span>
+            </button>
           </div>
         </fieldset>
 
@@ -217,7 +228,7 @@ export function QuestPrintLab({
             aria-controls="quest-print-lab-print-help-content"
             onClick={() => setPrintHelpOpen((open) => !open)}
           >
-            <span>{stage === "01" ? printGuidance.printHelpTitle : stage2Guidance.title}</span>
+            <span>{stage === "01" ? printGuidance.printHelpTitle : stage === "02" ? stage2Guidance.title : stage4Guidance.printHelpTitle}</span>
             <span aria-hidden="true">{printHelpOpen ? "▴" : "▾"}</span>
           </button>
           <div
@@ -347,7 +358,7 @@ export function QuestPrintLab({
             <span>{cardBoxGuidance.printNote}</span>
           </aside>
           </section>
-          ) : (
+          ) : stage === "02" ? (
             <section className="quest-print-lab__duplex-help" aria-label={stage2Guidance.title} data-stage-2-print-help="true">
               <p className="quest-print-lab__duplex-result">{stage2Guidance.summary}</p>
               <details className="quest-print-lab__duplex-scenario" data-duplex-scenario="stage-2-duplex" open>
@@ -363,6 +374,15 @@ export function QuestPrintLab({
                   <strong>{stage2Guidance.actualSize}</strong>
                 </div>
               </details>
+            </section>
+          ) : (
+            <section className="quest-print-lab__duplex-help" aria-label={stage4Guidance.printHelpTitle} data-stage-4-print-help="true">
+              <p className="quest-print-lab__duplex-result">{stage4Guidance.printHelpSummary}</p>
+              <aside className="quest-print-lab__single-sided-sheet" data-print-mode="mixed">
+                <strong>A4 · 100% / Actual Size</strong>
+                <span>Pages 1/2, 3/4, 5/6, 7/8 · Flip on long edge</span>
+                <span>8 PDF pages → 4 physical A4 sheets</span>
+              </aside>
             </section>
           )}
           </div>

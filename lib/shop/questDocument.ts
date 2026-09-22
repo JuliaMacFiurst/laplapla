@@ -24,6 +24,7 @@ import {
   SOUND_CASE_001_STAGE_2_BOX_DIELINE_ID,
   SOUND_CASE_001_STAGE_2_CLUE_CARD,
 } from "./quests/sound-case-001/vibratingCards";
+import { STAGE_4_DUPLEX_MODE } from "./quests/sound-case-001/brokenRhythm";
 
 type QuestPageDefinitionBase<TType extends string> = {
   id: string;
@@ -109,6 +110,22 @@ export type Stage2BoxPageDefinition =
     includesOverflowVibratingCard: boolean;
   };
 
+export type Stage4CardsPageDefinition = QuestPageDefinitionBase<"stage-4-cards"> & {
+  side: "front" | "back";
+  locale: Lang;
+  sheetNumber: 1 | 2 | 3;
+  sheetCount: 3;
+  pairId: `stage-4-cards-sheet-${1 | 2 | 3}`;
+  duplexMode: typeof STAGE_4_DUPLEX_MODE;
+};
+
+export type Stage4BoxRulesPageDefinition = QuestPageDefinitionBase<"stage-4-box-rules"> & {
+  side: "front" | "back";
+  locale: Lang;
+  pairId: "stage-4-box-rules-sheet";
+  duplexMode: typeof STAGE_4_DUPLEX_MODE;
+};
+
 /**
  * Discriminated union for printable document definitions.
  *
@@ -122,7 +139,9 @@ export type QuestPageDefinition =
   | Stage1CardBoxPageDefinition
   | Stage2VibratingCardsPageDefinition
   | Stage2ClueBackPageDefinition
-  | Stage2BoxPageDefinition;
+  | Stage2BoxPageDefinition
+  | Stage4CardsPageDefinition
+  | Stage4BoxRulesPageDefinition;
 
 export type QuestPageType = QuestPageDefinition["type"];
 
@@ -256,6 +275,55 @@ export function getSoundCase001Stage2Pages(
       },
     },
   ];
+}
+
+export function getSoundCase001Stage4Pages(locale: Lang): readonly QuestPageDefinition[] {
+  const pages: QuestPageDefinition[] = [];
+  for (const sheetNumber of [1, 2, 3] as const) {
+    pages.push({
+      id: `sound-case-001-stage-4-cards-${sheetNumber}-front-${locale}`,
+      type: "stage-4-cards",
+      printOrder: sheetNumber * 2 - 1,
+      printable: true,
+      side: "front",
+      locale,
+      sheetNumber,
+      sheetCount: 3,
+      pairId: `stage-4-cards-sheet-${sheetNumber}`,
+      duplexMode: STAGE_4_DUPLEX_MODE,
+    }, {
+      id: `sound-case-001-stage-4-cards-${sheetNumber}-back-${locale}`,
+      type: "stage-4-cards",
+      printOrder: sheetNumber * 2,
+      printable: true,
+      side: "back",
+      locale,
+      sheetNumber,
+      sheetCount: 3,
+      pairId: `stage-4-cards-sheet-${sheetNumber}`,
+      duplexMode: STAGE_4_DUPLEX_MODE,
+    });
+  }
+  pages.push({
+    id: `sound-case-001-stage-4-box-rules-front-${locale}`,
+    type: "stage-4-box-rules",
+    printOrder: 7,
+    printable: true,
+    side: "front",
+    locale,
+    pairId: "stage-4-box-rules-sheet",
+    duplexMode: STAGE_4_DUPLEX_MODE,
+  }, {
+    id: `sound-case-001-stage-4-box-rules-back-${locale}`,
+    type: "stage-4-box-rules",
+    printOrder: 8,
+    printable: true,
+    side: "back",
+    locale,
+    pairId: "stage-4-box-rules-sheet",
+    duplexMode: STAGE_4_DUPLEX_MODE,
+  });
+  return pages;
 }
 
 export function getPrintableQuestPages(

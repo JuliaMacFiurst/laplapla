@@ -3583,3 +3583,125 @@
     -webkit-print-color-adjust: exact;
   }
 }
+
+/* Sound Case #001 · Stage 04 · Broken Rhythm */
+.quest-stage-4-cards-sheet,
+.quest-stage-4-box-rules-sheet {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: #fff;
+  color: #17212a;
+  box-sizing: border-box;
+  font-family: var(--font-nunito, "Nunito", system-ui, sans-serif);
+}
+.quest-stage-4-cards-sheet > header,
+.quest-stage-4-cards-sheet > footer,
+.quest-stage-4-box-rules-sheet > header,
+.quest-stage-4-box-rules-sheet > footer { position: absolute; z-index: 12; inset-inline: 5mm; color: #60737a; font-size: 7pt; font-weight: 900; letter-spacing: .06em; text-align: center; }
+.quest-stage-4-cards-sheet > header { top: 7mm; }
+.quest-stage-4-cards-sheet > footer { bottom: 7mm; }
+.quest-stage-4-box-rules-sheet > header { top: 6mm; }
+.quest-stage-4-box-rules-sheet > footer { bottom: 6mm; }
+.quest-stage-4-cut-object { position: absolute; box-sizing: border-box; }
+.quest-stage-4-cut-mark { position: absolute; z-index: 4; width: 3mm; height: 3mm; pointer-events: none; }
+.quest-stage-4-cut-mark::before,
+.quest-stage-4-cut-mark::after { content: ""; position: absolute; background: #111; }
+.quest-stage-4-cut-mark::before { width: 3mm; height: .2mm; }
+.quest-stage-4-cut-mark::after { width: .2mm; height: 3mm; }
+.quest-stage-4-cut-mark--tl { top: -1.6mm; left: -1.6mm; }
+.quest-stage-4-cut-mark--tr { top: -1.6mm; right: -1.6mm; transform: rotate(90deg); }
+.quest-stage-4-cut-mark--br { right: -1.6mm; bottom: -1.6mm; transform: rotate(180deg); }
+.quest-stage-4-cut-mark--bl { left: -1.6mm; bottom: -1.6mm; transform: rotate(270deg); }
+.quest-stage-4-card { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; border: 1.2mm solid #1f3440; border-radius: 4mm; box-sizing: border-box; background: #fff; box-shadow: inset 0 0 0 1.4mm var(--stage-4-level-color), inset 0 0 0 2mm #fff; }
+.quest-stage-4-card::before { content: ""; position: absolute; inset: 2.7mm; z-index: 0; border: .35mm dashed color-mix(in srgb, var(--stage-4-level-color) 65%, #263944); border-radius: 2.3mm; pointer-events: none; }
+.quest-stage-4-card--face { padding: 3.4mm 4.4mm; }
+.quest-stage-4-card--face header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 4mm; color: #263944; font-size: 8.5pt; font-weight: 950; }
+.quest-stage-4-card--face header > bdi { color: var(--stage-4-level-color); letter-spacing: .08em; }
+.quest-stage-4-card--face header > strong { padding: .8mm 2.2mm; border-radius: 99mm; background: var(--stage-4-level-color); color: #fff; }
+.quest-stage-4-card__wave { position: absolute; z-index: 0; width: 19mm; height: 7mm; opacity: .16; background: repeating-linear-gradient(90deg, var(--stage-4-level-color) 0 1.2mm, transparent 1.2mm 3mm); transform: skewY(-13deg); }
+.quest-stage-4-card__wave--top { top: 0; left: 28mm; }
+.quest-stage-4-card__wave--bottom { right: 4mm; bottom: 1mm; transform: skewY(13deg); }
+.quest-stage-4-rhythm { display: flex; direction: ltr; flex-flow: row nowrap; align-items: center; justify-content: center; gap: 1.5mm; min-width: 0; }
+.quest-stage-4-card--face > .quest-stage-4-rhythm { position: relative; z-index: 2; flex: 1; }
+.quest-stage-4-rhythm__gesture { display: grid; place-items: center; flex: 0 1 13mm; width: 13mm; min-width: 7mm; height: 26mm; padding: .7mm; border: .35mm solid color-mix(in srgb, var(--stage-4-level-color) 40%, #fff); border-radius: 3mm; background: color-mix(in srgb, var(--stage-4-level-color) 8%, white); box-sizing: border-box; }
+.quest-stage-4-rhythm__gesture img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.quest-stage-4-rhythm__gesture--pause { border: .6mm dashed var(--stage-4-level-color); background: #fff; }
+.quest-stage-4-card__parrot-mode { position: absolute; z-index: 3; bottom: 2.4mm; inset-inline-start: 5mm; color: #6b4e9d; font-size: 7pt; font-weight: 950; }
+.quest-stage-4-card--has-qr > .quest-stage-4-rhythm { position: absolute; top: 15mm; left: 4mm; width: 56mm; height: 28mm; padding-left: 1mm; gap: .65mm; box-sizing: border-box; }
+.quest-stage-4-card--has-qr .quest-stage-4-rhythm__gesture { flex-basis: 7mm; min-width: 6.4mm; height: 22mm; padding: .3mm; }
+.quest-stage-4-card__qr { position: absolute; z-index: 5; right: 3.5mm; bottom: 3.5mm; display: grid; justify-items: center; width: 22mm; padding: .8mm; border: .4mm solid #243a46; border-radius: 2mm; background: #fff; color: #283942; font-size: 5pt; font-weight: 950; line-height: 1; box-sizing: border-box; }
+.quest-stage-4-card__qr img { display: block; width: 20.5mm; height: 20.5mm; }
+.quest-stage-4-card--back { align-items: center; justify-content: center; padding: 3mm; background: color-mix(in srgb, var(--stage-4-level-color) 26%, white); text-align: center; }
+.quest-stage-4-card--back::after { content: ""; position: absolute; inset: 4mm; border: .8mm solid rgba(255,255,255,.78); border-radius: 2mm; box-shadow: 0 0 0 .35mm rgba(31,52,64,.35); }
+.quest-stage-4-card__back-pattern { position: absolute; inset: 0; opacity: .16; background: repeating-radial-gradient(circle at 15% 50%, transparent 0 3mm, #243a46 3.2mm 3.7mm, transparent 4mm 7mm); }
+.quest-stage-4-card__logo { position: absolute; z-index: 2; top: 50%; left: 15%; width: 18mm; height: 18mm; object-fit: contain; opacity: .62; filter: saturate(.72) contrast(.92); transform: translate(-50%, -50%); }
+.quest-stage-4-card__back-kind { position: relative; z-index: 3; color: #263842; font-size: 10pt; font-weight: 950; letter-spacing: .08em; }
+.quest-stage-4-card--back > strong { position: relative; z-index: 3; margin-top: 1mm; font-size: 8pt; }
+.quest-stage-4-card__number { position: relative; z-index: 3; color: var(--stage-4-level-color); font-size: 33pt; font-weight: 1000; line-height: .82; text-shadow: 0 .5mm 0 #fff; }
+.quest-stage-4-card--back.quest-stage-4-card--secret .quest-stage-4-card__back-kind { transform: translateX(-8mm); }
+.quest-stage-4-card--back.quest-stage-4-card--secret > strong { transform: translateX(-8mm); }
+.quest-stage-4-card--back.quest-stage-4-card--secret .quest-stage-4-card__number { transform: translateX(-8mm); }
+.quest-stage-4-card__viewing { position: absolute; z-index: 4; inset-inline-end: 5mm; bottom: 6mm; display: grid; grid-template-columns: 12mm 12mm; align-items: center; width: 28mm; font-size: 6.5pt; font-weight: 950; }
+.quest-stage-4-card__viewing p { grid-column: 1 / -1; margin: .6mm 0 0; font-size: 5.4pt; line-height: 1.02; }
+.quest-stage-4-card__eye { display: block; width: 11mm; height: 6.5mm; overflow: visible; }
+.quest-stage-4-card__eye path { fill: #fff; stroke: #263842; stroke-width: 3; }
+.quest-stage-4-card__eye circle { fill: var(--stage-4-level-color); stroke: #263842; stroke-width: 2; }
+.quest-stage-4-card__answer-mark { position: absolute; z-index: 4; right: 6mm; bottom: 6mm; display: flex; align-items: center; gap: 1.2mm; height: 12mm; }
+.quest-stage-4-card__answer-mark i { display: block; width: 1.4mm; border-radius: 2mm; background: var(--stage-4-level-color); }
+.quest-stage-4-card__answer-mark i:nth-child(1), .quest-stage-4-card__answer-mark i:nth-child(5) { height: 4mm; }
+.quest-stage-4-card__answer-mark i:nth-child(2), .quest-stage-4-card__answer-mark i:nth-child(4) { height: 8mm; }
+.quest-stage-4-card__answer-mark i:nth-child(3) { height: 12mm; }
+.quest-stage-4-card__lab { position: absolute; z-index: 4; bottom: 3mm; color: #425962; font-size: 6.5pt; font-weight: 950; }
+.quest-stage-4-card__final-marker { position: absolute; z-index: 4; top: 3.2mm; right: 4mm; padding: .7mm 1.4mm; border-radius: 2mm; background: #6b4e9d; color: #fff; font-size: 5.5pt; font-weight: 950; }
+
+.quest-stage-4-rules-cut-object { position: absolute; z-index: 10; box-sizing: border-box; }
+.quest-stage-4-rules-card { position: relative; width: 100%; height: 100%; overflow: hidden; border: 1.2mm solid #243a46; border-radius: 4mm; box-sizing: border-box; background: #fffdf6; box-shadow: inset 0 0 0 1.1mm #f0a73c, inset 0 0 0 1.7mm #fff; }
+.quest-stage-4-rules-card--front { padding: 3.6mm 4.5mm 3mm; }
+.quest-stage-4-rules-card--front header { padding-inline-end: 2mm; border-bottom: .5mm solid #e5b766; }
+.quest-stage-4-rules-card--front header bdi { color: #7c5a25; font-size: 5.4pt; font-weight: 950; letter-spacing: .06em; }
+.quest-stage-4-rules-card h1 { margin: .5mm 0 0; font-size: 11pt; line-height: 1; }
+.quest-stage-4-rules-card h2 { margin: .7mm 0; color: #9a4f1d; font-size: 7.5pt; }
+.quest-stage-4-rules-card--front ol { columns: 2; column-gap: 5mm; margin: 1.5mm 0 0; padding-inline-start: 5mm; font-size: 6.5pt; font-weight: 750; line-height: 1.17; }
+.quest-stage-4-rules-card--front li { break-inside: avoid; margin-bottom: 1.2mm; }
+.quest-stage-4-rules-card--back { padding: 3.4mm 4.5mm; }
+.quest-stage-4-rules-card--back > h2 { margin: 0 0 1mm; font-size: 9pt; text-align: center; }
+.quest-stage-4-rules-card__legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1mm; }
+.quest-stage-4-rules-card__legend figure { display: grid; justify-items: center; margin: 0; color: #263842; font-size: 5.8pt; font-weight: 950; text-align: center; }
+.quest-stage-4-rules-card__legend img { width: 15mm; height: 14mm; object-fit: contain; }
+.quest-stage-4-rules-card__snap { margin: 1.5mm 0; font-size: 7pt; font-weight: 850; text-align: center; }
+.quest-stage-4-rules-card--back aside { display: grid; grid-template-columns: 18mm 1fr; gap: 2mm; align-items: center; padding: 2mm 2.5mm; border-radius: 2mm; background: #eee7f8; color: #3f315a; }
+.quest-stage-4-rules-card--back aside strong { font-size: 8pt; }
+.quest-stage-4-rules-card--back aside span { font-size: 7pt; font-weight: 800; line-height: 1.15; }
+
+.quest-stage-4-box-dieline { position: absolute; z-index: 2; }
+.quest-stage-4-box-dieline__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.quest-stage-4-box-dieline__lines .cut { fill: rgba(249,244,230,.45); stroke: #111; stroke-width: .32; vector-effect: non-scaling-stroke; }
+.quest-stage-4-box-dieline__lines .fold { fill: none; stroke: #49717d; stroke-width: .25; stroke-dasharray: 2 1.4; vector-effect: non-scaling-stroke; }
+.quest-stage-4-box-panel { position: absolute; z-index: 3; overflow: hidden; box-sizing: border-box; }
+.quest-stage-4-box-panel--front { left: 30mm; top: 27mm; width: 61mm; height: 93mm; background: linear-gradient(145deg,#193747,#315f6c); color: #fff; }
+.quest-stage-4-box-panel--back { left: 30mm; top: 135mm; width: 61mm; height: 93mm; background: #f3ead7; color: #18333f; }
+.quest-stage-4-box-panel--front > div, .quest-stage-4-box-panel--back > div { position: absolute; top: 50%; left: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 87mm; height: 55mm; padding: 3mm; border: .6mm solid rgba(255,255,255,.48); border-radius: 4mm; box-sizing: border-box; text-align: center; transform: translate(-50%,-50%) rotate(90deg); }
+.quest-stage-4-box-panel--back > div { border-color: #c59247; }
+.quest-stage-4-box-panel__logo { width: 25mm; height: 9mm; object-fit: contain; filter: drop-shadow(0 .5mm .3mm rgba(0,0,0,.15)); }
+.quest-stage-4-box-panel--front bdi { margin-top: .5mm; font-size: 5.4pt; font-weight: 950; letter-spacing: .04em; }
+.quest-stage-4-box-panel--front h2 { margin: 1.2mm 0 .8mm; color: #ffd57a; font-size: 14pt; line-height: 1; }
+.quest-stage-4-box-panel--front strong { font-size: 7pt; letter-spacing: .08em; }
+.quest-stage-4-box-panel__gestures { display: flex; gap: 2mm; height: 12mm; margin: .5mm 0; }
+.quest-stage-4-box-panel__gestures img { width: 12mm; height: 12mm; object-fit: contain; border-radius: 2mm; background: rgba(255,255,255,.86); }
+.quest-stage-4-box-panel--back bdi { font-size: 5.5pt; font-weight: 950; }
+.quest-stage-4-box-panel--back h3 { margin: 1.4mm 0; color: #9a4f1d; font-size: 10pt; }
+.quest-stage-4-box-panel--back strong { font-size: 8.5pt; line-height: 1.15; }
+.quest-stage-4-box-panel--back p { margin: 1.6mm 0 0; font-size: 6pt; font-weight: 900; }
+.quest-stage-4-box-panel--side-a, .quest-stage-4-box-panel--side-b { left: 30mm; display: grid; place-items: center; width: 61mm; height: 15mm; background: #e0a23f; color: #17313d; font-size: 6.5pt; font-weight: 950; letter-spacing: .06em; }
+.quest-stage-4-box-panel--side-a { top: 12mm; }
+.quest-stage-4-box-panel--side-b { top: 120mm; }
+.quest-stage-4-box-dieline__glue { position: absolute; z-index: 4; left: 30mm; top: 0; display: grid; place-items: center; width: 61mm; height: 12mm; color: #65747b; font-size: 5pt; font-weight: 900; transform: rotate(180deg); }
+
+@media print {
+  .quest-stage-4-card,
+  .quest-stage-4-rules-card,
+  .quest-stage-4-box-dieline,
+  .quest-stage-4-box-panel { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

@@ -63,11 +63,26 @@ export type SoundCase001Stage2VisualAssetId =
   | "stage-2-sand-bag";
 
 export type SoundCase001Stage3DistractorAssetId = `stage-3-distractor-${DistractorId}`;
+export type SoundCase001Stage4GestureAssetId =
+  | "stage-4-gesture-clap"
+  | "stage-4-gesture-snap"
+  | "stage-4-gesture-knee-pat"
+  | "stage-4-gesture-pause";
+
+export type SoundCase001Stage4ExperimentAssetId =
+  | "stage-4-clap-together"
+  | "stage-4-clap-out-of-sync";
+
+export type SoundCase001Stage4VisualAssetId =
+  | SoundCase001Stage4GestureAssetId
+  | SoundCase001Stage4ExperimentAssetId;
 
 export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
   readonly [TId in SoundCase001Stage2VisualAssetId]: QuestVisualAsset<TId>;
 } & {
   readonly [TId in SoundCase001Stage3DistractorAssetId]: QuestAudioAsset<TId>;
+} & {
+  readonly [TId in SoundCase001Stage4VisualAssetId]: QuestVisualAsset<TId>;
 };
 
 export type SoundCase001AssetManifest = QuestAssetManifest<
@@ -101,6 +116,8 @@ const STAGE_2_PUBLIC_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-02-vibrating-cards";
 const STAGE_3_AUDIO_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-03-human-equalizer/audio";
+const STAGE_4_ASSET_BASE_URL =
+  "https://media.laplapla.com/quests/sound-case-001/stage-04-broken-rhythm/assets";
 
 export const STAGE_3_DISTRACTOR_FILES = {
   "cartoon-sneeze": "mixkit-cartoon-sneeze-747.mp3",
@@ -165,6 +182,11 @@ const unknownSoundAudioSource = (
 const stage2VisualSource = (path: string) => ({
   status: "external" as const,
   url: `${STAGE_2_PUBLIC_BASE_URL}/${path}`,
+});
+
+const stage4VisualSource = (fileName: string) => ({
+  status: "external" as const,
+  url: `${STAGE_4_ASSET_BASE_URL}/${fileName}`,
 });
 
 export const SOUND_CASE_001_ASSET_MANIFEST = {
@@ -444,6 +466,30 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "stage-3-distractor-spinning-whistle": {
       id: "stage-3-distractor-spinning-whistle", kind: "audio",
       source: stage3DistractorSource(STAGE_3_DISTRACTOR_FILES["spinning-whistle"]),
+    },
+    "stage-4-gesture-clap": {
+      id: "stage-4-gesture-clap", kind: "visual",
+      source: stage4VisualSource("stage-4-beat-clap.webp"),
+    },
+    "stage-4-gesture-snap": {
+      id: "stage-4-gesture-snap", kind: "visual",
+      source: stage4VisualSource("stage-4-beat-finger-snap.webp"),
+    },
+    "stage-4-gesture-knee-pat": {
+      id: "stage-4-gesture-knee-pat", kind: "visual",
+      source: stage4VisualSource("stage-4-beat-knee-pat.webp"),
+    },
+    "stage-4-gesture-pause": {
+      id: "stage-4-gesture-pause", kind: "visual",
+      source: stage4VisualSource("stage-4-beat-pause.webp"),
+    },
+    "stage-4-clap-together": {
+      id: "stage-4-clap-together", kind: "visual",
+      source: stage4VisualSource("stage-4-clap-together.webp"),
+    },
+    "stage-4-clap-out-of-sync": {
+      id: "stage-4-clap-out-of-sync", kind: "visual",
+      source: stage4VisualSource("stage-4-clap-out-of-sync.webp"),
     },
   },
 } satisfies SoundCase001AssetManifest;

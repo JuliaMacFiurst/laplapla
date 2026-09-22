@@ -21,6 +21,7 @@ import {
 import {
   getStage2FrontCards,
 } from "@/lib/shop/quests/sound-case-001/vibratingCards";
+import { Stage4BoxRulesPage, Stage4CardsPage, type Stage4GestureUrls } from "./Stage4PrintablePages";
 
 export type QuestPageRenderContext = {
   personalization: QuestPersonalization;
@@ -120,6 +121,24 @@ const questPageRenderers: QuestPageRendererRegistry = {
         parrotUrl={requireQuestAssetUrl(context.assetManifest.assets["stage-2-parrot"])}
       />
     );
+  },
+  "stage-4-cards": ({ definition, context }) => {
+    const gestureUrls: Stage4GestureUrls = {
+      clap: requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-clap"]),
+      snap: requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-snap"]),
+      "knee-pat": requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-knee-pat"]),
+      pause: requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-pause"]),
+    };
+    return <Stage4CardsPage locale={definition.locale} sheetNumber={definition.sheetNumber} side={definition.side} gestureUrls={gestureUrls} />;
+  },
+  "stage-4-box-rules": ({ definition, context }) => {
+    const gestureUrls: Stage4GestureUrls = {
+      clap: requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-clap"]),
+      snap: requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-snap"]),
+      "knee-pat": requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-knee-pat"]),
+      pause: requireQuestAssetUrl(context.assetManifest.assets["stage-4-gesture-pause"]),
+    };
+    return <Stage4BoxRulesPage locale={definition.locale} side={definition.side} gestureUrls={gestureUrls} />;
   },
 };
 

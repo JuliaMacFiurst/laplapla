@@ -119,6 +119,8 @@ describe("Sound Case document configuration", () => {
       | "stage-2-vibrating-cards"
       | "stage-2-clue-back"
       | "stage-2-box"
+      | "stage-4-cards"
+      | "stage-4-box-rules"
     >();
 
     const definition = SOUND_CASE_001_PAGES[0];
@@ -392,7 +394,7 @@ describe("Sound Case asset manifest", () => {
     >();
 
     expect(SOUND_CASE_001_ASSET_MANIFEST.questId).toBe("sound-case-001");
-    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(62);
+    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(68);
     expect(SOUND_CASE_001_ASSET_MANIFEST.assets).not.toHaveProperty(
       "stage-1-sound-card-illustration",
     );
