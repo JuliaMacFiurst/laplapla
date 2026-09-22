@@ -57,7 +57,10 @@ export type SoundCase001Stage2VibrationCardAssetId =
 
 export type SoundCase001Stage2VisualAssetId =
   | SoundCase001Stage2VibrationCardAssetId
-  | "stage-2-parrot";
+  | "stage-2-parrot"
+  | "stage-2-digital-background"
+  | "stage-2-digital-parrot-2"
+  | "stage-2-sand-bag";
 
 export type SoundCase001Stage3DistractorAssetId = `stage-3-distractor-${DistractorId}`;
 
@@ -373,6 +376,18 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "stage-2-parrot": {
       id: "stage-2-parrot", kind: "visual",
       source: stage2VisualSource("assets/parrot.webp"),
+    },
+    "stage-2-digital-background": {
+      id: "stage-2-digital-background", kind: "visual",
+      source: stage2VisualSource("assets/stage-2-clue-sand-studio-background.webp"),
+    },
+    "stage-2-digital-parrot-2": {
+      id: "stage-2-digital-parrot-2", kind: "visual",
+      source: stage2VisualSource("assets/parrot2.webp"),
+    },
+    "stage-2-sand-bag": {
+      id: "stage-2-sand-bag", kind: "visual",
+      source: stage2VisualSource("assets/sand.webp"),
     },
     "stage-3-distractor-cow": {
       id: "stage-3-distractor-cow", kind: "audio",

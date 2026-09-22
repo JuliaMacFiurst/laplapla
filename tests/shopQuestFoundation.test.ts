@@ -392,7 +392,7 @@ describe("Sound Case asset manifest", () => {
     >();
 
     expect(SOUND_CASE_001_ASSET_MANIFEST.questId).toBe("sound-case-001");
-    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(59);
+    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(62);
     expect(SOUND_CASE_001_ASSET_MANIFEST.assets).not.toHaveProperty(
       "stage-1-sound-card-illustration",
     );

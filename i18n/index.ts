@@ -1173,6 +1173,18 @@ type DictionaryShape = {
         helpLines: readonly [string, string];
         helpClose: string;
       };
+      stage02ClueScene: {
+        pageTitle: string;
+        metaDescription: string;
+        stageLabel: string;
+        heading: string;
+        parrotLabel: string;
+        speech: readonly string[];
+        equalizerAction: string;
+        adultBonusTitle: string;
+        adultBonusQuestion: string;
+        adultBonusExplanation: string;
+      };
       humanEqualizer: {
         pageTitle: string;
         metaDescription: string;
