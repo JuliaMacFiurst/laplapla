@@ -25,6 +25,7 @@ import {
   SOUND_CASE_001_STAGE_2_CLUE_CARD,
 } from "./quests/sound-case-001/vibratingCards";
 import { STAGE_4_DUPLEX_MODE } from "./quests/sound-case-001/brokenRhythm";
+import { STAGE_5_DUPLEX_MODE } from "./quests/sound-case-001/scatteredSand";
 
 type QuestPageDefinitionBase<TType extends string> = {
   id: string;
@@ -125,6 +126,10 @@ export type Stage4BoxRulesPageDefinition = QuestPageDefinitionBase<"stage-4-box-
   pairId: "stage-4-box-rules-sheet";
   duplexMode: typeof STAGE_4_DUPLEX_MODE;
 };
+export type Stage5CardsPageDefinition = QuestPageDefinitionBase<"stage-5-cards"> & {
+  side: "front" | "back"; locale: Lang; pairId: "stage-5-cards-sheet"; duplexMode: typeof STAGE_5_DUPLEX_MODE;
+};
+export type Stage5BoxPageDefinition = QuestPageDefinitionBase<"stage-5-box"> & { locale: Lang };
 
 /**
  * Discriminated union for printable document definitions.
@@ -141,7 +146,9 @@ export type QuestPageDefinition =
   | Stage2ClueBackPageDefinition
   | Stage2BoxPageDefinition
   | Stage4CardsPageDefinition
-  | Stage4BoxRulesPageDefinition;
+  | Stage4BoxRulesPageDefinition
+  | Stage5CardsPageDefinition
+  | Stage5BoxPageDefinition;
 
 export type QuestPageType = QuestPageDefinition["type"];
 
@@ -323,6 +330,21 @@ export function getSoundCase001Stage4Pages(locale: Lang): readonly QuestPageDefi
     pairId: "stage-4-box-rules-sheet",
     duplexMode: STAGE_4_DUPLEX_MODE,
   });
+  return pages;
+}
+
+export function getSoundCase001Stage5Pages(locale: Lang): readonly QuestPageDefinition[] {
+  const pages: QuestPageDefinition[] = ["front", "back"].map((side, index) => ({
+    id: `sound-case-001-stage-5-cards-${side}-${locale}`,
+    type: "stage-5-cards" as const,
+    printOrder: index + 1,
+    printable: true,
+    side: side as "front" | "back",
+    locale,
+    pairId: "stage-5-cards-sheet" as const,
+    duplexMode: STAGE_5_DUPLEX_MODE,
+  }));
+  pages.push({ id: `sound-case-001-stage-5-box-${locale}`, type: "stage-5-box", printOrder: 3, printable: true, locale });
   return pages;
 }
 

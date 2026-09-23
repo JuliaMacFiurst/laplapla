@@ -4,6 +4,7 @@ import {
   SOUND_CASE_001_PAGES,
   getSoundCase001Stage2Pages,
   getSoundCase001Stage4Pages,
+  getSoundCase001Stage5Pages,
   getPrintableQuestPages,
   type QuestPageDefinition,
   type Stage1CardBoxPageDefinition,
@@ -30,7 +31,7 @@ const DEFAULT_FIXTURE = createQuestPersonalization("ru", {
 
 type QuestPrintLabProps = {
   initialPersonalization?: QuestPersonalization;
-  initialStage?: "01" | "02" | "04";
+  initialStage?: "01" | "02" | "04" | "05";
 };
 
 export type QuestPrintLabDuplexPair = {
@@ -111,7 +112,7 @@ export function QuestPrintLab({
   initialStage = "01",
 }: QuestPrintLabProps) {
   const [personalization, setPersonalization] = useState(initialPersonalization);
-  const [stage, setStage] = useState<"01" | "02" | "04">(initialStage);
+  const [stage, setStage] = useState<"01" | "02" | "04" | "05">(initialStage);
   const [xRayEnabled, setXRayEnabled] = useState(false);
   const [printHelpOpen, setPrintHelpOpen] = useState(false);
   const documentHostRef = useRef<HTMLDivElement>(null);
@@ -122,11 +123,13 @@ export function QuestPrintLab({
   const stage2Guidance =
     dictionaries[personalization.locale].shop.soundCase.stage02.printHelp;
   const stage4Guidance = dictionaries[personalization.locale].shop.soundCase.stage04.print;
+  const stage5Guidance = dictionaries[personalization.locale].shop.soundCase.stage05.print;
   const [firstPair, secondPair] = SOUND_CASE_001_DUPLEX_PAIRS;
   const cardPageRange = `${firstPair.frontPageNumber}–${secondPair.backPageNumber}`;
   const selectedPages = stage === "01" ? SOUND_CASE_001_PAGES
     : stage === "02" ? getSoundCase001Stage2Pages(personalization.locale)
-    : getSoundCase001Stage4Pages(personalization.locale);
+    : stage === "04" ? getSoundCase001Stage4Pages(personalization.locale)
+    : getSoundCase001Stage5Pages(personalization.locale);
 
   useEffect(() => {
     const host = documentHostRef.current;
@@ -214,6 +217,7 @@ export function QuestPrintLab({
               <strong>STAGE 04</strong>
               <span>BROKEN RHYTHM</span>
             </button>
+            <button type="button" aria-label="Открыть STAGE 05 — Scattered Sand" aria-pressed={stage === "05"} onClick={() => setStage("05")}><strong>STAGE 05</strong><span>SCATTERED SAND</span></button>
           </div>
         </fieldset>
 
@@ -228,7 +232,7 @@ export function QuestPrintLab({
             aria-controls="quest-print-lab-print-help-content"
             onClick={() => setPrintHelpOpen((open) => !open)}
           >
-            <span>{stage === "01" ? printGuidance.printHelpTitle : stage === "02" ? stage2Guidance.title : stage4Guidance.printHelpTitle}</span>
+            <span>{stage === "01" ? printGuidance.printHelpTitle : stage === "02" ? stage2Guidance.title : stage === "04" ? stage4Guidance.printHelpTitle : stage5Guidance.printHelpTitle}</span>
             <span aria-hidden="true">{printHelpOpen ? "▴" : "▾"}</span>
           </button>
           <div
@@ -375,7 +379,7 @@ export function QuestPrintLab({
                 </div>
               </details>
             </section>
-          ) : (
+          ) : stage === "04" ? (
             <section className="quest-print-lab__duplex-help" aria-label={stage4Guidance.printHelpTitle} data-stage-4-print-help="true">
               <p className="quest-print-lab__duplex-result">{stage4Guidance.printHelpSummary}</p>
               <aside className="quest-print-lab__single-sided-sheet" data-print-mode="mixed">
@@ -384,7 +388,7 @@ export function QuestPrintLab({
                 <span>8 PDF pages → 4 physical A4 sheets</span>
               </aside>
             </section>
-          )}
+          ) : <section className="quest-print-lab__duplex-help" data-stage-5-print-help="true"><p className="quest-print-lab__duplex-result">{stage5Guidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>A4 · 100% / Actual Size</strong><span>Pages 1/2: duplex cards · Page 3: single-sided box</span><span>3 PDF pages → 2 physical A4 sheets</span></aside></section>}
           </div>
         </section>
 

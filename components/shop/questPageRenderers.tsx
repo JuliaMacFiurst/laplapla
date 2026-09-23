@@ -22,6 +22,8 @@ import {
   getStage2FrontCards,
 } from "@/lib/shop/quests/sound-case-001/vibratingCards";
 import { Stage4BoxRulesPage, Stage4CardsPage, type Stage4GestureUrls } from "./Stage4PrintablePages";
+import { Stage5BoxPage, Stage5CardsPage, type Stage5SampleUrls } from "./Stage5PrintablePages";
+import { SOUND_CASE_001_STAGE_5_SAMPLES } from "@/lib/shop/quests/sound-case-001/scatteredSand";
 
 export type QuestPageRenderContext = {
   personalization: QuestPersonalization;
@@ -140,6 +142,11 @@ const questPageRenderers: QuestPageRendererRegistry = {
     };
     return <Stage4BoxRulesPage locale={definition.locale} side={definition.side} gestureUrls={gestureUrls} />;
   },
+  "stage-5-cards": ({ definition, context }) => {
+    const sampleUrls = Object.fromEntries(SOUND_CASE_001_STAGE_5_SAMPLES.map((sample) => [sample.id, requireQuestAssetUrl(context.assetManifest.assets[sample.assetId])])) as Stage5SampleUrls;
+    return <Stage5CardsPage locale={definition.locale} side={definition.side} sampleUrls={sampleUrls} duneUrl={requireQuestAssetUrl(context.assetManifest.assets["stage-5-dune-puzzle"])} />;
+  },
+  "stage-5-box": ({ definition, context }) => <Stage5BoxPage locale={definition.locale} duneUrl={requireQuestAssetUrl(context.assetManifest.assets["stage-5-dune-puzzle"])} />,
 };
 
 export function renderQuestPageDefinition<TType extends QuestPageType>(

@@ -38,6 +38,7 @@ import {
   type SoundCase001AudioAssetId,
   type SoundCase001SoundCardAssetId,
   type SoundCase001Stage3DistractorAssetId,
+  type SoundCase001Stage6AudioAssetId,
   type SoundCase001VisualAssetId,
 } from "@/lib/shop/quests/sound-case-001/assets";
 import {
@@ -121,6 +122,8 @@ describe("Sound Case document configuration", () => {
       | "stage-2-box"
       | "stage-4-cards"
       | "stage-4-box-rules"
+      | "stage-5-cards"
+      | "stage-5-box"
     >();
 
     const definition = SOUND_CASE_001_PAGES[0];
@@ -383,18 +386,18 @@ describe("Sound Case asset manifest", () => {
     expectTypeOf<SoundCase001VisualAssetId>().toEqualTypeOf<
       Exclude<
         SoundCase001AssetId,
-        "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId
+        "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId
       >
     >();
     expectTypeOf<SoundCase001AudioAssetId>().toEqualTypeOf<
-      "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId
+      "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId
     >();
     expectTypeOf<SoundCardDefinition["illustrationAssetId"]>().toEqualTypeOf<
       SoundCase001SoundCardAssetId
     >();
 
     expect(SOUND_CASE_001_ASSET_MANIFEST.questId).toBe("sound-case-001");
-    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(68);
+    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(86);
     expect(SOUND_CASE_001_ASSET_MANIFEST.assets).not.toHaveProperty(
       "stage-1-sound-card-illustration",
     );

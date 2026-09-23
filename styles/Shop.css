@@ -3705,3 +3705,45 @@
   .quest-stage-4-box-dieline,
   .quest-stage-4-box-panel { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
+/* Sound Case #001 · Stage 05. Printable gameplay copy is intentionally kept large. */
+.stage-5-sheet { position: relative; width:100%; height:100%; overflow: hidden; background: #f4eee1; color: #17222c; }
+.stage-5-sheet__mark { position:absolute; top:7mm; left:0; right:0; text-align:center; font:700 8pt/1 sans-serif; letter-spacing:.08em; }
+.stage-5-card { position:absolute; box-sizing:border-box; overflow:hidden; border:.35mm solid #263c46; border-radius:2.2mm; background:#fffaf0; }
+.stage-5-card--sample { padding:2.2mm; display:grid; grid-template-rows:auto 31mm 1fr; gap:1.2mm; }
+.stage-5-card--sample header { display:flex; flex-direction:column; text-align:center; line-height:1.05; }
+.stage-5-card--sample header b { font-size:7pt; letter-spacing:.1em; color:#8c522e; }
+.stage-5-card--sample header strong { font-size:11pt; }
+.stage-5-card--sample > img:not(.stage-5-card__qr) { width:100%; height:31mm; object-fit:cover; border-radius:1.4mm; }
+.stage-5-card__facts { padding-inline-end:15mm; font:600 6.2pt/1.18 sans-serif; }
+.stage-5-card__facts p { margin:.45mm 0; }
+.stage-5-card__qr { position:absolute; width:14mm; height:14mm; object-fit:contain; inset-inline-end:2mm; bottom:2mm; background:#fff; }
+.stage-5-card--puzzle { border-color:#fff; border-radius:0; background:#c98b4a; }
+.stage-5-card__dune { position:absolute; inset:0; background-size:400% 200%; background-repeat:no-repeat; }
+.stage-5-card__coordinate-clue { position:absolute; bottom:3.5mm; height:20mm; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1mm; color:#33251b; font-family:var(--font-nunito,"Nunito",system-ui,sans-serif); }
+.stage-5-card__coordinate-row { display:flex; align-items:center; justify-content:center; gap:1.5mm; width:100%; font-size:10pt; font-weight:950; line-height:1; white-space:nowrap; }
+.stage-5-card__coordinate-symbol { display:inline-grid; place-items:center; width:7mm; height:7mm; font-size:15pt; filter:grayscale(.12) sepia(.12); }
+.stage-5-card__coordinate-symbol--group { margin-inline-start:5mm; }
+.stage-5-card--insert { padding:3mm; background:linear-gradient(145deg,#103945,#186a72); color:#fff; border-color:#efb84b; display:flex; flex-direction:column; }
+.stage-5-card--insert h2 { margin:0 0 1.6mm; font:900 13pt/1 sans-serif; color:#ffd16c; }
+.stage-5-card--insert p { margin:.7mm 0; font:650 7.3pt/1.18 sans-serif; }
+.stage-5-card--insert aside { margin-top:auto; padding:1.5mm; background:rgba(255,255,255,.12); border-radius:1.5mm; }
+.stage-5-card--insert > strong { margin-top:auto; padding-inline-end:19mm; text-align:center; font:900 8pt/1.1 sans-serif; }
+.stage-5-insert__qr { position:absolute; inset-inline-end:2.5mm; bottom:2.5mm; width:17mm; height:17mm; background:#fff; }
+
+.stage-5-box-sheet { position:relative; width:210mm; height:297mm; overflow:hidden; box-sizing:border-box; background:#fff; color:#18333f; font-family:var(--font-nunito,"Nunito",system-ui,sans-serif); }
+.stage-5-box-sheet>header,.stage-5-box-sheet>footer { position:absolute; z-index:10; inset-inline:6mm; color:#65747b; font-size:7pt; font-weight:900; letter-spacing:.06em; text-align:center; }
+.stage-5-box-sheet>header { top:7mm; }.stage-5-box-sheet>footer { bottom:7mm; }
+.stage-5-box-dieline { position:absolute; z-index:2; }
+.stage-5-box-dieline__lines { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.stage-5-box-dieline__lines .cut { fill:rgba(244,238,225,.35); stroke:#111; stroke-width:.32; vector-effect:non-scaling-stroke; }
+.stage-5-box-dieline__lines .fold { fill:none; stroke:#49717d; stroke-width:.25; stroke-dasharray:2 1.4; vector-effect:non-scaling-stroke; }
+.stage-5-box-panel { position:absolute; z-index:3; overflow:hidden; box-sizing:border-box; }
+.stage-5-box-panel--front { left:16mm; top:30mm; width:59mm; height:78mm; color:#fff; background-position:center; background-size:cover; }
+.stage-5-box-panel--back { left:81mm; top:30mm; width:59mm; height:78mm; background:linear-gradient(145deg,#f6e3b4,#d7a96f); color:#173944; }
+.stage-5-box-panel--front>div,.stage-5-box-panel--back>div { position:absolute; inset:4mm; display:flex; flex-direction:column; align-items:center; justify-content:center; border:.55mm solid rgba(255,255,255,.62); border-radius:3mm; text-align:center; }
+.stage-5-box-panel--front bdi { font-size:7pt; font-weight:950; letter-spacing:.08em; }.stage-5-box-panel--front>div>strong { margin-top:1mm; color:#ffd77e; font-size:8pt; }.stage-5-box-panel--front h1 { max-width:49mm; margin:2mm 0; color:#fff7d6; font-size:18pt; line-height:.95; }.stage-5-box-panel--front span { font-size:7pt; font-weight:950; letter-spacing:.1em; }
+.stage-5-box-panel--back>div { border-color:rgba(117,73,33,.48); }.stage-5-box-panel--back img { width:30mm; height:12mm; object-fit:contain; }.stage-5-box-panel--back strong { margin:3mm 0 1mm; font-size:11pt; }.stage-5-box-panel--back span { font-size:8pt; font-weight:850; }
+.stage-5-box-panel--side-a,.stage-5-box-panel--side-b { top:30mm; display:grid; place-items:center; width:6mm; height:78mm; padding:3mm 0; background:#1b6870; color:#fff; font-size:5.5pt; letter-spacing:.05em; text-align:center; writing-mode:vertical-rl; }
+.stage-5-box-panel--side-a { left:10mm; }.stage-5-box-panel--side-b { left:75mm; background:#ba7546; }
+.stage-5-box-dieline__glue { position:absolute; z-index:4; left:0; top:34mm; display:grid; place-items:center; width:10mm; height:70mm; color:#65747b; font-size:5pt; font-weight:900; writing-mode:vertical-rl; }
+@media print { .stage-5-box-dieline,.stage-5-box-panel { print-color-adjust:exact; -webkit-print-color-adjust:exact; } }

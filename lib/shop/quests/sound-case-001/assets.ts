@@ -77,12 +77,31 @@ export type SoundCase001Stage4VisualAssetId =
   | SoundCase001Stage4GestureAssetId
   | SoundCase001Stage4ExperimentAssetId;
 
+export type SoundCase001Stage5VisualAssetId =
+  | "stage-5-dune-background"
+  | "stage-5-dune-puzzle"
+  | `stage-5-sand-sample-0${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`;
+
+export type SoundCase001Stage6AudioAssetId =
+  | "stage-6-sound-cat"
+  | "stage-6-sound-bell"
+  | "stage-6-sound-train"
+  | "stage-6-sound-chicken"
+  | "stage-6-sound-door"
+  | "stage-6-sound-mosquito"
+  | "stage-6-sound-balloon"
+  | "stage-6-sound-dog";
+
 export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
   readonly [TId in SoundCase001Stage2VisualAssetId]: QuestVisualAsset<TId>;
 } & {
   readonly [TId in SoundCase001Stage3DistractorAssetId]: QuestAudioAsset<TId>;
 } & {
   readonly [TId in SoundCase001Stage4VisualAssetId]: QuestVisualAsset<TId>;
+} & {
+  readonly [TId in SoundCase001Stage5VisualAssetId]: QuestVisualAsset<TId>;
+} & {
+  readonly [TId in SoundCase001Stage6AudioAssetId]: QuestAudioAsset<TId>;
 };
 
 export type SoundCase001AssetManifest = QuestAssetManifest<
@@ -118,6 +137,21 @@ const STAGE_3_AUDIO_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-03-human-equalizer/audio";
 const STAGE_4_ASSET_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-04-broken-rhythm/assets";
+const STAGE_5_BASE_URL =
+  "https://media.laplapla.com/quests/sound-case-001/stage-05-scattered-sand";
+const STAGE_6_AUDIO_BASE_URL =
+  "https://media.laplapla.com/quests/sound-case-001/stage-06-decoding-of-coordinates/audio";
+
+export const STAGE_6_AUDIO_FILES = {
+  cat: "mixkit-sweet-kitty-meow-93.mp3",
+  bell: "mixkit-bike-bell-ring-595.mp3",
+  train: "mixkit-train-passenger-passing-by-rattle-1636.mp3",
+  chicken: "mixkit-rooster-crowing-in-the-morning-2462.mp3",
+  door: "mixkit-creaking-door-open-and-close-199.mp3",
+  mosquito: "mixkit-cartoon-mosquito-flying-328.mp3",
+  balloon: "mixkit-farting-balloon-deflate-3052.mp3",
+  dog: "mixkit-medium-size-angry-dog-bark-54.mp3",
+} as const;
 
 export const STAGE_3_DISTRACTOR_FILES = {
   "cartoon-sneeze": "mixkit-cartoon-sneeze-747.mp3",
@@ -187,6 +221,16 @@ const stage2VisualSource = (path: string) => ({
 const stage4VisualSource = (fileName: string) => ({
   status: "external" as const,
   url: `${STAGE_4_ASSET_BASE_URL}/${fileName}`,
+});
+
+const stage5VisualSource = (path: string) => ({
+  status: "external" as const,
+  url: `${STAGE_5_BASE_URL}/${path}`,
+});
+
+const stage6AudioSource = (fileName: typeof STAGE_6_AUDIO_FILES[keyof typeof STAGE_6_AUDIO_FILES]) => ({
+  status: "external" as const,
+  url: `${STAGE_6_AUDIO_BASE_URL}/${fileName}`,
 });
 
 export const SOUND_CASE_001_ASSET_MANIFEST = {
@@ -491,5 +535,29 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
       id: "stage-4-clap-out-of-sync", kind: "visual",
       source: stage4VisualSource("stage-4-clap-out-of-sync.webp"),
     },
+    "stage-5-dune-background": {
+      id: "stage-5-dune-background", kind: "visual",
+      source: stage5VisualSource("assets/stage-5-dune-background.webp"),
+    },
+    "stage-5-dune-puzzle": {
+      id: "stage-5-dune-puzzle", kind: "visual",
+      source: stage5VisualSource("assets/stage-5-dune-puzzle.webp"),
+    },
+    "stage-5-sand-sample-01": { id: "stage-5-sand-sample-01", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-01-black-volcanic.webp") },
+    "stage-5-sand-sample-02": { id: "stage-5-sand-sample-02", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-02-white-coral.webp") },
+    "stage-5-sand-sample-03": { id: "stage-5-sand-sample-03", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-03-pink-biogenic.webp") },
+    "stage-5-sand-sample-04": { id: "stage-5-sand-sample-04", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-04-green-olivine.webp") },
+    "stage-5-sand-sample-05": { id: "stage-5-sand-sample-05", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-05-river.webp") },
+    "stage-5-sand-sample-06": { id: "stage-5-sand-sample-06", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-06-desert-quartz.webp") },
+    "stage-5-sand-sample-07": { id: "stage-5-sand-sample-07", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-07-red-desert.webp") },
+    "stage-5-sand-sample-08": { id: "stage-5-sand-sample-08", kind: "visual", source: stage5VisualSource("samples/stage-5-sand-sample-08-booming-dune.webp") },
+    "stage-6-sound-cat": { id: "stage-6-sound-cat", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.cat) },
+    "stage-6-sound-bell": { id: "stage-6-sound-bell", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.bell) },
+    "stage-6-sound-train": { id: "stage-6-sound-train", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.train) },
+    "stage-6-sound-chicken": { id: "stage-6-sound-chicken", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.chicken) },
+    "stage-6-sound-door": { id: "stage-6-sound-door", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.door) },
+    "stage-6-sound-mosquito": { id: "stage-6-sound-mosquito", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.mosquito) },
+    "stage-6-sound-balloon": { id: "stage-6-sound-balloon", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.balloon) },
+    "stage-6-sound-dog": { id: "stage-6-sound-dog", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.dog) },
   },
 } satisfies SoundCase001AssetManifest;

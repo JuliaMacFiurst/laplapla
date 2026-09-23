@@ -1315,6 +1315,33 @@ type DictionaryShape = {
           goAction: string;
         };
       };
+      stage05: {
+        print: {
+          title: string; sampleLabel: string; sampleNames: readonly string[]; locations: readonly string[];
+          grains: readonly string[]; composition: readonly string[]; feature: readonly string[];
+          grainsLabel: string; compositionLabel: string; featureLabel: string;
+          findTitle: string; playerLines: readonly string[]; adultTitle: string; adultLines: readonly string[];
+          parrotTitle: string; parrotLines: readonly string[]; decodeAction: string; damagedLabel: string;
+          printHelpTitle: string; printHelpSummary: string; boxContents: string; boxSide: string;
+        };
+      };
+      stage06: {
+        pageTitle: string; metaDescription: string; stageLabel: string; title: string;
+        soundWarning: string; volumeHint: string; testSound: string; start: string;
+        instructionsTitle: string; instructions: readonly string[]; example: string;
+        teamTitle: string; teamSmall: string; teamLarge: string; latitudeTeam: string; longitudeTeam: string;
+        codeTitle: string; listen: string; replay: string; playing: string; pause: string; resume: string;
+        playbackControls: string; digitNames: readonly string[];
+        decoderTitle: string; decoderHint: string; decodeError: string; decodeSuccess: string;
+        recordingTitle: string; latitude: string; longitude: string; group: string; playGroup: string;
+        writeHint: string; decodedAction: string; verifyTitle: string; coordinatesLabel: string; copy: string; copied: string;
+        compareHint: string; retryHint: string; earthLines: readonly string[]; findPlace: string; mapSteps: readonly string[];
+        googleMaps: string; googleEarth: string; locationQuestion: string; locationOptions: readonly string[];
+        wrongLocation: string; successNamedSuffix: string; successGeneric: string; successLines: readonly string[];
+        audioUnavailable: string;
+      };
+      stage06InputHint: string;
+      stage06SuccessNext: string;
     };
   };
 
