@@ -147,23 +147,16 @@ export function isValidBedtimeStorySlug(value: unknown): value is string {
   return typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
 
-export function isPublicBedtimeStoryRow(row: BedtimeStoryRow, now = new Date()): boolean {
-  if (row.status !== "exported" || row.is_published !== true || !row.publish_date) {
-    return false;
-  }
-  const publishTime = Date.parse(row.publish_date);
-  return Number.isFinite(publishTime) && publishTime <= now.getTime();
+export function isPublicBedtimeStoryRow(row: BedtimeStoryRow): boolean {
+  // Legacy public stories used exported status as their publication flag.
+  return row.status === "exported";
 }
 
 function publicStoriesQuery() {
-  const now = new Date().toISOString();
   return createServerSupabaseClient({ serviceRole: true })
     .from("bedtime_stories")
     .select(PUBLIC_STORY_COLUMNS)
-    .eq("status", "exported")
-    .eq("is_published", true)
-    .not("publish_date", "is", null)
-    .lte("publish_date", now);
+    .eq("status", "exported");
 }
 
 export async function loadBedtimeStories(lang: Lang): Promise<BedtimeStory[]> {
@@ -202,9 +195,9 @@ export type BedtimeStorySitemapEntry = {
   eligibleLangs: Lang[];
 };
 
-export function buildBedtimeStorySitemapEntries(rows: BedtimeStoryRow[], now = new Date()) {
+export function buildBedtimeStorySitemapEntries(rows: BedtimeStoryRow[]) {
   return rows.flatMap<BedtimeStorySitemapEntry>((row) => {
-    if (!isPublicBedtimeStoryRow(row, now) || !isValidBedtimeStorySlug(row.slug) || !isRecord(row.exported_image_urls)) {
+    if (!isPublicBedtimeStoryRow(row) || !isValidBedtimeStorySlug(row.slug) || !isRecord(row.exported_image_urls)) {
       return [];
     }
     const exportedImageUrls = row.exported_image_urls;
@@ -219,14 +212,10 @@ export function buildBedtimeStorySitemapEntries(rows: BedtimeStoryRow[], now = n
 }
 
 export async function loadBedtimeStorySitemapEntries(): Promise<BedtimeStorySitemapEntry[]> {
-  const now = new Date().toISOString();
   const { data, error } = await createServerSupabaseClient({ serviceRole: true })
     .from("bedtime_stories")
     .select("slug, exported_image_urls, status, is_published, publish_date")
     .eq("status", "exported")
-    .eq("is_published", true)
-    .not("publish_date", "is", null)
-    .lte("publish_date", now)
     .order("created_at", { ascending: false });
 
   if (error) {
