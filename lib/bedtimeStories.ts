@@ -8,6 +8,9 @@ type BedtimeStoryRow = {
   cover_image_url: string | null;
   exported_image_urls: unknown;
   slides?: unknown;
+  status?: string;
+  is_published?: boolean;
+  publish_date?: string | null;
   created_at: string | null;
 };
 
@@ -21,6 +24,7 @@ export type BedtimeStory = {
 };
 
 const TITLE_FALLBACK_LANGS: Lang[] = ["ru", "en", "he"];
+const PUBLIC_STORY_COLUMNS = "id, slug, title, cover_image_url, exported_image_urls, slides, status, is_published, publish_date, created_at";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -139,12 +143,31 @@ export function normalizeBedtimeStory(row: BedtimeStoryRow, lang: Lang): Bedtime
   };
 }
 
-export async function loadBedtimeStories(lang: Lang): Promise<BedtimeStory[]> {
-  const supabase = createServerSupabaseClient({ serviceRole: true });
-  const { data, error } = await supabase
+export function isValidBedtimeStorySlug(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+}
+
+export function isPublicBedtimeStoryRow(row: BedtimeStoryRow, now = new Date()): boolean {
+  if (row.status !== "exported" || row.is_published !== true || !row.publish_date) {
+    return false;
+  }
+  const publishTime = Date.parse(row.publish_date);
+  return Number.isFinite(publishTime) && publishTime <= now.getTime();
+}
+
+function publicStoriesQuery() {
+  const now = new Date().toISOString();
+  return createServerSupabaseClient({ serviceRole: true })
     .from("bedtime_stories")
-    .select("id, slug, title, cover_image_url, exported_image_urls, slides, created_at")
+    .select(PUBLIC_STORY_COLUMNS)
     .eq("status", "exported")
+    .eq("is_published", true)
+    .not("publish_date", "is", null)
+    .lte("publish_date", now);
+}
+
+export async function loadBedtimeStories(lang: Lang): Promise<BedtimeStory[]> {
+  const { data, error } = await publicStoriesQuery()
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -152,8 +175,65 @@ export async function loadBedtimeStories(lang: Lang): Promise<BedtimeStory[]> {
   }
 
   return ((data || []) as BedtimeStoryRow[])
+    .filter((row) => isPublicBedtimeStoryRow(row))
     .map((row) => normalizeBedtimeStory(row, lang))
     .filter((story): story is BedtimeStory => Boolean(story));
+}
+
+export async function loadBedtimeStoryBySlug(slug: string, lang: Lang): Promise<BedtimeStory | null> {
+  if (!isValidBedtimeStorySlug(slug)) {
+    return null;
+  }
+
+  const { data, error } = await publicStoriesQuery()
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const row = data as BedtimeStoryRow | null;
+  return row && isPublicBedtimeStoryRow(row) ? normalizeBedtimeStory(row, lang) : null;
+}
+
+export type BedtimeStorySitemapEntry = {
+  path: string;
+  eligibleLangs: Lang[];
+};
+
+export function buildBedtimeStorySitemapEntries(rows: BedtimeStoryRow[], now = new Date()) {
+  return rows.flatMap<BedtimeStorySitemapEntry>((row) => {
+    if (!isPublicBedtimeStoryRow(row, now) || !isValidBedtimeStorySlug(row.slug) || !isRecord(row.exported_image_urls)) {
+      return [];
+    }
+    const exportedImageUrls = row.exported_image_urls;
+    const eligibleLangs = TITLE_FALLBACK_LANGS.filter((lang) => {
+      const firstPage = exportedImageUrls[`${lang}-01`];
+      return typeof firstPage === "string" && Boolean(firstPage.trim());
+    });
+    return eligibleLangs.length > 0
+      ? [{ path: `/bedtime-stories/${row.slug}`, eligibleLangs }]
+      : [];
+  });
+}
+
+export async function loadBedtimeStorySitemapEntries(): Promise<BedtimeStorySitemapEntry[]> {
+  const now = new Date().toISOString();
+  const { data, error } = await createServerSupabaseClient({ serviceRole: true })
+    .from("bedtime_stories")
+    .select("slug, exported_image_urls, status, is_published, publish_date")
+    .eq("status", "exported")
+    .eq("is_published", true)
+    .not("publish_date", "is", null)
+    .lte("publish_date", now)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return buildBedtimeStorySitemapEntries((data || []) as BedtimeStoryRow[]);
 }
 
 export async function loadLatestBedtimeStory(lang: Lang) {

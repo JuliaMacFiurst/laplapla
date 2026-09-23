@@ -2,6 +2,7 @@ import { normalizeSiteUrl } from "@/lib/config";
 import type { Lang } from "@/i18n";
 import { buildCanonicalUrl, buildEligibleHreflangLinks, buildHreflangLinks } from "@/lib/i18n/routing";
 import { loadRecipeSitemapPaths } from "@/lib/recipes";
+import { loadBedtimeStorySitemapEntries } from "@/lib/bedtimeStories";
 import { loadEligibleMapRoutes, type EligibleMapRoute } from "@/lib/server/mapSeoEligibility";
 import { buildMapSitemapEntries } from "@/lib/seo/mapSitemapEligibility";
 import {
@@ -60,6 +61,12 @@ function buildSitemapXml(entries: SitemapEntry[], baseUrl: string) {
 export async function generateSitemapXml() {
   const baseUrl = normalizeSiteUrl(process.env["NEXT_PUBLIC_SITE_URL"]);
   const recipePaths = await loadRecipeSitemapPaths();
+  let bedtimeStoryEntries: Awaited<ReturnType<typeof loadBedtimeStorySitemapEntries>> = [];
+  try {
+    bedtimeStoryEntries = await loadBedtimeStorySitemapEntries();
+  } catch (error) {
+    console.error("[sitemap] failed to load bedtime story routes", error);
+  }
   let mapRoutes: EligibleMapRoute[] = [];
   try {
     mapRoutes = await loadEligibleMapRoutes();
@@ -87,6 +94,15 @@ export async function generateSitemapXml() {
       })),
     ),
     ...buildMapSitemapEntries(mapRoutes, baseUrl),
+    ...bedtimeStoryEntries.flatMap(({ path, eligibleLangs }) =>
+      eligibleLangs.map((lang) => ({
+        path,
+        url: buildAbsoluteUrl(baseUrl, path, lang),
+        priority: "0.76",
+        changefreq: "monthly",
+        eligibleLangs,
+      })),
+    ),
   ];
 
   const xml = buildSitemapXml(entries, baseUrl);

@@ -28,6 +28,7 @@ export type SEOProps = {
   }>;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
   noindex?: boolean;
+  image?: string;
 };
 
 function normalizePath(path: string) {
@@ -54,6 +55,7 @@ export default function SEO({
   alternates,
   jsonLd,
   noindex = false,
+  image,
 }: SEOProps) {
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
@@ -63,7 +65,7 @@ export default function SEO({
   const identityJsonLd = buildCoreIdentityJsonLd(resolvedLang);
   const pageJsonLd = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   const mergedJsonLd = [...identityJsonLd, ...pageJsonLd];
-  const socialImage = `${BASE_URL}${SITE_SOCIAL_IMAGE_PATH}`;
+  const socialImage = image || `${BASE_URL}${SITE_SOCIAL_IMAGE_PATH}`;
   const locale = resolvedLang === "he" ? "he_IL" : resolvedLang === "en" ? "en_US" : "ru_RU";
 
   return (
