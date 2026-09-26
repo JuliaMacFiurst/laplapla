@@ -36,6 +36,7 @@ describe("internal Quest Print Lab", () => {
     expect(labSource).toContain("pages={selectedPages}");
     expect(labSource).toContain("getSoundCase001Stage2Pages");
     expect(labSource).toContain("getSoundCase001Stage4Pages");
+    expect(labSource).toContain("getSoundCase001Stage7Pages");
     expect(labSource).toContain("assetManifest={SOUND_CASE_001_ASSET_MANIFEST}");
     expect(labSource).not.toContain("CaseCoverPage");
     expect(labSource).not.toContain('from "./SoundCardsPage"');
@@ -82,12 +83,28 @@ describe("internal Quest Print Lab", () => {
     expect(html.match(/data-duplex-side=/g)).toHaveLength(8);
   });
 
+  it.each(["ru", "en", "he"] as const)("renders Stage 07 %s in the shared Print Lab", (locale) => {
+    const html = renderToStaticMarkup(createElement(QuestPrintLab, {
+      initialStage: "07",
+      initialPersonalization: { locale, leadName: "Maya", participants: [] },
+    }));
+    expect(html).toContain("STAGE 07");
+    expect(html).toContain("EXPERT CLUB");
+    expect(html).toContain('aria-label="Открыть STAGE 07 — Expert Club" aria-pressed="true"');
+    expect(html.match(/data-page-id=/g)).toHaveLength(2);
+    expect(html.match(/data-page-type="stage-7-printable"/g)).toHaveLength(2);
+    expect(html).toContain('data-stage-7-print-help="true"');
+  });
+
   it("defaults X-Ray to OFF and renders every current printable page", () => {
     const html = renderToStaticMarkup(createElement(QuestPrintLab));
 
     expect(html).toContain('data-xray="off"');
     expect(html).toContain("X-Ray: OFF");
-    expect(html.match(/data-page-id=/g)).toHaveLength(5);
+    expect(html.match(/data-page-id=/g)).toHaveLength(6);
+    expect(html.indexOf('data-page-id="sound-case-001-adult-intro"')).toBeLessThan(
+      html.indexOf('data-page-id="sound-case-001-sound-cards-1"'),
+    );
     expect(html).not.toContain('data-page-id="sound-case-001-case-cover"');
     expect(html).toContain('data-page-id="sound-case-001-sound-cards-1"');
     expect(html).toContain('data-page-id="sound-case-001-sound-card-backs-1"');
@@ -151,20 +168,20 @@ describe("internal Quest Print Lab", () => {
         sheetNumber: 1,
         frontLabel: "SOUND CARDS 1/2",
         backLabel: "SOUND CARD BACKS 1/2",
-        frontPageNumber: 1,
-        backPageNumber: 2,
+        frontPageNumber: 2,
+        backPageNumber: 3,
       },
       {
         pairId: "sound-cards-sheet-2",
         sheetNumber: 2,
         frontLabel: "SOUND CARDS 2/2",
         backLabel: "SOUND CARD BACKS 2/2",
-        frontPageNumber: 3,
-        backPageNumber: 4,
+        frontPageNumber: 4,
+        backPageNumber: 5,
       },
     ]);
     expect(getQuestPrintLabCardBoxPage(SOUND_CASE_001_PAGES)).toMatchObject({
-      pageNumber: 5,
+      pageNumber: 6,
       definition: {
         id: "sound-case-001-stage-1-card-box",
         type: "stage-1-card-box",

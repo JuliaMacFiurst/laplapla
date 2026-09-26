@@ -42,6 +42,15 @@ const backgroundUrl = requireQuestAssetUrl(
 );
 
 describe("Sound Case #001 UNKNOWN SOUND digital scene", () => {
+  it.each(["ru", "en", "he"] as const)("names the exact Stage 02 physical box after clue one in %s", (locale) => {
+    const text=dictionaries[locale].shop.soundCase.unknownSoundScene;
+    const stage2=dictionaries[locale].shop.soundCase.stage02.title;
+    const startBadge=dictionaries[locale].shop.soundCase.stage02.intro.startBadge;
+    expect(text.nextSteps.join(" ")).toContain(stage2);
+    expect(text.phoneAway).toBeTruthy();
+    expect(text.nextSteps.join(" ")).toContain(startBadge);
+    expect(text.nextSteps.join(" ")).not.toContain("INTRO");
+  });
   it("owns the stable public route and uses the real typed media manifest", () => {
     expect(UNKNOWN_SOUND_PUBLIC_PATH).toBe(
       "/quests/sound-case-001/stage-01/unknown-sound",

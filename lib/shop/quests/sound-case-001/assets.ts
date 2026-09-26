@@ -92,6 +92,24 @@ export type SoundCase001Stage6AudioAssetId =
   | "stage-6-sound-balloon"
   | "stage-6-sound-dog";
 
+export type SoundCase001Stage7EquipmentVisualAssetId =
+  | "stage-7-equipment-microphones"
+  | "stage-7-equipment-radar"
+  | "stage-7-equipment-geophones"
+  | "stage-7-equipment-sand-samples"
+  | "stage-7-equipment-camera"
+  | "stage-7-equipment-human-butt"
+  | "stage-7-equipment-metal-detector";
+
+export type SoundCase001Stage7VisualAssetId =
+  | "stage-7-expert-club-background"
+  | "stage-7-dune-sliding-experiment"
+  | SoundCase001Stage7EquipmentVisualAssetId;
+
+export type SoundCase001Stage7AudioAssetId =
+  | "stage-7-singing-sand-dune"
+  | "stage-7-victory-fanfare";
+
 export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
   readonly [TId in SoundCase001Stage2VisualAssetId]: QuestVisualAsset<TId>;
 } & {
@@ -102,6 +120,10 @@ export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
   readonly [TId in SoundCase001Stage5VisualAssetId]: QuestVisualAsset<TId>;
 } & {
   readonly [TId in SoundCase001Stage6AudioAssetId]: QuestAudioAsset<TId>;
+} & {
+  readonly [TId in SoundCase001Stage7VisualAssetId]: QuestVisualAsset<TId>;
+} & {
+  readonly [TId in SoundCase001Stage7AudioAssetId]: QuestAudioAsset<TId>;
 };
 
 export type SoundCase001AssetManifest = QuestAssetManifest<
@@ -141,6 +163,9 @@ const STAGE_5_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-05-scattered-sand";
 const STAGE_6_AUDIO_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-06-decoding-of-coordinates/audio";
+
+export const STAGE_7_DUNE_SLIDING_EXPERIMENT_URL =
+  "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/dune-sliding-experiment.webp";
 
 export const STAGE_6_AUDIO_FILES = {
   cat: "mixkit-sweet-kitty-meow-93.mp3",
@@ -559,5 +584,16 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "stage-6-sound-mosquito": { id: "stage-6-sound-mosquito", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.mosquito) },
     "stage-6-sound-balloon": { id: "stage-6-sound-balloon", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.balloon) },
     "stage-6-sound-dog": { id: "stage-6-sound-dog", kind: "audio", source: stage6AudioSource(STAGE_6_AUDIO_FILES.dog) },
+    "stage-7-expert-club-background": { id: "stage-7-expert-club-background", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/backgrounds/stage-07-expert-club-background.webp" } },
+    "stage-7-dune-sliding-experiment": { id: "stage-7-dune-sliding-experiment", kind: "visual", source: { status: "external", url: STAGE_7_DUNE_SLIDING_EXPERIMENT_URL } },
+    "stage-7-equipment-microphones": { id: "stage-7-equipment-microphones", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/microphone.webp" } },
+    "stage-7-equipment-radar": { id: "stage-7-equipment-radar", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/ground-penetrating-radar.webp" } },
+    "stage-7-equipment-geophones": { id: "stage-7-equipment-geophones", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/geophones.webp" } },
+    "stage-7-equipment-sand-samples": { id: "stage-7-equipment-sand-samples", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/sand-samples.webp" } },
+    "stage-7-equipment-camera": { id: "stage-7-equipment-camera", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/camera.webp" } },
+    "stage-7-equipment-human-butt": { id: "stage-7-equipment-human-butt", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/butt.webp" } },
+    "stage-7-equipment-metal-detector": { id: "stage-7-equipment-metal-detector", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/metal-detector.webp" } },
+    "stage-7-singing-sand-dune": { id: "stage-7-singing-sand-dune", kind: "audio", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/audio/singing-sand-dune.mp3" } },
+    "stage-7-victory-fanfare": { id: "stage-7-victory-fanfare", kind: "audio", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/audio/medieval-show-fanfare-announcement-226.mp3" } },
   },
 } satisfies SoundCase001AssetManifest;

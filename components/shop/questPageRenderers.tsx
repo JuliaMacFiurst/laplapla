@@ -24,6 +24,9 @@ import {
 import { Stage4BoxRulesPage, Stage4CardsPage, type Stage4GestureUrls } from "./Stage4PrintablePages";
 import { Stage5BoxPage, Stage5CardsPage, type Stage5SampleUrls } from "./Stage5PrintablePages";
 import { SOUND_CASE_001_STAGE_5_SAMPLES } from "@/lib/shop/quests/sound-case-001/scatteredSand";
+import { Stage7BoxPage, Stage7PrintablePage, type Stage7EquipmentUrls } from "./Stage7PrintablePages";
+import { STAGE_7_EQUIPMENT } from "@/lib/shop/quests/sound-case-001/expertClub";
+import { SoundCaseAdultIntroPage } from "./SoundCaseAdultIntroPage";
 
 export type QuestPageRenderContext = {
   personalization: QuestPersonalization;
@@ -40,6 +43,12 @@ type QuestPageRendererRegistry = {
 };
 
 const questPageRenderers: QuestPageRendererRegistry = {
+  "sound-case-adult-intro": ({ context }) => (
+    <SoundCaseAdultIntroPage
+      locale={context.personalization.locale}
+      parrotUrl={requireQuestAssetUrl(context.assetManifest.assets["sound-lab-parrot"])}
+    />
+  ),
   "sound-cards": ({ definition, context }) => {
     const cards = getSoundCardsByIds(definition.cardIds).map((card, index) => ({
       card,
@@ -147,6 +156,11 @@ const questPageRenderers: QuestPageRendererRegistry = {
     return <Stage5CardsPage locale={definition.locale} side={definition.side} sampleUrls={sampleUrls} duneUrl={requireQuestAssetUrl(context.assetManifest.assets["stage-5-dune-puzzle"])} />;
   },
   "stage-5-box": ({ definition, context }) => <Stage5BoxPage locale={definition.locale} duneUrl={requireQuestAssetUrl(context.assetManifest.assets["stage-5-dune-puzzle"])} />,
+  "stage-7-printable": ({ definition, context }) => {
+    if (definition.sheet === "box") return <Stage7BoxPage locale={definition.locale} />;
+    const equipmentUrls = Object.fromEntries(STAGE_7_EQUIPMENT.map(item => [item.id, requireQuestAssetUrl(context.assetManifest.assets[item.assetId])])) as Stage7EquipmentUrls;
+    return <Stage7PrintablePage locale={definition.locale} equipmentUrls={equipmentUrls} />;
+  },
 };
 
 export function renderQuestPageDefinition<TType extends QuestPageType>(

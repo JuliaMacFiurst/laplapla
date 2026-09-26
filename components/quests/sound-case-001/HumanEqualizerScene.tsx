@@ -222,8 +222,23 @@ export function HumanEqualizerScene({ lang, recordingUrl, distractorUrls, parrot
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text.countdownVoice[step]);
       utterance.lang = COUNTDOWN_SPEECH_LANG[lang];
-      utterance.rate = 0.95;
-      utterance.volume = 0.85;
+      const language = COUNTDOWN_SPEECH_LANG[lang].toLowerCase();
+      const baseLanguage = language.split("-")[0];
+      const voices = typeof window.speechSynthesis.getVoices === "function"
+        ? window.speechSynthesis.getVoices()
+        : [];
+      const candidates = voices.filter((voice) => voice.lang.toLowerCase().split("-")[0] === baseLanguage);
+      const scoreVoice = (voice: SpeechSynthesisVoice) => {
+        const name = voice.name.toLowerCase();
+        return (voice.lang.toLowerCase() === language ? 8 : 0)
+          + (voice.localService ? 3 : 0)
+          + (/natural|premium|enhanced|siri|google|microsoft/.test(name) ? 4 : 0)
+          - (/compact|espeak/.test(name) ? 4 : 0);
+      };
+      utterance.voice = candidates.sort((a, b) => scoreVoice(b) - scoreVoice(a))[0] ?? null;
+      utterance.rate = 1.08;
+      utterance.pitch = 1.16;
+      utterance.volume = 1;
       window.speechSynthesis.speak(utterance);
     } catch { /* Visual countdown remains independent of the speech engine. */ }
   }, [lang, text.countdownVoice]);
@@ -529,7 +544,10 @@ export function HumanEqualizerScene({ lang, recordingUrl, distractorUrls, parrot
               <ul>{text.materials.map((item) => <li key={item}>{item}</li>)}</ul>
               <strong>{text.envelopeWarning}</strong>
             </section>
-            <button className="human-equalizer__replay" type="button" onClick={restart}>{text.replayAction}</button>
+            <div className="human-equalizer__replay-choice">
+              <strong>{text.replayAlternative}</strong>
+              <button className="human-equalizer__replay" type="button" onClick={restart}>{text.replayAction}</button>
+            </div>
           </section>
         )}
         {showExitConfirm && (

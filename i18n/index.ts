@@ -1039,6 +1039,8 @@ type DictionaryShape = {
       };
       soundCardBacks: {
         printHelpTitle: string;
+        adultPageTitle: string;
+        adultPageInstruction: string;
         frontTopEdge: string;
         frontSideLabel: string;
         sheetLabel: string;
@@ -1085,6 +1087,7 @@ type DictionaryShape = {
         title: string;
         stageLabel: string;
         intro: {
+          startBadge: string;
           parrotLabel: string;
           speech: readonly [string, string, string, string];
           challenge: string;
@@ -1128,6 +1131,18 @@ type DictionaryShape = {
         evidenceLines: readonly [string, string, string];
         actionLines: readonly [string, string, string];
       };
+      adultIntro: {
+        hostLabel: string;
+        title: string;
+        lead: string;
+        description: readonly string[];
+        importantTitle: string;
+        importantBody: string;
+        startTitle: string;
+        startSteps: readonly string[];
+        startCue: string;
+        phoneNote: string;
+      };
       unknownSoundScene: {
         pageTitle: string;
         metaDescription: string;
@@ -1166,6 +1181,9 @@ type DictionaryShape = {
         investigateFurther: string;
         finalTitle: string;
         finalBody: string;
+        nextTitle: string;
+        nextSteps: readonly string[];
+        phoneAway: string;
         helpAriaLabel: string;
         helpTitle: string;
         helpBrandPrefix: string;
@@ -1244,6 +1262,7 @@ type DictionaryShape = {
         clueExplanation: string;
         parrotClueLines: readonly string[];
         replayAction: string;
+        replayAlternative: string;
         physicalTransition: string;
         nextStepTitle: string;
         phoneAway: string;
@@ -1336,9 +1355,45 @@ type DictionaryShape = {
         recordingTitle: string; latitude: string; longitude: string; group: string; playGroup: string;
         writeHint: string; decodedAction: string; verifyTitle: string; coordinatesLabel: string; copy: string; copied: string;
         compareHint: string; retryHint: string; earthLines: readonly string[]; findPlace: string; mapSteps: readonly string[];
+        leaveLabTitle: string; leaveLabLines: readonly string[]; stage07KitTitle: string; stage07KitLines: readonly string[];
         googleMaps: string; googleEarth: string; locationQuestion: string; locationOptions: readonly string[];
         wrongLocation: string; successNamedSuffix: string; successGeneric: string; successLines: readonly string[];
         audioUnavailable: string;
+      };
+      stage07: {
+        pageTitle: string; metaDescription: string; stageLabel: string; title: string; routeShort: string;
+        setupTitle: string; chooseMode: string; oneGroup: string; oneGroupHelp: string; twoTeams: string; twoTeamsHelp: string;
+        groupName: string; teamAName: string; teamBName: string; suggestedNames: readonly string[]; suggestName: string; customName: string; begin: string;
+        restoreTitle: string; restoreBody: string; restart: string; continue: string; backToGame: string;
+        hostDo: string; hostRead: string; placeCards: string; optionalHint: string; showHint: string; hideHint: string;
+        startTimer: string; pauseTimer: string; resetTimer: string; timeUp: string; timerLabel: string;
+        answerAnytimeTitle: string; answerAnytimeLines: readonly string[]; timeExpired: string; giveYourVersion: string;
+        rouletteTitle: string; rouletteSpinning: string; rouletteAnswers: string; firstVersion: string; secondVersion: string;
+        showCorrectAnswer: string; inspectCorrectAnswer: string; hideCorrectAnswer: string; hostOnly: string; hostOnlyWarning: string; hostOnlyReadWarning: string; acceptedAnswer: string;
+        score: string; cooperativeProgress: string; challengesSolved: string;
+        groupAnswers: string; answers: string; bothAnswer: string; nobodyAnswered: string; answering: string; theirAnswer: string;
+        hostJudgesIdea: string; correct: string; wrong: string; confirmResult: string; editableUntilConfirm: string;
+        notQuite: string; secondTeamQuestion: string; giveRemaining: string; showAnswer: string;
+        introLines: readonly string[];
+        round1Label: string; round1Title: string; round1Setup: string; round1Read: readonly string[]; round1Question: string;
+        round1ExpectedJoke: string; round1Reveal: readonly string[]; round1Editorial: string;
+        round1ButtReveal: readonly string[]; round1OtherTitle: string; round1OtherLine: string; round1FullAnswer: string; round1ButtCallback: string;
+        bonusLabel: string; bonusQuestion: string; bonusSetup: string; bonusHint: string; bonusAnswerReference: readonly string[]; bonusReveal: readonly string[];
+        round2Label: string; round2Title: string; round2Setup: string; playSound: string; soundPlaying: string; duneAudioProvenance: string;
+        round2Read: readonly string[]; round2Options: readonly string[]; round2CorrectReference: readonly string[]; round2Reveal: readonly string[];
+        bonusVisualAlt: string; bonusVisualPlaceholder: string; bonusVisualDisclaimer: string; bonusVisualCaption: string;
+        showResults: string; winners: string; tieWinners: string; challengeComplete: string; finalScore: string;
+        finalInstructionButton: string; handoffTitle: string; handoffLines: readonly string[]; hostStops: string;
+        recapTitle: string; recapLead: string; recapClueLabel: string;
+        recapPuzzleTitle: string; recapPuzzleBody: string; recapCoordinatesTitle: string;
+        recapLocationTitle: string; recapLocationBody: string; recapExperimentsTitle: string; recapExperimentsBody: string; recapTransition: string;
+        equipment: Record<"microphones" | "radar" | "geophones" | "sand-samples" | "camera" | "human-butt" | "metal-detector", string>;
+        print: {
+          clubCardKicker: string; scanHost: string;
+          sampleNameLabel: string; printHelpTitle: string; printHelpSummary: string;
+          boxTitle: string; boxContents: string; boxFit: string; boxSide: string;
+          boxHostHeading: string; boxStartSteps: readonly string[]; boxStartKey: string; boxScanLabel: string;
+        };
       };
       stage06InputHint: string;
       stage06SuccessNext: string;

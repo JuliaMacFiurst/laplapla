@@ -6,6 +6,7 @@ import { dictionaries } from "@/i18n";
 import { requireQuestAssetUrl } from "@/lib/shop/questAssets";
 import { SOUND_CASE_001_ASSET_MANIFEST } from "@/lib/shop/quests/sound-case-001/assets";
 import { STAGE_2_CLUE_PUBLIC_PATH } from "@/pages/quests/sound-case-001/stage-02/clue";
+import { readFileSync } from "node:fs";
 
 const assets = SOUND_CASE_001_ASSET_MANIFEST.assets;
 const base = "https://media.laplapla.com/quests/sound-case-001/stage-02-vibrating-cards/assets/";
@@ -17,6 +18,12 @@ const sceneAssets = {
 };
 
 describe("Sound Case #001 Stage 02 digital clue", () => {
+  it("uses the established dark Sound Case header route classification", () => {
+    const source = readFileSync(`${process.cwd()}/components/TopBar.tsx`, "utf8");
+    expect(source).toContain('router.pathname === "/quests/sound-case-001/stage-02/clue"');
+    expect(source).toContain('top-bar--unknown-sound');
+    expect(source).toContain('data-quest-header');
+  });
   it("keeps its stable QR route and resolves only typed production assets", () => {
     expect(STAGE_2_CLUE_PUBLIC_PATH).toBe("/quests/sound-case-001/stage-02/clue");
     expect(sceneAssets).toEqual({

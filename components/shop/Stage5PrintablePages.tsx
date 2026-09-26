@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import type { CSSProperties } from "react";
 import type { Lang } from "@/i18n";
 import { dictionaries } from "@/i18n";
@@ -15,10 +16,10 @@ export function Stage5CardsPage({ locale, side, sampleUrls, duneUrl }: { locale:
     {SOUND_CASE_001_STAGE_5_SAMPLES.map((sample, index) => {
       const position = side === "front" ? getStage5CardPositionMm(index) : getStage5BackPositionMm(index);
       if (side === "front") return <article key={sample.id} className="stage-5-card stage-5-card--sample" style={cardStyle(position)} dir={rtl?"rtl":"ltr"}>
-        <header><b>{t.sampleLabel} {String(sample.index).padStart(2,"0")}</b><strong>{t.sampleNames[index]}</strong></header>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img src={sampleUrls[sample.id]} alt="" />
+        <header><b>{t.sampleLabel} {String(sample.index).padStart(2,"0")}</b></header>
+        <img src={sampleUrls[sample.id]} alt="" />
         <div className="stage-5-card__facts"><p>📍 {t.locations[index]}</p><p>🔬 <b>{t.grainsLabel}:</b> {t.grains[index]}</p><p>🧪 <b>{t.compositionLabel}:</b> {t.composition[index]}</p><p>👀 <b>{t.featureLabel}:</b> {t.feature[index]}</p></div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img className="stage-5-card__qr" src={sample.qrAssetPath} alt="" />
+        <img className="stage-5-card__qr" src={sample.qrAssetPath} alt="" />
       </article>;
       const tile = getStage5PuzzleTile(index);
       return <article key={sample.id} className="stage-5-card stage-5-card--puzzle" style={cardStyle(position)} dir="ltr">
@@ -39,7 +40,7 @@ function CoordinateSymbolRow({prefix,digits,suffix}:{prefix:string;digits:readon
 
 function Stage5Insert({locale,side,style}:{locale:Lang;side:"front"|"back";style:CSSProperties}) {
   const t=dictionaries[locale].shop.soundCase.stage05.print;
-  return <article className="stage-5-card stage-5-card--insert" style={style} dir={locale==="he"?"rtl":"ltr"}>{side==="front"?<><h2>{t.findTitle}</h2>{t.playerLines.map(x=><p key={x}>{x}</p>)}<aside><b>{t.adultTitle}</b>{t.adultLines.map(x=><p key={x}>{x}</p>)}</aside></>:<><h2>{t.parrotTitle}</h2>{t.parrotLines.map(x=><p key={x}>{x}</p>)}<strong>{t.decodeAction}</strong>{/* eslint-disable-next-line @next/next/no-img-element */}<img className="stage-5-insert__qr" src={STAGE_5_QR_ASSET_PATHS.soundCode} alt="" /></>}</article>;
+  return <article className="stage-5-card stage-5-card--insert" style={style} dir={locale==="he"?"rtl":"ltr"}>{side==="front"?<><h2>{t.findTitle}</h2>{t.playerLines.map(x=><p key={x}>{x}</p>)}<aside><b>{t.adultTitle}</b>{t.adultLines.map(x=><p key={x}>{x}</p>)}</aside></>:<><h2>{t.parrotTitle}</h2>{t.parrotLines.map(x=><p key={x}>{x}</p>)}<strong>{t.decodeAction}</strong><img className="stage-5-insert__qr" src={STAGE_5_QR_ASSET_PATHS.stage06Transition} alt="" /></>}</article>;
 }
 
 export function Stage5BoxPage({locale,duneUrl}:{locale:Lang;duneUrl:string}) {

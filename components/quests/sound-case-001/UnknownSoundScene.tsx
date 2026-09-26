@@ -356,6 +356,11 @@ export function UnknownSoundScene({
             <section className="unknown-sound-scene__final" aria-live="polite">
               <h2>{text.finalTitle}</h2>
               <p>{text.finalBody}</p>
+              <div className="unknown-sound-scene__next-step">
+                <h3>{text.nextTitle}</h3>
+                <strong>{text.phoneAway}</strong>
+                <ol>{text.nextSteps.map((step) => <li key={step}>{step}</li>)}</ol>
+              </div>
             </section>
           </div>
         ) : null}

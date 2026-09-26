@@ -1,8 +1,10 @@
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { requireQuestAssetUrl } from "@/lib/shop/questAssets";
 import { SOUND_CASE_001_ASSET_MANIFEST, STAGE_3_DISTRACTOR_FILES } from "@/lib/shop/quests/sound-case-001/assets";
 import { HumanEqualizerAudio, TARGET_FREQUENCIES_HZ, TARGET_TONE_GAIN, TARGET_TONE_SECONDS, TARGET_TONE_WAVEFORM } from "@/lib/shop/quests/sound-case-001/humanEqualizerAudio";
 import { PausableEqualizerTimer } from "@/lib/shop/quests/sound-case-001/humanEqualizerTimer";
+import { dictionaries } from "@/i18n";
 import {
   ANSWER_HELP_DELAY_MS,
   EQUALIZER_COUNTDOWN_MS,
@@ -23,6 +25,24 @@ function finishCountdown(state: ReturnType<typeof reduceEqualizerGame>) {
 }
 
 describe("Sound Case #001 Human Equalizer", () => {
+  it("uses a cheerful localized browser voice without assuming one installed voice", () => {
+    const source=readFileSync(`${process.cwd()}/components/quests/sound-case-001/HumanEqualizerScene.tsx`,"utf8");
+    expect(source).toContain("speechSynthesis.getVoices");
+    expect(source).toContain("utterance.rate = 1.08");
+    expect(source).toContain("utterance.pitch = 1.16");
+    expect(source).toContain("utterance.volume = 1");
+    expect(source).toContain("voice.lang.toLowerCase().split");
+  });
+  it.each(["ru","en","he"] as const)("uses the exact printed Stage 04 title and marks replay optional in %s",locale=>{
+    const equalizer=dictionaries[locale].shop.soundCase.humanEqualizer;
+    const printed=dictionaries[locale].shop.soundCase.stage04.print.title;
+    expect(equalizer.physicalTransition).toContain(printed);
+    expect(equalizer.replayAlternative).toBeTruthy();
+    expect(equalizer.materials.join(" ")).not.toMatch(/envelope|конверт|מעטפה/iu);
+    expect(equalizer.nextGameSteps).toHaveLength(5);
+    expect(equalizer.nextGameSteps[4]).toMatch(/QR/u);
+    expect(equalizer.nextGameSteps[4]).toMatch(/ANSWER/u);
+  });
   it("keeps the prescribed training order and truthful production distractor IDs", () => {
     expect(EQUALIZER_ROUNDS["round-1"].map((event) => event.emittedSignal)).toEqual(
       ["high", "mid", "low", "mid", "high", "low", "low", "mid", "high"]

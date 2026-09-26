@@ -35,6 +35,11 @@ type QuestPageDefinitionBase<TType extends string> = {
   title?: LocalizedString;
 };
 
+export type SoundCaseAdultIntroPageDefinition =
+  QuestPageDefinitionBase<"sound-case-adult-intro"> & {
+    side: "single";
+  };
+
 export type SoundCardsPageDefinition = QuestPageDefinitionBase<"sound-cards"> & {
   sheetCount: 2;
   side: "front";
@@ -130,6 +135,11 @@ export type Stage5CardsPageDefinition = QuestPageDefinitionBase<"stage-5-cards">
   side: "front" | "back"; locale: Lang; pairId: "stage-5-cards-sheet"; duplexMode: typeof STAGE_5_DUPLEX_MODE;
 };
 export type Stage5BoxPageDefinition = QuestPageDefinitionBase<"stage-5-box"> & { locale: Lang };
+export type Stage7PrintablePageDefinition = QuestPageDefinitionBase<"stage-7-printable"> & {
+  locale: Lang;
+  side: "single";
+  sheet: "club-kit" | "box";
+};
 
 /**
  * Discriminated union for printable document definitions.
@@ -139,6 +149,7 @@ export type Stage5BoxPageDefinition = QuestPageDefinitionBase<"stage-5-box"> & {
  * document configuration.
  */
 export type QuestPageDefinition =
+  | SoundCaseAdultIntroPageDefinition
   | SoundCardsPageDefinition
   | SoundCardBacksPageDefinition
   | Stage1CardBoxPageDefinition
@@ -148,7 +159,8 @@ export type QuestPageDefinition =
   | Stage4CardsPageDefinition
   | Stage4BoxRulesPageDefinition
   | Stage5CardsPageDefinition
-  | Stage5BoxPageDefinition;
+  | Stage5BoxPageDefinition
+  | Stage7PrintablePageDefinition;
 
 export type QuestPageType = QuestPageDefinition["type"];
 
@@ -157,6 +169,18 @@ export type QuestPageDefinitionByType = {
 };
 
 export const SOUND_CASE_001_PAGES = [
+  {
+    id: "sound-case-001-adult-intro",
+    type: "sound-case-adult-intro",
+    printOrder: 0,
+    printable: true,
+    side: "single",
+    title: {
+      ru: "Перед началом Sound Case #001",
+      en: "Before Sound Case #001 begins",
+      he: "לפני שמתחילים את Sound Case #001",
+    },
+  },
   {
     id: "sound-case-001-sound-cards-1",
     type: "sound-cards",
@@ -346,6 +370,26 @@ export function getSoundCase001Stage5Pages(locale: Lang): readonly QuestPageDefi
   }));
   pages.push({ id: `sound-case-001-stage-5-box-${locale}`, type: "stage-5-box", printOrder: 3, printable: true, locale });
   return pages;
+}
+
+export function getSoundCase001Stage7Pages(locale: Lang): readonly QuestPageDefinition[] {
+  return [{
+    id: `sound-case-001-stage-7-club-kit-${locale}`,
+    type: "stage-7-printable" as const,
+    printOrder: 1,
+    printable: true,
+    locale,
+    side: "single" as const,
+    sheet: "club-kit" as const,
+  }, {
+    id: `sound-case-001-stage-7-box-${locale}`,
+    type: "stage-7-printable" as const,
+    printOrder: 2,
+    printable: true,
+    locale,
+    side: "single" as const,
+    sheet: "box" as const,
+  }];
 }
 
 export function getPrintableQuestPages(

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import type { Lang } from "@/i18n";
 import { dictionaries } from "@/i18n";
 import type { QuestPersonalization } from "@/lib/shop/questPersonalization";
@@ -11,12 +12,12 @@ function ClapComparison({ text, clapOutOfSyncUrl, clapTogetherUrl }: {
   return (
     <div className="stage-4-result__comparison" aria-label={`${text.asyncLabel}. ${text.togetherLabel}.`}>
       <figure>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img src={clapOutOfSyncUrl} alt="" aria-hidden="true" />
+        <img src={clapOutOfSyncUrl} alt="" aria-hidden="true" />
         <figcaption>{text.asyncLabel}</figcaption>
       </figure>
       <span aria-hidden="true">→</span>
       <figure>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img src={clapTogetherUrl} alt="" aria-hidden="true" />
+        <img src={clapTogetherUrl} alt="" aria-hidden="true" />
         <figcaption>{text.togetherLabel}</figcaption>
       </figure>
     </div>
@@ -44,7 +45,7 @@ export function Stage4ResultScene({ lang, result, parrotUrl, clapOutOfSyncUrl, c
         <header><bdi dir="ltr">PARROT SOUND LAB</bdi><span>{text.stageLabel}</span></header>
         {result === "wrong" ? (
           <section className="stage-4-result__wrong">
-            {/* eslint-disable-next-line @next/next/no-img-element */}<img src={parrotUrl} alt="" aria-hidden="true" />
+            <img src={parrotUrl} alt="" aria-hidden="true" />
             <div>
               <h1>{text.wrongTitle}</h1>
               <p className="stage-4-result__lead">{namedLine}</p>
@@ -60,9 +61,9 @@ export function Stage4ResultScene({ lang, result, parrotUrl, clapOutOfSyncUrl, c
           <>
             <section className="stage-4-result__celebrate"><h1>{text.correctTitle}</h1><p>{namedLine}</p></section>
             <section className="stage-4-result__experiment"><h2>{text.checkTitle}</h2><h3>{text.question}</h3><ClapComparison text={text} clapOutOfSyncUrl={clapOutOfSyncUrl} clapTogetherUrl={clapTogetherUrl} /><p className="stage-4-result__prompt">{text.prompt}</p><blockquote>{text.challenge}</blockquote><ol>{text.experimentSteps.map((step) => <li key={step}>{step}</li>)}</ol><div className="stage-4-result__explanation">{text.explanation.map((line) => <p key={line}>{line}</p>)}</div></section>
-            <section className="stage-4-result__clue"><span>{text.clueTitle}</span>{text.clueLines.map((line) => <strong key={line}>{line}</strong>)}</section>
+            <section className="stage-4-result__clue"><h2>{text.clueTitle} <span aria-hidden="true">✓</span></h2>{text.clueLines.map((line) => <strong key={line}>{line}</strong>)}</section>
             <section className="stage-4-result__parrot">
-              {/* eslint-disable-next-line @next/next/no-img-element */}<img src={parrotUrl} alt="" aria-hidden="true" />
+              <img src={parrotUrl} alt="" aria-hidden="true" />
               <div>{text.parrotLines.map((line) => <p key={line}>{line}</p>)}</div>
             </section>
             <section className="stage-4-result__next" aria-label={text.nextTitle}><h2>{text.nextTitle}</h2><strong>{text.phoneAway}</strong><strong>{text.findSamples}</strong><p>{text.adultSetup}</p><p>{text.visibleRule}</p><ol>{text.playerSteps.map((step) => <li key={step}>{step}</li>)}</ol><b>{text.goAction}</b></section>

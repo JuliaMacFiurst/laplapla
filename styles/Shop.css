@@ -2945,12 +2945,26 @@
 
 .quest-stage-2-intro-card {
   display: grid;
-  grid-template-rows: 11mm auto minmax(0, 1fr) auto 4mm;
+  grid-template-rows: 11mm auto auto minmax(0, 1fr) auto 4mm;
   border: 0.8mm solid #5e436b;
   background:
     repeating-linear-gradient(90deg, rgba(89, 55, 105, 0.045) 0 0.7mm, transparent 0.7mm 2mm),
     linear-gradient(155deg, #fffdf8 0 72%, #f0e8f4 100%);
   color: #28232d;
+}
+
+.quest-stage-2-intro-card__start {
+  justify-self: center;
+  margin: 1.2mm 2.5mm 0;
+  padding: 1.15mm 2.2mm;
+  border-radius: 99mm;
+  background: #684a72;
+  color: #fff;
+  font-size: 2.45mm;
+  font-weight: 1000;
+  line-height: 1.05;
+  letter-spacing: 0.035em;
+  text-align: center;
 }
 
 .quest-stage-2-intro-card > header {
@@ -3706,14 +3720,14 @@
   .quest-stage-4-box-panel { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
 /* Sound Case #001 · Stage 05. Printable gameplay copy is intentionally kept large. */
-.stage-5-sheet { position: relative; width:100%; height:100%; overflow: hidden; background: #f4eee1; color: #17222c; }
+.stage-5-sheet { position: relative; width:100%; height:100%; overflow: hidden; background: #fff; color: #17222c; }
 .stage-5-sheet__mark { position:absolute; top:7mm; left:0; right:0; text-align:center; font:700 8pt/1 sans-serif; letter-spacing:.08em; }
 .stage-5-card { position:absolute; box-sizing:border-box; overflow:hidden; border:.35mm solid #263c46; border-radius:2.2mm; background:#fffaf0; }
-.stage-5-card--sample { padding:2.2mm; display:grid; grid-template-rows:auto 31mm 1fr; gap:1.2mm; }
+.stage-5-card--sample { padding:2.2mm; display:grid; grid-template-rows:auto 34mm 1fr; gap:1.2mm; }
 .stage-5-card--sample header { display:flex; flex-direction:column; text-align:center; line-height:1.05; }
 .stage-5-card--sample header b { font-size:7pt; letter-spacing:.1em; color:#8c522e; }
 .stage-5-card--sample header strong { font-size:11pt; }
-.stage-5-card--sample > img:not(.stage-5-card__qr) { width:100%; height:31mm; object-fit:cover; border-radius:1.4mm; }
+.stage-5-card--sample > img:not(.stage-5-card__qr) { width:100%; height:34mm; object-fit:cover; border-radius:1.4mm; }
 .stage-5-card__facts { padding-inline-end:15mm; font:600 6.2pt/1.18 sans-serif; }
 .stage-5-card__facts p { margin:.45mm 0; }
 .stage-5-card__qr { position:absolute; width:14mm; height:14mm; object-fit:contain; inset-inline-end:2mm; bottom:2mm; background:#fff; }
@@ -3728,7 +3742,7 @@
 .stage-5-card--insert p { margin:.7mm 0; font:650 7.3pt/1.18 sans-serif; }
 .stage-5-card--insert aside { margin-top:auto; padding:1.5mm; background:rgba(255,255,255,.12); border-radius:1.5mm; }
 .stage-5-card--insert > strong { margin-top:auto; padding-inline-end:19mm; text-align:center; font:900 8pt/1.1 sans-serif; }
-.stage-5-insert__qr { position:absolute; inset-inline-end:2.5mm; bottom:2.5mm; width:17mm; height:17mm; background:#fff; }
+.stage-5-insert__qr { position:absolute; inset-inline-end:2.5mm; bottom:2.5mm; width:17mm; height:17mm; padding:2mm; box-sizing:content-box; background:#fff; }
 
 .stage-5-box-sheet { position:relative; width:210mm; height:297mm; overflow:hidden; box-sizing:border-box; background:#fff; color:#18333f; font-family:var(--font-nunito,"Nunito",system-ui,sans-serif); }
 .stage-5-box-sheet>header,.stage-5-box-sheet>footer { position:absolute; z-index:10; inset-inline:6mm; color:#65747b; font-size:7pt; font-weight:900; letter-spacing:.06em; text-align:center; }
@@ -3747,3 +3761,46 @@
 .stage-5-box-panel--side-a { left:10mm; }.stage-5-box-panel--side-b { left:75mm; background:#ba7546; }
 .stage-5-box-dieline__glue { position:absolute; z-index:4; left:0; top:34mm; display:grid; place-items:center; width:10mm; height:70mm; color:#65747b; font-size:5pt; font-weight:900; writing-mode:vertical-rl; }
 @media print { .stage-5-box-dieline,.stage-5-box-panel { print-color-adjust:exact; -webkit-print-color-adjust:exact; } }
+
+/* Sound Case #001 · Stage 07 · low-ink game pieces plus one tuck-box sheet. */
+.stage-7-print { position:relative; width:210mm; height:297mm; overflow:hidden; box-sizing:border-box; background:#fff; color:#122d36; font-family:var(--font-nunito,"Nunito",system-ui,sans-serif); }
+.stage-7-print__header { position:absolute; top:6mm; inset-inline:8mm; color:#536970; font-size:7pt; font-weight:900; letter-spacing:.06em; text-align:center; }
+.stage-7-print-card { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; box-sizing:border-box; padding:3mm; border:.35mm solid #193844; border-radius:2mm; background:#fffaf0; text-align:center; }
+.stage-7-print-card small { color:#9b5f2d; font-size:6pt; font-weight:950; letter-spacing:.08em; text-transform:uppercase; }
+.stage-7-print-card h1,.stage-7-print-card h2 { margin:2mm 0; font-size:11pt; line-height:1.05; }
+.stage-7-print-card p { margin:.6mm 0; font-size:5.8pt; font-weight:750; line-height:1.15; }
+.stage-7-print-card footer { margin-top:auto; color:#5d6c70; font-size:4.8pt; font-weight:900; letter-spacing:.07em; }
+.stage-7-print-card--intro { background:linear-gradient(145deg,#0c3945,#17636a); color:#fff7dd; border-color:#dca848; }
+.stage-7-print-card--intro img { width:23mm; height:23mm; margin:1mm; padding:1mm; background:#fff; }
+.stage-7-print-card--intro bdi { font-size:4.5pt; overflow-wrap:anywhere; }
+.stage-7-equipment-card { justify-content:stretch; padding:2mm; border-width:.65mm; box-shadow:inset 0 0 0 .7mm #d7b16a; }
+.stage-7-equipment-card>img { width:100%; min-height:0; flex:1 1 auto; border-radius:1mm; object-fit:cover; object-position:center; }
+.stage-7-equipment-card h2 { min-height:16mm; display:grid; flex:0 0 auto; place-items:center; margin:1mm 0 0; color:#102d36; font-size:13.2pt; font-weight:1000; line-height:.94; overflow-wrap:anywhere; }
+.stage-7-equipment-card--metal-detector h2,.stage-7-equipment-card--radar h2 { font-size:11.4pt; }
+.stage-7-equipment-card--butt { background:#f8f5eb; }
+.stage-7-print-card--bonus { background:repeating-linear-gradient(135deg,#fff8e8,#fff8e8 5mm,#f3ead4 5mm,#f3ead4 10mm); border:.7mm solid #b77932; }
+.stage-7-print-card--bonus>span { font-size:23mm; font-weight:950; line-height:1; color:#15616b; }
+.stage-7-name-label { position:absolute; display:grid; align-content:center; gap:.7mm; overflow:hidden; box-sizing:border-box; padding:2.2mm 2.6mm; border:.35mm dashed #243f48; border-radius:1.5mm; background:#fff; text-align:center; }
+.stage-7-name-label small { grid-column:1/-1; color:#765035; font-size:4.5pt; font-weight:900; letter-spacing:.06em; }
+.stage-7-name-label strong { align-self:center; color:#102d36; font-size:9.4pt; font-weight:1000; line-height:1.05; text-transform:uppercase; overflow-wrap:anywhere; }
+.stage-7-box-sheet { position:relative; width:210mm; height:297mm; overflow:hidden; box-sizing:border-box; background:#fff; color:#122d36; font-family:var(--font-nunito,"Nunito",system-ui,sans-serif); }
+.stage-7-box-sheet>header,.stage-7-box-sheet>footer { position:absolute; inset-inline:8mm; color:#52676e; font-size:7pt; font-weight:900; letter-spacing:.06em; text-align:center; }
+.stage-7-box-sheet>header { top:7mm; }.stage-7-box-sheet>footer { bottom:7mm; }
+.stage-7-box-dieline { position:absolute; color:#14343d; }
+.stage-7-box-dieline__lines { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.stage-7-box-dieline__lines .cut { fill:none; stroke:#151515; stroke-width:.35; vector-effect:non-scaling-stroke; }
+.stage-7-box-dieline__lines .fold { fill:none; stroke:#52727a; stroke-width:.25; stroke-dasharray:2 1.4; vector-effect:non-scaling-stroke; }
+.stage-7-box-panel { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; padding:4mm; text-align:center; }
+.stage-7-box-panel--front { left:19mm; top:28mm; width:59mm; height:60mm; border:.4mm solid #b68034; background:#113d47; color:#fff4d4; }
+.stage-7-box-panel--front bdi { font-size:6pt; font-weight:950; letter-spacing:.08em; }.stage-7-box-panel--front h1 { margin:3mm 0 2mm; color:#ffd56f; font-size:16pt; line-height:.95; }.stage-7-box-panel--front strong { font-size:8pt; }
+.stage-7-box-panel--back { left:87mm; top:28mm; width:59mm; height:60mm; align-items:stretch; justify-content:flex-start; gap:.5mm; padding:2mm; border:.25mm solid #59737a; background:#fff; text-align:start; }.stage-7-box-panel--back>bdi { color:#507078; font-size:5pt; font-weight:950; }.stage-7-box-panel--back h2 { margin:0; font-size:7.4pt; line-height:1; }.stage-7-box-panel--back>strong { font-size:6pt; }.stage-7-box-panel--back ol { margin:0; padding-inline-start:4mm; font-size:5.2pt; font-weight:750; line-height:1.08; }.stage-7-box-panel--back b { padding-inline-end:17mm; color:#8e3a22; font-size:5.2pt; line-height:1.05; }.stage-7-box-panel__qr { position:absolute; inset-inline-end:2mm; bottom:2mm; display:grid; justify-items:center; width:14mm; padding:1.2mm; background:#fff; text-align:center; }.stage-7-box-panel__qr img { width:12mm; height:12mm; margin:0; }.stage-7-box-panel__qr span { margin:0; font-size:3.8pt; font-weight:950; line-height:1; }.stage-7-box-panel__qr bdi { max-width:14mm; overflow:hidden; font-size:2.2pt; white-space:nowrap; }
+.stage-7-box-panel--side-a,.stage-7-box-panel--side-b { top:28mm; width:9mm; height:60mm; padding:1mm; background:#e8f0ed; font-size:5.5pt; font-weight:950; writing-mode:vertical-rl; }
+.stage-7-box-panel--side-a { left:10mm; }.stage-7-box-panel--side-b { left:78mm; }
+.stage-7-box-dieline__glue { position:absolute; left:0; top:32mm; display:grid; place-items:center; width:10mm; height:52mm; color:#63737a; font-size:5pt; font-weight:900; writing-mode:vertical-rl; }
+@media print { .stage-7-print,.stage-7-print-card,.stage-7-name-label,.stage-7-box-sheet,.stage-7-box-panel { print-color-adjust:exact; -webkit-print-color-adjust:exact; } }
+
+.sound-case-adult-intro { position:relative; box-sizing:border-box; padding:17mm 20mm 15mm; overflow:hidden; background:#fff; color:#17323a; font-family:var(--font-nunito,"Nunito",system-ui,sans-serif); }
+.sound-case-adult-intro>header { display:flex; align-items:center; justify-content:space-between; padding-bottom:4mm; border-bottom:.5mm solid #17414c; color:#17414c; font-size:9pt; font-weight:950; letter-spacing:.06em; }
+.sound-case-adult-intro__hero { display:grid; grid-template-columns:34mm 1fr; align-items:center; gap:7mm; margin:10mm 0 6mm; }.sound-case-adult-intro__hero img { width:34mm; height:34mm; object-fit:contain; }.sound-case-adult-intro__hero h1 { margin:0 0 2mm; color:#9a3f26; font-size:30pt; line-height:1; }.sound-case-adult-intro__hero p { margin:0; font-size:15pt; font-weight:950; line-height:1.2; }
+.sound-case-adult-intro__body { display:grid; gap:4mm; font-size:12pt; line-height:1.42; }.sound-case-adult-intro__body p { margin:0; }.sound-case-adult-intro__body aside { padding:4mm 5mm; border-inline-start:1.5mm solid #e05a34; background:#fff8f3; }.sound-case-adult-intro__body h2 { margin:0 0 2mm; color:#173f49; font-size:16pt; }.sound-case-adult-intro__body ol { margin:0; padding-inline-start:7mm; }.sound-case-adult-intro__body li { margin:0 0 2.5mm; font-weight:750; }
+.sound-case-adult-intro__cue { display:block; margin-top:7mm; padding:4mm; border:.6mm solid #d4922d; border-radius:3mm; color:#873b22; font-size:16pt; text-align:center; }.sound-case-adult-intro>footer { position:absolute; inset-inline:20mm; bottom:9mm; color:#54666b; font-size:9pt; font-weight:800; text-align:center; }

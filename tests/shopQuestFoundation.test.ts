@@ -39,6 +39,7 @@ import {
   type SoundCase001SoundCardAssetId,
   type SoundCase001Stage3DistractorAssetId,
   type SoundCase001Stage6AudioAssetId,
+  type SoundCase001Stage7AudioAssetId,
   type SoundCase001VisualAssetId,
 } from "@/lib/shop/quests/sound-case-001/assets";
 import {
@@ -112,8 +113,18 @@ describe("Sound Case catalog safety", () => {
 });
 
 describe("Sound Case document configuration", () => {
+  it.each(["ru", "en", "he"] as const)("puts the localized adult introduction first in %s", (locale) => {
+    const html = renderToStaticMarkup(createElement(QuestDocument, { personalization: { locale, leadName: "", participants: [] } }));
+    const intro = dictionaries[locale].shop.soundCase.adultIntro;
+    expect(SOUND_CASE_001_PAGES[0].type).toBe("sound-case-adult-intro");
+    expect(html.indexOf("sound-case-adult-intro")).toBeLessThan(html.indexOf("quest-sound-cards-sheet"));
+    expect(html).toContain(intro.title);
+    expect(html).toContain(intro.startCue);
+    expect(intro.description.join(" ")).not.toMatch(/\b[0-9]+\s+(clues|улик|רמזים)/iu);
+  });
   it("registers every printable page type in the exhaustive renderer", () => {
     expectTypeOf<QuestPageType>().toEqualTypeOf<
+      | "sound-case-adult-intro"
       | "sound-cards"
       | "sound-card-backs"
       | "stage-1-card-box"
@@ -124,9 +135,10 @@ describe("Sound Case document configuration", () => {
       | "stage-4-box-rules"
       | "stage-5-cards"
       | "stage-5-box"
+      | "stage-7-printable"
     >();
 
-    const definition = SOUND_CASE_001_PAGES[0];
+    const definition = SOUND_CASE_001_PAGES[1];
     const html = renderToStaticMarkup(
       renderQuestPageDefinition(definition, {
         personalization: {
@@ -157,6 +169,11 @@ describe("Sound Case document configuration", () => {
         ({ id, type, printOrder }) => ({ id, type, printOrder }),
       ),
     ).toEqual([
+      {
+        id: "sound-case-001-adult-intro",
+        type: "sound-case-adult-intro",
+        printOrder: 0,
+      },
       {
         id: "sound-case-001-sound-cards-1",
         type: "sound-cards",
@@ -386,18 +403,24 @@ describe("Sound Case asset manifest", () => {
     expectTypeOf<SoundCase001VisualAssetId>().toEqualTypeOf<
       Exclude<
         SoundCase001AssetId,
-        "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId
+        "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId | SoundCase001Stage7AudioAssetId
       >
     >();
     expectTypeOf<SoundCase001AudioAssetId>().toEqualTypeOf<
-      "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId
+      "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId | SoundCase001Stage7AudioAssetId
     >();
     expectTypeOf<SoundCardDefinition["illustrationAssetId"]>().toEqualTypeOf<
       SoundCase001SoundCardAssetId
     >();
 
     expect(SOUND_CASE_001_ASSET_MANIFEST.questId).toBe("sound-case-001");
-    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(86);
+    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(97);
+    expect(
+      SOUND_CASE_001_ASSET_MANIFEST.assets["stage-7-expert-club-background"].source.status,
+    ).toBe("external");
+    expect(
+      SOUND_CASE_001_ASSET_MANIFEST.assets["stage-7-dune-sliding-experiment"].source.status,
+    ).toBe("external");
     expect(SOUND_CASE_001_ASSET_MANIFEST.assets).not.toHaveProperty(
       "stage-1-sound-card-illustration",
     );
@@ -914,6 +937,12 @@ describe("Sound Case localization and print boundaries", () => {
         createElement(QuestDocument, { personalization }),
       );
       expect(SOUND_CASE_001_PAGES[0]).toMatchObject({
+        id: "sound-case-001-adult-intro",
+        type: "sound-case-adult-intro",
+        printOrder: 0,
+        printable: true,
+      });
+      expect(SOUND_CASE_001_PAGES[1]).toMatchObject({
         id: "sound-case-001-sound-cards-1",
         type: "sound-cards",
         printOrder: 1,
@@ -972,7 +1001,7 @@ describe("Sound Case localization and print boundaries", () => {
         },
       }),
     );
-    expect(html.match(/data-page-id=/g)).toHaveLength(5);
+    expect(html.match(/data-page-id=/g)).toHaveLength(6);
     expect(html).not.toContain('data-page-id="sound-case-001-case-cover"');
     expect(html).not.toContain('class="quest-case-cover"');
     expect(html).toContain('data-page-id="sound-case-001-stage-1-card-box"');
@@ -1027,7 +1056,7 @@ describe("Sound Case localization and print boundaries", () => {
     expect(css).toMatch(/\.quest-sound-cards-sheet__grid[\s\S]*direction: ltr/);
     expect(css).toContain("width: 60mm");
     expect(css).toContain("height: 80mm");
-    expect(SOUND_CASE_001_PAGES).toHaveLength(5);
+    expect(SOUND_CASE_001_PAGES).toHaveLength(6);
     expect(css).toMatch(
       /\.quest-card-box-sheet__guides\s*\{[\s\S]*?width: 152mm;[\s\S]*?height: 142mm;/,
     );

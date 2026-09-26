@@ -62,6 +62,14 @@ describe("Sound Case #001 Stage 02 printable kit", () => {
     expect(SOUND_CASE_001_STAGE_2_CLUE_CARD.duplexMode).toBe("flip-long-edge");
   });
 
+  it.each(locales)("prints an unmistakable localized start badge on the Stage 02 Parrot card in %s", (locale) => {
+    const html = renderStage2(locale);
+    const badge = dictionaries[locale].shop.soundCase.stage02.intro.startBadge;
+    expect(html).toContain('class="quest-stage-2-intro-card__start"');
+    expect(html).toContain(badge);
+    expect(dictionaries[locale].shop.soundCase.unknownSoundScene.nextSteps.join(" ")).toContain(badge);
+  });
+
   it("resolves every production asset through the typed manifest", () => {
     const expectedDirectory = { ru: "/cards/rus/", en: "/cards/eng/", he: "/cards/he/" } as const;
     for (const locale of locales) {

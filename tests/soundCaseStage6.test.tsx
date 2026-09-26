@@ -1,9 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe,expect,it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SoundCodeScene } from "@/components/quests/sound-case-001/SoundCodeScene";
 import { SOUND_CODE_DIGITS, STAGE_6_DECODER_DIGITS, validateStage6Decoder } from "@/lib/shop/quests/sound-case-001/soundCode";
 import { STAGE_6_COORDINATE_PUZZLE } from "@/lib/shop/quests/sound-case-001/scatteredSand";
 import { SOUND_CASE_001_ASSET_MANIFEST, STAGE_6_AUDIO_FILES } from "@/lib/shop/quests/sound-case-001/assets";
+import { dictionaries } from "@/i18n";
 describe("Sound Case Stage 06",()=>{
   it("maps every digit exactly once and reuses Stage 03 only for zero and three",()=>{
     expect(SOUND_CODE_DIGITS.map(x=>x.digit).sort()).toEqual([0,1,2,3,4,5,6,7,8,9]);
@@ -28,4 +30,11 @@ describe("Sound Case Stage 06",()=>{
     expect(result.filter(value=>!value)).toHaveLength(2);
   });
   it("keeps coordinates hidden before explicit confirmation and orders Hebrew audio LTR",()=>{const html=renderToStaticMarkup(<SoundCodeScene lang="he" backgroundUrl="/dune.webp" parrotUrls={["/p.webp"]} audioUrls={{}}/>);expect(html).not.toContain(STAGE_6_COORDINATE_PUZZLE.final.latitude);expect(html).toContain('dir="ltr"');});
+  it.each(["ru","en","he"] as const)("explains the physical Stage 07 handoff before external map actions in %s",locale=>{
+    const text=dictionaries[locale].shop.soundCase.stage06;
+    expect(text.leaveLabLines.join(" ")).toMatch(/не нужно|do not return|אין צורך/u);
+    expect(text.stage07KitLines.join(" ")).toContain("STAGE 07");
+    const source=readFileSync(`${process.cwd()}/components/quests/sound-case-001/SoundCodeScene.tsx`,"utf8");
+    expect(source.indexOf("stage-6__external-handoff")).toBeLessThan(source.indexOf("https://www.google.com/maps"));
+  });
 });

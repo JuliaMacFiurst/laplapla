@@ -124,6 +124,10 @@ describe("Sound Case #001 Stage 04", () => {
     const named = renderToStaticMarkup(createElement(Stage4ResultScene, { lang: "ru", result: "correct", ...sceneAssets, personalization: { locale: "ru", leadName: "Майя", participants: [] } }));
     const generic = renderToStaticMarkup(createElement(Stage4ResultScene, { lang: "ru", result: "wrong", ...sceneAssets }));
     expect(named).toContain("Майя");
+    expect(named).toContain("УЛИКА №4");
+    expect(named).toMatch(/stage-4-result__clue[\s\S]*УЛИКА №4[\s\S]*✓/);
+    expect(named).toContain("ОБРАЗЕЦ 01");
+    expect(named).toContain("макрофотографией песка");
     expect(named).toContain('/clap-out-of-sync.webp');
     expect(named).toContain('/clap-together.webp');
     expect(generic).toContain("Кажется, где-то по дороге");

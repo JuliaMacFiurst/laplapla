@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SOUND_CASE_001_ASSET_MANIFEST } from "@/lib/shop/quests/sound-case-001/assets";
 import { getSoundCase001Stage5Pages } from "@/lib/shop/questDocument";
 import { renderQuestPageDefinition } from "@/components/shop/questPageRenderers";
-import { SOUND_CASE_001_STAGE_5_SAMPLES, STAGE_5_BOX_DIELINE_SIZE_MM, STAGE_5_BOX_INNER_SIZE_MM, STAGE_5_CARD_SIZE_MM, STAGE_5_PUZZLE_GRID, STAGE_5_SAND_ARTICLE_DESTINATION, STAGE_6_COORDINATE_PUZZLE, STAGE_6_DESTINATION, getStage5PuzzleTile } from "@/lib/shop/quests/sound-case-001/scatteredSand";
+import { SOUND_CASE_001_STAGE_5_SAMPLES, STAGE_5_BOX_DIELINE_SIZE_MM, STAGE_5_BOX_INNER_SIZE_MM, STAGE_5_CARD_SIZE_MM, STAGE_5_PUZZLE_GRID, STAGE_5_QR_ASSET_PATHS, STAGE_5_SAND_ARTICLE_DESTINATION, STAGE_6_COORDINATE_PUZZLE, STAGE_6_DESTINATION, getStage5PuzzleTile } from "@/lib/shop/quests/sound-case-001/scatteredSand";
+import { SOUND_CASE_001_FINALE_DESTINATION, SAMPLE_08_FINAL_QR_RESPONSIBILITY } from "@/lib/shop/quests/sound-case-001/expertClub";
+import { dictionaries } from "@/i18n";
 
 describe("Sound Case Stage 05", () => {
   it("defines eight unique samples, one Liwa route and seven article routes", () => {
@@ -14,6 +17,19 @@ describe("Sound Case Stage 05", () => {
     expect(SOUND_CASE_001_STAGE_5_SAMPLES.slice(0,7).every(x=>x.qrDestination===STAGE_5_SAND_ARTICLE_DESTINATION)).toBe(true);
     expect(STAGE_5_SAND_ARTICLE_DESTINATION).toBe("https://www.laplapla.com/bedtime-stories/sand-is-not-just-sand");
     expect(SOUND_CASE_001_STAGE_5_SAMPLES[7].qrDestination).toBe(STAGE_6_DESTINATION);
+    expect(SOUND_CASE_001_STAGE_5_SAMPLES[7].qrRole).toBe("legacy-stage-06-pending-finale");
+    expect(SOUND_CASE_001_STAGE_5_SAMPLES[7].plannedQrRole).toBe(SAMPLE_08_FINAL_QR_RESPONSIBILITY);
+    expect(SOUND_CASE_001_STAGE_5_SAMPLES[7].plannedQrDestination).toBe(SOUND_CASE_001_FINALE_DESTINATION);
+    expect(STAGE_5_QR_ASSET_PATHS.sample08Legacy).toBe(STAGE_5_QR_ASSET_PATHS.stage06Transition);
+  });
+  it.each(["ru", "en", "he"] as const)("hides identifying names on the %s information faces while retaining macro images and facts", (locale) => {
+    const front=getSoundCase001Stage5Pages(locale)[0];
+    const html=renderToStaticMarkup(renderQuestPageDefinition(front,{personalization:{locale,leadName:"",participants:[]},assetManifest:SOUND_CASE_001_ASSET_MANIFEST}));
+    for(const name of dictionaries[locale].shop.soundCase.stage05.print.sampleNames) expect(html).not.toContain(name);
+    expect(html.match(/stage-5-card--sample/g)).toHaveLength(8);
+    for(let index=1;index<=8;index+=1) expect(html).toContain(`stage-5-sand-sample-0${index}`);
+    expect(html.match(/stage-5-card__facts/g)).toHaveLength(8);
+    expect(html.match(/stage-5-card__qr/g)).toHaveLength(8);
   });
   it("uses a 4×2 programmatic puzzle without reversing Hebrew", () => {
     expect(STAGE_5_PUZZLE_GRID).toEqual({columns:4,rows:2});
@@ -44,5 +60,11 @@ describe("Sound Case Stage 05", () => {
     expect(html).toContain('data-box-inner-width-mm="59"');
     expect(html).toContain('data-box-inner-height-mm="78"');
     expect(html).toContain('data-box-inner-depth-mm="6"');
+  });
+  it("keeps both A4 card sides white and gives the Stage 06 QR a four-module-plus quiet zone",()=>{
+    const css=readFileSync(`${process.cwd()}/styles/Shop.css`,"utf8");
+    expect(css).toMatch(/\.stage-5-sheet\s*\{[^}]*background:\s*#fff/);
+    expect(css).toMatch(/\.stage-5-insert__qr\s*\{[^}]*width:17mm[^}]*height:17mm[^}]*padding:2mm/);
+    expect(STAGE_5_QR_ASSET_PATHS.stage06Transition).toBe("/quests/sound-case-001/stage-05/sound-code-qr.svg");
   });
 });

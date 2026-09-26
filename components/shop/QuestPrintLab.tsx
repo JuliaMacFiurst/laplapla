@@ -5,6 +5,7 @@ import {
   getSoundCase001Stage2Pages,
   getSoundCase001Stage4Pages,
   getSoundCase001Stage5Pages,
+  getSoundCase001Stage7Pages,
   getPrintableQuestPages,
   type QuestPageDefinition,
   type Stage1CardBoxPageDefinition,
@@ -31,7 +32,7 @@ const DEFAULT_FIXTURE = createQuestPersonalization("ru", {
 
 type QuestPrintLabProps = {
   initialPersonalization?: QuestPersonalization;
-  initialStage?: "01" | "02" | "04" | "05";
+  initialStage?: "01" | "02" | "04" | "05" | "07";
 };
 
 export type QuestPrintLabDuplexPair = {
@@ -112,7 +113,7 @@ export function QuestPrintLab({
   initialStage = "01",
 }: QuestPrintLabProps) {
   const [personalization, setPersonalization] = useState(initialPersonalization);
-  const [stage, setStage] = useState<"01" | "02" | "04" | "05">(initialStage);
+  const [stage, setStage] = useState<"01" | "02" | "04" | "05" | "07">(initialStage);
   const [xRayEnabled, setXRayEnabled] = useState(false);
   const [printHelpOpen, setPrintHelpOpen] = useState(false);
   const documentHostRef = useRef<HTMLDivElement>(null);
@@ -124,12 +125,14 @@ export function QuestPrintLab({
     dictionaries[personalization.locale].shop.soundCase.stage02.printHelp;
   const stage4Guidance = dictionaries[personalization.locale].shop.soundCase.stage04.print;
   const stage5Guidance = dictionaries[personalization.locale].shop.soundCase.stage05.print;
+  const stage7Guidance = dictionaries[personalization.locale].shop.soundCase.stage07.print;
   const [firstPair, secondPair] = SOUND_CASE_001_DUPLEX_PAIRS;
   const cardPageRange = `${firstPair.frontPageNumber}–${secondPair.backPageNumber}`;
   const selectedPages = stage === "01" ? SOUND_CASE_001_PAGES
     : stage === "02" ? getSoundCase001Stage2Pages(personalization.locale)
     : stage === "04" ? getSoundCase001Stage4Pages(personalization.locale)
-    : getSoundCase001Stage5Pages(personalization.locale);
+    : stage === "05" ? getSoundCase001Stage5Pages(personalization.locale)
+    : getSoundCase001Stage7Pages(personalization.locale);
 
   useEffect(() => {
     const host = documentHostRef.current;
@@ -218,6 +221,7 @@ export function QuestPrintLab({
               <span>BROKEN RHYTHM</span>
             </button>
             <button type="button" aria-label="Открыть STAGE 05 — Scattered Sand" aria-pressed={stage === "05"} onClick={() => setStage("05")}><strong>STAGE 05</strong><span>SCATTERED SAND</span></button>
+            <button type="button" aria-label="Открыть STAGE 07 — Expert Club" aria-pressed={stage === "07"} onClick={() => setStage("07")}><strong>STAGE 07</strong><span>EXPERT CLUB</span></button>
           </div>
         </fieldset>
 
@@ -232,7 +236,7 @@ export function QuestPrintLab({
             aria-controls="quest-print-lab-print-help-content"
             onClick={() => setPrintHelpOpen((open) => !open)}
           >
-            <span>{stage === "01" ? printGuidance.printHelpTitle : stage === "02" ? stage2Guidance.title : stage === "04" ? stage4Guidance.printHelpTitle : stage5Guidance.printHelpTitle}</span>
+            <span>{stage === "01" ? printGuidance.printHelpTitle : stage === "02" ? stage2Guidance.title : stage === "04" ? stage4Guidance.printHelpTitle : stage === "05" ? stage5Guidance.printHelpTitle : stage7Guidance.printHelpTitle}</span>
             <span aria-hidden="true">{printHelpOpen ? "▴" : "▾"}</span>
           </button>
           <div
@@ -242,6 +246,10 @@ export function QuestPrintLab({
           >
           {stage === "01" ? (
           <section className="quest-print-lab__duplex-help" aria-label={printGuidance.manualTitle}>
+          <div className="quest-print-lab__adult-page-help">
+            <strong>{printGuidance.adultPageTitle}</strong>
+            <p>{printGuidance.adultPageInstruction}</p>
+          </div>
           <details className="quest-print-lab__duplex-scenario" data-duplex-scenario="auto">
             <summary>{printGuidance.autoTitle}</summary>
             <div className="quest-print-lab__duplex-scenario-body">
@@ -388,7 +396,8 @@ export function QuestPrintLab({
                 <span>8 PDF pages → 4 physical A4 sheets</span>
               </aside>
             </section>
-          ) : <section className="quest-print-lab__duplex-help" data-stage-5-print-help="true"><p className="quest-print-lab__duplex-result">{stage5Guidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>A4 · 100% / Actual Size</strong><span>Pages 1/2: duplex cards · Page 3: single-sided box</span><span>3 PDF pages → 2 physical A4 sheets</span></aside></section>}
+          ) : stage === "05" ? <section className="quest-print-lab__duplex-help" data-stage-5-print-help="true"><p className="quest-print-lab__duplex-result">{stage5Guidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>A4 · 100% / Actual Size</strong><span>Pages 1/2: duplex cards · Page 3: single-sided box</span><span>3 PDF pages → 2 physical A4 sheets</span></aside></section>
+          : <section className="quest-print-lab__duplex-help" data-stage-7-print-help="true"><p className="quest-print-lab__duplex-result">{stage7Guidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>A4 · 100% / Actual Size</strong><span>Page 1: game cards and labels · Page 2: tuck box</span><span>2 PDF pages → 2 physical A4 sheets</span></aside></section>}
           </div>
         </section>
 

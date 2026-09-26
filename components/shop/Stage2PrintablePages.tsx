@@ -118,6 +118,7 @@ function Stage2IntroCard({ locale, parrotUrl }: { locale: Lang; parrotUrl: strin
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={parrotUrl} alt="" />
       </header>
+      <strong className="quest-stage-2-intro-card__start">{text.intro.startBadge}</strong>
       <strong className="quest-stage-2-intro-card__parrot">{text.intro.parrotLabel}</strong>
       <div className="quest-stage-2-intro-card__speech">
         {text.intro.speech.map((line) => <p key={line}>{line}</p>)}
