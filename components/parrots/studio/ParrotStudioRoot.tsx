@@ -1609,7 +1609,7 @@ export default function ParrotStudioRoot({
                 <button
                   key={item.id}
                   type="button"
-                  className={`parrot-studio-root__style-item ${item.id === selectedStyleSlug ? "is-active" : ""}`}
+                  className={`parrot-studio-root__style-item ${item.id === "singing-dune" ? "is-singing-dune" : ""} ${item.id === selectedStyleSlug ? "is-active" : ""}`}
                   onClick={() => {
                     playbackOwnershipRef.current.stopPreview({
                       stopPreview: () => {
@@ -1623,7 +1623,9 @@ export default function ParrotStudioRoot({
                     setIsStyleMenuOpen(false);
                   }}
                 >
-                  <Image src={item.iconUrl} alt="" width={48} height={48} unoptimized />
+                  <span className="parrot-studio-root__style-art" aria-hidden="true">
+                    <Image src={item.iconUrl} alt="" width={48} height={48} unoptimized />
+                  </span>
                   <span>{item.title}</span>
                 </button>
               ))}
@@ -1989,6 +1991,14 @@ export default function ParrotStudioRoot({
           box-sizing: border-box;
         }
 
+        .parrot-studio-root__style-art {
+          display: grid;
+          width: 28px;
+          height: 28px;
+          overflow: hidden;
+          border-radius: 7px;
+        }
+
         .parrot-studio-root__style-item img {
           display: block;
           width: 28px;
@@ -1996,6 +2006,8 @@ export default function ParrotStudioRoot({
           object-fit: contain;
           align-self: center;
         }
+
+        .parrot-studio-root__style-item.is-singing-dune img { transform: scale(1.08); }
 
         .parrot-studio-root__style-item span {
           display: block;

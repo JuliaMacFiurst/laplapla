@@ -372,7 +372,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
               <button
                 key={p.id}
                 onClick={() => setActiveId(p.id)}
-                className={`style-preset-btn ${p.id === activeId ? 'is-active' : ''}`}
+                className={`style-preset-btn ${p.id === "singing-dune" ? "is-singing-dune" : ""} ${p.id === activeId ? 'is-active' : ''}`}
                 style={{ backgroundImage: `url(${imageForPreset(p.id, p.iconUrl)})` }}
                 aria-pressed={p.id === activeId}
                 title={p.title}
@@ -461,6 +461,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             font-family: var(--font-amatic-sc), cursive;
           }
           .style-preset-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.12); }
+          .style-preset-btn.is-singing-dune { background-size: 108%; }
           .style-preset-btn.is-active {
             border: 3px solid #b388ff; /* kawaii lavender */
             box-shadow: 0 0 0 6px rgba(179,136,255,0.18), 0 10px 24px rgba(179,136,255,0.25);

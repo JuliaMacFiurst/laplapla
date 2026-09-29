@@ -34,7 +34,7 @@ export default function ParrotMobileExperience({
               key={preset.id}
               type="button"
               onClick={() => onOpenPreset(preset.id)}
-              className="style-preset-btn"
+              className={`style-preset-btn ${preset.id === "singing-dune" ? "is-singing-dune" : ""}`}
               style={{ backgroundImage: `url(${imageForPreset(preset.id)})` }}
               title={preset.localizedTitle}
             >
