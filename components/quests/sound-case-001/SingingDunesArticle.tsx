@@ -1,13 +1,95 @@
 /* eslint-disable @next/next/no-img-element */
+import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { requireQuestAssetUrl } from "@/lib/shop/questAssets";
+import { SOUND_CASE_001_ASSET_MANIFEST } from "@/lib/shop/quests/sound-case-001/assets";
 import { SOUND_CASE_001_HUB_PUBLIC_PATH } from "@/lib/shop/quests/sound-case-001/finale";
 import {
   getSingingDunesArticleCopy,
+  type SingingDunesArticleCopy,
   SINGING_DUNE_SOURCES,
   SINGING_DUNE_STICKERS,
 } from "@/lib/quests/singingDunesArticle";
+
+const SINGING_DUNE_AUDIO_URL = requireQuestAssetUrl(
+  SOUND_CASE_001_ASSET_MANIFEST.assets["stage-1-unknown-recording"],
+);
+
+type AudioState = "idle" | "loading" | "playing" | "error";
+
+function SingingDuneAudioPlayer({ copy }: { copy: SingingDunesArticleCopy["audio"] }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioState, setAudioState] = useState<AudioState>("idle");
+  const isPlaying = audioState === "playing";
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    return () => {
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, []);
+
+  const togglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      return;
+    }
+
+    if (audio.ended) audio.currentTime = 0;
+    setAudioState("loading");
+    try {
+      await audio.play();
+    } catch {
+      setAudioState("error");
+    }
+  };
+
+  return (
+    <aside className={`singing-dunes-audio${isPlaying ? " is-playing" : ""}`} aria-label={copy.caption}>
+      <audio
+        ref={audioRef}
+        src={SINGING_DUNE_AUDIO_URL}
+        preload="metadata"
+        onPlay={() => setAudioState("playing")}
+        onPause={(event) => {
+          if (!event.currentTarget.ended) setAudioState("idle");
+        }}
+        onEnded={() => setAudioState("idle")}
+        onError={() => setAudioState("error")}
+      />
+      <div className="singing-dunes-audio__heading">
+        <span aria-hidden="true">🎧</span>
+        <div>
+          <strong>{copy.title}</strong>
+          <small>{copy.caption}</small>
+        </div>
+      </div>
+      <div className="singing-dunes-audio__controls">
+        <button
+          type="button"
+          onClick={() => void togglePlayback()}
+          aria-label={isPlaying ? copy.pauseLabel : copy.playLabel}
+          aria-pressed={isPlaying}
+          disabled={audioState === "loading"}
+        >
+          <span aria-hidden="true">{isPlaying ? "Ⅱ" : "▶"}</span>
+        </button>
+        <span className="singing-dunes-audio__wave" aria-hidden="true" dir="ltr">
+          {Array.from({ length: 9 }, (_, index) => <i key={index} />)}
+        </span>
+      </div>
+      <p>{copy.note}</p>
+      {audioState === "error" ? <span className="singing-dunes-audio__error" role="status">{copy.error}</span> : null}
+    </aside>
+  );
+}
 
 export function SingingDunesArticle({ lang }: { lang: Lang }) {
   const text = getSingingDunesArticleCopy(lang);
@@ -39,7 +121,14 @@ export function SingingDunesArticle({ lang }: { lang: Lang }) {
               <span className="singing-dunes-article__number" aria-hidden="true">{String(sectionIndex + 1).padStart(2, "0")}</span>
               <h2>{section.title}</h2>
               <div className="singing-dunes-article__copy">
-                {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                {section.paragraphs.map((paragraph, paragraphIndex) => (
+                  <Fragment key={paragraph}>
+                    <p>{paragraph}</p>
+                    {sectionIndex === 0 && paragraphIndex === 1 ? (
+                      <SingingDuneAudioPlayer copy={text.audio} />
+                    ) : null}
+                  </Fragment>
+                ))}
               </div>
               {section.bullets ? (
                 <ul className="singing-dunes-article__chips">

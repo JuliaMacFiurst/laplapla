@@ -55,6 +55,14 @@ export type SingingDunesArticleCopy = {
   title: string;
   dek: string;
   boom: string;
+  audio: {
+    title: string;
+    note: string;
+    caption: string;
+    playLabel: string;
+    pauseLabel: string;
+    error: string;
+  };
   sections: readonly SingingDunesSection[];
   chainTitle: string;
   chain: readonly string[];
@@ -71,6 +79,14 @@ const copy: Record<Lang, SingingDunesArticleCopy> = {
     title: "ПОЧЕМУ ДЮНА ПОЁТ?",
     dek: "Короткий ответ: потому что миллионы песчинок умеют устроить очень странный хор. Длинный ответ намного веселее.",
     boom: "У-У-У-У-УМ",
+    audio: {
+      title: "ПОСЛУШАТЬ ДЮНУ",
+      note: "«Да. Она действительно так делает.»",
+      caption: "Настоящая запись поющей дюны",
+      playLabel: "Включить запись поющей дюны",
+      pauseLabel: "Поставить запись поющей дюны на паузу",
+      error: "Не удалось включить запись. Попробуйте ещё раз.",
+    },
     sections: [
       {
         id: "hello",
@@ -162,6 +178,14 @@ const copy: Record<Lang, SingingDunesArticleCopy> = {
     title: "WHY DOES A DUNE SING?",
     dek: "Short answer: millions of sand grains can form a very strange choir. The long answer is much more fun.",
     boom: "BOOOOOOOOM",
+    audio: {
+      title: "LISTEN TO THE DUNE",
+      note: "“Yes. It really does that.”",
+      caption: "A real recording of a singing dune",
+      playLabel: "Play the singing dune recording",
+      pauseLabel: "Pause the singing dune recording",
+      error: "The recording could not be played. Please try again.",
+    },
     sections: [
       { id: "hello", title: "The desert turns up the bass", paragraphs: ["Picture a desert. Heat. Wind. Sand. You slide down a giant dune—and the ground starts to hum.", "Not rustle. Not shhh. Hum. Congratulations: you found a singing dune. And no, nobody left a speaker on inside it.", "Scientists call this booming sand. In well-studied dunes, the main note is often around 70–110 Hz, with higher harmonics above it. A whole hill becomes one enormous low instrument."], note: "70–110 Hz is low. You can hear it with your ears—and sometimes feel it in your body.", stickerIndices: [0, 7] },
       { id: "where", title: "Where does sand give concerts?", paragraphs: ["These places are rare. Scientific reviews describe dozens of known booming sites, but the list is not forever fixed. New sites appear, and a famous dune will not sing in every kind of weather.", "The desert tour includes Kelso and Eureka Dunes in California, Sand Mountain in Nevada, Dumont Dunes, dunes in Morocco, China and the Gobi, Chile, and other documented sites."], bullets: ["Kelso · California", "Eureka · California", "Sand Mountain · Nevada", "Dumont · California", "Morocco", "China · Gobi", "Chile"], note: "Dunes do not publish concert times. Moisture, wind, and the condition of the slope may cancel the show.", stickerIndices: [3, 12, 18] },
@@ -184,6 +208,14 @@ const copy: Record<Lang, SingingDunesArticleCopy> = {
     title: "למה הדיונה שרה?",
     dek: "התשובה הקצרה: מיליוני גרגרי חול יודעים להקים מקהלה ממש מוזרה. התשובה הארוכה הרבה יותר כיפית.",
     boom: "בוווווווום",
+    audio: {
+      title: "להקשיב לדיונה",
+      note: "״כן. היא באמת עושה את זה.״",
+      caption: "הקלטה אמיתית של דיונה מזמרת",
+      playLabel: "להשמיע הקלטה של דיונה מזמרת",
+      pauseLabel: "להשהות את ההקלטה של הדיונה",
+      error: "לא הצלחנו להשמיע את ההקלטה. נסו שוב.",
+    },
     sections: [
       { id: "hello", title: "המדבר מגביר את הבס", paragraphs: ["דמיינו מדבר. חום. רוח. חול. אתם גולשים מדיונה ענקית—ופתאום האדמה מתחילה לזמזם.", "לא רשרוש. לא ששש. ממש זמזום עמוק. מזל טוב: מצאתם דיונה מזמרת. ולא, אף אחד לא שכח רמקול בפנים.", "המדענים קוראים לזה booming sand. בדיונות שנחקרו היטב, הצליל הראשי נמצא לעיתים קרובות סביב 70–110 Hz, ומעליו נשמעות הרמוניות. הר שלם הופך לכלי נגינה נמוך ועצום."], note: "70–110 Hz הוא צליל נמוך מאוד. שומעים אותו באוזניים—ולפעמים מרגישים אותו בכל הגוף.", stickerIndices: [0, 7] },
       { id: "where", title: "איפה החול נותן הופעות?", paragraphs: ["המקומות האלה נדירים. סקירות מדעיות מתארות עשרות אתרים מוכרים, אבל הרשימה לא קבועה לנצח. מגלים מקומות חדשים, וגם דיונה מפורסמת לא שרה בכל מזג אוויר.", "בסיבוב ההופעות המדברי נמצאות Kelso ו־Eureka ב־California, ‏Sand Mountain ב־Nevada, ‏Dumont Dunes, דיונות ב־Morocco, ב־China וב־Gobi, ב־Chile ועוד אתרים מתועדים."], bullets: ["Kelso · California", "Eureka · California", "Sand Mountain · Nevada", "Dumont · California", "Morocco", "China · Gobi", "Chile"], note: "לדיונות אין לוח הופעות. לחות, רוח ומצב המדרון עלולים לבטל את הקונצרט.", stickerIndices: [3, 12, 18] },

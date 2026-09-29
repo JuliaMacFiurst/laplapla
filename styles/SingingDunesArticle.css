@@ -35,6 +35,30 @@
 .singing-dunes-article__section h2, .singing-dunes-article__chain h2 { margin: 0 0 18px; color: #462b42; font-size: clamp(2rem, 5vw, 3.45rem); line-height: 1; text-wrap: balance; }
 .singing-dunes-article__copy { max-width: 700px; }
 .singing-dunes-article__copy p, .singing-dunes-article__finale p { margin: 0 0 1em; font-size: clamp(1.08rem, 1.8vw, 1.28rem); line-height: 1.68; }
+.singing-dunes-audio { position: relative; box-sizing: border-box; width: 100%; max-width: 610px; margin: 26px 0 34px; border: 3px solid #462b42; border-radius: 20px 25px 18px 23px; padding: 18px 20px 16px; background: #ffe078; box-shadow: 8px 9px 0 rgba(99, 57, 40, .14); transform: rotate(-.35deg); }
+.singing-dunes-audio::after { content: ""; position: absolute; width: 54px; height: 14px; inset-block-start: -8px; inset-inline-end: 28px; background: rgba(255, 255, 255, .62); transform: rotate(3deg); }
+.singing-dunes-audio > audio { display: none; }
+.singing-dunes-audio__heading { display: flex; align-items: center; gap: 11px; }
+.singing-dunes-audio__heading > span { font-size: 1.65rem; }
+.singing-dunes-audio__heading div { display: grid; gap: 2px; }
+.singing-dunes-audio__heading strong { color: #462b42; font-size: clamp(1.08rem, 2vw, 1.35rem); letter-spacing: .035em; }
+.singing-dunes-audio__heading small { color: #70402f; font-size: .85rem; font-weight: 750; }
+.singing-dunes-audio__controls { display: flex; align-items: center; gap: 16px; margin: 15px 0 11px; direction: ltr; }
+.singing-dunes-audio__controls button { display: grid; flex: 0 0 56px; width: 56px; height: 56px; place-items: center; border: 3px solid #462b42; border-radius: 50%; padding: 0; background: var(--terracotta); color: #fff9e8; box-shadow: 4px 4px 0 #462b42; cursor: pointer; }
+.singing-dunes-audio__controls button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #462b42; }
+.singing-dunes-audio__controls button:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 #462b42; }
+.singing-dunes-audio__controls button:focus-visible { outline: 4px solid var(--teal); outline-offset: 4px; }
+.singing-dunes-audio__controls button:disabled { cursor: wait; opacity: .7; }
+.singing-dunes-audio__controls button span { margin-inline-start: 2px; font-size: 1.35rem; line-height: 1; }
+.singing-dunes-audio.is-playing .singing-dunes-audio__controls button span { margin-inline-start: 0; font-weight: 950; }
+.singing-dunes-audio__wave { display: flex; flex: 1 1 auto; align-items: center; justify-content: space-around; height: 48px; border-block: 2px dashed rgba(23, 122, 120, .42); overflow: hidden; }
+.singing-dunes-audio__wave i { width: clamp(4px, 1.3vw, 8px); height: 8px; border-radius: 999px; background: var(--teal); transform-origin: center; }
+.singing-dunes-audio.is-playing .singing-dunes-audio__wave i { animation: singing-dunes-wave .72s ease-in-out infinite alternate; }
+.singing-dunes-audio__wave i:nth-child(2n) { animation-delay: -.22s; }
+.singing-dunes-audio__wave i:nth-child(3n) { animation-delay: -.47s; }
+.singing-dunes-audio > p { margin: 0; color: #462b42; font-size: 1rem; font-weight: 900; line-height: 1.4; }
+.singing-dunes-audio__error { display: block; margin-top: 8px; color: #8f281e; font-size: .9rem; font-weight: 850; }
+@keyframes singing-dunes-wave { from { height: 8px; } to { height: 42px; } }
 .singing-dunes-article__chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 22px 0; padding: 0; list-style: none; }
 .singing-dunes-article__chips li { border: 2px solid rgba(23, 122, 120, .32); border-radius: 999px; padding: .48rem .72rem; background: #eaf2dd; color: #275b55; font-weight: 850; }
 .singing-dunes-article__note { max-width: 670px; margin: 26px 0; padding: 18px 20px; border-inline-start: 7px solid var(--terracotta); background: #ffe078; font-size: clamp(1.05rem, 2vw, 1.28rem); font-weight: 850; line-height: 1.45; box-shadow: 8px 9px 0 rgba(99, 57, 40, .11); transform: rotate(-1deg); }
@@ -65,10 +89,16 @@
   .singing-dunes-article__hero-stickers img:first-child { width: 74%; left: 8%; }
   [dir="rtl"] .singing-dunes-article__hero-stickers img:first-child { left: auto; right: 8%; }
   .singing-dunes-article__number { position: static; display: block; margin-bottom: -8px; font-size: 2.6rem; }
+  .singing-dunes-audio { width: 100%; max-width: calc(100vw - clamp(34px, 10vw, 56px)); margin: 22px 0 30px; padding: 17px 16px 15px; transform: none; }
+  .singing-dunes-audio__controls button { flex-basis: 62px; width: 62px; height: 62px; }
   .singing-dunes-article__sticker-row { min-height: 96px; }
   .singing-dunes-article__sticker-row img { max-height: 135px; }
   .singing-dunes-article__chain > img { width: 92px; inset-inline-end: -15px; bottom: -40px; }
   .singing-dunes-article__finale { grid-template-columns: 100px minmax(0, 1fr); gap: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .singing-dunes-audio, .singing-dunes-audio__controls button { transform: none; }
+  .singing-dunes-audio.is-playing .singing-dunes-audio__wave i { height: 22px; animation: none; }
 }
 @media (max-width: 420px) {
   .singing-dunes-article h1 { font-size: 2.7rem; }
