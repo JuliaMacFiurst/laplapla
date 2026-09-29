@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { dictionaries, type Lang } from "@/i18n";
 import {
+  MAX_QUEST_PERSONALIZATION_NAME_LENGTH,
   MAX_QUEST_PARTICIPANTS,
   addQuestParticipant,
   createQuestPersonalization,
+  isValidQuestPersonalization,
   removeQuestParticipant,
   updateQuestParticipant,
+  type QuestPersonalization,
 } from "@/lib/shop/questPersonalization";
 import { QuestDocument } from "./QuestDocument";
 import { QuestPreview } from "./QuestPreview";
@@ -16,22 +19,60 @@ const LANGUAGE_OPTIONS: Array<{ value: Lang; label: string }> = [
   { value: "he", label: "עברית" },
 ];
 
-export function QuestBuilder({ interfaceLang }: { interfaceLang: Lang }) {
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+export function QuestBuilder({
+  interfaceLang,
+  initialPersonalization,
+  onSave,
+}: {
+  interfaceLang: Lang;
+  initialPersonalization?: QuestPersonalization | null;
+  onSave?: (personalization: QuestPersonalization) => Promise<QuestPersonalization>;
+}) {
   const [personalization, setPersonalization] = useState(() =>
-    createQuestPersonalization(interfaceLang),
+    initialPersonalization
+      ? { ...initialPersonalization, participants: [...initialPersonalization.participants] }
+      : createQuestPersonalization(interfaceLang),
   );
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const savingRef = useRef(false);
   const text = dictionaries[interfaceLang].shop.soundCase.builder;
   const canAddParticipant =
     personalization.participants.length < MAX_QUEST_PARTICIPANTS;
 
+  const updatePersonalization = (
+    update: (current: QuestPersonalization) => QuestPersonalization,
+  ) => {
+    setPersonalization(update);
+    setSaveStatus("idle");
+  };
+
   const updateParticipant = (index: number, name: string) => {
-    setPersonalization((current) =>
+    updatePersonalization((current) =>
       updateQuestParticipant(current, index, name),
     );
   };
 
   const removeParticipant = (index: number) => {
-    setPersonalization((current) => removeQuestParticipant(current, index));
+    updatePersonalization((current) => removeQuestParticipant(current, index));
+  };
+
+  const savePersonalization = async () => {
+    if (!onSave || savingRef.current || !isValidQuestPersonalization(personalization)) {
+      return;
+    }
+    savingRef.current = true;
+    setSaveStatus("saving");
+    try {
+      const saved = await onSave(personalization);
+      setPersonalization(saved);
+      setSaveStatus("saved");
+    } catch {
+      setSaveStatus("error");
+    } finally {
+      savingRef.current = false;
+    }
   };
 
   return (
@@ -50,7 +91,7 @@ export function QuestBuilder({ interfaceLang }: { interfaceLang: Lang }) {
               value={personalization.locale}
               onChange={(event) => {
                 const locale = event.target.value as Lang;
-                setPersonalization((current) => ({ ...current, locale }));
+                updatePersonalization((current) => ({ ...current, locale }));
               }}
             >
               {LANGUAGE_OPTIONS.map((option) => (
@@ -64,9 +105,10 @@ export function QuestBuilder({ interfaceLang }: { interfaceLang: Lang }) {
             <input
               type="text"
               value={personalization.leadName}
+              maxLength={MAX_QUEST_PERSONALIZATION_NAME_LENGTH}
               onChange={(event) => {
                 const leadName = event.target.value;
-                setPersonalization((current) => ({ ...current, leadName }));
+                updatePersonalization((current) => ({ ...current, leadName }));
               }}
               placeholder={text.leadPlaceholder}
               dir="auto"
@@ -85,6 +127,7 @@ export function QuestBuilder({ interfaceLang }: { interfaceLang: Lang }) {
                   <input
                     type="text"
                     value={participant}
+                    maxLength={MAX_QUEST_PERSONALIZATION_NAME_LENGTH}
                     onChange={(event) => updateParticipant(index, event.target.value)}
                     placeholder={`${text.participantPlaceholder} ${index + 1}`}
                     aria-label={`${text.participantPlaceholder} ${index + 1}`}
@@ -100,12 +143,26 @@ export function QuestBuilder({ interfaceLang }: { interfaceLang: Lang }) {
               className="quest-builder-add"
               type="button"
               disabled={!canAddParticipant}
-              onClick={() => setPersonalization((current) => addQuestParticipant(current))}
+              onClick={() => updatePersonalization((current) => addQuestParticipant(current))}
             >
               + {text.addParticipant}
             </button>
             <small>{text.participantLimit}</small>
           </fieldset>
+
+          {onSave ? (
+            <div className="quest-builder-save">
+              <button
+                type="button"
+                disabled={saveStatus === "saving" || !isValidQuestPersonalization(personalization)}
+                onClick={() => void savePersonalization()}
+              >
+                {saveStatus === "saving" ? text.saving : text.save}
+              </button>
+              {saveStatus === "saved" ? <p role="status">{text.saved}</p> : null}
+              {saveStatus === "error" ? <p role="alert">{text.saveFailed}</p> : null}
+            </div>
+          ) : null}
         </section>
 
         <QuestPreview personalization={personalization} />

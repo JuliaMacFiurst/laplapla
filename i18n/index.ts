@@ -965,6 +965,11 @@ type DictionaryShape = {
         addParticipant: string;
         removeParticipant: string;
         participantLimit: string;
+        save: string;
+        saving: string;
+        saved: string;
+        saveFailed: string;
+        loadingPersonalization: string;
       };
       preview: {
         eyebrow: string;

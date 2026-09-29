@@ -1176,7 +1176,7 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
       preparationNote: "This is an early builder preview. Payment and purchasing are not available yet.",
       builder: {
         title: "Adventure builder",
-        intro: "Choose a language and add names. The preview updates instantly and stays only in this browser.",
+        intro: "Choose a language and add names. Save the adventure to return and edit it later.",
         languageLabel: "Adventure language",
         leadLabel: "Lead participant / birthday child",
         leadPlaceholder: "Enter a name",
@@ -1186,6 +1186,11 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
         addParticipant: "Add participant",
         removeParticipant: "Remove",
         participantLimit: "You can add up to 8 participants.",
+        save: "Save personalization",
+        saving: "Saving…",
+        saved: "Saved to your account.",
+        saveFailed: "Could not save. Please try again.",
+        loadingPersonalization: "Loading your saved personalization…",
       },
       preview: {
         eyebrow: "Your personalized adventure",
