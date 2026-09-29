@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { QuestBuilder } from "@/components/shop/QuestBuilder";
+import { ProtectedQuestBuilder } from "@/components/shop/ProtectedQuestBuilder";
 import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
 import { getProductBySlug } from "@/lib/shop/catalog";
@@ -15,6 +15,11 @@ export default function QuestBuilderPage({ slug }: QuestBuilderPageProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const text = dictionaries[lang].shop.soundCase;
+  const product = getProductBySlug(slug);
+
+  if (!product) {
+    return null;
+  }
 
   return (
     <>
@@ -23,7 +28,7 @@ export default function QuestBuilderPage({ slug }: QuestBuilderPageProps) {
         <meta name="description" content={text.description} />
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <QuestBuilder key={`${slug}-${lang}`} interfaceLang={lang} />
+      <ProtectedQuestBuilder productId={product.id} interfaceLang={lang} />
     </>
   );
 }

@@ -106,6 +106,11 @@ export function getProductBySlug(slug: string): ShopProduct | null {
   return PRODUCTS.find((p) => p.slug === slug) ?? null;
 }
 
+/** Find a product by its stable entitlement/catalog identifier. */
+export function getProductById(id: string): ShopProduct | null {
+  return PRODUCTS.find((product) => product.id === id) ?? null;
+}
+
 /** Whether the shop has any public products to display. */
 export function hasPublicProducts(): boolean {
   return PRODUCTS.some(isPublicProduct);

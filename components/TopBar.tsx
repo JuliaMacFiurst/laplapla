@@ -8,6 +8,8 @@ import { buildLocalizedPublicPath, buildLocalizedQuery } from "@/lib/i18n/routin
 import { useIsMobile } from "@/hooks/useIsMobile";
 import Link from "next/link";
 import { isDarkSoundCaseRoute } from "@/lib/quests/soundCaseRouting";
+import { useCustomerSession } from "@/hooks/useCustomerSession";
+import { getCustomerNavigationLabel } from "@/lib/customer/authUi";
 
 type TopBarProps = {
   lang: Lang;
@@ -21,6 +23,9 @@ export default function TopBar({ lang }: TopBarProps) {
     router.pathname === "/quests/sound-case-001/stage-01/unknown-sound";
   const isDarkSoundCaseScene = isDarkSoundCaseRoute(router.pathname);
   const isMobile = useIsMobile();
+  const customerSession = useCustomerSession();
+  const customerIsAuthenticated = customerSession.status === "authenticated";
+  const customerNavigationLabel = getCustomerNavigationLabel(lang, customerIsAuthenticated);
 
   const [menuHover, setMenuHover] = useState(false);
   const closeTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -130,27 +135,29 @@ export default function TopBar({ lang }: TopBarProps) {
       {/* Правая зона — магазин и язык */}
       <div className="top-bar-actions">
         <div className="top-bar-auth-zone" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <button 
+          <Link
             className="top-bar-signin"
-            onClick={() => alert("Sign in is coming soon")}
-            aria-label={dictionaries[lang].topBar.signIn}
-            style={{ 
-              background: "none", 
-              border: "none", 
-              cursor: "pointer", 
-              fontWeight: 600, 
+            href={buildLocalizedPublicPath("/account", lang)}
+            aria-label={customerNavigationLabel}
+            aria-busy={customerSession.status === "loading"}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
               color: "var(--color-text, #333)",
-              fontSize: "0.9rem"
+              fontSize: "0.9rem",
+              textDecoration: "none",
             }}
           >
             {isDarkSoundCaseScene ? (
               <span className="top-bar-signin-icon" aria-hidden="true">↪</span>
             ) : null}
             <span className="top-bar-signin-label">
-              {dictionaries[lang].topBar.signIn}
+              {customerNavigationLabel}
             </span>
-          </button>
-          
+          </Link>
+
           <Link
             href={buildLocalizedPublicPath("/shop", lang)}
             className="top-bar-cart"

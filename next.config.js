@@ -93,6 +93,9 @@ const adminNoStoreHeaders = [
 const technicalNoIndexSources = [
   "/api/:path*",
   "/admin-login",
+  "/account",
+  "/account/:path*",
+  "/auth/callback",
   "/studio",
   "/cats/studio",
   "/cats/export",

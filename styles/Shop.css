@@ -753,6 +753,200 @@
 }
 
 /* ---------------------------------------------------------
+   Customer account and protected product access
+--------------------------------------------------------- */
+
+.customer-auth,
+.customer-account,
+.customer-access {
+  box-sizing: border-box;
+  min-height: 70vh;
+  padding: clamp(1rem, 5vw, 4rem);
+  background: #fffaf4;
+  color: #302b38;
+  font-family: var(--font-system, system-ui, -apple-system, sans-serif);
+}
+
+.customer-auth,
+.customer-access {
+  display: grid;
+  place-items: center;
+}
+
+.customer-auth__card,
+.customer-access__card,
+.customer-account__panel {
+  width: min(100%, 680px);
+  box-sizing: border-box;
+  padding: clamp(1.4rem, 5vw, 2.75rem);
+  border: 1px solid #e7dce5;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(67, 45, 71, 0.1);
+}
+
+.customer-account__panel {
+  width: min(100%, 920px);
+  margin-inline: auto;
+}
+
+.customer-auth h1,
+.customer-access h1,
+.customer-account h1,
+.customer-account h2,
+.customer-account h3 {
+  color: #49374d;
+}
+
+.customer-auth__card > button,
+.customer-auth form button,
+.customer-account__primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 46px;
+  padding: 0.75rem 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: #6d486f;
+  color: #fff;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.customer-auth__card > button,
+.customer-auth form button {
+  width: 100%;
+}
+
+.customer-auth button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.customer-auth form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.customer-auth input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #cfc3ce;
+  border-radius: 12px;
+  font: inherit;
+}
+
+.customer-auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 1.25rem;
+  color: #817985;
+}
+
+.customer-auth__divider::before,
+.customer-auth__divider::after {
+  height: 1px;
+  flex: 1;
+  background: #e4dce3;
+  content: "";
+}
+
+.customer-account__identity,
+.customer-account__empty {
+  padding: 1rem;
+  border-radius: 16px;
+  background: #f8f3f7;
+}
+
+.customer-account__identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.customer-account__identity p {
+  margin: 0;
+}
+
+.customer-account__products {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.customer-account__products > li {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem;
+  border: 1px solid #e7dce5;
+  border-radius: 18px;
+}
+
+.customer-account__products h3,
+.customer-account__products p {
+  margin-block: 0.45rem 0;
+}
+
+.customer-account__products span {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.customer-account__products .is-active {
+  background: #e3f3eb;
+  color: #276759;
+}
+
+.customer-account__products .is-inactive {
+  background: #f5e9ec;
+  color: #8a3850;
+}
+
+.customer-account__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .customer-auth,
+  .customer-account,
+  .customer-access {
+    padding: 0.75rem;
+  }
+
+  .customer-account__products > li,
+  .customer-account__identity {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .customer-account__actions,
+  .customer-account__actions a,
+  .customer-account__primary {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+}
+
+/* ---------------------------------------------------------
    Quest builder and shared printable document
 --------------------------------------------------------- */
 
