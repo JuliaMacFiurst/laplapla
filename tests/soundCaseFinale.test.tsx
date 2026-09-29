@@ -158,7 +158,8 @@ describe("Sound Case #001 case-level finale", () => {
     expect(html).toContain(text.title);
     expect(html).toContain(text.lead);
     for (const category of text.categories) expect(html).toContain(category);
-    expect(html).toContain("/studio?style=singing-dune&amp;slides=9&amp;type=parrot");
+    expect(html).toContain(`${lang === "ru" ? "" : `/${lang}`}/parrots?style=singing-dune`);
+    expect(html).not.toContain("/studio?style=singing-dune");
     expect(html).toContain("/mini-games/wake-the-dune");
     expect(html).toContain("/dog/lessons/poyushaya-dyuna");
     expect(html).toContain("/stage-03/equalizer?from=hub");
@@ -188,7 +189,7 @@ describe("Sound Case #001 case-level finale", () => {
     const component = readFileSync(`${process.cwd()}/components/quests/sound-case-001/SoundCaseHubScene.tsx`, "utf8");
     const page = readFileSync(`${process.cwd()}/pages/quests/sound-case-001/hub.tsx`, "utf8");
     const styles = readFileSync(`${process.cwd()}/styles/SoundCaseQuest.css`, "utf8");
-    expect(component).toContain("SINGING_DUNE_STUDIO_ROUTE");
+    expect(component).toContain("buildParrotStyleHref(SINGING_DUNE_STYLE_ID, lang)");
     expect(component).toContain("sound-case-hub__activity--music");
     expect(component).toContain("sound-case-hub__activity--drawing");
     expect(component).toContain("sound-case-hub__activity--game");

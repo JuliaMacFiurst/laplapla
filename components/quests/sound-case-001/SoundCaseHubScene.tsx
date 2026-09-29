@@ -4,12 +4,13 @@ import { dictionaries } from "@/i18n";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { buildLocalizedHref, buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { buildParrotStyleHref } from "@/lib/parrots/styleRouting";
 import { WAKE_THE_DUNE_ROUTE } from "@/lib/miniGames/wakeTheDune";
 import { SOUND_CASE_001_HUMAN_EQUALIZER_PUBLIC_PATH } from "@/lib/quests/soundCaseRouting";
 import { SINGING_DUNES_ARTICLE_ROUTE } from "@/lib/quests/singingDunesArticle";
 
 const SINGING_DUNE_LESSON_ROUTE = "/dog/lessons/poyushaya-dyuna";
-const SINGING_DUNE_STUDIO_ROUTE = "/studio?style=singing-dune&slides=9&type=parrot";
+const SINGING_DUNE_STYLE_ID = "singing-dune";
 
 export function SoundCaseHubScene({
   lang,
@@ -73,7 +74,7 @@ export function SoundCaseHubScene({
             {text.categories.map((category, index) => {
               if (index === 0) {
                 return <li className="sound-case-hub__activity sound-case-hub__activity--music" key={category}>
-                  <Link href={buildLocalizedHref(SINGING_DUNE_STUDIO_ROUTE, lang)} locale={lang} aria-label={category}>
+                  <Link href={buildParrotStyleHref(SINGING_DUNE_STYLE_ID, lang)} locale={lang} aria-label={category}>
                     <span className="sound-case-hub__activity-media" aria-hidden="true">
                       <img src={singingDuneArtworkUrl} alt="" />
                     </span>

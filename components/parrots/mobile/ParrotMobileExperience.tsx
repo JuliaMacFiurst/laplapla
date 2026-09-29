@@ -10,6 +10,7 @@ type Props = {
   title: string;
   subtitle: string;
   presets: PresetItem[];
+  activeStyleId: string;
   onOpenPreset: (id: string) => void;
   imageForPreset: (id: string) => string;
 };
@@ -19,6 +20,7 @@ export default function ParrotMobileExperience({
   title,
   subtitle,
   presets,
+  activeStyleId,
   onOpenPreset,
   imageForPreset,
 }: Props) {
@@ -34,8 +36,9 @@ export default function ParrotMobileExperience({
               key={preset.id}
               type="button"
               onClick={() => onOpenPreset(preset.id)}
-              className={`style-preset-btn ${preset.id === "singing-dune" ? "is-singing-dune" : ""}`}
+              className={`style-preset-btn ${preset.id === "singing-dune" ? "is-singing-dune" : ""} ${preset.id === activeStyleId ? "is-active" : ""}`}
               style={{ backgroundImage: `url(${imageForPreset(preset.id)})` }}
+              aria-pressed={preset.id === activeStyleId}
               title={preset.localizedTitle}
             >
               <span className="style-preset-label">{preset.localizedTitle}</span>
