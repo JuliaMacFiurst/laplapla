@@ -27,6 +27,7 @@ import '../styles/AppLab.css';
 import '../styles/LoadingSpinner.css';
 import '../styles/Shop.css';
 import '../styles/SoundCaseQuest.css';
+import '../styles/WakeTheDune.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -286,6 +287,7 @@ function getHydrationStableLang(
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
+  const isWakeTheDunePage = router.pathname === "/mini-games/wake-the-dune";
   const isCatsPage = router.pathname.startsWith("/cats");
   const isExportPage = router.pathname === "/cats/export";
   const isInstallPage = router.pathname === "/install";
@@ -444,10 +446,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         </>
       )}
 
-      <div className={`app-layout${isCapybaraPage ? " app-layout-capybara" : ""}`}>
-        {!isExportPage && <TopBar lang={lang} />}
+      <div className={`app-layout${isCapybaraPage ? " app-layout-capybara" : ""}${isWakeTheDunePage ? " app-layout--wake-dune" : ""}`}>
+        {!isExportPage && !isWakeTheDunePage && <TopBar lang={lang} />}
         <Component {...pageProps} lang={lang} />
-        <PWAInstallBanner disabled={isQuestPage || isExportPage || isInstallPage} />
+        <PWAInstallBanner disabled={isQuestPage || isExportPage || isInstallPage || isWakeTheDunePage} />
 
         {showHiddenAdminLogout ? (
           <button
@@ -474,7 +476,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           </button>
         ) : null}
 
-        {!isQuestPage && !isExportPage && (
+        {!isQuestPage && !isExportPage && !isWakeTheDunePage && (
           <div className="footer-stack">
             <footer className="unified-footer">
               <div className="footer-left">

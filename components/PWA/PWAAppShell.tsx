@@ -84,6 +84,10 @@ export function shouldShowStartupSplash(
   return standaloneDisplayMode || navigatorStandalone;
 }
 
+export function shouldReloadForControllerChange(updateRequested: boolean, reloadStarted: boolean) {
+  return updateRequested && !reloadStarted;
+}
+
 function canRegisterServiceWorker() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
     return false;
@@ -103,6 +107,7 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
   const [debugSplashMode, setDebugSplashMode] = useState<SplashDebugMode>();
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
   const reloadStarted = useRef(false);
+  const updateReloadRequested = useRef(false);
   const splashReadyTimer = useRef(0);
   const safetyTimer = useRef(0);
   const appReady = useRef(false);
@@ -230,7 +235,10 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
       });
 
     const handleControllerChange = () => {
-      if (reloadStarted.current) {
+      // A first service-worker install calls clients.claim(), which also emits
+      // controllerchange. Reload only after the user explicitly accepted an
+      // update; otherwise a long initial precache can reset an active game.
+      if (!shouldReloadForControllerChange(updateReloadRequested.current, reloadStarted.current)) {
         return;
       }
       reloadStarted.current = true;
@@ -251,6 +259,7 @@ export default function PWAAppShell({ lang }: { lang: Lang }) {
   }, []);
 
   const applyUpdate = () => {
+    updateReloadRequested.current = true;
     waitingWorker?.postMessage({ type: "SKIP_WAITING" });
   };
 

@@ -9,6 +9,7 @@ const connectSrc = [
   "https://api.giphy.com",
   "https://api.pexels.com",
   "https://media.laplapla.com",
+  "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev",
 ];
 
 if (sentryDsn) {
@@ -24,7 +25,7 @@ if (!isProduction) {
   connectSrc.push("http://127.0.0.1:5050");
 }
 
-const allowedDevOrigins = isProduction ? undefined : ["192.168.*.*"];
+const allowedDevOrigins = isProduction ? undefined : ["192.168.*.*", "127.0.0.1"];
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -100,6 +101,7 @@ const technicalNoIndexSources = [
 ];
 
 const supabaseStorageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const wakeTheDuneAudioOrigin = "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -181,6 +183,10 @@ const nextConfig = {
         source: "/sitemap.xml",
         destination: "/api/sitemap.xml",
       },
+      ...(!isProduction ? [{
+        source: "/wake-the-dune-audio/:path*",
+        destination: `${wakeTheDuneAudioOrigin}/quests/sound-case-001/mini-games/wake-the-dune/audio/:path*`,
+      }] : []),
     ];
 
     if (!supabaseStorageOrigin) {
