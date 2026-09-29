@@ -26,6 +26,12 @@ import {
 } from "./quests/sound-case-001/vibratingCards";
 import { STAGE_4_DUPLEX_MODE } from "./quests/sound-case-001/brokenRhythm";
 import { STAGE_5_DUPLEX_MODE } from "./quests/sound-case-001/scatteredSand";
+import type { QuestPersonalization } from "./questPersonalization";
+import {
+  SOUND_CASE_001_COLLECTIBLE_DUPLEX_MODE,
+  getSoundCase001CollectibleCards,
+  getSoundCase001CollectibleSheetCount,
+} from "./quests/sound-case-001/collectibleCards";
 
 type QuestPageDefinitionBase<TType extends string> = {
   id: string;
@@ -140,6 +146,14 @@ export type Stage7PrintablePageDefinition = QuestPageDefinitionBase<"stage-7-pri
   side: "single";
   sheet: "club-kit" | "box";
 };
+export type SoundCaseCollectiblePageDefinition = QuestPageDefinitionBase<"sound-case-collectible-cards"> & {
+  locale: Lang;
+  side: "front" | "back";
+  sheetNumber: number;
+  sheetCount: number;
+  pairId: `sound-case-001-collectibles-sheet-${number}`;
+  duplexMode: typeof SOUND_CASE_001_COLLECTIBLE_DUPLEX_MODE;
+};
 
 /**
  * Discriminated union for printable document definitions.
@@ -160,7 +174,8 @@ export type QuestPageDefinition =
   | Stage4BoxRulesPageDefinition
   | Stage5CardsPageDefinition
   | Stage5BoxPageDefinition
-  | Stage7PrintablePageDefinition;
+  | Stage7PrintablePageDefinition
+  | SoundCaseCollectiblePageDefinition;
 
 export type QuestPageType = QuestPageDefinition["type"];
 
@@ -390,6 +405,41 @@ export function getSoundCase001Stage7Pages(locale: Lang): readonly QuestPageDefi
     side: "single" as const,
     sheet: "box" as const,
   }];
+}
+
+export function getSoundCase001CollectiblePages(
+  personalization: Pick<QuestPersonalization, "locale" | "leadName" | "participants">,
+): readonly SoundCaseCollectiblePageDefinition[] {
+  const cardCount = getSoundCase001CollectibleCards(personalization).length;
+  const sheetCount = getSoundCase001CollectibleSheetCount(cardCount);
+  const pages: SoundCaseCollectiblePageDefinition[] = [];
+  for (let sheetNumber = 1; sheetNumber <= sheetCount; sheetNumber += 1) {
+    const pairId = `sound-case-001-collectibles-sheet-${sheetNumber}` as const;
+    pages.push({
+      id: `${pairId}-front-${personalization.locale}`,
+      type: "sound-case-collectible-cards",
+      printOrder: sheetNumber * 2 - 1,
+      printable: true,
+      locale: personalization.locale,
+      side: "front",
+      sheetNumber,
+      sheetCount,
+      pairId,
+      duplexMode: SOUND_CASE_001_COLLECTIBLE_DUPLEX_MODE,
+    }, {
+      id: `${pairId}-back-${personalization.locale}`,
+      type: "sound-case-collectible-cards",
+      printOrder: sheetNumber * 2,
+      printable: true,
+      locale: personalization.locale,
+      side: "back",
+      sheetNumber,
+      sheetCount,
+      pairId,
+      duplexMode: SOUND_CASE_001_COLLECTIBLE_DUPLEX_MODE,
+    });
+  }
+  return pages;
 }
 
 export function getPrintableQuestPages(

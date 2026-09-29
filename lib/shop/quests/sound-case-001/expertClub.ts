@@ -2,10 +2,6 @@ export const STAGE_7_PUBLIC_PATH = "/quests/sound-case-001/stage-07/expert-club"
 export const STAGE_7_DESTINATION = `https://www.laplapla.com${STAGE_7_PUBLIC_PATH}` as const;
 export const STAGE_7_HOST_QR_ASSET_PATH = "/quests/sound-case-001/stage-07/expert-club-qr.svg" as const;
 
-/** The finale route is deliberately not invented in Stage 07. */
-export const SOUND_CASE_001_FINALE_DESTINATION: null = null;
-export const SAMPLE_08_FINAL_QR_RESPONSIBILITY = "sound-case-001-finale" as const;
-
 export const STAGE_7_CARD_SIZE_MM = { width: 57, height: 58 } as const;
 export const STAGE_7_LABEL_SIZE_MM = { width: 44, height: 20 } as const;
 export const STAGE_7_DISCUSSION_SECONDS = 60 as const;

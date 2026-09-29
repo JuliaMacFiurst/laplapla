@@ -7,6 +7,7 @@ import HomeButton from "./HomeButton";
 import { buildLocalizedPublicPath, buildLocalizedQuery } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import Link from "next/link";
+import { isDarkSoundCaseRoute } from "@/lib/quests/soundCaseRouting";
 
 type TopBarProps = {
   lang: Lang;
@@ -18,12 +19,7 @@ export default function TopBar({ lang }: TopBarProps) {
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
   const isUnknownSoundScene =
     router.pathname === "/quests/sound-case-001/stage-01/unknown-sound";
-  const isDarkSoundCaseScene = isUnknownSoundScene ||
-    router.pathname === "/quests/sound-case-001/stage-02/clue" ||
-    router.pathname === "/quests/sound-case-001/stage-03/equalizer" ||
-    router.pathname === "/quests/sound-case-001/stage-04/check/[result]" ||
-    router.pathname === "/quests/sound-case-001/stage-06/sound-code" ||
-    router.pathname === "/quests/sound-case-001/stage-07/expert-club";
+  const isDarkSoundCaseScene = isDarkSoundCaseRoute(router.pathname);
   const isMobile = useIsMobile();
 
   const [menuHover, setMenuHover] = useState(false);

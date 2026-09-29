@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { isDarkSoundCaseRoute } from "@/lib/quests/soundCaseRouting";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -7,7 +8,7 @@ import { DuneSoundControl, ExpertClubHost, ExpertClubRecoveryPanel, HostOnlyAnsw
 import { renderQuestPageDefinition } from "@/components/shop/questPageRenderers";
 import { SOUND_CASE_001_ASSET_MANIFEST, STAGE_7_DUNE_SLIDING_EXPERIMENT_URL } from "@/lib/shop/quests/sound-case-001/assets";
 import { getSoundCase001Stage7Pages } from "@/lib/shop/questDocument";
-import { STAGE_7_BACKGROUND_REQUIREMENT, STAGE_7_BOX_DIELINE_POSITION_MM, STAGE_7_BOX_DIELINE_SIZE_MM, STAGE_7_BOX_INNER_SIZE_MM, STAGE_7_CARD_SIZE_MM, STAGE_7_DISCUSSION_SECONDS, STAGE_7_EQUIPMENT, STAGE_7_LABEL_SIZE_MM, STAGE_7_ROUND_1_ANSWER, STAGE_7_STACK_THICKNESS_MM } from "@/lib/shop/quests/sound-case-001/expertClub";
+import { STAGE_7_BACKGROUND_REQUIREMENT, STAGE_7_BOX_DIELINE_POSITION_MM, STAGE_7_BOX_DIELINE_SIZE_MM, STAGE_7_BOX_INNER_SIZE_MM, STAGE_7_CARD_SIZE_MM, STAGE_7_DISCUSSION_SECONDS, STAGE_7_EQUIPMENT, STAGE_7_LABEL_SIZE_MM, STAGE_7_PUBLIC_PATH, STAGE_7_ROUND_1_ANSWER, STAGE_7_STACK_THICKNESS_MM } from "@/lib/shop/quests/sound-case-001/expertClub";
 import { INITIAL_EXPERT_CLUB_STATE, getRound1RevealKind, getTimerExpiryMode, reduceExpertClub, type ExpertClubState } from "@/lib/shop/quests/sound-case-001/expertClubGame";
 import { EXPERT_CLUB_AUDIO_LEVELS } from "@/lib/shop/quests/sound-case-001/expertClubAudio";
 import { SOUND_CASE_001_STAGE_2_PHRASES } from "@/lib/shop/quests/sound-case-001/vibratingCards";
@@ -299,7 +300,8 @@ describe("Sound Case Stage 07", () => {
 
   it("registers Stage 07 with the established dark Sound Case header", () => {
     const source=readFileSync(`${process.cwd()}/components/TopBar.tsx`,"utf8");
-    expect(source).toContain('router.pathname === "/quests/sound-case-001/stage-07/expert-club"');
+    expect(isDarkSoundCaseRoute(STAGE_7_PUBLIC_PATH)).toBe(true);
+    expect(source).toContain("isDarkSoundCaseRoute(router.pathname)");
   });
 
   it("ships a real QR SVG for the canonical host route", () => {

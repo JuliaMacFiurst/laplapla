@@ -27,6 +27,12 @@ import { SOUND_CASE_001_STAGE_5_SAMPLES } from "@/lib/shop/quests/sound-case-001
 import { Stage7BoxPage, Stage7PrintablePage, type Stage7EquipmentUrls } from "./Stage7PrintablePages";
 import { STAGE_7_EQUIPMENT } from "@/lib/shop/quests/sound-case-001/expertClub";
 import { SoundCaseAdultIntroPage } from "./SoundCaseAdultIntroPage";
+import { SoundCaseCollectibleCardsPage, type SoundCaseCollectibleAssetUrls } from "./SoundCaseCollectibleCardsPage";
+import {
+  SOUND_CASE_001_COLLECTIBLE_HEROES,
+  getSoundCase001CollectibleCards,
+  getSoundCase001CollectibleSheetCards,
+} from "@/lib/shop/quests/sound-case-001/collectibleCards";
 
 export type QuestPageRenderContext = {
   personalization: QuestPersonalization;
@@ -160,6 +166,19 @@ const questPageRenderers: QuestPageRendererRegistry = {
     if (definition.sheet === "box") return <Stage7BoxPage locale={definition.locale} />;
     const equipmentUrls = Object.fromEntries(STAGE_7_EQUIPMENT.map(item => [item.id, requireQuestAssetUrl(context.assetManifest.assets[item.assetId])])) as Stage7EquipmentUrls;
     return <Stage7PrintablePage locale={definition.locale} equipmentUrls={equipmentUrls} />;
+  },
+  "sound-case-collectible-cards": ({ definition, context }) => {
+    const allCards = getSoundCase001CollectibleCards(context.personalization);
+    const cards = getSoundCase001CollectibleSheetCards(allCards, definition.sheetNumber);
+    const heroes = Object.fromEntries(SOUND_CASE_001_COLLECTIBLE_HEROES.map((hero) => [
+      hero.assetId,
+      requireQuestAssetUrl(context.assetManifest.assets[hero.assetId]),
+    ]));
+    const assetUrls: SoundCaseCollectibleAssetUrls = {
+      heroes,
+      background: requireQuestAssetUrl(context.assetManifest.assets["collectible-card-background"]),
+    };
+    return <SoundCaseCollectibleCardsPage cards={cards} locale={definition.locale} side={definition.side} sheetNumber={definition.sheetNumber} sheetCount={definition.sheetCount} assetUrls={assetUrls} />;
   },
 };
 

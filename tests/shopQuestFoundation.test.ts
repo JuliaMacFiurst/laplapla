@@ -36,6 +36,7 @@ import {
   SOUND_CASE_001_ASSET_MANIFEST,
   type SoundCase001AssetId,
   type SoundCase001AudioAssetId,
+  type SoundCase001FinaleAudioAssetId,
   type SoundCase001SoundCardAssetId,
   type SoundCase001Stage3DistractorAssetId,
   type SoundCase001Stage6AudioAssetId,
@@ -136,6 +137,7 @@ describe("Sound Case document configuration", () => {
       | "stage-5-cards"
       | "stage-5-box"
       | "stage-7-printable"
+      | "sound-case-collectible-cards"
     >();
 
     const definition = SOUND_CASE_001_PAGES[1];
@@ -403,18 +405,18 @@ describe("Sound Case asset manifest", () => {
     expectTypeOf<SoundCase001VisualAssetId>().toEqualTypeOf<
       Exclude<
         SoundCase001AssetId,
-        "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId | SoundCase001Stage7AudioAssetId
+        "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId | SoundCase001Stage7AudioAssetId | SoundCase001FinaleAudioAssetId
       >
     >();
     expectTypeOf<SoundCase001AudioAssetId>().toEqualTypeOf<
-      "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId | SoundCase001Stage7AudioAssetId
+      "stage-1-unknown-recording" | SoundCase001Stage3DistractorAssetId | SoundCase001Stage6AudioAssetId | SoundCase001Stage7AudioAssetId | SoundCase001FinaleAudioAssetId
     >();
     expectTypeOf<SoundCardDefinition["illustrationAssetId"]>().toEqualTypeOf<
       SoundCase001SoundCardAssetId
     >();
 
     expect(SOUND_CASE_001_ASSET_MANIFEST.questId).toBe("sound-case-001");
-    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(97);
+    expect(Object.keys(SOUND_CASE_001_ASSET_MANIFEST.assets)).toHaveLength(117);
     expect(
       SOUND_CASE_001_ASSET_MANIFEST.assets["stage-7-expert-club-background"].source.status,
     ).toBe("external");

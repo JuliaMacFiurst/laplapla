@@ -110,6 +110,19 @@ export type SoundCase001Stage7AudioAssetId =
   | "stage-7-singing-sand-dune"
   | "stage-7-victory-fanfare";
 
+export type SoundCase001FinaleVisualAssetId =
+  | "finale-victory"
+  | "finale-collectible-cards"
+  | "hub-wake-the-dune-icon"
+  | "hub-human-equalizer-icon";
+export type SoundCase001FinaleAudioAssetId = "finale-victory-soundtrack";
+
+export type SoundCase001CollectibleAssetId =
+  | `collectible-hero-${"01-sand-burping-bottle" | "02-grandpa-midnight-fridge" | "03-parrot-seismologist" | "04-parrot-sand-studio" | "05-capybara-expedition-shorts" | "06-singing-sand-man" | "07-chicken-vs-booming-dune" | "08-meditating-fox-dune" | "09-capybara-desert-trombone" | "10-elephant-china-shop" | "11-sand-grain-orchestra" | "12-dune-recording-session"}`
+  | "collectible-capybara-way"
+  | "collectible-parrot-way"
+  | "collectible-card-background";
+
 export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
   readonly [TId in SoundCase001Stage2VisualAssetId]: QuestVisualAsset<TId>;
 } & {
@@ -124,6 +137,12 @@ export type SoundCase001AssetEntries = SoundCase001Stage1AssetEntries & {
   readonly [TId in SoundCase001Stage7VisualAssetId]: QuestVisualAsset<TId>;
 } & {
   readonly [TId in SoundCase001Stage7AudioAssetId]: QuestAudioAsset<TId>;
+} & {
+  readonly [TId in SoundCase001FinaleVisualAssetId]: QuestVisualAsset<TId>;
+} & {
+  readonly [TId in SoundCase001FinaleAudioAssetId]: QuestAudioAsset<TId>;
+} & {
+  readonly [TId in SoundCase001CollectibleAssetId]: QuestVisualAsset<TId>;
 };
 
 export type SoundCase001AssetManifest = QuestAssetManifest<
@@ -163,6 +182,10 @@ const STAGE_5_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-05-scattered-sand";
 const STAGE_6_AUDIO_BASE_URL =
   "https://media.laplapla.com/quests/sound-case-001/stage-06-decoding-of-coordinates/audio";
+export const SOUND_CASE_001_COLLECTIBLE_ASSET_BASE_URL =
+  "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/collectible-cards/assets";
+export const SOUND_CASE_001_COLLECTIBLE_AUDIO_BASE_URL =
+  "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/collectible-cards/audio";
 
 export const STAGE_7_DUNE_SLIDING_EXPERIMENT_URL =
   "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/dune-sliding-experiment.webp";
@@ -256,6 +279,11 @@ const stage5VisualSource = (path: string) => ({
 const stage6AudioSource = (fileName: typeof STAGE_6_AUDIO_FILES[keyof typeof STAGE_6_AUDIO_FILES]) => ({
   status: "external" as const,
   url: `${STAGE_6_AUDIO_BASE_URL}/${fileName}`,
+});
+
+const collectibleVisualSource = (fileName: string) => ({
+  status: "external" as const,
+  url: `${SOUND_CASE_001_COLLECTIBLE_ASSET_BASE_URL}/${fileName}`,
 });
 
 export const SOUND_CASE_001_ASSET_MANIFEST = {
@@ -595,5 +623,25 @@ export const SOUND_CASE_001_ASSET_MANIFEST = {
     "stage-7-equipment-metal-detector": { id: "stage-7-equipment-metal-detector", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/assets/cards/metal-detector.webp" } },
     "stage-7-singing-sand-dune": { id: "stage-7-singing-sand-dune", kind: "audio", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/audio/singing-sand-dune.mp3" } },
     "stage-7-victory-fanfare": { id: "stage-7-victory-fanfare", kind: "audio", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/stage-07-expert-club/audio/medieval-show-fanfare-announcement-226.mp3" } },
+    "finale-victory": { id: "finale-victory", kind: "visual", source: collectibleVisualSource("victory.webp") },
+    "finale-collectible-cards": { id: "finale-collectible-cards", kind: "visual", source: collectibleVisualSource("cards-asset.webp") },
+    "hub-wake-the-dune-icon": { id: "hub-wake-the-dune-icon", kind: "visual", source: { status: "external", url: "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev/quests/sound-case-001/mini-games/wake-the-dune/assets/wake-the-dune-icon.webp" } },
+    "hub-human-equalizer-icon": { id: "hub-human-equalizer-icon", kind: "visual", source: { status: "external", url: "https://media.laplapla.com/quests/sound-case-001/stage-03-human-equalizer/assets/human-equalizer-icon.webp" } },
+    "finale-victory-soundtrack": { id: "finale-victory-soundtrack", kind: "audio", source: { status: "external", url: `${SOUND_CASE_001_COLLECTIBLE_AUDIO_BASE_URL}/Desert-Quest-Completed.mp3` } },
+    "collectible-hero-01-sand-burping-bottle": { id: "collectible-hero-01-sand-burping-bottle", kind: "visual", source: collectibleVisualSource("sand-burping-bottle.webp") },
+    "collectible-hero-02-grandpa-midnight-fridge": { id: "collectible-hero-02-grandpa-midnight-fridge", kind: "visual", source: collectibleVisualSource("grandpa-midnight-fridge.webp") },
+    "collectible-hero-03-parrot-seismologist": { id: "collectible-hero-03-parrot-seismologist", kind: "visual", source: collectibleVisualSource("parrot-seismologist.webp") },
+    "collectible-hero-04-parrot-sand-studio": { id: "collectible-hero-04-parrot-sand-studio", kind: "visual", source: collectibleVisualSource("parrot-sand-studio.webp") },
+    "collectible-hero-05-capybara-expedition-shorts": { id: "collectible-hero-05-capybara-expedition-shorts", kind: "visual", source: collectibleVisualSource("capybara-expedition-shorts.webp") },
+    "collectible-hero-06-singing-sand-man": { id: "collectible-hero-06-singing-sand-man", kind: "visual", source: collectibleVisualSource("singing-sand-man.webp") },
+    "collectible-hero-07-chicken-vs-booming-dune": { id: "collectible-hero-07-chicken-vs-booming-dune", kind: "visual", source: collectibleVisualSource("chicken-vs-booming-dune.webp") },
+    "collectible-hero-08-meditating-fox-dune": { id: "collectible-hero-08-meditating-fox-dune", kind: "visual", source: collectibleVisualSource("meditating-fox-dune.webp") },
+    "collectible-hero-09-capybara-desert-trombone": { id: "collectible-hero-09-capybara-desert-trombone", kind: "visual", source: collectibleVisualSource("capybara-desert-trombone.webp") },
+    "collectible-hero-10-elephant-china-shop": { id: "collectible-hero-10-elephant-china-shop", kind: "visual", source: collectibleVisualSource("elephant-china-shop.webp") },
+    "collectible-hero-11-sand-grain-orchestra": { id: "collectible-hero-11-sand-grain-orchestra", kind: "visual", source: collectibleVisualSource("sand-grain-orchestra.webp") },
+    "collectible-hero-12-dune-recording-session": { id: "collectible-hero-12-dune-recording-session", kind: "visual", source: collectibleVisualSource("dune-recording-session.webp") },
+    "collectible-capybara-way": { id: "collectible-capybara-way", kind: "visual", source: collectibleVisualSource("capybara-way.webp") },
+    "collectible-parrot-way": { id: "collectible-parrot-way", kind: "visual", source: collectibleVisualSource("parrot-way.webp") },
+    "collectible-card-background": { id: "collectible-card-background", kind: "visual", source: collectibleVisualSource("collectable-card-background.webp") },
   },
 } satisfies SoundCase001AssetManifest;

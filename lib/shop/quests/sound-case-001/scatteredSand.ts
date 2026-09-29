@@ -1,5 +1,5 @@
 import type { SoundCase001Stage5VisualAssetId } from "./assets";
-import { SAMPLE_08_FINAL_QR_RESPONSIBILITY, SOUND_CASE_001_FINALE_DESTINATION } from "./expertClub";
+import { SOUND_CASE_001_SOLVED_DESTINATION } from "./finale";
 
 export const STAGE_5_CARD_SIZE_MM = { width: 57, height: 76 } as const;
 export const STAGE_5_PUZZLE_GRID = { columns: 4, rows: 2 } as const;
@@ -11,7 +11,7 @@ export const STAGE_6_DESTINATION = `https://www.laplapla.com${STAGE_6_PUBLIC_PAT
 export const STAGE_5_QR_ASSET_PATHS = {
   article: "/quests/sound-case-001/stage-05/sand-article-qr.svg",
   stage06Transition: "/quests/sound-case-001/stage-05/sound-code-qr.svg",
-  sample08Legacy: "/quests/sound-case-001/stage-05/sound-code-qr.svg",
+  sample08Finale: "/quests/sound-case-001/stage-05/sample-08-solved-qr.svg",
 } as const;
 
 export const STAGE_5_BOX_CARD_COUNT = 8 as const;
@@ -36,9 +36,7 @@ export type SandSampleDefinition = {
   isLiwa: boolean;
   qrDestination: string;
   qrAssetPath: string;
-  qrRole: "educational-story" | "legacy-stage-06-pending-finale";
-  plannedQrRole: "educational-story" | typeof SAMPLE_08_FINAL_QR_RESPONSIBILITY;
-  plannedQrDestination: string | null;
+  qrRole: "educational-story" | "sound-case-finale";
 };
 
 export const SOUND_CASE_001_STAGE_5_SAMPLES = ([
@@ -53,11 +51,9 @@ export const SOUND_CASE_001_STAGE_5_SAMPLES = ([
     kind,
     assetId: `stage-5-sand-sample-0${index}` as SoundCase001Stage5VisualAssetId,
     isLiwa,
-    qrDestination: isLiwa ? STAGE_6_DESTINATION : STAGE_5_SAND_ARTICLE_DESTINATION,
-    qrAssetPath: isLiwa ? STAGE_5_QR_ASSET_PATHS.sample08Legacy : STAGE_5_QR_ASSET_PATHS.article,
-    qrRole: isLiwa ? "legacy-stage-06-pending-finale" as const : "educational-story" as const,
-    plannedQrRole: isLiwa ? SAMPLE_08_FINAL_QR_RESPONSIBILITY : "educational-story" as const,
-    plannedQrDestination: isLiwa ? SOUND_CASE_001_FINALE_DESTINATION : STAGE_5_SAND_ARTICLE_DESTINATION,
+    qrDestination: isLiwa ? SOUND_CASE_001_SOLVED_DESTINATION : STAGE_5_SAND_ARTICLE_DESTINATION,
+    qrAssetPath: isLiwa ? STAGE_5_QR_ASSET_PATHS.sample08Finale : STAGE_5_QR_ASSET_PATHS.article,
+    qrRole: isLiwa ? "sound-case-finale" as const : "educational-story" as const,
   };
 }) satisfies readonly SandSampleDefinition[];
 

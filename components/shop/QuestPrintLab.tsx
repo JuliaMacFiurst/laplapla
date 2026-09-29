@@ -6,6 +6,7 @@ import {
   getSoundCase001Stage4Pages,
   getSoundCase001Stage5Pages,
   getSoundCase001Stage7Pages,
+  getSoundCase001CollectiblePages,
   getPrintableQuestPages,
   type QuestPageDefinition,
   type Stage1CardBoxPageDefinition,
@@ -22,6 +23,8 @@ import {
 } from "@/lib/shop/questPersonalization";
 import { SOUND_CASE_001_ASSET_MANIFEST } from "@/lib/shop/quests/sound-case-001/assets";
 import { QuestDocument } from "./QuestDocument";
+import { getSoundCase001CollectibleCards, getSoundCase001CollectibleSheetCount } from "@/lib/shop/quests/sound-case-001/collectibleCards";
+import { SOUND_CASE_001_COLLECTIBLE_COPY } from "@/lib/shop/quests/sound-case-001/collectibleCardCopy";
 
 const LAB_LOCALES: readonly Lang[] = ["ru", "en", "he"];
 
@@ -32,7 +35,7 @@ const DEFAULT_FIXTURE = createQuestPersonalization("ru", {
 
 type QuestPrintLabProps = {
   initialPersonalization?: QuestPersonalization;
-  initialStage?: "01" | "02" | "04" | "05" | "07";
+  initialStage?: "01" | "02" | "04" | "05" | "07" | "REWARD";
 };
 
 export type QuestPrintLabDuplexPair = {
@@ -113,7 +116,7 @@ export function QuestPrintLab({
   initialStage = "01",
 }: QuestPrintLabProps) {
   const [personalization, setPersonalization] = useState(initialPersonalization);
-  const [stage, setStage] = useState<"01" | "02" | "04" | "05" | "07">(initialStage);
+  const [stage, setStage] = useState<"01" | "02" | "04" | "05" | "07" | "REWARD">(initialStage);
   const [xRayEnabled, setXRayEnabled] = useState(false);
   const [printHelpOpen, setPrintHelpOpen] = useState(false);
   const documentHostRef = useRef<HTMLDivElement>(null);
@@ -126,13 +129,17 @@ export function QuestPrintLab({
   const stage4Guidance = dictionaries[personalization.locale].shop.soundCase.stage04.print;
   const stage5Guidance = dictionaries[personalization.locale].shop.soundCase.stage05.print;
   const stage7Guidance = dictionaries[personalization.locale].shop.soundCase.stage07.print;
+  const collectibleGuidance = SOUND_CASE_001_COLLECTIBLE_COPY[personalization.locale];
+  const collectibleCardCount = getSoundCase001CollectibleCards(personalization).length;
+  const collectibleSheetCount = getSoundCase001CollectibleSheetCount(collectibleCardCount);
   const [firstPair, secondPair] = SOUND_CASE_001_DUPLEX_PAIRS;
   const cardPageRange = `${firstPair.frontPageNumber}–${secondPair.backPageNumber}`;
   const selectedPages = stage === "01" ? SOUND_CASE_001_PAGES
     : stage === "02" ? getSoundCase001Stage2Pages(personalization.locale)
     : stage === "04" ? getSoundCase001Stage4Pages(personalization.locale)
     : stage === "05" ? getSoundCase001Stage5Pages(personalization.locale)
-    : getSoundCase001Stage7Pages(personalization.locale);
+    : stage === "07" ? getSoundCase001Stage7Pages(personalization.locale)
+    : getSoundCase001CollectiblePages(personalization);
 
   useEffect(() => {
     const host = documentHostRef.current;
@@ -222,8 +229,15 @@ export function QuestPrintLab({
             </button>
             <button type="button" aria-label="Открыть STAGE 05 — Scattered Sand" aria-pressed={stage === "05"} onClick={() => setStage("05")}><strong>STAGE 05</strong><span>SCATTERED SAND</span></button>
             <button type="button" aria-label="Открыть STAGE 07 — Expert Club" aria-pressed={stage === "07"} onClick={() => setStage("07")}><strong>STAGE 07</strong><span>EXPERT CLUB</span></button>
+            <button type="button" aria-label="Открыть наградные Investigator Cards" aria-pressed={stage === "REWARD"} onClick={() => setStage("REWARD")}><strong>REWARD</strong><span>INVESTIGATOR CARDS</span></button>
           </div>
         </fieldset>
+        {stage === "REWARD" ? (
+          <output className="quest-print-lab__reward-summary" aria-live="polite">
+            <strong>{collectibleCardCount} personalized cards</strong>
+            <span>{collectibleSheetCount} front/back pairs · {collectibleSheetCount * 2} PDF pages · duplex long-edge</span>
+          </output>
+        ) : null}
 
         <section
           className="quest-print-lab__print-help"
@@ -236,7 +250,7 @@ export function QuestPrintLab({
             aria-controls="quest-print-lab-print-help-content"
             onClick={() => setPrintHelpOpen((open) => !open)}
           >
-            <span>{stage === "01" ? printGuidance.printHelpTitle : stage === "02" ? stage2Guidance.title : stage === "04" ? stage4Guidance.printHelpTitle : stage === "05" ? stage5Guidance.printHelpTitle : stage7Guidance.printHelpTitle}</span>
+            <span>{stage === "01" ? printGuidance.printHelpTitle : stage === "02" ? stage2Guidance.title : stage === "04" ? stage4Guidance.printHelpTitle : stage === "05" ? stage5Guidance.printHelpTitle : stage === "07" ? stage7Guidance.printHelpTitle : collectibleGuidance.printHelpTitle}</span>
             <span aria-hidden="true">{printHelpOpen ? "▴" : "▾"}</span>
           </button>
           <div
@@ -397,7 +411,8 @@ export function QuestPrintLab({
               </aside>
             </section>
           ) : stage === "05" ? <section className="quest-print-lab__duplex-help" data-stage-5-print-help="true"><p className="quest-print-lab__duplex-result">{stage5Guidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>A4 · 100% / Actual Size</strong><span>Pages 1/2: duplex cards · Page 3: single-sided box</span><span>3 PDF pages → 2 physical A4 sheets</span></aside></section>
-          : <section className="quest-print-lab__duplex-help" data-stage-7-print-help="true"><p className="quest-print-lab__duplex-result">{stage7Guidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>A4 · 100% / Actual Size</strong><span>Page 1: game cards and labels · Page 2: tuck box</span><span>2 PDF pages → 2 physical A4 sheets</span></aside></section>}
+          : stage === "07" ? <section className="quest-print-lab__duplex-help" data-stage-7-print-help="true"><p className="quest-print-lab__duplex-result">{stage7Guidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>A4 · 100% / Actual Size</strong><span>Page 1: game cards and labels · Page 2: tuck box</span><span>2 PDF pages → 2 physical A4 sheets</span></aside></section>
+          : <section className="quest-print-lab__duplex-help" data-collectible-print-help="true"><p className="quest-print-lab__duplex-result">{collectibleGuidance.printHelpSummary}</p><aside className="quest-print-lab__single-sided-sheet"><strong>{collectibleCardCount} personalized cards · 63 × 88 mm</strong><span>{collectibleSheetCount * 2} PDF pages → {collectibleSheetCount} duplex A4 sheets</span><span>Front/back pairs · 3 × 3 packing · Flip on long edge</span></aside></section>}
           </div>
         </section>
 
