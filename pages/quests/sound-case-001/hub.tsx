@@ -27,6 +27,8 @@ export default function SoundCaseHubPage({ lang, drawingPreviewUrl }: SoundCaseH
         description={text.metaDescription}
         path={SOUND_CASE_001_HUB_PUBLIC_PATH}
         lang={lang}
+        noindex
+        noindexFollow
       />
       <SoundCaseHubScene
         lang={lang}

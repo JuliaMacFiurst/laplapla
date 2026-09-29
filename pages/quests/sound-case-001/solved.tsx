@@ -17,6 +17,8 @@ export default function SoundCaseSolvedPage({ lang }: { lang: Lang }) {
         description={text.metaDescription}
         path={SOUND_CASE_001_SOLVED_PUBLIC_PATH}
         lang={lang}
+        noindex
+        noindexFollow
       />
       <SoundCaseSolvedScene
         lang={lang}

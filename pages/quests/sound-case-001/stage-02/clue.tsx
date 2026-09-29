@@ -20,6 +20,8 @@ export default function Stage2CluePage({ lang }: Stage2CluePageProps) {
         description={text.metaDescription}
         path={STAGE_2_CLUE_PUBLIC_PATH}
         lang={lang}
+        noindex
+        noindexFollow
       />
       <Stage2ClueScene
         lang={lang}

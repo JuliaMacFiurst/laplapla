@@ -86,6 +86,12 @@ URL: https://www.laplapla.com/author
 
 The Author page is the official author page for Julia Noah Makhlin, creator and founder of LapLapLa.
 
+### Why Does a Dune Sing?
+
+URL: https://www.laplapla.com/en/quests/sound-case-001/singing-dunes
+
+This illustrated popular-science article explains booming sand dunes, the conditions in which dunes sing, collective grain motion, dune acoustics, and the scientific debate around the phenomenon. It includes a real recording of a singing dune and links to scientific sources.
+
 ## Languages
 
 LapLapLa supports Russian, English, and Hebrew.

@@ -31,6 +31,8 @@ export default function UnknownSoundPage({ lang }: UnknownSoundPageProps) {
         description={text.metaDescription}
         path={UNKNOWN_SOUND_PUBLIC_PATH}
         lang={lang}
+        noindex
+        noindexFollow
       />
       <UnknownSoundScene
         lang={lang}

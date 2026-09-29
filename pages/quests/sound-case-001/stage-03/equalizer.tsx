@@ -30,6 +30,8 @@ export default function HumanEqualizerPage({ lang }: { lang: Lang }) {
         description={text.metaDescription}
         path={SOUND_CASE_001_HUMAN_EQUALIZER_PUBLIC_PATH}
         lang={lang}
+        noindex
+        noindexFollow
       />
       <HumanEqualizerScene
         lang={lang}

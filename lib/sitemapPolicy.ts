@@ -5,6 +5,7 @@ export const CORE_SITEMAP_PAGES = [
   { path: "/capybara", priority: "0.86", changefreq: "weekly" },
   { path: "/books/kladbishenskaya-kniga", priority: "0.78", changefreq: "monthly" },
   { path: "/parrots", priority: "0.84", changefreq: "weekly" },
+  { path: "/quests/sound-case-001/singing-dunes", priority: "0.76", changefreq: "monthly" },
   { path: "/raccoons", priority: "0.84", changefreq: "weekly" },
   { path: "/applab", priority: "0.78", changefreq: "monthly" },
   { path: "/about", priority: "0.82", changefreq: "monthly" },

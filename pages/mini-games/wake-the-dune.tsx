@@ -11,7 +11,7 @@ export default function WakeTheDunePage({ lang }: { lang: Lang }) {
       <Head>
         <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
-      <SEO title={copy.pageTitle} description={copy.metaDescription} path={WAKE_THE_DUNE_ROUTE} lang={lang} />
+      <SEO title={copy.pageTitle} description={copy.metaDescription} path={WAKE_THE_DUNE_ROUTE} lang={lang} noindex noindexFollow />
       <WakeTheDuneGame lang={lang} />
     </>
   );
