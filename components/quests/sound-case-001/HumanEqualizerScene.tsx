@@ -19,6 +19,7 @@ import {
   reduceEqualizerGame,
 } from "@/lib/shop/quests/sound-case-001/humanEqualizerGame";
 import type { DistractorId, EqualizerMode, EqualizerPosition, EqualizerState, EqualizerTempo } from "@/lib/shop/quests/sound-case-001/humanEqualizerGame";
+import Link from "next/link";
 
 const POSITION_ORDER: readonly EqualizerPosition[] = ["low", "mid", "high"];
 const POSITION_TOP: Record<EqualizerPosition, number> = { high: 10, mid: 50, low: 90 };
@@ -155,7 +156,7 @@ function VerticalFader({ state, labels, accessibleLabel, onPosition }: FaderProp
   );
 }
 
-export function HumanEqualizerScene({ lang, recordingUrl, distractorUrls, parrotUrl }: { lang: Lang; recordingUrl: string; distractorUrls: Record<DistractorId, string>; parrotUrl: string }) {
+export function HumanEqualizerScene({ lang, recordingUrl, distractorUrls, parrotUrl, hubReplay = false, hubHref = "/quests/sound-case-001/hub" }: { lang: Lang; recordingUrl: string; distractorUrls: Record<DistractorId, string>; parrotUrl: string; hubReplay?: boolean; hubHref?: string }) {
   const text = dictionaries[lang].shop.soundCase.humanEqualizer;
   const [state, dispatch] = useReducer(reduceEqualizerGame, INITIAL_EQUALIZER_STATE);
   const [tempo, setTempo] = useState<EqualizerTempo>("calm");
@@ -531,7 +532,12 @@ export function HumanEqualizerScene({ lang, recordingUrl, distractorUrls, parrot
               <img src={parrotUrl} alt="" aria-hidden="true" />
               <div className="human-equalizer__parrot-copy">{text.parrotClueLines.map((line) => <p key={line}>{line}</p>)}</div>
             </div>
-            <section className="human-equalizer__next-step" aria-labelledby="equalizer-next-step-title">
+            {hubReplay ? (
+              <section className="human-equalizer__hub-return" aria-labelledby="equalizer-hub-return-title">
+                <h3 id="equalizer-hub-return-title">{text.hubReplayComplete}</h3>
+                <Link href={hubHref} locale={lang}>{text.hubReturnAction}</Link>
+              </section>
+            ) : <section className="human-equalizer__next-step" aria-labelledby="equalizer-next-step-title">
               <h3 id="equalizer-next-step-title">{text.nextStepTitle}</h3>
               <p className="human-equalizer__transition">{text.physicalTransition}</p>
               <p className="human-equalizer__phone-away">{text.phoneAway}</p>
@@ -543,7 +549,7 @@ export function HumanEqualizerScene({ lang, recordingUrl, distractorUrls, parrot
               <h4>{text.materialsTitle}</h4>
               <ul>{text.materials.map((item) => <li key={item}>{item}</li>)}</ul>
               <strong>{text.envelopeWarning}</strong>
-            </section>
+            </section>}
             <div className="human-equalizer__replay-choice">
               <strong>{text.replayAlternative}</strong>
               <button className="human-equalizer__replay" type="button" onClick={restart}>{text.replayAction}</button>

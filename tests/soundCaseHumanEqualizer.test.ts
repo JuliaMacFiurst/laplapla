@@ -33,6 +33,15 @@ describe("Sound Case #001 Human Equalizer", () => {
     expect(source).toContain("utterance.volume = 1");
     expect(source).toContain("voice.lang.toLowerCase().split");
   });
+  it("keeps quest completion intact while offering an explicit Hub-only replay return", () => {
+    const scene = readFileSync(`${process.cwd()}/components/quests/sound-case-001/HumanEqualizerScene.tsx`, "utf8");
+    const page = readFileSync(`${process.cwd()}/pages/quests/sound-case-001/stage-03/equalizer.tsx`, "utf8");
+    expect(page).toContain('router.query.from === "hub"');
+    expect(scene).toContain("hubReplay ? (");
+    expect(scene).toContain("text.hubReturnAction");
+    expect(scene).toContain('className="human-equalizer__next-step"');
+    expect(scene).toContain("text.nextGameSteps.map");
+  });
   it.each(["ru","en","he"] as const)("uses the exact printed Stage 04 title and marks replay optional in %s",locale=>{
     const equalizer=dictionaries[locale].shop.soundCase.humanEqualizer;
     const printed=dictionaries[locale].shop.soundCase.stage04.print.title;
