@@ -28,6 +28,7 @@ import '../styles/LoadingSpinner.css';
 import '../styles/Shop.css';
 import '../styles/SoundCaseQuest.css';
 import '../styles/WakeTheDune.css';
+import '../styles/SingingDunesArticle.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
