@@ -88,17 +88,6 @@ export default function StandaloneBookScreenPages({
 
     openedTrackingKeyRef.current = key;
     completedTrackingKeyRef.current = null;
-    trackEvent({
-      eventName: "story_opened",
-      entityType: "book",
-      entityId: getBookPathSlug(activeBook),
-      entityTitle: activeBook.title,
-      lang,
-      metadata: {
-        storyType: "book",
-        mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
-      },
-    });
     trackEvent("content_open", {
       section: "books",
       content_type: "book",
@@ -141,18 +130,6 @@ export default function StandaloneBookScreenPages({
     }
 
     completedTrackingKeyRef.current = key;
-    trackEvent({
-      eventName: "story_completed",
-      entityType: "book",
-      entityId: getBookPathSlug(activeBook),
-      entityTitle: activeBook.title,
-      lang,
-      metadata: {
-        storyType: "book",
-        mode: selectedMode ? getExplanationModeSegment(selectedMode) : "default",
-        slideCount: slides.length,
-      },
-    });
     trackEvent("content_complete", {
       section: "books",
       content_type: "book",

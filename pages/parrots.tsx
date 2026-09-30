@@ -96,7 +96,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
 
   useEffect(() => {
-    trackEvent("parrot_music_opened", {
+    trackEvent("content_open", {
       section: "parrots",
       content_type: "parrot_music",
       content_id: "parrot-music",

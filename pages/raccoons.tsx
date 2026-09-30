@@ -199,7 +199,7 @@ export default function RaccoonsPage({ lang: providedLang, recipes }: { lang?: L
   ];
 
   useEffect(() => {
-    trackEvent("raccoon_map_opened", {
+    trackEvent("content_open", {
       section: "raccoons",
       content_type: "map",
       content_id: "raccoon-map",

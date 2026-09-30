@@ -40,7 +40,7 @@ export default async function handler(
       return;
     }
 
-    res.status(200).json({ ok: true, status: result.status, events: report.rows.length });
+    res.status(200).json({ ok: true, status: result.status, events: report.events });
   } catch (error) {
     console.error("[analytics] daily report failed", error);
     res.status(500).json({ error: "Daily report failed" });

@@ -29,7 +29,7 @@ export default function PrivacyPage() {
               h: "2. Product Analytics",
               paragraphs: [
                 `LapLapLa collects pseudonymous usage statistics. Events may include page views; session start and end; opening, progressing through, and completing content; active time; progress and completion of lessons, books, and stories; language changes; use of maps, studios, and other tools; creation and export of local projects; opening external links; and technical errors.`,
-                `For analytics, LapLapLa creates a persistent random visitor UUID in localStorage and a random session UUID in sessionStorage. These identifiers do not contain your name or email address, but they allow events from the same browser or the same session to be associated with one another.`,
+                `For analytics, LapLapLa creates a persistent random visitor UUID and a random session UUID in localStorage. The session is shared by tabs in the same browser profile and rotates after more than 30 minutes without tracked activity. These identifiers do not contain your name or email address.`,
                 `Raw analytics events are stored in Supabase and are normally deleted after approximately 15 days. After that period, anonymized aggregate reports that do not contain identifiers of individual visitors or sessions may be retained.`,
               ],
             },
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
               h: "2. ניתוח השימוש במוצר",
               paragraphs: [
                 `LapLapLa אוספת נתוני שימוש פסאודונימיים. האירועים עשויים לכלול צפיות בדפים; התחלה וסיום של הפעלה; פתיחה, התקדמות והשלמה של תוכן; משך הפעילות; התקדמות והשלמה של שיעורים, ספרים וסיפורים; שינוי שפה; שימוש במפות, באולפנים ובכלים אחרים; יצירה וייצוא של פרויקטים מקומיים; פתיחת קישורים חיצוניים; ושגיאות טכניות.`,
-                `לצורכי ניתוח שימוש LapLapLa יוצרת UUID אקראי וקבוע למבקר ב‑localStorage ו‑UUID אקראי להפעלה ב‑sessionStorage. מזהים אלה אינם כוללים שם או כתובת דוא״ל, אך הם מאפשרים לקשר בין אירועים מאותו דפדפן או מאותה הפעלה.`,
+                `לצורכי ניתוח שימוש LapLapLa יוצרת ב‑localStorage מזהה UUID אקראי וקבוע למבקר ומזהה UUID אקראי להפעלה. ההפעלה משותפת לכרטיסיות באותו פרופיל דפדפן ומתחלפת לאחר יותר מ־30 דקות ללא פעילות מתועדת. מזהים אלה אינם כוללים שם או כתובת דוא״ל.`,
                 `אירועי ניתוח גולמיים נשמרים ב‑Supabase ונמחקים בדרך כלל לאחר כ‑15 ימים. לאחר מכן עשויים להישמר דוחות מצטברים ואנונימיים שאינם כוללים מזהים של מבקרים או הפעלות בודדות.`,
               ],
             },
@@ -205,7 +205,7 @@ export default function PrivacyPage() {
               h: "2. Продуктовая аналитика",
               paragraphs: [
                 `LapLapLa собирает псевдонимную статистику использования. События могут включать просмотры страниц; начало и окончание сессии; открытие, прохождение и завершение контента; длительность активности; прогресс и завершение уроков, книг и историй; смену языка; использование карт, студий и других инструментов; создание и экспорт локальных проектов; открытие внешних ссылок; технические ошибки.`,
-                `Для аналитики LapLapLa создаёт постоянный случайный UUID посетителя в localStorage и случайный UUID сессии в sessionStorage. Эти идентификаторы не содержат имени или электронной почты, но позволяют связывать события одного браузера или одной сессии.`,
+                `Для аналитики LapLapLa создаёт в localStorage постоянный случайный UUID посетителя и случайный UUID сессии. Сессия общая для вкладок одного browser profile и меняется после более чем 30 минут без отслеживаемой активности. Эти идентификаторы не содержат имени или электронной почты.`,
                 `Сырые аналитические события хранятся в Supabase и обычно удаляются приблизительно через 15 дней. После этого могут сохраняться обезличенные агрегированные отчёты без идентификаторов отдельных посетителей или сессий.`,
               ],
             },

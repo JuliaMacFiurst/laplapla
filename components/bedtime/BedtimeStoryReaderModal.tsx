@@ -68,24 +68,6 @@ export default function BedtimeStoryReaderModal({
     }
 
     completionTrackedRef.current = true;
-    trackEvent({
-      eventName: "bedtime_story_completed",
-      entityType: "story",
-      entityId: story.slug || story.id,
-      entityTitle: story.title,
-      lang,
-      properties: {
-        section: "bedtime_stories",
-        content_type: "bedtime_story",
-        content_id: story.slug || story.id,
-        content_slug: story.slug || story.id,
-        content_title: story.title,
-        language: lang,
-        completion_percent: 100,
-        step_index: pageIndex + 1,
-        total_steps: pageCount,
-      },
-    });
     trackEvent("content_complete", {
       section: "bedtime_stories",
       content_type: "bedtime_story",

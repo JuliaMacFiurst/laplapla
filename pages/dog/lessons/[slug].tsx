@@ -989,17 +989,6 @@ function LessonPlayerDesktop() {
     }
 
     completedLessonKeyRef.current = key;
-    trackEvent("dog_lesson_completed", {
-      section: "dog_lessons",
-      content_type: "dog_lesson",
-      content_id: typeof slug === "string" ? slug : lesson.id || lesson.title,
-      content_slug: typeof slug === "string" ? slug : null,
-      content_title: lesson.title,
-      language: lang,
-      completion_percent: 100,
-      step_index: lesson.steps.length,
-      total_steps: lesson.steps.length,
-    });
     trackEvent("content_complete", {
       section: "dog_lessons",
       content_type: "dog_lesson",
@@ -1518,15 +1507,6 @@ function LessonPlayerDesktop() {
         return;
       }
       setLesson(translatedLesson);
-      trackEvent("dog_lesson_opened", {
-        section: "dog_lessons",
-        content_type: "dog_lesson",
-        content_id: slug,
-        content_slug: slug,
-        content_title: translatedLesson.title,
-        language: lang,
-        total_steps: translatedLesson.steps.length,
-      });
       trackEvent("content_open", {
         section: "dog_lessons",
         content_type: "dog_lesson",

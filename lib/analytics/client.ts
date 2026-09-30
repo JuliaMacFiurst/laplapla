@@ -5,16 +5,16 @@ import type {
 } from "@/lib/analytics/events";
 
 const VISITOR_STORAGE_KEY = "laplapla_analytics_visitor_id";
-const SESSION_STORAGE_KEY = "laplapla_analytics_session_id";
-const SESSION_STARTED_KEY = "laplapla_analytics_session_started";
+const LEGACY_SESSION_STORAGE_KEY = "laplapla_analytics_session_id";
+const SESSION_STORAGE_KEY = "laplapla_analytics_session_v2";
+const SESSION_STARTED_KEY = "laplapla_analytics_session_started_v2";
 const RETRY_QUEUE_STORAGE_KEY = "laplapla_analytics_retry_queue";
-const PAGE_VIEW_CACHE_KEY = "__laplaplaTrackedPageViews";
-const CONTENT_OPEN_CACHE_KEY = "__laplaplaTrackedContentOpens";
 const PROGRESS_CACHE_KEY = "__laplaplaProgressEvents";
 const ACTIVE_CONTENT_STATE_KEY = "__laplaplaActiveContentState";
 const PROGRESS_THROTTLE_MS = 15_000;
 const PROGRESS_STEP = 10;
 const MAX_RETRY_QUEUE_SIZE = 20;
+export const SESSION_INACTIVITY_MS = 30 * 60 * 1000;
 
 type AnalyticsTrackInput =
   | AnalyticsEventInput
@@ -23,12 +23,15 @@ type AnalyticsTrackInput =
 type AnalyticsIds = {
   anonymousUserId: string | null;
   sessionId: string | null;
+  isNewSession: boolean;
 };
+
+type StorageLike = Pick<Storage, "getItem" | "setItem">;
+
+export type AnalyticsDeliveryStatus = "recorded" | "duplicate" | "skipped";
 
 declare global {
   interface Window {
-    [PAGE_VIEW_CACHE_KEY]?: Set<string>;
-    [CONTENT_OPEN_CACHE_KEY]?: Set<string>;
     [PROGRESS_CACHE_KEY]?: Map<string, { at: number; percent: number }>;
     [ACTIVE_CONTENT_STATE_KEY]?: AnalyticsProperties;
     __laplaplaRecordAnalyticsDebug?: (input: {
@@ -46,7 +49,7 @@ declare global {
   }
 }
 
-function createId() {
+export function createAnalyticsId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
@@ -59,32 +62,60 @@ function createId() {
 }
 
 function createDebugId() {
-  return `analytics_${createId()}`;
+  return `analytics_${createAnalyticsId()}`;
 }
 
-function readOrCreateStorageId(storage: Storage, key: string) {
-  const existing = storage.getItem(key);
-  if (existing) {
-    return existing;
-  }
-
+export function resolveAnalyticsVisitor(storage: StorageLike, createId: () => string = createAnalyticsId) {
+  const existing = storage.getItem(VISITOR_STORAGE_KEY);
+  if (existing) return existing;
   const next = createId();
-  storage.setItem(key, next);
+  storage.setItem(VISITOR_STORAGE_KEY, next);
   return next;
+}
+
+export function resolveAnalyticsSession(
+  storage: StorageLike,
+  now = Date.now(),
+  createId: () => string = createAnalyticsId,
+  legacySessionId: string | null = null,
+) {
+  try {
+    const raw = storage.getItem(SESSION_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) as { id?: unknown; lastActivityAt?: unknown } : null;
+    const existingId = typeof parsed?.id === "string" ? parsed.id : null;
+    const lastActivityAt = typeof parsed?.lastActivityAt === "number" ? parsed.lastActivityAt : null;
+    const isActive = Boolean(
+      existingId &&
+      lastActivityAt != null &&
+      now >= lastActivityAt &&
+      now - lastActivityAt <= SESSION_INACTIVITY_MS,
+    );
+    const id = isActive ? existingId as string : legacySessionId || createId();
+    storage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ id, lastActivityAt: now }));
+    return { id, isNew: !isActive };
+  } catch {
+    return { id: legacySessionId || createId(), isNew: true };
+  }
 }
 
 function getAnalyticsIds(): AnalyticsIds {
   if (typeof window === "undefined") {
-    return { anonymousUserId: null, sessionId: null };
+    return { anonymousUserId: null, sessionId: null, isNewSession: false };
   }
 
   try {
+    const existingV2Session = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const legacySessionId = existingV2Session
+      ? null
+      : window.sessionStorage.getItem(LEGACY_SESSION_STORAGE_KEY);
+    const session = resolveAnalyticsSession(window.localStorage, Date.now(), createAnalyticsId, legacySessionId);
     return {
-      anonymousUserId: readOrCreateStorageId(window.localStorage, VISITOR_STORAGE_KEY),
-      sessionId: readOrCreateStorageId(window.sessionStorage, SESSION_STORAGE_KEY),
+      anonymousUserId: resolveAnalyticsVisitor(window.localStorage),
+      sessionId: session.id,
+      isNewSession: session.isNew,
     };
   } catch {
-    return { anonymousUserId: null, sessionId: null };
+    return { anonymousUserId: null, sessionId: null, isNewSession: false };
   }
 }
 
@@ -107,6 +138,31 @@ function getCurrentPage() {
   return `${window.location.pathname}${window.location.search}`;
 }
 
+export function getAnalyticsSkipReason(input: {
+  nodeEnv?: string;
+  vercelEnv?: string;
+  hostname?: string;
+  pathname?: string;
+  optedOut?: boolean;
+  automated?: boolean;
+}) {
+  if (input.optedOut) return "opted_out";
+  if (input.automated) return "automated_browser";
+  if (input.nodeEnv !== "production") return "non_production_build";
+  if (input.vercelEnv && input.vercelEnv !== "production") return "vercel_preview";
+  const hostname = (input.hostname || "").toLowerCase();
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") return "local_host";
+  if (hostname.endsWith(".vercel.app")) return "vercel_preview_host";
+  const pathname = input.pathname || "/";
+  if (
+    pathname === "/internal" || pathname.startsWith("/internal/") ||
+    pathname === "/admin" || pathname.startsWith("/admin/") ||
+    pathname === "/admin-login" || pathname.startsWith("/admin-login/") ||
+    pathname === "/auth/callback" || pathname.startsWith("/auth/callback/")
+  ) return "technical_route";
+  return null;
+}
+
 function shouldSkipAnalytics() {
   if (typeof window === "undefined") {
     return true;
@@ -119,9 +175,16 @@ function shouldSkipAnalytics() {
       return true;
     }
 
-    return window.localStorage.getItem("laplapla_analytics_opt_out") === "1";
+    return getAnalyticsSkipReason({
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
+      hostname: window.location.hostname,
+      pathname: window.location.pathname,
+      optedOut: window.localStorage.getItem("laplapla_analytics_opt_out") === "1",
+      automated: navigator.webdriver === true,
+    }) !== null;
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -213,25 +276,6 @@ function normalizeExportMethod(
   return existing || "unknown";
 }
 
-function shouldSkipPageView(input: AnalyticsEventInput, properties: AnalyticsProperties) {
-  if (input.eventName !== "page_view") {
-    return false;
-  }
-
-  const key = `${properties.current_page || input.page || ""}:${properties.language || input.lang || ""}`;
-  if (!key.trim()) {
-    return false;
-  }
-
-  window[PAGE_VIEW_CACHE_KEY] ||= new Set<string>();
-  if (window[PAGE_VIEW_CACHE_KEY]?.has(key)) {
-    return true;
-  }
-
-  window[PAGE_VIEW_CACHE_KEY]?.add(key);
-  return false;
-}
-
 function shouldSkipProgress(input: AnalyticsEventInput, properties: AnalyticsProperties) {
   if (input.eventName !== "content_progress") {
     return false;
@@ -250,30 +294,6 @@ function shouldSkipProgress(input: AnalyticsEventInput, properties: AnalyticsPro
   }
 
   window[PROGRESS_CACHE_KEY]?.set(key, { at: now, percent: bucket });
-  return false;
-}
-
-function shouldSkipContentOpen(input: AnalyticsEventInput, properties: AnalyticsProperties) {
-  if (input.eventName !== "content_open") {
-    return false;
-  }
-
-  const key = [
-    properties.current_page || input.page || "",
-    properties.content_type || "",
-    properties.content_id || properties.content_slug || "",
-    properties.language || input.lang || "",
-  ].join(":");
-  if (!key.replace(/:/g, "").trim()) {
-    return false;
-  }
-
-  window[CONTENT_OPEN_CACHE_KEY] ||= new Set<string>();
-  if (window[CONTENT_OPEN_CACHE_KEY]?.has(key)) {
-    return true;
-  }
-
-  window[CONTENT_OPEN_CACHE_KEY]?.add(key);
   return false;
 }
 
@@ -316,16 +336,31 @@ function flushRetryQueue() {
 
   writeRetryQueue([]);
   for (const payload of queue) {
-    try {
-      void fetch("/api/analytics/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => enqueueRetryPayload(payload));
-    } catch {
-      enqueueRetryPayload(payload);
+    void deliverPayload(payload).then((result) => {
+      if (!result.delivered) enqueueRetryPayload(payload);
+    });
+  }
+}
+
+export async function deliverPayload(
+  payload: AnalyticsEventInput,
+  request: typeof fetch = fetch,
+): Promise<{ delivered: boolean; status: AnalyticsDeliveryStatus | null; responseStatus: number | null }> {
+  try {
+    const response = await request("/api/analytics/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    });
+    const responseBody = await response.json().catch(() => null) as { status?: unknown } | null;
+    const status = responseBody?.status;
+    if (response.ok && (status === "recorded" || status === "duplicate" || status === "skipped")) {
+      return { delivered: true, status, responseStatus: response.status };
     }
+    return { delivered: response.status >= 400 && response.status < 500, status: null, responseStatus: response.status };
+  } catch {
+    return { delivered: false, status: null, responseStatus: null };
   }
 }
 
@@ -379,7 +414,6 @@ function updateActiveContentState(eventName: AnalyticsEventName, properties: Ana
 }
 
 function sendPayload(payload: AnalyticsEventInput, debugEventId?: string) {
-  const body = JSON.stringify(payload);
   flushRetryQueue();
   const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
   const completeDebug = (
@@ -402,26 +436,10 @@ function sendPayload(payload: AnalyticsEventInput, debugEventId?: string) {
   };
 
   try {
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: "application/json" });
-      if (navigator.sendBeacon("/api/analytics/event", blob)) {
-        completeDebug("sent");
-        return;
-      }
-    }
-  } catch {}
-
-  try {
-    void fetch("/api/analytics/event", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body,
-      keepalive: true,
-    })
-      .then((response) => {
-        completeDebug(response.ok ? "sent" : "failed", response.status);
+    void deliverPayload(payload)
+      .then((result) => {
+        completeDebug(result.delivered ? "sent" : "failed", result.responseStatus);
+        if (!result.delivered) enqueueRetryPayload(payload);
       })
       .catch((error) => {
         completeDebug("failed", null, error instanceof Error ? error.message : "Analytics request failed");
@@ -476,16 +494,29 @@ export function trackEvent(
     const ids = getAnalyticsIds();
     const mergedProperties = buildProperties(input, ids);
 
-    if (
-      shouldSkipPageView(input, mergedProperties) ||
-      shouldSkipContentOpen(input, mergedProperties) ||
-      shouldSkipProgress(input, mergedProperties)
-    ) {
+    if (ids.isNewSession && input.eventName !== "session_start" && ids.sessionId) {
+      try {
+        window.localStorage.setItem(SESSION_STARTED_KEY, ids.sessionId);
+      } catch {}
+      trackEvent({
+        eventName: "session_start",
+        visitorId: ids.anonymousUserId,
+        sessionId: ids.sessionId,
+        properties: {
+          language: mergedProperties.language,
+          current_page: mergedProperties.current_page,
+          section: mergedProperties.section,
+        },
+      });
+    }
+
+    if (shouldSkipProgress(input, mergedProperties)) {
       return;
     }
 
     const payload: AnalyticsEventInput = {
       ...input,
+      eventId: input.eventId || createAnalyticsId(),
       page: input.page || String(mergedProperties.current_page || getCurrentPage() || ""),
       visitorId: input.visitorId ?? ids.anonymousUserId,
       sessionId: input.sessionId ?? ids.sessionId,
@@ -513,15 +544,23 @@ export function trackEvent(
 }
 
 export function trackSessionStart(properties?: AnalyticsProperties) {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || shouldSkipAnalytics()) {
     return;
   }
 
   try {
-    if (window.sessionStorage.getItem(SESSION_STARTED_KEY) === "1") {
+    const ids = getAnalyticsIds();
+    if (!ids.sessionId || window.localStorage.getItem(SESSION_STARTED_KEY) === ids.sessionId) {
       return;
     }
-    window.sessionStorage.setItem(SESSION_STARTED_KEY, "1");
+    window.localStorage.setItem(SESSION_STARTED_KEY, ids.sessionId);
+    trackEvent({
+      eventName: "session_start",
+      visitorId: ids.anonymousUserId,
+      sessionId: ids.sessionId,
+      properties,
+    });
+    return;
   } catch {}
 
   trackEvent("session_start", properties);

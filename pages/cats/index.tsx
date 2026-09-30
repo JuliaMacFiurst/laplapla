@@ -500,18 +500,6 @@ export default function CatPage({ lang }: { lang: Lang }) {
     }
 
     completedQuestionKeyRef.current = key;
-    trackEvent("cat_question_completed", {
-      section: "cats",
-      content_type: "cat_question",
-      content_id: activePreset.id,
-      content_slug: activePreset.id,
-      content_title: activePreset.prompt,
-      language: lang,
-      completion_percent: completionPercent,
-      step_index: safeIndex + 1,
-      total_steps: slides.length,
-      source,
-    });
     trackEvent("content_complete", {
       section: "cats",
       content_type: "cat_question",
@@ -722,14 +710,6 @@ export default function CatPage({ lang }: { lang: Lang }) {
   const applyPreset = (preset: AnyCatPreset) => {
     lastResolvedTextPresetKeyRef.current = preset.kind === "text" ? null : lastResolvedTextPresetKeyRef.current;
     setActivePresetId(preset.id);
-    trackEvent("cat_question_opened", {
-      section: "cats",
-      content_type: "cat_question",
-      content_id: preset.id,
-      content_slug: preset.id,
-      content_title: preset.prompt,
-      language: lang,
-    });
     trackEvent("content_open", {
       section: "cats",
       content_type: "cat_question",
@@ -748,14 +728,6 @@ export default function CatPage({ lang }: { lang: Lang }) {
     setActivePresetId(preset.id);
     setError(null);
     setPendingQuestion(preset.prompt);
-    trackEvent("cat_question_opened", {
-      section: "cats",
-      content_type: "cat_question",
-      content_id: preset.id,
-      content_slug: preset.id,
-      content_title: preset.prompt,
-      language: lang,
-    });
     trackEvent("content_open", {
       section: "cats",
       content_type: "cat_question",
@@ -879,15 +851,6 @@ export default function CatPage({ lang }: { lang: Lang }) {
     lastResolvedTextPresetKeyRef.current = randomPreset.kind === "text" ? `${lang}:${randomPreset.id}` : null;
     setActivePresetId(randomPreset.id);
     setPendingQuestion(randomPreset.prompt);
-    trackEvent("cat_question_opened", {
-      section: "cats",
-      content_type: "cat_question",
-      content_id: randomPreset.id,
-      content_slug: randomPreset.id,
-      content_title: randomPreset.prompt,
-      language: lang,
-      source: "random",
-    });
     trackEvent("content_open", {
       section: "cats",
       content_type: "cat_question",
@@ -920,7 +883,7 @@ export default function CatPage({ lang }: { lang: Lang }) {
   };
 
   const handleEditInStudio = (sourceSlides: CatRuntimeSlide[]) => {
-    trackEvent("studio_open", {
+    trackEvent("studio_cta_clicked", {
       section: "studio",
       studio_type: "cats",
       content_id: activePresetId,

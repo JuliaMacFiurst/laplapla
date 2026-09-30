@@ -43,6 +43,7 @@ import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
 import PWAAppShell from "@/components/PWA/PWAAppShell";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { getActiveContentExitProperties, trackEvent, trackSessionStart } from "@/lib/analytics/client";
+import { analyticsNavigationKey, isNewAnalyticsNavigation } from "@/lib/analytics/pageView";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -131,6 +132,7 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
   const router = useRouter();
   const activeStartedAtRef = useRef<number | null>(null);
   const activeDurationMsRef = useRef(0);
+  const lastPageViewKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!router.isReady) {
@@ -138,6 +140,9 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
     }
 
     const currentPage = router.asPath;
+    const navigationKey = analyticsNavigationKey(currentPage, lang);
+    const shouldTrackPageView = isNewAnalyticsNavigation(lastPageViewKeyRef.current, navigationKey);
+    lastPageViewKeyRef.current = navigationKey;
     const section = resolveAnalyticsSection(router.pathname);
     const readableTitle = document.title || router.pathname;
     activeDurationMsRef.current = 0;
@@ -148,24 +153,26 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
       language: lang,
       current_page: currentPage,
     });
-    trackEvent({
-      eventName: "page_view",
-      entityType: "page",
-      entityId: router.pathname,
-      entityTitle: readableTitle,
-      page: currentPage,
-      lang,
-      properties: {
-        section,
-        content_type: "page",
-        content_id: router.pathname,
-        content_title: readableTitle,
-        page_title: document.title || readableTitle,
-        readable_title: readableTitle,
-        language: lang,
-        current_page: currentPage,
-      },
-    });
+    if (shouldTrackPageView) {
+      trackEvent({
+        eventName: "page_view",
+        entityType: "page",
+        entityId: router.pathname,
+        entityTitle: readableTitle,
+        page: currentPage,
+        lang,
+        properties: {
+          section,
+          content_type: "page",
+          content_id: router.pathname,
+          content_title: readableTitle,
+          page_title: document.title || readableTitle,
+          readable_title: readableTitle,
+          language: lang,
+          current_page: currentPage,
+        },
+      });
+    }
 
     const startTimer = window.setTimeout(() => {
       trackEvent("content_start", {

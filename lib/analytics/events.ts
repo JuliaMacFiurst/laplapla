@@ -11,6 +11,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "external_link_clicked",
   "error_seen",
   "studio_open",
+  "studio_cta_clicked",
   "studio_project_created",
   "studio_media_added",
   "studio_sticker_added",
@@ -113,6 +114,7 @@ export type AnalyticsProperties = {
 };
 
 export type AnalyticsEventInput = {
+  eventId?: string;
   eventName: AnalyticsEventName;
   entityType?: AnalyticsEntityType;
   entityId?: string | number | null;
@@ -138,6 +140,7 @@ export const ANALYTICS_EVENT_LABELS: Record<AnalyticsEventName, string> = {
   external_link_clicked: "External links clicked",
   error_seen: "Errors seen",
   studio_open: "Studio opened",
+  studio_cta_clicked: "Studio CTA clicked",
   studio_project_created: "Studio projects created",
   studio_media_added: "Studio media added",
   studio_sticker_added: "Studio stickers added",
