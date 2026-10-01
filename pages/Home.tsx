@@ -7,6 +7,7 @@ import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
 import { dictionaries, type Lang } from "../i18n";
 import { ShopSpotlight } from "@/components/shop/ShopSpotlight";
+import { SoundCasePromoBanner } from "@/components/shop/SoundCasePromoBanner";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BASE_URL } from "@/lib/config";
@@ -220,6 +221,8 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
               </div>
             </header>
 
+            {!isMobile ? <SoundCasePromoBanner lang={resolvedLang} /> : null}
+
             <div className={`grid ${isMobile ? "grid-mobile-menu" : ""}`}>
               <Link
                 className="card"
@@ -286,6 +289,8 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
               </Link>
             </div>
           </section>
+
+          {isMobile ? <SoundCasePromoBanner lang={resolvedLang} mobile /> : null}
 
           <section className="home-brand-overview" aria-labelledby="laplapla-brand-heading">
             <h2 id="laplapla-brand-heading">{t.brand.heading}</h2>

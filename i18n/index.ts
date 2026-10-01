@@ -139,6 +139,16 @@ type DictionaryShape = {
     };
     cta: string;
     installBanner: string;
+    soundCasePromo: {
+      eyebrow: string;
+      title: string;
+      hook: string;
+      regularPrice: string;
+      preorderPrice: string;
+      cta: string;
+      noPayment: string;
+      imageAlt: string;
+    };
   };
 
   homeRetention: {
@@ -953,6 +963,34 @@ type DictionaryShape = {
       highlights: string[];
       createCta: string;
       preparationNote: string;
+      preorder: {
+        eyebrow: string;
+        title: string;
+        seoTitle: string;
+        seoDescription: string;
+        intro: string;
+        regularPrice: string;
+        preorderPrice: string;
+        noPayment: string;
+        emailLabel: string;
+        emailPlaceholder: string;
+        consentBeforePrivacy: string;
+        privacyLabel: string;
+        consentAfterPrivacy: string;
+        submit: string;
+        submitting: string;
+        successTitle: string;
+        successBody: string;
+        invalidEmail: string;
+        consentRequired: string;
+        serverError: string;
+        closedTitle: string;
+        closedBody: string;
+        productCta: string;
+        adventureTitle: string;
+        hook: string;
+        posterAlt: string;
+      };
       builder: {
         title: string;
         intro: string;

@@ -566,6 +566,267 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 .card:nth-child(5) { background-color: #ede5f9; } /* сиреневый */
 .card:nth-child(6) { background-color: #f8e9ef; } /* пудровый */
 
+/* ────────────── Sound Case #001 launch banner ────────────── */
+.sound-case-home-promo {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  margin: 24px auto 34px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 34px;
+  background: #1e1728;
+  box-shadow: 0 28px 70px rgba(39, 24, 52, 0.24), 0 8px 20px rgba(102, 62, 47, 0.14);
+  color: #302536;
+  font-family: var(--font-system, system-ui, -apple-system, sans-serif);
+}
+
+.sound-case-home-promo__scene {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: #1e1728;
+}
+
+.sound-case-home-promo__hero {
+  object-fit: cover;
+  object-position: center;
+}
+
+.sound-case-home-promo__scene-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 56%, rgba(31, 20, 35, 0.46) 100%);
+  pointer-events: none;
+}
+
+.sound-case-home-promo__paper {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr);
+  gap: clamp(18px, 3vw, 34px);
+  align-items: center;
+  margin: -54px 26px 24px;
+  padding: clamp(22px, 3vw, 30px) clamp(22px, 4vw, 38px);
+  border: 1px solid rgba(102, 74, 56, 0.18);
+  border-radius: 26px 20px 28px 22px;
+  background:
+    linear-gradient(rgba(113, 91, 76, 0.05) 1px, transparent 1px) 0 20px / 100% 24px,
+    radial-gradient(circle at 88% 20%, rgba(255, 195, 83, 0.2), transparent 24%),
+    #fff9e9;
+  box-shadow: 0 18px 40px rgba(31, 20, 35, 0.28);
+}
+
+.sound-case-home-promo__paper::before {
+  position: absolute;
+  inset: 9px;
+  border: 2px dashed rgba(107, 79, 66, 0.17);
+  border-radius: 19px;
+  content: "";
+  pointer-events: none;
+}
+
+.sound-case-home-promo__copy,
+.sound-case-home-promo__offer {
+  position: relative;
+  z-index: 2;
+}
+
+.sound-case-home-promo__eyebrow {
+  width: fit-content;
+  margin: 0 0 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #f4cf48;
+  box-shadow: 3px 3px 0 #6f466f;
+  color: #39293e;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.sound-case-home-promo h2 {
+  margin: 0;
+  color: #3c2948;
+  font-family: var(--font-amatic-sc), var(--font-caveat), cursive;
+  font-size: clamp(2.55rem, 5vw, 4.4rem);
+  line-height: 0.92;
+  text-wrap: balance;
+}
+
+.sound-case-home-promo__hook {
+  max-width: 34ch;
+  margin: 10px 0 0;
+  color: #5b4a5b;
+  font-family: var(--font-caveat), cursive;
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.18;
+}
+
+.sound-case-home-promo__offer {
+  display: grid;
+  gap: 13px;
+  padding-inline-start: clamp(0px, 2vw, 18px);
+  border-inline-start: 2px dashed rgba(111, 70, 111, 0.24);
+}
+
+.sound-case-home-promo__prices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px 16px;
+}
+
+.sound-case-home-promo__prices span { color: #756b76; font-size: 0.82rem; font-weight: 700; }
+.sound-case-home-promo__prices s { margin-inline-start: 4px; text-decoration-thickness: 2px; }
+.sound-case-home-promo__prices strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #8c3152;
+  font-size: clamp(1.15rem, 2.5vw, 1.55rem);
+  font-weight: 900;
+}
+.sound-case-home-promo__prices strong bdi { font-size: 1.45em; line-height: 0.9; }
+
+.sound-case-home-promo__action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 9px 14px; }
+.sound-case-home-promo__cta {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 21px;
+  border: 2px solid #3e2949;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #704378, #9d436c 58%, #d3655a);
+  box-shadow: 0 7px 0 #3c2948, 0 13px 24px rgba(77, 43, 77, 0.24);
+  color: #fff;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.sound-case-home-promo__cta:hover,
+.sound-case-home-promo__cta:focus-visible {
+  transform: translateY(-2px) rotate(-0.5deg);
+  box-shadow: 0 9px 0 #3c2948, 0 17px 29px rgba(77, 43, 77, 0.3);
+  filter: saturate(1.12);
+}
+.sound-case-home-promo__cta:focus-visible { outline: 4px solid #f4cf48; outline-offset: 3px; }
+.sound-case-home-promo__cta:active { transform: translateY(4px); box-shadow: 0 3px 0 #3c2948, 0 7px 14px rgba(77, 43, 77, 0.22); }
+.sound-case-home-promo__no-payment { color: #625764; font-size: 0.78rem; font-weight: 750; }
+
+.sound-case-home-promo__sticker {
+  position: absolute;
+  z-index: 3;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 8px 9px rgba(64, 38, 37, 0.2));
+}
+.sound-case-home-promo__sticker--parrot {
+  inset-block-start: -76px;
+  inset-inline-end: 45%;
+  width: clamp(78px, 10vw, 112px);
+  transform: rotate(7deg);
+  animation: soundCaseStickerFloat 4.8s ease-in-out infinite;
+}
+.sound-case-home-promo__sticker--dune {
+  inset-block-end: -21px;
+  inset-inline-start: -20px;
+  width: clamp(76px, 9vw, 104px);
+  transform: rotate(-7deg);
+}
+
+@keyframes soundCaseStickerFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
+
+[dir="rtl"] .sound-case-home-promo__copy,
+[dir="rtl"] .sound-case-home-promo__offer { text-align: start; }
+[dir="rtl"] .sound-case-home-promo__cta:hover,
+[dir="rtl"] .sound-case-home-promo__cta:focus-visible { transform: translateY(-2px) rotate(0.5deg); }
+
+@media (min-width: 768px) {
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) {
+    margin-block: 18px 26px;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__scene {
+    height: clamp(310px, 42vw, 430px);
+    aspect-ratio: auto;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__hero {
+    object-position: center 47%;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__paper {
+    gap: clamp(16px, 2.2vw, 25px);
+    margin: -42px 24px 18px;
+    padding: 14px clamp(24px, 3.4vw, 34px) 15px;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__eyebrow {
+    margin-bottom: 5px;
+    padding-block: 5px;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) h2 {
+    font-size: clamp(2.45rem, 4.4vw, 3.65rem);
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__hook {
+    margin-top: 5px;
+    font-size: clamp(1.08rem, 1.8vw, 1.35rem);
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__offer {
+    gap: 8px;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__prices {
+    gap: 5px 12px;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__prices > span {
+    display: none;
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__sticker--parrot {
+    inset-block-start: -62px;
+    width: clamp(76px, 8vw, 96px);
+  }
+
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__sticker--dune {
+    inset-block-start: -48px;
+    inset-block-end: auto;
+    inset-inline-start: 12px;
+    width: 80px;
+  }
+}
+
+@media (max-width: 900px) and (min-width: 769px) {
+  .sound-case-home-promo:not(.sound-case-home-promo--mobile) .sound-case-home-promo__paper {
+    grid-template-columns: minmax(0, 1.05fr) minmax(245px, 0.95fr);
+    margin-inline: 18px;
+    padding-inline: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sound-case-home-promo__sticker--parrot { animation: none; }
+  .sound-case-home-promo__cta { transition: none; }
+}
+
 .home-retention-section {
   width: min(1120px, calc(100% - 32px));
   margin: 24px auto 38px;
@@ -1797,6 +2058,60 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
     padding: 12px 10px 12px;
     background: transparent;
   }
+
+  .home-wrapper-mobile .sound-case-home-promo--mobile {
+    display: flex;
+    min-height: calc(100dvh - 64px);
+    height: calc(100dvh - 64px);
+    flex-direction: column;
+    box-sizing: border-box;
+    margin: 0;
+    overflow-y: auto;
+    border: 0;
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 12% 12%, rgba(136, 72, 134, 0.38), transparent 34%),
+      #1e1728;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .sound-case-home-promo--mobile .sound-case-home-promo__scene {
+    flex: 0 0 min(48dvh, 405px);
+    min-height: 300px;
+    aspect-ratio: auto;
+  }
+
+  .sound-case-home-promo--mobile .sound-case-home-promo__hero { object-position: center 42%; }
+  .sound-case-home-promo--mobile .sound-case-home-promo__paper {
+    flex: 0 0 auto;
+    grid-template-columns: 1fr;
+    gap: 13px;
+    margin: -32px 10px 12px;
+    padding: 19px 19px 18px;
+    border-radius: 23px 18px 25px 20px;
+  }
+
+  .sound-case-home-promo--mobile h2 {
+    max-width: 86%;
+    font-size: clamp(2.25rem, 11vw, 3.1rem);
+  }
+
+  .sound-case-home-promo--mobile .sound-case-home-promo__hook { margin-top: 5px; font-size: 1.12rem; }
+  .sound-case-home-promo--mobile .sound-case-home-promo__offer {
+    gap: 10px;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+  .sound-case-home-promo--mobile .sound-case-home-promo__prices { gap: 5px 12px; }
+  .sound-case-home-promo--mobile .sound-case-home-promo__prices strong { font-size: 1.05rem; }
+  .sound-case-home-promo--mobile .sound-case-home-promo__cta { min-height: 48px; padding-inline: 18px; font-size: 0.94rem; }
+  .sound-case-home-promo--mobile .sound-case-home-promo__sticker--parrot {
+    inset-block-start: -46px;
+    inset-inline-end: 10px;
+    width: 76px;
+  }
+  .sound-case-home-promo--mobile .sound-case-home-promo__sticker--dune { display: none; }
 
   .home-wrapper-mobile .site-header {
     margin-top: 0;

@@ -91,7 +91,12 @@ describe("legacy lang redirects", () => {
 describe("sitemap and map canonical rules", () => {
   it("keeps legal pages and excludes technical pages from core sitemap entries", () => {
     const paths = CORE_SITEMAP_PAGES.map(({ path }) => path);
-    expect(paths).toEqual(expect.arrayContaining(["/privacy", "/terms", "/licenses"]));
+    expect(paths).toEqual(expect.arrayContaining([
+      "/privacy",
+      "/terms",
+      "/licenses",
+      "/shop/sound-case-001/preorder",
+    ]));
     expect(paths.some((path) => /admin|studio|export|preview|api/.test(path))).toBe(false);
   });
 

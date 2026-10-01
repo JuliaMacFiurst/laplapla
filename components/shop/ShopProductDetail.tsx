@@ -6,6 +6,7 @@ import type { ShopProduct } from "@/lib/shop/types";
 export function ShopProductDetail({ product, lang }: { product: ShopProduct; lang: Lang }) {
   const text = dictionaries[lang].shop;
   const productText = text.soundCase;
+  const isSoundCasePreorder = product.id === "sound-case-001" && product.status === "coming-soon";
 
   return (
     <main className="shop-product-page" dir={lang === "he" ? "rtl" : "ltr"}>
@@ -24,9 +25,14 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
         </ul>
         <Link
           className="shop-product-page__cta"
-          href={buildLocalizedPublicPath(`/shop/${product.slug}/create`, lang)}
+          href={buildLocalizedPublicPath(
+            isSoundCasePreorder
+              ? `/shop/${product.slug}/preorder`
+              : `/shop/${product.slug}/create`,
+            lang,
+          )}
         >
-          {productText.createCta}
+          {isSoundCasePreorder ? productText.preorder.productCta : productText.createCta}
         </Link>
         <p className="shop-product-page__note">{productText.preparationNote}</p>
       </div>

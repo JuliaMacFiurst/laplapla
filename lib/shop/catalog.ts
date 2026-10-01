@@ -37,7 +37,7 @@ const PRODUCTS: ShopProduct[] = [
       "Participants investigate mysterious sounds and discover vibration and resonance through play.",
       "המשתתפים חוקרים צלילים מסתוריים ומגלים רעידות ותהודה דרך משחק.",
     ),
-    price: 0,
+    price: 4900,
     currency: "ILS",
     heroImage: "",
     gallery: [],
