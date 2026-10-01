@@ -1,0 +1,186 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  getPayPalPublicConfig,
+  getPayPalServerConfig,
+  resolvePayPalEnvironment,
+} from "@/lib/server/commerce/paypal/config";
+import { createPayPalClient, PayPalApiError } from "@/lib/server/commerce/paypal/client";
+
+const originalEnvironment = process.env.PAYPAL_ENVIRONMENT;
+const originalClientId = process.env.PAYPAL_CLIENT_ID;
+const originalClientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+afterEach(() => {
+  process.env.PAYPAL_ENVIRONMENT = originalEnvironment;
+  process.env.PAYPAL_CLIENT_ID = originalClientId;
+  process.env.PAYPAL_CLIENT_SECRET = originalClientSecret;
+});
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const testConfig = {
+  environment: "sandbox" as const,
+  clientId: "sandbox-client-id",
+  clientSecret: "sandbox-test-value",
+  apiBaseUrl: "https://api-m.sandbox.paypal.com",
+  sdkUrl: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+};
+
+function completedCapture(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "PAYPAL_ORDER_1",
+    status: "COMPLETED",
+    purchase_units: [{
+      reference_id: "11111111-1111-4111-8111-111111111111",
+      custom_id: "11111111-1111-4111-8111-111111111111",
+      payments: { captures: [{
+        id: "CAPTURE_1",
+        status: "COMPLETED",
+        amount: { value: "49.00", currency_code: "ILS" },
+      }] },
+    }],
+    ...overrides,
+  };
+}
+
+describe("PayPal server configuration", () => {
+  it("selects only official sandbox and live endpoints", () => {
+    expect(resolvePayPalEnvironment("sandbox")).toBe("sandbox");
+    expect(resolvePayPalEnvironment("live")).toBe("live");
+    expect(() => resolvePayPalEnvironment("https://evil.example")).toThrow();
+
+    process.env.PAYPAL_ENVIRONMENT = "sandbox";
+    process.env.PAYPAL_CLIENT_ID = "public-client-id";
+    process.env.PAYPAL_CLIENT_SECRET = "server-only-test-value";
+    expect(getPayPalServerConfig().apiBaseUrl).toBe("https://api-m.sandbox.paypal.com");
+    process.env.PAYPAL_ENVIRONMENT = "live";
+    expect(getPayPalServerConfig().apiBaseUrl).toBe("https://api-m.paypal.com");
+  });
+
+  it("fails safely when credentials are missing and never exposes the secret publicly", () => {
+    process.env.PAYPAL_ENVIRONMENT = "sandbox";
+    process.env.PAYPAL_CLIENT_ID = "public-client-id";
+    process.env.PAYPAL_CLIENT_SECRET = "server-only-test-value";
+    const publicConfig = getPayPalPublicConfig();
+    expect(publicConfig).toEqual({ clientId: "public-client-id", environment: "sandbox" });
+    expect(JSON.stringify(publicConfig)).not.toContain("server-only-test-value");
+    delete process.env.PAYPAL_CLIENT_SECRET;
+    expect(() => getPayPalServerConfig()).toThrow("PayPal server credentials are not configured");
+  });
+});
+
+describe("typed PayPal Orders v2 client", () => {
+  it("uses Basic OAuth and creates CAPTURE orders from the trusted local snapshot", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "access-token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({ id: "PAYPAL_ORDER_1", status: "CREATED" }, 201));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.createOrder({
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      amountMinor: 3900,
+      currency: "ILS",
+      requestId: "create-request-id",
+    })).resolves.toEqual({ id: "PAYPAL_ORDER_1", status: "CREATED" });
+
+    expect(fetchImpl.mock.calls[0]?.[0]).toBe("https://api-m.sandbox.paypal.com/v1/oauth2/token");
+    const oauthHeaders = fetchImpl.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(oauthHeaders.Authorization).toMatch(/^Basic /);
+    expect(oauthHeaders.Authorization).not.toContain("sandbox-test-value");
+    const createInit = fetchImpl.mock.calls[1]?.[1] as RequestInit;
+    expect((createInit.headers as Record<string, string>)["PayPal-Request-Id"]).toBe("create-request-id");
+    expect(JSON.parse(String(createInit.body))).toMatchObject({
+      intent: "CAPTURE",
+      purchase_units: [{
+        reference_id: "11111111-1111-4111-8111-111111111111",
+        custom_id: "11111111-1111-4111-8111-111111111111",
+        amount: { value: "39.00", currency_code: "ILS" },
+      }],
+    });
+  });
+
+  it("accepts only a completed capture tied to the expected local and provider order", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse(completedCapture(), 201));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.captureOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      requestId: "capture-request-id",
+    })).resolves.toEqual({
+      status: "completed",
+      paypalOrderId: "PAYPAL_ORDER_1",
+      captureId: "CAPTURE_1",
+      amountMinor: 4900,
+      currency: "ILS",
+    });
+  });
+
+  it("returns non-completed state without inventing a capture", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({ id: "PAYPAL_ORDER_1", status: "PAYER_ACTION_REQUIRED" }, 201));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.captureOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      requestId: "capture-request-id",
+    })).resolves.toEqual({
+      status: "not_completed",
+      paypalOrderId: "PAYPAL_ORDER_1",
+      paypalStatus: "PAYER_ACTION_REQUIRED",
+    });
+  });
+
+  it("recovers a lost capture response using authoritative order details", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token-1", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({
+        name: "UNPROCESSABLE_ENTITY",
+        details: [{ issue: "ORDER_ALREADY_CAPTURED" }],
+        debug_id: "debug-id",
+      }, 422))
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token-2", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse(completedCapture()));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    const result = await paypal.captureOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      requestId: "capture-request-id",
+    });
+    expect(result.status).toBe("completed");
+    expect(fetchImpl.mock.calls[3]?.[0]).toBe(
+      "https://api-m.sandbox.paypal.com/v2/checkout/orders/PAYPAL_ORDER_1",
+    );
+  });
+
+  it("rejects malformed OAuth and mismatched capture relationships with safe errors", async () => {
+    const malformedOAuth = createPayPalClient({
+      fetchImpl: vi.fn().mockResolvedValue(jsonResponse({ token_type: "Bearer" })),
+      config: testConfig,
+    });
+    await expect(malformedOAuth.createOrder({
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      amountMinor: 4900,
+      currency: "ILS",
+      requestId: "request",
+    })).rejects.toMatchObject({ safeCode: "malformed_oauth_response" });
+
+    const mismatch = createPayPalClient({
+      fetchImpl: vi.fn()
+        .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+        .mockResolvedValueOnce(jsonResponse(completedCapture({ id: "OTHER_ORDER" }), 201)),
+      config: testConfig,
+    });
+    await expect(mismatch.captureOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      requestId: "request",
+    })).rejects.toBeInstanceOf(PayPalApiError);
+  });
+});

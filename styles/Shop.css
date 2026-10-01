@@ -753,6 +753,104 @@
 }
 
 /* ---------------------------------------------------------
+   PayPal Sandbox checkout (staging-only while product is coming soon)
+--------------------------------------------------------- */
+
+.paypal-checkout {
+  width: min(calc(100% - 2rem), 760px);
+  margin: clamp(1.5rem, 5vw, 4rem) auto;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  border: 1px solid #eadfe7;
+  border-radius: 30px;
+  background: linear-gradient(145deg, #fffdf8, #fff 58%, #f5eff8);
+  box-shadow: 0 22px 70px rgba(70, 47, 72, 0.12);
+}
+
+.paypal-checkout__header h1 {
+  margin: 0;
+  color: #3c3040;
+  font-size: clamp(2rem, 6vw, 3.7rem);
+  line-height: 1.02;
+}
+
+.paypal-checkout__header > p:last-child {
+  max-width: 58ch;
+  color: #665d69;
+  line-height: 1.6;
+}
+
+.paypal-checkout__badge {
+  display: inline-flex;
+  margin: 0 0 0.85rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: #fff0b8;
+  color: #6b5012;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.paypal-checkout__panel {
+  margin-top: 1.5rem;
+  padding: clamp(1.1rem, 4vw, 2rem);
+  border: 1px solid rgba(109, 72, 111, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.paypal-checkout__panel h2 { margin-top: 0; color: #3c3040; }
+.paypal-checkout__panel--success { border-color: rgba(55, 121, 110, 0.3); background: #f2fbf8; }
+
+.paypal-checkout__price {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.paypal-checkout__price span { color: #68606b; font-weight: 700; }
+.paypal-checkout__price strong { color: #3e725f; font-size: clamp(2rem, 7vw, 3rem); }
+
+.paypal-checkout__primary,
+.paypal-checkout__paypal-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.2rem;
+  border: 0;
+  border-radius: 999px;
+  background: #ffc439;
+  color: #1f2937;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.paypal-checkout__primary { background: #6d486f; color: #fff; }
+.paypal-checkout__paypal-button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(104, 75, 10, 0.18); }
+.paypal-checkout__paypal-button:disabled { cursor: wait; opacity: 0.65; }
+.paypal-checkout__secure-note { color: #746d76; font-size: 0.88rem; line-height: 1.5; }
+.paypal-checkout__status { padding: 2rem 0; color: #665d69; }
+.paypal-checkout__error { color: #8b2f3e; }
+.paypal-checkout__error button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
+
+@media (max-width: 520px) {
+  .paypal-checkout { width: min(calc(100% - 1rem), 760px); margin-block: 0.5rem; border-radius: 22px; }
+  .paypal-checkout__price { align-items: flex-start; flex-direction: column; gap: 0.2rem; }
+  .paypal-checkout__paypal-button, .paypal-checkout__primary { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paypal-checkout__paypal-button { transition: none; }
+}
+
+/* ---------------------------------------------------------
    Sound Case preorder
 --------------------------------------------------------- */
 

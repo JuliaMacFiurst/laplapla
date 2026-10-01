@@ -14,7 +14,9 @@ begin
     'public.create_commerce_order(uuid,text,integer,text,text,text,uuid,uuid,uuid)'::regprocedure,
     'public.claim_payment_provider_event(text,text,text,text,text,text,text)'::regprocedure,
     'public.set_payment_provider_event_status(uuid,text,text)'::regprocedure,
-    'public.finalize_commerce_order_paid(uuid,text,text,text,integer,text,uuid)'::regprocedure
+    'public.finalize_commerce_order_paid(uuid,text,text,text,integer,text,uuid)'::regprocedure,
+    'public.bind_paypal_order_to_commerce_order(uuid,text)'::regprocedure,
+    'public.begin_paypal_commerce_order_capture(uuid,uuid,text)'::regprocedure
   ]
   loop
     assert not has_function_privilege('anon', function_signature, 'EXECUTE');
@@ -39,6 +41,16 @@ begin
   assert exists (
     select 1 from pg_proc
     where oid = 'public.finalize_commerce_order_paid(uuid,text,text,text,integer,text,uuid)'::regprocedure
+      and 'search_path=public, pg_temp' = any(proconfig)
+  );
+  assert exists (
+    select 1 from pg_proc
+    where oid = 'public.bind_paypal_order_to_commerce_order(uuid,text)'::regprocedure
+      and 'search_path=public, pg_temp' = any(proconfig)
+  );
+  assert exists (
+    select 1 from pg_proc
+    where oid = 'public.begin_paypal_commerce_order_capture(uuid,uuid,text)'::regprocedure
       and 'search_path=public, pg_temp' = any(proconfig)
   );
 end;
@@ -190,6 +202,11 @@ begin
     where user_id = '11111111-1111-4111-8111-111111111111'
       and product_id = 'sound-case-001'
       and source = 'laplapla_web') = 1;
+
+  select * into duplicate_claim from public.bind_paypal_order_to_commerce_order(
+    order_id_value, 'PAYPAL-ORDER-1'
+  );
+  assert duplicate_claim.result = 'invalid_state';
 end;
 $$;
 
@@ -268,6 +285,67 @@ begin
   );
   assert status_row.result = 'updated';
   assert status_row.event_status = 'ignored';
+end;
+$$;
+
+do $$
+declare
+  first_order_id uuid;
+  second_order_id uuid;
+  result_row record;
+begin
+  select order_id into first_order_id from public.create_commerce_order(
+    '11111111-1111-4111-8111-111111111111',
+    'sound-case-001', 4900, 'ILS', 'catalog', null,
+    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+    'eeeeeeee-eeee-4eee-9eee-eeeeeeeeeee1',
+    'eeeeeeee-eeee-4eee-9eee-eeeeeeeeeee2'
+  );
+
+  select * into result_row from public.bind_paypal_order_to_commerce_order(
+    first_order_id, 'PAYPAL-BIND-1'
+  );
+  assert result_row.result = 'bound';
+  assert result_row.order_status = 'pending_approval';
+
+  select * into result_row from public.bind_paypal_order_to_commerce_order(
+    first_order_id, 'PAYPAL-BIND-1'
+  );
+  assert result_row.result = 'already_bound';
+
+  select order_id into second_order_id from public.create_commerce_order(
+    '22222222-2222-4222-8222-222222222222',
+    'sound-case-001', 4900, 'ILS', 'catalog', null,
+    'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    'ffffffff-ffff-4fff-9fff-fffffffffff1',
+    'ffffffff-ffff-4fff-9fff-fffffffffff2'
+  );
+
+  select * into result_row from public.bind_paypal_order_to_commerce_order(
+    second_order_id, 'PAYPAL-BIND-1'
+  );
+  assert result_row.result = 'provider_order_conflict';
+
+  select * into result_row from public.bind_paypal_order_to_commerce_order(
+    first_order_id, 'PAYPAL-BIND-OTHER'
+  );
+  assert result_row.result = 'provider_order_conflict';
+
+  select * into result_row from public.begin_paypal_commerce_order_capture(
+    first_order_id, '11111111-1111-4111-8111-111111111111', 'PAYPAL-BIND-1'
+  );
+  assert result_row.result = 'capture_ready';
+  assert result_row.order_status = 'capture_pending';
+
+  select * into result_row from public.begin_paypal_commerce_order_capture(
+    first_order_id, '11111111-1111-4111-8111-111111111111', 'PAYPAL-BIND-1'
+  );
+  assert result_row.result = 'capture_ready';
+
+  select * into result_row from public.begin_paypal_commerce_order_capture(
+    first_order_id, '22222222-2222-4222-8222-222222222222', 'PAYPAL-BIND-1'
+  );
+  assert result_row.result = 'unknown_order';
 end;
 $$;
 

@@ -250,3 +250,32 @@ describe("commerce migration security and replay invariants", () => {
     expect(migration).not.toMatch(/'checkout_started'|'order_paid'|'payment_failed'|client_secret|access_token/i);
   });
 });
+
+describe("PayPal provider-order binding migration", () => {
+  const migration = readFileSync(
+    `${process.cwd()}/supabase/migrations/202610010002_bind_paypal_checkout_orders.sql`,
+    "utf8",
+  );
+
+  it("keeps provider binding and capture transitions service-role only", () => {
+    for (const signature of [
+      "bind_paypal_order_to_commerce_order(uuid, text)",
+      "begin_paypal_commerce_order_capture(uuid, uuid, text)",
+    ]) {
+      expect(migration).toContain(`revoke all on function public.${signature}`);
+      expect(migration).toContain(`grant execute on function public.${signature}`);
+    }
+    expect(migration).toContain("from public, anon, authenticated");
+    expect(migration).toContain("to service_role");
+    expect(migration.match(/security definer\nset search_path = public, pg_temp/g)).toHaveLength(2);
+  });
+
+  it("locks orders and makes same-id retries safe while rejecting conflicts", () => {
+    expect(migration).toContain("for update;");
+    expect(migration).toContain("pg_advisory_xact_lock");
+    expect(migration).toContain("'already_bound'::text");
+    expect(migration).toContain("'provider_order_conflict'::text");
+    expect(migration).toContain("status = 'pending_approval'");
+    expect(migration).toContain("status = 'capture_pending'");
+  });
+});

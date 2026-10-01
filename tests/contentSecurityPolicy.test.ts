@@ -13,4 +13,11 @@ describe("production Content-Security-Policy", () => {
   it("keeps HTTPS audio playback allowed by media-src", () => {
     expect(nextConfigSource).toContain("media-src 'self' data: blob: https:");
   });
+
+  it("allows only official PayPal origins required by the hosted checkout SDK", () => {
+    expect(nextConfigSource).toContain('const paypalSources = ["https://*.paypal.com", "https://*.paypalobjects.com"]');
+    expect(nextConfigSource).toContain('"script-src \'self\' \'unsafe-inline\' \'wasm-unsafe-eval\' " + paypalSources.join(" ")');
+    expect(nextConfigSource).toContain('"frame-src \'self\' https://www.youtube.com https://www.youtube-nocookie.com " + paypalSources.join(" ")');
+    expect(nextConfigSource).toContain('"form-action \'self\' " + paypalSources.join(" ")');
+  });
 });
