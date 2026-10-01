@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 
 import CorePageLinks from "@/components/CorePageLinks";
 import SEO from "@/components/SEO";
+import { SoundCasePromoBanner } from "@/components/shop/SoundCasePromoBanner";
 import { dictionaries, type Lang } from "../i18n";
 import { VideoSection } from "../components/video/VideoSection";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
@@ -223,6 +224,8 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
               </div>
             </header>
 
+            {!isMobile ? <SoundCasePromoBanner lang={resolvedLang} /> : null}
+
             <div className={`grid ${isMobile ? "grid-mobile-menu" : ""}`}>
               <Link
                 className="card"
@@ -289,6 +292,8 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
               </Link>
             </div>
           </section>
+
+          {isMobile ? <SoundCasePromoBanner lang={resolvedLang} mobile /> : null}
 
           <section className="home-brand-overview" aria-labelledby="laplapla-brand-heading">
             <h2 id="laplapla-brand-heading">{t.brand.heading}</h2>

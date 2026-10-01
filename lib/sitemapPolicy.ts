@@ -13,6 +13,7 @@ export const CORE_SITEMAP_PAGES = [
   { path: "/privacy", priority: "0.42", changefreq: "monthly" },
   { path: "/terms", priority: "0.42", changefreq: "monthly" },
   { path: "/licenses", priority: "0.42", changefreq: "monthly" },
+  { path: "/shop/sound-case-001/preorder", priority: "0.88", changefreq: "weekly" },
 ] as const;
 
 export function sitemapContainsOnlyCanonicalPublicUrls(xml: string) {

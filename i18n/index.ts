@@ -139,6 +139,43 @@ type DictionaryShape = {
     };
     cta: string;
     installBanner: string;
+    soundCasePromo: {
+      eyebrow: string;
+      title: string;
+      hook: string;
+      regularPrice: string;
+      preorderPrice: string;
+      cta: string;
+      noPayment: string;
+      imageAlt: string;
+    };
+  };
+
+  soundCasePreorder: {
+    eyebrow: string;
+    seoTitle: string;
+    seoDescription: string;
+    intro: string;
+    regularPrice: string;
+    preorderPrice: string;
+    noPayment: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    consentBeforePrivacy: string;
+    privacyLabel: string;
+    consentAfterPrivacy: string;
+    submit: string;
+    submitting: string;
+    successTitle: string;
+    successBody: string;
+    invalidEmail: string;
+    consentRequired: string;
+    serverError: string;
+    closedTitle: string;
+    closedBody: string;
+    adventureTitle: string;
+    hook: string;
+    posterAlt: string;
   };
 
   homeRetention: {
