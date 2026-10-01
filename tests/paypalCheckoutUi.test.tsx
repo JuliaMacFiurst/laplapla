@@ -23,6 +23,7 @@ describe("localized PayPal Sandbox checkout UI", () => {
     paymentReady: true,
     signInPath: "/en/account/sign-in?next=%2Fen%2Fshop%2Fsound-case-001%2Fcheckout",
     createPath: "/en/shop/sound-case-001/create",
+    recoveryOrderReference: null,
     onStart: () => undefined,
     onRetry: () => undefined,
   };
@@ -84,6 +85,34 @@ describe("localized PayPal Sandbox checkout UI", () => {
     expect(failed).toContain('role="alert"');
   });
 
+  it.each(["ru", "en", "he"] as const)("renders a safe payment recovery state for %s", (lang) => {
+    const recovery = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps,
+      lang,
+      state: "recovery",
+      recoveryOrderReference: "abcd1234",
+      quote: {
+        ok: true, status: "priced", productId: "sound-case-001",
+        amountMinor: 3900, currency: "ILS", priceSource: "preorder",
+      },
+    }));
+    expect(recovery).toContain(paypalCheckoutCopy[lang].checkingPaymentTitle);
+    expect(recovery).toContain(paypalCheckoutCopy[lang].checkingPaymentBody);
+    expect(recovery).toContain("abcd1234");
+    expect(recovery).not.toContain(paypalCheckoutCopy[lang].payWithPayPal);
+  });
+
+  it("blocks another payment when multiple orders need reconciliation", () => {
+    const ambiguous = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps,
+      lang: "en",
+      state: "needs_reconciliation",
+      quote: null,
+    }));
+    expect(ambiguous).toContain(paypalCheckoutCopy.en.reconciliationTitle);
+    expect(ambiguous).not.toContain(paypalCheckoutCopy.en.payWithPayPal);
+  });
+
   it("keeps checkout noindex, locale-aware and Hebrew RTL", () => {
     const page = readFileSync(`${process.cwd()}/pages/shop/[slug]/checkout.tsx`, "utf8");
     const component = readFileSync(`${process.cwd()}/components/shop/PayPalCheckout.tsx`, "utf8");
@@ -102,5 +131,6 @@ describe("localized PayPal Sandbox checkout UI", () => {
     expect(component).toContain('presentationMode: "auto"');
     expect(component).not.toContain("PAYPAL_CLIENT_SECRET");
     expect(component).not.toContain("captureId:");
+    expect(component).not.toContain("window.location.reload");
   });
 });

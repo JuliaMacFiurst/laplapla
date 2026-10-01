@@ -31,6 +31,7 @@ const checkoutIdempotencyKey = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 function orderRow(overrides: Record<string, unknown> = {}) {
   return [{
+    checkout_result: "created",
     order_id: "order-1",
     order_item_id: "item-1",
     created: true,
@@ -68,7 +69,7 @@ describe("trusted local commerce order creation", () => {
       status: "order",
       order: { totalMinor: 4900, currency: "ILS", priceSource: "catalog", offerCode: null },
     });
-    expect(mocks.rpc).toHaveBeenCalledWith("create_commerce_order", expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenCalledWith("resolve_paypal_commerce_checkout", expect.objectContaining({
       target_user_id: customer.id,
       target_product_id: "sound-case-001",
       target_total_minor: 4900,
@@ -109,7 +110,7 @@ describe("trusted local commerce order creation", () => {
   });
 
   it("replays the existing immutable snapshot for an idempotent retry", async () => {
-    mocks.rpc.mockResolvedValue({ data: orderRow({ created: false }), error: null });
+    mocks.rpc.mockResolvedValue({ data: orderRow({ checkout_result: "resumed", created: false }), error: null });
     const first = await createLocalCommerceOrder({
       verifiedCustomer: customer,
       productId: "sound-case-001",
@@ -129,6 +130,24 @@ describe("trusted local commerce order creation", () => {
     });
     expect(first).toEqual(retry);
     expect(retry).toMatchObject({ status: "order", order: { totalMinor: 4900, created: false } });
+  });
+
+  it("returns an explicit reconciliation state instead of choosing between duplicate checkouts", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: orderRow({
+        checkout_result: "needs_reconciliation",
+        order_id: null,
+        order_item_id: null,
+        order_status: null,
+        total_minor: null,
+      }),
+      error: null,
+    });
+    await expect(createLocalCommerceOrder({
+      verifiedCustomer: customer,
+      productId: "sound-case-001",
+      checkoutIdempotencyKey,
+    })).resolves.toEqual({ status: "needs_reconciliation", productId: "sound-case-001" });
   });
 
   it("has no browser-controlled amount in its input contract", () => {
@@ -277,5 +296,25 @@ describe("PayPal provider-order binding migration", () => {
     expect(migration).toContain("'provider_order_conflict'::text");
     expect(migration).toContain("status = 'pending_approval'");
     expect(migration).toContain("status = 'capture_pending'");
+  });
+});
+
+describe("PayPal checkout recovery migration", () => {
+  const migration = readFileSync(
+    `${process.cwd()}/supabase/migrations/202610010003_add_paypal_checkout_recovery.sql`,
+    "utf8",
+  );
+
+  it("serializes customer/product checkout creation and exposes ambiguity", () => {
+    expect(migration).toContain("pg_advisory_xact_lock");
+    expect(migration).toContain("'paypal-checkout:' || target_user_id::text || ':' || target_product_id");
+    expect(migration).toContain("'needs_reconciliation'::text");
+    expect(migration).toContain("status in ('creating', 'pending_approval', 'capture_pending')");
+  });
+
+  it("is service-role-only with a fixed safe search path", () => {
+    expect(migration).toContain("security definer\nset search_path = public, pg_temp");
+    expect(migration).toContain("from public, anon, authenticated");
+    expect(migration).toContain("to service_role");
   });
 });

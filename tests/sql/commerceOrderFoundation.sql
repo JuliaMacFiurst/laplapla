@@ -4,7 +4,8 @@ begin;
 
 insert into auth.users (id) values
   ('11111111-1111-4111-8111-111111111111'),
-  ('22222222-2222-4222-8222-222222222222');
+  ('22222222-2222-4222-8222-222222222222'),
+  ('33333333-3333-4333-8333-333333333333');
 
 do $$
 declare
@@ -16,7 +17,8 @@ begin
     'public.set_payment_provider_event_status(uuid,text,text)'::regprocedure,
     'public.finalize_commerce_order_paid(uuid,text,text,text,integer,text,uuid)'::regprocedure,
     'public.bind_paypal_order_to_commerce_order(uuid,text)'::regprocedure,
-    'public.begin_paypal_commerce_order_capture(uuid,uuid,text)'::regprocedure
+    'public.begin_paypal_commerce_order_capture(uuid,uuid,text)'::regprocedure,
+    'public.resolve_paypal_commerce_checkout(uuid,text,integer,text,text,text,uuid,uuid,uuid)'::regprocedure
   ]
   loop
     assert not has_function_privilege('anon', function_signature, 'EXECUTE');
@@ -53,6 +55,62 @@ begin
     where oid = 'public.begin_paypal_commerce_order_capture(uuid,uuid,text)'::regprocedure
       and 'search_path=public, pg_temp' = any(proconfig)
   );
+  assert exists (
+    select 1 from pg_proc
+    where oid = 'public.resolve_paypal_commerce_checkout(uuid,text,integer,text,text,text,uuid,uuid,uuid)'::regprocedure
+      and 'search_path=public, pg_temp' = any(proconfig)
+  );
+end;
+$$;
+
+do $$
+declare
+  first_checkout record;
+  resumed_checkout record;
+  second_checkout record;
+  ambiguous_checkout record;
+begin
+  select * into first_checkout from public.resolve_paypal_commerce_checkout(
+    '33333333-3333-4333-8333-333333333333',
+    'sound-case-001', 3900, 'ILS', 'preorder', 'sound-case-001-preorder',
+    '33333333-3333-4333-8333-333333333331',
+    '33333333-3333-4333-9333-333333333332',
+    '33333333-3333-4333-9333-333333333333'
+  );
+  assert first_checkout.checkout_result = 'created';
+  assert first_checkout.total_minor = 3900;
+
+  select * into resumed_checkout from public.resolve_paypal_commerce_checkout(
+    '33333333-3333-4333-8333-333333333333',
+    'sound-case-001', 4900, 'ILS', 'catalog', null,
+    '33333333-3333-4333-8333-333333333334',
+    '33333333-3333-4333-9333-333333333335',
+    '33333333-3333-4333-9333-333333333336'
+  );
+  assert resumed_checkout.checkout_result = 'resumed';
+  assert resumed_checkout.order_id = first_checkout.order_id;
+  assert resumed_checkout.total_minor = 3900;
+  assert resumed_checkout.price_source = 'preorder';
+
+  select order_id into second_checkout from public.create_commerce_order(
+    '33333333-3333-4333-8333-333333333333',
+    'sound-case-001', 4900, 'ILS', 'catalog', null,
+    '33333333-3333-4333-8333-333333333337',
+    '33333333-3333-4333-9333-333333333338',
+    '33333333-3333-4333-9333-333333333339'
+  );
+
+  select * into ambiguous_checkout from public.resolve_paypal_commerce_checkout(
+    '33333333-3333-4333-8333-333333333333',
+    'sound-case-001', 4900, 'ILS', 'catalog', null,
+    '33333333-3333-4333-8333-333333333340',
+    '33333333-3333-4333-9333-333333333341',
+    '33333333-3333-4333-9333-333333333342'
+  );
+  assert ambiguous_checkout.checkout_result = 'needs_reconciliation';
+  assert ambiguous_checkout.order_id is null;
+  assert (select count(*) from public.orders
+    where user_id = '33333333-3333-4333-8333-333333333333') = 2;
 end;
 $$;
 

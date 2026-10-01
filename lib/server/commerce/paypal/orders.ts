@@ -12,11 +12,18 @@ export type PayPalCheckoutOrder = {
   paypalCreateRequestId: string;
   paypalCaptureRequestId: string;
   productId: string;
+  priceSource: "catalog" | "preorder";
   entitlementId: string | null;
 };
 
+export type ResumablePayPalCheckoutLookup =
+  | { status: "none" }
+  | { status: "one"; order: PayPalCheckoutOrder }
+  | { status: "needs_reconciliation" };
+
 type OrderItemRow = {
   product_id: string;
+  price_source: "catalog" | "preorder";
   entitlement_id: string | null;
 };
 
@@ -43,7 +50,7 @@ export async function getPayPalCheckoutOrderForCustomer(orderId: string, userId:
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase
     .from("orders")
-    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,order_items(product_id,entitlement_id)")
+    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,order_items(product_id,price_source,entitlement_id)")
     .eq("id", orderId)
     .eq("user_id", userId)
     .eq("provider", "paypal")
@@ -67,8 +74,48 @@ export async function getPayPalCheckoutOrderForCustomer(orderId: string, userId:
     paypalCreateRequestId: row.paypal_create_request_id,
     paypalCaptureRequestId: row.paypal_capture_request_id,
     productId: item.product_id,
+    priceSource: item.price_source,
     entitlementId: item.entitlement_id,
   } satisfies PayPalCheckoutOrder;
+}
+
+export async function findResumablePayPalCheckoutForCustomer(
+  userId: string,
+  productId: string,
+): Promise<ResumablePayPalCheckoutLookup> {
+  const supabase = createServerSupabaseClient({ serviceRole: true });
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,order_items!inner(product_id,price_source,entitlement_id)")
+    .eq("user_id", userId)
+    .eq("provider", "paypal")
+    .eq("order_items.product_id", productId)
+    .in("status", ["creating", "pending_approval", "capture_pending"])
+    .limit(2);
+  if (error) throw error;
+  if (!data || data.length === 0) return { status: "none" };
+  if (data.length > 1) return { status: "needs_reconciliation" };
+
+  const row = data[0] as unknown as OrderRow;
+  const item = Array.isArray(row.order_items) ? row.order_items[0] : row.order_items;
+  if (!item || item.product_id !== productId) throw new Error("Resumable order item is missing");
+  return {
+    status: "one",
+    order: {
+      orderId: row.id,
+      userId: row.user_id,
+      status: row.status,
+      providerOrderId: row.provider_order_id,
+      providerCaptureId: row.provider_capture_id,
+      totalMinor: row.total_minor,
+      currency: row.currency,
+      paypalCreateRequestId: row.paypal_create_request_id,
+      paypalCaptureRequestId: row.paypal_capture_request_id,
+      productId: item.product_id,
+      priceSource: item.price_source,
+      entitlementId: item.entitlement_id,
+    },
+  };
 }
 
 export type PayPalOrderBindingResult =

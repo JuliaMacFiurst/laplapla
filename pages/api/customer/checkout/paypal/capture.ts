@@ -70,31 +70,52 @@ export async function paypalCaptureHandler(req: NextApiRequest, res: NextApiResp
     return;
   }
 
-  const captureStart = await beginPayPalOrderCapture({
-    orderId: localOrder.orderId,
-    userId: access.user.id,
-    paypalOrderId: body.paypalOrderId,
-  });
-  if (captureStart.result === "already_paid") {
-    res.status(200).json({
-      ok: true,
-      status: "paid",
-      localOrderId: localOrder.orderId,
-      entitlementId: localOrder.entitlementId,
-    });
-    return;
-  }
-  if (captureStart.result !== "capture_ready") {
-    res.status(409).json({ ok: false, code: "order_mismatch" });
-    return;
-  }
-
+  let lifecycle: string = localOrder.status;
   try {
-    const capture = await createPayPalClient({ config: paypalConfig }).captureOrder({
+    const paypal = createPayPalClient({ config: paypalConfig });
+    const expectedPayment = {
       paypalOrderId: body.paypalOrderId,
       localOrderId: localOrder.orderId,
-      requestId: localOrder.paypalCaptureRequestId,
-    });
+      amountMinor: localOrder.totalMinor,
+      currency: localOrder.currency,
+    };
+
+    let capture = localOrder.status === "capture_pending"
+      ? await paypal.showOrder(expectedPayment)
+      : null;
+
+    if (capture?.status === "not_completed" && capture.paypalStatus !== "APPROVED") {
+      res.status(409).json({ ok: false, code: "payment_not_completed" });
+      return;
+    }
+
+    if (!capture || capture.status !== "completed") {
+      const captureStart = await beginPayPalOrderCapture({
+        orderId: localOrder.orderId,
+        userId: access.user.id,
+        paypalOrderId: body.paypalOrderId,
+      });
+      lifecycle = captureStart.status ?? lifecycle;
+      if (captureStart.result === "already_paid") {
+        res.status(200).json({
+          ok: true,
+          status: "paid",
+          localOrderId: localOrder.orderId,
+          entitlementId: localOrder.entitlementId,
+        });
+        return;
+      }
+      if (captureStart.result !== "capture_ready") {
+        res.status(409).json({ ok: false, code: "order_mismatch" });
+        return;
+      }
+
+      capture = await paypal.captureOrder({
+        ...expectedPayment,
+        requestId: localOrder.paypalCaptureRequestId,
+      });
+    }
+
     if (capture.status !== "completed") {
       res.status(409).json({ ok: false, code: "payment_not_completed" });
       return;
@@ -125,7 +146,7 @@ export async function paypalCaptureHandler(req: NextApiRequest, res: NextApiResp
         level: "error",
         message: "PayPal capture failed",
         internalOrderId: localOrder.orderId,
-        lifecycle: captureStart.status,
+        lifecycle,
         paypalHttpStatus: error.httpStatus,
         paypalCode: error.safeCode,
         paypalDebugId: error.debugId,

@@ -4,11 +4,14 @@ import type { NextApiRequest, NextApiResponse } from "next";
 const mocks = vi.hoisted(() => ({
   resolveCustomerAccess: vi.fn(),
   createLocalCommerceOrder: vi.fn(),
+  resolveProductPrice: vi.fn(),
+  findResumable: vi.fn(),
   getOrder: vi.fn(),
   bindOrder: vi.fn(),
   beginCapture: vi.fn(),
   paypalCreate: vi.fn(),
   paypalCapture: vi.fn(),
+  paypalShow: vi.fn(),
   finalize: vi.fn(),
   PayPalApiError: class PayPalApiError extends Error {},
 }));
@@ -17,9 +20,11 @@ vi.mock("@/lib/server/auth/customerAccess", () => ({ resolveCustomerAccess: mock
 vi.mock("@/lib/server/commerce/orders", () => ({ createLocalCommerceOrder: mocks.createLocalCommerceOrder }));
 vi.mock("@/lib/server/commerce/paypal/orders", () => ({
   getPayPalCheckoutOrderForCustomer: mocks.getOrder,
+  findResumablePayPalCheckoutForCustomer: mocks.findResumable,
   bindPayPalOrderToLocalOrder: mocks.bindOrder,
   beginPayPalOrderCapture: mocks.beginCapture,
 }));
+vi.mock("@/lib/server/commerce/resolveProductPrice", () => ({ resolveProductPrice: mocks.resolveProductPrice }));
 vi.mock("@/lib/server/commerce/paypal/config", () => ({
   getPayPalServerConfig: () => ({
     environment: "sandbox", clientId: "client", clientSecret: "test-value",
@@ -28,12 +33,17 @@ vi.mock("@/lib/server/commerce/paypal/config", () => ({
 }));
 vi.mock("@/lib/server/commerce/paypal/client", () => ({
   PayPalApiError: mocks.PayPalApiError,
-  createPayPalClient: () => ({ createOrder: mocks.paypalCreate, captureOrder: mocks.paypalCapture }),
+  createPayPalClient: () => ({
+    createOrder: mocks.paypalCreate,
+    captureOrder: mocks.paypalCapture,
+    showOrder: mocks.paypalShow,
+  }),
 }));
 vi.mock("@/lib/server/commerce/finalizePaidOrder", () => ({ finalizeLocalOrderPaid: mocks.finalize }));
 
 import { paypalCreateHandler } from "@/pages/api/customer/checkout/paypal/create";
 import { paypalCaptureHandler } from "@/pages/api/customer/checkout/paypal/capture";
+import { paypalResumeHandler } from "@/pages/api/customer/checkout/paypal/resume";
 
 const user = { id: "11111111-1111-4111-8111-111111111111", email: "buyer@example.com", email_confirmed_at: "2026-10-01" };
 const localOrderId = "22222222-2222-4222-8222-222222222222";
@@ -62,7 +72,7 @@ function order(overrides: Record<string, unknown> = {}) {
     orderId: localOrderId, userId: user.id, status: "creating", providerOrderId: null,
     providerCaptureId: null, totalMinor: 4900, currency: "ILS",
     paypalCreateRequestId: "create-request", paypalCaptureRequestId: "capture-request",
-    productId: "sound-case-001", entitlementId: null, ...overrides,
+    productId: "sound-case-001", priceSource: "catalog", entitlementId: null, ...overrides,
   };
 }
 
@@ -120,6 +130,28 @@ describe("authenticated PayPal create endpoint", () => {
     expect(mocks.paypalCreate).not.toHaveBeenCalled();
   });
 
+  it("blocks a third order when multiple resumable orders need reconciliation", async () => {
+    mocks.createLocalCommerceOrder.mockResolvedValue({
+      status: "needs_reconciliation", productId: "sound-case-001",
+    });
+    const { res, result } = response();
+    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+    expect(result.body).toEqual({ ok: true, status: "needs_reconciliation", productId: "sound-case-001" });
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns capture_pending as reconciliation work instead of opening PayPal again", async () => {
+    mocks.getOrder.mockResolvedValue(order({
+      status: "capture_pending", providerOrderId: "PAYPAL_ORDER_1", totalMinor: 3900,
+    }));
+    const { res, result } = response();
+    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+    expect(result.body).toMatchObject({
+      ok: true, status: "reconcile_required", localOrderId, paypalOrderId: "PAYPAL_ORDER_1", amountMinor: 3900,
+    });
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
+
   it("returns a safe failure and never grants access when PayPal create fails", async () => {
     mocks.paypalCreate.mockRejectedValue(new mocks.PayPalApiError("provider unavailable"));
     const { res, result } = response();
@@ -137,6 +169,9 @@ describe("authenticated PayPal capture endpoint", () => {
     mocks.getOrder.mockResolvedValue(order({ status: "pending_approval", providerOrderId: "PAYPAL_ORDER_1" }));
     mocks.beginCapture.mockResolvedValue({ result: "capture_ready", orderId: localOrderId, status: "capture_pending" });
     mocks.paypalCapture.mockResolvedValue({
+      status: "completed", paypalOrderId: "PAYPAL_ORDER_1", captureId: "CAPTURE_1", amountMinor: 4900, currency: "ILS",
+    });
+    mocks.paypalShow.mockResolvedValue({
       status: "completed", paypalOrderId: "PAYPAL_ORDER_1", captureId: "CAPTURE_1", amountMinor: 4900, currency: "ILS",
     });
     mocks.finalize.mockResolvedValue({ result: "paid", orderId: localOrderId, entitlementId: "entitlement-1" });
@@ -205,6 +240,33 @@ describe("authenticated PayPal capture endpoint", () => {
     expect(mocks.finalize).not.toHaveBeenCalled();
   });
 
+  it("reconciles capture_pending through Show Order without a second Capture", async () => {
+    mocks.getOrder.mockResolvedValue(order({
+      status: "capture_pending", providerOrderId: "PAYPAL_ORDER_1", totalMinor: 3900,
+    }));
+    mocks.paypalShow.mockResolvedValue({
+      status: "completed", paypalOrderId: "PAYPAL_ORDER_1", captureId: "CAPTURE_REAL", amountMinor: 3900, currency: "ILS",
+    });
+    const { res, result } = response();
+    await paypalCaptureHandler(request({ localOrderId, paypalOrderId: "PAYPAL_ORDER_1" }), res);
+    expect(result.body).toMatchObject({ ok: true, status: "paid" });
+    expect(mocks.paypalShow).toHaveBeenCalledWith(expect.objectContaining({ amountMinor: 3900, currency: "ILS" }));
+    expect(mocks.paypalCapture).not.toHaveBeenCalled();
+    expect(mocks.finalize).toHaveBeenCalledWith(expect.objectContaining({ providerCaptureId: "CAPTURE_REAL" }));
+  });
+
+  it("captures only after capture_pending Show Order proves the order is APPROVED", async () => {
+    mocks.getOrder.mockResolvedValue(order({ status: "capture_pending", providerOrderId: "PAYPAL_ORDER_1" }));
+    mocks.paypalShow.mockResolvedValue({
+      status: "not_completed", paypalOrderId: "PAYPAL_ORDER_1", paypalStatus: "APPROVED",
+    });
+    const { res, result } = response();
+    await paypalCaptureHandler(request({ localOrderId, paypalOrderId: "PAYPAL_ORDER_1" }), res);
+    expect(result.body).toMatchObject({ ok: true, status: "paid" });
+    expect(mocks.paypalShow).toHaveBeenCalledTimes(1);
+    expect(mocks.paypalCapture).toHaveBeenCalledTimes(1);
+  });
+
   it.each(["amount_mismatch", "currency_mismatch"])(
     "does not grant when finalizer returns %s", async (finalizerResult) => {
       mocks.finalize.mockResolvedValue({ result: finalizerResult, orderId: localOrderId, entitlementId: null });
@@ -224,5 +286,39 @@ describe("authenticated PayPal capture endpoint", () => {
     expect(result.body).toEqual({ ok: true, status: "paid", localOrderId, entitlementId: "revoked-entitlement" });
     expect(mocks.paypalCapture).not.toHaveBeenCalled();
     expect(mocks.finalize).not.toHaveBeenCalled();
+  });
+});
+
+describe("authenticated PayPal resume endpoint", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.resolveCustomerAccess.mockResolvedValue({ isAuthenticated: true, accessToken: "token", user });
+    mocks.resolveProductPrice.mockResolvedValue({
+      status: "priced", productId: "sound-case-001", priceMinor: 4900, currency: "ILS", source: "catalog",
+    });
+    mocks.findResumable.mockResolvedValue({ status: "none" });
+  });
+
+  it("returns one resumable historical snapshot without recalculating its price", async () => {
+    mocks.findResumable.mockResolvedValue({
+      status: "one",
+      order: order({
+        status: "capture_pending", providerOrderId: "PAYPAL_ORDER_1",
+        totalMinor: 3900, priceSource: "preorder",
+      }),
+    });
+    const { res, result } = response();
+    await paypalResumeHandler(request({ productId: "sound-case-001" }), res);
+    expect(result.body).toMatchObject({
+      ok: true, status: "resumable", lifecycle: "capture_pending", amountMinor: 3900,
+      priceSource: "preorder",
+    });
+  });
+
+  it("reports ambiguity without choosing an order", async () => {
+    mocks.findResumable.mockResolvedValue({ status: "needs_reconciliation" });
+    const { res, result } = response();
+    await paypalResumeHandler(request({ productId: "sound-case-001" }), res);
+    expect(result.body).toEqual({ ok: true, status: "needs_reconciliation", productId: "sound-case-001" });
   });
 });

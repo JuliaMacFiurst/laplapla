@@ -61,6 +61,14 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     res.status(200).json({ ok: true, status: "already_owned", productId: localResult.productId });
     return;
   }
+  if (localResult.status === "needs_reconciliation") {
+    res.status(200).json({
+      ok: true,
+      status: "needs_reconciliation",
+      productId: body.productId,
+    });
+    return;
+  }
 
   let localOrder = await getPayPalCheckoutOrderForCustomer(localResult.order.orderId, access.user.id);
   if (!localOrder) {
@@ -71,8 +79,23 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     res.status(200).json({ ok: true, status: "already_owned", productId: localOrder.productId });
     return;
   }
+  if (localOrder.status === "capture_pending") {
+    if (!localOrder.providerOrderId) {
+      res.status(409).json({ ok: false, code: "order_unavailable" });
+      return;
+    }
+    res.status(200).json({
+      ok: true,
+      status: "reconcile_required",
+      localOrderId: localOrder.orderId,
+      paypalOrderId: localOrder.providerOrderId,
+      amountMinor: localOrder.totalMinor,
+      currency: localOrder.currency,
+    });
+    return;
+  }
   if (localOrder.providerOrderId) {
-    if (localOrder.status !== "pending_approval" && localOrder.status !== "capture_pending") {
+    if (localOrder.status !== "pending_approval") {
       res.status(409).json({ ok: false, code: "order_unavailable" });
       return;
     }

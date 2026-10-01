@@ -31,9 +31,11 @@ export type LocalCommerceOrder = {
 
 export type CreateLocalCommerceOrderResult =
   | { status: "already_owned"; productId: string }
+  | { status: "needs_reconciliation"; productId: string }
   | { status: "order"; order: LocalCommerceOrder };
 
 type CreateCommerceOrderRpcRow = {
+  checkout_result: "created" | "resumed" | "needs_reconciliation" | "invalid_state";
   order_id: string;
   order_item_id: string;
   created: boolean;
@@ -70,7 +72,7 @@ export async function createLocalCommerceOrder(input: {
   }
 
   const supabase = createServerSupabaseClient({ serviceRole: true });
-  const { data, error } = await supabase.rpc("create_commerce_order", {
+  const { data, error } = await supabase.rpc("resolve_paypal_commerce_checkout", {
     target_user_id: input.verifiedCustomer.id,
     target_product_id: resolvedPrice.productId,
     target_total_minor: resolvedPrice.priceMinor,
@@ -87,6 +89,12 @@ export async function createLocalCommerceOrder(input: {
   if (error) throw error;
   const row = firstRpcRow<CreateCommerceOrderRpcRow>(data);
   if (!row) throw new Error("Local order creation returned no result");
+  if (row.checkout_result === "needs_reconciliation") {
+    return { status: "needs_reconciliation", productId: resolvedPrice.productId };
+  }
+  if (row.checkout_result === "invalid_state") {
+    throw new Error("Existing checkout is not resumable");
+  }
 
   return {
     status: "order",

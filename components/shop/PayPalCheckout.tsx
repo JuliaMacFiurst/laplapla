@@ -10,8 +10,13 @@ import {
   type PayPalCreateResponse,
   type PayPalPublicConfigResponse,
   type PayPalQuoteResponse,
+  type PayPalResumeResponse,
 } from "@/lib/shop/paypalCheckout";
 import { paypalCheckoutCopy } from "@/lib/shop/paypalCheckoutCopy";
+import {
+  clearPayPalCheckoutKey,
+  getOrCreatePayPalCheckoutKey,
+} from "@/lib/shop/paypalCheckoutSession";
 
 type PayPalApprovalData = { orderId?: unknown };
 type PayPalPaymentSession = {
@@ -42,7 +47,17 @@ declare global {
   }
 }
 
-type CheckoutState = "loading" | "ready" | "opening" | "capturing" | "cancelled" | "error" | "success";
+type CheckoutState =
+  | "loading"
+  | "ready"
+  | "opening"
+  | "capturing"
+  | "recovery"
+  | "reconciling"
+  | "needs_reconciliation"
+  | "cancelled"
+  | "error"
+  | "success";
 type SuccessfulQuote = Extract<PayPalQuoteResponse, { ok: true }>;
 
 const localeByLang: Record<Lang, string> = { ru: "ru-RU", en: "en-US", he: "he-IL" };
@@ -80,7 +95,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
   const [quote, setQuote] = useState<SuccessfulQuote | null>(null);
   const [paymentSession, setPaymentSession] = useState<PayPalPaymentSession | null>(null);
   const activeOrderRef = useRef<{ localOrderId: string; paypalOrderId: string } | null>(null);
-  const idempotencyKeyRef = useRef<string | null>(null);
+  const checkoutOutcomeHandledRef = useRef(false);
   const createPath = buildLocalizedPublicPath("/shop/sound-case-001/create", lang);
   const checkoutPath = buildLocalizedPublicPath("/shop/sound-case-001/checkout", lang);
   const signInPath = `${buildLocalizedPublicPath("/account/sign-in", lang)}?next=${encodeURIComponent(checkoutPath)}`;
@@ -97,6 +112,24 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
     });
   }, [auth]);
 
+  const reconcileActiveOrder = useCallback(async () => {
+    const activeOrder = activeOrderRef.current;
+    if (!activeOrder || auth.status !== "authenticated") {
+      setState("recovery");
+      return;
+    }
+    setState("reconciling");
+    try {
+      const response = await authenticatedFetch("/api/customer/checkout/paypal/capture", activeOrder);
+      const result = await readJson<PayPalCaptureResponse>(response);
+      if (!response.ok || !result.ok || result.status !== "paid") throw new Error("Reconciliation failed");
+      clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id);
+      setState("success");
+    } catch {
+      setState("recovery");
+    }
+  }, [auth, authenticatedFetch]);
+
   useEffect(() => {
     if (auth.status === "loading") return;
     if (auth.status !== "authenticated") {
@@ -112,12 +145,38 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       fetch("/api/shop/paypal/config", { cache: "no-store" }).then((response) => readJson<PayPalPublicConfigResponse>(response)),
       authenticatedFetch("/api/customer/checkout/paypal/quote", { productId: PAYPAL_CHECKOUT_PRODUCT_ID })
         .then((response) => readJson<PayPalQuoteResponse>(response)),
-    ]).then(async ([config, resolvedQuote]) => {
-      if (!active || !config.ok || !resolvedQuote.ok) throw new Error("Checkout unavailable");
+      authenticatedFetch("/api/customer/checkout/paypal/resume", { productId: PAYPAL_CHECKOUT_PRODUCT_ID })
+        .then((response) => readJson<PayPalResumeResponse>(response)),
+    ]).then(async ([config, resolvedQuote, resume]) => {
+      if (!active || !config.ok || !resolvedQuote.ok || !resume.ok) throw new Error("Checkout unavailable");
       setQuote(resolvedQuote);
-      if (resolvedQuote.status === "already_owned") {
+      if (resolvedQuote.status === "already_owned" || resume.status === "already_owned") {
         setState("ready");
         return;
+      }
+      if (resume.status === "needs_reconciliation") {
+        setState("needs_reconciliation");
+        return;
+      }
+      if (resume.status === "resumable") {
+        setQuote({
+          ok: true,
+          status: "priced",
+          productId: PAYPAL_CHECKOUT_PRODUCT_ID,
+          amountMinor: resume.amountMinor,
+          currency: resume.currency,
+          priceSource: resume.priceSource,
+        });
+      }
+      if (resume.status === "resumable" && resume.paypalOrderId) {
+        activeOrderRef.current = {
+          localOrderId: resume.localOrderId,
+          paypalOrderId: resume.paypalOrderId,
+        };
+        if (resume.lifecycle === "capture_pending") {
+          setState("recovery");
+          return;
+        }
       }
 
       await loadPayPalSdk(config.environment);
@@ -139,17 +198,12 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
             return;
           }
           setState("capturing");
-          try {
-            const response = await authenticatedFetch("/api/customer/checkout/paypal/capture", activeOrder);
-            const result = await readJson<PayPalCaptureResponse>(response);
-            if (!response.ok || !result.ok || result.status !== "paid") throw new Error("Capture failed");
-            setState("success");
-          } catch {
-            setState("error");
-          }
+          await reconcileActiveOrder();
         },
         onCancel: () => setState("cancelled"),
-        onError: () => setState("error"),
+        onError: () => {
+          if (!checkoutOutcomeHandledRef.current) setState("error");
+        },
       });
       if (!active) return;
       setPaymentSession(session);
@@ -159,20 +213,45 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
     });
 
     return () => { active = false; };
-  }, [auth, authenticatedFetch, lang]);
+  }, [auth, authenticatedFetch, lang, reconcileActiveOrder]);
 
   const startCheckout = async () => {
     if (!paymentSession || auth.status !== "authenticated") return;
     setState("opening");
-    if (!idempotencyKeyRef.current) idempotencyKeyRef.current = crypto.randomUUID();
+    checkoutOutcomeHandledRef.current = false;
+    const checkoutIdempotencyKey = getOrCreatePayPalCheckoutKey(
+      window.sessionStorage,
+      auth.session.user.id,
+      () => crypto.randomUUID(),
+    );
 
     const orderPromise = authenticatedFetch("/api/customer/checkout/paypal/create", {
       productId: PAYPAL_CHECKOUT_PRODUCT_ID,
-      checkoutIdempotencyKey: idempotencyKeyRef.current,
+      checkoutIdempotencyKey,
     }).then(async (response) => {
       const result = await readJson<PayPalCreateResponse>(response);
-      if (!response.ok || !result.ok || result.status !== "pending_approval") {
+      if (!response.ok || !result.ok) {
         throw new Error("Create order failed");
+      }
+      if (result.status === "needs_reconciliation") {
+        checkoutOutcomeHandledRef.current = true;
+        setState("needs_reconciliation");
+        throw new Error("Checkout reconciliation required");
+      }
+      if (result.status === "reconcile_required") {
+        activeOrderRef.current = {
+          localOrderId: result.localOrderId,
+          paypalOrderId: result.paypalOrderId,
+        };
+        checkoutOutcomeHandledRef.current = true;
+        setState("recovery");
+        throw new Error("Checkout recovery required");
+      }
+      if (result.status === "already_owned") {
+        checkoutOutcomeHandledRef.current = true;
+        clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id);
+        setState("success");
+        throw new Error("Product already owned");
       }
       activeOrderRef.current = {
         localOrderId: result.localOrderId,
@@ -184,7 +263,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
     try {
       await paymentSession.start({ presentationMode: "auto" }, orderPromise);
     } catch {
-      setState("error");
+      if (!checkoutOutcomeHandledRef.current) setState("error");
     }
   };
 
@@ -197,8 +276,12 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       paymentReady={Boolean(paymentSession)}
       signInPath={signInPath}
       createPath={createPath}
+      recoveryOrderReference={activeOrderRef.current?.localOrderId.slice(0, 8) ?? null}
       onStart={() => void startCheckout()}
-      onRetry={() => window.location.reload()}
+      onRetry={() => {
+        if (state === "recovery") void reconcileActiveOrder();
+        else void startCheckout();
+      }}
     />
   );
 }
@@ -211,6 +294,7 @@ export function PayPalCheckoutView({
   paymentReady,
   signInPath,
   createPath,
+  recoveryOrderReference,
   onStart,
   onRetry,
 }: {
@@ -221,6 +305,7 @@ export function PayPalCheckoutView({
   paymentReady: boolean;
   signInPath: string;
   createPath: string;
+  recoveryOrderReference: string | null;
   onStart: () => void;
   onRetry: () => void;
 }) {
@@ -245,6 +330,33 @@ export function PayPalCheckoutView({
         <h2>{state === "success" ? copy.successTitle : copy.ownedTitle}</h2>
         <p>{state === "success" ? copy.successBody : copy.ownedBody}</p>
         <Link className="paypal-checkout__primary" href={createPath}>{copy.openBuilder}</Link>
+      </section>
+    );
+  }
+
+  if (state === "needs_reconciliation") {
+    return (
+      <section className="paypal-checkout__panel paypal-checkout__panel--error" role="alert">
+        <h2>{copy.reconciliationTitle}</h2>
+        <p>{copy.reconciliationBody}</p>
+      </section>
+    );
+  }
+
+  if (state === "recovery" || state === "reconciling") {
+    return (
+      <section className="paypal-checkout__panel" aria-live="polite">
+        <h2>{copy.checkingPaymentTitle}</h2>
+        <p>{copy.checkingPaymentBody}</p>
+        {recoveryOrderReference ? <p>{copy.orderReference}: {recoveryOrderReference}</p> : null}
+        <button
+          className="paypal-checkout__primary"
+          type="button"
+          disabled={state === "reconciling"}
+          onClick={onRetry}
+        >
+          {state === "reconciling" ? copy.loading : copy.checkPayment}
+        </button>
       </section>
     );
   }

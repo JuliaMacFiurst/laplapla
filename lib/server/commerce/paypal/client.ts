@@ -108,6 +108,8 @@ function parseCreatedOrder(payload: unknown): PayPalCreatedOrder {
 function parseCaptureResult(payload: unknown, expected: {
   paypalOrderId: string;
   localOrderId: string;
+  amountMinor: number;
+  currency: string;
 }): PayPalCaptureResult {
   if (!isRecord(payload)) throw malformedPayPalResponse("malformed_capture_response");
   const paypalOrderId = providerIdentifier(payload.id);
@@ -124,11 +126,14 @@ function parseCaptureResult(payload: unknown, expected: {
     throw malformedPayPalResponse("malformed_capture_response");
   }
 
-  const matchingUnit = payload.purchase_units.find((value) => {
-    if (!isRecord(value)) return false;
-    return value.reference_id === expected.localOrderId && value.custom_id === expected.localOrderId;
-  });
+  const matchingUnits = payload.purchase_units.filter((value) => (
+    isRecord(value) && value.reference_id === expected.localOrderId
+  ));
+  const matchingUnit = matchingUnits.length === 1 ? matchingUnits[0] : null;
   if (!isRecord(matchingUnit) || !isRecord(matchingUnit.payments)) {
+    throw malformedPayPalResponse("order_relationship_mismatch");
+  }
+  if (matchingUnit.custom_id !== undefined && matchingUnit.custom_id !== expected.localOrderId) {
     throw malformedPayPalResponse("order_relationship_mismatch");
   }
 
@@ -147,6 +152,12 @@ function parseCaptureResult(payload: unknown, expected: {
   const currency = amount ? safeString(amount.currency_code, 3) : null;
   if (!captureId || amountMinor === null || !currency) {
     throw malformedPayPalResponse("malformed_capture_response");
+  }
+  if (amountMinor !== expected.amountMinor) {
+    throw malformedPayPalResponse("amount_mismatch");
+  }
+  if (currency !== expected.currency) {
+    throw malformedPayPalResponse("currency_mismatch");
   }
 
   return {
@@ -227,7 +238,12 @@ export function createPayPalClient(options?: {
     return parseCreatedOrder(payload);
   }
 
-  async function showOrder(input: { paypalOrderId: string; localOrderId: string }) {
+  async function showOrder(input: {
+    paypalOrderId: string;
+    localOrderId: string;
+    amountMinor: number;
+    currency: string;
+  }) {
     const payload = await authenticatedRequest(
       `/v2/checkout/orders/${encodeURIComponent(input.paypalOrderId)}`,
       { method: "GET" },
@@ -239,20 +255,46 @@ export function createPayPalClient(options?: {
       paypalOrderId: string;
       localOrderId: string;
       requestId: string;
+      amountMinor: number;
+      currency: string;
     }) {
+    let payload: unknown;
     try {
-      const payload = await authenticatedRequest(
+      payload = await authenticatedRequest(
         `/v2/checkout/orders/${encodeURIComponent(input.paypalOrderId)}/capture`,
         {
           method: "POST",
-          headers: { "PayPal-Request-Id": input.requestId },
+          headers: {
+            "PayPal-Request-Id": input.requestId,
+            Prefer: "return=representation",
+          },
           body: "{}",
         },
       );
+    } catch (error) {
+      if (
+        !(error instanceof PayPalApiError) ||
+        error.safeCode === "ORDER_ALREADY_CAPTURED" ||
+        error.httpStatus >= 500
+      ) {
+        try {
+          return await showOrder(input);
+        } catch {
+          throw error;
+        }
+      }
+      throw error;
+    }
+
+    try {
       return parseCaptureResult(payload, input);
     } catch (error) {
-      if (error instanceof PayPalApiError && error.safeCode === "ORDER_ALREADY_CAPTURED") {
-        return showOrder(input);
+      if (error instanceof PayPalApiError && error.httpStatus === 502) {
+        try {
+          return await showOrder(input);
+        } catch {
+          throw error;
+        }
       }
       throw error;
     }

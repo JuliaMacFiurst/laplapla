@@ -20,6 +20,12 @@ export type PayPalCheckoutCopy = {
   openBuilder: string;
   successTitle: string;
   successBody: string;
+  checkingPaymentTitle: string;
+  checkingPaymentBody: string;
+  checkPayment: string;
+  reconciliationTitle: string;
+  reconciliationBody: string;
+  orderReference: string;
 };
 
 export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
@@ -43,6 +49,12 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     openBuilder: "Открыть персонализацию",
     successTitle: "Оплата подтверждена",
     successBody: "Sound Case #001 добавлен в ваш аккаунт. Теперь можно создать своё приключение.",
+    checkingPaymentTitle: "Проверяем платёж",
+    checkingPaymentBody: "Не оплачивайте повторно. LapLapLa сверит этот заказ с PayPal без создания нового платежа.",
+    checkPayment: "Проверить этот платёж",
+    reconciliationTitle: "Нужна проверка платежей",
+    reconciliationBody: "Мы нашли больше одного незавершённого платежа. Не платите снова — сначала нужно безопасно сверить существующие заказы.",
+    orderReference: "Номер проверки",
   },
   en: {
     title: "Sound Case #001 checkout",
@@ -64,6 +76,12 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     openBuilder: "Open personalization",
     successTitle: "Payment confirmed",
     successBody: "Sound Case #001 is now in your account. You can create your adventure.",
+    checkingPaymentTitle: "Your payment is being checked",
+    checkingPaymentBody: "Do not pay again. LapLapLa will verify this order with PayPal without creating a new payment.",
+    checkPayment: "Check this payment",
+    reconciliationTitle: "Payment review required",
+    reconciliationBody: "We found more than one unfinished payment. Please do not pay again while the existing orders are reviewed safely.",
+    orderReference: "Review reference",
   },
   he: {
     title: "תשלום עבור תיק הצלילים מס׳ 001",
@@ -85,5 +103,11 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     openBuilder: "פתיחת ההתאמה האישית",
     successTitle: "התשלום אושר",
     successBody: "תיק הצלילים מס׳ 001 נוסף לחשבון שלכם. עכשיו אפשר ליצור את ההרפתקה.",
+    checkingPaymentTitle: "בודקים את התשלום",
+    checkingPaymentBody: "אל תשלמו שוב. LapLapLa תבדוק את ההזמנה מול PayPal בלי ליצור תשלום חדש.",
+    checkPayment: "בדיקת התשלום הזה",
+    reconciliationTitle: "נדרשת בדיקת תשלומים",
+    reconciliationBody: "מצאנו יותר מתשלום אחד שעדיין לא הושלם במערכת. אל תשלמו שוב — קודם נבדוק בבטחה את ההזמנות הקיימות.",
+    orderReference: "מספר בדיקה",
   },
 };

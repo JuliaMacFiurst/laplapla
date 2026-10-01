@@ -37,7 +37,6 @@ function completedCapture(overrides: Record<string, unknown> = {}) {
     status: "COMPLETED",
     purchase_units: [{
       reference_id: "11111111-1111-4111-8111-111111111111",
-      custom_id: "11111111-1111-4111-8111-111111111111",
       payments: { captures: [{
         id: "CAPTURE_1",
         status: "COMPLETED",
@@ -112,6 +111,8 @@ describe("typed PayPal Orders v2 client", () => {
       paypalOrderId: "PAYPAL_ORDER_1",
       localOrderId: "11111111-1111-4111-8111-111111111111",
       requestId: "capture-request-id",
+      amountMinor: 4900,
+      currency: "ILS",
     })).resolves.toEqual({
       status: "completed",
       paypalOrderId: "PAYPAL_ORDER_1",
@@ -130,6 +131,8 @@ describe("typed PayPal Orders v2 client", () => {
       paypalOrderId: "PAYPAL_ORDER_1",
       localOrderId: "11111111-1111-4111-8111-111111111111",
       requestId: "capture-request-id",
+      amountMinor: 4900,
+      currency: "ILS",
     })).resolves.toEqual({
       status: "not_completed",
       paypalOrderId: "PAYPAL_ORDER_1",
@@ -152,6 +155,8 @@ describe("typed PayPal Orders v2 client", () => {
       paypalOrderId: "PAYPAL_ORDER_1",
       localOrderId: "11111111-1111-4111-8111-111111111111",
       requestId: "capture-request-id",
+      amountMinor: 4900,
+      currency: "ILS",
     });
     expect(result.status).toBe("completed");
     expect(fetchImpl.mock.calls[3]?.[0]).toBe(
@@ -181,6 +186,104 @@ describe("typed PayPal Orders v2 client", () => {
       paypalOrderId: "PAYPAL_ORDER_1",
       localOrderId: "11111111-1111-4111-8111-111111111111",
       requestId: "request",
+      amountMinor: 4900,
+      currency: "ILS",
     })).rejects.toBeInstanceOf(PayPalApiError);
+  });
+
+  it("accepts the real capture contract without purchase-unit custom_id", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse(completedCapture(), 201));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.captureOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      requestId: "capture-request-id",
+      amountMinor: 4900,
+      currency: "ILS",
+    })).resolves.toMatchObject({ status: "completed", captureId: "CAPTURE_1" });
+    const captureHeaders = fetchImpl.mock.calls[1]?.[1]?.headers as Record<string, string>;
+    expect(captureHeaders.Prefer).toBe("return=representation");
+  });
+
+  it("recovers a minimal successful capture response through Show Order", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token-1", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({ id: "PAYPAL_ORDER_1", status: "COMPLETED", links: [] }, 201))
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token-2", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse(completedCapture()));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.captureOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      requestId: "capture-request-id",
+      amountMinor: 4900,
+      currency: "ILS",
+    })).resolves.toMatchObject({ status: "completed", captureId: "CAPTURE_1" });
+    expect(fetchImpl.mock.calls[3]?.[0]).toBe(
+      "https://api-m.sandbox.paypal.com/v2/checkout/orders/PAYPAL_ORDER_1",
+    );
+  });
+
+  it("recovers when the capture response is lost after PayPal completes the payment", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token-1", token_type: "Bearer" }))
+      .mockRejectedValueOnce(new TypeError("network response lost"))
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token-2", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse(completedCapture()));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.captureOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      requestId: "capture-request-id",
+      amountMinor: 4900,
+      currency: "ILS",
+    })).resolves.toMatchObject({ status: "completed", captureId: "CAPTURE_1" });
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    expect(fetchImpl.mock.calls[3]?.[0]).toBe(
+      "https://api-m.sandbox.paypal.com/v2/checkout/orders/PAYPAL_ORDER_1",
+    );
+  });
+
+  it.each([
+    ["wrong reference", completedCapture({ purchase_units: [{
+      reference_id: "other-order",
+      payments: { captures: [{ id: "CAPTURE_1", status: "COMPLETED", amount: { value: "49.00", currency_code: "ILS" } }] },
+    }] }), "order_relationship_mismatch"],
+    ["wrong amount", completedCapture({ purchase_units: [{
+      reference_id: "11111111-1111-4111-8111-111111111111",
+      payments: { captures: [{ id: "CAPTURE_1", status: "COMPLETED", amount: { value: "39.00", currency_code: "ILS" } }] },
+    }] }), "amount_mismatch"],
+    ["wrong currency", completedCapture({ purchase_units: [{
+      reference_id: "11111111-1111-4111-8111-111111111111",
+      payments: { captures: [{ id: "CAPTURE_1", status: "COMPLETED", amount: { value: "49.00", currency_code: "USD" } }] },
+    }] }), "currency_mismatch"],
+  ])("rejects %s after authoritative Show Order validation", async (_label, payload, safeCode) => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse(payload));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.showOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      amountMinor: 4900,
+      currency: "ILS",
+    })).rejects.toMatchObject({ safeCode });
+  });
+
+  it("does not accept a non-completed capture", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({ id: "PAYPAL_ORDER_1", status: "APPROVED", purchase_units: [] }));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    await expect(paypal.showOrder({
+      paypalOrderId: "PAYPAL_ORDER_1",
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      amountMinor: 4900,
+      currency: "ILS",
+    })).resolves.toEqual({
+      status: "not_completed", paypalOrderId: "PAYPAL_ORDER_1", paypalStatus: "APPROVED",
+    });
   });
 });
