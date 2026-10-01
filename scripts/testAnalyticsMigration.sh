@@ -89,6 +89,7 @@ done
 " >/dev/null
 
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/202609300002_restrict_internal_rpc_execute.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202609300004_add_preorder_analytics_events.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/tests/sql/analyticsSecurityReconciliation.sql"
 "${psql_local[@]}" -f "$repo_root/tests/sql/analyticsV2Regression.sql"
 

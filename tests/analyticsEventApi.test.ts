@@ -57,7 +57,14 @@ describe("analytics ingestion API", () => {
     vi.unstubAllEnvs();
   });
 
-  it.each(["shop_view", "product_view"])("records accepted production taxonomy event %s", async (eventName) => {
+  it.each([
+    "shop_view",
+    "product_view",
+    "preorder_page_view",
+    "preorder_submit_attempt",
+    "preorder_signup_success",
+    "preorder_signup_failed",
+  ])("records accepted production taxonomy event %s", async (eventName) => {
     insertMock.mockResolvedValue({ error: null });
     const capture = responseCapture();
     await handler(request(eventName) as never, capture.response as never);

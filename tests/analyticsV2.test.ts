@@ -114,14 +114,15 @@ describe("Analytics v2 navigation and report contract", () => {
   });
 
   it("keeps TypeScript taxonomy aligned with the database and bounds completion by matched opens", async () => {
-    const sql = await readFile(new URL("../supabase/migrations/202609300001_analytics_v2_foundation.sql", import.meta.url), "utf8");
+    const sql = await readFile(new URL("../supabase/migrations/202609300004_add_preorder_analytics_events.sql", import.meta.url), "utf8");
     const constraint = sql.match(/analytics_events_event_name_check check \(event_name in \(([\s\S]*?)\n\s*\)\);/)?.[1] || "";
     const sqlNames = Array.from(constraint.matchAll(/'([^']+)'/g), (match) => match[1]);
     expect(new Set(sqlNames)).toEqual(new Set(ANALYTICS_EVENT_NAMES));
-    expect(sql).toContain("left join content_completes c using (attempt_key)");
-    expect(sql).toContain("count(c.attempt_key)::integer as completions");
-    expect(sql).toContain("content_open_events as");
-    expect(sql).toContain("canonical.event_name = 'content_open'");
-    expect(sql).toContain("analytics_events_event_id_key unique (event_id)");
+    const foundationSql = await readFile(new URL("../supabase/migrations/202609300001_analytics_v2_foundation.sql", import.meta.url), "utf8");
+    expect(foundationSql).toContain("left join content_completes c using (attempt_key)");
+    expect(foundationSql).toContain("count(c.attempt_key)::integer as completions");
+    expect(foundationSql).toContain("content_open_events as");
+    expect(foundationSql).toContain("canonical.event_name = 'content_open'");
+    expect(foundationSql).toContain("analytics_events_event_id_key unique (event_id)");
   });
 });

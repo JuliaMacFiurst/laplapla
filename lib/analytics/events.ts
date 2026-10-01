@@ -43,6 +43,10 @@ export const ANALYTICS_EVENT_NAMES = [
   "story_downloaded",
   "shop_view",
   "product_view",
+  "preorder_page_view",
+  "preorder_submit_attempt",
+  "preorder_signup_success",
+  "preorder_signup_failed",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENT_NAMES)[number];
@@ -172,6 +176,10 @@ export const ANALYTICS_EVENT_LABELS: Record<AnalyticsEventName, string> = {
   story_downloaded: "Stories downloaded",
   shop_view: "Shop viewed",
   product_view: "Shop product viewed",
+  preorder_page_view: "Preorder page viewed",
+  preorder_submit_attempt: "Preorder signup attempted",
+  preorder_signup_success: "Preorder signup completed",
+  preorder_signup_failed: "Preorder signup failed",
 };
 
 export function isAnalyticsEventName(value: unknown): value is AnalyticsEventName {
