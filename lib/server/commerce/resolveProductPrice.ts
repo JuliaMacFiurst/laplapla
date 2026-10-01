@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { normalizePreorderEmail } from "@/lib/server/productPreorders";
 import { SOUND_CASE_PREORDER_OFFER } from "@/lib/server/commerce/preorderOffers";
 
-type VerifiedCustomer = Pick<User, "id" | "email" | "email_confirmed_at">;
+export type VerifiedCustomer = Pick<User, "id" | "email" | "email_confirmed_at">;
 
 export type ResolvedProductPrice =
   | { status: "already_owned"; productId: string }

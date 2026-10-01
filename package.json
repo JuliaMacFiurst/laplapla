@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:analytics-sql": "bash scripts/testAnalyticsMigration.sh",
+    "test:commerce-sql": "bash scripts/testCommerceOrderMigration.sh",
     "cleanup:meme-cache": "tsx scripts/cleanupMemeCache.ts",
     "backup:storage": "tsx scripts/backupStorage.ts",
     "backup:db": "tsx scripts/backupDatabase.ts",
