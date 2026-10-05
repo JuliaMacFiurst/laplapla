@@ -3,8 +3,14 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { QuestBuilder, printQuestDocument } from "@/components/shop/QuestBuilder";
+import { QuestDocument } from "@/components/shop/QuestDocument";
 import { QuestPreview } from "@/components/shop/QuestPreview";
 import { dictionaries, type Lang } from "@/i18n";
+import {
+  SOUND_CASE_001_DELIVERY_SECTIONS,
+  getSoundCase001FullPrintablePages,
+  getSoundCase001PrintableSections,
+} from "@/lib/shop/questDocument";
 
 const PERSONALIZATION = {
   locale: "en" as const,
@@ -59,6 +65,82 @@ describe("owned Sound Case customer delivery", () => {
     expect(source).toContain('<QuestPreview personalization={personalization} presentation="owned" />');
     expect(source).toContain("<QuestDocument personalization={personalization} />");
     expect(source.match(/<QuestDocument/g)).toHaveLength(1);
+  });
+
+  it.each(["ru", "en", "he"] as const)(
+    "composes the complete localized physical kit in canonical order for %s",
+    (locale) => {
+      const personalization = {
+        locale,
+        leadName: locale === "he" ? "מאיה" : "Maya",
+        participants: locale === "he" ? ["נועה", "סם"] : ["Noa", "Sam"],
+      };
+      const sections = getSoundCase001PrintableSections(personalization);
+      const pages = getSoundCase001FullPrintablePages(personalization);
+
+      expect(sections.map(({ id }) => id)).toEqual([
+        "stage-01",
+        "stage-02",
+        "stage-04",
+        "stage-05",
+        "stage-07",
+        "reward",
+      ]);
+      expect(sections.map(({ id, pages: sectionPages }) => [id, sectionPages.length])).toEqual([
+        ["stage-01", 6],
+        ["stage-02", 3],
+        ["stage-04", 8],
+        ["stage-05", 3],
+        ["stage-07", 2],
+        ["reward", 2],
+      ]);
+      expect(pages).toHaveLength(24);
+      expect(pages.map(({ printOrder }) => printOrder)).toEqual(
+        Array.from({ length: 24 }, (_, index) => index),
+      );
+    },
+  );
+
+  it("records Stage 03 and Stage 06 as intentional digital-only stages", () => {
+    expect(SOUND_CASE_001_DELIVERY_SECTIONS).toContainEqual({
+      id: "stage-03",
+      delivery: "digital-only",
+    });
+    expect(SOUND_CASE_001_DELIVERY_SECTIONS).toContainEqual({
+      id: "stage-06",
+      delivery: "digital-only",
+    });
+  });
+
+  it("uses the complete physical-kit composer as the customer document default", () => {
+    const html = renderToStaticMarkup(createElement(QuestDocument, {
+      personalization: PERSONALIZATION,
+    }));
+    const sectionStarts = [
+      'data-page-id="sound-case-001-adult-intro"',
+      'data-page-type="stage-2-vibrating-cards"',
+      'data-page-type="stage-4-cards"',
+      'data-page-type="stage-5-cards"',
+      'data-page-id="sound-case-001-stage-7-club-kit-en"',
+      'data-page-type="sound-case-collectible-cards"',
+    ].map((marker) => html.indexOf(marker));
+
+    expect(sectionStarts.every((index) => index >= 0)).toBe(true);
+    expect(sectionStarts).toEqual([...sectionStarts].sort((a, b) => a - b));
+    expect(html.match(/data-page-id=/g)).toHaveLength(24);
+  });
+
+  it("renders personalized names in the complete customer document without demo placeholders", () => {
+    const personalization = {
+      locale: "en" as const,
+      leadName: "Current Unsaved Lead",
+      participants: ["Current Teammate"],
+    };
+    const html = renderToStaticMarkup(createElement(QuestDocument, { personalization }));
+
+    expect(html).toContain("Current Unsaved Lead");
+    expect(html).toContain("Current Teammate");
+    expect(html).not.toContain("Your team names will appear here");
   });
 
   it("keeps the printable customer document behind ProtectedQuestBuilder", () => {

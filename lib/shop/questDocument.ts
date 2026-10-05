@@ -455,3 +455,73 @@ export function getPrintableQuestPages(
     )
     .map(({ page }) => page);
 }
+
+export const SOUND_CASE_001_DELIVERY_SECTIONS = [
+  { id: "stage-01", delivery: "printable" },
+  { id: "stage-02", delivery: "printable" },
+  { id: "stage-03", delivery: "digital-only" },
+  { id: "stage-04", delivery: "printable" },
+  { id: "stage-05", delivery: "printable" },
+  { id: "stage-06", delivery: "digital-only" },
+  { id: "stage-07", delivery: "printable" },
+  { id: "reward", delivery: "printable" },
+] as const;
+
+export type SoundCase001DeliverySection =
+  (typeof SOUND_CASE_001_DELIVERY_SECTIONS)[number];
+export type SoundCase001PrintableSectionId = Extract<
+  SoundCase001DeliverySection,
+  { delivery: "printable" }
+>["id"];
+
+export type SoundCase001PrintableSection = {
+  id: SoundCase001PrintableSectionId;
+  pages: readonly QuestPageDefinition[];
+};
+
+function getSoundCase001PrintableSectionPages(
+  sectionId: SoundCase001PrintableSectionId,
+  personalization: QuestPersonalization,
+): readonly QuestPageDefinition[] {
+  switch (sectionId) {
+    case "stage-01":
+      return SOUND_CASE_001_PAGES;
+    case "stage-02":
+      return getSoundCase001Stage2Pages(personalization.locale);
+    case "stage-04":
+      return getSoundCase001Stage4Pages(personalization.locale);
+    case "stage-05":
+      return getSoundCase001Stage5Pages(personalization.locale);
+    case "stage-07":
+      return getSoundCase001Stage7Pages(personalization.locale);
+    case "reward":
+      return getSoundCase001CollectiblePages(personalization);
+  }
+}
+
+/** Canonical physical kit order. Digital-only stages remain in the delivery manifest above. */
+export function getSoundCase001PrintableSections(
+  personalization: QuestPersonalization,
+): SoundCase001PrintableSection[] {
+  return SOUND_CASE_001_DELIVERY_SECTIONS
+    .filter(
+      (section): section is Extract<SoundCase001DeliverySection, { delivery: "printable" }> =>
+        section.delivery === "printable",
+    )
+    .map((section) => ({
+      id: section.id,
+      pages: getPrintableQuestPages(
+        getSoundCase001PrintableSectionPages(section.id, personalization),
+      ),
+    }));
+}
+
+/** Full customer document with one global print order across every physical section. */
+export function getSoundCase001FullPrintablePages(
+  personalization: QuestPersonalization,
+): QuestPageDefinition[] {
+  let printOrder = 0;
+  return getSoundCase001PrintableSections(personalization).flatMap((section) =>
+    section.pages.map((page) => ({ ...page, printOrder: printOrder++ })),
+  );
+}

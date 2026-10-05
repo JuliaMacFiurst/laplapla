@@ -45,6 +45,7 @@ export function QuestBuilder({
   const savingRef = useRef(false);
   const text = dictionaries[interfaceLang].shop.soundCase.builder;
   const accountPath = buildLocalizedPublicPath("/account", interfaceLang);
+  const canPrint = isValidQuestPersonalization(personalization);
   const canAddParticipant =
     personalization.participants.length < MAX_QUEST_PARTICIPANTS;
 
@@ -176,7 +177,11 @@ export function QuestBuilder({
           ) : null}
 
           <div className="quest-builder-delivery">
-            <button type="button" onClick={() => printQuestDocument()}>
+            <button
+              type="button"
+              disabled={!canPrint}
+              onClick={() => printQuestDocument()}
+            >
               {text.print}
             </button>
             <p>{text.printHelp}</p>

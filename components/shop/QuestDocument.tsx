@@ -4,7 +4,7 @@ import {
   type QuestPageRenderContext,
 } from "./questPageRenderers";
 import {
-  SOUND_CASE_001_PAGES,
+  getSoundCase001FullPrintablePages,
   getPrintableQuestPages,
   type QuestPageDefinition,
 } from "@/lib/shop/questDocument";
@@ -22,10 +22,12 @@ type QuestDocumentProps = {
 
 export function QuestDocument({
   personalization,
-  pages = SOUND_CASE_001_PAGES,
+  pages,
   assetManifest = SOUND_CASE_001_ASSET_MANIFEST,
 }: QuestDocumentProps) {
-  const printablePages = getPrintableQuestPages(pages);
+  const printablePages = getPrintableQuestPages(
+    pages ?? getSoundCase001FullPrintablePages(personalization),
+  );
   const renderContext: QuestPageRenderContext = {
     personalization,
     assetManifest,

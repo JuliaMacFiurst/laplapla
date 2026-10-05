@@ -707,6 +707,7 @@ describe("Sound Case Stage 01 Sound Cards", () => {
     const html = renderToStaticMarkup(
       createElement(QuestDocument, {
         personalization: { locale: "ru", leadName: "Майя", participants: ["Ноя"] },
+        pages: SOUND_CASE_001_PAGES,
       }),
     );
     expect(html).toContain('data-rendering-role="stage-1-intro-front"');
@@ -880,7 +881,7 @@ describe("Sound Case Stage 01 Sound Cards", () => {
       participants: [],
     };
     const documentHtml = renderToStaticMarkup(
-      createElement(QuestDocument, { personalization }),
+      createElement(QuestDocument, { personalization, pages: SOUND_CASE_001_PAGES }),
     );
     const previewHtml = renderToStaticMarkup(
       createElement(QuestPreview, { personalization }),
@@ -936,7 +937,7 @@ describe("Sound Case localization and print boundaries", () => {
       };
       const copy = dictionaries[locale].shop.soundCase.caseCover;
       const html = renderToStaticMarkup(
-        createElement(QuestDocument, { personalization }),
+        createElement(QuestDocument, { personalization, pages: SOUND_CASE_001_PAGES }),
       );
       expect(SOUND_CASE_001_PAGES[0]).toMatchObject({
         id: "sound-case-001-adult-intro",
@@ -1001,6 +1002,7 @@ describe("Sound Case localization and print boundaries", () => {
           leadName: "Майя",
           participants: Array.from({ length: 8 }, (_, index) => `Участник ${index + 1}`),
         },
+        pages: SOUND_CASE_001_PAGES,
       }),
     );
     expect(html.match(/data-page-id=/g)).toHaveLength(6);
