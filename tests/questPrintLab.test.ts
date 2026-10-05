@@ -268,7 +268,7 @@ describe("internal Quest Print Lab", () => {
     const css = readFileSync(`${process.cwd()}/styles/Shop.css`, "utf8");
     const printCss = css.slice(css.indexOf("@media print"));
 
-    expect(builderSource).toContain("<QuestPreview personalization={personalization} />");
+    expect(builderSource).toContain('<QuestPreview personalization={personalization} presentation="owned" />');
     expect(builderSource).toContain('className="quest-document-print-host"');
     expect(builderSource).toContain('aria-hidden="true"');
     expect(builderSource).not.toContain("QuestPrintLab");

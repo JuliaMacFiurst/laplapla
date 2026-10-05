@@ -1008,6 +1008,9 @@ type DictionaryShape = {
         saved: string;
         saveFailed: string;
         loadingPersonalization: string;
+        backToPurchases: string;
+        print: string;
+        printHelp: string;
       };
       preview: {
         eyebrow: string;

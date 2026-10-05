@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { dictionaries, type Lang } from "@/i18n";
+import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import {
   MAX_QUEST_PERSONALIZATION_NAME_LENGTH,
   MAX_QUEST_PARTICIPANTS,
@@ -21,6 +23,10 @@ const LANGUAGE_OPTIONS: Array<{ value: Lang; label: string }> = [
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
+export function printQuestDocument(print: () => void = () => window.print()) {
+  print();
+}
+
 export function QuestBuilder({
   interfaceLang,
   initialPersonalization,
@@ -38,6 +44,7 @@ export function QuestBuilder({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const savingRef = useRef(false);
   const text = dictionaries[interfaceLang].shop.soundCase.builder;
+  const accountPath = buildLocalizedPublicPath("/account", interfaceLang);
   const canAddParticipant =
     personalization.participants.length < MAX_QUEST_PARTICIPANTS;
 
@@ -78,6 +85,10 @@ export function QuestBuilder({
   return (
     <main className="quest-builder-shell" dir={interfaceLang === "he" ? "rtl" : "ltr"}>
       <header className="quest-builder-heading">
+        <Link className="quest-builder-back-link" href={accountPath}>
+          <span aria-hidden="true">{interfaceLang === "he" ? "→" : "←"}</span>
+          {text.backToPurchases}
+        </Link>
         <p>{dictionaries[interfaceLang].shop.soundCase.eyebrow}</p>
         <h1>{text.title}</h1>
         <span>{text.intro}</span>
@@ -163,9 +174,16 @@ export function QuestBuilder({
               {saveStatus === "error" ? <p role="alert">{text.saveFailed}</p> : null}
             </div>
           ) : null}
+
+          <div className="quest-builder-delivery">
+            <button type="button" onClick={() => printQuestDocument()}>
+              {text.print}
+            </button>
+            <p>{text.printHelp}</p>
+          </div>
         </section>
 
-        <QuestPreview personalization={personalization} />
+        <QuestPreview personalization={personalization} presentation="owned" />
       </div>
 
       <div className="quest-document-print-host" aria-hidden="true">

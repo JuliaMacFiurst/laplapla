@@ -1528,6 +1528,21 @@
   font-size: 0.82rem;
 }
 
+.quest-builder-back-link {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  color: #5d3e60;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.quest-builder-back-link:hover,
+.quest-builder-back-link:focus-visible {
+  text-decoration: underline;
+}
+
 .quest-builder-save {
   display: grid;
   gap: 0.55rem;
@@ -1559,6 +1574,42 @@
 
 .quest-builder-save p[role="alert"] {
   color: #9a3d52;
+}
+
+.quest-builder-delivery {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e3dae2;
+}
+
+.quest-builder-delivery button {
+  min-height: 48px;
+  padding: 0.78rem 1rem;
+  border: 2px solid #5b3a5f;
+  border-radius: 999px;
+  background: #fff;
+  color: #5b3a5f;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.quest-builder-delivery button:hover,
+.quest-builder-delivery button:focus-visible {
+  background: #f7f0f7;
+}
+
+.quest-builder-delivery button:focus-visible {
+  outline: 3px solid rgba(109, 72, 111, 0.2);
+  outline-offset: 2px;
+}
+
+.quest-builder-delivery p {
+  margin: 0;
+  color: #746c76;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .quest-builder-participants {
@@ -4409,6 +4460,12 @@
 
   .quest-page-frame[data-printable="false"] {
     display: none !important;
+  }
+
+  .quest-document,
+  .quest-document * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .quest-print-lab,

@@ -3,8 +3,10 @@ import type { QuestPersonalization } from "@/lib/shop/questPersonalization";
 
 export function QuestPreview({
   personalization,
+  presentation = "catalog",
 }: {
   personalization: QuestPersonalization;
+  presentation?: "catalog" | "owned";
 }) {
   const soundCase = dictionaries[personalization.locale].shop.soundCase;
   const text = soundCase.preview;
@@ -87,10 +89,12 @@ export function QuestPreview({
         </section>
       </div>
 
-      <footer className="quest-product-preview__purchase">
-        <button type="button" disabled>{text.buyAction}</button>
-        <p>{text.buyUnavailable}</p>
-      </footer>
+      {presentation === "catalog" ? (
+        <footer className="quest-product-preview__purchase">
+          <button type="button" disabled>{text.buyAction}</button>
+          <p>{text.buyUnavailable}</p>
+        </footer>
+      ) : null}
     </section>
   );
 }

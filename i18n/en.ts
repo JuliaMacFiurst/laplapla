@@ -1229,6 +1229,9 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
         saved: "Saved to your account.",
         saveFailed: "Could not save. Please try again.",
         loadingPersonalization: "Loading your saved personalization…",
+        backToPurchases: "My purchases",
+        print: "Print / save PDF",
+        printHelp: "In the print dialog, choose “Save as PDF” if you want to save a file.",
       },
       preview: {
         eyebrow: "Your personalized adventure",
