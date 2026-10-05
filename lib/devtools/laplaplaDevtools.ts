@@ -546,7 +546,7 @@ function getActiveStudioPageType() {
   if (pathname.includes("/caps/stories/create")) return "capybara_story_composer";
   if (pathname.includes("/capybara") || pathname.includes("/books")) return "capybara_books";
   if (pathname.includes("/raccoons/kitchen")) return "recipes";
-  if (pathname.includes("/bedtime-stories")) return "bedtime_stories";
+  if (pathname.includes("/library") || pathname.includes("/bedtime-stories")) return "library";
   if (pathname.includes("/studio")) return "studio";
   return null;
 }
@@ -598,6 +598,7 @@ function getPagePermissionSurface() {
     pathname.includes("/parrots") ||
     pathname.includes("/capybara") ||
     pathname.includes("/raccoons") ||
+    pathname.includes("/library") ||
     pathname.includes("/bedtime-stories");
 
   return {

@@ -115,8 +115,8 @@ function resolveAnalyticsSection(pathname: string) {
         ? "dog_lessons"
         : pathname.startsWith("/parrots")
           ? "parrots"
-          : pathname.startsWith("/bedtime-stories")
-            ? "bedtime_stories"
+          : pathname.startsWith("/library") || pathname.startsWith("/bedtime-stories")
+            ? "library"
             : pathname.startsWith("/capybara") || pathname.startsWith("/books")
               ? "books"
               : pathname === "/"

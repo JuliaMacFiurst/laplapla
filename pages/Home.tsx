@@ -32,7 +32,7 @@ function HomepageRetentionBlocks({
   const ui = dictionaries[lang].homeRetention;
   const recipe = retention?.recipe || null;
   const dogLesson = retention?.dogLesson || null;
-  const bedtimeStory = retention?.bedtimeStory || null;
+  const libraryItem = retention?.libraryItem || null;
   const recipeCoverUrl = `https://media.laplapla.com/stickers/raccoon-stickers/raccoon-kitchen-covers/raccoons-cook-${lang}.webp`;
 
   return (
@@ -141,16 +141,16 @@ function HomepageRetentionBlocks({
         </Link>
 
         <Link
-          className={`home-retention-card home-retention-bedtime-card ${bedtimeStory ? "" : "is-empty"}`}
-          href={buildLocalizedPublicPath("/bedtime-stories", lang)}
+          className={`home-retention-card home-retention-bedtime-card ${libraryItem ? "" : "is-empty"}`}
+          href={buildLocalizedPublicPath(libraryItem ? `/library/${libraryItem.slug}` : "/library", lang)}
         >
           <span className="home-retention-card-label">{ui.bedtime}</span>
-          {bedtimeStory ? (
+          {libraryItem ? (
             <>
               <span className="home-retention-bedtime-media">
                 <Image
-                  src={bedtimeStory.previewUrl}
-                  alt={bedtimeStory.title}
+                  src={libraryItem.previewUrl}
+                  alt={libraryItem.title}
                   fill
                   sizes="(max-width: 767px) 84vw, (max-width: 900px) 340px, 360px"
                   loading="eager"
@@ -158,7 +158,7 @@ function HomepageRetentionBlocks({
                 />
               </span>
               <span className="home-retention-bedtime-copy">
-                <span className="home-retention-card-title">{bedtimeStory.title}</span>
+                <span className="home-retention-card-title">{libraryItem.title}</span>
                 <span className="home-retention-card-action">{ui.openBedtimeStory}</span>
               </span>
             </>
@@ -173,7 +173,7 @@ function HomepageRetentionBlocks({
       <nav className="home-retention-links" aria-label={ui.title}>
         <Link href={buildLocalizedPublicPath("/raccoons", lang)}>{ui.recipeArchive}</Link>
         <Link href={buildLocalizedPublicPath("/dog/lessons", lang)}>{ui.drawingArchive}</Link>
-        <Link href={buildLocalizedPublicPath("/bedtime-stories", lang)}>{ui.bedtimeArchive}</Link>
+        <Link href={buildLocalizedPublicPath("/library", lang)}>{ui.bedtimeArchive}</Link>
       </nav>
     </section>
   );

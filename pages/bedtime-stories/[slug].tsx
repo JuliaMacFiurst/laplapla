@@ -1,29 +1,14 @@
 import type { GetServerSideProps } from "next";
 
-import BedtimeStoriesLibrary from "@/components/bedtime/BedtimeStoriesLibrary";
+import { buildLocalizedPublicPath, DEFAULT_LANG, isLang } from "@/lib/i18n/routing";
 import type { Lang } from "@/i18n";
-import {
-  loadBedtimeStories,
-  loadBedtimeStoryBySlug,
-  type BedtimeStory,
-} from "@/lib/bedtimeStories";
-import { DEFAULT_LANG, isLang } from "@/lib/i18n/routing";
+import { loadBedtimeStories, loadBedtimeStoryBySlug } from "@/lib/bedtimeStories";
 
-type BedtimeStoryPageProps = {
-  lang: Lang;
-  stories: BedtimeStory[];
-  story: BedtimeStory;
-};
-
-type StoryPageLoaders = {
-  loadStory: typeof loadBedtimeStoryBySlug;
-  loadStories: typeof loadBedtimeStories;
-};
-
+// Kept as a pure compatibility helper for existing regression tests and callers.
 export async function resolveBedtimeStoryPageProps(
   slug: string,
   lang: Lang,
-  loaders: StoryPageLoaders = { loadStory: loadBedtimeStoryBySlug, loadStories: loadBedtimeStories },
+  loaders = { loadStory: loadBedtimeStoryBySlug, loadStories: loadBedtimeStories },
 ) {
   const story = await loaders.loadStory(slug, lang);
   if (!story) return null;
@@ -31,20 +16,10 @@ export async function resolveBedtimeStoryPageProps(
   return { lang, stories, story };
 }
 
-export default function BedtimeStoryPage({ lang, stories, story }: BedtimeStoryPageProps) {
-  return <BedtimeStoriesLibrary lang={lang} stories={stories} selectedStory={story} />;
-}
+export default function LegacyBedtimeStoryPage() { return null; }
 
-export const getServerSideProps: GetServerSideProps<BedtimeStoryPageProps> = async ({ locale, params }) => {
+export const getServerSideProps: GetServerSideProps = async ({ locale, params }) => {
   const lang = isLang(locale) ? locale : DEFAULT_LANG;
   const slug = typeof params?.slug === "string" ? params.slug : "";
-  const props = await resolveBedtimeStoryPageProps(slug, lang).catch((error) => {
-    console.error("[bedtime-stories] failed to load story", error);
-    return null;
-  });
-
-  if (!props) {
-    return { notFound: true };
-  }
-  return { props };
+  return { redirect: { destination: buildLocalizedPublicPath(`/library/${slug}`, lang), permanent: true } };
 };

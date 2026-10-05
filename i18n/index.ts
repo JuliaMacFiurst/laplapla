@@ -115,6 +115,10 @@ type DictionaryShape = {
       title: string;
       description: string;
     };
+    library: {
+      title: string;
+      description: string;
+    };
   };
 
   home: {
@@ -207,6 +211,30 @@ type DictionaryShape = {
     counter: string;
     empty: string;
     backHome: string;
+  };
+
+  library: {
+    kicker: string;
+    title: string;
+    subtitle: string;
+    browseLabel: string;
+    openItem: string;
+    video: string;
+    slideshow: string;
+    image: string;
+    close: string;
+    previous: string;
+    next: string;
+    counter: string;
+    empty: string;
+    backHome: string;
+    backLibrary: string;
+    exploreMore: string;
+    discoverNext: string;
+    makeSomething: string;
+    discover: string;
+    watchAnother: string;
+    homeExperience: string;
   };
 
   pwaInstall: {

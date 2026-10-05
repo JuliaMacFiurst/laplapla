@@ -6,7 +6,7 @@ import { buildSupabasePublicUrl } from "@/lib/publicAssetUrls";
 import type { Lang } from "@/i18n";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import countryNames from "@/utils/country_names.json";
-import { loadLatestBedtimeStory } from "@/lib/bedtimeStories";
+import { loadLatestLibraryItem } from "@/lib/library";
 import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 
 export type HomepageRetentionData = {
@@ -24,10 +24,11 @@ export type HomepageRetentionData = {
     previewUrl: string;
     dogImageUrl: string | null;
   } | null;
-  bedtimeStory: {
+  libraryItem: {
     slug: string;
     title: string;
     previewUrl: string;
+    contentType: string;
   } | null;
 };
 
@@ -224,7 +225,7 @@ async function loadDogLessonOfTheWeek(lang: Lang): Promise<HomepageRetentionData
 }
 
 export async function loadHomepageRetentionData(lang: Lang): Promise<HomepageRetentionData> {
-  const [recipe, dogLesson, bedtimeStory] = await Promise.all([
+  const [recipe, dogLesson, libraryItem] = await Promise.all([
     loadRecipeOfTheWeek(lang).catch((error) => {
       console.error("[home-retention] failed to load recipe", error);
       return null;
@@ -233,8 +234,8 @@ export async function loadHomepageRetentionData(lang: Lang): Promise<HomepageRet
       console.error("[home-retention] failed to load dog lesson", error);
       return null;
     }),
-    loadLatestBedtimeStory(lang).catch((error) => {
-      console.error("[home-retention] failed to load bedtime story", error);
+    loadLatestLibraryItem(lang).catch((error) => {
+      console.error("[home-retention] failed to load library item", error);
       return null;
     }),
   ]);
@@ -242,11 +243,12 @@ export async function loadHomepageRetentionData(lang: Lang): Promise<HomepageRet
   return {
     recipe,
     dogLesson,
-    bedtimeStory: bedtimeStory
+    libraryItem: libraryItem
       ? {
-          slug: bedtimeStory.slug,
-          title: bedtimeStory.title,
-          previewUrl: bedtimeStory.previewUrl,
+          slug: libraryItem.slug,
+          title: libraryItem.title,
+          previewUrl: libraryItem.previewUrl,
+          contentType: libraryItem.contentType,
         }
       : null,
   };

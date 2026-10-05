@@ -70,6 +70,7 @@ export type AnalyticsSection =
   | "dog_lessons"
   | "parrots"
   | "bedtime_stories"
+  | "library"
   | "books"
   | "map"
   | "legal"
