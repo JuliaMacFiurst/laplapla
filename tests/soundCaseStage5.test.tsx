@@ -43,6 +43,8 @@ describe("Sound Case Stage 05", () => {
     expect(html).toContain('dir="ltr"');
     expect(html.match(/stage-5-card--puzzle/g)).toHaveLength(8);
     expect(html).toContain("stage-5-dune-puzzle.webp");
+    expect(html.match(/<img[^>]+stage-5-dune-puzzle\.webp/g)).toHaveLength(8);
+    expect(html).not.toContain("background-image:");
     expect(html).toContain("stage-5-card__coordinate-clue");
     expect(html).not.toContain("stage-5-card__coordinate-strip");
     expect(html).not.toMatch(/_ _ _/);
@@ -60,6 +62,7 @@ describe("Sound Case Stage 05", () => {
     expect(STAGE_5_BOX_DIELINE_SIZE_MM.height).toBeLessThanOrEqual(297);
     const html=renderToStaticMarkup(renderQuestPageDefinition(pages[2],{personalization:{locale:"ru",leadName:"",participants:[]},assetManifest:SOUND_CASE_001_ASSET_MANIFEST}));
     expect(html).toContain('data-page-type="stage-5-box"');
+    expect(html).toContain('class="stage-5-box-panel__photo"');
     expect(html).toContain('data-box-inner-width-mm="59"');
     expect(html).toContain('data-box-inner-height-mm="78"');
     expect(html).toContain('data-box-inner-depth-mm="6"');

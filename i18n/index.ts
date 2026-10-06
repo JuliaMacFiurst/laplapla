@@ -1010,6 +1010,8 @@ type DictionaryShape = {
         loadingPersonalization: string;
         backToPurchases: string;
         print: string;
+        printPreparing: string;
+        printFailed: string;
         printHelp: string;
       };
       preview: {

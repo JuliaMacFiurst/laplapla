@@ -12,6 +12,7 @@ import {
   updateQuestParticipant,
   type QuestPersonalization,
 } from "@/lib/shop/questPersonalization";
+import { printPreparedQuestDocument } from "@/lib/shop/printableAssets";
 import { QuestDocument } from "./QuestDocument";
 import { QuestPreview } from "./QuestPreview";
 
@@ -22,10 +23,7 @@ const LANGUAGE_OPTIONS: Array<{ value: Lang; label: string }> = [
 ];
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
-
-export function printQuestDocument(print: () => void = () => window.print()) {
-  print();
-}
+type PrintStatus = "idle" | "preparing" | "error";
 
 export function QuestBuilder({
   interfaceLang,
@@ -42,7 +40,9 @@ export function QuestBuilder({
       : createQuestPersonalization(interfaceLang),
   );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [printStatus, setPrintStatus] = useState<PrintStatus>("idle");
   const savingRef = useRef(false);
+  const printHostRef = useRef<HTMLDivElement>(null);
   const text = dictionaries[interfaceLang].shop.soundCase.builder;
   const accountPath = buildLocalizedPublicPath("/account", interfaceLang);
   const canPrint = isValidQuestPersonalization(personalization);
@@ -80,6 +80,19 @@ export function QuestBuilder({
       setSaveStatus("error");
     } finally {
       savingRef.current = false;
+    }
+  };
+
+  const printCurrentQuest = async () => {
+    const printHost = printHostRef.current;
+    if (!printHost || printStatus === "preparing") return;
+
+    setPrintStatus("preparing");
+    try {
+      await printPreparedQuestDocument(printHost);
+      setPrintStatus("idle");
+    } catch {
+      setPrintStatus("error");
     }
   };
 
@@ -179,19 +192,21 @@ export function QuestBuilder({
           <div className="quest-builder-delivery">
             <button
               type="button"
-              disabled={!canPrint}
-              onClick={() => printQuestDocument()}
+              disabled={!canPrint || printStatus === "preparing"}
+              aria-busy={printStatus === "preparing"}
+              onClick={() => void printCurrentQuest()}
             >
-              {text.print}
+              {printStatus === "preparing" ? text.printPreparing : text.print}
             </button>
             <p>{text.printHelp}</p>
+            {printStatus === "error" ? <p role="alert">{text.printFailed}</p> : null}
           </div>
         </section>
 
         <QuestPreview personalization={personalization} presentation="owned" />
       </div>
 
-      <div className="quest-document-print-host" aria-hidden="true">
+      <div className="quest-document-print-host" aria-hidden="true" ref={printHostRef}>
         <QuestDocument personalization={personalization} />
       </div>
     </main>

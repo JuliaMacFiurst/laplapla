@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
-import { QuestBuilder, printQuestDocument } from "@/components/shop/QuestBuilder";
+import { describe, expect, it } from "vitest";
+import { QuestBuilder } from "@/components/shop/QuestBuilder";
 import { QuestDocument } from "@/components/shop/QuestDocument";
 import { QuestPreview } from "@/components/shop/QuestPreview";
 import { dictionaries, type Lang } from "@/i18n";
@@ -52,12 +52,6 @@ describe("owned Sound Case customer delivery", () => {
 
     expect(owned).not.toContain("quest-product-preview__purchase");
     expect(catalog).toContain("quest-product-preview__purchase");
-  });
-
-  it("invokes the browser print action", () => {
-    const print = vi.fn();
-    printQuestDocument(print);
-    expect(print).toHaveBeenCalledOnce();
   });
 
   it("feeds the same current unsaved state to preview and the single QuestDocument renderer", () => {
@@ -156,7 +150,16 @@ describe("owned Sound Case customer delivery", () => {
     const copy = dictionaries[lang].shop.soundCase.builder;
     expect(copy.backToPurchases).toBeTruthy();
     expect(copy.print).toBeTruthy();
+    expect(copy.printPreparing).toBeTruthy();
+    expect(copy.printFailed).toBeTruthy();
     expect(copy.printHelp).toBeTruthy();
+  });
+
+  it("shows a localized failure state instead of printing an incomplete document", () => {
+    const source = readFileSync(`${process.cwd()}/components/shop/QuestBuilder.tsx`, "utf8");
+    expect(source).toContain('role="alert"');
+    expect(source).toContain("text.printFailed");
+    expect(source).toContain("printPreparedQuestDocument(printHost)");
   });
 
   it("keeps Print Lab development-only and reuses QuestDocument", () => {

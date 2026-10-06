@@ -1231,6 +1231,8 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
         loadingPersonalization: "Loading your saved personalization…",
         backToPurchases: "My purchases",
         print: "Print / save PDF",
+        printPreparing: "Preparing materials…",
+        printFailed: "The materials could not be prepared for printing. Please try again.",
         printHelp: "In the print dialog, choose “Save as PDF” if you want to save a file.",
       },
       preview: {

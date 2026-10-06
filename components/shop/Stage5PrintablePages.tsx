@@ -23,7 +23,13 @@ export function Stage5CardsPage({ locale, side, sampleUrls, duneUrl }: { locale:
       </article>;
       const tile = getStage5PuzzleTile(index);
       return <article key={sample.id} className="stage-5-card stage-5-card--puzzle" style={cardStyle(position)} dir="ltr">
-        <div className="stage-5-card__dune" style={{ backgroundImage:`url(${duneUrl})`, backgroundPosition:`${tile.column * 100 / 3}% ${tile.row * 100}%` }} />
+        <div className="stage-5-card__dune">
+          <img
+            src={duneUrl}
+            alt=""
+            style={{ left: `-${tile.column * 100}%`, top: `-${tile.row * 100}%` }}
+          />
+        </div>
         {tile.row === 1 ? <div className="stage-5-card__coordinate-clue" style={{ width:"400%", left:`-${tile.column*100}%` }}>
           <CoordinateSymbolRow prefix={STAGE_6_COORDINATE_PUZZLE.latitude.prefix} digits={STAGE_6_COORDINATE_PUZZLE.latitude.missingDigits} suffix={STAGE_6_COORDINATE_PUZZLE.latitude.suffix}/>
           <CoordinateSymbolRow prefix={STAGE_6_COORDINATE_PUZZLE.longitude.prefix} digits={STAGE_6_COORDINATE_PUZZLE.longitude.missingDigits} suffix={STAGE_6_COORDINATE_PUZZLE.longitude.suffix}/>
@@ -50,7 +56,7 @@ export function Stage5BoxPage({locale,duneUrl}:{locale:Lang;duneUrl:string}) {
     <header dir="ltr">LAP LAP LA ADVENTURES · SOUND CASE #001 · STAGE 05 · BOX</header>
     <div className="stage-5-box-dieline" data-box-inner-width-mm={STAGE_5_BOX_INNER_SIZE_MM.width} data-box-inner-height-mm={STAGE_5_BOX_INNER_SIZE_MM.height} data-box-inner-depth-mm={STAGE_5_BOX_INNER_SIZE_MM.depth} data-dieline-width-mm={STAGE_5_BOX_DIELINE_SIZE_MM.width} data-dieline-height-mm={STAGE_5_BOX_DIELINE_SIZE_MM.height} style={{left:`${STAGE_5_BOX_DIELINE_POSITION_MM.x}mm`,top:`${STAGE_5_BOX_DIELINE_POSITION_MM.y}mm`,width:`${STAGE_5_BOX_DIELINE_SIZE_MM.width}mm`,height:`${STAGE_5_BOX_DIELINE_SIZE_MM.height}mm`}}>
       <svg className="stage-5-box-dieline__lines" viewBox="0 0 140 134" aria-hidden="true"><path className="cut" d="M10 30L0 34V104L10 108M10 30V22L16 20V30M16 30H75M75 30V20L81 22V30M81 30V7L86 0H135L140 7V108M140 108V114L134 119H87L81 114V108M81 108V121L75 125V108M75 108V128L70 134H21L16 128V108M16 108V125L10 121V108"/><path className="fold" d="M10 30V108M16 30V108M75 30V108M81 30V108M10 30H16M75 30H81M81 30H140M81 22H140M10 108H140M16 114H75"/></svg>
-      <section className="stage-5-box-panel stage-5-box-panel--front" dir={direction} style={{backgroundImage:`linear-gradient(rgba(18,55,61,.28),rgba(18,55,61,.78)),url(${duneUrl})`}}><div><bdi dir="ltr">SOUND CASE #001</bdi><strong>STAGE 05</strong><h1>{t.title}</h1><span>PARROT SOUND LAB</span></div></section>
+      <section className="stage-5-box-panel stage-5-box-panel--front" dir={direction}><img className="stage-5-box-panel__photo" src={duneUrl} alt=""/><div><bdi dir="ltr">SOUND CASE #001</bdi><strong>STAGE 05</strong><h1>{t.title}</h1><span>PARROT SOUND LAB</span></div></section>
       <section className="stage-5-box-panel stage-5-box-panel--back" dir={direction}><div><img src="/laplapla-logo.webp" alt="LapLapLa"/><strong>{t.boxContents}</strong><span>{t.title}</span></div></section>
       <div className="stage-5-box-panel stage-5-box-panel--side-a" dir={direction}><strong>{t.boxSide}</strong></div>
       <div className="stage-5-box-panel stage-5-box-panel--side-b" dir={direction}><strong>{t.boxSide}</strong></div>
