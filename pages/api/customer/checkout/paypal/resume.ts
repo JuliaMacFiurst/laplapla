@@ -8,6 +8,7 @@ import {
   type PayPalResumeResponse,
 } from "@/lib/shop/paypalCheckout";
 import { withApiHandler } from "@/utils/apiHandler";
+import { getPayPalServerConfig } from "@/lib/server/commerce/paypal/config";
 
 const EXPECTED_BODY_KEYS = ["productId"];
 
@@ -49,6 +50,7 @@ export async function paypalResumeHandler(
     const lookup = await findResumablePayPalCheckoutForCustomer(
       access.user.id,
       PAYPAL_CHECKOUT_PRODUCT_ID,
+      getPayPalServerConfig().environment,
     );
     if (lookup.status === "none") {
       res.status(200).json({ ok: true, status: "none" });

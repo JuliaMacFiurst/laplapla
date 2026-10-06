@@ -1361,6 +1361,33 @@
   justify-content: space-between;
 }
 
+.customer-account__billing {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.5rem 0;
+  padding: 1.1rem;
+  border: 1px solid rgba(91, 67, 42, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.customer-account__billing input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(91, 67, 42, 0.3);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.paypal-checkout__billing label { font-weight: 700; }
+.paypal-checkout__billing input {
+  width: 100%;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid rgba(91, 67, 42, 0.3);
+  border-radius: 10px;
+  font: inherit;
+}
+
 .customer-account__identity p {
   margin: 0;
 }

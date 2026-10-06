@@ -52,6 +52,10 @@ const PRODUCTS: ShopProduct[] = [
     includedItems: [
       localizedString("Персонализированные страницы A4", "Personalized A4 pages", "דפי A4 אישיים"),
     ],
+    receipt: {
+      title: "Sound Case #001 - LapLapLa",
+      description: "A personalized printable quest for a birthday or group.",
+    },
     difficulty: null,
     featured: true,
     status: "coming-soon",

@@ -26,6 +26,13 @@ type CustomerCopy = {
   backToProduct: string;
   active: string;
   unavailable: string;
+  billingTitle: string;
+  billingNameLabel: string;
+  billingHelp: string;
+  billingSave: string;
+  billingSaving: string;
+  billingSaved: string;
+  verifiedEmail: string;
 };
 export const customerCopy: Record<Lang, CustomerCopy> = {
   ru: {
@@ -54,6 +61,13 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     backToProduct: "Вернуться к продукту",
     active: "Доступен",
     unavailable: "Недоступен",
+    billingTitle: "Данные для документов",
+    billingNameLabel: "Имя для чека",
+    billingHelp: "Это имя будет использоваться для будущих документов о покупке. Изменение не меняет данные прошлых заказов.",
+    billingSave: "Сохранить имя",
+    billingSaving: "Сохраняем…",
+    billingSaved: "Имя сохранено",
+    verifiedEmail: "Подтверждённый email",
   },
   en: {
     signInTitle: "Sign in to LapLapLa",
@@ -81,6 +95,13 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     backToProduct: "Back to product",
     active: "Available",
     unavailable: "Unavailable",
+    billingTitle: "Receipt details",
+    billingNameLabel: "Name for receipt",
+    billingHelp: "This name will be used for future purchase documents. Changing it does not alter previous orders.",
+    billingSave: "Save name",
+    billingSaving: "Saving…",
+    billingSaved: "Name saved",
+    verifiedEmail: "Verified email",
   },
   he: {
     signInTitle: "כניסה ל-LapLapLa",
@@ -108,5 +129,12 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     backToProduct: "חזרה למוצר",
     active: "זמין",
     unavailable: "לא זמין",
+    billingTitle: "פרטים למסמכי רכישה",
+    billingNameLabel: "שם לקבלה",
+    billingHelp: "השם ישמש במסמכי רכישה עתידיים. שינוי השם לא משנה הזמנות קודמות.",
+    billingSave: "שמירת השם",
+    billingSaving: "שומרים…",
+    billingSaved: "השם נשמר",
+    verifiedEmail: "אימייל מאומת",
   },
 };

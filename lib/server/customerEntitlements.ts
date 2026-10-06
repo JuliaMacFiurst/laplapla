@@ -6,7 +6,7 @@ export async function getCustomerAccountData(accessToken: string, userId: string
   const [profileResult, entitlementResult] = await Promise.all([
     supabase
       .from("customer_profiles")
-      .select("user_id, created_at, updated_at")
+      .select("user_id, created_at, updated_at, billing_name")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase

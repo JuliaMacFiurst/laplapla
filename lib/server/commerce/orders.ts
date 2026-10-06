@@ -5,6 +5,8 @@ import {
   resolveProductPrice,
   type VerifiedCustomer,
 } from "@/lib/server/commerce/resolveProductPrice";
+import type { PayPalEnvironment } from "@/lib/server/commerce/paypal/config";
+import { resolveProductReceiptSnapshot } from "@/lib/server/commerce/productReceiptSnapshots";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
@@ -27,6 +29,11 @@ export type LocalCommerceOrder = {
   offerCode: string | null;
   paypalCreateRequestId: string;
   paypalCaptureRequestId: string;
+  customerNameSnapshot: string;
+  customerEmailSnapshot: string;
+  providerEnvironment: PayPalEnvironment;
+  productTitleSnapshot: string;
+  receiptDescriptionSnapshot: string;
 };
 
 export type CreateLocalCommerceOrderResult =
@@ -46,6 +53,11 @@ type CreateCommerceOrderRpcRow = {
   offer_code: string | null;
   paypal_create_request_id: string;
   paypal_capture_request_id: string;
+  customer_name_snapshot: string;
+  customer_email_snapshot: string;
+  provider_environment: PayPalEnvironment;
+  product_title_snapshot: string;
+  receipt_description_snapshot: string;
 };
 
 function firstRpcRow<T>(data: unknown): T | null {
@@ -57,6 +69,9 @@ export async function createLocalCommerceOrder(input: {
   verifiedCustomer: VerifiedCustomer;
   productId: string;
   checkoutIdempotencyKey: string;
+  billingName: string;
+  verifiedEmail: string;
+  providerEnvironment: PayPalEnvironment;
 }): Promise<CreateLocalCommerceOrderResult> {
   if (!UUID_PATTERN.test(input.checkoutIdempotencyKey)) {
     throw new Error("A valid checkout idempotency key is required");
@@ -71,6 +86,8 @@ export async function createLocalCommerceOrder(input: {
     return resolvedPrice;
   }
 
+  const productReceiptSnapshot = resolveProductReceiptSnapshot(resolvedPrice.productId);
+
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase.rpc("resolve_paypal_commerce_checkout", {
     target_user_id: input.verifiedCustomer.id,
@@ -84,6 +101,11 @@ export async function createLocalCommerceOrder(input: {
     target_checkout_idempotency_key: input.checkoutIdempotencyKey,
     target_paypal_create_request_id: randomUUID(),
     target_paypal_capture_request_id: randomUUID(),
+    target_customer_name_snapshot: input.billingName,
+    target_customer_email_snapshot: input.verifiedEmail,
+    target_provider_environment: input.providerEnvironment,
+    target_product_title_snapshot: productReceiptSnapshot.title,
+    target_receipt_description_snapshot: productReceiptSnapshot.description,
   });
 
   if (error) throw error;
@@ -109,6 +131,11 @@ export async function createLocalCommerceOrder(input: {
       offerCode: row.offer_code,
       paypalCreateRequestId: row.paypal_create_request_id,
       paypalCaptureRequestId: row.paypal_capture_request_id,
+      customerNameSnapshot: row.customer_name_snapshot,
+      customerEmailSnapshot: row.customer_email_snapshot,
+      providerEnvironment: row.provider_environment,
+      productTitleSnapshot: row.product_title_snapshot,
+      receiptDescriptionSnapshot: row.receipt_description_snapshot,
     },
   };
 }

@@ -13,7 +13,9 @@ const mocks = vi.hoisted(() => ({
   paypalCapture: vi.fn(),
   paypalShow: vi.fn(),
   finalize: vi.fn(),
+  requireTrustedBillingIdentity: vi.fn(),
   PayPalApiError: class PayPalApiError extends Error {},
+  BillingIdentityError: class BillingIdentityError extends Error { constructor(public code: string) { super(code); } },
 }));
 
 vi.mock("@/lib/server/auth/customerAccess", () => ({ resolveCustomerAccess: mocks.resolveCustomerAccess }));
@@ -40,6 +42,10 @@ vi.mock("@/lib/server/commerce/paypal/client", () => ({
   }),
 }));
 vi.mock("@/lib/server/commerce/finalizePaidOrder", () => ({ finalizeLocalOrderPaid: mocks.finalize }));
+vi.mock("@/lib/server/customerBillingIdentity", () => ({
+  BillingIdentityError: mocks.BillingIdentityError,
+  requireTrustedBillingIdentity: mocks.requireTrustedBillingIdentity,
+}));
 
 import { paypalCreateHandler } from "@/pages/api/customer/checkout/paypal/create";
 import { paypalCaptureHandler } from "@/pages/api/customer/checkout/paypal/capture";
@@ -80,6 +86,7 @@ describe("authenticated PayPal create endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.resolveCustomerAccess.mockResolvedValue({ isAuthenticated: true, accessToken: "token", user });
+    mocks.requireTrustedBillingIdentity.mockResolvedValue({ billingName: "Buyer Example", email: "buyer@example.com" });
     mocks.createLocalCommerceOrder.mockResolvedValue({ status: "order", order: { orderId: localOrderId } });
     mocks.getOrder.mockResolvedValue(order());
     mocks.paypalCreate.mockResolvedValue({ id: "PAYPAL_ORDER_1", status: "CREATED" });
@@ -94,8 +101,20 @@ describe("authenticated PayPal create endpoint", () => {
       expect(result.status).toBe(200);
       expect(result.body).toMatchObject({ ok: true, amountMinor, currency: "ILS", paypalOrderId: "PAYPAL_ORDER_1" });
       expect(mocks.paypalCreate).toHaveBeenCalledWith(expect.objectContaining({ amountMinor, currency: "ILS" }));
+      expect(mocks.createLocalCommerceOrder).toHaveBeenCalledWith(expect.objectContaining({
+        billingName: "Buyer Example", verifiedEmail: "buyer@example.com", providerEnvironment: "sandbox",
+      }));
     },
   );
+
+  it("blocks local and PayPal order creation when billing identity is missing", async () => {
+    mocks.requireTrustedBillingIdentity.mockRejectedValue(new mocks.BillingIdentityError("billing_identity_required"));
+    const target = response();
+    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res);
+    expect(target.result).toMatchObject({ status: 409, body: { ok: false, code: "billing_identity_required" } });
+    expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
 
   it("rejects authentication, foreign origins and browser-controlled prices", async () => {
     mocks.resolveCustomerAccess.mockResolvedValueOnce({ isAuthenticated: false, accessToken: null, user: null });

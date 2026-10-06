@@ -14,7 +14,7 @@ export type PayPalCreateResponse =
   | { ok: true; status: "reconcile_required"; localOrderId: string; paypalOrderId: string; amountMinor: number; currency: string }
   | { ok: true; status: "needs_reconciliation"; productId: string }
   | { ok: true; status: "already_owned"; productId: string }
-  | { ok: false; code: "authentication_required" | "invalid_request" | "order_unavailable" | "paypal_unavailable" };
+  | { ok: false; code: "authentication_required" | "invalid_request" | "billing_identity_required" | "order_unavailable" | "paypal_unavailable" };
 
 export type PayPalResumeResponse =
   | { ok: true; status: "none" }

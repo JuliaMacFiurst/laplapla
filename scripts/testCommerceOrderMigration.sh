@@ -45,5 +45,28 @@ psql_local=(psql -X -v ON_ERROR_STOP=1 -h "$socket_dir" -p "$port" -d postgres)
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/202610010003_add_paypal_checkout_recovery.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/202610060001_add_paypal_webhook_event_recovery.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/tests/sql/commerceOrderFoundation.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610070001_add_billing_identity_order_snapshots.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/billingIdentityOrderSnapshots.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610070002_create_receipt_ledger_foundation.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerFoundation.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerConcurrencySetup.sql" >/dev/null
+
+same_order_id="$("${psql_local[@]}" -Atc "select order_id from public.receipt_concurrency_orders where label = 'same'")"
+different_a_id="$("${psql_local[@]}" -Atc "select order_id from public.receipt_concurrency_orders where label = 'different-a'")"
+different_b_id="$("${psql_local[@]}" -Atc "select order_id from public.receipt_concurrency_orders where label = 'different-b'")"
+
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$same_order_id')" >"$test_root/same-a.out" &
+same_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$same_order_id')" >"$test_root/same-b.out" &
+same_b_pid=$!
+wait "$same_a_pid" "$same_b_pid"
+
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$different_a_id')" >"$test_root/different-a.out" &
+different_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$different_b_id')" >"$test_root/different-b.out" &
+different_b_pid=$!
+wait "$different_a_pid" "$different_b_pid"
+
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerConcurrencyAssert.sql"
 
 printf 'Commerce order foundation SQL regression checks passed.\n'

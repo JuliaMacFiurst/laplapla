@@ -28,6 +28,11 @@ const customer = {
   email_confirmed_at: "2026-10-01T00:00:00.000Z",
 };
 const checkoutIdempotencyKey = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const trustedCheckoutFacts = {
+  billingName: "Julia Example",
+  verifiedEmail: "customer@example.com",
+  providerEnvironment: "sandbox" as const,
+};
 
 function orderRow(overrides: Record<string, unknown> = {}) {
   return [{
@@ -42,6 +47,11 @@ function orderRow(overrides: Record<string, unknown> = {}) {
     offer_code: null,
     paypal_create_request_id: "create-request",
     paypal_capture_request_id: "capture-request",
+    customer_name_snapshot: trustedCheckoutFacts.billingName,
+    customer_email_snapshot: trustedCheckoutFacts.verifiedEmail,
+    provider_environment: trustedCheckoutFacts.providerEnvironment,
+    product_title_snapshot: "Sound Case #001 - LapLapLa",
+    receipt_description_snapshot: "A personalized printable quest for a birthday or group.",
     ...overrides,
   }];
 }
@@ -64,6 +74,7 @@ describe("trusted local commerce order creation", () => {
       verifiedCustomer: customer,
       productId: "sound-case-001",
       checkoutIdempotencyKey,
+      ...trustedCheckoutFacts,
     });
     expect(result).toMatchObject({
       status: "order",
@@ -77,6 +88,11 @@ describe("trusted local commerce order creation", () => {
       target_price_source: "catalog",
       target_offer_code: null,
       target_checkout_idempotency_key: checkoutIdempotencyKey,
+      target_customer_name_snapshot: "Julia Example",
+      target_customer_email_snapshot: "customer@example.com",
+      target_provider_environment: "sandbox",
+      target_product_title_snapshot: "Sound Case #001 - LapLapLa",
+      target_receipt_description_snapshot: "A personalized printable quest for a birthday or group.",
     }));
   });
 
@@ -98,6 +114,7 @@ describe("trusted local commerce order creation", () => {
       verifiedCustomer: customer,
       productId: "sound-case-001",
       checkoutIdempotencyKey,
+      ...trustedCheckoutFacts,
     });
     expect(result).toMatchObject({
       status: "order",
@@ -115,6 +132,7 @@ describe("trusted local commerce order creation", () => {
       verifiedCustomer: customer,
       productId: "sound-case-001",
       checkoutIdempotencyKey,
+      ...trustedCheckoutFacts,
     });
     mocks.resolveProductPrice.mockResolvedValue({
       status: "priced",
@@ -127,6 +145,7 @@ describe("trusted local commerce order creation", () => {
       verifiedCustomer: customer,
       productId: "sound-case-001",
       checkoutIdempotencyKey,
+      ...trustedCheckoutFacts,
     });
     expect(first).toEqual(retry);
     expect(retry).toMatchObject({ status: "order", order: { totalMinor: 4900, created: false } });
@@ -147,6 +166,7 @@ describe("trusted local commerce order creation", () => {
       verifiedCustomer: customer,
       productId: "sound-case-001",
       checkoutIdempotencyKey,
+      ...trustedCheckoutFacts,
     })).resolves.toEqual({ status: "needs_reconciliation", productId: "sound-case-001" });
   });
 

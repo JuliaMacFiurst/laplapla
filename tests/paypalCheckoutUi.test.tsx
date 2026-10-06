@@ -26,6 +26,12 @@ describe("localized PayPal Sandbox checkout UI", () => {
     recoveryOrderReference: null,
     onStart: () => undefined,
     onRetry: () => undefined,
+    billingIdentity: { billingName: "Julia Example", email: "customer@example.com", complete: true },
+    billingName: "Julia Example",
+    billingSaving: false,
+    billingError: false,
+    onBillingNameChange: () => undefined,
+    onBillingSave: () => undefined,
   };
 
   it("renders unauthenticated sign-in and server-resolved 39/49 prices", () => {
@@ -52,6 +58,18 @@ describe("localized PayPal Sandbox checkout UI", () => {
     }));
     expect(catalog).toContain("49");
     expect(catalog).toContain(paypalCheckoutCopy.en.regularPrice);
+  });
+
+  it.each(["ru", "en", "he"] as const)("collects missing billing identity in %s before PayPal", (lang) => {
+    const html = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps, lang, quote: null,
+      billingIdentity: { billingName: null, email: "verified@example.com", complete: false },
+      billingName: "",
+    }));
+    expect(html).toContain(paypalCheckoutCopy[lang].billingTitle);
+    expect(html).toContain("verified@example.com");
+    expect(html).not.toContain(paypalCheckoutCopy[lang].payWithPayPal);
+    if (lang === "he") expect(paypalCheckoutCopy.he.billingTitle).toContain("שם");
   });
 
   it("renders owned and paid-success states with the personalization CTA", () => {

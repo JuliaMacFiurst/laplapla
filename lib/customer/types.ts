@@ -22,6 +22,7 @@ export type CustomerProfile = {
   user_id: string;
   created_at: string;
   updated_at: string;
+  billing_name: string | null;
 };
 export type ProductEntitlement = {
   id: string;

@@ -26,6 +26,13 @@ export type PayPalCheckoutCopy = {
   reconciliationTitle: string;
   reconciliationBody: string;
   orderReference: string;
+  billingTitle: string;
+  billingNameLabel: string;
+  billingEmailLabel: string;
+  billingHelp: string;
+  billingSave: string;
+  billingSaving: string;
+  billingError: string;
 };
 
 export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
@@ -55,6 +62,9 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     reconciliationTitle: "Нужна проверка платежей",
     reconciliationBody: "Мы нашли больше одного незавершённого платежа. Не платите снова — сначала нужно безопасно сверить существующие заказы.",
     orderReference: "Номер проверки",
+    billingTitle: "Имя для чека", billingNameLabel: "Имя", billingEmailLabel: "Подтверждённый email",
+    billingHelp: "Сохраните имя для будущих документов о покупке. Email берётся из вашего аккаунта.",
+    billingSave: "Сохранить и продолжить", billingSaving: "Сохраняем…", billingError: "Проверьте имя и попробуйте снова.",
   },
   en: {
     title: "Sound Case #001 checkout",
@@ -82,6 +92,9 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     reconciliationTitle: "Payment review required",
     reconciliationBody: "We found more than one unfinished payment. Please do not pay again while the existing orders are reviewed safely.",
     orderReference: "Review reference",
+    billingTitle: "Name for receipt", billingNameLabel: "Name", billingEmailLabel: "Verified email",
+    billingHelp: "Save your name for future purchase documents. Your email comes from your account.",
+    billingSave: "Save and continue", billingSaving: "Saving…", billingError: "Check the name and try again.",
   },
   he: {
     title: "תשלום עבור תיק הצלילים מס׳ 001",
@@ -109,5 +122,8 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     reconciliationTitle: "נדרשת בדיקת תשלומים",
     reconciliationBody: "מצאנו יותר מתשלום אחד שעדיין לא הושלם במערכת. אל תשלמו שוב — קודם נבדוק בבטחה את ההזמנות הקיימות.",
     orderReference: "מספר בדיקה",
+    billingTitle: "שם לקבלה", billingNameLabel: "שם", billingEmailLabel: "אימייל מאומת",
+    billingHelp: "שמרו את השם למסמכי רכישה עתידיים. האימייל נלקח מהחשבון.",
+    billingSave: "שמירה והמשך", billingSaving: "שומרים…", billingError: "בדקו את השם ונסו שוב.",
   },
 };

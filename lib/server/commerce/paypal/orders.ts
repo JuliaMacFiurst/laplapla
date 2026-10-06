@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { CommerceOrderStatus } from "@/lib/server/commerce/orders";
+import type { PayPalEnvironment } from "@/lib/server/commerce/paypal/config";
 
 export type PayPalCheckoutOrder = {
   orderId: string;
@@ -14,6 +15,9 @@ export type PayPalCheckoutOrder = {
   productId: string;
   priceSource: "catalog" | "preorder";
   entitlementId: string | null;
+  customerNameSnapshot: string | null;
+  customerEmailSnapshot: string | null;
+  providerEnvironment: PayPalEnvironment | null;
 };
 
 export type ResumablePayPalCheckoutLookup =
@@ -39,6 +43,9 @@ type OrderRow = {
   paypal_create_request_id: string;
   paypal_capture_request_id: string;
   order_items: OrderItemRow[] | OrderItemRow | null;
+  customer_name_snapshot: string | null;
+  customer_email_snapshot: string | null;
+  provider_environment: PayPalEnvironment | null;
 };
 
 function mapPayPalCheckoutOrder(row: OrderRow): PayPalCheckoutOrder {
@@ -58,6 +65,9 @@ function mapPayPalCheckoutOrder(row: OrderRow): PayPalCheckoutOrder {
     productId: item.product_id,
     priceSource: item.price_source,
     entitlementId: item.entitlement_id,
+    customerNameSnapshot: row.customer_name_snapshot,
+    customerEmailSnapshot: row.customer_email_snapshot,
+    providerEnvironment: row.provider_environment,
   };
 }
 
@@ -70,7 +80,7 @@ export async function getPayPalCheckoutOrderForCustomer(orderId: string, userId:
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase
     .from("orders")
-    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,order_items(product_id,price_source,entitlement_id)")
+    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,customer_name_snapshot,customer_email_snapshot,provider_environment,order_items(product_id,price_source,entitlement_id)")
     .eq("id", orderId)
     .eq("user_id", userId)
     .eq("provider", "paypal")
@@ -86,7 +96,7 @@ export async function getPayPalCheckoutOrderByProviderOrderId(providerOrderId: s
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase
     .from("orders")
-    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,order_items(product_id,price_source,entitlement_id)")
+    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,customer_name_snapshot,customer_email_snapshot,provider_environment,order_items(product_id,price_source,entitlement_id)")
     .eq("provider", "paypal")
     .eq("provider_order_id", providerOrderId)
     .limit(2);
@@ -99,13 +109,15 @@ export async function getPayPalCheckoutOrderByProviderOrderId(providerOrderId: s
 export async function findResumablePayPalCheckoutForCustomer(
   userId: string,
   productId: string,
+  providerEnvironment: PayPalEnvironment,
 ): Promise<ResumablePayPalCheckoutLookup> {
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase
     .from("orders")
-    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,order_items!inner(product_id,price_source,entitlement_id)")
+    .select("id,user_id,status,provider,provider_order_id,provider_capture_id,total_minor,currency,paypal_create_request_id,paypal_capture_request_id,customer_name_snapshot,customer_email_snapshot,provider_environment,order_items!inner(product_id,price_source,entitlement_id)")
     .eq("user_id", userId)
     .eq("provider", "paypal")
+    .eq("provider_environment", providerEnvironment)
     .eq("order_items.product_id", productId)
     .in("status", ["creating", "pending_approval", "capture_pending"])
     .limit(2);

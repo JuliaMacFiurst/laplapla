@@ -117,6 +117,12 @@ export interface ShopProduct {
   /** What's included — list of items shown on the product page. */
   includedItems: LocalizedString[];
 
+  /** Immutable accounting copy captured when a new local order is created. */
+  receipt: {
+    title: string;
+    description: string;
+  };
+
   /** Optional difficulty label, e.g. "easy", "intermediate". */
   difficulty: string | null;
 

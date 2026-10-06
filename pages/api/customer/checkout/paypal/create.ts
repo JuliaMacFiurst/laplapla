@@ -11,6 +11,7 @@ import { enforceSameOrigin } from "@/lib/server/security/requestOrigin";
 import { PAYPAL_CHECKOUT_PRODUCT_ID, type PayPalCreateResponse } from "@/lib/shop/paypalCheckout";
 import { getProductById } from "@/lib/shop/catalog";
 import { withApiHandler } from "@/utils/apiHandler";
+import { BillingIdentityError, requireTrustedBillingIdentity } from "@/lib/server/customerBillingIdentity";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const EXPECTED_BODY_KEYS = ["checkoutIdempotencyKey", "productId"];
@@ -52,10 +53,24 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     return;
   }
 
+  let identity;
+  try {
+    identity = await requireTrustedBillingIdentity(access.user);
+  } catch (error) {
+    if (error instanceof BillingIdentityError) {
+      res.status(409).json({ ok: false, code: "billing_identity_required" });
+      return;
+    }
+    throw error;
+  }
+
   const localResult = await createLocalCommerceOrder({
     verifiedCustomer: access.user,
     productId: body.productId,
     checkoutIdempotencyKey: body.checkoutIdempotencyKey,
+    billingName: identity.billingName,
+    verifiedEmail: identity.email,
+    providerEnvironment: paypalConfig.environment,
   });
   if (localResult.status === "already_owned") {
     res.status(200).json({ ok: true, status: "already_owned", productId: localResult.productId });

@@ -7,6 +7,7 @@ import { customerCopy } from "@/lib/customer/copy";
 import { resolveEntitledCatalogProducts } from "@/lib/customer/catalog";
 import type { CustomerProfile, ProductEntitlement } from "@/lib/customer/types";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
+import type { CustomerBillingIdentityResponse } from "@/lib/customer/billingIdentity";
 
 type AccountResponse = {
   profile: CustomerProfile | null;
@@ -20,6 +21,9 @@ export default function CustomerAccountPage() {
   const auth = useCustomerSession();
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [billing, setBilling] = useState<CustomerBillingIdentityResponse | null>(null);
+  const [billingName, setBillingName] = useState("");
+  const [billingState, setBillingState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const products = useMemo(
     () => resolveEntitledCatalogProducts(account?.entitlements ?? [], lang),
     [account?.entitlements, lang],
@@ -36,15 +40,22 @@ export default function CustomerAccountPage() {
     setAccount(null);
     setAccountError(null);
 
-    void fetch("/api/customer/account", {
+    void Promise.all([fetch("/api/customer/account", {
       headers: { Authorization: `Bearer ${auth.session.access_token}` },
       signal: controller.signal,
-    })
-      .then(async (response) => {
+    }), fetch("/api/customer/billing-identity", {
+      headers: { Authorization: `Bearer ${auth.session.access_token}` }, signal: controller.signal,
+    })]).then(async ([response, billingResponse]) => {
         if (!response.ok) throw new Error(`Account request failed (${response.status})`);
-        return response.json() as Promise<AccountResponse>;
+        if (!billingResponse.ok) throw new Error(`Billing identity request failed (${billingResponse.status})`);
+        return Promise.all([
+          response.json() as Promise<AccountResponse>,
+          billingResponse.json() as Promise<CustomerBillingIdentityResponse>,
+        ]);
       })
-      .then(setAccount)
+      .then(([nextAccount, nextBilling]) => {
+        setAccount(nextAccount); setBilling(nextBilling); setBillingName(nextBilling.billingName ?? "");
+      })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
           setAccountError(error instanceof Error ? error.message : "Unable to load account");
@@ -56,6 +67,20 @@ export default function CustomerAccountPage() {
 
   const accountPath = buildLocalizedPublicPath("/account", lang);
   const signInPath = `${buildLocalizedPublicPath("/account/sign-in", lang)}?next=${encodeURIComponent(accountPath)}`;
+  const saveBillingName = async () => {
+    if (auth.status !== "authenticated") return;
+    setBillingState("saving");
+    try {
+      const response = await fetch("/api/customer/billing-identity", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${auth.session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ billingName }),
+      });
+      if (!response.ok) throw new Error("Unable to save billing identity");
+      const next = await response.json() as CustomerBillingIdentityResponse;
+      setBilling(next); setBillingName(next.billingName ?? ""); setBillingState("saved");
+    } catch { setBillingState("error"); }
+  };
 
   return (
     <>
@@ -96,6 +121,24 @@ export default function CustomerAccountPage() {
                   {copy.signOut}
                 </Link>
               </div>
+
+              {billing ? (
+                <section className="customer-account__billing" aria-labelledby="billing-title">
+                  <h2 id="billing-title">{copy.billingTitle}</h2>
+                  <p>{copy.billingHelp}</p>
+                  <label htmlFor="billing-name">{copy.billingNameLabel}</label>
+                  <input id="billing-name" value={billingName} maxLength={160} autoComplete="name"
+                    onChange={(event) => { setBillingName(event.target.value); setBillingState("idle"); }} />
+                  <label>{copy.verifiedEmail}</label>
+                  <input value={billing.email} readOnly aria-readonly="true" />
+                  <button className="customer-account__primary" type="button" disabled={billingState === "saving"}
+                    onClick={() => void saveBillingName()}>
+                    {billingState === "saving" ? copy.billingSaving : copy.billingSave}
+                  </button>
+                  {billingState === "saved" ? <p role="status">{copy.billingSaved}</p> : null}
+                  {billingState === "error" ? <p role="alert">{copy.retry}</p> : null}
+                </section>
+              ) : null}
 
               <h2>{copy.purchasesTitle}</h2>
               {!account && !accountError ? <p>{copy.loading}</p> : null}

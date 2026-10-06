@@ -17,6 +17,7 @@ import {
   clearPayPalCheckoutKey,
   getOrCreatePayPalCheckoutKey,
 } from "@/lib/shop/paypalCheckoutSession";
+import type { CustomerBillingIdentityResponse } from "@/lib/customer/billingIdentity";
 
 type PayPalApprovalData = { orderId?: unknown };
 type PayPalPaymentSession = {
@@ -94,6 +95,12 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
   const [state, setState] = useState<CheckoutState>("loading");
   const [quote, setQuote] = useState<SuccessfulQuote | null>(null);
   const [paymentSession, setPaymentSession] = useState<PayPalPaymentSession | null>(null);
+  const [billingIdentity, setBillingIdentity] = useState<CustomerBillingIdentityResponse | null>(null);
+  const [billingName, setBillingName] = useState("");
+  const [billingSaving, setBillingSaving] = useState(false);
+  const [billingError, setBillingError] = useState(false);
+  const [identityRevision, setIdentityRevision] = useState(0);
+  const [paypalEnvironment, setPayPalEnvironment] = useState<"sandbox" | "live" | null>(null);
   const activeOrderRef = useRef<{ localOrderId: string; paypalOrderId: string } | null>(null);
   const checkoutOutcomeHandledRef = useRef(false);
   const createPath = buildLocalizedPublicPath("/shop/sound-case-001/create", lang);
@@ -123,12 +130,12 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       const response = await authenticatedFetch("/api/customer/checkout/paypal/capture", activeOrder);
       const result = await readJson<PayPalCaptureResponse>(response);
       if (!response.ok || !result.ok || result.status !== "paid") throw new Error("Reconciliation failed");
-      clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id);
+      if (paypalEnvironment) clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id, paypalEnvironment);
       setState("success");
     } catch {
       setState("recovery");
     }
-  }, [auth, authenticatedFetch]);
+  }, [auth, authenticatedFetch, paypalEnvironment]);
 
   useEffect(() => {
     if (auth.status === "loading") return;
@@ -147,9 +154,15 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
         .then((response) => readJson<PayPalQuoteResponse>(response)),
       authenticatedFetch("/api/customer/checkout/paypal/resume", { productId: PAYPAL_CHECKOUT_PRODUCT_ID })
         .then((response) => readJson<PayPalResumeResponse>(response)),
-    ]).then(async ([config, resolvedQuote, resume]) => {
+      fetch("/api/customer/billing-identity", {
+        headers: { Authorization: `Bearer ${auth.session.access_token}` }, cache: "no-store",
+      }).then((response) => readJson<CustomerBillingIdentityResponse>(response)),
+    ]).then(async ([config, resolvedQuote, resume, identity]) => {
       if (!active || !config.ok || !resolvedQuote.ok || !resume.ok) throw new Error("Checkout unavailable");
       setQuote(resolvedQuote);
+      setPayPalEnvironment(config.environment);
+      setBillingIdentity(identity);
+      setBillingName(identity.billingName ?? "");
       if (resolvedQuote.status === "already_owned" || resume.status === "already_owned") {
         setState("ready");
         return;
@@ -177,6 +190,12 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
           setState("recovery");
           return;
         }
+      }
+
+      if (!identity.complete) {
+        setPaymentSession(null);
+        setState("ready");
+        return;
       }
 
       await loadPayPalSdk(config.environment);
@@ -213,15 +232,31 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
     });
 
     return () => { active = false; };
-  }, [auth, authenticatedFetch, lang, reconcileActiveOrder]);
+  }, [auth, authenticatedFetch, identityRevision, lang, reconcileActiveOrder]);
+
+  const saveBillingIdentity = async () => {
+    if (auth.status !== "authenticated") return;
+    setBillingSaving(true); setBillingError(false);
+    try {
+      const response = await fetch("/api/customer/billing-identity", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${auth.session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ billingName }),
+      });
+      if (!response.ok) throw new Error("Billing identity rejected");
+      setBillingIdentity(await readJson<CustomerBillingIdentityResponse>(response));
+      setIdentityRevision((value) => value + 1);
+    } catch { setBillingError(true); } finally { setBillingSaving(false); }
+  };
 
   const startCheckout = async () => {
-    if (!paymentSession || auth.status !== "authenticated") return;
+    if (!paymentSession || auth.status !== "authenticated" || !paypalEnvironment) return;
     setState("opening");
     checkoutOutcomeHandledRef.current = false;
     const checkoutIdempotencyKey = getOrCreatePayPalCheckoutKey(
       window.sessionStorage,
       auth.session.user.id,
+      paypalEnvironment,
       () => crypto.randomUUID(),
     );
 
@@ -249,7 +284,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       }
       if (result.status === "already_owned") {
         checkoutOutcomeHandledRef.current = true;
-        clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id);
+        clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id, paypalEnvironment);
         setState("success");
         throw new Error("Product already owned");
       }
@@ -277,6 +312,12 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       signInPath={signInPath}
       createPath={createPath}
       recoveryOrderReference={activeOrderRef.current?.localOrderId.slice(0, 8) ?? null}
+      billingIdentity={billingIdentity}
+      billingName={billingName}
+      billingSaving={billingSaving}
+      billingError={billingError}
+      onBillingNameChange={(value) => { setBillingName(value); setBillingError(false); }}
+      onBillingSave={() => void saveBillingIdentity()}
       onStart={() => void startCheckout()}
       onRetry={() => {
         if (state === "recovery") void reconcileActiveOrder();
@@ -295,6 +336,7 @@ export function PayPalCheckoutView({
   signInPath,
   createPath,
   recoveryOrderReference,
+  billingIdentity, billingName, billingSaving, billingError, onBillingNameChange, onBillingSave,
   onStart,
   onRetry,
 }: {
@@ -306,6 +348,12 @@ export function PayPalCheckoutView({
   signInPath: string;
   createPath: string;
   recoveryOrderReference: string | null;
+  billingIdentity: CustomerBillingIdentityResponse | null;
+  billingName: string;
+  billingSaving: boolean;
+  billingError: boolean;
+  onBillingNameChange: (value: string) => void;
+  onBillingSave: () => void;
   onStart: () => void;
   onRetry: () => void;
 }) {
@@ -330,6 +378,24 @@ export function PayPalCheckoutView({
         <h2>{state === "success" ? copy.successTitle : copy.ownedTitle}</h2>
         <p>{state === "success" ? copy.successBody : copy.ownedBody}</p>
         <Link className="paypal-checkout__primary" href={createPath}>{copy.openBuilder}</Link>
+      </section>
+    );
+  }
+
+  if (billingIdentity && !billingIdentity.complete) {
+    return (
+      <section className="paypal-checkout__panel paypal-checkout__billing">
+        <h2>{copy.billingTitle}</h2>
+        <p>{copy.billingHelp}</p>
+        <label htmlFor="checkout-billing-name">{copy.billingNameLabel}</label>
+        <input id="checkout-billing-name" value={billingName} maxLength={160} autoComplete="name"
+          onChange={(event) => onBillingNameChange(event.target.value)} />
+        <label>{copy.billingEmailLabel}</label>
+        <input value={billingIdentity.email} readOnly aria-readonly="true" />
+        <button className="paypal-checkout__primary" type="button" disabled={billingSaving} onClick={onBillingSave}>
+          {billingSaving ? copy.billingSaving : copy.billingSave}
+        </button>
+        {billingError ? <p role="alert">{copy.billingError}</p> : null}
       </section>
     );
   }
