@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   setEventStatus: vi.fn(),
   getOrder: vi.fn(),
   finalize: vi.fn(),
+  issueReceipt: vi.fn(),
   captureAndAlert: vi.fn(),
   discordAlert: vi.fn(),
   PayPalApiError: class PayPalApiError extends Error {
@@ -51,6 +52,9 @@ vi.mock("@/lib/server/commerce/paypal/orders", () => ({
 }));
 vi.mock("@/lib/server/commerce/finalizePaidOrder", () => ({
   finalizeLocalOrderPaid: mocks.finalize,
+}));
+vi.mock("@/lib/server/commerce/receipts/issuance", () => ({
+  issueReceiptAfterPaidFinalization: mocks.issueReceipt,
 }));
 vi.mock("@/lib/monitoring/captureAndAlertServerError", () => ({
   captureAndAlertServerError: mocks.captureAndAlert,
@@ -145,6 +149,7 @@ describe("PayPal webhook reconciliation", () => {
       orderId: localOrder.orderId,
       entitlementId: "44444444-4444-4444-8444-444444444444",
     });
+    mocks.issueReceipt.mockResolvedValue({ status: "issued", receiptId: "receipt-1", displayNumber: "WEB-000001" });
     mocks.captureAndAlert.mockResolvedValue(undefined);
     mocks.discordAlert.mockResolvedValue({ ok: true, status: "sent" });
   });
@@ -217,6 +222,15 @@ describe("PayPal webhook reconciliation", () => {
       providerCaptureId: "CAPTURE_1",
       providerEventRecordId: "33333333-3333-4333-8333-333333333333",
     }));
+    expect(mocks.issueReceipt).toHaveBeenCalledWith({ orderId: localOrder.orderId, source: "webhook" });
+  });
+
+  it("keeps the provider event processed when receipt issuance fails", async () => {
+    mocks.issueReceipt.mockResolvedValue({ status: "failed", code: "rpc_unavailable" });
+    const { res, result } = response();
+    await paypalWebhookHandler(request(completedEvent()), res);
+    expect(result).toMatchObject({ status: 200, body: { ok: true, status: "processed" } });
+    expect(mocks.finalize).toHaveBeenCalledTimes(1);
   });
 
   it("finalizes a pending-approval order from authoritative completed evidence without Capture", async () => {
@@ -242,6 +256,27 @@ describe("PayPal webhook reconciliation", () => {
     expect(result).toMatchObject({ status: 200, body: { status: "already_processed" } });
     expect(mocks.showOrder).not.toHaveBeenCalled();
     expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.issueReceipt).toHaveBeenCalledWith({ orderId: localOrder.orderId, source: "webhook" });
+  });
+
+  it("keeps a processed duplicate successful when receipt recovery and alerting both fail", async () => {
+    mocks.claimEvent.mockResolvedValue({
+      eventId: "event-record",
+      claimStatus: "duplicate",
+      claimed: false,
+      duplicate: true,
+      status: "processed",
+      payloadHash: "a".repeat(64),
+    });
+    mocks.getOrder.mockRejectedValueOnce(new Error("receipt lookup unavailable"));
+    mocks.captureAndAlert.mockRejectedValueOnce(new Error("alert unavailable"));
+
+    const { res, result } = response();
+    await paypalWebhookHandler(request(completedEvent()), res);
+
+    expect(result).toMatchObject({ status: 200, body: { status: "already_processed" } });
+    expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.captureAndAlert).toHaveBeenCalledTimes(1);
   });
 
   it("asks PayPal to retry while a concurrent delivery is processing", async () => {

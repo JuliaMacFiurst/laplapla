@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   paypalCapture: vi.fn(),
   paypalShow: vi.fn(),
   finalize: vi.fn(),
+  issueReceipt: vi.fn(),
   requireTrustedBillingIdentity: vi.fn(),
   PayPalApiError: class PayPalApiError extends Error {},
   BillingIdentityError: class BillingIdentityError extends Error { constructor(public code: string) { super(code); } },
@@ -42,6 +43,7 @@ vi.mock("@/lib/server/commerce/paypal/client", () => ({
   }),
 }));
 vi.mock("@/lib/server/commerce/finalizePaidOrder", () => ({ finalizeLocalOrderPaid: mocks.finalize }));
+vi.mock("@/lib/server/commerce/receipts/issuance", () => ({ issueReceiptAfterPaidFinalization: mocks.issueReceipt }));
 vi.mock("@/lib/server/customerBillingIdentity", () => ({
   BillingIdentityError: mocks.BillingIdentityError,
   requireTrustedBillingIdentity: mocks.requireTrustedBillingIdentity,
@@ -194,6 +196,7 @@ describe("authenticated PayPal capture endpoint", () => {
       status: "completed", paypalOrderId: "PAYPAL_ORDER_1", captureId: "CAPTURE_1", amountMinor: 4900, currency: "ILS",
     });
     mocks.finalize.mockResolvedValue({ result: "paid", orderId: localOrderId, entitlementId: "entitlement-1" });
+    mocks.issueReceipt.mockResolvedValue({ status: "issued", receiptId: "receipt-1", displayNumber: "WEB-000001" });
   });
 
   it("finalizes only a completed, server-verified capture", async () => {
@@ -204,6 +207,15 @@ describe("authenticated PayPal capture endpoint", () => {
       orderId: localOrderId, providerOrderId: "PAYPAL_ORDER_1", providerCaptureId: "CAPTURE_1",
       confirmedAmountMinor: 4900, confirmedCurrency: "ILS",
     }));
+    expect(mocks.issueReceipt).toHaveBeenCalledWith({ orderId: localOrderId, source: "capture" });
+  });
+
+  it("keeps a successful purchase successful when receipt issuance fails", async () => {
+    mocks.issueReceipt.mockResolvedValue({ status: "failed", code: "rpc_unavailable" });
+    const { res, result } = response();
+    await paypalCaptureHandler(request({ localOrderId, paypalOrderId: "PAYPAL_ORDER_1" }), res);
+    expect(result).toMatchObject({ status: 200, body: { ok: true, status: "paid", entitlementId: "entitlement-1" } });
+    expect(mocks.finalize).toHaveBeenCalledTimes(1);
   });
 
   it("requires authenticated same-origin requests", async () => {
@@ -257,6 +269,7 @@ describe("authenticated PayPal capture endpoint", () => {
     expect(result.status).toBe(409);
     expect(result.body).toEqual({ ok: false, code: "payment_not_completed" });
     expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.issueReceipt).not.toHaveBeenCalled();
   });
 
   it("reconciles capture_pending through Show Order without a second Capture", async () => {
@@ -305,6 +318,7 @@ describe("authenticated PayPal capture endpoint", () => {
     expect(result.body).toEqual({ ok: true, status: "paid", localOrderId, entitlementId: "revoked-entitlement" });
     expect(mocks.paypalCapture).not.toHaveBeenCalled();
     expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.issueReceipt).toHaveBeenCalledWith({ orderId: localOrderId, source: "capture" });
   });
 });
 

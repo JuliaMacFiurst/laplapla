@@ -18,6 +18,7 @@ import {
 import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 import { sendDiscordErrorAlert } from "@/lib/monitoring/discordAlert";
 import { withApiHandler } from "@/utils/apiHandler";
+import { issueReceiptAfterPaidFinalization } from "@/lib/server/commerce/receipts/issuance";
 
 const MAX_WEBHOOK_BODY_BYTES = 128 * 1024;
 
@@ -77,6 +78,25 @@ async function alertReconciliationFailure(error: unknown, environment: string) {
     environment,
     statusCode: 503,
   });
+}
+
+async function issueReceiptForProcessedWebhook(providerOrderId: string | null) {
+  if (!providerOrderId) return;
+  try {
+    const order = await getPayPalCheckoutOrderByProviderOrderId(providerOrderId);
+    if (order) await issueReceiptAfterPaidFinalization({ orderId: order.orderId, source: "webhook" });
+  } catch (error) {
+    try {
+      await captureAndAlertServerError(error, {
+        route: "/api/webhooks/paypal",
+        method: "POST",
+        runtime: "server",
+        statusCode: 503,
+      });
+    } catch {
+      // Receipt recovery is best-effort after a payment event was already processed.
+    }
+  }
 }
 
 export async function paypalWebhookHandler(
@@ -178,6 +198,9 @@ export async function paypalWebhookHandler(
 
   if (!claim.claimed) {
     if (claim.status === "processed" || claim.status === "ignored") {
+      if (claim.status === "processed" && event.eventType === PAYPAL_FULFILLMENT_EVENT) {
+        await issueReceiptForProcessedWebhook(references.providerOrderId);
+      }
       res.status(200).json({
         ok: true,
         status: claim.status === "processed" ? "already_processed" : "ignored",
@@ -289,6 +312,8 @@ export async function paypalWebhookHandler(
       res.status(422).json({ ok: false, code: "payment_verification_failed" });
       return;
     }
+
+    await issueReceiptAfterPaidFinalization({ orderId: finalization.orderId, source: "webhook" });
 
     res.status(200).json({
       ok: true,
