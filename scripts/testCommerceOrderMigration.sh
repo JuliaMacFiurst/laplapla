@@ -43,6 +43,7 @@ psql_local=(psql -X -v ON_ERROR_STOP=1 -h "$socket_dir" -p "$port" -d postgres)
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/202610010001_create_commerce_order_foundation.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/202610010002_bind_paypal_checkout_orders.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/202610010003_add_paypal_checkout_recovery.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610060001_add_paypal_webhook_event_recovery.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/tests/sql/commerceOrderFoundation.sql"
 
 printf 'Commerce order foundation SQL regression checks passed.\n'

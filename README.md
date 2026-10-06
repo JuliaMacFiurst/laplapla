@@ -61,6 +61,16 @@ npm run build
 - `PEXELS_API_KEY`
 - `GOOGLE_TTS_API_KEY`
 
+Для PayPal checkout/webhook используются только server-side переменные:
+
+- `PAYPAL_ENVIRONMENT=sandbox` или `live`;
+- `PAYPAL_CLIENT_ID`;
+- `PAYPAL_CLIENT_SECRET`;
+- `PAYPAL_WEBHOOK_ID` — ID webhook, зарегистрированного для того же Sandbox или Live app и URL `/api/webhooks/paypal`.
+
+Sandbox и Live используют разные credentials и разные webhook ID. `PAYPAL_CLIENT_SECRET` и
+`PAYPAL_WEBHOOK_ID` нельзя публиковать через `NEXT_PUBLIC_*` или client config API.
+
 Важно:
 
 - Секретные ключи должны использоваться только на сервере и через API routes.

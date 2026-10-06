@@ -8,6 +8,10 @@ export type PayPalServerConfig = {
   sdkUrl: string;
 };
 
+export type PayPalWebhookConfig = PayPalServerConfig & {
+  webhookId: string;
+};
+
 const PAYPAL_ENDPOINTS: Record<PayPalEnvironment, { apiBaseUrl: string; sdkUrl: string }> = {
   sandbox: {
     apiBaseUrl: "https://api-m.sandbox.paypal.com",
@@ -47,6 +51,17 @@ export function getPayPalPublicConfig() {
     clientId: config.clientId,
     environment: config.environment,
   };
+}
+
+export function getPayPalWebhookConfig(): PayPalWebhookConfig {
+  const config = getPayPalServerConfig();
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID?.trim();
+
+  if (!webhookId || !/^[A-Za-z0-9]{1,50}$/u.test(webhookId)) {
+    throw new Error("PayPal webhook ID is not configured");
+  }
+
+  return { ...config, webhookId };
 }
 
 export function getPayPalSdkUrl(environment: PayPalEnvironment) {

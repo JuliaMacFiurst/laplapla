@@ -65,6 +65,41 @@ $$;
 
 do $$
 declare
+  claim_row record;
+  duplicate_row record;
+  reclaimed_row record;
+begin
+  select * into claim_row from public.claim_payment_provider_event(
+    'paypal', 'WH-LEASE-EVENT', 'PAYMENT.CAPTURE.COMPLETED', 'TRANSMISSION-LEASE',
+    'PAYPAL-LEASE-ORDER', 'PAYPAL-LEASE-CAPTURE', repeat('c', 64)
+  );
+  assert claim_row.claim_status = 'claimed';
+
+  select * into duplicate_row from public.claim_payment_provider_event(
+    'paypal', 'WH-LEASE-EVENT', 'PAYMENT.CAPTURE.COMPLETED', 'TRANSMISSION-LEASE',
+    'PAYPAL-LEASE-ORDER', 'PAYPAL-LEASE-CAPTURE', repeat('c', 64)
+  );
+  assert duplicate_row.claim_status = 'duplicate';
+  assert not duplicate_row.claimed;
+
+  set local session_replication_role = replica;
+  update public.payment_provider_events
+  set updated_at = now() - interval '6 minutes'
+  where id = claim_row.event_id;
+  set local session_replication_role = origin;
+
+  select * into reclaimed_row from public.claim_payment_provider_event(
+    'paypal', 'WH-LEASE-EVENT', 'PAYMENT.CAPTURE.COMPLETED', 'TRANSMISSION-LEASE',
+    'PAYPAL-LEASE-ORDER', 'PAYPAL-LEASE-CAPTURE', repeat('c', 64)
+  );
+  assert reclaimed_row.claim_status = 'retry_claimed';
+  assert reclaimed_row.claimed;
+  assert (select attempt_count from public.payment_provider_events where id = claim_row.event_id) = 2;
+end;
+$$;
+
+do $$
+declare
   first_checkout record;
   resumed_checkout record;
   second_checkout record;

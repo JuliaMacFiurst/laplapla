@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getPayPalPublicConfig,
   getPayPalServerConfig,
+  getPayPalWebhookConfig,
   resolvePayPalEnvironment,
 } from "@/lib/server/commerce/paypal/config";
 import { createPayPalClient, PayPalApiError } from "@/lib/server/commerce/paypal/client";
@@ -9,11 +10,13 @@ import { createPayPalClient, PayPalApiError } from "@/lib/server/commerce/paypal
 const originalEnvironment = process.env.PAYPAL_ENVIRONMENT;
 const originalClientId = process.env.PAYPAL_CLIENT_ID;
 const originalClientSecret = process.env.PAYPAL_CLIENT_SECRET;
+const originalWebhookId = process.env.PAYPAL_WEBHOOK_ID;
 
 afterEach(() => {
   process.env.PAYPAL_ENVIRONMENT = originalEnvironment;
   process.env.PAYPAL_CLIENT_ID = originalClientId;
   process.env.PAYPAL_CLIENT_SECRET = originalClientSecret;
+  process.env.PAYPAL_WEBHOOK_ID = originalWebhookId;
 });
 
 function jsonResponse(body: unknown, status = 200) {
@@ -71,9 +74,87 @@ describe("PayPal server configuration", () => {
     delete process.env.PAYPAL_CLIENT_SECRET;
     expect(() => getPayPalServerConfig()).toThrow("PayPal server credentials are not configured");
   });
+
+  it("keeps the webhook ID server-only and validates it separately", () => {
+    process.env.PAYPAL_ENVIRONMENT = "sandbox";
+    process.env.PAYPAL_CLIENT_ID = "public-client-id";
+    process.env.PAYPAL_CLIENT_SECRET = "server-only-test-value";
+    process.env.PAYPAL_WEBHOOK_ID = "9AB12345CD678901E";
+    expect(getPayPalWebhookConfig()).toMatchObject({
+      environment: "sandbox",
+      webhookId: "9AB12345CD678901E",
+    });
+    expect(JSON.stringify(getPayPalPublicConfig())).not.toContain("9AB12345CD678901E");
+    delete process.env.PAYPAL_WEBHOOK_ID;
+    expect(() => getPayPalWebhookConfig()).toThrow("PayPal webhook ID is not configured");
+  });
 });
 
 describe("typed PayPal Orders v2 client", () => {
+  it("verifies webhook signatures with PayPal and accepts only SUCCESS", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({ verification_status: "SUCCESS" }));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+    const webhookEvent = { id: "WH-1", event_type: "PAYMENT.CAPTURE.COMPLETED", resource: {} };
+    await expect(paypal.verifyWebhookSignature({
+      webhookId: "WEBHOOK123",
+      webhookEvent,
+      transmission: {
+        transmissionId: "transmission-1",
+        transmissionTime: "2026-10-06T10:00:00Z",
+        transmissionSignature: "signature-value",
+        certificateUrl: "https://api-m.sandbox.paypal.com/cert.pem",
+        authAlgorithm: "SHA256withRSA",
+      },
+    })).resolves.toBe(true);
+
+    const verifyRequest = fetchImpl.mock.calls[1];
+    expect(verifyRequest?.[0]).toBe(
+      "https://api-m.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
+    );
+    expect(JSON.parse(String(verifyRequest?.[1]?.body))).toEqual({
+      auth_algo: "SHA256withRSA",
+      cert_url: "https://api-m.sandbox.paypal.com/cert.pem",
+      transmission_id: "transmission-1",
+      transmission_sig: "signature-value",
+      transmission_time: "2026-10-06T10:00:00Z",
+      webhook_id: "WEBHOOK123",
+      webhook_event: webhookEvent,
+    });
+  });
+
+  it("rejects failed or malformed webhook verification responses", async () => {
+    const failed = createPayPalClient({
+      fetchImpl: vi.fn()
+        .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+        .mockResolvedValueOnce(jsonResponse({ verification_status: "FAILURE" })),
+      config: testConfig,
+    });
+    const input = {
+      webhookId: "WEBHOOK123",
+      webhookEvent: { id: "WH-1" },
+      transmission: {
+        transmissionId: "transmission-1",
+        transmissionTime: "2026-10-06T10:00:00Z",
+        transmissionSignature: "signature-value",
+        certificateUrl: "https://api-m.sandbox.paypal.com/cert.pem",
+        authAlgorithm: "SHA256withRSA",
+      },
+    };
+    await expect(failed.verifyWebhookSignature(input)).resolves.toBe(false);
+
+    const malformed = createPayPalClient({
+      fetchImpl: vi.fn()
+        .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+        .mockResolvedValueOnce(jsonResponse({ status: "SUCCESS" })),
+      config: testConfig,
+    });
+    await expect(malformed.verifyWebhookSignature(input)).rejects.toMatchObject({
+      safeCode: "malformed_webhook_verification_response",
+    });
+  });
+
   it("uses Basic OAuth and creates CAPTURE orders from the trusted local snapshot", async () => {
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(jsonResponse({ access_token: "access-token", token_type: "Bearer" }))

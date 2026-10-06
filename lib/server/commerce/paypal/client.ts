@@ -41,6 +41,14 @@ export type PayPalCaptureResult =
       paypalStatus: string;
     };
 
+export type PayPalWebhookTransmission = {
+  transmissionId: string;
+  transmissionTime: string;
+  transmissionSignature: string;
+  certificateUrl: string;
+  authAlgorithm: string;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -300,9 +308,35 @@ export function createPayPalClient(options?: {
     }
   }
 
+  async function verifyWebhookSignature(input: {
+    transmission: PayPalWebhookTransmission;
+    webhookId: string;
+    webhookEvent: Record<string, unknown>;
+  }) {
+    const payload = await authenticatedRequest("/v1/notifications/verify-webhook-signature", {
+      method: "POST",
+      body: JSON.stringify({
+        auth_algo: input.transmission.authAlgorithm,
+        cert_url: input.transmission.certificateUrl,
+        transmission_id: input.transmission.transmissionId,
+        transmission_sig: input.transmission.transmissionSignature,
+        transmission_time: input.transmission.transmissionTime,
+        webhook_id: input.webhookId,
+        webhook_event: input.webhookEvent,
+      }),
+    });
+
+    if (!isRecord(payload) || !safeString(payload.verification_status, 20)) {
+      throw malformedPayPalResponse("malformed_webhook_verification_response");
+    }
+
+    return payload.verification_status === "SUCCESS";
+  }
+
   return {
     createOrder,
     showOrder,
     captureOrder,
+    verifyWebhookSignature,
   };
 }

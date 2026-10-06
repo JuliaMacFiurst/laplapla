@@ -13,6 +13,13 @@ type ProviderEventClaimRow = {
   event_status: ProviderEventStatus;
 };
 
+export class ProviderEventIdentityConflictError extends Error {
+  constructor() {
+    super("Provider event identity conflict");
+    this.name = "ProviderEventIdentityConflictError";
+  }
+}
+
 function requireProviderIdentifier(value: string, label: string, maxLength: number) {
   const normalized = value.trim();
   if (!normalized || normalized.length > maxLength) {
@@ -52,7 +59,7 @@ export async function claimPaymentProviderEvent(input: {
 
   const row = candidate as ProviderEventClaimRow;
   if (row.claim_status === "conflict") {
-    throw new Error("Provider event identity conflict");
+    throw new ProviderEventIdentityConflictError();
   }
 
   return {

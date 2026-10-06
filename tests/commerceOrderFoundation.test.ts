@@ -196,17 +196,19 @@ describe("paid order and provider event server helpers", () => {
       }],
       error: null,
     });
+    const rawPayload = '{"payer":{"email":"private-buyer@example.com"}}';
     const result = await claimPaymentProviderEvent({
       provider: "paypal",
       providerEventId: "WH-1",
       eventType: "PAYMENT.CAPTURE.COMPLETED",
-      rawPayload: "provider-payload-without-pii",
+      rawPayload,
     });
     expect(result.payloadHash).toMatch(/^[0-9a-f]{64}$/);
     expect(mocks.rpc).toHaveBeenCalledWith("claim_payment_provider_event", expect.objectContaining({
       target_payload_hash: result.payloadHash,
     }));
-    expect(JSON.stringify(result)).not.toContain("provider-payload-without-pii");
+    expect(JSON.stringify(result)).not.toContain("private-buyer@example.com");
+    expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("private-buyer@example.com");
   });
 
   it("exposes duplicate claims without invoking business finalization", async () => {
@@ -296,6 +298,28 @@ describe("PayPal provider-order binding migration", () => {
     expect(migration).toContain("'provider_order_conflict'::text");
     expect(migration).toContain("status = 'pending_approval'");
     expect(migration).toContain("status = 'capture_pending'");
+  });
+});
+
+describe("PayPal webhook event recovery migration", () => {
+  const migration = readFileSync(
+    `${process.cwd()}/supabase/migrations/202610060001_add_paypal_webhook_event_recovery.sql`,
+    "utf8",
+  );
+
+  it("keeps event claim mutations service-role only with a fixed search path", () => {
+    expect(migration).toContain("security definer");
+    expect(migration).toContain("set search_path = public, pg_temp");
+    expect(migration).toContain("from public, anon, authenticated");
+    expect(migration).toContain("to service_role");
+  });
+
+  it("reclaims only identical provider events whose processing lease is stale", () => {
+    expect(migration).toContain("provider_event.updated_at <= now() - interval '5 minutes'");
+    expect(migration).toContain("provider_event.payload_hash <> target_payload_hash");
+    expect(migration).toContain("provider_event.provider_order_id is distinct from target_provider_order_id");
+    expect(migration).toContain("provider_event.provider_capture_id is distinct from target_provider_capture_id");
+    expect(migration).toContain("'retry_claimed'::text");
   });
 });
 
