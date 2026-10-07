@@ -109,6 +109,12 @@ Sandbox и Live используют разные credentials и разные we
 - Чтобы клиентские ошибки попадали в Discord, в Sentry создайте Issue Alert: environment `production`, level `error`/`fatal`, action `Send a notification via <Internal Integration>`. Endpoint проверяет стандартную HMAC-подпись Sentry; `x-alert-secret` остаётся только для ручных тестов.
 - `/api/alert-discord` возвращает `502`, если Discord отклонил сообщение или webhook недоступен.
 
+## Receipt PDF artifacts
+
+- Production PDF artifacts use a private Supabase Storage bucket configured by the server-only `RECEIPT_PDF_STORAGE_BUCKET` environment variable.
+- The recommended bucket name is `receipt-pdfs`; it must remain private and accept only `application/pdf` objects up to 2 MB.
+- Bucket creation is a manual infrastructure step. Browser roles receive no Storage policies; generation uses the existing server-side service role.
+
 ## Локальные backup-скрипты
 
 В проекте есть локальные backup-скрипты в папке `scripts/`.

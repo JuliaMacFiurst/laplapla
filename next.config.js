@@ -110,6 +110,13 @@ const wakeTheDuneAudioOrigin = "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  outputFileTracingIncludes: {
+    "/api/customer/checkout/paypal/capture": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/webhooks/paypal": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/cron/recover-receipts": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/cron/recover-receipt-artifacts": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+  },
   poweredByHeader: false,
   allowedDevOrigins,
   i18n: {

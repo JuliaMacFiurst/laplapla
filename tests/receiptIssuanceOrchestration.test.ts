@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), alert: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), alert: vi.fn(), ensureArtifacts: vi.fn() }));
 vi.mock("@/lib/server/supabase", () => ({
   createServerSupabaseClient: () => ({ rpc: mocks.rpc }),
 }));
 vi.mock("@/lib/monitoring/captureAndAlertServerError", () => ({
   captureAndAlertServerError: mocks.alert,
+}));
+vi.mock("@/lib/server/commerce/receipts/artifacts", () => ({
+  ensureReceiptArtifacts: mocks.ensureArtifacts,
 }));
 
 import { issueReceiptAfterPaidFinalization } from "@/lib/server/commerce/receipts/issuance";
@@ -24,6 +27,7 @@ describe("post-payment receipt coordinator", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.alert.mockResolvedValue(undefined);
+    mocks.ensureArtifacts.mockResolvedValue({ complete: true, copies: [] });
     vi.spyOn(console, "error").mockImplementation(() => undefined);
   });
   afterEach(() => vi.restoreAllMocks());
@@ -37,6 +41,15 @@ describe("post-payment receipt coordinator", () => {
       status: "already_issued", receiptId: "22222222-2222-4222-8222-222222222222", displayNumber: "WEB-000001",
     });
     expect(mocks.rpc).toHaveBeenCalledTimes(2);
+    expect(mocks.ensureArtifacts).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps successful receipt/payment semantics when artifact generation throws", async () => {
+    mocks.rpc.mockResolvedValue(success("issued"));
+    mocks.ensureArtifacts.mockRejectedValue(new Error("storage unavailable"));
+    await expect(issueReceiptAfterPaidFinalization({ orderId, source: "capture" })).resolves.toMatchObject({
+      status: "issued", receiptId: "22222222-2222-4222-8222-222222222222",
+    });
   });
 
   it.each(["sandbox_order", "unknown_environment", "order_not_paid"])(

@@ -80,5 +80,17 @@ different_b_pid=$!
 wait "$different_a_pid" "$different_b_pid"
 
 "${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerConcurrencyAssert.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610080001_create_receipt_pdf_artifacts.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptPdfArtifacts.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptArtifactConcurrencySetup.sql" >/dev/null
+receipt_artifact_target_id="$("${psql_local[@]}" -Atc "select receipt_id from public.receipt_artifact_concurrency_target limit 1")"
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_receipt_pdf_artifact('$receipt_artifact_target_id','original','receipt-pdfs','receipt-html-v2',300)" >"$test_root/artifact-a.out" &
+artifact_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_receipt_pdf_artifact('$receipt_artifact_target_id','original','receipt-pdfs','receipt-html-v2',300)" >"$test_root/artifact-b.out" &
+artifact_b_pid=$!
+wait "$artifact_a_pid" "$artifact_b_pid"
+artifact_results="$(sort "$test_root/artifact-a.out" "$test_root/artifact-b.out" | tr '\n' ' ')"
+[[ "$artifact_results" = "claimed processing " ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptArtifactConcurrencyAssert.sql"
 
 printf 'Commerce order foundation SQL regression checks passed.\n'
