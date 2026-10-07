@@ -53,8 +53,8 @@ vi.mock("@/lib/server/commerce/paypal/orders", () => ({
 vi.mock("@/lib/server/commerce/finalizePaidOrder", () => ({
   finalizeLocalOrderPaid: mocks.finalize,
 }));
-vi.mock("@/lib/server/commerce/receipts/issuance", () => ({
-  issueReceiptAfterPaidFinalization: mocks.issueReceipt,
+vi.mock("@/lib/server/commerce/postPayment", () => ({
+  runPaidOrderSideEffects: mocks.issueReceipt,
 }));
 vi.mock("@/lib/monitoring/captureAndAlertServerError", () => ({
   captureAndAlertServerError: mocks.captureAndAlert,

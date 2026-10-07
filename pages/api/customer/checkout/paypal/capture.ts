@@ -10,7 +10,7 @@ import {
 import { enforceSameOrigin } from "@/lib/server/security/requestOrigin";
 import { PAYPAL_CHECKOUT_PRODUCT_ID, type PayPalCaptureResponse } from "@/lib/shop/paypalCheckout";
 import { withApiHandler } from "@/utils/apiHandler";
-import { issueReceiptAfterPaidFinalization } from "@/lib/server/commerce/receipts/issuance";
+import { runPaidOrderSideEffects } from "@/lib/server/commerce/postPayment";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const PROVIDER_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/u;
@@ -54,7 +54,7 @@ export async function paypalCaptureHandler(req: NextApiRequest, res: NextApiResp
     return;
   }
   if (localOrder.status === "paid") {
-    await issueReceiptAfterPaidFinalization({ orderId: localOrder.orderId, source: "capture" });
+    await runPaidOrderSideEffects({ orderId: localOrder.orderId, source: "capture" });
     res.status(200).json({
       ok: true,
       status: "paid",
@@ -99,7 +99,7 @@ export async function paypalCaptureHandler(req: NextApiRequest, res: NextApiResp
       });
       lifecycle = captureStart.status ?? lifecycle;
       if (captureStart.result === "already_paid") {
-        await issueReceiptAfterPaidFinalization({ orderId: localOrder.orderId, source: "capture" });
+        await runPaidOrderSideEffects({ orderId: localOrder.orderId, source: "capture" });
         res.status(200).json({
           ok: true,
           status: "paid",
@@ -137,7 +137,7 @@ export async function paypalCaptureHandler(req: NextApiRequest, res: NextApiResp
       return;
     }
 
-    await issueReceiptAfterPaidFinalization({ orderId: finalization.orderId, source: "capture" });
+    await runPaidOrderSideEffects({ orderId: finalization.orderId, source: "capture" });
 
     res.status(200).json({
       ok: true,

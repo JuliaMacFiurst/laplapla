@@ -43,7 +43,7 @@ vi.mock("@/lib/server/commerce/paypal/client", () => ({
   }),
 }));
 vi.mock("@/lib/server/commerce/finalizePaidOrder", () => ({ finalizeLocalOrderPaid: mocks.finalize }));
-vi.mock("@/lib/server/commerce/receipts/issuance", () => ({ issueReceiptAfterPaidFinalization: mocks.issueReceipt }));
+vi.mock("@/lib/server/commerce/postPayment", () => ({ runPaidOrderSideEffects: mocks.issueReceipt }));
 vi.mock("@/lib/server/customerBillingIdentity", () => ({
   BillingIdentityError: mocks.BillingIdentityError,
   requireTrustedBillingIdentity: mocks.requireTrustedBillingIdentity,

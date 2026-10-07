@@ -49,6 +49,18 @@ psql_local=(psql -X -v ON_ERROR_STOP=1 -h "$socket_dir" -p "$port" -d postgres)
 "${psql_local[@]}" -f "$repo_root/tests/sql/billingIdentityOrderSnapshots.sql"
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/202610070002_create_receipt_ledger_foundation.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerFoundation.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610070003_add_purchase_notification_delivery.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/purchaseNotificationDelivery.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/purchaseNotificationConcurrencySetup.sql" >/dev/null
+purchase_notification_order_id="$("${psql_local[@]}" -Atc "select order_id from public.purchase_notification_concurrency_order")"
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_paid_order_purchase_notification('$purchase_notification_order_id')" >"$test_root/purchase-notification-a.out" &
+purchase_notification_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_paid_order_purchase_notification('$purchase_notification_order_id')" >"$test_root/purchase-notification-b.out" &
+purchase_notification_b_pid=$!
+wait "$purchase_notification_a_pid" "$purchase_notification_b_pid"
+purchase_notification_results="$(sort "$test_root/purchase-notification-a.out" "$test_root/purchase-notification-b.out" | tr '\n' ' ')"
+[[ "$purchase_notification_results" = "claimed processing " ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/purchaseNotificationConcurrencyAssert.sql"
 "${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerConcurrencySetup.sql" >/dev/null
 
 same_order_id="$("${psql_local[@]}" -Atc "select order_id from public.receipt_concurrency_orders where label = 'same'")"

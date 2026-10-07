@@ -18,7 +18,7 @@ import {
 import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 import { sendDiscordErrorAlert } from "@/lib/monitoring/discordAlert";
 import { withApiHandler } from "@/utils/apiHandler";
-import { issueReceiptAfterPaidFinalization } from "@/lib/server/commerce/receipts/issuance";
+import { runPaidOrderSideEffects } from "@/lib/server/commerce/postPayment";
 
 const MAX_WEBHOOK_BODY_BYTES = 128 * 1024;
 
@@ -80,11 +80,11 @@ async function alertReconciliationFailure(error: unknown, environment: string) {
   });
 }
 
-async function issueReceiptForProcessedWebhook(providerOrderId: string | null) {
+async function runSideEffectsForProcessedWebhook(providerOrderId: string | null) {
   if (!providerOrderId) return;
   try {
     const order = await getPayPalCheckoutOrderByProviderOrderId(providerOrderId);
-    if (order) await issueReceiptAfterPaidFinalization({ orderId: order.orderId, source: "webhook" });
+    if (order) await runPaidOrderSideEffects({ orderId: order.orderId, source: "webhook" });
   } catch (error) {
     try {
       await captureAndAlertServerError(error, {
@@ -199,7 +199,7 @@ export async function paypalWebhookHandler(
   if (!claim.claimed) {
     if (claim.status === "processed" || claim.status === "ignored") {
       if (claim.status === "processed" && event.eventType === PAYPAL_FULFILLMENT_EVENT) {
-        await issueReceiptForProcessedWebhook(references.providerOrderId);
+        await runSideEffectsForProcessedWebhook(references.providerOrderId);
       }
       res.status(200).json({
         ok: true,
@@ -313,7 +313,7 @@ export async function paypalWebhookHandler(
       return;
     }
 
-    await issueReceiptAfterPaidFinalization({ orderId: finalization.orderId, source: "webhook" });
+    await runPaidOrderSideEffects({ orderId: finalization.orderId, source: "webhook" });
 
     res.status(200).json({
       ok: true,
