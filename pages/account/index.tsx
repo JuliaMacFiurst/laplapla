@@ -174,6 +174,8 @@ export default function CustomerAccountPage() {
                     const description = product ? getLocalizedShortDescription(product, lang) : "";
                     const active = purchase.accessStatus === "active";
                     const createPath = product ? buildLocalizedPublicPath(`/shop/${product.slug}/create`, lang) : null;
+                    const editPath = createPath ? `${createPath}?mode=edit` : null;
+                    const printPath = createPath ? `${createPath}?mode=ready` : null;
                     return (
                       <li key={purchase.orderId}>
                         <div className="customer-account__purchase-main">
@@ -191,7 +193,8 @@ export default function CustomerAccountPage() {
                           {active ? <p className="customer-account__reprint-help">{copy.reprintHelp}</p> : null}
                         </div>
                         <div className="customer-account__actions">
-                          {active && createPath ? <Link className="customer-account__primary" href={createPath}>{copy.openEditPrint}</Link> : null}
+                          {active && editPath ? <Link className="customer-account__secondary" href={editPath}>{copy.editPersonalization}</Link> : null}
+                          {active && printPath ? <Link className="customer-account__primary" href={printPath}>{copy.openAndPrint}</Link> : null}
                           {purchase.receipt.status === "available" ? <button className="customer-account__secondary" type="button" disabled={receiptDownload.orderId === purchase.orderId} onClick={() => void downloadReceipt(purchase)}>{receiptDownload.orderId === purchase.orderId ? copy.downloadingReceipt : copy.downloadReceipt}</button> : null}
                         </div>
                       </li>

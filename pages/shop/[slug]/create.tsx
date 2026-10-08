@@ -16,6 +16,7 @@ export default function QuestBuilderPage({ slug }: QuestBuilderPageProps) {
   const lang = getCurrentLang(router);
   const text = dictionaries[lang].shop.soundCase;
   const product = getProductBySlug(slug);
+  const initialMode = router.query.mode === "edit" ? "edit" : router.query.mode === "ready" ? "ready" : "default";
 
   if (!product) {
     return null;
@@ -28,7 +29,7 @@ export default function QuestBuilderPage({ slug }: QuestBuilderPageProps) {
         <meta name="description" content={text.description} />
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <ProtectedQuestBuilder productId={product.id} interfaceLang={lang} />
+      <ProtectedQuestBuilder productId={product.id} interfaceLang={lang} initialMode={initialMode} />
     </>
   );
 }

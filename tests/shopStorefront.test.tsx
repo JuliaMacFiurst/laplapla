@@ -67,4 +67,14 @@ describe("LapLapLa shop storefront", () => {
     expect(css).toMatch(/\.shop-product-card__visual\s*\{[^}]*aspect-ratio:\s*16 \/ 10/s);
     expect(css).toContain("@media (max-width: 520px)");
   });
+
+  it("balances the multilingual hero responsively without English-only line breaks", () => {
+    const page = readFileSync(`${process.cwd()}/pages/shop/index.tsx`, "utf8");
+    const css = readFileSync(`${process.cwd()}/styles/Shop.css`, "utf8");
+    expect(page).toContain("{storefront.title}");
+    expect(page).not.toMatch(/storefront\.title[\s\S]{0,80}<br/);
+    expect(css).toMatch(/\.shop-catalog__hero h1\s*\{[^}]*font-size:\s*clamp\(2\.35rem, 5vw, 4\.75rem\)/s);
+    expect(css).toMatch(/\.shop-catalog__hero h1\s*\{[^}]*text-wrap:\s*balance/s);
+    for (const lang of ["ru", "en", "he"] as const) expect(SHOP_STOREFRONT_COPY[lang].title).toBeTruthy();
+  });
 });

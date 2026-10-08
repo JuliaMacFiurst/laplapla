@@ -525,3 +525,73 @@ export function getSoundCase001FullPrintablePages(
     section.pages.map((page) => ({ ...page, printOrder: printOrder++ })),
   );
 }
+
+export type SoundCase001DuplexPair = {
+  pairId: string;
+  frontPageNumber: number;
+  backPageNumber: number;
+  duplexMode: string;
+};
+
+export type SoundCase001PrintPlan = {
+  pages: QuestPageDefinition[];
+  singleSidedPageNumbers: number[];
+  duplexPairs: SoundCase001DuplexPair[];
+};
+
+/**
+ * Customer print metadata derived from the same ordered definitions used by
+ * QuestDocument. Page numbers are one-based because they are shown in the
+ * browser print dialog.
+ */
+export function getSoundCase001PrintPlan(
+  personalization: QuestPersonalization,
+): SoundCase001PrintPlan {
+  const pages = getSoundCase001FullPrintablePages(personalization);
+  const singleSidedPageNumbers: number[] = [];
+  const pairs = new Map<string, Partial<SoundCase001DuplexPair>>();
+
+  pages.forEach((page, index) => {
+    const pageNumber = index + 1;
+    if (!("pairId" in page) || !("duplexMode" in page)) {
+      singleSidedPageNumbers.push(pageNumber);
+      return;
+    }
+
+    const current = pairs.get(page.pairId) ?? {
+      pairId: page.pairId,
+      duplexMode: page.duplexMode,
+    };
+    if (page.side === "front") current.frontPageNumber = pageNumber;
+    if (page.side === "back") current.backPageNumber = pageNumber;
+    pairs.set(page.pairId, current);
+  });
+
+  const duplexPairs = Array.from(pairs.values()).map((pair) => {
+    if (
+      !pair.pairId ||
+      !pair.duplexMode ||
+      !pair.frontPageNumber ||
+      !pair.backPageNumber
+    ) {
+      throw new Error("sound_case_print_pair_incomplete");
+    }
+    return pair as SoundCase001DuplexPair;
+  });
+
+  return { pages, singleSidedPageNumbers, duplexPairs };
+}
+
+export function formatPageNumberRanges(pageNumbers: readonly number[]): string {
+  const sorted = [...new Set(pageNumbers)].sort((left, right) => left - right);
+  const ranges: string[] = [];
+  for (let index = 0; index < sorted.length; index += 1) {
+    const start = sorted[index];
+    let end = start;
+    while (index + 1 < sorted.length && sorted[index + 1] === end + 1) {
+      end = sorted[++index];
+    }
+    ranges.push(start === end ? String(start) : `${start}–${end}`);
+  }
+  return ranges.join(", ");
+}

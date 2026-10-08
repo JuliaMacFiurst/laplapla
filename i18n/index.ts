@@ -1046,6 +1046,23 @@ type DictionaryShape = {
         printPreparing: string;
         printFailed: string;
         printHelp: string;
+        previewEyebrow: string;
+        previewTitle: string;
+        previewPageIndicator: string;
+        previewNavigationLabel: string;
+        previewPageListLabel: string;
+        previewOpenPage: string;
+        previewPrevious: string;
+        previewNext: string;
+        previewNote: string;
+        printGuideTitle: string;
+        printGuideIntro: string;
+        printGuideSize: string;
+        printGuideColor: string;
+        printGuideSingle: string;
+        printGuideDuplex: string;
+        printGuideAssembly: string;
+        printGuidePhysicalNote: string;
       };
       preview: {
         eyebrow: string;

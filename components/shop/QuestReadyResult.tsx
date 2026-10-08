@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { dictionaries, type Lang } from "@/i18n";
+import {
+  formatPageNumberRanges,
+  getSoundCase001PrintPlan,
+} from "@/lib/shop/questDocument";
 import type { QuestPersonalization } from "@/lib/shop/questPersonalization";
+import { QuestPagePreview } from "./QuestPagePreview";
 
 type PrintStatus = "idle" | "preparing" | "error";
 const LANGUAGE_NAMES: Record<Lang, string> = { ru: "Русский", en: "English", he: "עברית" };
@@ -15,6 +20,11 @@ export function QuestReadyResult({ personalization, interfaceLang, printStatus, 
 }) {
   const text = dictionaries[interfaceLang].shop.soundCase.builder;
   const participants = personalization.participants.filter((name) => name.trim());
+  const printPlan = getSoundCase001PrintPlan(personalization);
+  const singleSidedPages = formatPageNumberRanges(printPlan.singleSidedPageNumbers);
+  const duplexPages = formatPageNumberRanges(
+    printPlan.duplexPairs.flatMap(({ frontPageNumber, backPageNumber }) => [frontPageNumber, backPageNumber]),
+  );
   return (
     <section className="quest-ready" aria-labelledby="quest-ready-title" dir={interfaceLang === "he" ? "rtl" : "ltr"} lang={interfaceLang}>
       <header className="quest-ready__hero"><span aria-hidden="true">✓</span><p>{text.readyEyebrow}</p><h2 id="quest-ready-title">{text.readyTitle}</h2><p>{text.readyBody}</p></header>
@@ -31,6 +41,21 @@ export function QuestReadyResult({ personalization, interfaceLang, printStatus, 
           {printStatus === "error" ? <div className="quest-ready__print-error" role="alert"><p>{text.printFailed}</p><button type="button" onClick={onPrint}>{text.retryPrint}</button></div> : null}
         </section>
       </div>
+      <QuestPagePreview personalization={personalization} interfaceLang={interfaceLang} />
+      <details className="quest-ready__print-guide">
+        <summary>{text.printGuideTitle}</summary>
+        <div>
+          <p>{text.printGuideIntro}</p>
+          <ul>
+            <li>{text.printGuideSize}</li>
+            <li>{text.printGuideColor}</li>
+            <li>{text.printGuideSingle} <bdi dir="ltr">{singleSidedPages}</bdi>.</li>
+            <li>{text.printGuideDuplex} <bdi dir="ltr">{duplexPages}</bdi>.</li>
+            <li>{text.printGuideAssembly}</li>
+          </ul>
+          <p className="quest-ready__print-guide-note">{text.printGuidePhysicalNote}</p>
+        </div>
+      </details>
       <footer className="quest-ready__actions"><button type="button" onClick={onEdit}>{text.editPersonalization}</button><Link href={accountPath}>{text.backToPurchases}</Link><p>{text.readyReturn}</p></footer>
     </section>
   );

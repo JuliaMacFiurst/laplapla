@@ -268,11 +268,11 @@ describe("internal Quest Print Lab", () => {
     const css = readFileSync(`${process.cwd()}/styles/Shop.css`, "utf8");
     const printCss = css.slice(css.indexOf("@media print"));
 
-    expect(builderSource).toContain('<QuestPreview personalization={personalization} presentation="owned" />');
+    expect(builderSource).toContain("<QuestReadyResult");
     expect(builderSource).toContain('className="quest-document-print-host"');
     expect(builderSource).toContain('aria-hidden="true"');
     expect(builderSource).not.toContain("QuestPrintLab");
-    expect(builderSource).toContain("updateQuestParticipant(current, index, name)");
+    expect(builderSource).toContain("updateQuestParticipant(current, index, event.target.value)");
     expect(builderSource).toContain("removeQuestParticipant(current, index)");
     expect(printCss).toMatch(/\.quest-print-lab__toolbar[\s\S]*display: none !important/);
     expect(printCss).toMatch(/\.quest-print-lab--xray[\s\S]*display: none !important/);

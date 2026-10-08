@@ -6,13 +6,14 @@ import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import { getProductById } from "@/lib/shop/catalog";
 import { dictionaries, type Lang } from "@/i18n";
 import type { QuestPersonalization } from "@/lib/shop/questPersonalization";
-import { QuestBuilder } from "./QuestBuilder";
+import { QuestBuilder, type QuestBuilderMode } from "./QuestBuilder";
 
 type ProductAccessState = "checking" | "granted" | "denied" | "error";
 
-export function ProtectedQuestBuilder({ productId, interfaceLang }: {
+export function ProtectedQuestBuilder({ productId, interfaceLang, initialMode = "default" }: {
   productId: string;
   interfaceLang: Lang;
+  initialMode?: QuestBuilderMode;
 }) {
   const auth = useCustomerSession();
   const [access, setAccess] = useState<ProductAccessState>("checking");
@@ -77,6 +78,7 @@ export function ProtectedQuestBuilder({ productId, interfaceLang }: {
         key={`${productId}-${auth.session.user.id}`}
         interfaceLang={interfaceLang}
         initialPersonalization={initialPersonalization}
+        initialMode={initialMode}
         onSave={save}
       />
     );

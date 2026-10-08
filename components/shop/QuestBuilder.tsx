@@ -25,6 +25,7 @@ const LANGUAGE_OPTIONS: Array<{ value: Lang; label: string }> = [
 type SaveStatus = "idle" | "saving" | "error";
 type PrintStatus = "idle" | "preparing" | "error";
 type BuilderStep = "personalize" | "ready";
+export type QuestBuilderMode = "default" | "edit" | "ready";
 
 export function normalizeQuestPersonalization(personalization: QuestPersonalization): QuestPersonalization {
   return {
@@ -46,10 +47,12 @@ export function shouldEnterReadyAfterSave(currentDraft: QuestPersonalization, sa
 export function QuestBuilder({
   interfaceLang,
   initialPersonalization,
+  initialMode = "default",
   onSave,
 }: {
   interfaceLang: Lang;
   initialPersonalization?: QuestPersonalization | null;
+  initialMode?: QuestBuilderMode;
   onSave?: (personalization: QuestPersonalization) => Promise<QuestPersonalization>;
 }) {
   const initial = initialPersonalization
@@ -57,11 +60,14 @@ export function QuestBuilder({
     : createQuestPersonalization(interfaceLang);
   const [draft, setDraft] = useState<QuestPersonalization>(initial);
   const [lastSaved, setLastSaved] = useState<QuestPersonalization | null>(initialPersonalization ? initial : null);
-  const [step, setStep] = useState<BuilderStep>(initialPersonalization ? "ready" : "personalize");
+  const [step, setStep] = useState<BuilderStep>(
+    initialPersonalization && initialMode !== "edit" ? "ready" : "personalize",
+  );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [printStatus, setPrintStatus] = useState<PrintStatus>("idle");
   const initialDraftRef = useRef(initial);
   const savingRef = useRef(false);
+  const printingRef = useRef(false);
   const draftRef = useRef(draft);
   const printHostRef = useRef<HTMLDivElement>(null);
   const text = dictionaries[interfaceLang].shop.soundCase.builder;
@@ -113,13 +119,16 @@ export function QuestBuilder({
 
   const printSavedQuest = async () => {
     const printHost = printHostRef.current;
-    if (!lastSaved || isDirty || !printHost || printStatus === "preparing") return;
+    if (!lastSaved || isDirty || !printHost || printingRef.current) return;
+    printingRef.current = true;
     setPrintStatus("preparing");
     try {
       await printPreparedQuestDocument(printHost);
       setPrintStatus("idle");
     } catch {
       setPrintStatus("error");
+    } finally {
+      printingRef.current = false;
     }
   };
 

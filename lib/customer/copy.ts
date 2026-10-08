@@ -51,6 +51,8 @@ type CustomerCopy = {
   downloadingReceipt: string;
   receiptDownloadError: string;
   openEditPrint: string;
+  editPersonalization: string;
+  openAndPrint: string;
   reprintHelp: string;
   accessProductsTitle: string;
   accessWithoutPurchase: string;
@@ -94,7 +96,7 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     paymentPaid: "Оплачено", paymentProcessing: "Обрабатывается", paymentCancelled: "Отменено", paymentFailed: "Не завершено",
     accessActive: "Активен", accessUnavailable: "Недоступен", receiptAvailable: "Готова", receiptPreparing: "Готовится", receiptUnavailable: "Не предусмотрена",
     downloadReceipt: "Скачать квитанцию", downloadingReceipt: "Скачиваем…", receiptDownloadError: "Не удалось скачать квитанцию. Попробуйте снова.",
-    openEditPrint: "Открыть, изменить и распечатать", reprintHelp: "Вы можете в любое время изменить персонализацию и распечатать квест снова — без ограничения количества повторов.",
+    openEditPrint: "Открыть, изменить и распечатать", editPersonalization: "Изменить персонализацию", openAndPrint: "Открыть и распечатать", reprintHelp: "Вы можете в любое время изменить персонализацию и распечатать квест снова — без ограничения количества повторов.",
     accessProductsTitle: "Другие доступные продукты", accessWithoutPurchase: "Доступ предоставлен без покупки на сайте.", accessSource: "Источник доступа",
   },
   en: {
@@ -134,7 +136,7 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     paymentPaid: "Paid", paymentProcessing: "Processing", paymentCancelled: "Cancelled", paymentFailed: "Not completed",
     accessActive: "Active", accessUnavailable: "Unavailable", receiptAvailable: "Available", receiptPreparing: "Being prepared", receiptUnavailable: "Not applicable",
     downloadReceipt: "Download receipt", downloadingReceipt: "Downloading…", receiptDownloadError: "The receipt could not be downloaded. Please try again.",
-    openEditPrint: "Open, edit & print again", reprintHelp: "You can return at any time, change the personalization, and print the quest again with no reprint limit.",
+    openEditPrint: "Open, edit & print again", editPersonalization: "Edit personalization", openAndPrint: "Open & print", reprintHelp: "You can return at any time, change the personalization, and print the quest again with no reprint limit.",
     accessProductsTitle: "Other available products", accessWithoutPurchase: "Access was provided without a website purchase.", accessSource: "Access source",
   },
   he: {
@@ -174,7 +176,7 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     paymentPaid: "שולם", paymentProcessing: "בטיפול", paymentCancelled: "בוטל", paymentFailed: "לא הושלם",
     accessActive: "פעילה", accessUnavailable: "לא זמינה", receiptAvailable: "זמינה", receiptPreparing: "בהכנה", receiptUnavailable: "לא נדרשת",
     downloadReceipt: "הורדת קבלה", downloadingReceipt: "מורידים…", receiptDownloadError: "לא הצלחנו להוריד את הקבלה. נסו שוב.",
-    openEditPrint: "פתיחה, עריכה והדפסה מחדש", reprintHelp: "אפשר לחזור בכל עת, לשנות את ההתאמה האישית ולהדפיס שוב ללא הגבלת הדפסות חוזרות.",
+    openEditPrint: "פתיחה, עריכה והדפסה מחדש", editPersonalization: "עריכת ההתאמה האישית", openAndPrint: "פתיחה והדפסה", reprintHelp: "אפשר לחזור בכל עת, לשנות את ההתאמה האישית ולהדפיס שוב ללא הגבלת הדפסות חוזרות.",
     accessProductsTitle: "מוצרים זמינים נוספים", accessWithoutPurchase: "הגישה ניתנה ללא רכישה באתר.", accessSource: "מקור הגישה",
   },
 };
