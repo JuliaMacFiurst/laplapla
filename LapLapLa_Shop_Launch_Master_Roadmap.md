@@ -32,7 +32,7 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 |---|---|---|
 | Backend commerce | DONE / near production-ready | Trusted PayPal reconciliation, atomic paid finalization, entitlement, snapshots, receipt ledger, PDF artifacts and recovery exist. |
 | Customer purchase flow | PARTIAL | Sandbox flow is developed, but product remains `coming-soon` and checkout is Sandbox-only. |
-| Storefront design | PARTIAL | Sound Case #001 product detail now has launch-quality merchandising, real previews and trust context; shop index and unresolved product guidance remain. |
+| Storefront design | PARTIAL | Sound Case #001 product detail and shop index now have launch-quality merchandising; age/duration are approved provisional facts pending live playtest, while minimum-player and preparation-burden decisions remain. |
 | Builder / preview / print | PARTIAL | Personalization, persistence and printable document exist; customer result UX needs work. |
 | Post-purchase UX | PARTIAL | `/account` now provides localized purchase history, truthful access/payment/receipt states, re-edit/re-print entry and secure original-receipt download; email delivery remains optional/not started. |
 | Commerce Admin | PARTIAL | Strong read-only foundation; receipt/artifact/notification/recovery visibility is missing. |
@@ -219,18 +219,18 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 **Status: PARTIAL**
 
 ### `/shop`
-- [ ] Real product imagery.
-- [ ] Clear product value proposition.
-- [ ] Strong launch-ready card design.
-- [ ] Mobile / RU / EN / HE / RTL pass.
+- [x] Real product imagery.
+- [x] Clear product value proposition.
+- [x] Strong launch-ready card design.
+- [x] Mobile / RU / EN / HE / RTL pass.
 
 ### `/shop/[slug]` Sound Case #001
 - [x] Hero visual.
 - [x] Gallery using real product materials.
 - [x] Clear “what you get”.
-- [ ] Recommended age.
+- [x] Recommended age: provisional `9+` mostly independently / `7+` with an adult host; live playtest validation remains required.
 - [x] Group/participant guidance.
-- [ ] Approximate activity duration.
+- [x] Approximate activity duration: provisional `90–120 minutes`, depending on group size and pace; larger groups may take longer.
 - [x] Languages.
 - [x] Printable nature clearly explained.
 - [x] Personalization explained.
@@ -240,6 +240,12 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 - [x] Seller identity where appropriate.
 - [x] CTA hierarchy.
 - [ ] Remove prototype/coming-soon SEO/copy only when product is actually ready for activation.
+
+### Product-content decisions still open
+- Adult preparation is currently estimated at **60–90 active minutes after printing** for the complete kit (75–84 pieces and five boxes). This remains a provisional setup estimate and product-optimization issue; it is not promoted as a settled storefront/catalog fact until live setup testing determines whether the kit should be simplified.
+- An adult is required for preparation, QR/device assistance and the adult-led Stage 7. `9+` therefore means **mostly independently**, not fully autonomous play.
+- Minimum-player/solo compatibility remains unresolved: Stage 4 requires passing a rhythm to another player. A child plus adult host may prove to be the minimum viable team, but this is not yet an approved product claim.
+- The materials requirements now correctly include glue in RU/EN/HE because the five box-assembly instructions require it.
 
 ### Design requirement
 “Route exists” is not completion. Storefront must be judged as a product a stranger can understand and trust.
@@ -424,8 +430,8 @@ This is a first-class launch requirement, not “later polish”.
 
 | Surface | Current assessment | Completion |
 |---|---|---|
-| Shop index | NEEDS PASS | [ ] |
-| Product detail | NEEDS PRODUCT DECISIONS | [ ] |
+| Shop index | READY — implementation and RU/EN/HE desktop/mobile visual QA complete | [x] |
+| Product detail | IMPLEMENTED — provisional age/duration require live playtest validation | [x] |
 | Auth transition | NEEDS PASS | [ ] |
 | Billing identity | NEEDS PASS | [ ] |
 | Checkout | NEEDS PASS | [ ] |
@@ -585,6 +591,46 @@ Validation:
 - 60 focused product, promo and quest-foundation tests passed; TypeScript and changed-file ESLint passed.
 - Production build, diff check and secret scan passed.
 - Visual QA passed on RU desktop/mobile, HE desktop/mobile and EN desktop: no horizontal overflow, RTL/CTA/gallery correct, and hero/gallery image aspect ratios preserved.
+
+## 2026-10-08 — Sound Case #001 product-content audit
+Phase: Phase 3
+Status: PARTIAL
+Commits:
+- capybara_tales: `74a0b5f` `feat: complete shop merchandising` (approved product facts and materials correction)
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Audited the real eight-stage quest, printable kit, QR/audio/device flow and adult-host responsibilities before setting product guidance.
+- Approved provisional age guidance: `9+` mostly independently; `7+` with an adult host.
+- Approved provisional typical duration: `90–120 minutes`, dependent on group size and pace; larger groups may take longer.
+- Added glue to the RU/EN/HE materials requirements because the physical boxes require it.
+Remaining in this phase:
+- Validate age and duration in a live playtest.
+- Measure the provisional `60–90 minute` adult setup estimate and decide whether to simplify the 75–84-piece, five-box kit.
+- Decide and validate the minimum player count; solo compatibility is not claimed.
+Decisions/blockers:
+- An adult remains required for preparation, QR/device support and adult-led Stage 7; `9+` is not described as fully autonomous.
+Validation:
+- Catalog/detail/storefront tests cover all three localized product facts, glue requirements, absence of solo claims and preservation of coming-soon behavior.
+
+## 2026-10-08 — Shop index merchandising redesign
+Phase: Phase 3
+Status: PARTIAL
+Commits:
+- capybara_tales: `74a0b5f` `feat: complete shop merchandising`
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Replaced the generic prototype catalog with a focused one-product storefront hero and launch-quality featured Sound Case section.
+- Added real Sound Case banner imagery, canonical catalog price, localized provisional age/duration, languages, printable-interactive format and a truthful product-detail CTA.
+- Preserved `coming-soon`, preorder routing, catalog pricing and all payment/activation safeguards.
+- Completed RU/EN/HE and RTL responsive presentation without fake future products or image distortion.
+Remaining in this phase:
+- Live-playtest age/duration, setup burden and minimum-player decisions remain.
+- Coming-soon/activation cleanup remains intentionally deferred to Phase 7.
+Decisions/blockers:
+- The storefront links to product detail rather than bypassing availability, authentication or commerce flow.
+Validation:
+- 60 focused shop/product/quest tests passed; TypeScript, changed-file ESLint, production build, diff check and secret scan passed.
+- Visual QA passed at RU 1440/390, EN 1280, and HE 1440/390: no horizontal overflow or console errors; RTL, CTA hierarchy and responsive image proportions were correct.
 
 ---
 
