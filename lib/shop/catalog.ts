@@ -12,6 +12,17 @@
 import type { Lang } from "@/i18n";
 import type { ShopProduct, ProductCategory } from "./types";
 import { isPublicProduct, isPurchasableProduct, localizedString } from "./types";
+import { requireQuestAssetUrl } from "./questAssets";
+import { SOUND_CASE_001_ASSET_MANIFEST } from "./quests/sound-case-001/assets";
+import { SOUND_CASE_PROMO_MEDIA } from "./soundCasePromoMedia";
+
+const soundCaseAssets = SOUND_CASE_001_ASSET_MANIFEST.assets;
+const soundCasePreviewPages = [
+  requireQuestAssetUrl(soundCaseAssets["stage-1-sound-card-02-sneeze-cat"]),
+  requireQuestAssetUrl(soundCaseAssets["stage-2-vibration-card-en-s"]),
+  requireQuestAssetUrl(soundCaseAssets["stage-7-dune-sliding-experiment"]),
+  requireQuestAssetUrl(soundCaseAssets["finale-collectible-cards"]),
+];
 
 // ---------------------------------------------------------------------------
 // Catalog
@@ -39,9 +50,12 @@ const PRODUCTS: ShopProduct[] = [
     ),
     price: 4900,
     currency: "ILS",
-    heroImage: "",
-    gallery: [],
-    previewPages: [],
+    heroImage: SOUND_CASE_PROMO_MEDIA.banners.horizontal,
+    gallery: [
+      SOUND_CASE_PROMO_MEDIA.banners.square,
+      SOUND_CASE_PROMO_MEDIA.banners.vertical,
+    ],
+    previewPages: soundCasePreviewPages,
     category: "adventures",
     tags: ["personalized", "printable", "sound", "science"],
     languages: ["ru", "en", "he"],
@@ -51,6 +65,11 @@ const PRODUCTS: ShopProduct[] = [
     format: "printable",
     includedItems: [
       localizedString("Персонализированные страницы A4", "Personalized A4 pages", "דפי A4 אישיים"),
+      localizedString("8 этапов приключения", "8 adventure stages", "8 שלבים של הרפתקה"),
+      localizedString("Карточки и улики для печати", "Printable cards and clues", "כרטיסים ורמזים להדפסה"),
+      localizedString("QR-коды к интерактивным заданиям", "QR codes for interactive activities", "קודי QR למשימות אינטראקטיביות"),
+      localizedString("Звуковые мини-игры и эксперименты", "Sound mini-games and experiments", "משחקוני צליל וניסויים"),
+      localizedString("Персональные коллекционные карточки", "Personal collectible cards", "כרטיסי אספנות אישיים"),
     ],
     receipt: {
       title: "Sound Case #001 - LapLapLa",
