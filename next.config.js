@@ -116,7 +116,6 @@ const nextConfig = {
     "/api/webhooks/paypal": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
     "/api/cron/recover-receipts": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
     "/api/cron/recover-receipt-artifacts": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
-    "/api/internal/receipt-pdf-runtime-smoke": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
   },
   poweredByHeader: false,
   allowedDevOrigins,
