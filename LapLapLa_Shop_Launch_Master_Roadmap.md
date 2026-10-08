@@ -36,7 +36,7 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 | Builder / preview / print | PARTIAL | Personalization, persistence and printable document exist; customer result UX needs work. |
 | Post-purchase UX | PARTIAL | `/account` now provides localized purchase history, truthful access/payment/receipt states, re-edit/re-print entry and secure original-receipt download; email delivery remains optional/not started. |
 | Commerce Admin | PARTIAL | Strong read-only foundation; receipt/artifact/notification/recovery visibility is missing. |
-| Refund lifecycle | NOT STARTED / BLOCKED | Review events exist, but refund → entitlement → accounting lifecycle is undefined. |
+| Refund lifecycle | READY FOR TECHNICAL DESIGN | Accountant rules for full/partial refunds and corrective documents are confirmed; technical lifecycle, entitlement behavior and delivery remain unimplemented. |
 | Legal | BLOCKED FOR LAUNCH | Privacy/Terms are not yet suitable for real PayPal digital-product sales. |
 | Production configuration | NOT STARTED | Live PayPal, product activation and controlled real purchase remain. |
 
@@ -166,20 +166,24 @@ without opening Supabase manually.
 
 ---
 
-## PARALLEL DECISION — Accountant: refunds/corrections
+## CONFIRMED ACCOUNTING DECISION — Refunds/corrections
 
-**Status: BLOCKED / NEEDS ACCOUNTANT DECISION**
+**Status: ACCOUNTANT RULES CONFIRMED / READY FOR TECHNICAL DESIGN**
 
-Ask accountant before we reach Live activation. Implementation may happen later while UI work continues.
+Confirmed rules and required invariants:
+- A full refund requires `חשבונית זיכוי` + `קבלה במינוס` for the amount actually refunded.
+- A partial refund uses the same `חשבונית זיכוי` + `קבלה במינוס` model for the amount actually refunded.
+- The two parts may be represented as one document.
+- `חשבונית זיכוי` has its own sequential numbering, which may begin at integer 1. No technical display prefix has been approved yet.
+- The original `קבלה`, its accounting snapshot, amount and PDF remain immutable: they are not rewritten, deleted or regenerated to make the original sale disappear.
+- Immutability of the original accounting document does not prevent a derived operational refund state from being shown beside it.
+- One original receipt may have zero or more append-only refund/corrective documents, supporting one full refund, one partial refund or multiple partial refunds.
+- Every refund/corrective record must explicitly link to the original receipt and original order, and to the refund transaction/provider event where appropriate.
+- Linkage must be navigable in both directions in Commerce: original receipt → related corrective documents, and corrective document → original receipt/order.
+- The linked history must allow the system to derive original paid amount, total refunded amount, remaining/net amount, and no refund / partially refunded / fully refunded state. A standalone `refunded` boolean must not be the source of truth.
+- The corrective/refund document must be delivered to the customer and retained by the business. Delivery method remains a separate implementation decision; receipt email delivery is not implemented by this decision.
 
-Need authoritative answers for:
-- [ ] What accounting document/process is required for a **full refund** after a receipt has already been issued?
-- [ ] What is required for a **partial refund**?
-- [ ] How should cancellation/refund reference the original receipt?
-- [ ] What fields/wording/numbering must the corrective document contain, if one is required?
-- [ ] Does the customer need the corrective document electronically, and what must the business retain?
-
-Do not invent Israeli accounting semantics in code before this answer.
+This section records accounting facts and system invariants only. Final schema, table/column names, constraints, RPCs, PayPal refund workflow, entitlement behavior and numbering display format require a separate technical audit.
 
 ---
 
@@ -282,17 +286,19 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 
 ## PHASE 5 — Refund lifecycle + legal readiness
 
-**Status: BLOCKED / PARTIAL**
+**Status: REFUND READY FOR TECHNICAL DESIGN / LEGAL PARTIAL**
 
 ### Refund technical lifecycle
-After accountant/business decisions:
 - [ ] Define full refund lifecycle.
 - [ ] Define partial refund lifecycle.
 - [ ] Define reversal lifecycle.
 - [ ] Define dispute/chargeback lifecycle.
 - [ ] Define entitlement transition (`active → refunded/revoked/...`).
-- [ ] Preserve original receipt immutably.
-- [ ] Implement append-only corrective accounting model if required.
+- [x] Confirm accounting model and preserve original receipt as an immutable accounting document.
+- [ ] Design and implement linked append-only corrective accounting records without changing the original receipt.
+- [ ] Derive no/partial/full refund and net amount from linked refund operations rather than a standalone boolean.
+- [ ] Preserve bidirectional traceability between original receipt/order and corrective/refund documents.
+- [ ] Deliver the corrective/refund document to the customer and retain the business copy; delivery method remains undecided.
 - [ ] Show refund/correction lifecycle in Commerce.
 - [ ] Show appropriate state to customer.
 
@@ -453,7 +459,7 @@ Do not declare the shop launch-ready until all applicable items are checked.
 - [x] Admin can securely download original and business copy.
 - [x] Stale Takbull placeholder removed.
 - [ ] Refund/cancellation policy approved.
-- [ ] Accounting handling of refund/correction approved by accountant.
+- [x] Accounting handling of full and partial refund/correction approved by accountant.
 - [ ] Refund lifecycle implemented to required launch scope.
 - [ ] Privacy updated for real commerce.
 - [ ] Terms of Sale published.
@@ -541,6 +547,23 @@ Validation:
 - 33 focused customer account, receipt download, access-security, commerce-foundation and billing-identity tests passed.
 - TypeScript, changed-file ESLint, production build, diff check and secret scan passed.
 
+## 2026-10-08 — Accountant-confirmed refund accounting model
+Phase: Phase 5
+Status: READY FOR TECHNICAL DESIGN
+Commits:
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Recorded `חשבונית זיכוי + קבלה במינוס` for both full and partial refunds, with the actual refunded amount; the two parts may be represented as one document.
+- Recorded separate sequential numbering for `חשבונית זיכוי`, starting at 1, without inventing a display prefix.
+- Recorded immutable original receipt/accounting snapshot and append-only linked corrective-document history.
+- Recorded bidirectional original/corrective traceability, derived refund totals/net state, and customer delivery plus business retention requirements.
+Remaining in this phase:
+- Audit existing schema and PayPal event model, then design the technical refund, entitlement, delivery and operational lifecycle.
+Decisions/blockers:
+- Accounting rules are confirmed; implementation details and entitlement/access behavior remain undecided and unimplemented.
+Validation:
+- Documentation-only diff reviewed; no database or production behavior was changed.
+
 ---
 
 # 7. Instructions for every future Codex prompt
@@ -553,7 +576,7 @@ Every launch-related implementation prompt should begin with these requirements:
 4. Do not silently expand scope into later phases.
 5. Do not mark a design surface DONE merely because it functions technically.
 6. Preserve accounting/payment immutability and server-trust boundaries.
-7. Do not invent refund/accounting rules while accountant decisions are unresolved.
+7. Preserve the confirmed refund accounting invariants and do not invent unapproved implementation or legal details.
 8. At task end, update this roadmap:
    - relevant phase status/checklist;
    - Progress log entry;
