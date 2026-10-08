@@ -32,7 +32,7 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 |---|---|---|
 | Backend commerce | DONE / near production-ready | Trusted PayPal reconciliation, atomic paid finalization, entitlement, snapshots, receipt ledger, PDF artifacts and recovery exist. |
 | Customer purchase flow | PARTIAL | Sandbox flow is developed, but product remains `coming-soon` and checkout is Sandbox-only. |
-| Storefront design | MAJORLY UNFINISHED | Routes exist; merchandising, imagery, previews and trust context are incomplete. |
+| Storefront design | PARTIAL | Sound Case #001 product detail now has launch-quality merchandising, real previews and trust context; shop index and unresolved product guidance remain. |
 | Builder / preview / print | PARTIAL | Personalization, persistence and printable document exist; customer result UX needs work. |
 | Post-purchase UX | PARTIAL | `/account` now provides localized purchase history, truthful access/payment/receipt states, re-edit/re-print entry and secure original-receipt download; email delivery remains optional/not started. |
 | Commerce Admin | PARTIAL | Strong read-only foundation; receipt/artifact/notification/recovery visibility is missing. |
@@ -216,7 +216,7 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 
 ## PHASE 3 — Storefront + merchandising design
 
-**Status: MAJORLY UNFINISHED**
+**Status: PARTIAL**
 
 ### `/shop`
 - [ ] Real product imagery.
@@ -225,20 +225,20 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 - [ ] Mobile / RU / EN / HE / RTL pass.
 
 ### `/shop/[slug]` Sound Case #001
-- [ ] Hero visual.
-- [ ] Gallery / real preview pages.
-- [ ] Clear “what you get”.
+- [x] Hero visual.
+- [x] Gallery using real product materials.
+- [x] Clear “what you get”.
 - [ ] Recommended age.
-- [ ] Group/participant guidance.
+- [x] Group/participant guidance.
 - [ ] Approximate activity duration.
-- [ ] Languages.
-- [ ] Printable nature clearly explained.
-- [ ] Personalization explained.
-- [ ] `Buy → personalize → print → play` explanation.
-- [ ] Re-edit/re-print promise explained accurately.
-- [ ] Trust/payment context.
-- [ ] Seller identity where appropriate.
-- [ ] CTA hierarchy.
+- [x] Languages.
+- [x] Printable nature clearly explained.
+- [x] Personalization explained.
+- [x] `Buy → personalize → print → play` explanation.
+- [x] Re-edit/re-print promise explained accurately.
+- [x] Trust/payment context.
+- [x] Seller identity where appropriate.
+- [x] CTA hierarchy.
 - [ ] Remove prototype/coming-soon SEO/copy only when product is actually ready for activation.
 
 ### Design requirement
@@ -425,7 +425,7 @@ This is a first-class launch requirement, not “later polish”.
 | Surface | Current assessment | Completion |
 |---|---|---|
 | Shop index | NEEDS PASS | [ ] |
-| Product detail | MAJORLY UNFINISHED | [ ] |
+| Product detail | NEEDS PRODUCT DECISIONS | [ ] |
 | Auth transition | NEEDS PASS | [ ] |
 | Billing identity | NEEDS PASS | [ ] |
 | Checkout | NEEDS PASS | [ ] |
@@ -563,6 +563,28 @@ Decisions/blockers:
 - Accounting rules are confirmed; implementation details and entitlement/access behavior remain undecided and unimplemented.
 Validation:
 - Documentation-only diff reviewed; no database or production behavior was changed.
+
+## 2026-10-08 — Sound Case #001 product merchandising/detail
+Phase: Phase 3
+Status: PARTIAL
+Commits:
+- capybara_tales: `0f36db579ec78628e6a3ffce7e5179440afa3873` `feat: redesign Sound Case product page`
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Rebuilt `/shop/sound-case-001` as a product-led page with a clear hero, canonical price, coming-soon preorder CTA, included-materials summary, four-step purchase model, personalization/reprint guidance, practical details and trust/seller context.
+- Added an accessible gallery using existing Sound Case banner art and real quest card, vibration-code, singing-dunes and collectible-card assets.
+- Completed localized RU/EN/HE copy, Hebrew RTL behavior and responsive desktop/mobile presentation without changing commerce availability.
+Remaining in this phase:
+- Decide and approve recommended age and approximate activity duration before presenting either as product facts.
+- Redesign `/shop` index and complete the wider storefront/mobile launch pass.
+- Remove coming-soon/prototype activation copy only in the later Production Activation phase.
+Decisions/blockers:
+- Existing code/content does not provide an approved recommended age or catalog duration; neither was invented.
+- Customer delivery remains browser print; the page does not promise a generated quest download artifact.
+Validation:
+- 60 focused product, promo and quest-foundation tests passed; TypeScript and changed-file ESLint passed.
+- Production build, diff check and secret scan passed.
+- Visual QA passed on RU desktop/mobile, HE desktop/mobile and EN desktop: no horizontal overflow, RTL/CTA/gallery correct, and hero/gallery image aspect ratios preserved.
 
 ---
 
