@@ -1433,12 +1433,78 @@
   color: #8a3850;
 }
 
+.customer-account__products .is-pending {
+  background: #fff1ce;
+  color: #76551b;
+}
+
+.customer-account__purchases > li {
+  align-items: stretch;
+}
+
+.customer-account__purchase-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.customer-account__purchase-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin: 1rem 0;
+}
+
+.customer-account__purchase-meta > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.customer-account__purchase-meta dt {
+  color: #817985;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.customer-account__purchase-meta dd {
+  margin: 0;
+  font-weight: 750;
+}
+
+.customer-account__purchase-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.customer-account__reprint-help {
+  max-width: 56ch;
+  color: #655b68;
+  line-height: 1.55;
+}
+
 .customer-account__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
+  align-content: flex-start;
 }
+
+.customer-account__secondary {
+  min-height: 46px;
+  padding: 0.75rem 1.15rem;
+  border: 1px solid #6d486f;
+  border-radius: 999px;
+  background: #fff;
+  color: #6d486f;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.customer-account__secondary:disabled { cursor: wait; opacity: 0.58; }
+.customer-account__download-error { color: #8a3850; font-weight: 700; }
+.customer-account__grants { margin-top: 2rem; }
 
 @media (max-width: 600px) {
   .customer-auth,
@@ -1455,6 +1521,7 @@
 
   .customer-account__actions,
   .customer-account__actions a,
+  .customer-account__actions button,
   .customer-account__primary {
     width: 100%;
     box-sizing: border-box;

@@ -33,6 +33,28 @@ type CustomerCopy = {
   billingSaving: string;
   billingSaved: string;
   verifiedEmail: string;
+  purchaseDate: string;
+  purchaseAmount: string;
+  paymentLabel: string;
+  accessLabel: string;
+  receiptLabel: string;
+  paymentPaid: string;
+  paymentProcessing: string;
+  paymentCancelled: string;
+  paymentFailed: string;
+  accessActive: string;
+  accessUnavailable: string;
+  receiptAvailable: string;
+  receiptPreparing: string;
+  receiptUnavailable: string;
+  downloadReceipt: string;
+  downloadingReceipt: string;
+  receiptDownloadError: string;
+  openEditPrint: string;
+  reprintHelp: string;
+  accessProductsTitle: string;
+  accessWithoutPurchase: string;
+  accessSource: string;
 };
 export const customerCopy: Record<Lang, CustomerCopy> = {
   ru: {
@@ -68,6 +90,12 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     billingSaving: "Сохраняем…",
     billingSaved: "Имя сохранено",
     verifiedEmail: "Подтверждённый email",
+    purchaseDate: "Дата покупки", purchaseAmount: "Сумма", paymentLabel: "Оплата", accessLabel: "Доступ", receiptLabel: "Квитанция",
+    paymentPaid: "Оплачено", paymentProcessing: "Обрабатывается", paymentCancelled: "Отменено", paymentFailed: "Не завершено",
+    accessActive: "Активен", accessUnavailable: "Недоступен", receiptAvailable: "Готова", receiptPreparing: "Готовится", receiptUnavailable: "Не предусмотрена",
+    downloadReceipt: "Скачать квитанцию", downloadingReceipt: "Скачиваем…", receiptDownloadError: "Не удалось скачать квитанцию. Попробуйте снова.",
+    openEditPrint: "Открыть, изменить и распечатать", reprintHelp: "Вы можете в любое время изменить персонализацию и распечатать квест снова — без ограничения количества повторов.",
+    accessProductsTitle: "Другие доступные продукты", accessWithoutPurchase: "Доступ предоставлен без покупки на сайте.", accessSource: "Источник доступа",
   },
   en: {
     signInTitle: "Sign in to LapLapLa",
@@ -102,6 +130,12 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     billingSaving: "Saving…",
     billingSaved: "Name saved",
     verifiedEmail: "Verified email",
+    purchaseDate: "Purchase date", purchaseAmount: "Amount", paymentLabel: "Payment", accessLabel: "Access", receiptLabel: "Receipt",
+    paymentPaid: "Paid", paymentProcessing: "Processing", paymentCancelled: "Cancelled", paymentFailed: "Not completed",
+    accessActive: "Active", accessUnavailable: "Unavailable", receiptAvailable: "Available", receiptPreparing: "Being prepared", receiptUnavailable: "Not applicable",
+    downloadReceipt: "Download receipt", downloadingReceipt: "Downloading…", receiptDownloadError: "The receipt could not be downloaded. Please try again.",
+    openEditPrint: "Open, edit & print again", reprintHelp: "You can return at any time, change the personalization, and print the quest again with no reprint limit.",
+    accessProductsTitle: "Other available products", accessWithoutPurchase: "Access was provided without a website purchase.", accessSource: "Access source",
   },
   he: {
     signInTitle: "כניסה ל-LapLapLa",
@@ -136,5 +170,11 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     billingSaving: "שומרים…",
     billingSaved: "השם נשמר",
     verifiedEmail: "אימייל מאומת",
+    purchaseDate: "תאריך הרכישה", purchaseAmount: "סכום", paymentLabel: "תשלום", accessLabel: "גישה", receiptLabel: "קבלה",
+    paymentPaid: "שולם", paymentProcessing: "בטיפול", paymentCancelled: "בוטל", paymentFailed: "לא הושלם",
+    accessActive: "פעילה", accessUnavailable: "לא זמינה", receiptAvailable: "זמינה", receiptPreparing: "בהכנה", receiptUnavailable: "לא נדרשת",
+    downloadReceipt: "הורדת קבלה", downloadingReceipt: "מורידים…", receiptDownloadError: "לא הצלחנו להוריד את הקבלה. נסו שוב.",
+    openEditPrint: "פתיחה, עריכה והדפסה מחדש", reprintHelp: "אפשר לחזור בכל עת, לשנות את ההתאמה האישית ולהדפיס שוב ללא הגבלת הדפסות חוזרות.",
+    accessProductsTitle: "מוצרים זמינים נוספים", accessWithoutPurchase: "הגישה ניתנה ללא רכישה באתר.", accessSource: "מקור הגישה",
   },
 };

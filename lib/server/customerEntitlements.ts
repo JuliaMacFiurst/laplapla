@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { CustomerProfile, ProductEntitlement } from "@/lib/customer/types";
+import { getCustomerPurchases } from "@/lib/server/customerPurchases";
 
 export async function getCustomerAccountData(accessToken: string, userId: string) {
   const supabase = createServerSupabaseClient({ accessToken });
@@ -23,9 +24,12 @@ export async function getCustomerAccountData(accessToken: string, userId: string
     throw entitlementResult.error;
   }
 
+  const entitlements = (entitlementResult.data ?? []) as ProductEntitlement[];
+  const commerce = await getCustomerPurchases(userId, entitlements);
   return {
     profile: (profileResult.data ?? null) as CustomerProfile | null,
-    entitlements: (entitlementResult.data ?? []) as ProductEntitlement[],
+    entitlements,
+    ...commerce,
   };
 }
 

@@ -1,18 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
 import { useCustomerSession } from "@/hooks/useCustomerSession";
 import { customerCopy } from "@/lib/customer/copy";
-import { resolveEntitledCatalogProducts } from "@/lib/customer/catalog";
 import type { CustomerProfile, ProductEntitlement } from "@/lib/customer/types";
+import type { CustomerAccessGrant, CustomerAccountResponse, CustomerPurchase } from "@/lib/customer/purchases";
+import { getLocalizedShortDescription, getLocalizedTitle, getProductById } from "@/lib/shop/catalog";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import type { CustomerBillingIdentityResponse } from "@/lib/customer/billingIdentity";
 
-type AccountResponse = {
-  profile: CustomerProfile | null;
-  entitlements: ProductEntitlement[];
-};
+type AccountResponse = CustomerAccountResponse & { profile: CustomerProfile | null; entitlements: ProductEntitlement[] };
 
 export default function CustomerAccountPage() {
   const router = useRouter();
@@ -24,11 +22,7 @@ export default function CustomerAccountPage() {
   const [billing, setBilling] = useState<CustomerBillingIdentityResponse | null>(null);
   const [billingName, setBillingName] = useState("");
   const [billingState, setBillingState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const products = useMemo(
-    () => resolveEntitledCatalogProducts(account?.entitlements ?? [], lang),
-    [account?.entitlements, lang],
-  );
-
+  const [receiptDownload, setReceiptDownload] = useState<{ orderId: string | null; error: boolean }>({ orderId: null, error: false });
   useEffect(() => {
     if (auth.status !== "authenticated") {
       setAccount(null);
@@ -81,6 +75,27 @@ export default function CustomerAccountPage() {
       setBilling(next); setBillingName(next.billingName ?? ""); setBillingState("saved");
     } catch { setBillingState("error"); }
   };
+  const downloadReceipt = async (purchase: CustomerPurchase) => {
+    if (auth.status !== "authenticated") return;
+    setReceiptDownload({ orderId: purchase.orderId, error: false });
+    try {
+      const response = await fetch(`/api/customer/purchases/${encodeURIComponent(purchase.orderId)}/receipt`, { headers: { Authorization: `Bearer ${auth.session.access_token}` } });
+      if (!response.ok) throw new Error("receipt_download_failed");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `receipt-${purchase.receipt.displayNumber ?? "purchase"}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setReceiptDownload({ orderId: null, error: false });
+    } catch {
+      setReceiptDownload({ orderId: null, error: true });
+    }
+  };
+  const paymentText = (status: CustomerPurchase["paymentStatus"]) => status === "paid" ? copy.paymentPaid : status === "processing" ? copy.paymentProcessing : status === "cancelled" ? copy.paymentCancelled : copy.paymentFailed;
+  const accessText = (status: CustomerPurchase["accessStatus"]) => status === "active" ? copy.accessActive : copy.accessUnavailable;
+  const receiptText = (status: CustomerPurchase["receipt"]["status"]) => status === "available" ? copy.receiptAvailable : status === "preparing" ? copy.receiptPreparing : copy.receiptUnavailable;
 
   return (
     <>
@@ -148,40 +163,44 @@ export default function CustomerAccountPage() {
                   <button type="button" onClick={() => void router.reload()}>{copy.retry}</button>
                 </div>
               ) : null}
-              {account && products.length === 0 ? (
+              {account && account.purchases.length === 0 && account.accessGrants.length === 0 ? (
                 <p className="customer-account__empty">{copy.emptyPurchases}</p>
               ) : null}
-              {products.length > 0 ? (
-                <ul className="customer-account__products">
-                  {products.map(({ entitlement, product, title, description }) => {
-                    const active = entitlement.status === "active";
+              {account?.purchases.length ? (
+                <ul className="customer-account__products customer-account__purchases">
+                  {account.purchases.map((purchase) => {
+                    const product = getProductById(purchase.productId);
+                    const title = product ? getLocalizedTitle(product, lang) : purchase.productTitle;
+                    const description = product ? getLocalizedShortDescription(product, lang) : "";
+                    const active = purchase.accessStatus === "active";
+                    const createPath = product ? buildLocalizedPublicPath(`/shop/${product.slug}/create`, lang) : null;
                     return (
-                      <li key={entitlement.id}>
-                        <div>
-                          <span className={active ? "is-active" : "is-inactive"}>
-                            {active ? copy.active : copy.unavailable}
-                          </span>
+                      <li key={purchase.orderId}>
+                        <div className="customer-account__purchase-main">
                           <h3>{title}</h3>
-                          <p>{description}</p>
+                          {description ? <p>{description}</p> : null}
+                          <dl className="customer-account__purchase-meta">
+                            <div><dt>{copy.purchaseDate}</dt><dd>{new Intl.DateTimeFormat(lang, { dateStyle: "medium" }).format(new Date(purchase.purchasedAt))}</dd></div>
+                            <div><dt>{copy.purchaseAmount}</dt><dd>{new Intl.NumberFormat(lang, { style: "currency", currency: purchase.currency }).format(purchase.amountMinor / 100)}</dd></div>
+                          </dl>
+                          <div className="customer-account__purchase-statuses">
+                            <span className={purchase.paymentStatus === "paid" ? "is-active" : "is-inactive"}>{copy.paymentLabel}: {paymentText(purchase.paymentStatus)}</span>
+                            <span className={active ? "is-active" : "is-inactive"}>{copy.accessLabel}: {accessText(purchase.accessStatus)}</span>
+                            {purchase.receipt.status !== "not_available" ? <span className={purchase.receipt.status === "available" ? "is-active" : "is-pending"}>{copy.receiptLabel}: {receiptText(purchase.receipt.status)}</span> : null}
+                          </div>
+                          {active ? <p className="customer-account__reprint-help">{copy.reprintHelp}</p> : null}
                         </div>
                         <div className="customer-account__actions">
-                          <Link href={buildLocalizedPublicPath(`/shop/${product.slug}`, lang)}>
-                            {copy.openProduct}
-                          </Link>
-                          {active ? (
-                            <Link
-                              className="customer-account__primary"
-                              href={buildLocalizedPublicPath(`/shop/${product.slug}/create`, lang)}
-                            >
-                              {copy.personalize}
-                            </Link>
-                          ) : null}
+                          {active && createPath ? <Link className="customer-account__primary" href={createPath}>{copy.openEditPrint}</Link> : null}
+                          {purchase.receipt.status === "available" ? <button className="customer-account__secondary" type="button" disabled={receiptDownload.orderId === purchase.orderId} onClick={() => void downloadReceipt(purchase)}>{receiptDownload.orderId === purchase.orderId ? copy.downloadingReceipt : copy.downloadReceipt}</button> : null}
                         </div>
                       </li>
                     );
                   })}
                 </ul>
               ) : null}
+              {receiptDownload.error ? <p className="customer-account__download-error" role="alert">{copy.receiptDownloadError}</p> : null}
+              {account?.accessGrants.length ? <section className="customer-account__grants"><h2>{copy.accessProductsTitle}</h2><ul className="customer-account__products">{account.accessGrants.map((grant: CustomerAccessGrant) => { const product = getProductById(grant.productId); const active = grant.status === "active"; return <li key={grant.entitlementId}><div><span className={active ? "is-active" : "is-inactive"}>{active ? copy.active : copy.unavailable}</span><h3>{product ? getLocalizedTitle(product, lang) : grant.productId}</h3><p>{copy.accessWithoutPurchase}</p><small>{copy.accessSource}: {grant.source}</small></div>{active && product ? <div className="customer-account__actions"><Link className="customer-account__primary" href={buildLocalizedPublicPath(`/shop/${product.slug}/create`, lang)}>{copy.openEditPrint}</Link></div> : null}</li>; })}</ul></section> : null}
             </>
           ) : null}
         </section>
