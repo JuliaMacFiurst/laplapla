@@ -33,7 +33,7 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 | Backend commerce | DONE / near production-ready | Trusted PayPal reconciliation, atomic paid finalization, entitlement, snapshots, receipt ledger, PDF artifacts and recovery exist. |
 | Customer purchase flow | PARTIAL | Sandbox flow is developed, but product remains `coming-soon` and checkout is Sandbox-only. |
 | Storefront design | PARTIAL | Sound Case #001 product detail and shop index now have launch-quality merchandising; age/duration are approved provisional facts pending live playtest, while minimum-player and preparation-burden decisions remain. |
-| Builder / preview / print | PARTIAL | Safe draft/saved progression, customer Ready state and saved-only browser printing exist; full 24-page preview/print guidance and protected-route visual QA remain. |
+| Builder / preview / print | PARTIAL | Canonical 24-page preview, saved-only printing, code-derived print guidance and account Edit/Open & print intents exist; protected-route visual QA and physical printer validation remain. |
 | Post-purchase UX | PARTIAL | `/account` now provides localized purchase history, truthful access/payment/receipt states, re-edit/re-print entry and secure original-receipt download; email delivery remains optional/not started. |
 | Commerce Admin | PARTIAL | Strong read-only foundation; receipt/artifact/notification/recovery visibility is missing. |
 | Refund lifecycle | READY FOR TECHNICAL DESIGN | Accountant rules for full/partial refunds and corrective documents are confirmed; technical lifecycle, entitlement behavior and delivery remain unimplemented. |
@@ -264,22 +264,22 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 - Browser print.
 
 ### Required functional QA
-- [ ] 1 participant.
-- [ ] 8 participants.
-- [ ] Long names.
-- [ ] RU.
-- [ ] EN.
-- [ ] HE.
-- [ ] Hebrew RTL.
-- [ ] Mixed-direction content.
+- [x] 1 participant (technical lead-only document rendering; not a solo-play claim).
+- [x] 8 additional participants / maximum supported team (automated document render).
+- [x] Long valid names (automated 80-character render; protected visual QA remains).
+- [x] RU (automated canonical preview/document render).
+- [x] EN (automated canonical preview/document render).
+- [x] HE (automated canonical preview/document render).
+- [x] Hebrew RTL (automated markup/direction verification; protected visual QA remains).
+- [x] Mixed-direction content (automated document render; protected visual QA remains).
 - [ ] Desktop.
 - [ ] Mobile.
 - [x] Save/error/retry states (automated behavior coverage complete; protected-route device QA remains).
 
 ### Required UX/design
 - [x] Clear `personalize → save → Ready/result → print` progression.
-- [ ] Preview visual hierarchy and scaling pass.
-- [ ] Navigation through preview/result.
+- [ ] Preview visual hierarchy and A4 scaling implemented; protected desktop/mobile visual QA remains before completion.
+- [x] Previous/next/direct-page navigation through all 24 canonical pages.
 - [x] Customer-facing Ready/result screen.
 - [x] Clear re-edit/re-print route within the builder/result flow.
 
@@ -461,9 +461,9 @@ This is a first-class launch requirement, not “later polish”.
 | Checkout | NEEDS PASS | [ ] |
 | Purchase success | NEEDS PASS | [ ] |
 | Quest builder | PHASE 4A IMPLEMENTED / NEEDS PROTECTED-ROUTE VISUAL QA | [ ] |
-| Quest preview | NEEDS PASS | [ ] |
-| Customer result/print | READY SHELL IMPLEMENTED / SLICE 4B PRINT-PREVIEW PASS REMAINS | [ ] |
-| Account | NEEDS PASS | [ ] |
+| Quest preview | CANONICAL 24-PAGE VIEWER IMPLEMENTED / NEEDS PROTECTED VISUAL QA | [ ] |
+| Customer result/print | IMPLEMENTED / NEEDS PHYSICAL PRINTER VALIDATION | [ ] |
+| Account | EDIT / OPEN & PRINT INTENTS IMPLEMENTED / NEEDS PROTECTED VISUAL QA | [ ] |
 | Commerce list | NEEDS PASS | [ ] |
 | Commerce order detail | Operational visibility complete / NEEDS PASS visually | [ ] |
 
@@ -695,6 +695,33 @@ Decisions/blockers:
 Validation:
 - 132 focused builder, personalization, printable-asset, auth, account and shop-foundation tests passed.
 - TypeScript, changed-file ESLint, production build, diff check and added-line secret scan passed.
+
+## 2026-10-09 — Phase 4B preview and print UX
+Phase: Phase 4
+Status: PARTIAL
+Commits:
+- capybara_tales: `dbb1b3c` `feat: add quest preview and print UX`
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Added a customer-facing real-page preview that selects from the same canonical 24-page definitions and uses the same page renderer as `QuestDocument`; only the selected A4 page is mounted in the visible viewer.
+- Added Previous / Next, direct page selection, page indicator, responsive A4-preserving scaling and accessible navigation without exposing `QuestPrintLab`.
+- Derived the print plan from canonical side/pair/duplex metadata: single-sided pages `1, 6, 9, 20–22`; long-edge duplex pages `2–5, 7–8, 10–19, 23–24`.
+- Added localized concise A4/100%, color/background, duplex, cutting and glue guidance with an explicit physical-printer test warning.
+- Preserved saved-snapshot-only printing, asset load/decode blocking, localized failure/retry and added an immediate repeated-print guard.
+- Split purchased-product account actions into `Edit personalization` and `Open & print`; query intent cannot bypass auth, entitlement or the requirement for saved personalization.
+- Automated lead-only, maximum-team, 80-character and mixed Hebrew/Latin/Cyrillic document rendering across RU/EN/HE; no solo-play claim was introduced.
+- Fixed only the approved `/shop` hero regression by widening its text measure and reducing responsive headline scale without changing wording, imagery, CTA, price or availability.
+Remaining in this phase:
+- Perform protected-route RU/EN/HE desktop/mobile visual QA using a legitimate authenticated entitlement; inspect page readability, long names, mixed direction, touch navigation and account intents.
+- Physically test one complete kit: A4 Actual Size, background graphics, every single/duplex range, long-edge orientation, cutting and all five glued boxes.
+- Complete any layout corrections revealed by those two real-world checks; only then mark preview scaling, desktop/mobile and Phase 4 design surfaces complete.
+Decisions/blockers:
+- No safe existing local authenticated entitlement/session fixture was available, so protected visual QA was not fabricated and access controls were not weakened.
+- Browser Print / Save as PDF remains launch v1; no generated quest PDF or quest artifact infrastructure was added.
+Validation:
+- 206 focused preview, document, stage, print-asset, persistence, auth/account and storefront tests passed.
+- TypeScript, changed-file ESLint, production build, diff check and added-line secret scan passed.
+- Public `/shop` hero QA passed in local Chrome at RU/EN/HE 1440, 1280/820 and 390 px with no horizontal overflow, preserved RTL and unchanged product-detail CTA.
 
 ---
 
