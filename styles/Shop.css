@@ -2098,6 +2098,51 @@
   line-height: 1.5;
 }
 
+.quest-builder-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+  width: min(100%, 1200px);
+  margin: 1.5rem auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quest-builder-progress li {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  min-width: 0;
+  padding: .7rem .8rem;
+  border: 1px solid #ded5dd;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .68);
+  color: #746c76;
+  font-size: .88rem;
+  font-weight: 800;
+}
+
+.quest-builder-progress li span {
+  display: grid;
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #eee8ed;
+}
+
+.quest-builder-progress li.is-current,
+.quest-builder-progress li.is-complete,
+.quest-builder-progress li.is-available {
+  border-color: #9bc7bb;
+  color: #315f57;
+}
+
+.quest-builder-progress li.is-current { background: #eef8f4; }
+.quest-builder-progress li.is-current span,
+.quest-builder-progress li.is-complete span { background: #37796e; color: #fff; }
+
 .quest-builder-workspace {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
@@ -2122,6 +2167,47 @@
   gap: 1rem;
   padding: 1.25rem;
 }
+
+.quest-builder-section-heading h2,
+.quest-builder-draft-summary h2 {
+  margin: 0;
+  color: #49374d;
+}
+
+.quest-builder-section-heading p,
+.quest-builder-draft-summary > p {
+  margin: .45rem 0 0;
+  color: #6c646f;
+  line-height: 1.5;
+}
+
+.quest-builder-draft-summary {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid #e2d8e1;
+  border-radius: 22px;
+  background: #fff;
+}
+
+.quest-builder-draft-summary dl,
+.quest-ready__summary dl {
+  display: grid;
+  gap: .75rem;
+  margin: 1.25rem 0 0;
+}
+
+.quest-builder-draft-summary dl div,
+.quest-ready__summary dl div {
+  display: grid;
+  grid-template-columns: minmax(8rem, .7fr) minmax(0, 1.3fr);
+  gap: .8rem;
+  padding-bottom: .7rem;
+  border-bottom: 1px solid #ebe4ea;
+}
+
+.quest-builder-draft-summary dt,
+.quest-ready__summary dt { color: #746c76; font-weight: 750; }
+.quest-builder-draft-summary dd,
+.quest-ready__summary dd { min-width: 0; margin: 0; color: #3d3540; font-weight: 800; overflow-wrap: anywhere; }
 
 .quest-builder-field {
   display: flex;
@@ -2204,6 +2290,112 @@
 .quest-builder-save p[role="alert"] {
   color: #9a3d52;
 }
+
+.quest-builder-save--dirty p { color: #865d25; }
+
+.quest-ready {
+  width: min(100%, 1000px);
+  margin: 1.5rem auto 0;
+  overflow: hidden;
+  border: 1px solid #d8e6e0;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 16px 44px rgba(55, 75, 67, .09);
+}
+
+.quest-ready__hero {
+  padding: clamp(1.5rem, 5vw, 3rem);
+  background: linear-gradient(135deg, #e8f5ef, #faf7fb);
+  text-align: center;
+}
+
+.quest-ready__hero > span {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto .8rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #37796e;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.quest-ready__hero > p:first-of-type {
+  margin: 0 0 .35rem;
+  color: #37796e;
+  font-size: .82rem;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.quest-ready__hero h2 { margin: 0; color: #49374d; font-size: clamp(2rem, 5vw, 3.35rem); }
+.quest-ready__hero > p:last-child { max-width: 58ch; margin: .7rem auto 0; color: #655e68; line-height: 1.55; }
+
+.quest-ready__content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(16rem, .85fr);
+  gap: 1.25rem;
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.quest-ready__summary,
+.quest-ready__print { padding: 1.2rem; border: 1px solid #ebe4ea; border-radius: 16px; }
+.quest-ready__summary h3,
+.quest-ready__print h3 { margin: 0; color: #5d3e60; }
+.quest-ready__summary dd { display: flex; flex-wrap: wrap; gap: .35rem; }
+.quest-ready__summary dd bdi + bdi::before { content: "·"; margin-inline-end: .35rem; color: #9c929e; }
+.quest-ready__print p { color: #6c646f; line-height: 1.55; }
+
+.quest-ready__print > button,
+.quest-ready__print-error button {
+  width: 100%;
+  min-height: 48px;
+  padding: .75rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #5b3a5f;
+  color: #fff;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.quest-ready__print > button:focus-visible,
+.quest-ready__print-error button:focus-visible,
+.quest-ready__actions button:focus-visible,
+.quest-ready__actions a:focus-visible { outline: 3px solid rgba(109, 72, 111, .22); outline-offset: 3px; }
+.quest-ready__print > button:disabled { cursor: wait; opacity: .6; }
+.quest-ready__print-error { margin-top: .8rem; color: #9a3d52; }
+.quest-ready__print-error button { background: #8a3850; }
+
+.quest-ready__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .8rem;
+  padding: 1.1rem clamp(1.25rem, 4vw, 2.25rem) 1.5rem;
+  border-top: 1px solid #ebe4ea;
+}
+
+.quest-ready__actions button,
+.quest-ready__actions a {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: .65rem 1rem;
+  border: 1px solid #6d486f;
+  border-radius: 999px;
+  background: #fff;
+  color: #5d3e60;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.quest-ready__actions p { flex-basis: 100%; margin: .2rem 0 0; color: #746c76; font-size: .88rem; line-height: 1.5; }
 
 .quest-builder-delivery {
   display: grid;
@@ -4400,6 +4592,8 @@
     position: static;
   }
 
+  .quest-ready__content { grid-template-columns: 1fr; }
+
   .quest-print-lab__controls {
     grid-template-columns: 1fr;
   }
@@ -4451,6 +4645,10 @@
     padding: 0.75rem;
   }
 
+  .quest-builder-progress { gap: .35rem; }
+  .quest-builder-progress li { justify-content: center; padding: .6rem .35rem; font-size: .74rem; text-align: center; }
+  .quest-builder-progress li span { flex-basis: 1.45rem; width: 1.45rem; height: 1.45rem; }
+
   .quest-builder-participant {
     grid-template-columns: 1fr;
   }
@@ -4458,6 +4656,12 @@
   .quest-product-preview__map ol {
     grid-template-columns: 1fr;
   }
+
+  .quest-builder-draft-summary dl div,
+  .quest-ready__summary dl div { grid-template-columns: 1fr; gap: .25rem; }
+  .quest-ready__actions { align-items: stretch; flex-direction: column; }
+  .quest-ready__actions button,
+  .quest-ready__actions a { width: 100%; text-align: center; }
 }
 
 /* Stage 02 · Vibrating Cards · compact physical kit */
@@ -5087,9 +5291,11 @@
 
   .top-bar,
   .quest-builder-heading,
+  .quest-builder-progress,
   .quest-builder-workspace,
   .quest-builder-controls,
   .quest-product-preview,
+  .quest-ready,
   .footer-stack,
   .pwa-install-banner,
   .app-layout > button {

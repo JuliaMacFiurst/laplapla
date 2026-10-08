@@ -17,6 +17,7 @@ export function ProtectedQuestBuilder({ productId, interfaceLang }: {
   const auth = useCustomerSession();
   const [access, setAccess] = useState<ProductAccessState>("checking");
   const [initialPersonalization, setInitialPersonalization] = useState<QuestPersonalization | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const copy = customerCopy[interfaceLang];
   const productSlug = getProductById(productId)?.slug ?? productId;
 
@@ -54,7 +55,7 @@ export function ProtectedQuestBuilder({ productId, interfaceLang }: {
       });
 
     return () => controller.abort();
-  }, [auth, productId]);
+  }, [auth, productId, loadAttempt]);
 
   if (auth.status === "authenticated" && access === "granted") {
     const save = async (personalization: QuestPersonalization) => {
@@ -107,9 +108,14 @@ export function ProtectedQuestBuilder({ productId, interfaceLang }: {
         ) : null}
         {isError ? (
           <>
-            <h1>{copy.entitlementRequiredTitle}</h1>
-            <p role="alert">{copy.entitlementRequiredBody}</p>
-            <Link href={productPath}>{copy.backToProduct}</Link>
+            <h1>{dictionaries[interfaceLang].shop.soundCase.builder.loadErrorTitle}</h1>
+            <p role="alert">{dictionaries[interfaceLang].shop.soundCase.builder.loadErrorBody}</p>
+            <button className="customer-account__primary" type="button" onClick={() => {
+              if (auth.status === "error") window.location.reload();
+              else setLoadAttempt((attempt) => attempt + 1);
+            }}>
+              {dictionaries[interfaceLang].shop.soundCase.builder.retryLoad}
+            </button>
           </>
         ) : null}
         {!isAnonymous && !isDenied && !isError ? (

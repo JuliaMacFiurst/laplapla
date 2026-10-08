@@ -226,9 +226,10 @@ describe("Sound Case personalization persistence contract", () => {
       interfaceLang: "en",
       initialPersonalization: personalization,
     }));
-    expect(html).toContain('value="Maya"');
-    expect(html).toContain('value="Noa"');
-    expect(html).toContain('value="Sam"');
+    expect(html).toContain("Your personalized Sound Case is ready");
+    expect(html).toContain("<bdi>Maya</bdi>");
+    expect(html).toContain("<bdi>Noa</bdi>");
+    expect(html).toContain("<bdi>Sam</bdi>");
   });
 
   it.each(["ru", "en", "he"] as const)("has localized save states in %s", (locale) => {

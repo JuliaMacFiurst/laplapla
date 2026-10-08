@@ -2,9 +2,15 @@ import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { QuestBuilder } from "@/components/shop/QuestBuilder";
+import {
+  QuestBuilder,
+  normalizeQuestPersonalization,
+  questPersonalizationsMatch,
+  shouldEnterReadyAfterSave,
+} from "@/components/shop/QuestBuilder";
 import { QuestDocument } from "@/components/shop/QuestDocument";
 import { QuestPreview } from "@/components/shop/QuestPreview";
+import { QuestReadyResult } from "@/components/shop/QuestReadyResult";
 import { dictionaries, type Lang } from "@/i18n";
 import {
   SOUND_CASE_001_DELIVERY_SECTIONS,
@@ -37,7 +43,8 @@ describe("owned Sound Case customer delivery", () => {
     } else {
       expect(html).toContain(printLabel);
     }
-    expect(html).toContain(dictionaries[interfaceLang].shop.soundCase.builder.printHelp);
+    expect(html).toContain("24");
+    expect(html).toContain("PDF");
     if (interfaceLang === "he") expect(html).toContain('dir="rtl"');
   });
 
@@ -54,11 +61,62 @@ describe("owned Sound Case customer delivery", () => {
     expect(catalog).toContain("quest-product-preview__purchase");
   });
 
-  it("feeds the same current unsaved state to preview and the single QuestDocument renderer", () => {
+  it("keeps current draft separate from the saved snapshot used by QuestDocument", () => {
     const source = readFileSync(`${process.cwd()}/components/shop/QuestBuilder.tsx`, "utf8");
-    expect(source).toContain('<QuestPreview personalization={personalization} presentation="owned" />');
-    expect(source).toContain("<QuestDocument personalization={personalization} />");
+    expect(source).toContain("const [draft, setDraft]");
+    expect(source).toContain("const [lastSaved, setLastSaved]");
+    expect(source).toContain("<QuestDocument personalization={lastSaved} />");
+    expect(source).not.toContain("<QuestDocument personalization={draft}");
     expect(source.match(/<QuestDocument/g)).toHaveLength(1);
+  });
+
+  it("does not treat a stale save response as readiness for a newer draft", () => {
+    const source = readFileSync(`${process.cwd()}/components/shop/QuestBuilder.tsx`, "utf8");
+    const snapshotA = { locale: "en" as const, leadName: "Maya", participants: ["Noa"] };
+    const newerDraftB = { ...snapshotA, leadName: "Maya B" };
+    expect(shouldEnterReadyAfterSave(snapshotA, snapshotA)).toBe(true);
+    expect(shouldEnterReadyAfterSave(newerDraftB, snapshotA)).toBe(false);
+    expect(questPersonalizationsMatch(newerDraftB, snapshotA)).toBe(false);
+    expect(source).toContain('current === "saving" ? "saving" : "idle"');
+  });
+
+  it("normalizes blank participant rows consistently without promoting them to saved data", () => {
+    expect(normalizeQuestPersonalization({
+      locale: "he",
+      leadName: "  מאיה ",
+      participants: [" נועה ", "", "   "],
+    })).toEqual({ locale: "he", leadName: "מאיה", participants: ["נועה"] });
+  });
+
+  it("restores a valid saved personalization directly into the Ready result", () => {
+    const html = renderToStaticMarkup(createElement(QuestBuilder, {
+      interfaceLang: "en",
+      initialPersonalization: PERSONALIZATION,
+      onSave: async (value) => value,
+    }));
+    expect(html).toContain("Your personalized Sound Case is ready");
+    expect(html).toContain("24 A4 pages");
+    expect(html).toContain("Print / save PDF");
+    expect(html).toContain("Edit personalization");
+    expect(html).not.toContain("Save &amp; continue");
+  });
+
+  it("starts without a print action until a first personalization is saved", () => {
+    const html = renderToStaticMarkup(createElement(QuestBuilder, {
+      interfaceLang: "en",
+      initialPersonalization: null,
+      onSave: async (value) => value,
+    }));
+    expect(html).toContain("Save &amp; continue");
+    expect(html).toContain("Add the lead participant to continue.");
+    expect(html).not.toContain(">Print / save PDF<");
+  });
+
+  it("protects dirty work on reload and the in-surface account link", () => {
+    const source = readFileSync(`${process.cwd()}/components/shop/QuestBuilder.tsx`, "utf8");
+    expect(source).toContain('window.addEventListener("beforeunload"');
+    expect(source).toContain("window.confirm(text.leaveConfirm)");
+    expect(source).toContain("if (isDirty");
   });
 
   it.each(["ru", "en", "he"] as const)(
@@ -156,10 +214,11 @@ describe("owned Sound Case customer delivery", () => {
   });
 
   it("shows a localized failure state instead of printing an incomplete document", () => {
-    const source = readFileSync(`${process.cwd()}/components/shop/QuestBuilder.tsx`, "utf8");
-    expect(source).toContain('role="alert"');
-    expect(source).toContain("text.printFailed");
-    expect(source).toContain("printPreparedQuestDocument(printHost)");
+    const builderSource = readFileSync(`${process.cwd()}/components/shop/QuestBuilder.tsx`, "utf8");
+    const resultSource = readFileSync(`${process.cwd()}/components/shop/QuestReadyResult.tsx`, "utf8");
+    expect(resultSource).toContain('role="alert"');
+    expect(resultSource).toContain("text.printFailed");
+    expect(builderSource).toContain("printPreparedQuestDocument(printHost)");
   });
 
   it("keeps Print Lab development-only and reuses QuestDocument", () => {
@@ -168,5 +227,35 @@ describe("owned Sound Case customer delivery", () => {
     expect(route).toContain('nodeEnvironment === "development"');
     expect(builder).not.toContain("QuestPrintLab");
     expect(builder).toContain('import { QuestDocument } from "./QuestDocument"');
+  });
+
+  it.each(["ru", "en", "he"] as const)("shows localized Ready facts without stale timing claims in %s", (locale) => {
+    const html = renderToStaticMarkup(createElement(QuestReadyResult, {
+      interfaceLang: locale, personalization: { ...PERSONALIZATION, locale }, printStatus: "idle",
+      onEdit: () => undefined, onPrint: () => undefined, accountPath: "/account",
+    }));
+    expect(dictionaries[locale].shop.soundCase.builder.readyDuration).toContain("90");
+    expect(dictionaries[locale].shop.soundCase.builder.readyDuration).toContain("120");
+    expect(html).toContain("24");
+    expect(html).not.toContain("20–30");
+    expect(html).not.toContain("60–90");
+    if (locale === "he") expect(html).toContain('dir="rtl"');
+  });
+
+  it("keeps preparation un-timed, glue in requirements, and makes no solo claim", () => {
+    for (const locale of ["ru", "en", "he"] as const) {
+      const preview = dictionaries[locale].shop.soundCase.preview;
+      expect(preview.preparationTime).not.toMatch(/20.?30|60.?90/);
+      expect(preview.requirements.join(" ")).toMatch(/клей|glue|דבק/i);
+      expect(JSON.stringify(dictionaries[locale].shop.soundCase.builder)).not.toMatch(/solo|одиноч|לבד/i);
+    }
+  });
+
+  it("keeps temporary access failure distinct and retryable", () => {
+    const source = readFileSync(`${process.cwd()}/components/shop/ProtectedQuestBuilder.tsx`, "utf8");
+    expect(source).toContain("builder.loadErrorTitle");
+    expect(source).toContain("builder.loadErrorBody");
+    expect(source).toContain("builder.retryLoad");
+    expect(source).toContain("setLoadAttempt");
   });
 });
