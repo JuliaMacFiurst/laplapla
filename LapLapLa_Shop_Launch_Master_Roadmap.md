@@ -33,7 +33,7 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 | Backend commerce | DONE / near production-ready | Trusted PayPal reconciliation, atomic paid finalization, entitlement, snapshots, receipt ledger, PDF artifacts and recovery exist. |
 | Customer purchase flow | PARTIAL | Sandbox flow is developed, but product remains `coming-soon` and checkout is Sandbox-only. |
 | Storefront design | PARTIAL | Sound Case #001 product detail and shop index now have launch-quality merchandising; age/duration are approved provisional facts pending live playtest, while minimum-player and preparation-burden decisions remain. |
-| Builder / preview / print | PARTIAL | Personalization, persistence and printable document exist; customer result UX needs work. |
+| Builder / preview / print | PARTIAL | Safe draft/saved progression, customer Ready state and saved-only browser printing exist; full 24-page preview/print guidance and protected-route visual QA remain. |
 | Post-purchase UX | PARTIAL | `/account` now provides localized purchase history, truthful access/payment/receipt states, re-edit/re-print entry and secure original-receipt download; email delivery remains optional/not started. |
 | Commerce Admin | PARTIAL | Strong read-only foundation; receipt/artifact/notification/recovery visibility is missing. |
 | Refund lifecycle | READY FOR TECHNICAL DESIGN | Accountant rules for full/partial refunds and corrective documents are confirmed; technical lifecycle, entitlement behavior and delivery remain unimplemented. |
@@ -274,19 +274,43 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 - [ ] Mixed-direction content.
 - [ ] Desktop.
 - [ ] Mobile.
-- [ ] Save/error/retry states.
+- [x] Save/error/retry states (automated behavior coverage complete; protected-route device QA remains).
 
 ### Required UX/design
-- [ ] Clear `personalize → save → preview → get/print result` progression.
+- [x] Clear `personalize → save → Ready/result → print` progression.
 - [ ] Preview visual hierarchy and scaling pass.
 - [ ] Navigation through preview/result.
-- [ ] Customer-facing result screen.
-- [ ] Clear re-edit/re-print route.
+- [x] Customer-facing Ready/result screen.
+- [x] Clear re-edit/re-print route within the builder/result flow.
 
 ### Decision
-- [ ] Decide whether browser print is sufficient for launch v1 or whether customer quest PDF/download artifact is required.
+- [x] Browser Print / Save as PDF is the launch-v1 delivery. A generated quest PDF artifact remains deferred unless real browser/mobile testing proves browser print inadequate.
 
 `QuestPrintLab` is an internal QA tool unless explicitly redesigned into a customer feature.
+
+---
+
+## PLANNED STOREFRONT/DISCOVERY FOLLOW-UP — Free Svalbard quest
+
+**Status: PLANNED — separate audit and implementation checkpoint after current Phase 4 work, before public launch**
+
+Product direction:
+- The existing Svalbard / Global Seed Vault quest is intended to become a **free interactive discovery product** in LapLapLa Shop.
+- It must not be presented as a fake paid product priced at `0 ₪`.
+- By default it should remain outside order, payment and entitlement infrastructure unless its future audit finds a concrete need for otherwise.
+- Sound Case #001 remains the paid/personalized product; Svalbard is a discovery/onboarding experience.
+
+Required future read-only audit:
+- [ ] Establish the real routes, components and data flow.
+- [ ] Verify RU / EN / HE, mobile and Hebrew RTL behavior.
+- [ ] Determine real age/audience, duration and device requirements from the existing quest.
+- [ ] Confirm whether it is fully public and requires no auth, entitlement or payment.
+- [ ] Identify real assets suitable for storefront merchandising.
+- [ ] Review start and completion UX.
+- [ ] Review the current ending around the approximately two-minute YouTube cartoon without assuming the film itself should be replaced.
+- [ ] Decide whether completion should provide a natural `completed quest → discover more LapLapLa experiences → /shop` path.
+
+Only after that audit should a separate implementation checkpoint add Svalbard to `/shop`. This planned follow-up must not interrupt Phase 4.
 
 ---
 
@@ -436,9 +460,9 @@ This is a first-class launch requirement, not “later polish”.
 | Billing identity | NEEDS PASS | [ ] |
 | Checkout | NEEDS PASS | [ ] |
 | Purchase success | NEEDS PASS | [ ] |
-| Quest builder | NEEDS PASS | [ ] |
+| Quest builder | PHASE 4A IMPLEMENTED / NEEDS PROTECTED-ROUTE VISUAL QA | [ ] |
 | Quest preview | NEEDS PASS | [ ] |
-| Customer result/print | MAJORLY UNFINISHED | [ ] |
+| Customer result/print | READY SHELL IMPLEMENTED / SLICE 4B PRINT-PREVIEW PASS REMAINS | [ ] |
 | Account | NEEDS PASS | [ ] |
 | Commerce list | NEEDS PASS | [ ] |
 | Commerce order detail | Operational visibility complete / NEEDS PASS visually | [ ] |
@@ -631,6 +655,46 @@ Decisions/blockers:
 Validation:
 - 60 focused shop/product/quest tests passed; TypeScript, changed-file ESLint, production build, diff check and secret scan passed.
 - Visual QA passed at RU 1440/390, EN 1280, and HE 1440/390: no horizontal overflow or console errors; RTL, CTA hierarchy and responsive image proportions were correct.
+
+## 2026-10-09 — Plan free Svalbard discovery quest
+Phase: Planned storefront/discovery follow-up
+Status: NOT STARTED
+Commits:
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Recorded the product direction for the existing Svalbard / Global Seed Vault quest as a free discovery/onboarding experience rather than a `0 ₪` paid product.
+- Scheduled a separate read-only audit and implementation checkpoint after current Phase 4 work and before public launch.
+Remaining in this phase:
+- Audit routes/data flow, localization, mobile/RTL, product facts, public access, storefront assets and start/completion UX.
+- Decide the completion path around the existing approximately two-minute YouTube cartoon and only then add Svalbard to `/shop`.
+Decisions/blockers:
+- No Svalbard implementation or catalog/storefront change belongs to Phase 4A.
+Validation:
+- Planning entry only; no Svalbard code was inspected or changed.
+
+## 2026-10-09 — Phase 4A safe builder progression
+Phase: Phase 4
+Status: PARTIAL
+Commits:
+- capybara_tales: `9f5be6a` `feat: improve quest builder progression`
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Fixed the edit-during-save race by separating the current draft from the last server-saved snapshot; a stale response cannot overwrite newer typing or unlock Ready for unsaved work.
+- Added explicit Saved / Unsaved changes / Saving / Save failed states, retry without draft loss, dirty-page unload protection and a confirmation on the in-surface account link.
+- Added localized `Personalize → Ready → Print` progression and a customer-facing Ready result shell; restored valid personalization opens Ready with an explicit Edit action.
+- Enforced saved-only printing while preserving image load/decode checks and localized print retry behavior.
+- Replaced stale `60–90 minute` play and `20–30 minute` preparation claims: Ready now shows the approved provisional `90–120 minute` play duration, while preparation remains untimed in customer UI.
+- Distinguished temporary personalization/access loading failures from sign-in-required and no-entitlement states.
+- Confirmed browser Print / Save as PDF as launch-v1 quest delivery; no generated quest artifact pipeline was added.
+Remaining in this phase:
+- Slice 4B: real 24-page preview hierarchy/scaling/navigation, detailed physically validated print guidance, responsive RU/EN/HE/RTL visual QA with legitimate protected access, long-name and participant-boundary visual QA, and account `Edit` versus `Open & print` refinement.
+- Live product playtest still owns solo/minimum-player and preparation-burden decisions.
+Decisions/blockers:
+- `QuestPrintLab` remains development-only and is not exposed to customers.
+- Protected builder/result visual QA was not fabricated because no legitimate local/test authenticated entitlement was available in this checkpoint.
+Validation:
+- 132 focused builder, personalization, printable-asset, auth, account and shop-foundation tests passed.
+- TypeScript, changed-file ESLint, production build, diff check and added-line secret scan passed.
 
 ---
 
