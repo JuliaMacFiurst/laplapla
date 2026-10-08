@@ -34,7 +34,7 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 | Customer purchase flow | PARTIAL | Sandbox flow is developed, but product remains `coming-soon` and checkout is Sandbox-only. |
 | Storefront design | MAJORLY UNFINISHED | Routes exist; merchandising, imagery, previews and trust context are incomplete. |
 | Builder / preview / print | PARTIAL | Personalization, persistence and printable document exist; customer result UX needs work. |
-| Post-purchase UX | MAJORLY UNFINISHED | `/account` exposes entitlement but not a complete purchase/receipt/re-download experience. |
+| Post-purchase UX | PARTIAL | `/account` now provides localized purchase history, truthful access/payment/receipt states, re-edit/re-print entry and secure original-receipt download; email delivery remains optional/not started. |
 | Commerce Admin | PARTIAL | Strong read-only foundation; receipt/artifact/notification/recovery visibility is missing. |
 | Refund lifecycle | NOT STARTED / BLOCKED | Review events exist, but refund → entitlement → accounting lifecycle is undefined. |
 | Legal | BLOCKED FOR LAUNCH | Privacy/Terms are not yet suitable for real PayPal digital-product sales. |
@@ -185,7 +185,7 @@ Do not invent Israeli accounting semantics in code before this answer.
 
 ## PHASE 2 — Customer post-purchase area + receipt access
 
-**Status: PARTIAL / NOT STARTED**
+**Status: PARTIAL**
 
 ### Already exists
 - `/account`.
@@ -195,15 +195,15 @@ Do not invent Israeli accounting semantics in code before this answer.
 - Saved personalization can be reopened.
 
 ### Required
-- [ ] Turn account into understandable **My purchases** experience.
-- [ ] Show Sound Case #001 purchase/order information.
-- [ ] Show useful purchase status/date/amount where appropriate.
-- [ ] Clear actions: open/edit, print/re-download.
-- [ ] Customer can securely access/download receipt original (`מקור`).
-- [ ] Define/display receipt delivery state where useful.
+- [x] Turn account into understandable **My purchases** experience.
+- [x] Show Sound Case #001 purchase/order information.
+- [x] Show useful purchase status/date/amount where appropriate.
+- [x] Clear actions: open/edit, print/re-download.
+- [x] Customer can securely access/download receipt original (`מקור`).
+- [x] Define/display receipt delivery state where useful.
 - [ ] Decide whether launch v1 also sends receipt by email or whether secure account download is the initial delivery channel.
-- [ ] Explain that purchased quest can be edited and printed again.
-- [ ] Mobile + RU/EN/HE + RTL UX pass.
+- [x] Explain that purchased quest can be edited and printed again.
+- [x] Implement responsive RU/EN/HE + RTL account experience; final device-level launch QA remains in the global launch checklist.
 
 ### Important distinction
 Receipt PDF access and quest result access are different products/artifacts. Do not conflate them.
@@ -427,7 +427,7 @@ This is a first-class launch requirement, not “later polish”.
 | Quest builder | NEEDS PASS | [ ] |
 | Quest preview | NEEDS PASS | [ ] |
 | Customer result/print | MAJORLY UNFINISHED | [ ] |
-| Account | MAJORLY UNFINISHED | [ ] |
+| Account | NEEDS PASS | [ ] |
 | Commerce list | NEEDS PASS | [ ] |
 | Commerce order detail | Operational visibility complete / NEEDS PASS visually | [ ] |
 
@@ -446,9 +446,9 @@ Do not declare the shop launch-ready until all applicable items are checked.
 - [ ] Mobile verified across shop, checkout, builder, preview/result and account.
 - [ ] Long names and participant boundary cases verified.
 - [ ] Loading/error/retry/empty/success states are understandable.
-- [ ] Account provides a real My purchases experience.
-- [ ] Customer can return, edit and re-print the purchased quest.
-- [ ] Customer can securely obtain receipt original.
+- [x] Account provides a real My purchases experience.
+- [x] Customer can return, edit and re-print the purchased quest.
+- [x] Customer can securely obtain receipt original.
 - [x] Commerce admin exposes payment, entitlement, receipt, both artifacts, notification and operational problems.
 - [x] Admin can securely download original and business copy.
 - [x] Stale Takbull placeholder removed.
@@ -519,6 +519,27 @@ Decisions/blockers:
 Validation:
 - 20 focused Commerce/admin-auth/download tests passed; changed-file ESLint, diff check and secret scan passed.
 - Next production build and repository-wide TypeScript remain blocked by pre-existing broken imports in unrelated `scripts/tmp/*`; no Commerce type/build error remained before that blocker.
+
+## 2026-10-08 — Customer purchase history and receipt access
+Phase: Phase 2
+Status: PARTIAL
+Commits:
+- capybara_tales: `0fab3787f4a49d6ac5d4a31a3aa577dc0e83ecca` `feat: add customer purchase history`
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Reworked `/account` into a localized RU/EN/HE My purchases experience with truthful payment, access and receipt states.
+- Added server-owned purchase aggregation without inventing orders for promo/gift entitlements.
+- Added secure authenticated download of the customer `original` receipt PDF; the business `copy` remains inaccessible to customers.
+- Added clear return/edit/re-print guidance and responsive RTL-aware account presentation.
+Remaining in this phase:
+- Decide whether receipt email delivery is required for launch v1 or remains an optional later enhancement.
+- Complete final device/browser visual QA together with the launch-wide mobile and RTL pass.
+Decisions/blockers:
+- Receipt PDF access and quest editing/printing remain separate customer artifacts and flows.
+- Legacy, Sandbox and Unknown orders do not gain fabricated receipt availability.
+Validation:
+- 33 focused customer account, receipt download, access-security, commerce-foundation and billing-identity tests passed.
+- TypeScript, changed-file ESLint, production build, diff check and secret scan passed.
 
 ---
 
