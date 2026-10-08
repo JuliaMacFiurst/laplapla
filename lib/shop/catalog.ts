@@ -59,9 +59,17 @@ const PRODUCTS: ShopProduct[] = [
     category: "adventures",
     tags: ["personalized", "printable", "sound", "science"],
     languages: ["ru", "en", "he"],
-    recommendedAge: null,
+    recommendedAge: localizedString(
+      "9+ — в основном самостоятельно; 7+ — с ведущим-взрослым.",
+      "Ages 9+ mostly independently; ages 7+ with an adult host.",
+      "מגיל 9 — באופן עצמאי ברובו; מגיל 7 — בליווי מבוגר או מבוגרת שמנחים את המשחק.",
+    ),
     audience: localizedString("Для семьи и друзей", "For family and friends", "למשפחה ולחברים"),
-    duration: null,
+    duration: localizedString(
+      "Около 90–120 минут, в зависимости от размера и темпа группы.",
+      "About 90–120 minutes, depending on group size and pace.",
+      "כ־90–120 דקות, בהתאם לגודל הקבוצה ולקצב שלה.",
+    ),
     format: "printable",
     includedItems: [
       localizedString("Персонализированные страницы A4", "Personalized A4 pages", "דפי A4 אישיים"),

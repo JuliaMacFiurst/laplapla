@@ -104,7 +104,7 @@ export interface ShopProduct {
    * Suggested audience descriptor. Free-form, e.g. "16+", "family",
    * "adults". Not an age-gate — purely informational.
    */
-  recommendedAge: string | null;
+  recommendedAge: LocalizedString | null;
 
   /** Human-readable audience label, e.g. "For families", "Solo evening". */
   audience: LocalizedString | null;

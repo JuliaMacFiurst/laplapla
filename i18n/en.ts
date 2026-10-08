@@ -1262,6 +1262,7 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
           "A standard color printer",
           "A4 paper",
           "Scissors",
+          "Glue for assembling the card boxes",
           "A phone or tablet with internet access",
           "A team of investigators",
         ],

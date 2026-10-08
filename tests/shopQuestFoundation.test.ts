@@ -918,7 +918,7 @@ describe("Sound Case localization and print boundaries", () => {
     expect(soundCase.title).toBeTruthy();
     expect(soundCase.preview.includedItems).toHaveLength(7);
     expect(soundCase.preview.howItWorksSteps).toHaveLength(4);
-    expect(soundCase.preview.requirements).toHaveLength(5);
+    expect(soundCase.preview.requirements).toHaveLength(6);
     expect(soundCase.preview.adventureStages).toHaveLength(8);
     expect(soundCase.preview.buyAction).toBeTruthy();
     expect(soundCase.caseCover.dossierStatuses).toHaveLength(3);

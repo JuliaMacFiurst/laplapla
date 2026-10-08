@@ -101,7 +101,11 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
 
       <section className="sound-case-product__details sound-case-product__section" aria-labelledby="sound-case-details-title">
         <h2 id="sound-case-details-title">{detail.detailsTitle}</h2>
-        <dl>{detail.details.map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}</dl>
+        <dl>
+          {product.recommendedAge ? <div><dt>{detail.ageLabel}</dt><dd>{product.recommendedAge[lang]}</dd></div> : null}
+          {product.duration ? <div><dt>{detail.durationLabel}</dt><dd>{product.duration[lang]}</dd></div> : null}
+          {detail.details.map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
+        </dl>
       </section>
 
       <section className="sound-case-product__trust sound-case-product__section" aria-labelledby="sound-case-trust-title">

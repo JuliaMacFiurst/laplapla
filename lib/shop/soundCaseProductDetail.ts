@@ -19,6 +19,8 @@ type ProductDetailCopy = {
   reuseTitle: string;
   reuseBody: string;
   detailsTitle: string;
+  ageLabel: string;
+  durationLabel: string;
   details: Array<{ label: string; value: string }>;
   trustTitle: string;
   trustItems: string[];
@@ -61,6 +63,8 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     reuseTitle: "Можно вернуться и распечатать снова",
     reuseBody: "Персонализация сохраняется в аккаунте. После покупки можно снова открыть квест, изменить имена и повторно подготовить материалы к печати.",
     detailsTitle: "Практические детали",
+    ageLabel: "Возраст",
+    durationLabel: "Продолжительность",
     details: [
       { label: "Формат", value: "24 печатные страницы A4 + интерактивные этапы по QR-кодам" },
       { label: "Языки", value: "Русский · English · עברית" },
@@ -110,6 +114,8 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     reuseTitle: "Come back and print again",
     reuseBody: "Personalization is saved to your account. After purchase, you can reopen the quest, change names, and prepare the materials for printing again.",
     detailsTitle: "Practical details",
+    ageLabel: "Age",
+    durationLabel: "Duration",
     details: [
       { label: "Format", value: "24 printable A4 pages + QR-linked interactive stages" },
       { label: "Languages", value: "Русский · English · עברית" },
@@ -159,6 +165,8 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     reuseTitle: "אפשר לחזור ולהדפיס שוב",
     reuseBody: "ההתאמה האישית נשמרת בחשבון. לאחר הרכישה אפשר לפתוח שוב את המשימה, לשנות שמות ולהכין מחדש את החומרים להדפסה.",
     detailsTitle: "פרטים שימושיים",
+    ageLabel: "גיל",
+    durationLabel: "משך המשחק",
     details: [
       { label: "פורמט", value: "24 עמודי A4 להדפסה + שלבים אינטראקטיביים המקושרים בקודי QR" },
       { label: "שפות", value: "Русский · English · עברית" },

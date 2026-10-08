@@ -54,7 +54,11 @@ describe("Sound Case product merchandising detail", () => {
     expect(html).toContain("Come back and print again");
     expect(html).toContain("saved to your account");
     expect(html).toContain("browser");
-    expect(html).not.toMatch(/recommended age|years old|minutes|hours/i);
+    expect(html).toContain(product.recommendedAge?.en ?? "missing age");
+    expect(html).toContain(product.duration?.en ?? "missing duration");
+    expect(html).toContain("mostly independently");
+    expect(html).not.toMatch(/\b1[–-]9 players\b|solo/i);
+    expect(html).not.toContain("60–90 minutes after printing");
   });
 
   it("renders real catalog preview media with accessible gallery controls", () => {
