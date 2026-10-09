@@ -47,9 +47,14 @@ function StatDots({ value }: { value: number }) {
 function InvestigatorCardFront({ card, heroUrl, locale }: { card: SoundCase001CollectibleCard; heroUrl: string; locale: Lang }) {
   const t = SOUND_CASE_001_COLLECTIBLE_COPY[locale];
   const title = t.titles[card.titleIndex];
+  const heroStyle = {
+    backgroundImage: `linear-gradient(180deg, rgba(3,31,44,.32) 0%, transparent 22%, transparent 52%, rgba(3,24,32,.12) 62%, rgba(3,24,32,.94) 100%), url("${heroUrl}")`,
+    backgroundPosition: `center, ${card.art.objectPosition}`,
+  } satisfies CSSProperties;
   return <article className="investigator-card investigator-card--front" lang={locale} dir={locale === "he" ? "rtl" : "ltr"} data-collectible-card="front" data-art-id={card.art.id} data-title-id={`T${String(card.titleIndex + 1).padStart(2, "0")}`} data-variant-code={card.variantCode}>
-    <section className="investigator-card__hero">
-      <img src={heroUrl} alt="" style={{ objectPosition: card.art.objectPosition } as CSSProperties}/>
+    <section className="investigator-card__hero" style={heroStyle}>
+      <img className="investigator-card__hero-preload" src={heroUrl} alt="" aria-hidden="true"/>
+      <img className="investigator-card__hero-print" src={card.art.printAssetPath} alt="" aria-hidden="true"/>
       <div className="investigator-card__case-tag" dir="ltr"><b>SOUND CASE</b><strong>#001</strong><Wave/></div>
       <img className="investigator-card__logo" src="/laplapla-logo-letters.webp" alt="LapLapLa"/>
       <span className="investigator-card__case-name">{t.caseName}</span>

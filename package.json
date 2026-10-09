@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:print-pdf": "node scripts/verifySoundCasePrintPdf.cjs",
     "test:analytics-sql": "bash scripts/testAnalyticsMigration.sh",
     "test:commerce-sql": "bash scripts/testCommerceOrderMigration.sh",
     "receipt:pdf-spike": "tsx scripts/renderReceiptPdfSpike.ts",

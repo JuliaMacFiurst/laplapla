@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import type { CSSProperties, ReactNode } from "react";
 import type { Lang } from "@/i18n";
 import { dictionaries } from "@/i18n";
@@ -34,7 +35,6 @@ function RhythmSequence({ rhythm, gestureUrls, labels }: {
     <div className="quest-stage-4-rhythm" dir="ltr" data-rhythm-order={rhythm.join(",")}>
       {rhythm.map((gesture, index) => (
         <span className={`quest-stage-4-rhythm__gesture quest-stage-4-rhythm__gesture--${gesture}`} key={`${gesture}-${index}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={gestureUrls[gesture]} alt={labels[gesture]} data-asset-id={GESTURE_ASSET_IDS[gesture]} />
         </span>
       ))}
@@ -76,7 +76,7 @@ function Stage4RulesCard({ locale, gestureUrls, side }: { locale: Lang; gestureU
     <h2>{text.legendTitle}</h2>
     <div className="quest-stage-4-rules-card__legend" dir="ltr">
       {(Object.keys(gestureUrls) as RhythmGesture[]).map((gesture) => <figure key={gesture}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img src={gestureUrls[gesture]} alt="" /><figcaption dir={direction}>{text.gestureLabels[gesture]}</figcaption>
+        <img src={gestureUrls[gesture]} alt="" /><figcaption dir={direction}>{text.gestureLabels[gesture]}</figcaption>
       </figure>)}
     </div>
     <p className="quest-stage-4-rules-card__snap">{text.snapAlternative}</p>
@@ -106,7 +106,7 @@ function Stage4CardFace({ card, locale, gestureUrls }: {
       <RhythmSequence rhythm={rhythm} gestureUrls={gestureUrls} labels={text.gestureLabels} />
       {card.level.level === 6 && card.kind === "secret" && <span className="quest-stage-4-card__parrot-mode"><bdi dir="ltr">PARROT MODE</bdi></span>}
       {qr && <div className="quest-stage-4-card__qr" data-qr-destination={qrDestination} dir={locale === "he" ? "rtl" : "ltr"}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img src={qr} alt={text.scanQrLabel} /><span>{text.scanQrLabel}</span>
+        <img src={qr} alt={text.scanQrLabel} /><span>{text.scanQrLabel}</span>
       </div>}
     </article>
   );
@@ -117,8 +117,14 @@ function Stage4CardBack({ card, locale }: { card: ReturnType<typeof getStage4She
   const levelNumber = formatStage4Level(card.level.level);
   return (
     <article className={`quest-stage-4-card quest-stage-4-card--back quest-stage-4-card--${card.kind}`} style={{ "--stage-4-level-color": card.level.color } as CSSProperties} dir={locale === "he" ? "rtl" : "ltr"}>
-      <span className="quest-stage-4-card__back-pattern" aria-hidden="true" />
-      {/* eslint-disable-next-line @next/next/no-img-element */}<img className="quest-stage-4-card__logo" src="/laplapla-logo.webp" alt="LapLapLa" />
+      <svg className="quest-stage-4-card__back-pattern" viewBox="0 0 88 56" preserveAspectRatio="none" aria-hidden="true">
+        <g fill="none" stroke="#243a46" strokeWidth="0.5">
+          {[3.45, 10.45, 17.45, 24.45, 31.45, 38.45, 45.45, 52.45, 59.45, 66.45, 73.45, 80.45].map((radius) => (
+            <circle cx="13.2" cy="28" r={radius} key={radius} />
+          ))}
+        </g>
+      </svg>
+      <img className="quest-stage-4-card__logo" src="/laplapla-logo.webp" alt="LapLapLa" />
       <bdi className="quest-stage-4-card__back-kind" dir="ltr">{card.kind === "secret" ? "SECRET BEAT" : "ANSWER CARDS"}</bdi>
       <strong>{text.levelLabel}</strong><bdi className="quest-stage-4-card__number" dir="ltr">{levelNumber}</bdi>
       {card.kind === "secret" ? <div className="quest-stage-4-card__viewing"><svg className="quest-stage-4-card__eye" viewBox="0 0 48 28" aria-hidden="true"><path d="M2 14C8 5 15 2 24 2s16 3 22 12c-6 9-13 12-22 12S8 23 2 14Z" /><circle cx="24" cy="14" r="6" /></svg><bdi dir="ltr">5 SEC</bdi><p>{text.secretBackInstruction}</p></div> : <div className="quest-stage-4-card__answer-mark" aria-hidden="true"><i /><i /><i /><i /><i /></div>}
@@ -160,11 +166,10 @@ function Stage4BoxDieline({ locale, gestureUrls }: { locale: Lang; gestureUrls: 
     </svg>
     <section className="quest-stage-4-box-panel quest-stage-4-box-panel--front" dir={direction}>
       <div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img className="quest-stage-4-box-panel__logo" src="/laplapla-logo.webp" alt="LapLapLa" />
+        <img className="quest-stage-4-box-panel__logo" src="/laplapla-logo.webp" alt="LapLapLa" />
         <bdi dir="ltr">LAP LAP LA ADVENTURES · SOUND CASE #001</bdi>
         <h2>{text.title}</h2>
         <div className="quest-stage-4-box-panel__gestures" dir="ltr">{(["clap", "snap", "knee-pat", "pause"] as RhythmGesture[]).map((gesture) => (
-          // eslint-disable-next-line @next/next/no-img-element
           <img key={gesture} src={gestureUrls[gesture]} alt="" />
         ))}</div>
         <strong>{text.boxLab}</strong>

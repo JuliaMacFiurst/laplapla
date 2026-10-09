@@ -1,4 +1,6 @@
 import { createElement } from "react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { QuestDocument } from "@/components/shop/QuestDocument";
@@ -22,6 +24,7 @@ import {
 } from "@/lib/shop/quests/sound-case-001/brokenRhythm";
 
 describe("Sound Case #001 Stage 04", () => {
+  const root = path.resolve(process.cwd());
   it("defines 6 secret cards and exactly 18 unambiguous answers", () => {
     expect(SOUND_CASE_001_STAGE_4_LEVELS).toHaveLength(6);
     expect(STAGE_4_CARD_OBJECTS.filter((card) => card.kind === "secret")).toHaveLength(6);
@@ -77,6 +80,9 @@ describe("Sound Case #001 Stage 04", () => {
     expect(html.match(/data-duplex-side=/g)).toHaveLength(8);
     expect(html).toContain(`data-cut-width-mm="${STAGE_4_CARD_SIZE_MM.width}"`);
     expect(html).toContain(`data-cut-height-mm="${STAGE_4_CARD_SIZE_MM.height}"`);
+    expect(html.match(/class="quest-stage-4-card__back-pattern"/g)).toHaveLength(24);
+    expect(html).toContain('viewBox="0 0 88 56"');
+    expect(html).not.toContain("repeating-radial-gradient");
   });
 
   it("derives a practical box for 25 cards with five millimetres clearance on every axis", () => {
@@ -111,6 +117,15 @@ describe("Sound Case #001 Stage 04", () => {
     const html = renderToStaticMarkup(createElement(QuestDocument, { personalization: { locale: "he", leadName: "מאיה", participants: [] }, pages: getSoundCase001Stage4Pages("he") }));
     expect(html).toContain('class="quest-stage-4-rhythm" dir="ltr"');
     expect(html).toContain('data-rhythm-order="clap,clap,snap,pause,knee-pat,snap,clap"');
+  });
+
+  it("uses a local SVG coordinate system for every card back instead of a PDF tiling gradient", () => {
+    const component = readFileSync(`${root}/components/shop/Stage4PrintablePages.tsx`, "utf8");
+    const css = readFileSync(`${root}/styles/Shop.css`, "utf8");
+    expect(component).toContain('className="quest-stage-4-card__back-pattern" viewBox="0 0 88 56"');
+    expect(component).toContain('<circle cx="13.2" cy="28"');
+    expect(component).not.toMatch(/<defs|clipPath|mask id=|filter id=/);
+    expect(css).not.toContain("repeating-radial-gradient(circle at 15% 50%");
   });
 
   it("uses personalization when present and a safe generic fallback", () => {

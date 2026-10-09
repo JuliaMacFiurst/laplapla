@@ -86,6 +86,27 @@ Sandbox и Live используют разные credentials и разные we
 - проверка server-side интеграций: `Supabase`, `GIPHY`, `Pexels`, `Google TTS`
 - проверка env: приватные ключи не должны попадать в клиентский bundle
 
+### Проверка печатного PDF Sound Case #001
+
+После `npm run build` запустите production-сервер командой `npm run start`, затем в другом терминале выполните:
+
+```bash
+npm run test:print-pdf
+```
+
+Проверка обязательна при изменении печатных React-компонентов, `styles/*.css`, генераторов и конфигурации PDF, шрифтов, изображений/SVG Sound Case #001, зависимостей, тестов или эталонов. Она создаёт PDF для RU/EN/HE, независимо рендерит контрольные страницы через Poppler, а на macOS также через Quartz, и проверяет визуальные эталоны, физические размеры, границы карточек, перекрытие текста, RTL, отсутствие больших soft mask и локальность декоративных узоров.
+
+Эталоны обновляются только после ручного одобрения нового дизайна:
+
+```bash
+UPDATE_SNAPSHOTS=1 npm run test:print-pdf
+git diff -- tests/fixtures/sound-case-001-print
+```
+
+Не используйте для печати полноразмерные полупрозрачные CSS-градиенты, `filter`, `mix-blend-mode` или повторяемые gradients: PDF-просмотрщики могут по-разному интерпретировать compositing и начало координат pattern. Для сложного затемнения используйте непрозрачный предварительно сведённый растр, оставляя текст векторным; для повторяемого декора — локальный SVG без общих `defs`/ID.
+
+Для диагностики сравните файлы из `tmp/pdfs/sound-case-001-regression/`: PDF Chromium, PNG Poppler, PNG Quartz и `*-diff.png`. На macOS откройте итоговый `output/pdf/sound-case-001-full-ru.pdf` в Preview и проверьте страницы 11, 13, 15 и 23 при масштабе 100%. Не считайте Linux-проверку подтверждением Quartz: в CI для него предусмотрен отдельный обязательный macOS-job.
+
 ## Monitoring
 
 - План безопасного rollout `Sentry` для этого репозитория описан в [docs/sentry-rollout.md](/Users/julia_mac/AI-Workspace/dev/capybara_tales/docs/sentry-rollout.md).

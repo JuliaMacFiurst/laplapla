@@ -112,6 +112,7 @@ describe("Sound Case #001 collectible investigator cards", () => {
     expect(SOUND_CASE_001_COLLECTIBLE_HEROES).toHaveLength(12);
     for (const hero of SOUND_CASE_001_COLLECTIBLE_HEROES) {
       expect(hero.objectPosition).toMatch(/^\d+% \d+%$/);
+      expect(hero.printAssetPath).toMatch(/^\/quests\/sound-case-001\/collectible-cards\/print-heroes\/a\d{2}\.jpg$/);
       const source = SOUND_CASE_001_ASSET_MANIFEST.assets[hero.assetId].source;
       expect(source.status).toBe("external");
       if (source.status === "external") expect(source.url).toMatch(new RegExp(`^${SOUND_CASE_001_COLLECTIBLE_ASSET_BASE_URL}/.+\\.webp$`));
@@ -138,5 +139,19 @@ describe("Sound Case #001 collectible investigator cards", () => {
     expect(component).not.toContain("investigator-card-back__categories");
     expect(component).not.toContain("investigator-card-back__note");
     expect(component).not.toContain("recipientLabel");
+  });
+
+  it("keeps the printable identity in stable flow and uses an opaque precomposited print hero", () => {
+    const css = readFileSync(`${root}/styles/Shop.css`, "utf8");
+    const component = readFileSync(`${root}/components/shop/SoundCaseCollectibleCardsPage.tsx`, "utf8");
+    expect(component).toContain('backgroundImage: `linear-gradient(180deg');
+    expect(component).toContain('<section className="investigator-card__hero" style={heroStyle}>');
+    expect(component).toContain('className="investigator-card__hero-print" src={card.art.printAssetPath}');
+    expect(css).toContain(".investigator-card__hero { background-image: none !important; }");
+    expect(css).not.toContain(".investigator-card__hero::before");
+    expect(css).toMatch(/\.investigator-card__identity \{[^}]*display: grid;[^}]*gap: 1\.1mm;/);
+    expect(css).toMatch(/\.investigator-card__name \{[^}]*var\(--font-nunito/);
+    expect(css).toMatch(/\.investigator-card__title \{[^}]*overflow-wrap: anywhere;/);
+    expect(css).not.toMatch(/\.investigator-card__identity \{[^}]*text-shadow:/);
   });
 });

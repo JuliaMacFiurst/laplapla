@@ -87,9 +87,9 @@
 }
 
 .investigator-card--front { display: grid; grid-template-rows: 64.5mm 15.5mm 7mm; }
-.investigator-card__hero { position: relative; overflow: hidden; background: #1784a8; border-bottom: .55mm solid #e9aa32; }
-.investigator-card__hero > img:first-of-type { display: block; width: 100%; height: 100%; object-fit: cover; }
-.investigator-card__hero::before { content: ""; position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg,rgba(3,31,44,.32) 0,transparent 22%,transparent 52%,rgba(3,24,32,.12) 62%,rgba(3,24,32,.94) 100%); pointer-events: none; }
+.investigator-card__hero { position: relative; overflow: hidden; background-color: #1784a8; background-repeat: no-repeat; background-size: cover; border-bottom: .55mm solid #e9aa32; }
+.investigator-card__hero-preload { position: absolute; width: 1px; height: 1px; visibility: hidden; pointer-events: none; }
+.investigator-card__hero-print { display: none; position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; }
 .investigator-card__hero::after { content: ""; position: absolute; z-index: 2; inset: .8mm; border: .22mm solid rgba(255,232,181,.62); border-radius: 1.8mm; pointer-events: none; }
 .investigator-card__case-tag { position: absolute; z-index: 3; inset: 2mm auto auto 2mm; width: 12mm; padding: 1mm 1.1mm .7mm; transform: rotate(-2deg); border: .25mm solid rgba(255,231,174,.85); background: rgba(7,39,50,.88); color: #ffe1a0; box-shadow: 0 .8mm 1.8mm rgba(0,0,0,.28); font-size: 1.55mm; line-height: 1; text-align: start; }
 .investigator-card__case-tag b { display: block; letter-spacing: .08em; white-space: nowrap; }
@@ -97,11 +97,11 @@
 .investigator-card__case-tag .investigator-card__wave { display: block; width: 9.7mm; height: 2.2mm; margin-top: .5mm; }
 .investigator-card__logo { position: absolute; z-index: 3; inset: 1.8mm 2.2mm auto auto; width: 15.5mm; height: 8mm; object-fit: contain; filter: drop-shadow(0 .5mm .7mm rgba(255,255,255,.9)); }
 .investigator-card__case-name { position: absolute; z-index: 3; inset: 10mm 2.3mm auto auto; max-width: 25mm; padding: .55mm 1mm; border: .2mm solid rgba(255,224,156,.5); background: rgba(7,39,50,.72); color: #ffe5a9; font-size: 1.55mm; font-weight: 1000; letter-spacing: .08em; line-height: 1; text-align: end; }
-.investigator-card__identity { position: absolute; z-index: 3; inset: auto 3mm 2.6mm 3mm; padding-inline-end: 11mm; color: #fff; text-align: start; text-shadow: 0 .4mm 1.2mm #031922, 0 0 2mm rgba(3,25,34,.9); }
-.investigator-card__name { display: block; font-family: var(--font-heading, "Nunito", sans-serif); font-size: 6.8mm; font-weight: 1000; letter-spacing: -.035em; line-height: .88; overflow-wrap: anywhere; text-wrap: balance; }
-.investigator-card__name--long { font-size: 5.45mm; line-height: .92; }
-.investigator-card__name--xl { font-size: 4.25mm; line-height: .96; }
-.investigator-card__title { display: block; max-width: 43mm; margin-top: 1.1mm; color: #ffd77d; font-size: 2.6mm; font-weight: 1000; letter-spacing: .025em; line-height: .95; text-wrap: balance; }
+.investigator-card__identity { position: absolute; z-index: 3; inset: auto 3mm 2.6mm 3mm; display: grid; grid-template-columns: minmax(0,1fr); gap: 1.1mm; max-height: 35mm; padding-inline-end: 11mm; color: #fff; text-align: start; }
+.investigator-card__name { display: block; max-width: 43mm; margin: 0; padding: 0; font-family: var(--font-nunito, "Nunito", system-ui, sans-serif); font-size: 6.8mm; font-weight: 1000; letter-spacing: -.035em; line-height: .95; overflow-wrap: anywhere; text-shadow: 0 .35mm 0 #031922; }
+.investigator-card__name--long { font-size: 5.45mm; line-height: .98; }
+.investigator-card__name--xl { font-size: 4.25mm; line-height: 1; }
+.investigator-card__title { display: block; width: fit-content; max-width: 43mm; margin: 0; padding: 0; color: #ffd77d; font-size: 2.6mm; font-weight: 1000; letter-spacing: .025em; line-height: 1.05; overflow-wrap: anywhere; text-shadow: 0 .22mm 0 #031922; }
 .investigator-card[lang="he"] .investigator-card__title { font-size: 2.85mm; }
 .investigator-card__stamp { position: absolute; z-index: 4; inset: auto 2.8mm 3mm auto; display: grid; width: 7.8mm; height: 7.8mm; place-content: center; justify-items: center; transform: rotate(-9deg); border: .38mm solid #f15b3d; border-radius: 50%; background: rgba(7,36,43,.58); color: rgba(255,128,102,.9); text-align: center; text-transform: uppercase; box-shadow: inset 0 0 0 .3mm rgba(241,91,61,.35); }
 .investigator-card__stamp svg { width: 2.6mm; height: 2.6mm; }
@@ -159,6 +159,8 @@
 
 @media print {
   .collectible-card-sheet, .collectible-card-cut-area, .investigator-card { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .investigator-card__hero { background-image: none !important; }
+  .investigator-card__hero-print { display: block; }
 }
 
 .ShopComingSoon-header {
@@ -5561,7 +5563,7 @@
 .quest-stage-4-card__qr img { display: block; width: 20.5mm; height: 20.5mm; }
 .quest-stage-4-card--back { align-items: center; justify-content: center; padding: 3mm; background: color-mix(in srgb, var(--stage-4-level-color) 26%, white); text-align: center; }
 .quest-stage-4-card--back::after { content: ""; position: absolute; inset: 4mm; border: .8mm solid rgba(255,255,255,.78); border-radius: 2mm; box-shadow: 0 0 0 .35mm rgba(31,52,64,.35); }
-.quest-stage-4-card__back-pattern { position: absolute; inset: 0; opacity: .16; background: repeating-radial-gradient(circle at 15% 50%, transparent 0 3mm, #243a46 3.2mm 3.7mm, transparent 4mm 7mm); }
+.quest-stage-4-card__back-pattern { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .16; }
 .quest-stage-4-card__logo { position: absolute; z-index: 2; top: 50%; left: 15%; width: 18mm; height: 18mm; object-fit: contain; opacity: .62; filter: saturate(.72) contrast(.92); transform: translate(-50%, -50%); }
 .quest-stage-4-card__back-kind { position: relative; z-index: 3; color: #263842; font-size: 10pt; font-weight: 950; letter-spacing: .08em; }
 .quest-stage-4-card--back > strong { position: relative; z-index: 3; margin-top: 1mm; font-size: 8pt; }

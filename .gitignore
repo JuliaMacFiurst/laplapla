@@ -58,6 +58,8 @@ supabase-*.sql
 backups/
 
 artifacts/
+/tmp/pdfs/
+/output/pdf/sound-case-001-full-ru.pdf
 
 # Local physical-map analysis inputs and re-creatable outputs
 /generated/physic-map-source-snapshot.svg

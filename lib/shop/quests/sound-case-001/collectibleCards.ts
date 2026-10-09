@@ -14,21 +14,22 @@ export type SoundCase001CollectibleHero = {
   id: `A${string}`;
   assetId: SoundCase001CollectibleAssetId;
   objectPosition: string;
+  printAssetPath: string;
 };
 
 export const SOUND_CASE_001_COLLECTIBLE_HEROES = [
-  { id: "A01", assetId: "collectible-hero-01-sand-burping-bottle", objectPosition: "50% 46%" },
-  { id: "A02", assetId: "collectible-hero-02-grandpa-midnight-fridge", objectPosition: "50% 42%" },
-  { id: "A03", assetId: "collectible-hero-03-parrot-seismologist", objectPosition: "50% 42%" },
-  { id: "A04", assetId: "collectible-hero-04-parrot-sand-studio", objectPosition: "50% 45%" },
-  { id: "A05", assetId: "collectible-hero-05-capybara-expedition-shorts", objectPosition: "50% 42%" },
-  { id: "A06", assetId: "collectible-hero-06-singing-sand-man", objectPosition: "50% 38%" },
-  { id: "A07", assetId: "collectible-hero-07-chicken-vs-booming-dune", objectPosition: "50% 45%" },
-  { id: "A08", assetId: "collectible-hero-08-meditating-fox-dune", objectPosition: "50% 42%" },
-  { id: "A09", assetId: "collectible-hero-09-capybara-desert-trombone", objectPosition: "50% 43%" },
-  { id: "A10", assetId: "collectible-hero-10-elephant-china-shop", objectPosition: "50% 45%" },
-  { id: "A11", assetId: "collectible-hero-11-sand-grain-orchestra", objectPosition: "50% 46%" },
-  { id: "A12", assetId: "collectible-hero-12-dune-recording-session", objectPosition: "50% 43%" },
+  { id: "A01", assetId: "collectible-hero-01-sand-burping-bottle", objectPosition: "50% 46%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a01.jpg" },
+  { id: "A02", assetId: "collectible-hero-02-grandpa-midnight-fridge", objectPosition: "50% 42%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a02.jpg" },
+  { id: "A03", assetId: "collectible-hero-03-parrot-seismologist", objectPosition: "50% 42%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a03.jpg" },
+  { id: "A04", assetId: "collectible-hero-04-parrot-sand-studio", objectPosition: "50% 45%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a04.jpg" },
+  { id: "A05", assetId: "collectible-hero-05-capybara-expedition-shorts", objectPosition: "50% 42%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a05.jpg" },
+  { id: "A06", assetId: "collectible-hero-06-singing-sand-man", objectPosition: "50% 38%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a06.jpg" },
+  { id: "A07", assetId: "collectible-hero-07-chicken-vs-booming-dune", objectPosition: "50% 45%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a07.jpg" },
+  { id: "A08", assetId: "collectible-hero-08-meditating-fox-dune", objectPosition: "50% 42%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a08.jpg" },
+  { id: "A09", assetId: "collectible-hero-09-capybara-desert-trombone", objectPosition: "50% 43%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a09.jpg" },
+  { id: "A10", assetId: "collectible-hero-10-elephant-china-shop", objectPosition: "50% 45%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a10.jpg" },
+  { id: "A11", assetId: "collectible-hero-11-sand-grain-orchestra", objectPosition: "50% 46%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a11.jpg" },
+  { id: "A12", assetId: "collectible-hero-12-dune-recording-session", objectPosition: "50% 43%", printAssetPath: "/quests/sound-case-001/collectible-cards/print-heroes/a12.jpg" },
 ] as const satisfies readonly SoundCase001CollectibleHero[];
 
 export type SoundCase001CollectibleCard = {
