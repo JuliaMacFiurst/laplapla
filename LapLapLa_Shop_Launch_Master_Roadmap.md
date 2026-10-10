@@ -771,6 +771,17 @@ Validation:
 - 1,123 Vitest tests, TypeScript, changed-file ESLint and production build passed.
 - Local production-browser QA passed for RU/EN/HE at 1440×900 and 390×844: correct RTL, no horizontal overflow, 48 px mobile CTA, and direct locale-correct quest navigation with no console errors.
 
+## 2026-10-10 — Shop local route recovery after Svalbard catalog update
+Phase: Planned storefront/discovery follow-up
+Status: RECOVERED — no application routing regression confirmed
+Completed:
+- Reproduced the local failure on the existing long-running `next dev` process and traced it to a corrupted Turbopack task database in `.next/dev`; its development pages manifest was empty.
+- Preserved the Svalbard discovery card and all Sound Case route, authentication and entitlement behavior; no routing or commerce source code required a change.
+- Recovered the development server from a fresh generated cache and added focused coverage for RU / EN / HE shop, Sound Case product and protected create route resolution.
+Validation:
+- Fresh development routing returns `200` for the shop index, Sound Case product and Sound Case create route in RU / EN / HE; the saved-language redirect `/shop → /en/shop` terminates at `200` as designed.
+- The existing production build served the same route matrix with `200`, confirming that the failure was limited to the stale development process/cache.
+
 ---
 
 # 7. Instructions for every future Codex prompt
