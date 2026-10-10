@@ -145,7 +145,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
     <iframe
       className="quest-video"
       src="https://www.youtube.com/embed/5NhIRwCq428?autoplay=1&mute=1&loop=1&playlist=5NhIRwCq428&controls=0&modestbranding=1&playsinline=1&enablejsapi=1"
-      title="Spitsbergen Flight"
+      title={t.day4StarsNav.videoTitle}
       allow="autoplay; encrypted-media; fullscreen"
       allowFullScreen
     />

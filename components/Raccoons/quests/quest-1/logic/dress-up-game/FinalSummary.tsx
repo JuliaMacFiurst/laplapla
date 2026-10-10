@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { CharacterResult, DressedItem } from "@/types/types";
+import { useQuest1I18n } from "../../i18n";
 
 export default function FinalSummary({
   results,
@@ -10,6 +11,7 @@ export default function FinalSummary({
   results: CharacterResult[];
   onRestart: () => void;
 }) {
+  const { t } = useQuest1I18n();
   return (
     <div className="final-summary-stage">
       {/* HEADER: общий счёт */}
@@ -67,7 +69,7 @@ export default function FinalSummary({
 
       {/* РЕСТАРТ */}
       <button className="final-summary-restart-btn" onClick={onRestart}>
-        Играть ещё раз
+        {t.day5Heat.playAgain}
       </button>
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
 import { sanitizeSvg } from "@/lib/security/sanitize";
 import { LapLapLaSpinner } from "@/components/LoadingSpinner";
+import { useQuest1I18n } from "../i18n";
 
 const DEFAULT_VIEW_BOX = { width: 2000, height: 856 };
 const MIN_ZOOM = 1;
@@ -106,6 +107,7 @@ export default function MobileSvgDrawMap({
   onPointerUp,
   onRouteHitIdsChange,
 }: MobileSvgDrawMapProps) {
+  const { t } = useQuest1I18n();
   const surfaceRef = useRef<HTMLDivElement>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const routePathRef = useRef<SVGPathElement>(null);
@@ -368,13 +370,13 @@ export default function MobileSvgDrawMap({
 
       {enablePanZoom ? (
         <div className="quest-mobile-svg-map-zoom-controls" onPointerDown={(event) => event.stopPropagation()}>
-          <button type="button" onClick={() => setZoomLevel(zoom + 0.4)} aria-label="Zoom in">
+          <button type="button" onClick={() => setZoomLevel(zoom + 0.4)} aria-label={t.mapUi.zoomIn}>
             +
           </button>
-          <button type="button" onClick={() => setZoomLevel(zoom - 0.4)} aria-label="Zoom out">
+          <button type="button" onClick={() => setZoomLevel(zoom - 0.4)} aria-label={t.mapUi.zoomOut}>
             -
           </button>
-          <button type="button" onClick={resetZoom} aria-label="Reset zoom">
+          <button type="button" onClick={resetZoom} aria-label={t.mapUi.resetZoom}>
             1x
           </button>
         </div>

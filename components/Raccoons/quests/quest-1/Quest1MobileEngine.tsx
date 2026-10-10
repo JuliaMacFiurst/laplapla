@@ -366,12 +366,12 @@ function getMobileLoganName(lang: string) {
 
 function getCountryLabel(id: string, lang: "ru" | "en" | "he") {
   const entry = (countryNames as Record<string, Partial<Record<"ru" | "en" | "he", string>>>)[id.toLowerCase()];
-  return entry?.[lang] || entry?.ru || id;
+  return entry?.[lang] || id;
 }
 
 function getSeaLabel(id: string, lang: "ru" | "en" | "he") {
   const entry = (seaNames as Record<string, Partial<Record<"ru" | "en" | "he", string>>>)[id];
-  return entry?.[lang] || entry?.ru || id;
+  return entry?.[lang] || id;
 }
 
 function isSeaHit(hit: MobileSvgMapHit | null) {
@@ -660,7 +660,7 @@ function Day3FlightMobile({ go }: MobilePageProps) {
               routePoints={routePoints}
               startPoint={startPoint}
               targetPoint={targetPoint}
-              targetLabel="Svalbard"
+              targetLabel={t.mapUi.svalbard}
               onPointerDown={setHomePoint}
               onRouteHitIdsChange={updateFlightFeedback}
               ignoredHitIds={MOBILE_MAP_BAD_IDS}
@@ -851,7 +851,7 @@ function Day3SailMobile({ go }: MobilePageProps) {
               routePoints={routePoints}
               startPoint={startPoint}
               targetPoint={targetPoint}
-              targetLabel="Svalbard"
+              targetLabel={t.mapUi.svalbard}
               onPointerDown={startRoute}
               onPointerMove={drawRoute}
               onPointerUp={stopRoute}
@@ -1045,7 +1045,7 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
       <div className="quest-mobile-youtube">
         <iframe
           src="https://www.youtube.com/embed/5NhIRwCq428?autoplay=1&mute=1&loop=1&playlist=5NhIRwCq428&controls=0&modestbranding=1&playsinline=1&enablejsapi=1"
-          title="Spitsbergen Flight"
+          title={t.day4StarsNav.videoTitle}
           allow="autoplay; encrypted-media; fullscreen"
           allowFullScreen
         />

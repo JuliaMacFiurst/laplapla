@@ -1,4 +1,5 @@
 "use client";
+import { useQuest1I18n } from "../../i18n";
 
 interface RunResultsOverlayProps {
   stars: number;
@@ -13,26 +14,28 @@ export default function RunResultsOverlay({
   onRetry,
   onExit,
 }: RunResultsOverlayProps) {
+  const { t } = useQuest1I18n();
+  const copy = t.day5Garage.run;
   return (
     <div className="dog-sled-results-overlay">
       <div className="dog-sled-results-card">
-        <h2>Результат</h2>
+        <h2>{copy.result}</h2>
 
         <div className="dog-sled-results-row">
-          <span>⭐ </span>
+          <span>⭐ {copy.stars}</span>
           <strong>{stars}</strong>
         </div>
 
         <div className="dog-sled-results-row">
-          <span>💥 Аварии</span>
+          <span>💥 {copy.crashes}</span>
           <strong>{crashes}</strong>
         </div>
 
         <div className="dog-sled-results-actions">
-          <button onClick={onRetry}>Ещё раз</button>
+          <button onClick={onRetry}>{copy.retry}</button>
           {onExit && (
             <button className="ghost" onClick={onExit}>
-              ← Назад
+              ← {copy.back}
             </button>
           )}
         </div>

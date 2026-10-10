@@ -4,12 +4,14 @@ interface FinishLineProps {
   finishX: number;
   scrollX: number;
   stageWidth: number;
+  label: string;
 }
 
 export default function FinishLine({
   finishX,
   scrollX,
   stageWidth,
+  label,
 }: FinishLineProps) {
   const left = finishX - scrollX;
 
@@ -23,7 +25,7 @@ export default function FinishLine({
     >
       <div className="dog-sled-finish-pole left" />
       <div className="dog-sled-finish-banner">
-        <span>ФИНИШ</span>
+        <span>{label}</span>
       </div>
       <div className="dog-sled-finish-pole right" />
     </div>

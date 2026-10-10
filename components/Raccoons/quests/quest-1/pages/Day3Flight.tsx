@@ -22,7 +22,7 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   // --- перевод ID страны в русское название ---
   const getCountryLabel = useCallback((id: string): string => {
     const entry = (countryNames as Record<string, any>)[id];
-    return entry?.[lang] || entry?.ru || id;
+    return entry?.[lang] || id;
   }, [lang]);
 
   // --- слушатель для текстов от initRouteLogic ---

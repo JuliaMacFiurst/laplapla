@@ -98,6 +98,12 @@ export type Quest1Dictionary = {
     backButton: string;
     loadingCharacters: string;
     characterCounter: string;
+    startGame: string;
+    restartGame: string;
+    nextCharacter: string;
+    playAgain: string;
+    scoreboardAlt: string;
+    clothesBeltAlt: string;
   };
   day5Garage: {
     title: string;
@@ -108,6 +114,17 @@ export type Quest1Dictionary = {
     warningBack: string;
     warningRisk: string;
     backButton: string;
+    run: {
+      start: string;
+      stop: string;
+      back: string;
+      controls: string;
+      finish: string;
+      result: string;
+      stars: string;
+      crashes: string;
+      retry: string;
+    };
     stats: {
       lowRisk: string;
       highRisk: string;
@@ -130,6 +147,8 @@ export type Quest1Dictionary = {
     subtitle: string;
     backButton: string;
     scoreLabel: string;
+    laneLabel: string;
+    backpackControls: string;
     gameStart: {
       title: string;
       caption: string;
@@ -140,6 +159,12 @@ export type Quest1Dictionary = {
       backpackCaption: string;
       restartButton: string;
     };
+  };
+  mapUi: {
+    svalbard: string;
+    zoomIn: string;
+    zoomOut: string;
+    resetZoom: string;
   };
   day6: {
     title: string;
@@ -166,6 +191,6 @@ export function useQuest1I18n() {
   const lang = getCurrentLang(router) as Lang;
   return {
     lang,
-    t: quest1Dictionaries[lang] ?? quest1Dictionaries.ru,
+    t: quest1Dictionaries[lang],
   };
 }

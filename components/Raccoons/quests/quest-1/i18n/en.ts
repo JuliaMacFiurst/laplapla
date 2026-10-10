@@ -187,6 +187,12 @@ export const en: Quest1Dictionary = {
     backButton: "Back to the research station",
     loadingCharacters: "Loading characters…",
     characterCounter: "Character {current} of {total}",
+    startGame: "Start game",
+    restartGame: "Start over",
+    nextCharacter: "Next character",
+    playAgain: "Play again",
+    scoreboardAlt: "Scoreboard",
+    clothesBeltAlt: "Clothing conveyor belt",
   },
   day5Garage: {
     title: "Garage",
@@ -198,6 +204,11 @@ export const en: Quest1Dictionary = {
     warningBack: "🔧 Return to preparation",
     warningRisk: "⚠️ Take the risk and ride",
     backButton: "Back to the research station",
+    run: {
+      start: "Start run", stop: "Stop", back: "Back",
+      controls: "Sled controls", finish: "FINISH",
+      result: "Result", stars: "Stars", crashes: "Crashes", retry: "Try again",
+    },
     stats: {
       lowRisk: "Low risk",
       highRisk: "High risk",
@@ -244,6 +255,8 @@ export const en: Quest1Dictionary = {
     subtitle: "Here we will test tools and prepare an explorer's kit.",
     backButton: "Back to the research station",
     scoreLabel: "Score",
+    laneLabel: "Lane {number}",
+    backpackControls: "Backpack controls",
     gameStart: {
       title: "Laboratory mini-game",
       caption: "Collect only the items that are useful for a polar expedition!",
@@ -254,6 +267,9 @@ export const en: Quest1Dictionary = {
       backpackCaption: "You are taking these items with you on the polar expedition:",
       restartButton: "Play again",
     },
+  },
+  mapUi: {
+    svalbard: "Svalbard", zoomIn: "Zoom in", zoomOut: "Zoom out", resetZoom: "Reset zoom",
   },
   day6: {
     title: "Expedition",

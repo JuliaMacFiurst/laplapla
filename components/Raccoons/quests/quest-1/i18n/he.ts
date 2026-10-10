@@ -187,6 +187,12 @@ export const he: Quest1Dictionary = {
     backButton: "חזרה לתחנה המחקרית",
     loadingCharacters: "טוען דמויות…",
     characterCounter: "דמות {current} מתוך {total}",
+    startGame: "להתחיל במשחק",
+    restartGame: "להתחיל מחדש",
+    nextCharacter: "לדמות הבאה",
+    playAgain: "לשחק שוב",
+    scoreboardAlt: "לוח ניקוד",
+    clothesBeltAlt: "מסוע בגדים",
   },
   day5Garage: {
     title: "מוסך",
@@ -198,6 +204,11 @@ export const he: Quest1Dictionary = {
     warningBack: "🔧 לחזור להכנות",
     warningRisk: "⚠️ לקחת סיכון ולצאת",
     backButton: "חזרה לתחנה המחקרית",
+    run: {
+      start: "להתחיל במרוץ", stop: "עצירה", back: "חזרה",
+      controls: "שליטה במזחלת", finish: "סיום",
+      result: "תוצאה", stars: "כוכבים", crashes: "תאונות", retry: "לנסות שוב",
+    },
     stats: {
       lowRisk: "סיכון נמוך",
       highRisk: "סיכון גבוה",
@@ -244,6 +255,8 @@ export const he: Quest1Dictionary = {
     subtitle: "כאן נבדוק כלים ונכין ערכת חוקר.",
     backButton: "חזרה לתחנה המחקרית",
     scoreLabel: "ניקוד",
+    laneLabel: "מסלול {number}",
+    backpackControls: "שליטה בתרמיל",
     gameStart: {
       title: "מיני-משחק המעבדה",
       caption: "אספו רק את הפריטים שיהיו שימושיים במשלחת קוטבית!",
@@ -254,6 +267,9 @@ export const he: Quest1Dictionary = {
       backpackCaption: "אלה הפריטים שאת לוקחת איתך למשלחת הקוטבית:",
       restartButton: "לשחק שוב",
     },
+  },
+  mapUi: {
+    svalbard: "סבאלברד", zoomIn: "הגדלה", zoomOut: "הקטנה", resetZoom: "איפוס תצוגה",
   },
   day6: {
     title: "משלחת",

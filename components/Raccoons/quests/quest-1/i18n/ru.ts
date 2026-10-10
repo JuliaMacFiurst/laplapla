@@ -203,6 +203,12 @@ export const ru: Quest1Dictionary = {
     backButton: "Назад на научную станцию",
     loadingCharacters: "Загрузка персонажей…",
     characterCounter: "{current} персонаж из {total}",
+    startGame: "Начать игру",
+    restartGame: "Начать заново",
+    nextCharacter: "Следующий персонаж",
+    playAgain: "Играть ещё раз",
+    scoreboardAlt: "Табло счёта",
+    clothesBeltAlt: "Лента с одеждой",
   },
   day5Garage: {
     title: "Гараж",
@@ -215,6 +221,11 @@ export const ru: Quest1Dictionary = {
     warningBack: "🔧 Вернуться к подготовке",
     warningRisk: "⚠️ Рискнуть и поехать",
     backButton: "Назад на научную станцию",
+    run: {
+      start: "Начать заезд", stop: "Стоп", back: "Назад",
+      controls: "Управление упряжкой", finish: "ФИНИШ",
+      result: "Результат", stars: "Звёзды", crashes: "Аварии", retry: "Ещё раз",
+    },
     stats: {
       lowRisk: "Низкий риск",
       highRisk: "Высокий риск",
@@ -262,6 +273,8 @@ export const ru: Quest1Dictionary = {
       "Здесь мы будем тестировать инструменты и готовить набор исследователя.",
     backButton: "Назад на научную станцию",
     scoreLabel: "Счёт",
+    laneLabel: "Дорожка {number}",
+    backpackControls: "Управление рюкзаком",
     gameStart: {
       title: "Лабораторная мини-игра",
       caption: "Соберите только предметы, полезные в полярной экспедиции!",
@@ -272,6 +285,9 @@ export const ru: Quest1Dictionary = {
       backpackCaption: "Ты берёшь с собой в полярную экспедицию:",
       restartButton: "Играть заново",
     },
+  },
+  mapUi: {
+    svalbard: "Шпицберген", zoomIn: "Приблизить", zoomOut: "Отдалить", resetZoom: "Сбросить масштаб",
   },
   day6: {
     title: "Экспедиция",

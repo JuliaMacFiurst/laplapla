@@ -300,6 +300,8 @@ Product direction:
 - By default it should remain outside order, payment and entitlement infrastructure unless its future audit finds a concrete need for otherwise.
 - Sound Case #001 remains the paid/personalized product; Svalbard is a discovery/onboarding experience.
 - [x] Anonymous browser-local progress persists across reloads, browser restarts, locales and desktop/mobile layouts; explicit replay clears only this quest's progress.
+- [x] Static mini-game UI, laboratory item copy, dog-sled results/controls and map controls are localized for RU / EN / HE.
+- [ ] Replace or localize Russian text embedded in the externally loaded star-map SVG; the current EN/HE notice remains until that asset work is approved.
 
 Required future read-only audit:
 - [ ] Establish the real routes, components and data flow.
@@ -742,6 +744,18 @@ Decisions/blockers:
 Validation:
 - Persistence unit coverage includes first visit, desktop/mobile restore, both routes, all station rooms, invalid/unknown/unavailable storage, locale/layout transitions, restart, completion and hydration overwrite protection.
 - Local Chrome QA confirmed EN desktop/mobile Polaris restoration, HE RTL locale continuity, station-room restoration, Day 7 retention and restart to Day 1.
+
+## 2026-10-10 — Svalbard mini-game UI localization
+Phase: Planned storefront/discovery follow-up
+Status: IN PROGRESS
+Completed:
+- Localized laboratory item names and Logan feedback, dog-sled run/results controls, dress-up controls, Svalbard labels and mobile map accessibility controls for RU / EN / HE.
+- Removed Russian fallback from EN/HE country and sea labels while preserving semantic IDs, progress state and game geometry.
+- Kept narration production files and story copy unchanged.
+Remaining in this phase:
+- Russian labels embedded in the externally loaded star-map SVG still require a separately approved localized asset or safe SVG-label strategy; narration/audio integration remains separate.
+Validation:
+- 1,115 Vitest tests, TypeScript, changed-file ESLint and production build passed; dedicated localization coverage verifies dictionary parity, laboratory data, dog-sled controls, map labels, geometry invariance and the unchanged narration manifest.
 
 ---
 

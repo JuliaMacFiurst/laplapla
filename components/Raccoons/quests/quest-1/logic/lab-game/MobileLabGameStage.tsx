@@ -116,7 +116,7 @@ export default function MobileLabGameStage() {
               className={`quest-mobile-lab-lane ${backpackLane === lane.laneIndex ? "is-selected" : ""}`}
               onClick={() => moveToLane(lane.laneIndex)}
               disabled={!gameStarted}
-              aria-label={`Lane ${lane.laneIndex + 1}`}
+              aria-label={t.day5Lab.laneLabel.replace("{number}", String(lane.laneIndex + 1))}
             >
               {lane.item ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -202,7 +202,7 @@ export default function MobileLabGameStage() {
         ) : null}
       </div>
 
-      <div className="quest-mobile-lab-controls" aria-label="Backpack controls">
+      <div className="quest-mobile-lab-controls" aria-label={t.day5Lab.backpackControls}>
         <button type="button" onClick={() => moveToLane(backpackLane - 1)} disabled={backpackLane <= 0}>
           ←
         </button>
