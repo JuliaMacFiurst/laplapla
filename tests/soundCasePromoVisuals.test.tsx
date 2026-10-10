@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import { SoundCasePromoBanner } from "@/components/shop/SoundCasePromoBanner";
 import { dictionaries } from "@/i18n";
-import { SOUND_CASE_PROMO_MEDIA } from "@/lib/shop/soundCasePromoMedia";
+import {
+  SOUND_CASE_PRODUCT_INCLUDED_MEDIA,
+  SOUND_CASE_PROMO_MEDIA,
+} from "@/lib/shop/soundCasePromoMedia";
 
 describe("Sound Case promotional visuals", () => {
   it.each(["ru", "en", "he"] as const)("renders localized homepage promo copy and route for %s", (lang) => {
@@ -32,6 +35,18 @@ describe("Sound Case promotional visuals", () => {
     expect(Object.values(SOUND_CASE_PROMO_MEDIA.stickers).every((url) =>
       url.startsWith("https://media.laplapla.com/stickers/singing-dune-stickers/"),
     )).toBe(true);
+  });
+
+  it("maps every product inclusion to an existing shop-preview object", () => {
+    expect(SOUND_CASE_PRODUCT_INCLUDED_MEDIA).toEqual([
+      "https://media.laplapla.com/quests/sound-case-001/banners/shop-preview/Personalized-A4-pages.webp?v=20261009-195611",
+      "https://media.laplapla.com/quests/sound-case-001/banners/shop-preview/8-adventure-stages.webp?v=20261009-195611",
+      "https://media.laplapla.com/quests/sound-case-001/banners/shop-preview/Printable-cards-and-clues.webp?v=20261009-195611",
+      "https://media.laplapla.com/quests/sound-case-001/banners/shop-preview/QR-codes-for-interactive-activities.webp?v=20261009-195611",
+      "https://media.laplapla.com/quests/sound-case-001/banners/shop-preview/Sound-mini-games-and-experiments.webp?v=20261009-195611",
+      "https://media.laplapla.com/quests/sound-case-001/banners/shop-preview/Cards_Asset.webp?v=20261009-195611",
+    ]);
+    expect(Object.keys(SOUND_CASE_PROMO_MEDIA.shopPreview)).toHaveLength(6);
   });
 
   it("keeps stickers decorative and gives the campaign image localized alt text", () => {

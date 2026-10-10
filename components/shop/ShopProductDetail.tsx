@@ -7,8 +7,11 @@ import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import { formatPrice } from "@/lib/shop/commerce";
 import { requireQuestAssetUrl } from "@/lib/shop/questAssets";
 import { SOUND_CASE_001_ASSET_MANIFEST } from "@/lib/shop/quests/sound-case-001/assets";
+import { SOUND_CASE_PRODUCT_INCLUDED_MEDIA } from "@/lib/shop/soundCasePromoMedia";
 import { SOUND_CASE_PRODUCT_DETAIL_COPY } from "@/lib/shop/soundCaseProductDetail";
 import type { ShopProduct } from "@/lib/shop/types";
+
+import { SoundCaseVideoPresentation } from "./SoundCaseVideoPresentation";
 
 const localizedVibrationCard = (lang: Lang) => {
   const id = lang === "ru"
@@ -19,6 +22,10 @@ const localizedVibrationCard = (lang: Lang) => {
 
   return requireQuestAssetUrl(SOUND_CASE_001_ASSET_MANIFEST.assets[id]);
 };
+
+const soundCaseReuseIllustration = requireQuestAssetUrl(
+  SOUND_CASE_001_ASSET_MANIFEST.assets["collectible-parrot-way"],
+);
 
 export function ShopProductDetail({ product, lang }: { product: ShopProduct; lang: Lang }) {
   const productText = dictionaries[lang].shop.soundCase;
@@ -55,6 +62,8 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
         </div>
       </section>
 
+      <SoundCaseVideoPresentation lang={lang} copy={detail.videoPresentation} />
+
       <section className="sound-case-product__intro sound-case-product__section" aria-labelledby="sound-case-what-title">
         <p className="sound-case-product__section-kicker">Sound Case #001</p>
         <h2 id="sound-case-what-title">{detail.whatIsTitle}</h2>
@@ -64,7 +73,23 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
       <section className="sound-case-product__section" aria-labelledby="sound-case-included-title">
         <div className="sound-case-product__section-heading"><h2 id="sound-case-included-title">{detail.includedTitle}</h2><p>{detail.includedIntro}</p></div>
         <ul className="sound-case-product__included">
-          {product.includedItems.map((item, index) => <li key={item[lang]}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{item[lang]}</li>)}
+          {product.includedItems.map((item, index) => {
+            const imageUrl = product.id === "sound-case-001" ? SOUND_CASE_PRODUCT_INCLUDED_MEDIA[index] : undefined;
+            return <li key={item[lang]}>
+              <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              {imageUrl ? <div className="sound-case-product__included-media">
+                <Image
+                  src={imageUrl}
+                  alt={detail.includedImageAlts[index] ?? item[lang]}
+                  fill
+                  sizes="(max-width: 640px) calc(100vw - 4.7rem), (max-width: 900px) 44vw, 340px"
+                  loading="lazy"
+                  unoptimized
+                />
+              </div> : null}
+              <div className="sound-case-product__included-title">{item[lang]}</div>
+            </li>;
+          })}
         </ul>
       </section>
 
@@ -96,7 +121,18 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
       </section>
 
       <section className="sound-case-product__reuse sound-case-product__section" aria-labelledby="sound-case-reuse-title">
-        <div aria-hidden="true">↺</div><div><h2 id="sound-case-reuse-title">{detail.reuseTitle}</h2><p>{detail.reuseBody}</p></div>
+        <div className="sound-case-product__reuse-media" aria-hidden="true">
+          <Image
+            src={soundCaseReuseIllustration}
+            alt=""
+            width={1536}
+            height={1024}
+            sizes="(max-width: 640px) 72vw, 280px"
+            loading="lazy"
+            unoptimized
+          />
+        </div>
+        <div><h2 id="sound-case-reuse-title">{detail.reuseTitle}</h2><p>{detail.reuseBody}</p></div>
       </section>
 
       <section className="sound-case-product__details sound-case-product__section" aria-labelledby="sound-case-details-title">

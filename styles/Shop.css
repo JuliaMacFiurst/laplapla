@@ -1046,6 +1046,102 @@
   align-items: end;
 }
 
+.sound-case-product__video {
+  display: grid;
+  grid-template-areas: "media copy";
+  grid-template-columns: minmax(260px, 38fr) minmax(0, 62fr);
+  gap: clamp(2.5rem, 8vw, 7rem);
+  align-items: center;
+  direction: ltr;
+}
+
+.sound-case-product__video-copy {
+  grid-area: copy;
+}
+
+.sound-case-product__video-copy .sound-case-product__section-kicker {
+  margin-top: 0;
+}
+
+.sound-case-product__video-copy > p:last-child {
+  max-width: 48ch;
+  margin: 1.35rem 0 0;
+  color: var(--case-muted);
+  font-size: clamp(1rem, 1.8vw, 1.18rem);
+  line-height: 1.7;
+}
+
+.sound-case-product__video-frame {
+  position: relative;
+  grid-area: media;
+  width: min(100%, 350px);
+  aspect-ratio: 9 / 16;
+  justify-self: center;
+  overflow: hidden;
+  border-radius: 26px;
+  background: #092f3e;
+  box-shadow: 0 22px 54px rgba(8, 42, 52, .18);
+}
+
+.sound-case-product__video-frame iframe,
+.sound-case-product__video-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.sound-case-product__video-poster {
+  display: grid;
+  padding: 0;
+  place-items: center;
+  overflow: hidden;
+  background: #092f3e;
+  cursor: pointer;
+}
+
+.sound-case-product__video-poster img {
+  object-fit: contain;
+}
+
+.sound-case-product__video-play {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  border: 3px solid rgba(255, 255, 255, .9);
+  border-radius: 50%;
+  background: var(--case-coral);
+  box-shadow: 0 12px 30px rgba(8, 42, 52, .35);
+}
+
+.sound-case-product__video-play span {
+  width: 0;
+  height: 0;
+  margin-inline-start: 5px;
+  border-block: 11px solid transparent;
+  border-inline-start: 18px solid #fff;
+}
+
+.sound-case-product__video-poster:focus-visible {
+  outline: 4px solid #ffd477;
+  outline-offset: -7px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sound-case-product__video-play {
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+
+  .sound-case-product__video-poster:hover .sound-case-product__video-play {
+    transform: scale(1.06);
+    box-shadow: 0 16px 36px rgba(8, 42, 52, .42);
+  }
+}
+
 .sound-case-product__intro .sound-case-product__section-kicker {
   grid-column: 1 / -1;
   margin: 0;
@@ -1063,8 +1159,9 @@
 
 .sound-case-product__included li {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 132px;
-  align-content: space-between;
+  align-content: stretch;
   gap: 1.25rem;
   padding: 1.35rem;
   background: #fffdf8;
@@ -1073,10 +1170,26 @@
 }
 
 .sound-case-product__included li span {
+  direction: ltr;
+  justify-self: left;
   color: var(--case-coral);
   font-size: .72rem;
   letter-spacing: .1em;
 }
+
+.sound-case-product__included-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  align-self: center;
+}
+
+.sound-case-product__included-media img {
+  object-fit: contain;
+  object-position: center;
+}
+
+.sound-case-product__included-title { align-self: end; }
 
 .sound-case-product__flow {
   width: 100%;
@@ -1210,17 +1323,20 @@
 
 .sound-case-product__reuse {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 1.5rem;
-  padding-inline: clamp(1.5rem, 5vw, 4rem);
+  grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);
+  gap: clamp(2rem, 4vw, 3rem);
+  align-items: center;
+  overflow: hidden;
+  padding: clamp(2.25rem, 4.5vw, 3.75rem) clamp(2rem, 4vw, 3rem);
   border-radius: 28px;
   background: #143f48;
   color: #fff;
 }
 
-.sound-case-product__reuse > div:first-child { font-size: clamp(3rem, 8vw, 6rem); line-height: 1; }
+.sound-case-product__reuse-media { width: min(112%, 460px); justify-self: center; }
+.sound-case-product__reuse-media img { display: block; width: 100%; height: auto; object-fit: contain; }
 .sound-case-product__reuse h2 { color: #fff4d6; }
-.sound-case-product__reuse p { max-width: 65ch; margin-bottom: 0; color: rgba(255, 255, 255, .76); }
+.sound-case-product__reuse p { max-width: 56ch; margin-bottom: 0; color: rgba(255, 255, 255, .76); }
 
 .sound-case-product__details dl {
   display: grid;
@@ -1257,9 +1373,13 @@
 @media (max-width: 900px) {
   .sound-case-product__hero { grid-template-columns: 1fr; }
   .sound-case-product__hero-media { min-height: min(72vw, 620px); aspect-ratio: 16 / 10; }
+  .sound-case-product__video { grid-template-columns: minmax(250px, 42fr) minmax(0, 58fr); gap: 2.5rem; }
+  .sound-case-product__video-frame { width: min(100%, 300px); }
   .sound-case-product__included { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sound-case-product__flow ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sound-case-product__gallery-stage { min-height: 500px; }
+  .sound-case-product__reuse { grid-template-columns: minmax(0, 44fr) minmax(0, 56fr); gap: 1.5rem; padding: 2.25rem 2rem; }
+  .sound-case-product__reuse-media { width: min(115%, 390px); }
 }
 
 @media (max-width: 640px) {
@@ -1274,6 +1394,8 @@
   .sound-case-product__intro,
   .sound-case-product__personalization,
   .sound-case-product__trust { grid-template-columns: 1fr; gap: 1.25rem; }
+  .sound-case-product__video { grid-template-areas: "copy" "media"; grid-template-columns: 1fr; gap: 2rem; }
+  .sound-case-product__video-frame { width: min(100%, 300px); }
   .sound-case-product__included,
   .sound-case-product__flow ol,
   .sound-case-product__details dl { grid-template-columns: 1fr; }
@@ -1283,7 +1405,8 @@
   .sound-case-product__gallery-stage { min-height: min(115vw, 500px); }
   .sound-case-product__gallery-thumbs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .sound-case-product__gallery-thumbs button { min-height: 72px; }
-  .sound-case-product__reuse { grid-template-columns: 1fr; padding-inline: 1.25rem; }
+  .sound-case-product__reuse { grid-template-columns: 1fr; gap: .5rem; padding: 1.5rem 1.25rem 2rem; }
+  .sound-case-product__reuse-media { width: min(100%, 340px); }
   .sound-case-product__trust { width: 100%; padding-inline: 1rem; }
   .sound-case-product__final-cta { align-items: stretch; flex-direction: column; padding-inline: 1.25rem; }
   .sound-case-product__final-cta > div:last-child { align-items: stretch; flex-direction: column; }

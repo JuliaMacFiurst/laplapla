@@ -1,13 +1,23 @@
 import type { Lang } from "@/i18n";
 
+export type SoundCaseVideoPresentationCopy = {
+  label: string;
+  heading: string;
+  description: string;
+  playLabel: string;
+  iframeTitle: string;
+};
+
 type ProductDetailCopy = {
   availability: string;
   priceLabel: string;
   heroValue: string;
+  videoPresentation: SoundCaseVideoPresentationCopy;
   whatIsTitle: string;
   whatIsBody: string;
   includedTitle: string;
   includedIntro: string;
+  includedImageAlts: string[];
   flowTitle: string;
   flow: Array<{ title: string; body: string }>;
   galleryTitle: string;
@@ -34,10 +44,25 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     availability: "Скоро · предзаказ без оплаты",
     priceLabel: "Обычная цена после запуска",
     heroValue: "Готовое групповое приключение, которое становится вашей собственной историей — с именами участников, печатными уликами и интерактивными звуковыми заданиями.",
+    videoPresentation: {
+      label: "ПОСМОТРИ ПРИКЛЮЧЕНИЕ",
+      heading: "Услышь, как начинается загадка",
+      description: "Таинственная запись, звуковые эксперименты и восемь этапов приключения. Посмотри короткое видео и узнай, что ждёт твою команду.",
+      playLabel: "Воспроизвести видео о приключении",
+      iframeTitle: "Видео-презентация Sound Case #001",
+    },
     whatIsTitle: "Что это за квест?",
     whatIsBody: "Команда расследует загадочный звук, проходит восемь связанных этапов и через игру знакомится с вибрацией, ритмом, звуковыми кодами и поющими песками.",
     includedTitle: "Что входит в Sound Case",
     includedIntro: "Это не одна рабочая страница, а 24-страничный комплект материалов для целого приключения.",
+    includedImageAlts: [
+      "Персонализированные страницы квеста формата A4",
+      "Восемь этапов приключения Sound Case",
+      "Печатные карточки и улики Sound Case",
+      "QR-коды для интерактивных заданий Sound Case",
+      "Звуковые мини-игры и научные эксперименты",
+      "Веер персональных коллекционных карточек участников",
+    ],
     flowTitle: "Как это работает",
     flow: [
       { title: "Покупка", body: "После запуска — безопасная оплата через PayPal." },
@@ -85,10 +110,25 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     availability: "Coming soon · preorder with no payment",
     priceLabel: "Regular price after launch",
     heroValue: "A complete group adventure that becomes your own story—with participant names, printable clues, and interactive sound challenges.",
+    videoPresentation: {
+      label: "WATCH THE ADVENTURE",
+      heading: "Hear how the mystery begins",
+      description: "A mysterious recording, sound experiments, and eight stages of adventure. Watch this short video to discover what awaits your team.",
+      playLabel: "Play the adventure video",
+      iframeTitle: "Sound Case #001 video presentation",
+    },
     whatIsTitle: "What kind of quest is it?",
     whatIsBody: "The team investigates a mysterious sound across eight connected stages, discovering vibration, rhythm, sound codes, and singing sands through play.",
     includedTitle: "What comes with Sound Case",
     includedIntro: "This is not a single worksheet: it is a 24-page set of materials for a complete adventure.",
+    includedImageAlts: [
+      "Personalized A4 pages from the Sound Case adventure",
+      "Eight stages of the Sound Case adventure",
+      "Printable Sound Case cards and clues",
+      "QR codes linking to interactive Sound Case activities",
+      "Sound mini-games and hands-on experiments",
+      "A fan of personalized participant collectible cards",
+    ],
     flowTitle: "How it works",
     flow: [
       { title: "Buy", body: "After launch, pay securely with PayPal." },
@@ -136,10 +176,25 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     availability: "בקרוב · הרשמה מוקדמת ללא תשלום",
     priceLabel: "המחיר הרגיל לאחר ההשקה",
     heroValue: "הרפתקה קבוצתית שלמה שהופכת לסיפור שלכם — עם שמות המשתתפים, רמזים להדפסה ומשימות צליל אינטראקטיביות.",
+    videoPresentation: {
+      label: "הצצה להרפתקה",
+      heading: "שמעו איך התעלומה מתחילה",
+      description: "הקלטה מסתורית, ניסויים בצלילים ושמונה שלבים של הרפתקה. צפו בסרטון קצר וגלו מה מחכה לצוות שלכם.",
+      playLabel: "הפעלת סרטון ההרפתקה",
+      iframeTitle: "סרטון הצגה של Sound Case #001",
+    },
     whatIsTitle: "איזו משימה זו?",
     whatIsBody: "הצוות חוקר צליל מסתורי לאורך שמונה שלבים מחוברים ומגלה דרך המשחק רעידות, קצב, קודי צליל וחולות מזמרים.",
     includedTitle: "מה מקבלים ב־Sound Case",
     includedIntro: "זה לא דף עבודה אחד, אלא ערכה בת 24 עמודים להרפתקה שלמה.",
+    includedImageAlts: [
+      "דפי A4 אישיים מתוך הרפתקת Sound Case",
+      "שמונת שלבי ההרפתקה של Sound Case",
+      "כרטיסים ורמזים להדפסה של Sound Case",
+      "קודי QR שמובילים למשימות אינטראקטיביות של Sound Case",
+      "משחקוני צליל וניסויים מעשיים",
+      "מניפה של כרטיסי אספנות אישיים למשתתפים",
+    ],
     flowTitle: "איך זה עובד",
     flow: [
       { title: "קנייה", body: "לאחר ההשקה — תשלום מאובטח דרך PayPal." },
