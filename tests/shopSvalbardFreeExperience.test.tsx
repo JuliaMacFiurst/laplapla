@@ -37,6 +37,9 @@ describe("Svalbard free shop experience", () => {
     expect(html).toContain("RU · EN · HE");
     expect(html).toContain("shop-product-card__facts");
     expect(html).toContain("shop-product-card__purchase");
+    expect(html).toContain("shop-product-card__visual--svalbard");
+    expect(html).toContain("shop-product-card__visual-backdrop");
+    expect(html).toContain("shop-product-card__visual-poster");
     expect(html).toContain(`href="${href}"`);
     expect(buildLocalizedPublicPath(SVALBARD_FREE_EXPERIENCE.href, lang)).toBe(href);
     expect(html).toContain(`dir="${lang === "he" ? "rtl" : "ltr"}"`);
@@ -85,6 +88,23 @@ describe("Svalbard free shop experience", () => {
     expect(css).toMatch(/\.shop-product-card__purchase a,[\s\S]*min-height:\s*48px/s);
     expect(css).toMatch(/@media \(max-width: 520px\)[\s\S]*\.shop-product-card__purchase a\s*\{[^}]*width:\s*100%/s);
     expect(css).not.toMatch(/\.shop-product-card--free[^}]*:hover[^}]*display:\s*(block|flex|grid)/s);
+  });
+
+  it("contains only the Svalbard poster while preserving the shared Sound Case crop", () => {
+    const css = readFileSync("styles/Shop.css", "utf8");
+    const soundCase = readFileSync("components/shop/ShopProductCard.tsx", "utf8");
+
+    expect(css).toMatch(
+      /\.shop-product-card__visual--svalbard \.shop-product-card__visual-poster\s*\{[^}]*object-fit:\s*contain;[^}]*object-position:\s*center;/s,
+    );
+    expect(css).toMatch(
+      /\.shop-product-card__visual--svalbard \.shop-product-card__visual-backdrop\s*\{[^}]*object-fit:\s*cover;/s,
+    );
+    expect(css).toMatch(
+      /\.shop-product-card__visual img\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center;/s,
+    );
+    expect(soundCase).toContain('className="shop-product-card__visual"');
+    expect(soundCase).not.toContain("shop-product-card__visual--svalbard");
   });
 
   it("is rendered by the shop page without changing the paid product route", () => {

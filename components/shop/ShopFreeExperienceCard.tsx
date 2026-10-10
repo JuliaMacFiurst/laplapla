@@ -25,12 +25,22 @@ export function ShopFreeExperienceCard({
       data-category={experience.category}
       dir={lang === "he" ? "rtl" : "ltr"}
     >
-      <div className="shop-product-card__visual">
+      <div className="shop-product-card__visual shop-product-card__visual--svalbard">
+        <Image
+          src={experience.image}
+          alt=""
+          fill
+          sizes="(max-width: 760px) calc(100vw - 32px), 52vw"
+          className="shop-product-card__visual-backdrop"
+          aria-hidden="true"
+          unoptimized
+        />
         <Image
           src={experience.image}
           alt={copy.title}
           fill
           sizes="(max-width: 760px) calc(100vw - 32px), 52vw"
+          className="shop-product-card__visual-poster"
           unoptimized
         />
         <span className="shop-product-card__number">{copy.label}</span>

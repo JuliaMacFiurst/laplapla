@@ -640,6 +640,26 @@
   object-position: center;
 }
 
+.shop-product-card__visual--svalbard {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, .92), transparent 48%),
+    linear-gradient(180deg, #e7f1f2 0%, #dbe8eb 100%);
+}
+
+.shop-product-card__visual--svalbard .shop-product-card__visual-backdrop {
+  object-fit: cover;
+  object-position: center;
+  opacity: .32;
+  filter: blur(16px) saturate(.72);
+  transform: scale(1.08);
+}
+
+.shop-product-card__visual--svalbard .shop-product-card__visual-poster {
+  z-index: 1;
+  object-fit: contain;
+  object-position: center;
+}
+
 .shop-product-card__number {
   position: absolute;
   inset-inline-start: 1.25rem;
