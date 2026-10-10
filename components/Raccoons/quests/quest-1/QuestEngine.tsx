@@ -17,6 +17,8 @@ import Day6Expedition from "./pages/Day6Expedition";
 import Day7TreasureOfTimes from "./pages/Day7TreasureOfTimes";
 import type { Quest1PageId } from "./progress";
 import { useQuest1Progress } from "./useQuest1Progress";
+import QuestNarrationPlayer from "./narration/QuestNarrationPlayer";
+import { isQuest1NarrationEnabled } from "./narration/catalog";
 
 // дальше добавляем по мере создания
 
@@ -70,9 +72,13 @@ export default function QuestEngine() {
   return (
     <div
       dir={lang === "he" ? "rtl" : "ltr"}
-      className={lang === "he" ? "quest-1-hebrew-font" : undefined}
+      className={[
+        lang === "he" ? "quest-1-hebrew-font" : "",
+        isQuest1NarrationEnabled ? "quest-narration-enabled" : "",
+      ].filter(Boolean).join(" ") || undefined}
     >
       <Page go={go} />
+      <QuestNarrationPlayer pageId={pageId} locale={lang} />
       <button type="button" className="quest-restart-button" onClick={restart}>
         {t.day5Lab.gameFinal.restartButton}
       </button>

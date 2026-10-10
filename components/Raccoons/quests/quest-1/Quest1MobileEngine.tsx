@@ -36,6 +36,8 @@ import seaNames from "@/utils/sea_names.json";
 import { starInfoList } from "@/utils/starInfo";
 import { sanitizeRichText } from "@/lib/security/sanitize";
 import { useQuest1Progress } from "./useQuest1Progress";
+import QuestNarrationPlayer from "./narration/QuestNarrationPlayer";
+import { isQuest1NarrationEnabled } from "./narration/catalog";
 
 type MobilePageProps = {
   go: (id: PageId) => void;
@@ -92,7 +94,10 @@ function QuestMobileShell({
   const { lang, t } = useQuest1I18n();
 
   return (
-    <main className="quest-mobile-screen" dir={lang === "he" ? "rtl" : "ltr"}>
+    <main
+      className={`quest-mobile-screen${isQuest1NarrationEnabled ? " quest-narration-enabled" : ""}`}
+      dir={lang === "he" ? "rtl" : "ltr"}
+    >
       <header className="quest-mobile-topbar">
         <button type="button" className="quest-mobile-back" onClick={onExit}>
           {t.engine.homeButton}
@@ -1870,15 +1875,16 @@ export default function Quest1MobileEngine() {
                           : t.day2.question;
 
   return (
-    <QuestMobileShell
-      title={title}
-      onExit={exit}
-      onRestart={restart}
-      restartLabel={t.day5Lab.gameFinal.restartButton}
-      progress={progress}
-    >
-      {renderPage()}
-      {devMode ? (
+    <>
+      <QuestMobileShell
+        title={title}
+        onExit={exit}
+        onRestart={restart}
+        restartLabel={t.day5Lab.gameFinal.restartButton}
+        progress={progress}
+      >
+        {renderPage()}
+        {devMode ? (
         <div className="quest-mobile-dev-nav" aria-label="Quest dev navigation">
           <button
             type="button"
@@ -1911,7 +1917,9 @@ export default function Quest1MobileEngine() {
             {t.engine.nextButton}
           </button>
         </div>
-      ) : null}
-    </QuestMobileShell>
+        ) : null}
+      </QuestMobileShell>
+      <QuestNarrationPlayer pageId={pageId} locale={lang} />
+    </>
   );
 }

@@ -216,6 +216,134 @@
   font: inherit;
 }
 
+.quest-narration-enabled {
+  padding-bottom: 84px;
+}
+
+.quest-narration-launcher,
+.quest-narration-player {
+  position: fixed;
+  z-index: 9997;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  color: #fff;
+  background: rgba(8, 47, 62, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 12px 30px rgba(8, 30, 43, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.quest-narration-launcher {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.15rem;
+}
+
+.quest-narration-player {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100vw - 24px);
+  min-height: 50px;
+  padding: 5px 7px;
+  border-radius: 999px;
+  box-sizing: border-box;
+}
+
+.quest-narration-button,
+.quest-narration-collapse {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  font: inherit;
+}
+
+.quest-narration-button--primary {
+  background: #fff;
+  color: #173d4e;
+}
+
+.quest-narration-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.quest-narration-launcher:focus-visible,
+.quest-narration-button:focus-visible,
+.quest-narration-collapse:focus-visible {
+  outline: 3px solid #ffd966;
+  outline-offset: 2px;
+}
+
+.quest-narration-time {
+  min-width: 76px;
+  color: inherit;
+  font: 700 0.78rem/1.1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  direction: ltr;
+  text-align: center;
+}
+
+.quest-narration-status {
+  max-width: 150px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.quest-narration-collapse {
+  flex-basis: 34px;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  font-size: 1.35rem;
+}
+
+@media (max-width: 520px) {
+  .quest-narration-enabled .quest-mobile-content {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .quest-narration-player {
+    gap: 2px;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    padding-inline: 5px;
+  }
+
+  .quest-narration-button {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .quest-narration-time {
+    min-width: 68px;
+    font-size: 0.72rem;
+  }
+
+  .quest-narration-status {
+    position: absolute;
+    inset-inline: 12px;
+    bottom: calc(100% + 6px);
+    max-width: none;
+    padding: 6px 9px;
+    border-radius: 8px;
+    background: rgba(8, 47, 62, 0.94);
+    text-align: center;
+  }
+}
+
 .quest-mobile-restart {
   border: 0;
   background: transparent;

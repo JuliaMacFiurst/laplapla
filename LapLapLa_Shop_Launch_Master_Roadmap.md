@@ -303,6 +303,8 @@ Product direction:
 - [x] Static mini-game UI, laboratory item copy, dog-sled results/controls and map controls are localized for RU / EN / HE.
 - [x] `/shop` includes a localized free Svalbard discovery card with direct anonymous launch and no commerce or entitlement coupling.
 - [ ] Replace or localize Russian text embedded in the externally loaded star-map SVG; the current EN/HE notice remains until that asset work is approved.
+- [x] Add a feature-gated contextual narration-player foundation with manifest-derived RU/EN/HE URLs, page/route-scoped availability, isolated preferences and no gameplay coupling.
+- [ ] After approved MP3 upload, register state-dependent dialogue/hint blocks at their real reveal points, validate all 249 objects and enable the player in preview before production.
 
 Required future read-only audit:
 - [ ] Establish the real routes, components and data flow.
@@ -793,6 +795,21 @@ Completed:
 Validation:
 - RU / EN / HE browser QA passed at 1440×900, 768×1024 and 390×844 with no horizontal overflow, fact overlap or RTL regression; mobile CTA remains at least 48 px high.
 - Focused storefront tests, TypeScript, changed-file ESLint and the full Vitest suite passed.
+
+## 2026-10-10 — Svalbard contextual narration player foundation
+Phase: Planned storefront/discovery follow-up
+Status: IN PROGRESS
+Completed:
+- Added one compact, collapsible RU / EN / HE narration player shared by the mutually exclusive desktop and mobile engines.
+- Resolved stable semantic block IDs through the read-only 83-block narration manifest and a centralized feature-gated public-media URL contract; no MP3, upload or cross-language fallback was added.
+- Kept audio navigation inside the current semantic page and chosen flight/sail branch, with stop/unload behavior for page, locale and unmount transitions.
+- Isolated the two narration preferences from browser-local quest progress and added localized accessible controls, RTL handling and safe-area-aware scoped layout.
+Remaining in this phase:
+- Keep production playback disabled until Julia-approved MP3 files exist at all 249 manifest paths.
+- Register interaction-dependent dialogues, hints, explanations and station details only when their existing game states reveal them; then complete real-file preview QA before enabling the public flag.
+- Narration production/review, final-cartoon dubbing and Cloudflare upload remain separate tasks.
+Validation:
+- Context/catalog/runtime/settings coverage uses a mocked audio element and verifies branch isolation, locale mapping, disabled-CDN behavior, cleanup and progress independence.
 
 ---
 
