@@ -292,13 +292,14 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 
 ## PLANNED STOREFRONT/DISCOVERY FOLLOW-UP — Free Svalbard quest
 
-**Status: PLANNED — separate audit and implementation checkpoint after current Phase 4 work, before public launch**
+**Status: IMPLEMENTATION IN PROGRESS — progress persistence completed; storefront integration remains separate**
 
 Product direction:
 - The existing Svalbard / Global Seed Vault quest is intended to become a **free interactive discovery product** in LapLapLa Shop.
 - It must not be presented as a fake paid product priced at `0 ₪`.
 - By default it should remain outside order, payment and entitlement infrastructure unless its future audit finds a concrete need for otherwise.
 - Sound Case #001 remains the paid/personalized product; Svalbard is a discovery/onboarding experience.
+- [x] Anonymous browser-local progress persists across reloads, browser restarts, locales and desktop/mobile layouts; explicit replay clears only this quest's progress.
 
 Required future read-only audit:
 - [ ] Establish the real routes, components and data flow.
@@ -722,6 +723,25 @@ Validation:
 - 206 focused preview, document, stage, print-asset, persistence, auth/account and storefront tests passed.
 - TypeScript, changed-file ESLint, production build, diff check and added-line secret scan passed.
 - Public `/shop` hero QA passed in local Chrome at RU/EN/HE 1440, 1280/820 and 390 px with no horizontal overflow, preserved RTL and unchanged product-detail CTA.
+
+## 2026-10-10 — Svalbard browser-local progress
+Phase: Planned storefront/discovery follow-up
+Status: IN PROGRESS
+Commits:
+- capybara_tales: roadmap checkpoint (this commit)
+Completed:
+- Added one validated, versioned `localStorage` progress contract shared by desktop and mobile quest engines, with migration from the former mobile-only `sessionStorage` page key.
+- Persisted semantic page and flight/sail route state across reloads, browser restarts, locale changes and desktop/mobile layout transitions.
+- Restored optional Heat, Lab and Garage rooms at their safe entry screens without persisting minigame internals or introducing completion gates.
+- Preserved Day 7 as the predictable completed resume screen and added an explicit localized replay control that clears only Svalbard progress.
+Remaining in this phase:
+- Complete the previously listed discovery audit and the separately approved `/shop` card/details integration.
+- Narration production and later audio integration remain separate work.
+Decisions/blockers:
+- Progress is anonymous and browser-local; no account, cookie, API, Supabase, entitlement or commerce dependency was introduced.
+Validation:
+- Persistence unit coverage includes first visit, desktop/mobile restore, both routes, all station rooms, invalid/unknown/unavailable storage, locale/layout transitions, restart, completion and hydration overwrite protection.
+- Local Chrome QA confirmed EN desktop/mobile Polaris restoration, HE RTL locale continuity, station-room restoration, Day 7 retention and restart to Day 1.
 
 ---
 

@@ -35,6 +35,7 @@ import countryNames from "@/utils/country_names.json";
 import seaNames from "@/utils/sea_names.json";
 import { starInfoList } from "@/utils/starInfo";
 import { sanitizeRichText } from "@/lib/security/sanitize";
+import { useQuest1Progress } from "./useQuest1Progress";
 
 type MobilePageProps = {
   go: (id: PageId) => void;
@@ -59,8 +60,6 @@ const MOBILE_PAGE_ORDER: PageId[] = [
   "day7_treasure_of_times",
 ];
 
-const QUEST_1_MOBILE_PROGRESS_KEY = "quest-1-mobile-page";
-
 const MOBILE_MAP_BAD_IDS = new Set([
   "__next",
   "map-wrap",
@@ -75,38 +74,19 @@ function flattenBlocks(blocks: string[][]) {
   return blocks.flatMap((block) => block);
 }
 
-function isMobilePageId(value: string | null): value is PageId {
-  return Boolean(value && MOBILE_PAGE_ORDER.includes(value as PageId));
-}
-
-function readStoredMobilePageId(): PageId {
-  if (typeof window === "undefined") return "day1";
-
-  try {
-    const storedPageId = window.sessionStorage.getItem(QUEST_1_MOBILE_PROGRESS_KEY);
-    return isMobilePageId(storedPageId) ? storedPageId : "day1";
-  } catch {
-    return "day1";
-  }
-}
-
-function clearStoredMobilePageId() {
-  try {
-    window.sessionStorage.removeItem(QUEST_1_MOBILE_PROGRESS_KEY);
-  } catch {
-    // Session storage can be unavailable in private or restricted browsing modes.
-  }
-}
-
 function QuestMobileShell({
   title,
   children,
   onExit,
+  onRestart,
+  restartLabel,
   progress,
 }: {
   title: string;
   children: ReactNode;
   onExit: () => void;
+  onRestart: () => void;
+  restartLabel: string;
   progress: string;
 }) {
   const { lang, t } = useQuest1I18n();
@@ -118,6 +98,9 @@ function QuestMobileShell({
           {t.engine.homeButton}
         </button>
         <div className="quest-mobile-progress">{progress}</div>
+        <button type="button" className="quest-mobile-restart" onClick={onRestart}>
+          {restartLabel}
+        </button>
       </header>
       <section className="quest-mobile-content">
         <h1 className="quest-mobile-title">{title}</h1>
@@ -1711,7 +1694,6 @@ function Day7TreasureMobile() {
   const paragraphs = useMemo(() => flattenBlocks(t.day7.blocks), [t.day7.blocks]);
 
   const goToMap = useCallback(() => {
-    clearStoredMobilePageId();
     void router.push(
       { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
       undefined,
@@ -1799,18 +1781,10 @@ function Day7TreasureMobile() {
 export default function Quest1MobileEngine() {
   const router = useRouter();
   const { lang, t } = useQuest1I18n();
-  const [pageId, setPageId] = useState<PageId>(readStoredMobilePageId);
+  const { pageId, go, restart } = useQuest1Progress();
   const [devMode, setDevMode] = useState(false);
   const pageIndex = MOBILE_PAGE_ORDER.indexOf(pageId);
   const progress = `${Math.max(1, pageIndex + 1)} / ${MOBILE_PAGE_ORDER.length}`;
-
-  useEffect(() => {
-    try {
-      window.sessionStorage.setItem(QUEST_1_MOBILE_PROGRESS_KEY, pageId);
-    } catch {
-      // Session storage can be unavailable in private or restricted browsing modes.
-    }
-  }, [pageId]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1819,60 +1793,27 @@ export default function Quest1MobileEngine() {
   }, []);
 
   const exit = useCallback(() => {
-    if (typeof window !== "undefined" && !window.confirm(t.engine.confirmExit)) {
-      return;
-    }
-
-    clearStoredMobilePageId();
     void router.replace(
       { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
       undefined,
       { locale: lang },
     );
-  }, [lang, router, t.engine.confirmExit]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const historyState = { quest1ExitGuard: true };
-    window.history.pushState(historyState, "", window.location.href);
-
-    const handlePopState = () => {
-      if (window.confirm(t.engine.confirmExit)) {
-        clearStoredMobilePageId();
-        void router.replace(
-          { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
-          undefined,
-          { locale: lang },
-        );
-        return;
-      }
-
-      window.history.pushState(historyState, "", window.location.href);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [lang, router, t.engine.confirmExit]);
+  }, [lang, router]);
 
   const renderPage = () => {
-    if (pageId === "day1") return <Day1Mobile go={setPageId} />;
-    if (pageId === "day2") return <Day2Mobile go={setPageId} />;
-    if (pageId === "day3flight") return <Day3FlightMobile go={setPageId} />;
-    if (pageId === "day3sail") return <Day3SailMobile go={setPageId} />;
-    if (pageId === "day4_takeoff") return <Day4TakeoffMobile go={setPageId} />;
-    if (pageId === "day4_sail") return <Day4StarsNavMobile go={setPageId} />;
-    if (pageId === "day5_spitsbergen") return <Day5SpitsbergenMobile go={setPageId} />;
-    if (pageId === "day5_heat") return <Day5HeatMobile go={setPageId} />;
-    if (pageId === "day5_lab") return <Day5LabMobile go={setPageId} />;
-    if (pageId === "day5_garage") return <Day5GarageMobile go={setPageId} />;
+    if (pageId === "day1") return <Day1Mobile go={go} />;
+    if (pageId === "day2") return <Day2Mobile go={go} />;
+    if (pageId === "day3flight") return <Day3FlightMobile go={go} />;
+    if (pageId === "day3sail") return <Day3SailMobile go={go} />;
+    if (pageId === "day4_takeoff") return <Day4TakeoffMobile go={go} />;
+    if (pageId === "day4_sail") return <Day4StarsNavMobile go={go} />;
+    if (pageId === "day5_spitsbergen") return <Day5SpitsbergenMobile go={go} />;
+    if (pageId === "day5_heat") return <Day5HeatMobile go={go} />;
+    if (pageId === "day5_lab") return <Day5LabMobile go={go} />;
+    if (pageId === "day5_garage") return <Day5GarageMobile go={go} />;
 
     if (pageId === "day6_expedition") {
-      return <Day6ExpeditionMobile go={setPageId} />;
+      return <Day6ExpeditionMobile go={go} />;
     }
 
     if (pageId === "day7_treasure_of_times") {
@@ -1894,7 +1835,7 @@ export default function Quest1MobileEngine() {
           className="quest-mobile-primary"
           onClick={() => {
             const next = MOBILE_PAGE_ORDER[Math.min(MOBILE_PAGE_ORDER.length - 1, pageIndex + 1)];
-            setPageId(next);
+            go(next);
           }}
         >
           {t.engine.nextButton}
@@ -1929,7 +1870,13 @@ export default function Quest1MobileEngine() {
                           : t.day2.question;
 
   return (
-    <QuestMobileShell title={title} onExit={exit} progress={progress}>
+    <QuestMobileShell
+      title={title}
+      onExit={exit}
+      onRestart={restart}
+      restartLabel={t.day5Lab.gameFinal.restartButton}
+      progress={progress}
+    >
       {renderPage()}
       {devMode ? (
         <div className="quest-mobile-dev-nav" aria-label="Quest dev navigation">
@@ -1937,7 +1884,7 @@ export default function Quest1MobileEngine() {
             type="button"
             onClick={() => {
               const previous = MOBILE_PAGE_ORDER[Math.max(0, pageIndex - 1)];
-              setPageId(previous);
+              go(previous);
             }}
             disabled={pageIndex <= 0}
           >
@@ -1945,7 +1892,7 @@ export default function Quest1MobileEngine() {
           </button>
           <select
             value={pageId}
-            onChange={(event) => setPageId(event.target.value as PageId)}
+            onChange={(event) => go(event.target.value as PageId)}
           >
             {MOBILE_PAGE_ORDER.map((id, index) => (
               <option key={id} value={id}>
@@ -1957,7 +1904,7 @@ export default function Quest1MobileEngine() {
             type="button"
             onClick={() => {
               const next = MOBILE_PAGE_ORDER[Math.min(MOBILE_PAGE_ORDER.length - 1, pageIndex + 1)];
-              setPageId(next);
+              go(next);
             }}
             disabled={pageIndex >= MOBILE_PAGE_ORDER.length - 1}
           >
