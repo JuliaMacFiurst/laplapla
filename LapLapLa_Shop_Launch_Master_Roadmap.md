@@ -301,6 +301,7 @@ Product direction:
 - Sound Case #001 remains the paid/personalized product; Svalbard is a discovery/onboarding experience.
 - [x] Anonymous browser-local progress persists across reloads, browser restarts, locales and desktop/mobile layouts; explicit replay clears only this quest's progress.
 - [x] Static mini-game UI, laboratory item copy, dog-sled results/controls and map controls are localized for RU / EN / HE.
+- [x] `/shop` includes a localized free Svalbard discovery card with direct anonymous launch and no commerce or entitlement coupling.
 - [ ] Replace or localize Russian text embedded in the externally loaded star-map SVG; the current EN/HE notice remains until that asset work is approved.
 
 Required future read-only audit:
@@ -756,6 +757,19 @@ Remaining in this phase:
 - Russian labels embedded in the externally loaded star-map SVG still require a separately approved localized asset or safe SVG-label strategy; narration/audio integration remains separate.
 Validation:
 - 1,115 Vitest tests, TypeScript, changed-file ESLint and production build passed; dedicated localization coverage verifies dictionary parity, laboratory data, dog-sled controls, map labels, geometry invariance and the unchanged narration manifest.
+
+## 2026-10-10 — Free Svalbard shop discovery card
+Phase: Planned storefront/discovery follow-up
+Status: IN PROGRESS
+Completed:
+- Added a compact RU/EN/HE free-experience card to `/shop` in the existing `games` category, linking directly to the locale-aware anonymous quest route.
+- Kept the experience outside `ShopProduct`, pricing, checkout, PayPal, orders, authentication and entitlements; reused the existing Svalbard station asset.
+- Preserved the existing Sound Case catalog entry and commerce behavior unchanged.
+Remaining in this phase:
+- Star-map SVG localization and narration/audio integration remain separate unfinished tasks.
+Validation:
+- 1,123 Vitest tests, TypeScript, changed-file ESLint and production build passed.
+- Local production-browser QA passed for RU/EN/HE at 1440×900 and 390×844: correct RTL, no horizontal overflow, 48 px mobile CTA, and direct locale-correct quest navigation with no console errors.
 
 ---
 

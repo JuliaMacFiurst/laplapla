@@ -3,10 +3,12 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { ShopComingSoon } from "@/components/shop/ShopComingSoon";
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
+import { ShopFreeExperienceCard } from "@/components/shop/ShopFreeExperienceCard";
 import { dictionaries } from "@/i18n";
 import { getCurrentLang } from "@/lib/i18n/routing";
 import { getPublicProducts } from "@/lib/shop/catalog";
 import { SHOP_STOREFRONT_COPY } from "@/lib/shop/shopStorefront";
+import { SHOP_FREE_EXPERIENCES } from "@/lib/shop/freeExperiences";
 
 import { useEffect } from "react";
 import { trackEvent } from "@/lib/analytics/client";
@@ -44,6 +46,9 @@ export default function ShopIndexPage() {
             <section className="shop-catalog__featured" aria-label={storefront.featuredLabel}>
               {products.map((product) => (
                 <ShopProductCard key={product.id} product={product} lang={lang} />
+              ))}
+              {SHOP_FREE_EXPERIENCES.map((experience) => (
+                <ShopFreeExperienceCard key={experience.id} experience={experience} lang={lang} />
               ))}
             </section>
           </div>
