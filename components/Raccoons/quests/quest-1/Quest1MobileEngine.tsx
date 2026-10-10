@@ -36,8 +36,26 @@ import seaNames from "@/utils/sea_names.json";
 import { starInfoList } from "@/utils/starInfo";
 import { sanitizeRichText } from "@/lib/security/sanitize";
 import { useQuest1Progress } from "./useQuest1Progress";
-import QuestNarrationPlayer from "./narration/QuestNarrationPlayer";
 import { isQuest1NarrationEnabled } from "./narration/catalog";
+import { QuestNarrationScope } from "./narration/availability";
+import { useAvailableNarrationBlocks } from "./narration/availability";
+import type { NarrationBlockId } from "./narration/catalog";
+import {
+  DAY_1_BLOCKS,
+  DAY_2_BLOCKS,
+  DAY_2_CHOICE_BLOCK,
+  DAY_6_BLOCKS,
+  FLIGHT_STATIC_BLOCKS,
+  SAIL_STATIC_BLOCKS,
+  STARS_INTRO_BLOCKS,
+  STATION_BLOCKS,
+  TAKEOFF_STORY_BLOCKS,
+  flightDialogueBlockId,
+  garagePartBlockId,
+  seaDialogueBlockId,
+  starDialogueBlockId,
+  takeoffHintBlockId,
+} from "./narration/gameMappings";
 
 type MobilePageProps = {
   go: (id: PageId) => void;
@@ -230,11 +248,13 @@ function QuestMobileQuiz({
   finishTitle,
   finishButtonText,
   onFinish,
+  explanationBlockIds = [],
 }: {
   questions: QuestQuestion[];
   finishTitle: string;
   finishButtonText: string;
   onFinish: () => void;
+  explanationBlockIds?: readonly (NarrationBlockId | null)[];
 }) {
   const { lang, t } = useQuest1I18n();
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -243,6 +263,11 @@ function QuestMobileQuiz({
 
   const question = questions[questionIndex];
   const isLast = questionIndex >= questions.length - 1;
+  const explanationBlockId = explanationBlockIds[questionIndex] ?? null;
+  useAvailableNarrationBlocks(
+    "mobile-quiz-explanation",
+    checked && question?.explanation && explanationBlockId ? [explanationBlockId] : [],
+  );
 
   if (!question) {
     return (
@@ -492,6 +517,10 @@ function Day1Mobile({ go }: MobilePageProps) {
   const [started, setStarted] = useState(false);
   const [revealCount, setRevealCount] = useState(1);
   const [muted, setMuted] = useState(false);
+  useAvailableNarrationBlocks(
+    "mobile-day1-story",
+    started ? DAY_1_BLOCKS.slice(0, revealCount) : [],
+  );
 
   const start = () => {
     setStarted(true);
@@ -564,6 +593,11 @@ function Day2Mobile({ go }: MobilePageProps) {
   const paragraphs = useMemo(() => flattenBlocks(t.day2.blocks), [t.day2.blocks]);
   const [revealCount, setRevealCount] = useState(1);
   const isFinished = revealCount >= paragraphs.length;
+  useAvailableNarrationBlocks("mobile-day2-story", DAY_2_BLOCKS.slice(0, revealCount));
+  useAvailableNarrationBlocks(
+    "mobile-day2-choice",
+    isFinished ? [DAY_2_CHOICE_BLOCK] : [],
+  );
 
   return (
     <>
@@ -639,6 +673,16 @@ function Day3FlightMobile({ go }: MobilePageProps) {
   }, [lang, routeType, t.day3Flight.speech.overCountries, t.day3Flight.speech.overOcean]);
 
   const introDone = revealCount >= paragraphs.length;
+  const flightDialogueBlock = flightDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("mobile-day3-flight-intro", [FLIGHT_STATIC_BLOCKS[0]]);
+  useAvailableNarrationBlocks(
+    "mobile-day3-flight-tools",
+    introDone ? FLIGHT_STATIC_BLOCKS.slice(1) : [],
+  );
+  useAvailableNarrationBlocks(
+    "mobile-day3-flight-dialogue",
+    readyForQuiz && flightDialogueBlock ? [flightDialogueBlock] : [],
+  );
 
   return (
     <>
@@ -697,6 +741,7 @@ function Day3FlightMobile({ go }: MobilePageProps) {
                 questions={questions}
                 finishTitle={t.day3Flight.finishTitle}
                 finishButtonText={t.day3Flight.finishButton}
+                explanationBlockIds={[null, "svalbard.day03.flight.mercator-explanation.01", null]}
                 onFinish={() => go("day4_takeoff")}
               />
             </>
@@ -830,6 +875,16 @@ function Day3SailMobile({ go }: MobilePageProps) {
   };
 
   const introDone = revealCount >= paragraphs.length;
+  const sailDialogueBlock = seaDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("mobile-day3-sail-intro", [SAIL_STATIC_BLOCKS[0]]);
+  useAvailableNarrationBlocks(
+    "mobile-day3-sail-tools",
+    introDone ? SAIL_STATIC_BLOCKS.slice(1) : [],
+  );
+  useAvailableNarrationBlocks(
+    "mobile-day3-sail-dialogue",
+    routeFinished && sailDialogueBlock ? [sailDialogueBlock] : [],
+  );
 
   return (
     <>
@@ -903,6 +958,13 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
   const [hint, setHint] = useState<string | null>(null);
   const [motionEnabled, setMotionEnabled] = useState(false);
   const [motionMessage, setMotionMessage] = useState("");
+  const [activeSwitchId, setActiveSwitchId] = useState<string | null>(null);
+  const takeoffHintId = takeoffHintBlockId(activeSwitchId);
+  useAvailableNarrationBlocks("mobile-day4-takeoff-story", TAKEOFF_STORY_BLOCKS);
+  useAvailableNarrationBlocks(
+    "mobile-day4-takeoff-hint",
+    takeoffHintId ? [takeoffHintId] : [],
+  );
 
   useEffect(() => {
     if (!motionEnabled || typeof window === "undefined") return undefined;
@@ -953,12 +1015,14 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
   const handleSwitch = (id: string) => {
     if (!id.startsWith("switcher-on")) {
       setHint(null);
+      setActiveSwitchId(null);
       return;
     }
 
     const text = takeoffHints[id];
     if (text) {
       setHint(text);
+      setActiveSwitchId(id);
     }
 
     const list = TAKEOFF_VIDEO_MAP[id];
@@ -981,7 +1045,10 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
           <PlaneWindshield ref={windshieldRef} angle={angle} pushPull={pushPull} />
           {hint ? (
             <div className="quest-mobile-cockpit-hint">
-              <CockpitHint text={hint} onClose={() => setHint(null)} />
+              <CockpitHint text={hint} onClose={() => {
+                setHint(null);
+                setActiveSwitchId(null);
+              }} />
             </div>
           ) : null}
         </div>
@@ -1072,6 +1139,16 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
   const [routePoints, setRoutePoints] = useState<{ x: number; y: number }[]>([]);
   const [feedback, setFeedback] = useState(t.day4StarsNav.defaultSpeech);
   const [showVideo, setShowVideo] = useState(false);
+  const starDialogueBlock = starDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("mobile-day4-stars-story", STARS_INTRO_BLOCKS);
+  useAvailableNarrationBlocks(
+    "mobile-day4-stars-dialogue",
+    starDialogueBlock ? [starDialogueBlock] : [],
+  );
+  useAvailableNarrationBlocks(
+    "mobile-day4-stars-arrival",
+    showVideo ? ["svalbard.day04.stars.arrival.01"] : [],
+  );
 
   const setWrongDialog = (phase: "merak" | "dubhe", hit: MobileSvgMapHit | null) => {
     const humanName = hit?.id ? getStarHumanName(hit.id) : "no_id";
@@ -1240,6 +1317,7 @@ function Day5SpitsbergenMobile({ go }: MobilePageProps) {
   const paragraphs = useMemo(() => flattenBlocks(t.day5Spitsbergen.blocks), [t.day5Spitsbergen.blocks]);
   const introParagraphs = paragraphs.slice(0, 3);
   const detailParagraphs = paragraphs.slice(3);
+  useAvailableNarrationBlocks("mobile-day5-station", STATION_BLOCKS);
 
   const getDoorLabel = (id: MobileStationDoorId) => {
     if (id === "heat") return t.day5Spitsbergen.labels.heat;
@@ -1462,6 +1540,11 @@ function Day5GarageMobile({ go }: MobilePageProps) {
     stamina: 0.5,
     risk: 1,
   });
+  const garageBlock = garagePartBlockId(activePart);
+  useAvailableNarrationBlocks(
+    "mobile-day5-garage-part",
+    isLandscape && phase === "inspect" && garageBlock ? [garageBlock] : [],
+  );
 
   function statLevel(value: number) {
     if (value >= 0.9) return "is-max" as const;
@@ -1671,6 +1754,7 @@ function Day5GarageMobile({ go }: MobilePageProps) {
 function Day6ExpeditionMobile({ go }: MobilePageProps) {
   const { t } = useQuest1I18n();
   const paragraphs = useMemo(() => flattenBlocks(t.day6.blocks), [t.day6.blocks]);
+  useAvailableNarrationBlocks("mobile-day6-story", DAY_6_BLOCKS);
 
   return (
     <>
@@ -1697,6 +1781,7 @@ function Day7TreasureMobile() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const paragraphs = useMemo(() => flattenBlocks(t.day7.blocks), [t.day7.blocks]);
+  useAvailableNarrationBlocks("mobile-day7-ending", ["svalbard.day07.ending.01"]);
 
   const goToMap = useCallback(() => {
     void router.push(
@@ -1875,7 +1960,7 @@ export default function Quest1MobileEngine() {
                           : t.day2.question;
 
   return (
-    <>
+    <QuestNarrationScope key={pageId} pageId={pageId} locale={lang}>
       <QuestMobileShell
         title={title}
         onExit={exit}
@@ -1919,7 +2004,6 @@ export default function Quest1MobileEngine() {
         </div>
         ) : null}
       </QuestMobileShell>
-      <QuestNarrationPlayer pageId={pageId} locale={lang} />
-    </>
+    </QuestNarrationScope>
   );
 }

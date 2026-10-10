@@ -10,6 +10,8 @@ import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
 import { getStarRouteDialogs, type StarDialogueStep } from "../i18n/dialogs";
 import { devLog } from "@/utils/devLog";
+import { useAvailableNarrationBlocks } from "../narration/availability";
+import { STARS_INTRO_BLOCKS, starDialogueBlockId } from "../narration/gameMappings";
 
 export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
   const { lang, t } = useQuest1I18n();
@@ -29,6 +31,19 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
   const [fadeOutInteractive, setFadeOutInteractive] = useState(false);
 
   const [introDone, setIntroDone] = useState(false);
+  const visibleDialogueId = finishDialogueQueue[0]?.id
+    ?? mapDialogueQueue[0]?.id
+    ?? dialogueQueue[0]?.id;
+  const visibleDialogueBlock = starDialogueBlockId(visibleDialogueId);
+  useAvailableNarrationBlocks("day4-stars-story", STARS_INTRO_BLOCKS);
+  useAvailableNarrationBlocks(
+    "day4-stars-dialogue",
+    visibleDialogueBlock ? [visibleDialogueBlock] : [],
+  );
+  useAvailableNarrationBlocks(
+    "day4-stars-arrival",
+    showVideo ? ["svalbard.day04.stars.arrival.01"] : [],
+  );
 
   const handleMapClick = () => {
     if (!introDone) {

@@ -8,6 +8,8 @@ import FlightMiniTest from "../flight/FlightMiniTest";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
 import { getFlightRouteDialogs, type FlightDialogueStep } from "../i18n/dialogs";
+import { useAvailableNarrationBlocks } from "../narration/availability";
+import { FLIGHT_STATIC_BLOCKS, flightDialogueBlockId } from "../narration/gameMappings";
 
 export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   const { lang, t } = useQuest1I18n();
@@ -18,6 +20,12 @@ export default function Day3Flight({ go }: { go: (id: PageId) => void }) {
   const [dialogueQueue, setDialogueQueue] = useState<FlightDialogueStep[]>([]);
   const flightRouteDialogs = getFlightRouteDialogs(lang);
   const flyingOverText = t.day3Flight.speech.flyingOver;
+  const currentDialogueBlock = flightDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("day3-flight-static", FLIGHT_STATIC_BLOCKS);
+  useAvailableNarrationBlocks(
+    "day3-flight-dialogue",
+    currentDialogueBlock ? [currentDialogueBlock] : [],
+  );
 
   // --- перевод ID страны в русское название ---
   const getCountryLabel = useCallback((id: string): string => {

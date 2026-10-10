@@ -1,60 +1,96 @@
 # Svalbard contextual narration player
 
-## Purpose and safety state
+## Runtime architecture
 
-The quest uses one compact player per active engine, not one control per paragraph. Desktop and mobile are mutually exclusive at `pages/quests/quest-1.tsx`, so only one `QuestNarrationPlayer` is mounted.
+The quest mounts one `QuestNarrationScope` around the active semantic page in either `QuestEngine` or `Quest1MobileEngine`. Page and game components register only narration block IDs whose source text is currently visible. The scope combines those registrations in manifest order and gives the resulting list to the single compact `QuestNarrationPlayer`.
 
-The production UI is off unless both public build variables are configured:
+```text
+quest page/game state
+  -> mounted visible-text component
+  -> useAvailableNarrationBlocks(registrationKey, blockIds)
+  -> QuestNarrationScope
+  -> ordered active block IDs
+  -> compact audio catalog
+  -> CDN URL
+  -> QuestNarrationPlayer
+```
+
+Registration is state-driven React context, not DOM inspection, timers or CSS visibility. `QuestNarrationScope` is keyed by `pageId`, so leaving a page synchronously removes its registrations and unloads the old audio source. Audio controls never call quest navigation or mutate game state.
+
+## Catalog and delivery contract
+
+The authoritative production source remains `docs/production/svalbard-audio-v1/manifest.json`. Runtime code uses the generated, compact `narration/audioPaths.ts` map containing only stable block ID, manifest order and locale-independent relative path. It deliberately excludes displayed text, hashes, WAV/TTS metadata and production reports from the client bundle.
+
+Confirmed public delivery configuration:
+
+```text
+origin: https://media.laplapla.com
+prefix: quests/quest-1/audio/v1
+URL:    <origin>/<prefix>/<locale>/<relative-path>
+```
+
+Example:
+
+```text
+https://media.laplapla.com/quests/quest-1/audio/v1/he/day05/station/intro/04.mp3
+```
+
+`NEXT_PUBLIC_QUEST_1_AUDIO_BASE_URL` overrides the origin only; it should not contain the quest prefix. The resolver normalizes trailing slashes and also tolerates an older local value that already ends in the prefix, appending the prefix exactly once. There is no API proxy, Supabase dependency, secret or cross-language fallback.
+
+## Feature flag and local testing
+
+The player remains absent unless the public feature flag is explicitly enabled:
 
 ```text
 NEXT_PUBLIC_QUEST_1_AUDIO_ENABLED=true
-NEXT_PUBLIC_QUEST_1_AUDIO_BASE_URL=https://<approved-public-media-origin>
+NEXT_PUBLIC_QUEST_1_AUDIO_BASE_URL=https://media.laplapla.com
 ```
 
-With either value absent, no player or broken audio controls are rendered. Google Drive review paths are never accepted as delivery URLs.
+The default is disabled. Do not enable the flag in production configuration as part of repository integration. For an isolated local run, pass these variables only to the local dev/build process or add them to an uncommitted `.env.local` without replacing existing values.
 
-## Manifest and URL contract
+## Availability and branching rules
 
-`narration/catalog.ts` reads `docs/production/svalbard-audio-v1/manifest.json` without modifying it. A stable block ID and locale resolve through the manifest's `audio` map and `delivery.productionObjectPrefix`:
+- Static story blocks register while their text component is mounted. Mobile progressive text registers only the revealed slice.
+- Flight and sail dialogue IDs are mapped from the active dialogue key; choosing one route never registers the other route.
+- Quiz explanations register only after the corresponding checked/answered state makes the explanation visible.
+- Takeoff hints register only while the selected switch hint is open.
+- Star-dialogue and arrival blocks follow the visible dialogue/video state.
+- Garage equipment narration follows the currently opened part popup. Lab instructions exist only while the instruction overlay is visible.
+- Optional station rooms have independent page scopes; leaving a room removes all of its blocks.
 
-```text
-<NEXT_PUBLIC_QUEST_1_AUDIO_BASE_URL>/quests/quest-1/audio/v1/<manifest-relative-path>
-```
-
-There is no cross-language fallback. A missing locale path or disabled CDN returns `null`.
-
-## Context and branching
-
-The current semantic `Quest1PageId` is the player context. `narration/context.ts` declares only blocks that are already visible or immediately available on that page. Flight and sail have separate lists. Audio Previous/Next moves only within that list and never calls `go`, changes progress, selects a route, opens a station room or completes a game.
-
-Interactive dialogue, takeoff hints, garage-part explanations, quiz explanations and the post-challenge arrival are intentionally not pre-unlocked. Their manifest IDs exist, but exposing them before the related action would reveal future content. When those recordings are approved, each relevant game-state component must add its newly revealed IDs to the typed available-block list at the same transition that reveals the corresponding text. It must not derive IDs from DOM order or displayed text.
-
-The initial mapping is shared by desktop and mobile because both engines use the same semantic page IDs. Changing viewport therefore selects the nearest identical page context without changing game progress.
+Previous/Next operates only inside the current ordered active list. It cannot choose a route, answer a quiz, open a room, advance a day or reveal a future block. The full 83-block matrix is documented in `svalbard-audio-coverage.md`.
 
 ## Playback lifecycle
 
 One native `<audio>` element owns playback. The player:
 
-- never starts on first page load;
 - starts only after explicit Play;
-- can continue to the next already available block after `ended`;
-- stops and unloads audio on page change, locale change and unmount;
-- preserves the semantic block ID when the locale changes, but never auto-starts its translation;
-- leaves browser autoplay rejection in a quiet, playable state;
-- reports loading failure inline without a modal.
+- may continue after `ended` only to the next already-available block in the same active context;
+- stops and clears its source when the selected block disappears, on page change, locale change and unmount;
+- preserves the semantic block ID across locale changes when it remains available, but never auto-starts the translated file;
+- ignores stale asynchronous `play()` completions after a context or language change;
+- surfaces loading/playback failure inline without blocking the quest and allows a later retry.
 
-The player stores only `enabled` and `collapsed` under `laplapla:quest-1:narration:v1`. It never reads or writes `laplapla:quest-1:progress:v1`.
+Settings store only `enabled` and `collapsed` under `laplapla:quest-1:narration:v1`. Narration never reads or writes `laplapla:quest-1:progress:v1`.
 
-## Layout and accessibility
+## RTL and layout
 
-The control is a scoped fixed pill at the bottom of the quest, with safe-area spacing and extra quest-content bottom padding. The collapsed form is one 48 px sound button. Controls have localized RU/EN/HE labels, disabled states, keyboard focus rings and touch-sized targets. Hebrew changes control text direction only; time remains LTR and game geometry is untouched.
+The existing compact control and safe-area spacing remain unchanged. Hebrew applies text direction to the panel while media controls and game geometry are not mirrored. The elapsed/duration display remains LTR. No per-paragraph controls or playlist are rendered.
 
-## Activation checklist after audio approval
+## Known limitations
 
-1. Upload only Julia-approved MP3 files with the exact manifest object keys.
-2. Verify all 249 public objects and their MIME/cache headers.
-3. Configure the approved public media origin and enable flag in a preview environment.
-4. Wire dynamic game-state unlocks for all remaining manifest blocks before production activation.
-5. Test RU/EN/HE playback, language switches, both branches, optional rooms and failure handling with real files.
-6. Recheck 1440×900, 768×1024 and 390×844, including iPhone safe area and Hebrew RTL.
-7. Enable production only after the preview check passes; do not use Google Drive or localhost URLs.
+Three manifest recordings cannot be exposed faithfully without changing source content or dialogue behavior:
+
+- `svalbard.day03.flight-dialogue.straight-5` combines the visible `straight_5` reply with `arc_1`, which belongs to a mutually exclusive route choice.
+- `svalbard.day03.flight-dialogue.zigzag-3` combines visible `zigzag_3` with `afterCorrect_1`, which the current game never renders.
+- `svalbard.day03.flight-dialogue.afterCorrect-2` points to an `afterCorrect` dialogue state that the current game never queues.
+
+These IDs remain catalogued but unavailable, preventing premature or inaccurate narration. They require corrected source recordings/manifest segmentation or a separately approved story/gameplay change. Desktop garage intro narration is integrated; the current mobile garage UI does not render that subtitle, so it is intentionally unavailable there.
+
+## Activation checklist
+
+1. Resolve and approve the three blocked dialogue recordings above.
+2. Run the manifest/catalog consistency tests after any approved manifest update.
+3. Enable the flag only in a preview environment and play through RU/EN/HE, both routes and all optional rooms.
+4. Recheck 1440x900, 768x1024 and 390x844, including iPhone safe area and Hebrew RTL.
+5. Enable production only after product approval; production activation is not part of this implementation.

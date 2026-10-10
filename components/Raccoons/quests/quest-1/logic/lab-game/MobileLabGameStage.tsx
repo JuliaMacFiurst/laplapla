@@ -11,6 +11,7 @@ import {
   LOGAN_VIDEO_URL,
 } from "./types";
 import { useLabGameState } from "./useLabGameState";
+import { useAvailableNarrationBlocks } from "../../narration/availability";
 
 export default function MobileLabGameStage() {
   const { t } = useQuest1I18n();
@@ -34,6 +35,10 @@ export default function MobileLabGameStage() {
     gameDurationMs: 30_000,
     finishDelayMs: 0,
   });
+  useAvailableNarrationBlocks(
+    "day5-mobile-lab-instruction",
+    !gameStarted ? ["svalbard.day05.lab.instruction.01"] : [],
+  );
 
   const moveToLane = (nextLane: number) => {
     const clampedLane = Math.max(0, Math.min(nextLane, FALLING_LANE_COUNT - 1));

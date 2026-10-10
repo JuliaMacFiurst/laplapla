@@ -8,6 +8,7 @@ import Backpack from "./Backpack";
 import FallingThingLane from "./FallingThingLane";
 import LoganComment from "./LoganComment";
 import { useLabGameState } from "./useLabGameState";
+import { useAvailableNarrationBlocks } from "../../narration/availability";
 
 export default function LabGameStage() {
   const { t } = useQuest1I18n();
@@ -25,6 +26,10 @@ export default function LabGameStage() {
   resetGame,
   caughtThings,
 } = useLabGameState();
+  useAvailableNarrationBlocks(
+    "day5-lab-instruction",
+    !gameStarted ? ["svalbard.day05.lab.instruction.01"] : [],
+  );
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {

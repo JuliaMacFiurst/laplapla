@@ -11,6 +11,7 @@ export default function FlightMiniTest({ go }: { go: (id: PageId) => void }) {
       questions={flightQuestions}
       finishTitle={t.day3Flight.finishTitle}
       finishButtonText={t.day3Flight.finishButton}
+      explanationBlockIds={[null, "svalbard.day03.flight.mercator-explanation.01", null]}
       onFinish={() => go("day4_takeoff")}
     />
   );

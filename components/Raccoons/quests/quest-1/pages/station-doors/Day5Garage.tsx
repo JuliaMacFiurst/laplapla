@@ -10,6 +10,8 @@ import SledAnimationOverlay from "../../logic/dog-sled-game/SledAnimationOverlay
 import DogSledRunStage from "../../logic/dog-sled-game/DogSledRunStage";
 import { useQuest1I18n } from "../../i18n";
 import { devLog } from "@/utils/devLog";
+import { useAvailableNarrationBlocks } from "../../narration/availability";
+import { garagePartBlockId } from "../../narration/gameMappings";
 
 export type SledPart =
   | "reins"
@@ -53,6 +55,15 @@ export default function Day5Garage({ go }: { go: (id: PageId) => void }) {
   });
 
   const [activeAnimation, setActiveAnimation] = useState<SledAnimation>(null);
+  const partBlockId = garagePartBlockId(activePart);
+  useAvailableNarrationBlocks(
+    "day5-garage-intro",
+    ["svalbard.day05.garage.intro.01"],
+  );
+  useAvailableNarrationBlocks(
+    "day5-garage-part",
+    phase === "inspect" && partBlockId ? [partBlockId] : [],
+  );
 
   function statLevel(value: number) {
      if (value >= 0.9) return "is-max"; 

@@ -304,7 +304,7 @@ Product direction:
 - [x] `/shop` includes a localized free Svalbard discovery card with direct anonymous launch and no commerce or entitlement coupling.
 - [ ] Replace or localize Russian text embedded in the externally loaded star-map SVG; the current EN/HE notice remains until that asset work is approved.
 - [x] Add a feature-gated contextual narration-player foundation with manifest-derived RU/EN/HE URLs, page/route-scoped availability, isolated preferences and no gameplay coupling.
-- [ ] After approved MP3 upload, register state-dependent dialogue/hint blocks at their real reveal points, validate all 249 objects and enable the player in preview before production.
+- [ ] Complete narration activation: 80/83 blocks are now registered at their real reveal points and all 249 catalog paths are validated; three flight-dialogue recordings need approved re-segmentation/source-state resolution, followed by preview QA and separate production enablement.
 
 Required future read-only audit:
 - [ ] Establish the real routes, components and data flow.
@@ -810,6 +810,22 @@ Remaining in this phase:
 - Narration production/review, final-cartoon dubbing and Cloudflare upload remain separate tasks.
 Validation:
 - Context/catalog/runtime/settings coverage uses a mocked audio element and verifies branch isolation, locale mapping, disabled-CDN behavior, cleanup and progress independence.
+
+## 2026-10-10 — Svalbard narration gameplay integration
+Phase: Planned storefront/discovery follow-up
+Status: IN PROGRESS — 80/83 blocks integrated; production flag remains disabled
+Completed:
+- Replaced broad page-level availability with state-driven registrations tied to actually visible desktop/mobile paragraphs, route dialogues, checked quiz explanations, active takeoff hints, star-navigation states and optional station-room overlays.
+- Added a compact 83-entry runtime path catalog for the confirmed `https://media.laplapla.com/quests/quest-1/audio/v1/` delivery contract without bundling literary text, production metadata or secrets.
+- Classified every manifest ID in an explicit coverage matrix: 80 are integrated, and all 83 retain unique RU / EN / HE paths.
+- Verified representative RU / EN / HE objects return HTTP 200 `audio/mpeg` and byte-range requests return HTTP 206.
+Remaining in this phase:
+- Resolve three flight-dialogue source mismatches before claiming full integration: `straight-5` combines mutually exclusive route text, `zigzag-3` includes a non-rendered line, and `afterCorrect-2` has no current game trigger.
+- Complete real-browser preview QA after those source decisions, then obtain separate approval before enabling the production feature flag.
+- Final-cartoon dubbing remains a separate task.
+Validation:
+- Focused narration tests (24), full Vitest (1,159), TypeScript, changed-file ESLint, production build and `git diff --check` passed.
+- Local real-file preview confirmed HE playback, HE → EN stop/remap behavior, RU / EN / HE layout at 1440×900, 768×1024 and 390×844, correct RTL and no user-route control overlap or horizontal overflow.
 
 ---
 

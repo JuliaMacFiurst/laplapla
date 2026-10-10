@@ -1,17 +1,23 @@
 import type { CSSProperties } from "react";
 import { useQuest1I18n } from "./i18n";
 import { sanitizeRichText } from "@/lib/security/sanitize";
+import { useAvailableNarrationBlocks } from "./narration/availability";
 
 export default function QuestTextBlocks({
   blocks,
   className = "quest-story-text",
   style,
+  narrationKey,
+  narrationBlockIds = [],
 }: {
   blocks: string[][];
   className?: string;
   style?: CSSProperties;
+  narrationKey?: string;
+  narrationBlockIds?: readonly string[];
 }) {
   const { lang } = useQuest1I18n();
+  useAvailableNarrationBlocks(narrationKey ?? "quest-text-blocks", narrationBlockIds);
   return (
     <div className={className} style={style} dir={lang === "he" ? "rtl" : "ltr"}>
       {blocks.map((block, blockIndex) => (

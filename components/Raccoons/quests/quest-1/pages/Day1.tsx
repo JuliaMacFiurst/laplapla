@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { PageId } from "../QuestEngine";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
+import { DAY_1_BLOCKS } from "../narration/gameMappings";
 
 export default function Day1({ go }: { go: (id: PageId) => void }) {
   const { t } = useQuest1I18n();
@@ -111,6 +112,8 @@ export default function Day1({ go }: { go: (id: PageId) => void }) {
           <QuestTextBlocks
             className="quest-story-text quest-day1-story-text"
             blocks={t.day1.blocks}
+            narrationKey="day1-story"
+            narrationBlockIds={DAY_1_BLOCKS}
           />
         </div>
       )}

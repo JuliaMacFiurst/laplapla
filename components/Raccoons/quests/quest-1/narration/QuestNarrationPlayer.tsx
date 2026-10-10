@@ -6,11 +6,7 @@ import {
   resolveQuest1NarrationUrl,
   type NarrationBlockId,
 } from "./catalog";
-import {
-  QUEST_1_INITIAL_NARRATION,
-  adjacentNarrationBlock,
-  selectNarrationBlock,
-} from "./context";
+import { adjacentNarrationBlock, selectNarrationBlock } from "./context";
 import { QUEST_1_NARRATION_LABELS } from "./labels";
 import {
   DEFAULT_QUEST_1_NARRATION_SETTINGS,
@@ -33,11 +29,12 @@ function browserStorage() {
   }
 }
 
-export default function QuestNarrationPlayer({ pageId, locale }: {
+export default function QuestNarrationPlayer({ pageId, locale, availableBlockIds }: {
   pageId: Quest1PageId;
   locale: Lang;
+  availableBlockIds: readonly NarrationBlockId[];
 }) {
-  const available = QUEST_1_INITIAL_NARRATION[pageId];
+  const available = availableBlockIds;
   const labels = QUEST_1_NARRATION_LABELS[locale];
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const localeRef = useRef(locale);
@@ -45,6 +42,7 @@ export default function QuestNarrationPlayer({ pageId, locale }: {
   const selectedRef = useRef<NarrationBlockId | null>(available[0] ?? null);
   const userStartedRef = useRef(false);
   const enabledRef = useRef(true);
+  const playbackAttemptRef = useRef(0);
   const [selected, setSelected] = useState<NarrationBlockId | null>(available[0] ?? null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -54,6 +52,7 @@ export default function QuestNarrationPlayer({ pageId, locale }: {
   const [settingsHydrated, setSettingsHydrated] = useState(false);
 
   const stop = useCallback(() => {
+    playbackAttemptRef.current += 1;
     const audio = audioRef.current;
     stopQuestNarrationAudio(audio);
     setPlaying(false);
@@ -62,6 +61,8 @@ export default function QuestNarrationPlayer({ pageId, locale }: {
   }, []);
 
   const playBlock = useCallback(async (blockId: NarrationBlockId) => {
+    const attempt = playbackAttemptRef.current + 1;
+    playbackAttemptRef.current = attempt;
     const url = resolveQuest1NarrationUrl(blockId, localeRef.current);
     const audio = audioRef.current;
     if (!url || !audio || !enabledRef.current) {
@@ -72,6 +73,10 @@ export default function QuestNarrationPlayer({ pageId, locale }: {
     setLoadFailed(false);
     try {
       await playQuestNarrationAudio(audio, url);
+      if (attempt !== playbackAttemptRef.current) {
+        audio.pause();
+        return false;
+      }
       userStartedRef.current = true;
       setPlaying(true);
       return true;
@@ -98,6 +103,7 @@ export default function QuestNarrationPlayer({ pageId, locale }: {
   useEffect(() => {
     availableRef.current = available;
     const nextSelected = selectNarrationBlock(available, selectedRef.current);
+    if (nextSelected === selectedRef.current) return;
     selectedRef.current = nextSelected;
     setSelected(nextSelected);
     userStartedRef.current = false;

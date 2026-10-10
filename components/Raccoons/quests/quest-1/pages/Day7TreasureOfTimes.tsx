@@ -46,7 +46,12 @@ export default function Day7TreasureOfTimes() {
       )}
 
       {/* Текстовые плитки */}
-      <QuestTextBlocks blocks={t.day7.blocks} style={{ marginTop: "24px" }} />
+      <QuestTextBlocks
+        blocks={t.day7.blocks}
+        narrationKey="day7-ending"
+        narrationBlockIds={["svalbard.day07.ending.01"]}
+        style={{ marginTop: "24px" }}
+      />
 
         <footer className="quest-footer">
         <div

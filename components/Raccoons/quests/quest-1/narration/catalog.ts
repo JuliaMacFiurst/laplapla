@@ -1,30 +1,39 @@
-import manifest from "@/docs/production/svalbard-audio-v1/manifest.json";
 import type { Lang } from "@/i18n";
+import {
+  QUEST_1_AUDIO_CDN_ORIGIN,
+  QUEST_1_AUDIO_PATHS,
+  QUEST_1_AUDIO_PREFIX,
+  narrationRelativePath,
+  type NarrationBlockId,
+} from "./audioPaths";
 
-export type NarrationBlockId = (typeof manifest.blocks)[number]["id"];
+export type { NarrationBlockId } from "./audioPaths";
 
-const blocksById = new Map(manifest.blocks.map((block) => [block.id, block]));
-
-const configuredBaseUrl = process.env.NEXT_PUBLIC_QUEST_1_AUDIO_BASE_URL?.trim().replace(/\/+$/, "");
+const configuredBaseUrl = (
+  process.env.NEXT_PUBLIC_QUEST_1_AUDIO_BASE_URL?.trim() || QUEST_1_AUDIO_CDN_ORIGIN
+)
+  .replace(/\/+$/, "")
+  .replace(new RegExp(`/${QUEST_1_AUDIO_PREFIX.replaceAll("/", "\\/")}$`), "");
 
 export const isQuest1NarrationEnabled =
-  process.env.NEXT_PUBLIC_QUEST_1_AUDIO_ENABLED === "true" && Boolean(configuredBaseUrl);
+  process.env.NEXT_PUBLIC_QUEST_1_AUDIO_ENABLED === "true";
 
 export function isNarrationBlockId(value: string): value is NarrationBlockId {
-  return blocksById.has(value);
+  return Object.prototype.hasOwnProperty.call(QUEST_1_AUDIO_PATHS, value);
 }
 
 export function resolveQuest1NarrationUrl(blockId: NarrationBlockId, locale: Lang) {
   if (!isQuest1NarrationEnabled || !configuredBaseUrl) return null;
 
-  const relativePath = blocksById.get(blockId)?.audio[locale];
-  if (!relativePath) return null;
-
-  return `${configuredBaseUrl}/${manifest.delivery.productionObjectPrefix}/${relativePath}`;
+  return `${configuredBaseUrl}/${QUEST_1_AUDIO_PREFIX}/${narrationRelativePath(blockId, locale)}`;
 }
 
 export function hasNarrationLocale(blockId: NarrationBlockId, locale: Lang) {
-  return Boolean(blocksById.get(blockId)?.audio[locale]);
+  return Boolean(narrationRelativePath(blockId, locale));
 }
 
-export const QUEST_1_NARRATION_BLOCK_COUNT = manifest.blocks.length;
+export function compareNarrationBlocks(left: NarrationBlockId, right: NarrationBlockId) {
+  return QUEST_1_AUDIO_PATHS[left].order - QUEST_1_AUDIO_PATHS[right].order;
+}
+
+export const QUEST_1_NARRATION_BLOCK_COUNT = Object.keys(QUEST_1_AUDIO_PATHS).length;

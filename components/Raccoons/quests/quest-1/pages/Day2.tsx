@@ -3,9 +3,12 @@ import Image from "next/image";
 import type { PageId } from "../QuestEngine";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
+import { useAvailableNarrationBlocks } from "../narration/availability";
+import { DAY_2_BLOCKS, DAY_2_CHOICE_BLOCK } from "../narration/gameMappings";
 
 export default function Day2({ go }: { go: (id: PageId) => void }) {
   const { t } = useQuest1I18n();
+  useAvailableNarrationBlocks("day2-choice", [DAY_2_CHOICE_BLOCK]);
   return (
     <div className="quest-page-bg">
       <div className="polar-scenery" aria-hidden />
@@ -22,7 +25,12 @@ export default function Day2({ go }: { go: (id: PageId) => void }) {
         </div>
       </div>
 
-      <QuestTextBlocks blocks={t.day2.blocks} style={{ marginTop: "20px" }} />
+      <QuestTextBlocks
+        blocks={t.day2.blocks}
+        narrationKey="day2-story"
+        narrationBlockIds={DAY_2_BLOCKS}
+        style={{ marginTop: "20px" }}
+      />
       <div
             className="quest-center ice-button-wrapper"
             style={{ marginTop: "60px" }}

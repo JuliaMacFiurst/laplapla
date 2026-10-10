@@ -9,12 +9,20 @@ import SailMiniTest from "../sail/SailMiniTest";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
 import { getSeaRouteDialogs } from "../i18n/dialogs";
+import { useAvailableNarrationBlocks } from "../narration/availability";
+import { SAIL_STATIC_BLOCKS, seaDialogueBlockId } from "../narration/gameMappings";
 
 export default function Day3Sail({ go }: { go: (id: PageId) => void }) {
   const { lang, t } = useQuest1I18n();
   const racTextRef = useRef<HTMLDivElement | null>(null);
   const seaRouteDialogs = getSeaRouteDialogs(lang);
   const [dialogueQueue, setDialogueQueue] = useState(seaRouteDialogs);
+  const currentDialogueBlock = seaDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("day3-sail-static", SAIL_STATIC_BLOCKS);
+  useAvailableNarrationBlocks(
+    "day3-sail-dialogue",
+    currentDialogueBlock ? [currentDialogueBlock] : [],
+  );
   return (
     <div className="quest-page-bg">
       <div className="polar-scenery" aria-hidden />

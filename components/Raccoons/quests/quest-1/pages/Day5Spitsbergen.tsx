@@ -5,6 +5,7 @@ import type { PageId } from "../QuestEngine";
 import { useState } from "react";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
+import { STATION_BLOCKS } from "../narration/gameMappings";
 
 type DoorId = "heat" | "lab" | "garage";
 
@@ -44,7 +45,12 @@ return (
         <h1 className="quest-title-text">{t.day5Spitsbergen.title}</h1>
       </div>
 
-      <QuestTextBlocks blocks={t.day5Spitsbergen.blocks} style={{ marginTop: "20px" }} />
+      <QuestTextBlocks
+        blocks={t.day5Spitsbergen.blocks}
+        narrationKey="day5-station-story"
+        narrationBlockIds={STATION_BLOCKS}
+        style={{ marginTop: "20px" }}
+      />
 
       <div className="spitsbergen-station">
         {/* фон станции */}
