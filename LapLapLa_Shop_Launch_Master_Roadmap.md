@@ -782,6 +782,18 @@ Validation:
 - Fresh development routing returns `200` for the shop index, Sound Case product and Sound Case create route in RU / EN / HE; the saved-language redirect `/shop → /en/shop` terminates at `200` as designed.
 - The existing production build served the same route matrix with `200`, confirming that the failure was limited to the stale development process/cache.
 
+## 2026-10-10 — Shop format positioning and Svalbard playtime
+Phase: Planned storefront/discovery follow-up
+Status: IN PROGRESS
+Completed:
+- Updated the RU / EN / HE shop hero so the storefront represents both fully online quests and adventures with printable activities, rather than implying that every quest begins on paper.
+- Brought the Svalbard discovery card onto the shared storefront card structure with its approved poster, four localized facts and an explicit no-commerce free status.
+- Set the owner-approved Svalbard playtime to `25 minutes or more`, with localized guidance that mini-games and retries affect the total duration.
+- Preserved all Sound Case #001 product facts, price, CTA and commerce behavior unchanged.
+Validation:
+- RU / EN / HE browser QA passed at 1440×900, 768×1024 and 390×844 with no horizontal overflow, fact overlap or RTL regression; mobile CTA remains at least 48 px high.
+- Focused storefront tests, TypeScript, changed-file ESLint and the full Vitest suite passed.
+
 ---
 
 # 7. Instructions for every future Codex prompt

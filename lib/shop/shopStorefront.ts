@@ -19,8 +19,8 @@ type ShopStorefrontCopy = {
 export const SHOP_STOREFRONT_COPY: Record<Lang, ShopStorefrontCopy> = {
   ru: {
     eyebrow: "LapLapLa Shop",
-    title: "Приключения, которые начинаются на бумаге — и продолжаются в игре",
-    intro: "Персонализированные печатные квесты соединяют физические карточки и улики со звуком, QR-заданиями и интерактивными этапами LapLapLa.",
+    title: "Мир полон загадок. Пора их разгадать!",
+    intro: "Почему пески умеют петь? Что скрывает арктическое семенохранилище? Интерактивные квесты LapLapLa превращают удивительные научные факты в приключения с головоломками, экспериментами и мини-играми. Играйте онлайн или отправляйтесь в приключение с печатными заданиями.",
     featuredLabel: "Первое приключение",
     productValue: "Расследование тайны поющих песков: восемь этапов, имена вашей команды, печатные материалы и звуковые задания.",
     priceLabel: "Обычная цена после запуска",
@@ -34,8 +34,8 @@ export const SHOP_STOREFRONT_COPY: Record<Lang, ShopStorefrontCopy> = {
   },
   en: {
     eyebrow: "LapLapLa Shop",
-    title: "Adventures that begin on paper—and continue through play",
-    intro: "Personalized printable quests connect physical cards and clues with sound, QR activities, and interactive LapLapLa stages.",
+    title: "The World Is Full of Mysteries. Let's Solve Them!",
+    intro: "Why do sand dunes sing? What secrets does the Arctic Seed Vault hold? LapLapLa's interactive quests turn surprising scientific facts into adventures filled with puzzles, experiments, and mini-games. Play online or take your adventure further with printable activities.",
     featuredLabel: "The first adventure",
     productValue: "Investigate the mystery of singing sands across eight stages with your team’s names, printable materials, and sound challenges.",
     priceLabel: "Regular price after launch",
@@ -49,8 +49,8 @@ export const SHOP_STOREFRONT_COPY: Record<Lang, ShopStorefrontCopy> = {
   },
   he: {
     eyebrow: "LapLapLa Shop",
-    title: "הרפתקאות שמתחילות על הנייר — וממשיכות במשחק",
-    intro: "משימות הרפתקה אישיות להדפסה שמחברות כרטיסים ורמזים פיזיים עם צלילים, משימות QR ושלבים אינטראקטיביים של LapLapLa.",
+    title: "העולם מלא תעלומות. הגיע הזמן לפתור אותן!",
+    intro: "למה דיונות חול שרות? אילו סודות מסתתרים בכספת הזרעים הארקטית? הקווסטים האינטראקטיביים של LapLapLa הופכים עובדות מדעיות מפתיעות להרפתקאות עם חידות, ניסויים ומשחקונים. אפשר לשחק אונליין או להמשיך את ההרפתקה עם פעילויות להדפסה.",
     featuredLabel: "ההרפתקה הראשונה",
     productValue: "חוקרים את תעלומת החולות המזמרים בשמונה שלבים, עם שמות הצוות שלכם, חומרים להדפסה ומשימות צליל.",
     priceLabel: "המחיר הרגיל לאחר ההשקה",

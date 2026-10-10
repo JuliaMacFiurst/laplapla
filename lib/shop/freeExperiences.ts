@@ -7,6 +7,12 @@ export type ShopFreeExperience = {
   description: LocalizedString;
   label: LocalizedString;
   cta: LocalizedString;
+  age: LocalizedString;
+  durationLabel: LocalizedString;
+  duration: LocalizedString;
+  format: LocalizedString;
+  priceLabel: LocalizedString;
+  priceValue: LocalizedString;
   category: ProductCategory;
   href: string;
   image: string;
@@ -22,9 +28,23 @@ export const SVALBARD_FREE_EXPERIENCE: ShopFreeExperience = {
   ),
   label: localizedString("Бесплатно", "Free", "חינם"),
   cta: localizedString("Начать приключение", "Start the adventure", "מתחילים בהרפתקה"),
+  age: localizedString("7+", "7+", "7+"),
+  durationLabel: localizedString("Время прохождения", "Playtime", "משך המשחק"),
+  duration: localizedString(
+    "От 25 минут. Продолжительность зависит от времени, проведённого в мини-играх, и повторных попыток.",
+    "25 minutes or more. Playtime depends on how long you spend on mini-games and retries.",
+    "25 דקות ומעלה. משך המשחק תלוי בזמן שמקדישים למשחקונים ולניסיונות חוזרים.",
+  ),
+  format: localizedString(
+    "Интерактивный онлайн-квест, без печатных материалов",
+    "Interactive online quest, with no printed materials",
+    "משימת הרפתקה אינטראקטיבית אונליין, ללא חומרי הדפסה",
+  ),
+  priceLabel: localizedString("Стоимость", "Price", "מחיר"),
+  priceValue: localizedString("Полностью бесплатно", "Completely free", "חינם לגמרי"),
   category: "games",
   href: "/quests/quest-1",
-  image: "/supabase-storage/quests/1_quest/images/Spitzbergen-station.webp",
+  image: "/supabase-storage/quests/1_quest/images/first-quest-afisha.webp",
 };
 
 export const SHOP_FREE_EXPERIENCES: readonly ShopFreeExperience[] = [SVALBARD_FREE_EXPERIENCE];
@@ -38,5 +58,11 @@ export function getLocalizedFreeExperience(
     description: experience.description[lang],
     label: experience.label[lang],
     cta: experience.cta[lang],
+    age: experience.age[lang],
+    durationLabel: experience.durationLabel[lang],
+    duration: experience.duration[lang],
+    format: experience.format[lang],
+    priceLabel: experience.priceLabel[lang],
+    priceValue: experience.priceValue[lang],
   };
 }

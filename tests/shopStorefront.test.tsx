@@ -14,6 +14,28 @@ const product = getProductById("sound-case-001");
 if (!product) throw new Error("Sound Case #001 catalog fixture is missing");
 
 describe("LapLapLa shop storefront", () => {
+  it("presents online and printable quests with the approved localized hero copy", () => {
+    expect(SHOP_STOREFRONT_COPY.ru).toMatchObject({
+      title: "Мир полон загадок. Пора их разгадать!",
+      intro: "Почему пески умеют петь? Что скрывает арктическое семенохранилище? Интерактивные квесты LapLapLa превращают удивительные научные факты в приключения с головоломками, экспериментами и мини-играми. Играйте онлайн или отправляйтесь в приключение с печатными заданиями.",
+    });
+    expect(SHOP_STOREFRONT_COPY.en).toMatchObject({
+      title: "The World Is Full of Mysteries. Let's Solve Them!",
+      intro: "Why do sand dunes sing? What secrets does the Arctic Seed Vault hold? LapLapLa's interactive quests turn surprising scientific facts into adventures filled with puzzles, experiments, and mini-games. Play online or take your adventure further with printable activities.",
+    });
+    expect(SHOP_STOREFRONT_COPY.he).toMatchObject({
+      title: "העולם מלא תעלומות. הגיע הזמן לפתור אותן!",
+      intro: "למה דיונות חול שרות? אילו סודות מסתתרים בכספת הזרעים הארקטית? הקווסטים האינטראקטיביים של LapLapLa הופכים עובדות מדעיות מפתיעות להרפתקאות עם חידות, ניסויים ומשחקונים. אפשר לשחק אונליין או להמשיך את ההרפתקה עם פעילויות להדפסה.",
+    });
+
+    const heroCopy = [
+      SHOP_STOREFRONT_COPY.ru.title,
+      SHOP_STOREFRONT_COPY.en.title,
+      SHOP_STOREFRONT_COPY.he.title,
+    ].join(" ");
+    expect(heroCopy).not.toMatch(/начинаются на бумаге|begin on paper|מתחילות על הנייר/i);
+  });
+
   it("stores the approved provisional age and duration facts in every locale", () => {
     expect(product.recommendedAge).toEqual({
       ru: "9+ — в основном самостоятельно; 7+ — с ведущим-взрослым.",

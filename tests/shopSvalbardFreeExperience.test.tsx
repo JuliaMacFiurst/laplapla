@@ -29,6 +29,14 @@ describe("Svalbard free shop experience", () => {
     expect(html).toContain(label);
     expect(html).toContain(cta);
     expect(html).toContain(SVALBARD_FREE_EXPERIENCE.description[lang]);
+    expect(html).toContain(SVALBARD_FREE_EXPERIENCE.age[lang]);
+    expect(html).toContain(SVALBARD_FREE_EXPERIENCE.durationLabel[lang]);
+    expect(html).toContain(SVALBARD_FREE_EXPERIENCE.duration[lang]);
+    expect(html).toContain(SVALBARD_FREE_EXPERIENCE.format[lang]);
+    expect(html).toContain(SVALBARD_FREE_EXPERIENCE.priceValue[lang]);
+    expect(html).toContain("RU · EN · HE");
+    expect(html).toContain("shop-product-card__facts");
+    expect(html).toContain("shop-product-card__purchase");
     expect(html).toContain(`href="${href}"`);
     expect(buildLocalizedPublicPath(SVALBARD_FREE_EXPERIENCE.href, lang)).toBe(href);
     expect(html).toContain(`dir="${lang === "he" ? "rtl" : "ltr"}"`);
@@ -40,6 +48,31 @@ describe("Svalbard free shop experience", () => {
     expect(SVALBARD_FREE_EXPERIENCE).not.toHaveProperty("commerce");
     expect(SVALBARD_FREE_EXPERIENCE).not.toHaveProperty("entitlement");
     expect(SVALBARD_FREE_EXPERIENCE).not.toHaveProperty("download");
+    expect(SVALBARD_FREE_EXPERIENCE.image).toBe(
+      "/supabase-storage/quests/1_quest/images/first-quest-afisha.webp",
+    );
+  });
+
+  it("uses the approved localized playtime and never renders the former placeholder", () => {
+    expect(SVALBARD_FREE_EXPERIENCE.durationLabel).toEqual({
+      ru: "Время прохождения",
+      en: "Playtime",
+      he: "משך המשחק",
+    });
+    expect(SVALBARD_FREE_EXPERIENCE.duration).toEqual({
+      ru: "От 25 минут. Продолжительность зависит от времени, проведённого в мини-играх, и повторных попыток.",
+      en: "25 minutes or more. Playtime depends on how long you spend on mini-games and retries.",
+      he: "25 דקות ומעלה. משך המשחק תלוי בזמן שמקדישים למשחקונים ולניסיונות חוזרים.",
+    });
+    expect(JSON.stringify(SVALBARD_FREE_EXPERIENCE)).not.toMatch(
+      /Уточняется после проверки|To be confirmed after a timed playthrough|ייקבע לאחר בדיקת זמן/,
+    );
+    expect(SVALBARD_FREE_EXPERIENCE.age).toEqual({ ru: "7+", en: "7+", he: "7+" });
+    expect(SVALBARD_FREE_EXPERIENCE.priceValue).toEqual({
+      ru: "Полностью бесплатно",
+      en: "Completely free",
+      he: "חינם לגמרי",
+    });
   });
 
   it("keeps Sound Case catalog data unchanged", () => {
@@ -49,9 +82,9 @@ describe("Svalbard free shop experience", () => {
 
   it("keeps the CTA visible and touch-sized on mobile without hover dependency", () => {
     const css = readFileSync("styles/Shop.css", "utf8");
-    expect(css).toMatch(/\.shop-free-experience__copy a\s*\{[^}]*min-height:\s*48px/s);
-    expect(css).toMatch(/@media \(max-width: 520px\)[\s\S]*\.shop-free-experience__copy a\s*\{[^}]*width:\s*100%/s);
-    expect(css).not.toMatch(/\.shop-free-experience[^}]*:hover[^}]*display:\s*(block|flex|grid)/s);
+    expect(css).toMatch(/\.shop-product-card__purchase a,[\s\S]*min-height:\s*48px/s);
+    expect(css).toMatch(/@media \(max-width: 520px\)[\s\S]*\.shop-product-card__purchase a\s*\{[^}]*width:\s*100%/s);
+    expect(css).not.toMatch(/\.shop-product-card--free[^}]*:hover[^}]*display:\s*(block|flex|grid)/s);
   });
 
   it("is rendered by the shop page without changing the paid product route", () => {
