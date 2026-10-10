@@ -2609,20 +2609,20 @@
       "order": 68,
       "texts": {
         "ru": {
-          "displayText": "— Тепловой модуль — где ты научишься правильному полярному снаряжению. — Лаборатория оборудования — где проверяют инструменты и приборы. — Гараж — место, где готовят снегоходы и технику к выезду. Ты можешь заходить в комнаты в любом порядке — всё зависит от тебя. Когда пройдёшь все три этапа, экспедиция начнётся!",
-          "spokenText": "— Тепловой модуль — где ты научишься правильному полярному снаряжению. — Лаборатория оборудования — где проверяют инструменты и приборы. — Гараж — место, где готовят снегоходы и технику к выезду. Ты можешь заходить в комнаты в любом порядке — всё зависит от тебя. Когда пройдёшь все три этапа, экспедиция начнётся!",
+          "displayText": "— Тепловой модуль — здесь узнают, как правильно одеваться в полярных условиях. — Лаборатория оборудования — здесь проверяют инструменты и приборы. — Гараж — здесь готовят снегоходы и снаряжение к выходу. Ты можешь заглянуть в любую из трёх комнат и попробовать задания. А когда будешь готов, отправляйся дальше в экспедицию!",
+          "spokenText": "— Тепловой модуль — здесь узнают, как правильно одеваться в полярных условиях. — Лаборатория оборудования — здесь проверяют инструменты и приборы. — Гараж — здесь готовят снегоходы и снаряжение к выходу. Ты можешь заглянуть в любую из трёх комнат и попробовать задания. А когда будешь готов, отправляйся дальше в экспедицию!",
           "pronunciationNotes": [
             "Human-review astronomical proper-name pronunciation."
           ]
         },
         "en": {
-          "displayText": "— Thermal module — where you learn proper polar clothing. — Equipment lab — where tools and instruments are tested. — Garage — where snowmobiles and field equipment are prepared for departure. You can enter the rooms in any order. Once you complete all three stages, the expedition will begin!",
-          "spokenText": "— Thermal module — where you learn proper polar clothing. — Equipment lab — where tools and instruments are tested. — Garage — where snowmobiles and field equipment are prepared for departure. You can enter the rooms in any order. Once you complete all three stages, the expedition will begin!",
+          "displayText": "— Heat Module — where you learn how to dress for polar conditions. — Equipment Lab — where tools and instruments are tested. — Garage — where snowmobiles and expedition gear are prepared. You can explore any of the three rooms and try their challenges. When you're ready, continue your expedition!",
+          "spokenText": "— Heat Module — where you learn how to dress for polar conditions. — Equipment Lab — where tools and instruments are tested. — Garage — where snowmobiles and expedition gear are prepared. You can explore any of the three rooms and try their challenges. When you're ready, continue your expedition!",
           "pronunciationNotes": []
         },
         "he": {
-          "displayText": "— מודול חום — שבו לומדים על לבוש קוטבי נכון. — מעבדת ציוד — שבה בודקים כלים ומכשירים. — מוסך — המקום שבו מכינים אופנועי שלג וציוד ליציאה. אפשר להיכנס לחדרים בכל סדר שתרצה. כשתסיים את כל שלושת השלבים, המשלחת תתחיל!",
-          "spokenText": "— מודול חום — שבו לומדים על לבוש קוטבי נכון. — מעבדת ציוד — שבה בודקים כלים ומכשירים. — מוסך — המקום שבו מכינים אופנועי שלג וציוד ליציאה. אפשר להיכנס לחדרים בכל סדר שתרצה. כשתסיים את כל שלושת השלבים, המשלחת תתחיל!",
+          "displayText": "— מודול החום — כאן לומדים איך להתלבש נכון בתנאי הקוטב. — מעבדת הציוד — כאן בודקים כלים ומכשירים. — המוסך — כאן מכינים אופנועי שלג וציוד ליציאה. אפשר לבקר בכל אחד משלושת החדרים ולנסות את המשימות. כשמוכנים, אפשר להמשיך במסע!",
+          "spokenText": "— מודול החום — כאן לומדים איך להתלבש נכון בתנאי הקוטב. — מעבדת הציוד — כאן בודקים כלים ומכשירים. — המוסך — כאן מכינים אופנועי שלג וציוד ליציאה. אפשר לבקר בכל אחד משלושת החדרים ולנסות את המשימות. כשמוכנים, אפשר להמשיך במסע!",
           "pronunciationNotes": []
         }
       },

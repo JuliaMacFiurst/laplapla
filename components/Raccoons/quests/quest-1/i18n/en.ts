@@ -170,8 +170,8 @@ export const en: Quest1Dictionary = {
         "It is time for you to get ready for your own polar expedition too! The base has three departments, and each one will help you master an important part of the preparation:",
       ],
       [
-        "— <strong>Thermal module</strong> — where you learn proper polar clothing.<br/>— <strong>Equipment lab</strong> — where tools and instruments are tested.<br/>— <strong>Garage</strong> — where snowmobiles and field equipment are prepared for departure.",
-        "You can enter the rooms in any order. Once you complete all three stages, the expedition will begin!",
+        "— <strong>Heat Module</strong> — where you learn how to dress for polar conditions.<br/>— <strong>Equipment Lab</strong> — where tools and instruments are tested.<br/>— <strong>Garage</strong> — where snowmobiles and expedition gear are prepared.",
+        "You can explore any of the three rooms and try their challenges. When you're ready, continue your expedition!",
       ],
     ],
     labels: {

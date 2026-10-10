@@ -67,6 +67,6 @@ describe("Svalbard game UI localization", () => {
 
   it("keeps the narration production manifest unchanged", () => {
     const bytes = readFileSync("docs/production/svalbard-audio-v1/manifest.json");
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("679ebb3c55041d9aa08708df0ddbfa7d3d60c0a06f045a7ff5ca6d63a93ffe38");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("b08a612f0112fafb89d7c29fc89cf6acb462297ad37f716f8ed8448910828a1a");
   });
 });
