@@ -1,0 +1,3193 @@
+{
+  "schemaVersion": 1,
+  "questId": "quest-1",
+  "productId": "svalbard-free-discovery",
+  "manifestVersion": "audio-v1",
+  "sourcePolicy": "Application localization and stage-specific source files are authoritative. displayText is extracted from visible copy with markup removed; spokenText is identical unless a future approved revision changes it.",
+  "delivery": {
+    "productionObjectPrefix": "quests/quest-1/audio/v1",
+    "reviewExportDirectory": "/Users/julia_mac/Library/CloudStorage/GoogleDrive-juliamakhlinfiurst@gmail.com/Мой диск/content-media/99_EXPORTS/Other/laplapla-svalbard-quest-audio-v1",
+    "format": "mp3",
+    "productionMasterFormat": "wav",
+    "conversionPolicy": "Generate lossless WAV masters with the approved Content Factory locale pipeline, then encode review/delivery MP3 files with the configured ffmpeg tool. Preserve WAV masters outside the public delivery tree until review is complete."
+  },
+  "locales": [
+    "ru",
+    "en",
+    "he"
+  ],
+  "excludedSources": [
+    {
+      "category": "short-ui",
+      "reason": "Buttons, counters, navigation, scores and compact statuses are not narration."
+    },
+    {
+      "category": "dynamic-game-text",
+      "reason": "Scores, randomized results, country/sea lists, runtime feedback and player-dependent output must not become stale recordings."
+    },
+    {
+      "category": "unlocalized-runtime-copy",
+      "reason": "Russian-only lab item labels/comments and dog-sled UI require application localization before any later audio decision."
+    },
+    {
+      "category": "video",
+      "reason": "YouTube IDs 5NhIRwCq428, CWf0_sdJOJI and final cartoon sE2jxOVG8kU already contain media audio; final-cartoon dubbing is explicitly deferred."
+    },
+    {
+      "category": "quiz-options",
+      "reason": "Question counters, answer options and correctness feedback remain interactive UI rather than linear narration in v1."
+    }
+  ],
+  "blocks": [
+    {
+      "id": "svalbard.day01.intro.01",
+      "stage": "day01",
+      "scene": "intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day1.blocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 1,
+      "texts": {
+        "ru": {
+          "displayText": "Хрустят дрова в камине. За окном медленно падает снег. На пушистом коврике у огня сидят друзья: толстый Бульдог Роланд в очках, Йоркширский терьер Свенсен, запутавшийся в клетчатом пледе, маленький щенок Тобиас, играющий с апельсином, и задумчивая кошка, свернувшаяся клубком на кровати в углу.",
+          "spokenText": "Хрустят дрова в камине. За окном медленно падает снег. На пушистом коврике у огня сидят друзья: толстый Бульдог Роланд в очках, Йоркширский терьер Свенсен, запутавшийся в клетчатом пледе, маленький щенок Тобиас, играющий с апельсином, и задумчивая кошка, свернувшаяся клубком на кровати в углу.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Firewood crackles in the fireplace. Snow falls slowly outside the window. On the fluffy rug by the fire sit their friends: Roland the stout bulldog in glasses, Svensen the Yorkshire terrier tangled in a plaid blanket, little Tobias playing with an orange, and a thoughtful cat curled up on the bed in the corner.",
+          "spokenText": "Firewood crackles in the fireplace. Snow falls slowly outside the window. On the fluffy rug by the fire sit their friends: Roland the stout bulldog in glasses, Svensen the Yorkshire terrier tangled in a plaid blanket, little Tobias playing with an orange, and a thoughtful cat curled up on the bed in the corner.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "העצים מתפצפצים באח. מחוץ לחלון יורד שלג לאט. על השטיח הרך ליד האש יושבים החברים: רולנד הבולדוג השמנמן עם המשקפיים, סוונסן הטרייר היורקשיירי שהסתבך בשמיכה משובצת, טוביאס הגור הקטן שמשחק בתפוז, וחתולה מהורהרת שמכונסת בכדור על המיטה שבפינה.",
+          "spokenText": "העצים מתפצפצים באח. מחוץ לחלון יורד שלג לאט. על השטיח הרך ליד האש יושבים החברים: רולנד הבולדוג השמנמן עם המשקפיים, סוונסן הטרייר היורקשיירי שהסתבך בשמיכה משובצת, טוביאס הגור הקטן שמשחק בתפוז, וחתולה מהורהרת שמכונסת בכדור על המיטה שבפינה.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day01/intro/01.mp3",
+        "en": "en/day01/intro/01.mp3",
+        "he": "he/day01/intro/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day01.intro.02",
+      "stage": "day01",
+      "scene": "intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day1.blocks[1]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 2,
+      "texts": {
+        "ru": {
+          "displayText": "Бульдог открывает старую, чуть потёртую книгу. Его голос звучит низко и спокойно:",
+          "spokenText": "Бульдог открывает старую, чуть потёртую книгу. Его голос звучит низко и спокойно:",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The bulldog opens an old, slightly worn book. His voice is low and calm:",
+          "spokenText": "The bulldog opens an old, slightly worn book. His voice is low and calm:",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הבולדוג פותח ספר ישן ומעט שחוק. קולו נשמע נמוך ורגוע:",
+          "spokenText": "הבולדוג פותח ספר ישן ומעט שחוק. קולו נשמע נמוך ורגוע:",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day01/intro/02.mp3",
+        "en": "en/day01/intro/02.mp3",
+        "he": "he/day01/intro/02.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day01.intro.03",
+      "stage": "day01",
+      "scene": "intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day1.blocks[2]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 3,
+      "texts": {
+        "ru": {
+          "displayText": "«Когда-то давно, мой юный слушатель, жил великий путешественник — сэр Бартоломью Вагглстоун. Он прошёл сквозь снега Севера и пески Юга, пересёк океаны, пережил ураганы и песчаные бури. И в один из своих походов он нашёл древнюю карту — карту, ведущую к Кладу Времён. Но судьба капризна: буря разорвала карту на пять частей и разбросала их по всему свету.»",
+          "spokenText": "«Когда-то давно, мой юный слушатель, жил великий путешественник — сэр Бартоломью Вагглстоун. Он прошёл сквозь снега Севера и пески Юга, пересёк океаны, пережил ураганы и песчаные бури. И в один из своих походов он нашёл древнюю карту — карту, ведущую к Кладу Времён. Но судьба капризна: буря разорвала карту на пять частей и разбросала их по всему свету.»",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "“Long ago, my young listener, there lived a great traveler, Sir Bartholomew Wagglestone. He crossed northern snowfields and southern sands, sailed across oceans, survived hurricanes and sandstorms. And on one of his journeys he found an ancient map, a map leading to the Treasure of Time. But fate is whimsical: a storm tore the map into five pieces and scattered them across the world.”",
+          "spokenText": "“Long ago, my young listener, there lived a great traveler, Sir Bartholomew Wagglestone. He crossed northern snowfields and southern sands, sailed across oceans, survived hurricanes and sandstorms. And on one of his journeys he found an ancient map, a map leading to the Treasure of Time. But fate is whimsical: a storm tore the map into five pieces and scattered them across the world.”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "“לפני שנים רבות, מאזין צעיר שלי, חי נוסע גדול, סר ברתולומיו ואגלסטון. הוא עבר בשלגי הצפון ובחולות הדרום, חצה אוקיינוסים, שרד הוריקנים וסופות חול. ובאחת ממסעותיו הוא מצא מפה עתיקה, מפה המובילה אל אוצר הזמנים. אבל הגורל הפכפך: סערה קרעה את המפה לחמישה חלקים ופיזרה אותם ברחבי העולם.”",
+          "spokenText": "“לפני שנים רבות, מאזין צעיר שלי, חי נוסע גדול, סר ברתולומיו ואגלסטון. הוא עבר בשלגי הצפון ובחולות הדרום, חצה אוקיינוסים, שרד הוריקנים וסופות חול. ובאחת ממסעותיו הוא מצא מפה עתיקה, מפה המובילה אל אוצר הזמנים. אבל הגורל הפכפך: סערה קרעה את המפה לחמישה חלקים ופיזרה אותם ברחבי העולם.”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day01/intro/03.mp3",
+        "en": "en/day01/intro/03.mp3",
+        "he": "he/day01/intro/03.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day01.intro.04",
+      "stage": "day01",
+      "scene": "intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day1.blocks[3]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 4,
+      "texts": {
+        "ru": {
+          "displayText": "Йоркширский терьер отпивает чай и шепчет: — Пять частей... это же почти как пять историй!",
+          "spokenText": "Йоркширский терьер отпивает чай и шепчет: — Пять частей... это же почти как пять историй!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The Yorkshire terrier sips tea and whispers: “Five pieces... that is almost like five stories!”",
+          "spokenText": "The Yorkshire terrier sips tea and whispers: “Five pieces... that is almost like five stories!”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הטרייר יורקשיירי לוגם תה ולוחש: “חמישה חלקים... זה כמעט כמו חמישה סיפורים!”",
+          "spokenText": "הטרייר יורקשיירי לוגם תה ולוחש: “חמישה חלקים... זה כמעט כמו חמישה סיפורים!”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day01/intro/04.mp3",
+        "en": "en/day01/intro/04.mp3",
+        "he": "he/day01/intro/04.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day01.intro.05",
+      "stage": "day01",
+      "scene": "intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day1.blocks[4]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 5,
+      "texts": {
+        "ru": {
+          "displayText": "Бульдог кивает: «Именно так, мои пушистые слушатели. Чтобы найти клад, нужно собрать карту снова. Каждая часть спрятана в новой стране, за рекой, за горами, под морем и в сердце джунглей. И лишь самые отважные смогут пройти этот путь.»",
+          "spokenText": "Бульдог кивает: «Именно так, мои пушистые слушатели. Чтобы найти клад, нужно собрать карту снова. Каждая часть спрятана в новой стране, за рекой, за горами, под морем и в сердце джунглей. И лишь самые отважные смогут пройти этот путь.»",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The bulldog nods: “Exactly, my fluffy listeners. To find the treasure, the map must be assembled again. Each piece is hidden in a new country, beyond a river, behind mountains, under the sea, and in the heart of the jungle. Only the bravest will make it through.”",
+          "spokenText": "The bulldog nods: “Exactly, my fluffy listeners. To find the treasure, the map must be assembled again. Each piece is hidden in a new country, beyond a river, behind mountains, under the sea, and in the heart of the jungle. Only the bravest will make it through.”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הבולדוג מהנהן: “בדיוק כך, מאזינים פרוותיים שלי. כדי למצוא את האוצר צריך להרכיב שוב את המפה. כל חלק מוסתר בארץ חדשה, מעבר לנהר, מאחורי הרים, מתחת לים ובלב הג'ונגל. ורק האמיצים ביותר יצליחו לעבור את הדרך הזו.”",
+          "spokenText": "הבולדוג מהנהן: “בדיוק כך, מאזינים פרוותיים שלי. כדי למצוא את האוצר צריך להרכיב שוב את המפה. כל חלק מוסתר בארץ חדשה, מעבר לנהר, מאחורי הרים, מתחת לים ובלב הג'ונגל. ורק האמיצים ביותר יצליחו לעבור את הדרך הזו.”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day01/intro/05.mp3",
+        "en": "en/day01/intro/05.mp3",
+        "he": "he/day01/intro/05.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day01.intro.06",
+      "stage": "day01",
+      "scene": "intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day1.blocks[5]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 6,
+      "texts": {
+        "ru": {
+          "displayText": "Маленький щенок подпрыгивает: — Давайте мы попробуем! Бульдог с улыбкой закрывает книгу:",
+          "spokenText": "Маленький щенок подпрыгивает: — Давайте мы попробуем! Бульдог с улыбкой закрывает книгу:",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The little puppy jumps up: “Let us try!” The bulldog closes the book with a smile:",
+          "spokenText": "The little puppy jumps up: “Let us try!” The bulldog closes the book with a smile:",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הגור הקטן קופץ: “בואו ננסה אנחנו!” הבולדוג סוגר את הספר בחיוך:",
+          "spokenText": "הגור הקטן קופץ: “בואו ננסה אנחנו!” הבולדוג סוגר את הספר בחיוך:",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day01/intro/06.mp3",
+        "en": "en/day01/intro/06.mp3",
+        "he": "he/day01/intro/06.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day01.intro.07",
+      "stage": "day01",
+      "scene": "intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day1.blocks[6]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 7,
+      "texts": {
+        "ru": {
+          "displayText": "«Каждое путешествие начинается с первого шага. Завтра на рассвете — отправляемся.» Пламя камина тихо трещит, и кажется, что искры на секунду складываются в очертания старой карты…",
+          "spokenText": "«Каждое путешествие начинается с первого шага. Завтра на рассвете — отправляемся.» Пламя камина тихо трещит, и кажется, что искры на секунду складываются в очертания старой карты…",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "“Every journey begins with the first step. At dawn tomorrow, we set out.” The fire crackles softly, and for a moment the sparks seem to form the outline of an old map...",
+          "spokenText": "“Every journey begins with the first step. At dawn tomorrow, we set out.” The fire crackles softly, and for a moment the sparks seem to form the outline of an old map...",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "“כל מסע מתחיל בצעד הראשון. מחר עם שחר, נצא לדרך.” להבות האח מרצדות בשקט, ולרגע נדמה שהניצוצות מסתדרים בצורת מפה עתיקה...",
+          "spokenText": "“כל מסע מתחיל בצעד הראשון. מחר עם שחר, נצא לדרך.” להבות האח מרצדות בשקט, ולרגע נדמה שהניצוצות מסתדרים בצורת מפה עתיקה...",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day01/intro/07.mp3",
+        "en": "en/day01/intro/07.mp3",
+        "he": "he/day01/intro/07.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day02.departure.01",
+      "stage": "day02",
+      "scene": "departure",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day2.blocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 8,
+      "texts": {
+        "ru": {
+          "displayText": "Утро тёплое, но в воздухе чувствуется волнение. В комнате суета. Роланд крутит старый глобус, прищурившись сквозь очки. — Хм… если верить записям сэра Бартоломью, первая часть карты должна быть где-то на севере... но где именно?",
+          "spokenText": "Утро тёплое, но в воздухе чувствуется волнение. В комнате суета. Роланд крутит старый глобус, прищурившись сквозь очки. — Хм… если верить записям сэра Бартоломью, первая часть карты должна быть где-то на севере... но где именно?",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The morning is warm, but excitement hangs in the air. The room is buzzing. Roland spins an old globe, squinting through his glasses. “Hmm... if Sir Bartholomew’s notes are right, the first piece of the map must be somewhere in the north... but where exactly?”",
+          "spokenText": "The morning is warm, but excitement hangs in the air. The room is buzzing. Roland spins an old globe, squinting through his glasses. “Hmm... if Sir Bartholomew’s notes are right, the first piece of the map must be somewhere in the north... but where exactly?”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הבוקר חמים, אבל באוויר מורגשת התרגשות. בחדר יש המולה. רולנד מסובב גלובוס ישן ומצמצם את עיניו מאחורי המשקפיים. “הממ... אם הרישומים של סר ברתולומיו נכונים, החלק הראשון של המפה צריך להיות איפשהו בצפון... אבל איפה בדיוק?”",
+          "spokenText": "הבוקר חמים, אבל באוויר מורגשת התרגשות. בחדר יש המולה. רולנד מסובב גלובוס ישן ומצמצם את עיניו מאחורי המשקפיים. “הממ... אם הרישומים של סר ברתולומיו נכונים, החלק הראשון של המפה צריך להיות איפשהו בצפון... אבל איפה בדיוק?”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day02/departure/01.mp3",
+        "en": "en/day02/departure/01.mp3",
+        "he": "he/day02/departure/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day02.departure.02",
+      "stage": "day02",
+      "scene": "departure",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day2.blocks[1]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 9,
+      "texts": {
+        "ru": {
+          "displayText": "Свенсен пишет список вещей. — Компас, фонарик, шоколад… нет, стоп, два шоколада!",
+          "spokenText": "Свенсен пишет список вещей. — Компас, фонарик, шоколад… нет, стоп, два шоколада!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Svensen is writing a packing list. “Compass, flashlight, chocolate... no, wait, two chocolates!”",
+          "spokenText": "Svensen is writing a packing list. “Compass, flashlight, chocolate... no, wait, two chocolates!”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "סוונסן כותב רשימת ציוד. “מצפן, פנס, שוקולד... לא, רגע, שני שוקולדים!”",
+          "spokenText": "סוונסן כותב רשימת ציוד. “מצפן, פנס, שוקולד... לא, רגע, שני שוקולדים!”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day02/departure/02.mp3",
+        "en": "en/day02/departure/02.mp3",
+        "he": "he/day02/departure/02.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day02.departure.03",
+      "stage": "day02",
+      "scene": "departure",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day2.blocks[2]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 10,
+      "texts": {
+        "ru": {
+          "displayText": "Тобиас сбивает стопку карт и визжит: — Мы поедем, да? Мы поедем прямо сейчас?!",
+          "spokenText": "Тобиас сбивает стопку карт и визжит: — Мы поедем, да? Мы поедем прямо сейчас?!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Tobias knocks over a stack of maps and squeals: “We are going, right? We are going right now?!”",
+          "spokenText": "Tobias knocks over a stack of maps and squeals: “We are going, right? We are going right now?!”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "טוביאס מפיל ערימה של מפות וצועק: “אנחנו נוסעים, נכון? אנחנו נוסעים עכשיו?!”",
+          "spokenText": "טוביאס מפיל ערימה של מפות וצועק: “אנחנו נוסעים, נכון? אנחנו נוסעים עכשיו?!”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day02/departure/03.mp3",
+        "en": "en/day02/departure/03.mp3",
+        "he": "he/day02/departure/03.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day02.departure.04",
+      "stage": "day02",
+      "scene": "departure",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day2.blocks[3]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 11,
+      "texts": {
+        "ru": {
+          "displayText": "В дверь стучат. Входит енот-капитан Логан с картой, пахнущей солью и ветром. Логан: — Я слышал, кто-то тут собирается в путешествие и им нужен проводник? Я летал над фьордами и плавал сквозь штормы, когда чайки замерзали на лету! Он бросает карту на стол — пункт назначения: таинственный архипелаг Шпицберген, за Полярным кругом.",
+          "spokenText": "В дверь стучат. Входит енот-капитан Логан с картой, пахнущей солью и ветром. Логан: — Я слышал, кто-то тут собирается в путешествие и им нужен проводник? Я летал над фьордами и плавал сквозь штормы, когда чайки замерзали на лету! Он бросает карту на стол — пункт назначения: таинственный архипелаг Шпицберген, за Полярным кругом.",
+          "pronunciationNotes": [
+            "Use the established Russian stress and pronunciation for «Шпицберген» consistently.",
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "There is a knock at the door. Logan the raccoon captain enters with a map that smells of salt and wind. Logan: “I heard someone here is preparing for a journey and needs a guide. I have flown over fjords and sailed through storms when seagulls froze in midair!” He throws the map on the table. The destination: the mysterious Spitsbergen archipelago beyond the Arctic Circle.",
+          "spokenText": "There is a knock at the door. Logan the raccoon captain enters with a map that smells of salt and wind. Logan: “I heard someone here is preparing for a journey and needs a guide. I have flown over fjords and sailed through storms when seagulls froze in midair!” He throws the map on the table. The destination: the mysterious Spitsbergen archipelago beyond the Arctic Circle.",
+          "pronunciationNotes": [
+            "Confirm a consistent English pronunciation of “Spitsbergen”; do not substitute “Svalbard” unless Julia approves."
+          ]
+        },
+        "he": {
+          "displayText": "מישהו דופק בדלת. קפטן לוגן הדביבון נכנס עם מפה שמריחה ממלח ומרוח. לוגן: “שמעתי שמישהו כאן עומד לצאת למסע וצריך מדריך. טסתי מעל פיורדים והפלגתי בתוך סערות כשהשחפים קפאו באוויר!” הוא משליך את המפה על השולחן. היעד: ארכיפלג שפיצברגן המסתורי, מעבר לחוג הארקטי.",
+          "spokenText": "מישהו דופק בדלת. קפטן לוגן הדביבון נכנס עם מפה שמריחה ממלח ומרוח. לוגן: “שמעתי שמישהו כאן עומד לצאת למסע וצריך מדריך. טסתי מעל פיורדים והפלגתי בתוך סערות כשהשחפים קפאו באוויר!” הוא משליך את המפה על השולחן. היעד: ארכיפלג שפיצברגן המסתורי, מעבר לחוג הארקטי.",
+          "pronunciationNotes": [
+            "Review pronunciation of שפיצברגן with a Hebrew speaker; no niqqud is present in application copy."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day02/departure/04.mp3",
+        "en": "en/day02/departure/04.mp3",
+        "he": "he/day02/departure/04.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day02.departure.05",
+      "stage": "day02",
+      "scene": "departure",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day2.blocks[4]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 12,
+      "texts": {
+        "ru": {
+          "displayText": "Логан снова говорит: — Добраться туда можно двумя путями: по морю или по воздуху. Решать вам, отважные хвосты!",
+          "spokenText": "Логан снова говорит: — Добраться туда можно двумя путями: по морю или по воздуху. Решать вам, отважные хвосты!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Logan speaks again: “There are two ways to get there: by sea or by air. The choice is yours, brave tails!”",
+          "spokenText": "Logan speaks again: “There are two ways to get there: by sea or by air. The choice is yours, brave tails!”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "לוגן מדבר שוב: “אפשר להגיע לשם בשתי דרכים: דרך הים או דרך האוויר. ההחלטה בידיכם, זנבות אמיצים!”",
+          "spokenText": "לוגן מדבר שוב: “אפשר להגיע לשם בשתי דרכים: דרך הים או דרך האוויר. ההחלטה בידיכם, זנבות אמיצים!”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day02/departure/05.mp3",
+        "en": "en/day02/departure/05.mp3",
+        "he": "he/day02/departure/05.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day02.departure.06",
+      "stage": "day02",
+      "scene": "departure",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day2.blocks[5]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 13,
+      "texts": {
+        "ru": {
+          "displayText": "Роланд нахмурился. Свенсен застыл. Тобиас уже влез на чемодан.",
+          "spokenText": "Роланд нахмурился. Свенсен застыл. Тобиас уже влез на чемодан.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Roland frowns. Svensen freezes. Tobias has already climbed onto a suitcase.",
+          "spokenText": "Roland frowns. Svensen freezes. Tobias has already climbed onto a suitcase.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "רולנד מתקמט במצחו. סוונסן קופא במקום. טוביאס כבר טיפס על המזוודה.",
+          "spokenText": "רולנד מתקמט במצחו. סוונסן קופא במקום. טוביאס כבר טיפס על המזוודה.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day02/departure/06.mp3",
+        "en": "en/day02/departure/06.mp3",
+        "he": "he/day02/departure/06.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day02.transport-choice.01",
+      "stage": "day02",
+      "scene": "transport-choice",
+      "type": "game-instruction",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day2.question"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 14,
+      "texts": {
+        "ru": {
+          "displayText": "Как предпочитаете добираться?",
+          "spokenText": "Как предпочитаете добираться?",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "How would you like to travel?",
+          "spokenText": "How would you like to travel?",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "איך תרצו להגיע?",
+          "spokenText": "איך תרצו להגיע?",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day02/transport-choice/01.mp3",
+        "en": "en/day02/transport-choice/01.mp3",
+        "he": "he/day02/transport-choice/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight.intro.01",
+      "stage": "day03",
+      "scene": "flight-intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day3Flight.introBlocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 15,
+      "texts": {
+        "ru": {
+          "displayText": "Енот надевает лётный шлем и говорит: «Роланд, ставь синюю кнопку на свой дом!»",
+          "spokenText": "Енот надевает лётный шлем и говорит: «Роланд, ставь синюю кнопку на свой дом!»",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The raccoon puts on a flight helmet and says: “Roland, place the blue marker on your home!”",
+          "spokenText": "The raccoon puts on a flight helmet and says: “Roland, place the blue marker on your home!”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הדביבון חובש קסדת טייס ואומר: “רולנד, מקם את הסמן הכחול על הבית שלך!”",
+          "spokenText": "הדביבון חובש קסדת טייס ואומר: “רולנד, מקם את הסמן הכחול על הבית שלך!”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight/intro/01.mp3",
+        "en": "en/day03/flight/intro/01.mp3",
+        "he": "he/day03/flight/intro/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight.route-explanation.01",
+      "stage": "day03",
+      "scene": "flight-route",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day3Flight.tips[0..2]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 16,
+      "texts": {
+        "ru": {
+          "displayText": "Синяя точка — твой дом. Красная точка — Шпицберген. Когда выберешь маршрут — прямой, дугой или зигзагом — енот покажет, над какими странами вы пролетите. И поможет найти лучший маршрут.",
+          "spokenText": "Синяя точка — твой дом. Красная точка — Шпицберген. Когда выберешь маршрут — прямой, дугой или зигзагом — енот покажет, над какими странами вы пролетите. И поможет найти лучший маршрут.",
+          "pronunciationNotes": [
+            "Use the established Russian stress and pronunciation for «Шпицберген» consistently."
+          ]
+        },
+        "en": {
+          "displayText": "The blue point is your home. The red point is Spitsbergen. When you choose a route, straight, curved, or zigzag, the raccoon will show which countries you will fly over and help you find the best route.",
+          "spokenText": "The blue point is your home. The red point is Spitsbergen. When you choose a route, straight, curved, or zigzag, the raccoon will show which countries you will fly over and help you find the best route.",
+          "pronunciationNotes": [
+            "Confirm a consistent English pronunciation of “Spitsbergen”; do not substitute “Svalbard” unless Julia approves."
+          ]
+        },
+        "he": {
+          "displayText": "הנקודה הכחולה היא הבית שלך. הנקודה האדומה היא שפיצברגן. כשתבחר מסלול, ישר, קשת או זיגזג, הדביבון יראה מעל אילו מדינות תעברו ויעזור לבחור את המסלול הטוב ביותר.",
+          "spokenText": "הנקודה הכחולה היא הבית שלך. הנקודה האדומה היא שפיצברגן. כשתבחר מסלול, ישר, קשת או זיגזג, הדביבון יראה מעל אילו מדינות תעברו ויעזור לבחור את המסלול הטוב ביותר.",
+          "pronunciationNotes": [
+            "Review pronunciation of שפיצברגן with a Hebrew speaker; no niqqud is present in application copy."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight/route-explanation/01.mp3",
+        "en": "en/day03/flight/route-explanation/01.mp3",
+        "he": "he/day03/flight/route-explanation/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight.quiz-instruction.01",
+      "stage": "day03",
+      "scene": "flight-quiz",
+      "type": "game-instruction",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day3Flight.tips[3]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 17,
+      "texts": {
+        "ru": {
+          "displayText": "Внимательно изучи обсуждения Логана и Роланда под картой и ответь на вопросы внизу страницы.",
+          "spokenText": "Внимательно изучи обсуждения Логана и Роланда под картой и ответь на вопросы внизу страницы.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Read Logan and Roland’s discussion under the map carefully and answer the questions at the bottom of the page.",
+          "spokenText": "Read Logan and Roland’s discussion under the map carefully and answer the questions at the bottom of the page.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "קרא היטב את השיחה של לוגן ורולנד מתחת למפה וענה על השאלות בתחתית העמוד.",
+          "spokenText": "קרא היטב את השיחה של לוגן ורולנד מתחת למפה וענה על השאלות בתחתית העמוד.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight/quiz-instruction/01.mp3",
+        "en": "en/day03/flight/quiz-instruction/01.mp3",
+        "he": "he/day03/flight/quiz-instruction/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight-dialogue.straight-1",
+      "stage": "day03",
+      "scene": "flight-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "flightDialogs[*].id=straight_1,straight_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 18,
+      "texts": {
+        "ru": {
+          "displayText": "Ты провёл прямую линию. Выглядит красиво… но так будет дольше! Это совершенно нелогично! Прямой путь всегда самый быстрый!",
+          "spokenText": "Ты провёл прямую линию. Выглядит красиво… но так будет дольше! Это совершенно нелогично! Прямой путь всегда самый быстрый!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "You drew a straight line. It looks neat... but it will take longer! That makes no sense at all! A straight path is always the fastest!",
+          "spokenText": "You drew a straight line. It looks neat... but it will take longer! That makes no sense at all! A straight path is always the fastest!",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "ציירת קו ישר. זה נראה יפה... אבל זה יהיה ארוך יותר! זה בכלל לא הגיוני! דרך ישרה תמיד הכי מהירה!",
+          "spokenText": "ציירת קו ישר. זה נראה יפה... אבל זה יהיה ארוך יותר! זה בכלל לא הגיוני! דרך ישרה תמיד הכי מהירה!",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight-dialogue/straight-1.mp3",
+        "en": "en/day03/flight-dialogue/straight-1.mp3",
+        "he": "he/day03/flight-dialogue/straight-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight-dialogue.straight-3",
+      "stage": "day03",
+      "scene": "flight-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "flightDialogs[*].id=straight_3,straight_4"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 19,
+      "texts": {
+        "ru": {
+          "displayText": "Только если Земля — лист бумаги. Но она круглая! На шарике прямые превращаются в дуги. То есть… “у-прямая линия” не хочет гнуться и не огибает землю по-дуге?",
+          "spokenText": "Только если Земля — лист бумаги. Но она круглая! На шарике прямые превращаются в дуги. То есть… “у-прямая линия” не хочет гнуться и не огибает землю по-дуге?",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Only if Earth were a sheet of paper. But it is round. On a sphere, the shortest paths curve. So... an ordinary straight line does not bend and follow Earth in an arc?",
+          "spokenText": "Only if Earth were a sheet of paper. But it is round. On a sphere, the shortest paths curve. So... an ordinary straight line does not bend and follow Earth in an arc?",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "רק אם כדור הארץ היה דף נייר. אבל הוא עגול. על כדור, המסלול הקצר ביותר נראה כמו קשת. כלומר... קו ישר רגיל לא מתכופף ולא עוקב אחרי כדור הארץ בקשת?",
+          "spokenText": "רק אם כדור הארץ היה דף נייר. אבל הוא עגול. על כדור, המסלול הקצר ביותר נראה כמו קשת. כלומר... קו ישר רגיל לא מתכופף ולא עוקב אחרי כדור הארץ בקשת?",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight-dialogue/straight-3.mp3",
+        "en": "en/day03/flight-dialogue/straight-3.mp3",
+        "he": "he/day03/flight-dialogue/straight-3.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight-dialogue.straight-5",
+      "stage": "day03",
+      "scene": "flight-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "flightDialogs[*].id=straight_5,arc_1"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 20,
+      "texts": {
+        "ru": {
+          "displayText": "Верно! А ещё эта прямая называется локсодромия — линия, которая упрямо идёт под одним углом. Удобная, но НЕ самая короткая. Вот это уже похоже на настоящий авиамаршрут.",
+          "spokenText": "Верно! А ещё эта прямая называется локсодромия — линия, которая упрямо идёт под одним углом. Удобная, но НЕ самая короткая. Вот это уже похоже на настоящий авиамаршрут.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Exactly. And that straight line has a name: a rhumb line, a route that stubbornly keeps one angle. Handy, but NOT the shortest. Now that looks like a real flight route.",
+          "spokenText": "Exactly. And that straight line has a name: a rhumb line, a route that stubbornly keeps one angle. Handy, but NOT the shortest. Now that looks like a real flight route.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "בדיוק. והקו הזה נקרא לוקסודרום, מסלול ששומר בעקשנות על אותה זווית. נוח, אבל לא הכי קצר. זה כבר נראה כמו מסלול טיסה אמיתי.",
+          "spokenText": "בדיוק. והקו הזה נקרא לוקסודרום, מסלול ששומר בעקשנות על אותה זווית. נוח, אבל לא הכי קצר. זה כבר נראה כמו מסלול טיסה אמיתי.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight-dialogue/straight-5.mp3",
+        "en": "en/day03/flight-dialogue/straight-5.mp3",
+        "he": "he/day03/flight-dialogue/straight-5.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight-dialogue.arc-2",
+      "stage": "day03",
+      "scene": "flight-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "flightDialogs[*].id=arc_2,arc_3"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 21,
+      "texts": {
+        "ru": {
+          "displayText": "Это ортодромия — коротчайший путь по круглой Земле! Кривая, но быстрая. Как будто Земля сама говорит: «Иди по дуге — я же круглая!»",
+          "spokenText": "Это ортодромия — коротчайший путь по круглой Земле! Кривая, но быстрая. Как будто Земля сама говорит: «Иди по дуге — я же круглая!»",
+          "pronunciationNotes": [
+            "Human-review the scientific term and proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "That is an orthodrome, the shortest path over a round Earth! Curved, but fast. As if Earth itself says, 'Take the arc, I am round!'",
+          "spokenText": "That is an orthodrome, the shortest path over a round Earth! Curved, but fast. As if Earth itself says, 'Take the arc, I am round!'",
+          "pronunciationNotes": [
+            "Human-review the scientific term and proper-name pronunciation."
+          ]
+        },
+        "he": {
+          "displayText": "זו אורתודרומיה, הדרך הקצרה ביותר על פני כדור הארץ! עקום, אבל מהיר. כאילו כדור הארץ עצמו אומר: 'לך בקשת, אני הרי עגול!'",
+          "spokenText": "זו אורתודרומיה, הדרך הקצרה ביותר על פני כדור הארץ! עקום, אבל מהיר. כאילו כדור הארץ עצמו אומר: 'לך בקשת, אני הרי עגול!'",
+          "pronunciationNotes": [
+            "Human-review the scientific term and proper-name pronunciation."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight-dialogue/arc-2.mp3",
+        "en": "en/day03/flight-dialogue/arc-2.mp3",
+        "he": "he/day03/flight-dialogue/arc-2.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight-dialogue.zigzag-1",
+      "stage": "day03",
+      "scene": "flight-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "flightDialogs[*].id=zigzag_1,zigzag_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 22,
+      "texts": {
+        "ru": {
+          "displayText": "Ух ты! Маршрут для самолёта, у которого сломался навигатор и приходится спрашивать дорогу, приземляясь в аэропортах! Зигзаг хорош, если хочешь лететь три года…",
+          "spokenText": "Ух ты! Маршрут для самолёта, у которого сломался навигатор и приходится спрашивать дорогу, приземляясь в аэропортах! Зигзаг хорош, если хочешь лететь три года…",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Wow! A route for an airplane with a broken navigator that has to ask for directions by landing at airports! A zigzag is great if you want to fly for three years...",
+          "spokenText": "Wow! A route for an airplane with a broken navigator that has to ask for directions by landing at airports! A zigzag is great if you want to fly for three years...",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "וואו! מסלול למטוס שהנווט שלו התקלקל והוא צריך לשאול דרך בכל שדה תעופה! זיגזג מצוין אם רוצים לטוס שלוש שנים...",
+          "spokenText": "וואו! מסלול למטוס שהנווט שלו התקלקל והוא צריך לשאול דרך בכל שדה תעופה! זיגזג מצוין אם רוצים לטוס שלוש שנים...",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight-dialogue/zigzag-1.mp3",
+        "en": "en/day03/flight-dialogue/zigzag-1.mp3",
+        "he": "he/day03/flight-dialogue/zigzag-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight-dialogue.zigzag-3",
+      "stage": "day03",
+      "scene": "flight-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "flightDialogs[*].id=zigzag_3,afterCorrect_1"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 23,
+      "texts": {
+        "ru": {
+          "displayText": "Но если хочешь добраться быстро — выбирай дугу! Ты выбрал самый быстрый путь для самолёта!",
+          "spokenText": "Но если хочешь добраться быстро — выбирай дугу! Ты выбрал самый быстрый путь для самолёта!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "But if you want to arrive quickly, choose the arc! You chose the fastest route for an airplane!",
+          "spokenText": "But if you want to arrive quickly, choose the arc! You chose the fastest route for an airplane!",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אבל אם רוצים להגיע מהר, בוחרים בקשת! בחרת את המסלול המהיר ביותר למטוס!",
+          "spokenText": "אבל אם רוצים להגיע מהר, בוחרים בקשת! בחרת את המסלול המהיר ביותר למטוס!",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight-dialogue/zigzag-3.mp3",
+        "en": "en/day03/flight-dialogue/zigzag-3.mp3",
+        "he": "he/day03/flight-dialogue/zigzag-3.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight-dialogue.afterCorrect-2",
+      "stage": "day03",
+      "scene": "flight-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "flightDialogs[*].id=afterCorrect_2,afterCorrect_3"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 24,
+      "texts": {
+        "ru": {
+          "displayText": "Теперь мы готовы поделиться с тобой нашими секретами. Жми на штурвалы под нами, чтобы узнать больше!",
+          "spokenText": "Теперь мы готовы поделиться с тобой нашими секретами. Жми на штурвалы под нами, чтобы узнать больше!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Now we are ready to share our secrets with you. Press the yokes below us to learn more!",
+          "spokenText": "Now we are ready to share our secrets with you. Press the yokes below us to learn more!",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "עכשיו אנחנו מוכנים לשתף אותך בסודות שלנו. לחץ על ההגאים מתחתינו כדי ללמוד עוד!",
+          "spokenText": "עכשיו אנחנו מוכנים לשתף אותך בסודות שלנו. לחץ על ההגאים מתחתינו כדי ללמוד עוד!",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight-dialogue/afterCorrect-2.mp3",
+        "en": "en/day03/flight-dialogue/afterCorrect-2.mp3",
+        "he": "he/day03/flight-dialogue/afterCorrect-2.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.flight.mercator-explanation.01",
+      "stage": "day03",
+      "scene": "flight-quiz",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/tests.ts",
+        "key": "flightQuestions[locale][1].explanation"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 25,
+      "texts": {
+        "ru": {
+          "displayText": "Карта Меркатора разворачивает поверхность Земли в прямоугольник. Из-за этого кратчайшие линии выглядят не прямыми, а изогнутыми.",
+          "spokenText": "Карта Меркатора разворачивает поверхность Земли в прямоугольник. Из-за этого кратчайшие линии выглядят не прямыми, а изогнутыми.",
+          "pronunciationNotes": [
+            "Human-review the scientific term and proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "A Mercator map unwraps Earth into a rectangle. Because of that, the shortest routes no longer look straight.",
+          "spokenText": "A Mercator map unwraps Earth into a rectangle. Because of that, the shortest routes no longer look straight.",
+          "pronunciationNotes": [
+            "Human-review the scientific term and proper-name pronunciation."
+          ]
+        },
+        "he": {
+          "displayText": "מפת מרקטור פורשת את כדור הארץ למלבן. בגלל זה המסלול הקצר ביותר כבר לא נראה ישר.",
+          "spokenText": "מפת מרקטור פורשת את כדור הארץ למלבן. בגלל זה המסלול הקצר ביותר כבר לא נראה ישר.",
+          "pronunciationNotes": [
+            "Human-review the scientific term and proper-name pronunciation."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/flight/mercator-explanation/01.mp3",
+        "en": "en/day03/flight/mercator-explanation/01.mp3",
+        "he": "he/day03/flight/mercator-explanation/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail.intro.01",
+      "stage": "day03",
+      "scene": "sail-intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day3Sail.introBlocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 26,
+      "texts": {
+        "ru": {
+          "displayText": "Енот надевает капитанскую фуражку и говорит: 🦝🌊 «Роланд, ставь синюю кнопку на ближайший порт!»",
+          "spokenText": "Енот надевает капитанскую фуражку и говорит: 🦝🌊 «Роланд, ставь синюю кнопку на ближайший порт!»",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The raccoon puts on a captain’s cap and says: 🦝🌊 “Roland, place the blue marker on the nearest port!”",
+          "spokenText": "The raccoon puts on a captain’s cap and says: 🦝🌊 “Roland, place the blue marker on the nearest port!”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הדביבון חובש כובע קפטן ואומר: 🦝🌊 “רולנד, מקם את הסמן הכחול על הנמל הקרוב ביותר!”",
+          "spokenText": "הדביבון חובש כובע קפטן ואומר: 🦝🌊 “רולנד, מקם את הסמן הכחול על הנמל הקרוב ביותר!”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail/intro/01.mp3",
+        "en": "en/day03/sail/intro/01.mp3",
+        "he": "he/day03/sail/intro/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail.route-explanation.01",
+      "stage": "day03",
+      "scene": "sail-route",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day3Sail.tips[0..2]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 27,
+      "texts": {
+        "ru": {
+          "displayText": "Синяя точка — ближайший к дому порт с выходом в море. Красная точка — Шпицберген. Когда выберешь маршрут, енот покажет, по каким морям вы поплывёте. И поможет найти лучший маршрут.",
+          "spokenText": "Синяя точка — ближайший к дому порт с выходом в море. Красная точка — Шпицберген. Когда выберешь маршрут, енот покажет, по каким морям вы поплывёте. И поможет найти лучший маршрут.",
+          "pronunciationNotes": [
+            "Use the established Russian stress and pronunciation for «Шпицберген» consistently."
+          ]
+        },
+        "en": {
+          "displayText": "The blue point is the nearest seaport connected to your home. The red point is Spitsbergen. When you choose a route, the raccoon will show which seas you will sail through and help you find the best route.",
+          "spokenText": "The blue point is the nearest seaport connected to your home. The red point is Spitsbergen. When you choose a route, the raccoon will show which seas you will sail through and help you find the best route.",
+          "pronunciationNotes": [
+            "Confirm a consistent English pronunciation of “Spitsbergen”; do not substitute “Svalbard” unless Julia approves."
+          ]
+        },
+        "he": {
+          "displayText": "הנקודה הכחולה היא הנמל הקרוב ביותר עם יציאה לים. הנקודה האדומה היא שפיצברגן. כשתבחר מסלול, הדביבון יראה דרך אילו ימים תפליגו ויעזור למצוא את המסלול הטוב ביותר.",
+          "spokenText": "הנקודה הכחולה היא הנמל הקרוב ביותר עם יציאה לים. הנקודה האדומה היא שפיצברגן. כשתבחר מסלול, הדביבון יראה דרך אילו ימים תפליגו ויעזור למצוא את המסלול הטוב ביותר.",
+          "pronunciationNotes": [
+            "Review pronunciation of שפיצברגן with a Hebrew speaker; no niqqud is present in application copy."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail/route-explanation/01.mp3",
+        "en": "en/day03/sail/route-explanation/01.mp3",
+        "he": "he/day03/sail/route-explanation/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail.quiz-instruction.01",
+      "stage": "day03",
+      "scene": "sail-quiz",
+      "type": "game-instruction",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day3Sail.tips[3]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 28,
+      "texts": {
+        "ru": {
+          "displayText": "Внимательно изучи обсуждения Логана и Роланда под картой и ответь на вопросы внизу страницы.",
+          "spokenText": "Внимательно изучи обсуждения Логана и Роланда под картой и ответь на вопросы внизу страницы.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Read Logan and Roland’s discussion under the map carefully and answer the questions at the bottom of the page.",
+          "spokenText": "Read Logan and Roland’s discussion under the map carefully and answer the questions at the bottom of the page.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "קרא היטב את השיחה של לוגן ורולנד מתחת למפה וענה על השאלות בתחתית העמוד.",
+          "spokenText": "קרא היטב את השיחה של לוגן ורולנד מתחת למפה וענה על השאלות בתחתית העמוד.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail/quiz-instruction/01.mp3",
+        "en": "en/day03/sail/quiz-instruction/01.mp3",
+        "he": "he/day03/sail/quiz-instruction/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail.draw-route.01",
+      "stage": "day03",
+      "scene": "sail-route",
+      "type": "game-instruction",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day3Sail.mapSpeech.startPrompt"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 29,
+      "texts": {
+        "ru": {
+          "displayText": "Енот: «Отметь на карте своё местоположение и построй морской маршрут до Шпицбергена (красный пин).»",
+          "spokenText": "Енот: «Отметь на карте своё местоположение и построй морской маршрут до Шпицбергена (красный пин).»",
+          "pronunciationNotes": [
+            "Use the established Russian stress and pronunciation for «Шпицберген» consistently."
+          ]
+        },
+        "en": {
+          "displayText": "Raccoon: “Mark your location on the map and build a sea route to Spitsbergen (the red pin).”",
+          "spokenText": "Raccoon: “Mark your location on the map and build a sea route to Spitsbergen (the red pin).”",
+          "pronunciationNotes": [
+            "Confirm a consistent English pronunciation of “Spitsbergen”; do not substitute “Svalbard” unless Julia approves."
+          ]
+        },
+        "he": {
+          "displayText": "דביבון: “סמן על המפה את המיקום שלך ובנה מסלול ימי אל שפיצברגן (הסיכה האדומה).”",
+          "spokenText": "דביבון: “סמן על המפה את המיקום שלך ובנה מסלול ימי אל שפיצברגן (הסיכה האדומה).”",
+          "pronunciationNotes": [
+            "Review pronunciation of שפיצברגן with a Hebrew speaker; no niqqud is present in application copy."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail/draw-route/01.mp3",
+        "en": "en/day03/sail/draw-route/01.mp3",
+        "he": "he/day03/sail/draw-route/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.intro-1",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=intro_1,intro_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 30,
+      "texts": {
+        "ru": {
+          "displayText": "Логан, я думал, что море — это просто большая лужа. Плывёшь себе по прямой — и всё. Это если в ванне плыть. А в северных морях всё меняется каждую неделю. Маршрут — как пазл.",
+          "spokenText": "Логан, я думал, что море — это просто большая лужа. Плывёшь себе по прямой — и всё. Это если в ванне плыть. А в северных морях всё меняется каждую неделю. Маршрут — как пазл.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Logan, I thought the sea was just one giant puddle. You sail in a straight line and that is it. Maybe in a bathtub. In northern seas, everything changes every week. A route is like a puzzle.",
+          "spokenText": "Logan, I thought the sea was just one giant puddle. You sail in a straight line and that is it. Maybe in a bathtub. In northern seas, everything changes every week. A route is like a puzzle.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "לוגן, חשבתי שהים הוא רק שלולית ענקית. מפליגים ישר וזהו. אולי באמבטיה. בימים הצפוניים הכול משתנה כל שבוע. מסלול הוא כמו פאזל.",
+          "spokenText": "לוגן, חשבתי שהים הוא רק שלולית ענקית. מפליגים ישר וזהו. אולי באמבטיה. בימים הצפוניים הכול משתנה כל שבוע. מסלול הוא כמו פאזל.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/intro-1.mp3",
+        "en": "en/day03/sail-dialogue/intro-1.mp3",
+        "he": "he/day03/sail-dialogue/intro-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.ice-1",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=ice_1,ice_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 31,
+      "texts": {
+        "ru": {
+          "displayText": "Ты про айсберги говоришь? Они ведь плавают сами по себе. Не только. В Баренцевом и Гренландском морях есть дрейфующие льды. Они закрывают привычные пути, и капитаны каждый раз строят маршрут заново.",
+          "spokenText": "Ты про айсберги говоришь? Они ведь плавают сами по себе. Не только. В Баренцевом и Гренландском морях есть дрейфующие льды. Они закрывают привычные пути, и капитаны каждый раз строят маршрут заново.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "You mean icebergs? They drift on their own anyway. Not only them. The Barents and Greenland Seas have drifting ice. It closes familiar paths, so captains rebuild the route every time.",
+          "spokenText": "You mean icebergs? They drift on their own anyway. Not only them. The Barents and Greenland Seas have drifting ice. It closes familiar paths, so captains rebuild the route every time.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אתה מדבר על קרחונים? הרי הם צפים לבד. לא רק. בים ברנץ ובים גרינלנד יש קרח נסחף. הוא סוגר נתיבים מוכרים, ולכן הקברניטים בונים את המסלול מחדש בכל פעם.",
+          "spokenText": "אתה מדבר על קרחונים? הרי הם צפים לבד. לא רק. בים ברנץ ובים גרינלנד יש קרח נסחף. הוא סוגר נתיבים מוכרים, ולכן הקברניטים בונים את המסלול מחדש בכל פעם.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/ice-1.mp3",
+        "en": "en/day03/sail-dialogue/ice-1.mp3",
+        "he": "he/day03/sail-dialogue/ice-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.ice-3",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=ice_3,ice_4"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 32,
+      "texts": {
+        "ru": {
+          "displayText": "То есть океан — живой? Типа сам двигает стены лабиринта? Именно. И иногда стена быстрее тебя. Поэтому лучший путь бывает там, где неделю назад был тупик.",
+          "spokenText": "То есть океан — живой? Типа сам двигает стены лабиринта? Именно. И иногда стена быстрее тебя. Поэтому лучший путь бывает там, где неделю назад был тупик.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "So the ocean is alive? Like it moves the maze walls by itself? Exactly. And sometimes the wall moves faster than you. That is why the best path may be where there was a dead end a week ago.",
+          "spokenText": "So the ocean is alive? Like it moves the maze walls by itself? Exactly. And sometimes the wall moves faster than you. That is why the best path may be where there was a dead end a week ago.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אז האוקיינוס חי? כאילו הוא מזיז את קירות המבוך בעצמו? בדיוק. ולפעמים הקיר נע מהר יותר ממך. לכן המסלול הכי טוב יכול להיות במקום שלפני שבוע היה מבוי סתום.",
+          "spokenText": "אז האוקיינוס חי? כאילו הוא מזיז את קירות המבוך בעצמו? בדיוק. ולפעמים הקיר נע מהר יותר ממך. לכן המסלול הכי טוב יכול להיות במקום שלפני שבוע היה מבוי סתום.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/ice-3.mp3",
+        "en": "en/day03/sail-dialogue/ice-3.mp3",
+        "he": "he/day03/sail-dialogue/ice-3.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.current-1",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=current_1,current_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 33,
+      "texts": {
+        "ru": {
+          "displayText": "А почему опытные моряки не плывут по прямой? Это же короче. Потому что прямой путь может быть медленнее. Есть морские течения — такие подводные дороги. Сядешь на Норвежское течение, и корабль идёт быстрее, чем по прямой траектории.",
+          "spokenText": "А почему опытные моряки не плывут по прямой? Это же короче. Потому что прямой путь может быть медленнее. Есть морские течения — такие подводные дороги. Сядешь на Норвежское течение, и корабль идёт быстрее, чем по прямой траектории.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Why do experienced sailors not just go in a straight line? That should be shorter. Because a straight path may be slower. There are sea currents, underwater roads of a sort. Catch the Norwegian Current and the ship can move faster than on a direct line.",
+          "spokenText": "Why do experienced sailors not just go in a straight line? That should be shorter. Because a straight path may be slower. There are sea currents, underwater roads of a sort. Catch the Norwegian Current and the ship can move faster than on a direct line.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "ולמה מלחים מנוסים לא מפליגים ישר? זה הרי קצר יותר. כי לפעמים דרך ישרה איטית יותר. יש זרמי ים, כמו כבישים תת-ימיים. אם תתפוס את הזרם הנורווגי, הספינה תנוע מהר יותר מאשר בקו ישר.",
+          "spokenText": "ולמה מלחים מנוסים לא מפליגים ישר? זה הרי קצר יותר. כי לפעמים דרך ישרה איטית יותר. יש זרמי ים, כמו כבישים תת-ימיים. אם תתפוס את הזרם הנורווגי, הספינה תנוע מהר יותר מאשר בקו ישר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/current-1.mp3",
+        "en": "en/day03/sail-dialogue/current-1.mp3",
+        "he": "he/day03/sail-dialogue/current-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.current-3",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=current_3,current_4"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 34,
+      "texts": {
+        "ru": {
+          "displayText": "То есть море само помогает толкать корабль? Бесплатное топливо? Вот именно. Умный капитан выбирает путь по течениям, а не по линейке.",
+          "spokenText": "То есть море само помогает толкать корабль? Бесплатное топливо? Вот именно. Умный капитан выбирает путь по течениям, а не по линейке.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "So the sea itself helps push the ship along? Free fuel? Exactly. A smart captain follows the currents, not a ruler.",
+          "spokenText": "So the sea itself helps push the ship along? Free fuel? Exactly. A smart captain follows the currents, not a ruler.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "כלומר הים עצמו עוזר לדחוף את הספינה? דלק בחינם? בדיוק. קפטן חכם בוחר מסלול לפי הזרמים, לא לפי סרגל.",
+          "spokenText": "כלומר הים עצמו עוזר לדחוף את הספינה? דלק בחינם? בדיוק. קפטן חכם בוחר מסלול לפי הזרמים, לא לפי סרגל.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/current-3.mp3",
+        "en": "en/day03/sail-dialogue/current-3.mp3",
+        "he": "he/day03/sail-dialogue/current-3.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.storm-1",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=storm_1,storm_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 35,
+      "texts": {
+        "ru": {
+          "displayText": "А если просто держаться берега? Так безопаснее? Зависит от берега. В Северной Атлантике шторма такие, что корабли специально уходят подальше — там волны предсказуемее.",
+          "spokenText": "А если просто держаться берега? Так безопаснее? Зависит от берега. В Северной Атлантике шторма такие, что корабли специально уходят подальше — там волны предсказуемее.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "What if we just stay close to shore? Would that be safer? It depends on the shore. In the North Atlantic, storms can be so fierce that ships go farther out because the waves are more predictable there.",
+          "spokenText": "What if we just stay close to shore? Would that be safer? It depends on the shore. In the North Atlantic, storms can be so fierce that ships go farther out because the waves are more predictable there.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "ואם פשוט נישאר קרוב לחוף? זה לא בטוח יותר? זה תלוי בחוף. בצפון האוקיינוס האטלנטי יש סערות כל כך חזקות שספינות דווקא מתרחקות, כי שם הגלים צפויים יותר.",
+          "spokenText": "ואם פשוט נישאר קרוב לחוף? זה לא בטוח יותר? זה תלוי בחוף. בצפון האוקיינוס האטלנטי יש סערות כל כך חזקות שספינות דווקא מתרחקות, כי שם הגלים צפויים יותר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/storm-1.mp3",
+        "en": "en/day03/sail-dialogue/storm-1.mp3",
+        "he": "he/day03/sail-dialogue/storm-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.storm-3",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=storm_3,storm_4"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 36,
+      "texts": {
+        "ru": {
+          "displayText": "Значит, иногда лучше обойти шторм по огромной дуге, чем пробиваться через него? Конечно. Капитан выбирает не самый короткий, а самый безопасный маршрут.",
+          "spokenText": "Значит, иногда лучше обойти шторм по огромной дуге, чем пробиваться через него? Конечно. Капитан выбирает не самый короткий, а самый безопасный маршрут.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "So sometimes it is better to go around a storm in a huge arc than to push right through it? Of course. A captain chooses not the shortest route, but the safest one.",
+          "spokenText": "So sometimes it is better to go around a storm in a huge arc than to push right through it? Of course. A captain chooses not the shortest route, but the safest one.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אז לפעמים עדיף לעקוף סערה בקשת גדולה מאשר לנסות לעבור דרכה? כמובן. קפטן בוחר לא את הדרך הקצרה ביותר, אלא את הבטוחה ביותר.",
+          "spokenText": "אז לפעמים עדיף לעקוף סערה בקשת גדולה מאשר לנסות לעבור דרכה? כמובן. קפטן בוחר לא את הדרך הקצרה ביותר, אלא את הבטוחה ביותר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/storm-3.mp3",
+        "en": "en/day03/sail-dialogue/storm-3.mp3",
+        "he": "he/day03/sail-dialogue/storm-3.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.depth-1",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=depth_1,depth_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 37,
+      "texts": {
+        "ru": {
+          "displayText": "А глубины тоже влияют на маршрут? Очень. В Баренцевом море есть подводные банки — мелкие места. Если не знать карту — сядешь на мель быстрее, чем приготовишь чай.",
+          "spokenText": "А глубины тоже влияют на маршрут? Очень. В Баренцевом море есть подводные банки — мелкие места. Если не знать карту — сядешь на мель быстрее, чем приготовишь чай.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Do depths affect the route too? Very much. The Barents Sea has underwater banks, shallow places. If you do not know the map, you can run aground before you finish making tea.",
+          "spokenText": "Do depths affect the route too? Very much. The Barents Sea has underwater banks, shallow places. If you do not know the map, you can run aground before you finish making tea.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "גם העומק משפיע על המסלול? מאוד. בים ברנץ יש שרטונים, אזורים רדודים. אם לא מכירים את המפה, אפשר להיתקע לפני שמספיקים להכין תה.",
+          "spokenText": "גם העומק משפיע על המסלול? מאוד. בים ברנץ יש שרטונים, אזורים רדודים. אם לא מכירים את המפה, אפשר להיתקע לפני שמספיקים להכין תה.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/depth-1.mp3",
+        "en": "en/day03/sail-dialogue/depth-1.mp3",
+        "he": "he/day03/sail-dialogue/depth-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.final-1",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=final_1,final_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 38,
+      "texts": {
+        "ru": {
+          "displayText": "Выходит, маршрут — это не линия, а решение капитана? Точно. В море каждый маршрут — уникален. Даже если ты плывёшь туда же, куда вчера.",
+          "spokenText": "Выходит, маршрут — это не линия, а решение капитана? Точно. В море каждый маршрут — уникален. Даже если ты плывёшь туда же, куда вчера.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "So a route is not a line, but the captain’s decision? Exactly. At sea, every route is unique, even if you sail to the same place as yesterday.",
+          "spokenText": "So a route is not a line, but the captain’s decision? Exactly. At sea, every route is unique, even if you sail to the same place as yesterday.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אז מסלול הוא לא קו, אלא החלטה של הקפטן? בדיוק. בים כל מסלול הוא ייחודי, אפילו אם מפליגים לאותו מקום כמו אתמול.",
+          "spokenText": "אז מסלול הוא לא קו, אלא החלטה של הקפטן? בדיוק. בים כל מסלול הוא ייחודי, אפילו אם מפליגים לאותו מקום כמו אתמול.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/final-1.mp3",
+        "en": "en/day03/sail-dialogue/final-1.mp3",
+        "he": "he/day03/sail-dialogue/final-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day03.sail-dialogue.final-3",
+      "stage": "day03",
+      "scene": "sail-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "seaDialogs[*].id=final_3"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 39,
+      "texts": {
+        "ru": {
+          "displayText": "Тогда я готов! Показывай, какие моря мы пройдём на нашем пути к Шпицбергену!",
+          "spokenText": "Тогда я готов! Показывай, какие моря мы пройдём на нашем пути к Шпицбергену!",
+          "pronunciationNotes": [
+            "Use the established Russian stress and pronunciation for «Шпицберген» consistently."
+          ]
+        },
+        "en": {
+          "displayText": "Then I am ready! Show me which seas we will cross on our way to Spitsbergen!",
+          "spokenText": "Then I am ready! Show me which seas we will cross on our way to Spitsbergen!",
+          "pronunciationNotes": [
+            "Confirm a consistent English pronunciation of “Spitsbergen”; do not substitute “Svalbard” unless Julia approves."
+          ]
+        },
+        "he": {
+          "displayText": "אז אני מוכן! תראה לי דרך אילו ימים נעבור במסע שלנו לשפיצברגן!",
+          "spokenText": "אז אני מוכן! תראה לי דרך אילו ימים נעבור במסע שלנו לשפיצברגן!",
+          "pronunciationNotes": [
+            "Review pronunciation of שפיצברגן with a Hebrew speaker; no niqqud is present in application copy."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day03/sail-dialogue/final-3.mp3",
+        "en": "en/day03/sail-dialogue/final-3.mp3",
+        "he": "he/day03/sail-dialogue/final-3.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.01",
+      "stage": "day04",
+      "scene": "takeoff",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day4Takeoff.introBlocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 40,
+      "texts": {
+        "ru": {
+          "displayText": "Енот подмигивает: «Готовы? Это будет наш самый красивый взлёт!» Крути штурвал и нажимай на кнопки, выполняя команды опытных пилотов на экране.",
+          "spokenText": "Енот подмигивает: «Готовы? Это будет наш самый красивый взлёт!» Крути штурвал и нажимай на кнопки, выполняя команды опытных пилотов на экране.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The raccoon winks: “Ready? This will be our most beautiful takeoff yet!” Turn the yoke and press the controls, following the instructions from the experienced pilots on the screen.",
+          "spokenText": "The raccoon winks: “Ready? This will be our most beautiful takeoff yet!” Turn the yoke and press the controls, following the instructions from the experienced pilots on the screen.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הדביבון קורץ: “מוכנים? זו תהיה ההמראה היפה ביותר שלנו!” סובבו את ההגה ולחצו על הכפתורים לפי ההוראות של הטייסים המנוסים שעל המסך.",
+          "spokenText": "הדביבון קורץ: “מוכנים? זו תהיה ההמראה היפה ביותר שלנו!” סובבו את ההגה ולחצו על הכפתורים לפי ההוראות של הטייסים המנוסים שעל המסך.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/01.mp3",
+        "en": "en/day04/takeoff/01.mp3",
+        "he": "he/day04/takeoff/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.02",
+      "stage": "day04",
+      "scene": "takeoff",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day4Takeoff.introBlocks[1]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 41,
+      "texts": {
+        "ru": {
+          "displayText": "Отличная работа, капитан! Смотри‑ка, что там виднеется внизу? Кажется, пора заходить на посадку!",
+          "spokenText": "Отличная работа, капитан! Смотри‑ка, что там виднеется внизу? Кажется, пора заходить на посадку!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Great job, captain! Look down there... I think it is time to prepare for landing!",
+          "spokenText": "Great job, captain! Look down there... I think it is time to prepare for landing!",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "עבודה מצוינת, קפטן! תראו מה רואים למטה... נראה שהגיע הזמן להיכנס לנחיתה!",
+          "spokenText": "עבודה מצוינת, קפטן! תראו מה רואים למטה... נראה שהגיע הזמן להיכנס לנחיתה!",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/02.mp3",
+        "en": "en/day04/takeoff/02.mp3",
+        "he": "he/day04/takeoff/02.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.03",
+      "stage": "day04",
+      "scene": "takeoff",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day4Takeoff.introBlocks[2]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 42,
+      "texts": {
+        "ru": {
+          "displayText": "Приземлились! Добро пожаловать в страну льдов и полярных лисиц.",
+          "spokenText": "Приземлились! Добро пожаловать в страну льдов и полярных лисиц.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "We have landed! Welcome to the land of ice and arctic foxes.",
+          "spokenText": "We have landed! Welcome to the land of ice and arctic foxes.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "נחתנו! ברוכים הבאים לארץ הקרח ושועלי הקוטב.",
+          "spokenText": "נחתנו! ברוכים הבאים לארץ הקרח ושועלי הקוטב.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/03.mp3",
+        "en": "en/day04/takeoff/03.mp3",
+        "he": "he/day04/takeoff/03.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-01",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-1"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 43,
+      "texts": {
+        "ru": {
+          "displayText": "Перед взлётом пилоты проверяют приборы, положение штурвала и полосу. Если что‑то не так, взлёт отменяют.",
+          "spokenText": "Перед взлётом пилоты проверяют приборы, положение штурвала и полосу. Если что‑то не так, взлёт отменяют.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Before takeoff, pilots check the instruments, the yoke position, and the runway. If something is wrong, the takeoff is canceled.",
+          "spokenText": "Before takeoff, pilots check the instruments, the yoke position, and the runway. If something is wrong, the takeoff is canceled.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "לפני המראה הטייסים בודקים את המכשירים, את מצב ההגה ואת המסלול. אם משהו לא תקין, מבטלים את ההמראה.",
+          "spokenText": "לפני המראה הטייסים בודקים את המכשירים, את מצב ההגה ואת המסלול. אם משהו לא תקין, מבטלים את ההמראה.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-01.mp3",
+        "en": "en/day04/takeoff/hint-01.mp3",
+        "he": "he/day04/takeoff/hint-01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-02",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 44,
+      "texts": {
+        "ru": {
+          "displayText": "Самолёт отрывается от земли благодаря подъёмной силе крыла. Воздух сверху идёт быстрее, и крыло начинает поднимать самолёт.",
+          "spokenText": "Самолёт отрывается от земли благодаря подъёмной силе крыла. Воздух сверху идёт быстрее, и крыло начинает поднимать самолёт.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "An airplane leaves the ground because the wing creates lift. Air moves faster above the wing, and the wing starts lifting the plane.",
+          "spokenText": "An airplane leaves the ground because the wing creates lift. Air moves faster above the wing, and the wing starts lifting the plane.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "מטוס מתרומם מהקרקע כי הכנף יוצרת כוח עילוי. האוויר עובר מהר יותר מעל הכנף והיא מתחילה להרים את המטוס.",
+          "spokenText": "מטוס מתרומם מהקרקע כי הכנף יוצרת כוח עילוי. האוויר עובר מהר יותר מעל הכנף והיא מתחילה להרים את המטוס.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-02.mp3",
+        "en": "en/day04/takeoff/hint-02.mp3",
+        "he": "he/day04/takeoff/hint-02.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-03",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-3"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 45,
+      "texts": {
+        "ru": {
+          "displayText": "При взлёте штурвал тянут плавно. Резкий рывок может привести к потере подъёмной силы.",
+          "spokenText": "При взлёте штурвал тянут плавно. Резкий рывок может привести к потере подъёмной силы.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "During takeoff, the yoke is pulled back smoothly. A sudden jerk can make the wing lose lift.",
+          "spokenText": "During takeoff, the yoke is pulled back smoothly. A sudden jerk can make the wing lose lift.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "בהמראה מושכים את ההגה בעדינות. משיכה חדה מדי עלולה לגרום לכנף לאבד עילוי.",
+          "spokenText": "בהמראה מושכים את ההגה בעדינות. משיכה חדה מדי עלולה לגרום לכנף לאבד עילוי.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-03.mp3",
+        "en": "en/day04/takeoff/hint-03.mp3",
+        "he": "he/day04/takeoff/hint-03.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-04",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-4"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 46,
+      "texts": {
+        "ru": {
+          "displayText": "Для отрыва нужна определённая скорость. Пока её нет, самолёт должен оставаться на земле.",
+          "spokenText": "Для отрыва нужна определённая скорость. Пока её нет, самолёт должен оставаться на земле.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The plane needs a specific speed to lift off. Until it reaches that speed, it must stay on the ground.",
+          "spokenText": "The plane needs a specific speed to lift off. Until it reaches that speed, it must stay on the ground.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "כדי להתרומם צריך מהירות מסוימת. עד שהמטוס מגיע אליה, הוא חייב להישאר על הקרקע.",
+          "spokenText": "כדי להתרומם צריך מהירות מסוימת. עד שהמטוס מגיע אליה, הוא חייב להישאר על הקרקע.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-04.mp3",
+        "en": "en/day04/takeoff/hint-04.mp3",
+        "he": "he/day04/takeoff/hint-04.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-05",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-5"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 47,
+      "texts": {
+        "ru": {
+          "displayText": "Руль высоты поднимает или опускает нос самолёта. Нос вверх — самолёт идёт выше, нос вниз — опускается.",
+          "spokenText": "Руль высоты поднимает или опускает нос самолёта. Нос вверх — самолёт идёт выше, нос вниз — опускается.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The elevator raises or lowers the airplane’s nose. Nose up means climbing, nose down means descending.",
+          "spokenText": "The elevator raises or lowers the airplane’s nose. Nose up means climbing, nose down means descending.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הגה הגובה מרים או מוריד את אף המטוס. אף למעלה פירושו עלייה, אף למטה פירושו ירידה.",
+          "spokenText": "הגה הגובה מרים או מוריד את אף המטוס. אף למעלה פירושו עלייה, אף למטה פירושו ירידה.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-05.mp3",
+        "en": "en/day04/takeoff/hint-05.mp3",
+        "he": "he/day04/takeoff/hint-05.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-06",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-6"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 48,
+      "texts": {
+        "ru": {
+          "displayText": "Педали управляют рулём направления и помогают держать самолёт ровно по оси полосы.",
+          "spokenText": "Педали управляют рулём направления и помогают держать самолёт ровно по оси полосы.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The pedals control the rudder and help keep the airplane aligned with the runway centerline.",
+          "spokenText": "The pedals control the rudder and help keep the airplane aligned with the runway centerline.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הדוושות שולטות בהגה הכיוון ועוזרות לשמור את המטוס ישר על ציר המסלול.",
+          "spokenText": "הדוושות שולטות בהגה הכיוון ועוזרות לשמור את המטוס ישר על ציר המסלול.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-06.mp3",
+        "en": "en/day04/takeoff/hint-06.mp3",
+        "he": "he/day04/takeoff/hint-06.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-07",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-7"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 49,
+      "texts": {
+        "ru": {
+          "displayText": "Закрылки слегка выпускают на взлёте, чтобы крыло поднимало самолёт уже на меньшей скорости.",
+          "spokenText": "Закрылки слегка выпускают на взлёте, чтобы крыло поднимало самолёт уже на меньшей скорости.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Flaps are slightly extended for takeoff so the wing can lift the airplane at a lower speed.",
+          "spokenText": "Flaps are slightly extended for takeoff so the wing can lift the airplane at a lower speed.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "מדפים נפתחים מעט בזמן ההמראה כדי שהכנף תוכל להרים את המטוס גם במהירות נמוכה יותר.",
+          "spokenText": "מדפים נפתחים מעט בזמן ההמראה כדי שהכנף תוכל להרים את המטוס גם במהירות נמוכה יותר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-07.mp3",
+        "en": "en/day04/takeoff/hint-07.mp3",
+        "he": "he/day04/takeoff/hint-07.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-08",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-8"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 50,
+      "texts": {
+        "ru": {
+          "displayText": "Встречный ветер помогает взлёту, а попутный делает разбег длиннее и сложнее.",
+          "spokenText": "Встречный ветер помогает взлёту, а попутный делает разбег длиннее и сложнее.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "A headwind helps takeoff, while a tailwind makes the takeoff roll longer and harder.",
+          "spokenText": "A headwind helps takeoff, while a tailwind makes the takeoff roll longer and harder.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "רוח נגדית עוזרת להמראה, ורוח גבית הופכת את הריצה על המסלול לארוכה וקשה יותר.",
+          "spokenText": "רוח נגדית עוזרת להמראה, ורוח גבית הופכת את הריצה על המסלול לארוכה וקשה יותר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-08.mp3",
+        "en": "en/day04/takeoff/hint-08.mp3",
+        "he": "he/day04/takeoff/hint-08.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-09",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-9"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 51,
+      "texts": {
+        "ru": {
+          "displayText": "После отрыва пилоты держат правильный угол набора. Слишком круто нельзя — скорость упадёт.",
+          "spokenText": "После отрыва пилоты держат правильный угол набора. Слишком круто нельзя — скорость упадёт.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "After liftoff, pilots keep the right climb angle. Too steep and the speed drops.",
+          "spokenText": "After liftoff, pilots keep the right climb angle. Too steep and the speed drops.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אחרי הניתוק מהקרקע הטייסים שומרים על זווית טיפוס נכונה. אם הזווית חדה מדי, המהירות תרד.",
+          "spokenText": "אחרי הניתוק מהקרקע הטייסים שומרים על זווית טיפוס נכונה. אם הזווית חדה מדי, המהירות תרד.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-09.mp3",
+        "en": "en/day04/takeoff/hint-09.mp3",
+        "he": "he/day04/takeoff/hint-09.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-10",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-10"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 52,
+      "texts": {
+        "ru": {
+          "displayText": "Тропосфера — дом облаков и погоды. Выше находится стратосфера, где воздух спокойнее, и самолёты летят мягче.",
+          "spokenText": "Тропосфера — дом облаков и погоды. Выше находится стратосфера, где воздух спокойнее, и самолёты летят мягче.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The troposphere is where clouds and weather live. Above it is the calmer stratosphere, where planes fly more smoothly.",
+          "spokenText": "The troposphere is where clouds and weather live. Above it is the calmer stratosphere, where planes fly more smoothly.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הטרופוספירה היא הבית של העננים ומזג האוויר. מעליה נמצאת הסטרטוספירה השקטה יותר, שבה המטוסים טסים בצורה חלקה יותר.",
+          "spokenText": "הטרופוספירה היא הבית של העננים ומזג האוויר. מעליה נמצאת הסטרטוספירה השקטה יותר, שבה המטוסים טסים בצורה חלקה יותר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-10.mp3",
+        "en": "en/day04/takeoff/hint-10.mp3",
+        "he": "he/day04/takeoff/hint-10.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-11",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-11"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 53,
+      "texts": {
+        "ru": {
+          "displayText": "Во время шторма пилот держит самолёт ровно и спокойно, обходя самые тяжёлые облака.",
+          "spokenText": "Во время шторма пилот держит самолёт ровно и спокойно, обходя самые тяжёлые облака.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "In a storm, a pilot keeps the aircraft steady and avoids the darkest clouds.",
+          "spokenText": "In a storm, a pilot keeps the aircraft steady and avoids the darkest clouds.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "בסערה הטייס שומר על המטוס יציב ונמנע מהעננים הכבדים ביותר.",
+          "spokenText": "בסערה הטייס שומר על המטוס יציב ונמנע מהעננים הכבדים ביותר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-11.mp3",
+        "en": "en/day04/takeoff/hint-11.mp3",
+        "he": "he/day04/takeoff/hint-11.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-12",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-12"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 54,
+      "texts": {
+        "ru": {
+          "displayText": "Автопилот включают не сразу. Сначала пилот должен стабилизировать самолёт вручную.",
+          "spokenText": "Автопилот включают не сразу. Сначала пилот должен стабилизировать самолёт вручную.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Autopilot is not turned on immediately. First, the pilot stabilizes the airplane by hand.",
+          "spokenText": "Autopilot is not turned on immediately. First, the pilot stabilizes the airplane by hand.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "לא מפעילים טייס אוטומטי מיד. קודם הטייס מייצב את המטוס ידנית.",
+          "spokenText": "לא מפעילים טייס אוטומטי מיד. קודם הטייס מייצב את המטוס ידנית.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-12.mp3",
+        "en": "en/day04/takeoff/hint-12.mp3",
+        "he": "he/day04/takeoff/hint-12.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-13",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-13"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 55,
+      "texts": {
+        "ru": {
+          "displayText": "Если двигатель ведёт себя странно, пилот может прервать взлёт. В авиации вовремя остановиться тоже смелость.",
+          "spokenText": "Если двигатель ведёт себя странно, пилот может прервать взлёт. В авиации вовремя остановиться тоже смелость.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "If an engine behaves strangely, a pilot may abort the takeoff. In aviation, stopping in time is also courage.",
+          "spokenText": "If an engine behaves strangely, a pilot may abort the takeoff. In aviation, stopping in time is also courage.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אם מנוע מתנהג בצורה מוזרה, הטייס יכול להפסיק את ההמראה. בתעופה גם לדעת לעצור בזמן זו אומץ.",
+          "spokenText": "אם מנוע מתנהג בצורה מוזרה, הטייס יכול להפסיק את ההמראה. בתעופה גם לדעת לעצור בזמן זו אומץ.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-13.mp3",
+        "en": "en/day04/takeoff/hint-13.mp3",
+        "he": "he/day04/takeoff/hint-13.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.takeoff.hint-14",
+      "stage": "day04",
+      "scene": "takeoff-controls",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/takeoffHints.ts",
+        "key": "takeoffHints[locale].switcher-on-14"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 56,
+      "texts": {
+        "ru": {
+          "displayText": "Северное сияние — это свет заряженных частиц в небе. Для пилотов на севере это красивое, но обычное зрелище.",
+          "spokenText": "Северное сияние — это свет заряженных частиц в небе. Для пилотов на севере это красивое, но обычное зрелище.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The aurora is light from charged particles in the sky. For pilots flying north, it is a beautiful but familiar sight.",
+          "spokenText": "The aurora is light from charged particles in the sky. For pilots flying north, it is a beautiful but familiar sight.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הזוהר הצפוני הוא אור של חלקיקים טעונים בשמיים. לטייסים שטסים צפונה זה מראה יפה ומוכר.",
+          "spokenText": "הזוהר הצפוני הוא אור של חלקיקים טעונים בשמיים. לטייסים שטסים צפונה זה מראה יפה ומוכר.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/takeoff/hint-14.mp3",
+        "en": "en/day04/takeoff/hint-14.mp3",
+        "he": "he/day04/takeoff/hint-14.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars.intro.01",
+      "stage": "day04",
+      "scene": "stars-intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day4StarsNav.introBlocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 57,
+      "texts": {
+        "ru": {
+          "displayText": "Йорк Свенсен стоит на палубе, маленький и пушистый... Свенсен: — Компас ведёт себя странно! Логан: — Настоящие путешественники читают не стрелки…",
+          "spokenText": "Йорк Свенсен стоит на палубе, маленький и пушистый... Свенсен: — Компас ведёт себя странно! Логан: — Настоящие путешественники читают не стрелки…",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Yorkie Svensen stands on deck, small and fluffy... Svensen: The compass is acting strangely! Logan: Real travelers do not read arrows...",
+          "spokenText": "Yorkie Svensen stands on deck, small and fluffy... Svensen: The compass is acting strangely! Logan: Real travelers do not read arrows...",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "סוונסן הקטן והפרוותי עומד על הסיפון... סוונסן: המצפן מתנהג מוזר! לוגן: מטיילים אמיתיים לא קוראים חצים...",
+          "spokenText": "סוונסן הקטן והפרוותי עומד על הסיפון... סוונסן: המצפן מתנהג מוזר! לוגן: מטיילים אמיתיים לא קוראים חצים...",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars/intro/01.mp3",
+        "en": "en/day04/stars/intro/01.mp3",
+        "he": "he/day04/stars/intro/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars.intro.02",
+      "stage": "day04",
+      "scene": "stars-intro",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day4StarsNav.introBlocks[1]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 58,
+      "texts": {
+        "ru": {
+          "displayText": "Логан продолжает: — Хочешь узнать, где север — ищи Полярную.",
+          "spokenText": "Логан продолжает: — Хочешь узнать, где север — ищи Полярную.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "Logan continues: If you want to know where north is, look for Polaris.",
+          "spokenText": "Logan continues: If you want to know where north is, look for Polaris.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "he": {
+          "displayText": "לוגן ממשיך: אם אתה רוצה לדעת איפה הצפון, חפש את כוכב הצפון.",
+          "spokenText": "לוגן ממשיך: אם אתה רוצה לדעת איפה הצפון, חפש את כוכב הצפון.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars/intro/02.mp3",
+        "en": "en/day04/stars/intro/02.mp3",
+        "he": "he/day04/stars/intro/02.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars-dialogue.intro-1",
+      "stage": "day04",
+      "scene": "stars-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "starsDialogs[*].id=intro_1,intro_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 59,
+      "texts": {
+        "ru": {
+          "displayText": "Логан, я смотрю на небо… и вижу просто россыпь блёсток! Как можно что‑то понять в этом хаосе? Это только сначала хаос. Есть звёзды‑подсказки. Они помогут найти север лучше любого компаса.",
+          "spokenText": "Логан, я смотрю на небо… и вижу просто россыпь блёсток! Как можно что‑то понять в этом хаосе? Это только сначала хаос. Есть звёзды‑подсказки. Они помогут найти север лучше любого компаса.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Logan, I look at the sky... and all I see is a glittery mess! How can anyone understand anything in this chaos? It only looks like chaos at first. There are guide stars. They can show north better than any compass.",
+          "spokenText": "Logan, I look at the sky... and all I see is a glittery mess! How can anyone understand anything in this chaos? It only looks like chaos at first. There are guide stars. They can show north better than any compass.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "לוגן, אני מסתכל על השמיים... וכל מה שאני רואה זה נצנוצים מפוזרים! איך אפשר להבין משהו מהכאוס הזה? בהתחלה זה באמת נראה כמו כאוס. אבל יש כוכבי רמז. הם יעזרו למצוא את הצפון טוב יותר מכל מצפן.",
+          "spokenText": "לוגן, אני מסתכל על השמיים... וכל מה שאני רואה זה נצנוצים מפוזרים! איך אפשר להבין משהו מהכאוס הזה? בהתחלה זה באמת נראה כמו כאוס. אבל יש כוכבי רמז. הם יעזרו למצוא את הצפון טוב יותר מכל מצפן.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars-dialogue/intro-1.mp3",
+        "en": "en/day04/stars-dialogue/intro-1.mp3",
+        "he": "he/day04/stars-dialogue/intro-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars-dialogue.intro-3",
+      "stage": "day04",
+      "scene": "stars-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "starsDialogs[*].id=intro_3,intro_4"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 60,
+      "texts": {
+        "ru": {
+          "displayText": "Подсказки? У звёзд есть подсказки?! Покажи, какие именно! Иногда достаточно трёх. Найди (1) Мерак и (2) Дубхе на карте звёздного неба и соедини их прямой линией — она укажет направление ⬆️!",
+          "spokenText": "Подсказки? У звёзд есть подсказки?! Покажи, какие именно! Иногда достаточно трёх. Найди (1) Мерак и (2) Дубхе на карте звёздного неба и соедини их прямой линией — она укажет направление ⬆️!",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "Guide stars? Stars have clues?! Show me which ones! Sometimes three are enough. Find (1) Merak and (2) Dubhe on the sky map and connect them with a straight line, it will point the way ⬆️!",
+          "spokenText": "Guide stars? Stars have clues?! Show me which ones! Sometimes three are enough. Find (1) Merak and (2) Dubhe on the sky map and connect them with a straight line, it will point the way ⬆️!",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "he": {
+          "displayText": "רמזים? לכוכבים יש רמזים?! תראה לי אילו! לפעמים שלושה מספיקים. מצא את (1) מראק ואת (2) דובהה במפת השמיים וחבר ביניהם בקו ישר, והוא יראה את הכיוון ⬆️!",
+          "spokenText": "רמזים? לכוכבים יש רמזים?! תראה לי אילו! לפעמים שלושה מספיקים. מצא את (1) מראק ואת (2) דובהה במפת השמיים וחבר ביניהם בקו ישר, והוא יראה את הכיוון ⬆️!",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars-dialogue/intro-3.mp3",
+        "en": "en/day04/stars-dialogue/intro-3.mp3",
+        "he": "he/day04/stars-dialogue/intro-3.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars-dialogue.merak-1",
+      "stage": "day04",
+      "scene": "stars-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "starsDialogs[*].id=merak_1,dubhe_1"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 61,
+      "texts": {
+        "ru": {
+          "displayText": "Отлично! Мерак — первая указательная звезда. Молодец! Теперь найди звезду под названием Дубхе. А вот и Дубхе! Теперь мы соединим её линией с Мераком — они показывают направление к Полярной звезде. Продолжи рисовать прямую линию вниз и посмотри, куда она ведёт.",
+          "spokenText": "Отлично! Мерак — первая указательная звезда. Молодец! Теперь найди звезду под названием Дубхе. А вот и Дубхе! Теперь мы соединим её линией с Мераком — они показывают направление к Полярной звезде. Продолжи рисовать прямую линию вниз и посмотри, куда она ведёт.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "Great! Merak is the first pointer star. Well done! Now find the star called Dubhe. And there is Dubhe! Now we connect it with Merak. Together they point toward Polaris. Keep drawing the straight line and see where it leads.",
+          "spokenText": "Great! Merak is the first pointer star. Well done! Now find the star called Dubhe. And there is Dubhe! Now we connect it with Merak. Together they point toward Polaris. Keep drawing the straight line and see where it leads.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "he": {
+          "displayText": "מעולה! מראק הוא כוכב ההכוונה הראשון. כל הכבוד! עכשיו מצא את הכוכב שנקרא דובהה. והנה דובהה! עכשיו נחבר אותו למראק, יחד הם מצביעים לכיוון כוכב הצפון. המשך לצייר את הקו וראה לאן הוא מוביל.",
+          "spokenText": "מעולה! מראק הוא כוכב ההכוונה הראשון. כל הכבוד! עכשיו מצא את הכוכב שנקרא דובהה. והנה דובהה! עכשיו נחבר אותו למראק, יחד הם מצביעים לכיוון כוכב הצפון. המשך לצייר את הקו וראה לאן הוא מוביל.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars-dialogue/merak-1.mp3",
+        "en": "en/day04/stars-dialogue/merak-1.mp3",
+        "he": "he/day04/stars-dialogue/merak-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars-dialogue.polaris-1",
+      "stage": "day04",
+      "scene": "stars-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "starsDialogs[*].id=polaris_1,finish_1"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 62,
+      "texts": {
+        "ru": {
+          "displayText": "Вот она — Полярная! Она почти не двигается на небе, как настоящий небесный якорь. Ты справился! Теперь ты знаешь, как ориентироваться по звёздам — даже если компас танцует ламбаду.",
+          "spokenText": "Вот она — Полярная! Она почти не двигается на небе, как настоящий небесный якорь. Ты справился! Теперь ты знаешь, как ориентироваться по звёздам — даже если компас танцует ламбаду.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "There it is, Polaris! It barely moves in the sky, like a true celestial anchor. You did it! Now you know how to navigate by the stars, even if the compass decides to dance.",
+          "spokenText": "There it is, Polaris! It barely moves in the sky, like a true celestial anchor. You did it! Now you know how to navigate by the stars, even if the compass decides to dance.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "he": {
+          "displayText": "הנה הוא, כוכב הצפון! הוא כמעט לא זז בשמיים, כמו עוגן שמימי אמיתי. הצלחת! עכשיו אתה יודע לנווט לפי הכוכבים, גם אם המצפן מחליט לרקוד.",
+          "spokenText": "הנה הוא, כוכב הצפון! הוא כמעט לא זז בשמיים, כמו עוגן שמימי אמיתי. הצלחת! עכשיו אתה יודע לנווט לפי הכוכבים, גם אם המצפן מחליט לרקוד.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars-dialogue/polaris-1.mp3",
+        "en": "en/day04/stars-dialogue/polaris-1.mp3",
+        "he": "he/day04/stars-dialogue/polaris-1.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars-dialogue.finish-2",
+      "stage": "day04",
+      "scene": "stars-dialogue",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/dialogs.ts",
+        "key": "starsDialogs[*].id=finish_2"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 63,
+      "texts": {
+        "ru": {
+          "displayText": "Йеее! Теперь я морской пёс со звёздным навигатором!",
+          "spokenText": "Йеее! Теперь я морской пёс со звёздным навигатором!",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Yay! Now I am a sea dog with a star navigator!",
+          "spokenText": "Yay! Now I am a sea dog with a star navigator!",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "יש! עכשיו אני כלב ים עם נווט כוכבים!",
+          "spokenText": "יש! עכשיו אני כלב ים עם נווט כוכבים!",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars-dialogue/finish-2.mp3",
+        "en": "en/day04/stars-dialogue/finish-2.mp3",
+        "he": "he/day04/stars-dialogue/finish-2.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day04.stars.arrival.01",
+      "stage": "day04",
+      "scene": "arrival",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day4StarsNav.arrivalBlock"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 64,
+      "texts": {
+        "ru": {
+          "displayText": "Приплыли! Добро пожаловать в страну льдов и полярных лисиц.",
+          "spokenText": "Приплыли! Добро пожаловать в страну льдов и полярных лисиц.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "We made it! Welcome to the land of ice and arctic foxes.",
+          "spokenText": "We made it! Welcome to the land of ice and arctic foxes.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הגענו! ברוכים הבאים לארץ הקרח ושועלי הקוטב.",
+          "spokenText": "הגענו! ברוכים הבאים לארץ הקרח ושועלי הקוטב.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day04/stars/arrival/01.mp3",
+        "en": "en/day04/stars/arrival/01.mp3",
+        "he": "he/day04/stars/arrival/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.station.intro.01",
+      "stage": "day05",
+      "scene": "station-intro",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Spitsbergen.blocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 65,
+      "texts": {
+        "ru": {
+          "displayText": "Ты на научной полярной станции — месте, где учёные изучают вечные льды, следят за климатом, наблюдают за белыми медведями, исследуют северные сияния и даже хранят коллекции редких растений в специальных холодных хранилищах.",
+          "spokenText": "Ты на научной полярной станции — месте, где учёные изучают вечные льды, следят за климатом, наблюдают за белыми медведями, исследуют северные сияния и даже хранят коллекции редких растений в специальных холодных хранилищах.",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "You are at a scientific polar station, a place where researchers study ancient ice, track the climate, observe polar bears, explore the aurora, and even store collections of rare plants in special cold vaults.",
+          "spokenText": "You are at a scientific polar station, a place where researchers study ancient ice, track the climate, observe polar bears, explore the aurora, and even store collections of rare plants in special cold vaults.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אתם נמצאים בתחנה מדעית קוטבית, מקום שבו חוקרים לומדים קרח עתיק, עוקבים אחר האקלים, צופים בדובי קוטב, חוקרים את הזוהר הצפוני ואפילו שומרים אוספים של צמחים נדירים במאגרים קרים מיוחדים.",
+          "spokenText": "אתם נמצאים בתחנה מדעית קוטבית, מקום שבו חוקרים לומדים קרח עתיק, עוקבים אחר האקלים, צופים בדובי קוטב, חוקרים את הזוהר הצפוני ואפילו שומרים אוספים של צמחים נדירים במאגרים קרים מיוחדים.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/station/intro/01.mp3",
+        "en": "en/day05/station/intro/01.mp3",
+        "he": "he/day05/station/intro/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.station.intro.02",
+      "stage": "day05",
+      "scene": "station-intro",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Spitsbergen.blocks[1]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 66,
+      "texts": {
+        "ru": {
+          "displayText": "Эта станция помогает понять, как меняется наша планета и что нужно сделать, чтобы защитить природу Арктики. Здесь каждый день проводят эксперименты, делают измерения, отправляют данные в международные центры и внимательно следят за тем, как живёт север.",
+          "spokenText": "Эта станция помогает понять, как меняется наша планета и что нужно сделать, чтобы защитить природу Арктики. Здесь каждый день проводят эксперименты, делают измерения, отправляют данные в международные центры и внимательно следят за тем, как живёт север.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "This station helps us understand how our planet is changing and what must be done to protect Arctic nature. Every day, experiments are run here, measurements are taken, data is sent to international centers, and scientists carefully watch how the north lives and changes.",
+          "spokenText": "This station helps us understand how our planet is changing and what must be done to protect Arctic nature. Every day, experiments are run here, measurements are taken, data is sent to international centers, and scientists carefully watch how the north lives and changes.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "התחנה הזו עוזרת להבין כיצד כוכב הלכת שלנו משתנה ומה צריך לעשות כדי להגן על טבע הארקטי. כאן עושים ניסויים בכל יום, מבצעים מדידות, שולחים נתונים למרכזים בינלאומיים ועוקבים בקפדנות אחרי חיי הצפון.",
+          "spokenText": "התחנה הזו עוזרת להבין כיצד כוכב הלכת שלנו משתנה ומה צריך לעשות כדי להגן על טבע הארקטי. כאן עושים ניסויים בכל יום, מבצעים מדידות, שולחים נתונים למרכזים בינלאומיים ועוקבים בקפדנות אחרי חיי הצפון.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/station/intro/02.mp3",
+        "en": "en/day05/station/intro/02.mp3",
+        "he": "he/day05/station/intro/02.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.station.intro.03",
+      "stage": "day05",
+      "scene": "station-intro",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Spitsbergen.blocks[2]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 67,
+      "texts": {
+        "ru": {
+          "displayText": "Тебе тоже пора готовиться к своей полярной экспедиции! На базе есть три отдела, и каждый поможет тебе освоить важную часть подготовки:",
+          "spokenText": "Тебе тоже пора готовиться к своей полярной экспедиции! На базе есть три отдела, и каждый поможет тебе освоить важную часть подготовки:",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "It is time for you to get ready for your own polar expedition too! The base has three departments, and each one will help you master an important part of the preparation:",
+          "spokenText": "It is time for you to get ready for your own polar expedition too! The base has three departments, and each one will help you master an important part of the preparation:",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "גם לך הגיע הזמן להתכונן למשלחת הקוטבית שלך! בבסיס יש שלוש מחלקות, וכל אחת מהן תעזור לך ללמוד חלק חשוב מההכנה:",
+          "spokenText": "גם לך הגיע הזמן להתכונן למשלחת הקוטבית שלך! בבסיס יש שלוש מחלקות, וכל אחת מהן תעזור לך ללמוד חלק חשוב מההכנה:",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/station/intro/03.mp3",
+        "en": "en/day05/station/intro/03.mp3",
+        "he": "he/day05/station/intro/03.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.station.intro.04",
+      "stage": "day05",
+      "scene": "station-intro",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Spitsbergen.blocks[3]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 68,
+      "texts": {
+        "ru": {
+          "displayText": "— Тепловой модуль — где ты научишься правильному полярному снаряжению. — Лаборатория оборудования — где проверяют инструменты и приборы. — Гараж — место, где готовят снегоходы и технику к выезду. Ты можешь заходить в комнаты в любом порядке — всё зависит от тебя. Когда пройдёшь все три этапа, экспедиция начнётся!",
+          "spokenText": "— Тепловой модуль — где ты научишься правильному полярному снаряжению. — Лаборатория оборудования — где проверяют инструменты и приборы. — Гараж — место, где готовят снегоходы и технику к выезду. Ты можешь заходить в комнаты в любом порядке — всё зависит от тебя. Когда пройдёшь все три этапа, экспедиция начнётся!",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "— Thermal module — where you learn proper polar clothing. — Equipment lab — where tools and instruments are tested. — Garage — where snowmobiles and field equipment are prepared for departure. You can enter the rooms in any order. Once you complete all three stages, the expedition will begin!",
+          "spokenText": "— Thermal module — where you learn proper polar clothing. — Equipment lab — where tools and instruments are tested. — Garage — where snowmobiles and field equipment are prepared for departure. You can enter the rooms in any order. Once you complete all three stages, the expedition will begin!",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "— מודול חום — שבו לומדים על לבוש קוטבי נכון. — מעבדת ציוד — שבה בודקים כלים ומכשירים. — מוסך — המקום שבו מכינים אופנועי שלג וציוד ליציאה. אפשר להיכנס לחדרים בכל סדר שתרצה. כשתסיים את כל שלושת השלבים, המשלחת תתחיל!",
+          "spokenText": "— מודול חום — שבו לומדים על לבוש קוטבי נכון. — מעבדת ציוד — שבה בודקים כלים ומכשירים. — מוסך — המקום שבו מכינים אופנועי שלג וציוד ליציאה. אפשר להיכנס לחדרים בכל סדר שתרצה. כשתסיים את כל שלושת השלבים, המשלחת תתחיל!",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/station/intro/04.mp3",
+        "en": "en/day05/station/intro/04.mp3",
+        "he": "he/day05/station/intro/04.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.intro.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "game-instruction",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.subtitle"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 69,
+      "texts": {
+        "ru": {
+          "displayText": "Внимательно изучи упряжь. В снегах очень важно доверять своему транспорту и знать, в каком он состоянии.",
+          "spokenText": "Внимательно изучи упряжь. В снегах очень важно доверять своему транспорту и знать, в каком он состоянии.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Inspect the harness carefully. In the snow, it is important to trust your transport and know what condition it is in.",
+          "spokenText": "Inspect the harness carefully. In the snow, it is important to trust your transport and know what condition it is in.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "בדוק היטב את הרתמה. בשלג חשוב לסמוך על כלי התחבורה שלך ולדעת באיזה מצב הוא נמצא.",
+          "spokenText": "בדוק היטב את הרתמה. בשלג חשוב לסמוך על כלי התחבורה שלך ולדעת באיזה מצב הוא נמצא.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/intro/01.mp3",
+        "en": "en/day05/garage/intro/01.mp3",
+        "he": "he/day05/garage/intro/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-reins.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.reins"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 70,
+      "texts": {
+        "ru": {
+          "displayText": "Поводья передают команды собакам. От их состояния зависит управляемость.",
+          "spokenText": "Поводья передают команды собакам. От их состояния зависит управляемость.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The reins pass commands to the dogs. Their condition affects how well the sled can be controlled.",
+          "spokenText": "The reins pass commands to the dogs. Their condition affects how well the sled can be controlled.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "המושכות מעבירות פקודות לכלבים. המצב שלהן משפיע על השליטה במזחלת.",
+          "spokenText": "המושכות מעבירות פקודות לכלבים. המצב שלהן משפיע על השליטה במזחלת.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-reins/01.mp3",
+        "en": "en/day05/garage/part-reins/01.mp3",
+        "he": "he/day05/garage/part-reins/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-harness.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.harness"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 71,
+      "texts": {
+        "ru": {
+          "displayText": "Упряжь распределяет нагрузку между собаками.",
+          "spokenText": "Упряжь распределяет нагрузку между собаками.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The harness distributes the load between the dogs.",
+          "spokenText": "The harness distributes the load between the dogs.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הרתמה מחלקת את העומס בין הכלבים.",
+          "spokenText": "הרתמה מחלקת את העומס בין הכלבים.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-harness/01.mp3",
+        "en": "en/day05/garage/part-harness/01.mp3",
+        "he": "he/day05/garage/part-harness/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-water.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.water"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 72,
+      "texts": {
+        "ru": {
+          "displayText": "Вода необходима собакам для выносливости в долгом пути.",
+          "spokenText": "Вода необходима собакам для выносливости в долгом пути.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Water is essential for the dogs' endurance on a long journey.",
+          "spokenText": "Water is essential for the dogs' endurance on a long journey.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "מים חיוניים לסיבולת של הכלבים במסע ארוך.",
+          "spokenText": "מים חיוניים לסיבולת של הכלבים במסע ארוך.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-water/01.mp3",
+        "en": "en/day05/garage/part-water/01.mp3",
+        "he": "he/day05/garage/part-water/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-food.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.food"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 73,
+      "texts": {
+        "ru": {
+          "displayText": "Еда поддерживает силы упряжки.",
+          "spokenText": "Еда поддерживает силы упряжки.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Food helps the team keep up its strength.",
+          "spokenText": "Food helps the team keep up its strength.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "האוכל עוזר לצוות לשמור על הכוח.",
+          "spokenText": "האוכל עוזר לצוות לשמור על הכוח.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-food/01.mp3",
+        "en": "en/day05/garage/part-food/01.mp3",
+        "he": "he/day05/garage/part-food/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-brake.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.brake"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 74,
+      "texts": {
+        "ru": {
+          "displayText": "Тормоз позволяет контролировать скорость на спусках.",
+          "spokenText": "Тормоз позволяет контролировать скорость на спусках.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The brake helps control speed on descents.",
+          "spokenText": "The brake helps control speed on descents.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הבלם עוזר לשלוט במהירות בירידות.",
+          "spokenText": "הבלם עוזר לשלוט במהירות בירידות.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-brake/01.mp3",
+        "en": "en/day05/garage/part-brake/01.mp3",
+        "he": "he/day05/garage/part-brake/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-skids.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.skids"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 75,
+      "texts": {
+        "ru": {
+          "displayText": "Полозья влияют на скольжение и устойчивость.",
+          "spokenText": "Полозья влияют на скольжение и устойчивость.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The runners affect glide and stability.",
+          "spokenText": "The runners affect glide and stability.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "המגלשים משפיעים על ההחלקה ועל היציבות.",
+          "spokenText": "המגלשים משפיעים על ההחלקה ועל היציבות.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-skids/01.mp3",
+        "en": "en/day05/garage/part-skids/01.mp3",
+        "he": "he/day05/garage/part-skids/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-loads.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.loads"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 76,
+      "texts": {
+        "ru": {
+          "displayText": "Груз влияет на баланс и скорость.",
+          "spokenText": "Груз влияет на баланс и скорость.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The load affects balance and speed.",
+          "spokenText": "The load affects balance and speed.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "המטען משפיע על האיזון ועל המהירות.",
+          "spokenText": "המטען משפיע על האיזון ועל המהירות.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-loads/01.mp3",
+        "en": "en/day05/garage/part-loads/01.mp3",
+        "he": "he/day05/garage/part-loads/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.garage.part-dogs.01",
+      "stage": "day05",
+      "scene": "garage",
+      "type": "educational",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Garage.popup.descriptions.dogs"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 77,
+      "texts": {
+        "ru": {
+          "displayText": "Состояние собак — ключ к успешному заезду.",
+          "spokenText": "Состояние собак — ключ к успешному заезду.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "The dogs' condition is key to a successful run.",
+          "spokenText": "The dogs' condition is key to a successful run.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "מצב הכלבים הוא המפתח לנסיעה מוצלחת.",
+          "spokenText": "מצב הכלבים הוא המפתח לנסיעה מוצלחת.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/garage/part-dogs/01.mp3",
+        "en": "en/day05/garage/part-dogs/01.mp3",
+        "he": "he/day05/garage/part-dogs/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day05.lab.instruction.01",
+      "stage": "day05",
+      "scene": "lab",
+      "type": "game-instruction",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day5Lab.gameStart.caption"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 78,
+      "texts": {
+        "ru": {
+          "displayText": "Соберите только предметы, полезные в полярной экспедиции!",
+          "spokenText": "Соберите только предметы, полезные в полярной экспедиции!",
+          "pronunciationNotes": [
+            "Human-review astronomical proper-name pronunciation."
+          ]
+        },
+        "en": {
+          "displayText": "Collect only the items that are useful for a polar expedition!",
+          "spokenText": "Collect only the items that are useful for a polar expedition!",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "אספו רק את הפריטים שיהיו שימושיים במשלחת קוטבית!",
+          "spokenText": "אספו רק את הפריטים שיהיו שימושיים במשלחת קוטבית!",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day05/lab/instruction/01.mp3",
+        "en": "en/day05/lab/instruction/01.mp3",
+        "he": "he/day05/lab/instruction/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day06.expedition.01",
+      "stage": "day06",
+      "scene": "expedition",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day6.blocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 79,
+      "texts": {
+        "ru": {
+          "displayText": "Они ехали долго. Сани мягко скользили по насту. Снег скрипел под полозьями, дыхание собак сливалось в ровный, живой шум. Ничего лишнего. Только бег, холод и движение вперёд.",
+          "spokenText": "Они ехали долго. Сани мягко скользили по насту. Снег скрипел под полозьями, дыхание собак сливалось в ровный, живой шум. Ничего лишнего. Только бег, холод и движение вперёд.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "They traveled for a long time. The sled glided softly over the crust. Snow creaked under the runners, and the dogs’ breathing merged into a steady living rhythm. Nothing extra. Only motion, cold, and the road ahead.",
+          "spokenText": "They traveled for a long time. The sled glided softly over the crust. Snow creaked under the runners, and the dogs’ breathing merged into a steady living rhythm. Nothing extra. Only motion, cold, and the road ahead.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "הם נסעו זמן רב. המזחלת החליקה ברכות על פני השלג הקפוא. השלג חרק מתחת למגלשיים, ונשימות הכלבים התאחדו לקצב חי ויציב. בלי שום דבר מיותר. רק תנועה, קור והמשך קדימה.",
+          "spokenText": "הם נסעו זמן רב. המזחלת החליקה ברכות על פני השלג הקפוא. השלג חרק מתחת למגלשיים, ונשימות הכלבים התאחדו לקצב חי ויציב. בלי שום דבר מיותר. רק תנועה, קור והמשך קדימה.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day06/expedition/01.mp3",
+        "en": "en/day06/expedition/01.mp3",
+        "he": "he/day06/expedition/01.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day06.expedition.02",
+      "stage": "day06",
+      "scene": "expedition",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day6.blocks[1]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 80,
+      "texts": {
+        "ru": {
+          "displayText": "Здесь не было дорог — только направление. Ни следов, ни указателей, ни привычных ориентиров. В таких местах мир не подсказывает путь — он смотрит, как ты выберешь его сам.",
+          "spokenText": "Здесь не было дорог — только направление. Ни следов, ни указателей, ни привычных ориентиров. В таких местах мир не подсказывает путь — он смотрит, как ты выберешь его сам.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "There were no roads here, only direction. No tracks, no signs, no familiar landmarks. In places like this, the world does not tell you the way. It watches how you choose it yourself.",
+          "spokenText": "There were no roads here, only direction. No tracks, no signs, no familiar landmarks. In places like this, the world does not tell you the way. It watches how you choose it yourself.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "כאן לא היו דרכים, רק כיוון. לא עקבות, לא שלטים ולא נקודות ציון מוכרות. במקומות כאלה העולם לא מראה לך את הדרך. הוא רק בוחן איך תבחר אותה בעצמך.",
+          "spokenText": "כאן לא היו דרכים, רק כיוון. לא עקבות, לא שלטים ולא נקודות ציון מוכרות. במקומות כאלה העולם לא מראה לך את הדרך. הוא רק בוחן איך תבחר אותה בעצמך.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day06/expedition/02.mp3",
+        "en": "en/day06/expedition/02.mp3",
+        "he": "he/day06/expedition/02.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day06.expedition.03",
+      "stage": "day06",
+      "scene": "expedition",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day6.blocks[2]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 81,
+      "texts": {
+        "ru": {
+          "displayText": "Роланд прищурился, глядя на горизонт. Он не повышал голос — здесь и так было слышно всё важное. — Торопиться не будем, — сказал он. — Здесь выигрывает не тот, кто быстрее, а тот, кто умеет замечать.",
+          "spokenText": "Роланд прищурился, глядя на горизонт. Он не повышал голос — здесь и так было слышно всё важное. — Торопиться не будем, — сказал он. — Здесь выигрывает не тот, кто быстрее, а тот, кто умеет замечать.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Roland narrowed his eyes at the horizon. He did not raise his voice. Out here, everything important was already easy to hear. “We will not rush,” he said. “Here, the winner is not the one who moves fastest, but the one who notices best.”",
+          "spokenText": "Roland narrowed his eyes at the horizon. He did not raise his voice. Out here, everything important was already easy to hear. “We will not rush,” he said. “Here, the winner is not the one who moves fastest, but the one who notices best.”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "רולנד צמצם את עיניו אל האופק. הוא לא הרים את קולו, כאן הרי היה אפשר לשמוע הכול גם כך. “לא נמהר,” אמר. “כאן לא מנצח מי שמהיר יותר, אלא מי שיודע לשים לב.”",
+          "spokenText": "רולנד צמצם את עיניו אל האופק. הוא לא הרים את קולו, כאן הרי היה אפשר לשמוע הכול גם כך. “לא נמהר,” אמר. “כאן לא מנצח מי שמהיר יותר, אלא מי שיודע לשים לב.”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day06/expedition/03.mp3",
+        "en": "en/day06/expedition/03.mp3",
+        "he": "he/day06/expedition/03.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day06.expedition.04",
+      "stage": "day06",
+      "scene": "expedition",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day6.blocks[3]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 82,
+      "texts": {
+        "ru": {
+          "displayText": "Маленький Тобиас подпрыгивает: — Я буду смотреть первым! Следы, трещины, ветер! И если что-то покажется странным — я сразу скажу! Роланд с улыбкой отвечает: — Правильно. Вот в этом и есть суть экспедиции. Когда один смотрит вперёд, другой — по сторонам, а третий не боится сказать, что что-то идёт не так.",
+          "spokenText": "Маленький Тобиас подпрыгивает: — Я буду смотреть первым! Следы, трещины, ветер! И если что-то покажется странным — я сразу скажу! Роланд с улыбкой отвечает: — Правильно. Вот в этом и есть суть экспедиции. Когда один смотрит вперёд, другой — по сторонам, а третий не боится сказать, что что-то идёт не так.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Little Tobias jumps up: “I will be the first to look! Tracks, cracks, wind! And if anything seems strange, I will say it right away!” Roland answers with a smile: “Exactly. That is what an expedition is. One looks ahead, another looks around, and the third is not afraid to say when something feels wrong.”",
+          "spokenText": "Little Tobias jumps up: “I will be the first to look! Tracks, cracks, wind! And if anything seems strange, I will say it right away!” Roland answers with a smile: “Exactly. That is what an expedition is. One looks ahead, another looks around, and the third is not afraid to say when something feels wrong.”",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "טוביאס הקטן קופץ: “אני אסתכל ראשון! עקבות, סדקים, רוח! ואם משהו ייראה מוזר, אגיד מיד!” רולנד מחייך ועונה: “בדיוק. זו כל המהות של משלחת. כשאחד מסתכל קדימה, השני לצדדים, והשלישי לא מפחד לומר שמשהו לא מרגיש נכון.”",
+          "spokenText": "טוביאס הקטן קופץ: “אני אסתכל ראשון! עקבות, סדקים, רוח! ואם משהו ייראה מוזר, אגיד מיד!” רולנד מחייך ועונה: “בדיוק. זו כל המהות של משלחת. כשאחד מסתכל קדימה, השני לצדדים, והשלישי לא מפחד לומר שמשהו לא מרגיש נכון.”",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day06/expedition/04.mp3",
+        "en": "en/day06/expedition/04.mp3",
+        "he": "he/day06/expedition/04.mp3"
+      }
+    },
+    {
+      "id": "svalbard.day07.ending.01",
+      "stage": "day07",
+      "scene": "ending",
+      "type": "story",
+      "source": {
+        "file": "components/Raccoons/quests/quest-1/i18n/{locale}.ts",
+        "key": "day7.blocks[0]"
+      },
+      "platforms": [
+        "desktop",
+        "mobile"
+      ],
+      "order": 83,
+      "texts": {
+        "ru": {
+          "displayText": "Каждая экспедиция когда-нибудь заканчивается. Но если что-то интересное подошло к концу — значит, совсем скоро начнётся что-то новое. Пора возвращаться домой, открывать карту и искать новые удивительные места, куда обязательно захочется отправиться снова.",
+          "spokenText": "Каждая экспедиция когда-нибудь заканчивается. Но если что-то интересное подошло к концу — значит, совсем скоро начнётся что-то новое. Пора возвращаться домой, открывать карту и искать новые удивительные места, куда обязательно захочется отправиться снова.",
+          "pronunciationNotes": []
+        },
+        "en": {
+          "displayText": "Every expedition ends someday. But when something interesting comes to an end, it means something new is about to begin. It is time to go home, open the map, and search for new amazing places you will want to visit again.",
+          "spokenText": "Every expedition ends someday. But when something interesting comes to an end, it means something new is about to begin. It is time to go home, open the map, and search for new amazing places you will want to visit again.",
+          "pronunciationNotes": []
+        },
+        "he": {
+          "displayText": "כל משלחת מסתיימת יום אחד. אבל אם משהו מעניין הסתיים, זה אומר שמשהו חדש עומד להתחיל ממש בקרוב. זה הזמן לחזור הביתה, לפתוח את המפה ולחפש מקומות חדשים ומופלאים שתרצו לבקר בהם שוב.",
+          "spokenText": "כל משלחת מסתיימת יום אחד. אבל אם משהו מעניין הסתיים, זה אומר שמשהו חדש עומד להתחיל ממש בקרוב. זה הזמן לחזור הביתה, לפתוח את המפה ולחפש מקומות חדשים ומופלאים שתרצו לבקר בהם שוב.",
+          "pronunciationNotes": []
+        }
+      },
+      "audio": {
+        "ru": "ru/day07/ending/01.mp3",
+        "en": "en/day07/ending/01.mp3",
+        "he": "he/day07/ending/01.mp3"
+      }
+    }
+  ]
+}
