@@ -17,7 +17,7 @@ export default function ShopIndexPage() {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const dict = dictionaries[lang];
-  const { navTitle, hubDescription } = dict.shop;
+  const { navTitle, hubDescription, conceptCards } = dict.shop;
   const products = getPublicProducts();
   const storefront = SHOP_STOREFRONT_COPY[lang];
 
@@ -50,6 +50,21 @@ export default function ShopIndexPage() {
               {SHOP_FREE_EXPERIENCES.map((experience) => (
                 <ShopFreeExperienceCard key={experience.id} experience={experience} lang={lang} />
               ))}
+            </section>
+            <section className="shop-catalog__directions" aria-labelledby="shop-directions-title">
+              <h2 id="shop-directions-title">{storefront.directionsTitle}</h2>
+              <div className="shop-catalog__direction-grid">
+                {(["solve", "create", "explore", "together"] as const).map((key) => (
+                  <div key={key} className={`shop-catalog__direction shop-catalog__direction--${key}`}>
+                    <h3>{conceptCards[key].title}</h3>
+                    <p>{conceptCards[key].desc}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="shop-catalog__how" aria-labelledby="shop-how-title">
+              <h2 id="shop-how-title">{storefront.howTitle}</h2>
+              <ol>{storefront.howSteps.map((step) => <li key={step}>{step}</li>)}</ol>
             </section>
           </div>
         ) : (

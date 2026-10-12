@@ -216,13 +216,15 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 
 ## PHASE 3 — Storefront + merchandising design
 
-**Status: PARTIAL**
+**Status: PARTIAL — IMPLEMENTED / PHYSICAL MOBILE QA PENDING**
 
 ### `/shop`
 - [x] Real product imagery.
 - [x] Clear product value proposition.
 - [x] Strong launch-ready card design.
 - [x] Mobile / RU / EN / HE / RTL pass.
+- [x] Show Sound Case and free Svalbard before shop directions, with a compact localized hero and format explanation.
+- [ ] Confirm the refreshed storefront and homepage shop discoverability on the owner's physical Android phone.
 
 ### `/shop/[slug]` Sound Case #001
 - [x] Hero visual.
@@ -850,6 +852,26 @@ Validation:
 - Local Chrome checked the homepage at 390×844, 375×812 and 360×800 in RU/EN/HE: section order, one shop section, RTL, normal scroll to footer, no horizontal overflow and localized /shop links. The shop CTA was opened in all three locales.
 - Desktop homepage checks at 1440×900 and 1280×800 in RU/EN/HE preserved banner, animal cards, Novinki and shop order, with no horizontal overflow; the change is scoped to mobile rendering and CSS breakpoints.
 - 154 focused tests and 1,208 full Vitest tests passed; TypeScript, changed-file ESLint, production build and `git diff --check` passed.
+
+## 2026-10-12 — Homepage shop discoverability and adventure storefront
+Phase: Phase 3 — Storefront + merchandising design
+Status: PARTIAL — IMPLEMENTED / PHYSICAL MOBILE QA PENDING
+Commits:
+- capybara_tales: `e03af64` `fix(mobile): improve homepage shop discoverability`
+- capybara_tales: this commit — `feat(shop): redesign adventure storefront`
+Completed:
+- Made the mobile homepage shop entrance recognizable with the existing Svalbard poster and an earlier shop link; kept its position after the Sound Case preorder banner and native document scrolling.
+- Shortened the `/shop` hero, kept the real Sound Case and free Svalbard cards first, and placed compact localized directions and format guidance after the products.
+- Reused the existing R2 Sound Case banner and Supabase-proxied Svalbard poster; changed no catalog price, status, checkout, storage object or production configuration.
+Remaining in this phase:
+- Owner to verify mobile scrolling and storefront presentation on a physical Android phone, including fast touch momentum; browser viewport checks are not device proof.
+- Product age/duration live playtest, minimum-player decision and preparation-burden decision remain open.
+Decisions/blockers:
+- Native momentum can still carry an unusually strong gesture past a section; no mandatory snap, gesture interception or artificial delay was added.
+- Commerce, PayPal Live, protected editor QA and Svalbard device QA retain their existing statuses.
+Validation:
+- Local browser checked mobile home at 360×800, 375×812 and 390×844 in RU/EN/HE; `/shop` at 360×800, 375×812, 390×844, 430×932, 1280×800 and 1440×900. RTL, image loading, localized routes and zero horizontal overflow were confirmed. The home shop CTA, Sound Case coming-soon detail, anonymous Svalbard launch and Back to Store were opened in RU.
+- 29 focused tests and 1,212 full Vitest tests passed; TypeScript, changed-file ESLint, production build and `git diff --check` passed. Physical Android touch scrolling remains unverified.
 
 ---
 

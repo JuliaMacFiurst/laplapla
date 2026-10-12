@@ -14,18 +14,15 @@ const product = getProductById("sound-case-001");
 if (!product) throw new Error("Sound Case #001 catalog fixture is missing");
 
 describe("LapLapLa shop storefront", () => {
-  it("presents online and printable quests with the approved localized hero copy", () => {
+  it("presents online and printable quests with concise localized hero copy", () => {
     expect(SHOP_STOREFRONT_COPY.ru).toMatchObject({
-      title: "Мир полон загадок. Пора их разгадать!",
-      intro: "Почему пески умеют петь? Что скрывает арктическое семенохранилище? Интерактивные квесты LapLapLa превращают удивительные научные факты в приключения с головоломками, экспериментами и мини-играми. Играйте онлайн или отправляйтесь в приключение с печатными заданиями.",
+      title: "Приключения, которые начинаются дома",
     });
     expect(SHOP_STOREFRONT_COPY.en).toMatchObject({
-      title: "The World Is Full of Mysteries. Let's Solve Them!",
-      intro: "Why do sand dunes sing? What secrets does the Arctic Seed Vault hold? LapLapLa's interactive quests turn surprising scientific facts into adventures filled with puzzles, experiments, and mini-games. Play online or take your adventure further with printable activities.",
+      title: "Adventures that begin at home",
     });
     expect(SHOP_STOREFRONT_COPY.he).toMatchObject({
-      title: "העולם מלא תעלומות. הגיע הזמן לפתור אותן!",
-      intro: "למה דיונות חול שרות? אילו סודות מסתתרים בכספת הזרעים הארקטית? הקווסטים האינטראקטיביים של LapLapLa הופכים עובדות מדעיות מפתיעות להרפתקאות עם חידות, ניסויים ומשחקונים. אפשר לשחק אונליין או להמשיך את ההרפתקה עם פעילויות להדפסה.",
+      title: "הרפתקאות שמתחילות בבית",
     });
 
     const heroCopy = [
@@ -34,6 +31,17 @@ describe("LapLapLa shop storefront", () => {
       SHOP_STOREFRONT_COPY.he.title,
     ].join(" ");
     expect(heroCopy).not.toMatch(/начинаются на бумаге|begin on paper|מתחילות על הנייר/i);
+  });
+
+  it.each(["ru", "en", "he"] as const)("keeps products before directions and explains both formats in %s", (lang) => {
+    const copy = SHOP_STOREFRONT_COPY[lang];
+    expect(copy.howSteps).toHaveLength(3);
+    expect(copy.intro).toBeTruthy();
+    expect(copy.directionsTitle).toBeTruthy();
+    const page = readFileSync(`${process.cwd()}/pages/shop/index.tsx`, "utf8");
+    expect(page.indexOf('className="shop-catalog__featured"')).toBeLessThan(page.indexOf('className="shop-catalog__directions"'));
+    expect(page.indexOf('className="shop-catalog__directions"')).toBeLessThan(page.indexOf('className="shop-catalog__how"'));
+    expect(page).toContain("conceptCards[key].title");
   });
 
   it("stores the approved provisional age and duration facts in every locale", () => {

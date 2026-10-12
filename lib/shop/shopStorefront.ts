@@ -14,13 +14,16 @@ type ShopStorefrontCopy = {
   formatValue: string;
   availability: string;
   detailsAction: string;
+  directionsTitle: string;
+  howTitle: string;
+  howSteps: [string, string, string];
 };
 
 export const SHOP_STOREFRONT_COPY: Record<Lang, ShopStorefrontCopy> = {
   ru: {
     eyebrow: "LapLapLa Shop",
-    title: "Мир полон загадок. Пора их разгадать!",
-    intro: "Почему пески умеют петь? Что скрывает арктическое семенохранилище? Интерактивные квесты LapLapLa превращают удивительные научные факты в приключения с головоломками, экспериментами и мини-играми. Играйте онлайн или отправляйтесь в приключение с печатными заданиями.",
+    title: "Приключения, которые начинаются дома",
+    intro: "Интерактивные квесты, игры и приключения для печати. Исследуйте необычные явления, разгадывайте загадки и играйте вместе.",
     featuredLabel: "Первое приключение",
     productValue: "Расследование тайны поющих песков: восемь этапов, имена вашей команды, печатные материалы и звуковые задания.",
     priceLabel: "Обычная цена после запуска",
@@ -31,11 +34,14 @@ export const SHOP_STOREFRONT_COPY: Record<Lang, ShopStorefrontCopy> = {
     formatValue: "Персонализированный печатный квест + интерактивные этапы",
     availability: "Скоро · сейчас доступен предзаказ без оплаты",
     detailsAction: "Посмотреть Sound Case",
+    directionsTitle: "Куда отправимся?",
+    howTitle: "Как это работает",
+    howSteps: ["Выберите приключение", "Играйте онлайн или подготовьте материалы для печати", "Разгадывайте, экспериментируйте и проходите задания"],
   },
   en: {
     eyebrow: "LapLapLa Shop",
-    title: "The World Is Full of Mysteries. Let's Solve Them!",
-    intro: "Why do sand dunes sing? What secrets does the Arctic Seed Vault hold? LapLapLa's interactive quests turn surprising scientific facts into adventures filled with puzzles, experiments, and mini-games. Play online or take your adventure further with printable activities.",
+    title: "Adventures that begin at home",
+    intro: "Interactive quests, games, and printable adventures. Explore surprising discoveries, solve mysteries, and play together.",
     featuredLabel: "The first adventure",
     productValue: "Investigate the mystery of singing sands across eight stages with your team’s names, printable materials, and sound challenges.",
     priceLabel: "Regular price after launch",
@@ -46,11 +52,14 @@ export const SHOP_STOREFRONT_COPY: Record<Lang, ShopStorefrontCopy> = {
     formatValue: "Personalized printable quest + interactive stages",
     availability: "Coming soon · preorder now with no payment",
     detailsAction: "Explore Sound Case",
+    directionsTitle: "Choose your direction",
+    howTitle: "How it works",
+    howSteps: ["Choose an adventure", "Play online or prepare printable materials", "Solve puzzles, experiment, and complete the challenges"],
   },
   he: {
     eyebrow: "LapLapLa Shop",
-    title: "העולם מלא תעלומות. הגיע הזמן לפתור אותן!",
-    intro: "למה דיונות חול שרות? אילו סודות מסתתרים בכספת הזרעים הארקטית? הקווסטים האינטראקטיביים של LapLapLa הופכים עובדות מדעיות מפתיעות להרפתקאות עם חידות, ניסויים ומשחקונים. אפשר לשחק אונליין או להמשיך את ההרפתקה עם פעילויות להדפסה.",
+    title: "הרפתקאות שמתחילות בבית",
+    intro: "משימות הרפתקה אינטראקטיביות, משחקים והרפתקאות להדפסה. מגלים תופעות מפתיעות, פותרים תעלומות ומשחקים יחד.",
     featuredLabel: "ההרפתקה הראשונה",
     productValue: "חוקרים את תעלומת החולות המזמרים בשמונה שלבים, עם שמות הצוות שלכם, חומרים להדפסה ומשימות צליל.",
     priceLabel: "המחיר הרגיל לאחר ההשקה",
@@ -61,5 +70,8 @@ export const SHOP_STOREFRONT_COPY: Record<Lang, ShopStorefrontCopy> = {
     formatValue: "משימת הרפתקה אישית להדפסה + שלבים אינטראקטיביים",
     availability: "בקרוב · כעת אפשר להירשם מראש ללא תשלום",
     detailsAction: "לגלות את Sound Case",
+    directionsTitle: "לאן יוצאים?",
+    howTitle: "איך זה עובד",
+    howSteps: ["בוחרים הרפתקה", "משחקים אונליין או מכינים חומרים להדפסה", "פותרים חידות, מתנסים ומשלימים משימות"],
   },
 };
