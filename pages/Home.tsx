@@ -292,7 +292,7 @@ export default function Home({ lang, retention }: { lang?: Lang; retention?: Hom
 
           {isMobile ? <SoundCasePromoBanner lang={resolvedLang} mobile /> : null}
 
-          {isMobile ? <ShopSpotlight lang={resolvedLang} /> : null}
+          {isMobile ? <ShopSpotlight lang={resolvedLang} mobile /> : null}
 
           <section className="home-brand-overview" aria-labelledby="laplapla-brand-heading">
             <h2 id="laplapla-brand-heading">{t.brand.heading}</h2>

@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 import Home from "@/pages/Home";
@@ -27,6 +28,9 @@ describe("home section order", () => {
       expect(html.match(/class="home-shop-spotlight"/g)).toHaveLength(1);
       expect(html).toContain(`href="${lang === "ru" ? "" : `/${lang}`}/shop"`);
       expect(html).toContain(`dir="${lang === "he" ? "rtl" : "ltr"}"`);
+      const spotlight = html.slice(shop, latest);
+      expect(spotlight).toContain("first-quest-afisha.webp");
+      expect(spotlight.indexOf("home-shop-action")).toBeLessThan(spotlight.indexOf("shop-concept-grid"));
     });
 
     it(`preserves the desktop banner, cards, latest, shop order on ${lang}`, () => {
@@ -42,6 +46,14 @@ describe("home section order", () => {
       expect(latest).toBeGreaterThan(cards);
       expect(shop).toBeGreaterThan(latest);
       expect(html.match(/class="home-shop-spotlight"/g)).toHaveLength(1);
+      expect(html).not.toContain("home-shop-spotlight-preview");
     });
   }
+
+  it("keeps mobile document scrolling free of mandatory vertical snap", () => {
+    const css = readFileSync(`${process.cwd()}/styles/Home.css`, "utf8");
+    const mobile = css.slice(css.indexOf("@media (max-width: 768px)"));
+    expect(mobile).not.toMatch(/scroll-snap-type:\s*y\s+mandatory/);
+    expect(mobile).toMatch(/\.home-wrapper-mobile \.home-mobile-snap-shell\s*\{[^}]*overflow:\s*visible;[^}]*scroll-snap-type:\s*none;/s);
+  });
 });
