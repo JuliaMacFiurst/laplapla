@@ -361,6 +361,16 @@ This discovery checkpoint does not complete Phase 1, Phase 4, production activat
 - [ ] Confirm electronic-document consent wording/requirement.
 - [ ] Publish seller identity/contact details accurately.
 
+### Customer support contact center
+- [x] Implement localized RU/EN/HE request form and private request storage in code, including own-order selection and owner notification integration.
+- [x] Apply and verify both support-request and Discord-delivery migrations manually in Supabase; CLI migration history still needs synchronization by Antigravity.
+- [x] Confirm local Resend acceptance and receipt in the owner mailbox, plus independent Discord delivery, with a real test request.
+- [x] Implement Upstash rate limiting, failed/uncertain review handling and deduplicated notification claims in code.
+- [ ] Verify production environment variables after deployment; local configuration does not establish production readiness.
+- [ ] Verify production distributed rate limiting and the recovery cron.
+- [ ] Monitor failed/uncertain notifications manually and verify the form on a physical mobile device.
+- [ ] Review Privacy text for support-message processing and retention before public activation.
+
 Seller identity canonical data:
 - Business: `אומנצ׳קים`
 - Owner: `יוליה נואה מכלין`
@@ -890,6 +900,30 @@ Remaining:
 Validation:
 - Local browser screenshots covered RU/EN/HE at 390×844 and 1440×900; responsive checks also covered 360×800, 375×812, 430×932 and 1280×800 in all three locales. Image proportions, localized CTA links, RTL and no horizontal overflow were confirmed.
 - Targeted and full automated checks are recorded in the implementation report.
+
+## 2026-10-12 — Customer support contact center
+Phase: Phase 5 — Refund lifecycle + legal readiness
+Status: PARTIAL — IMPLEMENTED IN CODE / EXTERNAL CONFIGURATION AND DELIVERY QA PENDING
+Commits: none (requested working-tree delivery)
+Completed:
+- Added RU/EN/HE support form, links from footer/account/checkout, server-side validation, own-order verification, private support-request table migration, and Resend notification with separate acceptance status.
+- Added guarded recovery for provider failures; ambiguous send outcomes require review instead of blind retry. Refund approval and payment/refund lifecycles were not changed.
+Remaining in this phase:
+- Owner confirmed `laplapla.com` is Verified in Resend and created the `LapLapLa Support` API key. Apply the migration; configure `RESEND_API_KEY`, `RESEND_FROM_EMAIL=LapLapLa Support <support@laplapla.com>` and `SUPPORT_NOTIFICATION_EMAIL=juliamakhlinfiurst@gmail.com` as server-only environment variables in the target environment. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` before production use (the support API fails closed without them); verify the protected cron and test a real message through to the owner mailbox. The sender address is outgoing-only and needs no separate mailbox; customer email is used as Reply-To.
+- Review support-data wording and retention in Privacy. Legal policy and refund lifecycle remain open.
+Validation:
+- Automated tests and local browser rendering were checked; no live Supabase migration or Resend email was sent during this task.
+
+## 2026-10-13 — Customer support local delivery checkpoint
+Phase: Phase 5 — Refund lifecycle + legal readiness
+Status: PARTIAL — LOCAL END-TO-END VERIFIED / PRODUCTION ACTIVATION PENDING
+Completed:
+- The owner manually applied and verified both support migrations (`20261012171428` and `20261012215203`); Supabase CLI migration-history synchronization is assigned to Antigravity and remains open.
+- RU/EN/HE support form, private persistence, Upstash rate limiting, Resend and independent Discord notifications, guarded recovery, failed/uncertain review and submission/notification deduplication are implemented.
+- The owner submitted one local test request (`b0e6e2b4-c692-412f-b760-60ce5d075c7d`): the browser confirmed it, Supabase stored it, Gmail received the Resend message and Discord received the alert with the same request ID. The stored statuses were `new`, email `accepted`, Discord created `sent`, Discord review `null`. `accepted` records provider acceptance, not guaranteed delivery for every future message.
+Remaining:
+- Antigravity must synchronize Supabase CLI migration history without reapplying the SQL. Verify production Vercel variables and the deployed form, then test the protected cron in its target environment.
+- Continue manual review of failed/uncertain notification states; complete physical mobile QA and Privacy wording/retention review. Customer Support Center is not yet launched in production.
 
 ---
 

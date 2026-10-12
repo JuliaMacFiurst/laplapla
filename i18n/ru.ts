@@ -1946,6 +1946,7 @@ LapLapLa создаёт интерактивные и редакционные �
     terms: "Условия использования",
     privacy: "Политика конфиденциальности",
     licenses: "Лицензии",
+    support: "Поддержка покупателей",
     creatorPrefix: "Создано",
     authorLink: "Автор проекта",
     youtubeChannel: "YouTube-канал: @LapLapLa-studio",

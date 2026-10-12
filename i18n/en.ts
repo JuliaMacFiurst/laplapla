@@ -1886,6 +1886,7 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
     terms: "Terms of Service",
     privacy: "Privacy Policy",
     licenses: "Licensing & Credits",
+    support: "Customer support",
     creatorPrefix: "Created by",
     authorLink: "Project author",
     youtubeChannel: "YouTube channel: @LapLapLa-studio",

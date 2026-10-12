@@ -1,8 +1,10 @@
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { PayPalCheckout } from "@/components/shop/PayPalCheckout";
-import { getCurrentLang } from "@/lib/i18n/routing";
+import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
+import { supportCopy } from "@/lib/support/copy";
 import { getProductBySlug } from "@/lib/shop/catalog";
 import { paypalCheckoutCopy } from "@/lib/shop/paypalCheckoutCopy";
 
@@ -26,6 +28,7 @@ export default function PayPalCheckoutPage({ slug }: PayPalCheckoutPageProps) {
           <p className="paypal-checkout__badge">{copy.sandboxBadge}</p>
           <h1>{copy.title}</h1>
           <p>{copy.intro}</p>
+          <Link href={buildLocalizedPublicPath("/support", lang)}>{supportCopy[lang].checkoutLink}</Link>
         </header>
         <PayPalCheckout lang={lang} />
       </main>

@@ -65,10 +65,15 @@ export async function applyDistributedApiGuard(
     limit,
     windowMs = DEFAULT_WINDOW_MS,
     keyPrefix = "api",
-  }: Pick<RouteGuardOptions, "limit" | "windowMs" | "keyPrefix">,
+    failClosedOnError = false,
+  }: Pick<RouteGuardOptions, "limit" | "windowMs" | "keyPrefix"> & { failClosedOnError?: boolean },
 ) {
   const config = getDistributedRateLimitConfig();
   if (!config) {
+    if (failClosedOnError) {
+      res.status(503).json({ error: "Request protection unavailable" });
+      return false;
+    }
     return true;
   }
 
@@ -97,9 +102,16 @@ export async function applyDistributedApiGuard(
       throw new Error("Distributed rate limit request failed");
     }
 
-    const payload = await response.json() as { result?: [number, number] };
-    const count = Number(payload.result?.[0]);
-    const ttlMs = Math.max(1, Number(payload.result?.[1]) || windowMs);
+    const payload = await response.json() as { result?: unknown };
+    if (!Array.isArray(payload.result) || payload.result.length !== 2) {
+      throw new Error("Invalid distributed rate limit response");
+    }
+    const count = Number(payload.result[0]);
+    const ttl = Number(payload.result[1]);
+    if (!Number.isSafeInteger(count) || count < 1 || !Number.isSafeInteger(ttl) || ttl < 0) {
+      throw new Error("Invalid distributed rate limit response");
+    }
+    const ttlMs = Math.max(1, ttl);
     const resetAt = Date.now() + ttlMs;
 
     res.setHeader("X-RateLimit-Limit", String(limit));
@@ -114,6 +126,10 @@ export async function applyDistributedApiGuard(
 
     return true;
   } catch {
+    if (failClosedOnError) {
+      res.status(503).json({ error: "Request protection unavailable" });
+      return false;
+    }
     if (process.env.NODE_ENV !== "production") {
       console.warn("[rate-limit] distributed store unavailable; using local guard");
     }

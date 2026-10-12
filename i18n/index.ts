@@ -1556,6 +1556,7 @@ type DictionaryShape = {
     terms: string;
     privacy: string;
     licenses: string;
+    support: string;
     creatorPrefix: string;
     authorLink: string;
     youtubeChannel: string;

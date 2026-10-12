@@ -26,6 +26,7 @@ import '../styles/BedtimeStories.css';
 import '../styles/AppLab.css';
 import '../styles/LoadingSpinner.css';
 import '../styles/Shop.css';
+import '../styles/Support.css';
 import '../styles/SoundCaseQuest.css';
 import '../styles/WakeTheDune.css';
 import '../styles/SingingDunesArticle.css';
@@ -540,6 +541,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                   >
                     {t.footer.licenses}
                   </a>
+                  <a href={buildLocalizedPublicPath("/support", lang)}>{t.footer.support}</a>
                   <a
                     href={buildLocalizedPublicPath("/author", lang)}
                     onClick={() =>

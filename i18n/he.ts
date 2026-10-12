@@ -1881,6 +1881,7 @@ LapLapLa יוצרת תכנים אינטראקטיביים ועריכתיים ש�
     terms: "תנאי שימוש",
     privacy: "מדיניות פרטיות",
     licenses: "רישיונות",
+    support: "תמיכה ללקוחות",
     creatorPrefix: "נוצר על ידי",
     authorLink: "יוצרת הפרויקט",
     youtubeChannel: "ערוץ YouTube: @LapLapLa-studio",

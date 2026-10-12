@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/recover-purchase-notifications",
       "schedule": "40 1 * * *"
+    },
+    {
+      "path": "/api/cron/recover-support-notifications",
+      "schedule": "55 1 * * *"
     }
   ]
 }

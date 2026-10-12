@@ -7,6 +7,7 @@ import { customerCopy } from "@/lib/customer/copy";
 import type { CustomerProfile, ProductEntitlement } from "@/lib/customer/types";
 import type { CustomerAccessGrant, CustomerAccountResponse, CustomerPurchase } from "@/lib/customer/purchases";
 import { getLocalizedShortDescription, getLocalizedTitle, getProductById } from "@/lib/shop/catalog";
+import { supportCopy } from "@/lib/support/copy";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import type { CustomerBillingIdentityResponse } from "@/lib/customer/billingIdentity";
 
@@ -108,6 +109,7 @@ export default function CustomerAccountPage() {
       <main className="customer-account" dir={lang === "he" ? "rtl" : "ltr"}>
         <section className="customer-account__panel">
           <h1>{copy.accountTitle}</h1>
+          <Link className="customer-account__secondary" href={buildLocalizedPublicPath("/support", lang)}>{supportCopy[lang].accountLink}</Link>
 
           {auth.status === "loading" ? <p>{copy.loading}</p> : null}
           {auth.status === "error" ? <p role="alert">{auth.error}</p> : null}
