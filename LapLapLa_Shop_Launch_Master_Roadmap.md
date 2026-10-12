@@ -226,6 +226,11 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 - [x] Show Sound Case and free Svalbard before shop directions, with a compact localized hero and format explanation.
 - [ ] Confirm the refreshed storefront and homepage shop discoverability on the owner's physical Android phone.
 
+### Homepage shop showcase
+- [x] Replace the mobile Svalbard teaser and generic desktop spotlight with one illustrated, localized RU/EN/HE shop invitation using a local optimized WebP asset.
+- [x] Keep the existing mobile/desktop section order and localized `/shop` links; present four shop directions as compact supporting content.
+- [ ] Confirm the new showcase and native scrolling on the owner's physical Android phone.
+
 ### `/shop/[slug]` Sound Case #001
 - [x] Hero visual.
 - [x] Gallery using real product materials.
@@ -872,6 +877,19 @@ Decisions/blockers:
 Validation:
 - Local browser checked mobile home at 360×800, 375×812 and 390×844 in RU/EN/HE; `/shop` at 360×800, 375×812, 390×844, 430×932, 1280×800 and 1440×900. RTL, image loading, localized routes and zero horizontal overflow were confirmed. The home shop CTA, Sound Case coming-soon detail, anonymous Svalbard launch and Back to Store were opened in RU.
 - 29 focused tests and 1,212 full Vitest tests passed; TypeScript, changed-file ESLint, production build and `git diff --check` passed. Physical Android touch scrolling remains unverified.
+
+## 2026-10-12 — Illustrated homepage shop showcase
+Phase: Phase 3 — Storefront + merchandising design
+Status: PARTIAL — IMPLEMENTED / PHYSICAL MOBILE QA PENDING
+Commit: capybara_tales — `feat(home): redesign shop showcase` (this commit)
+Completed:
+- Replaced the homepage shop section's old mobile Svalbard poster with the new LapLapLa adventure illustration, optimized as a local WebP; desktop and mobile now share the same visual identity.
+- Added a real gradient heading, brief RU/EN/HE copy, accessible localized shop CTA and compact four-direction layout while keeping the homepage section order and `/shop` page unchanged.
+Remaining:
+- Owner to verify visual presentation and native scrolling on a physical Android phone; browser viewport emulation is not device proof.
+Validation:
+- Local browser screenshots covered RU/EN/HE at 390×844 and 1440×900; responsive checks also covered 360×800, 375×812, 430×932 and 1280×800 in all three locales. Image proportions, localized CTA links, RTL and no horizontal overflow were confirmed.
+- Targeted and full automated checks are recorded in the implementation report.
 
 ---
 

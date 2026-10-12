@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 import Home from "@/pages/Home";
-import type { Lang } from "@/i18n";
+import { dictionaries, type Lang } from "@/i18n";
 
 const viewport = vi.hoisted(() => ({ mobile: false }));
 
@@ -29,7 +29,12 @@ describe("home section order", () => {
       expect(html).toContain(`href="${lang === "ru" ? "" : `/${lang}`}/shop"`);
       expect(html).toContain(`dir="${lang === "he" ? "rtl" : "ltr"}"`);
       const spotlight = html.slice(shop, latest);
-      expect(spotlight).toContain("first-quest-afisha.webp");
+      expect(spotlight).toContain("%2Fimages%2Fshop%2Flaplapla-adventures-showcase.webp");
+      expect(spotlight).not.toContain("first-quest-afisha.webp");
+      expect(spotlight).toContain(dictionaries[lang].shop.homeShowcase.title);
+      expect(spotlight).toContain(dictionaries[lang].shop.homeShowcase.action);
+      expect(spotlight.match(/class="shop-concept-card"/g)).toHaveLength(4);
+      expect(spotlight.indexOf('class="home-shop-spotlight-visual"')).toBeLessThan(spotlight.indexOf('class="home-shop-title"'));
       expect(spotlight.indexOf("home-shop-action")).toBeLessThan(spotlight.indexOf("shop-concept-grid"));
     });
 
@@ -46,7 +51,11 @@ describe("home section order", () => {
       expect(latest).toBeGreaterThan(cards);
       expect(shop).toBeGreaterThan(latest);
       expect(html.match(/class="home-shop-spotlight"/g)).toHaveLength(1);
-      expect(html).not.toContain("home-shop-spotlight-preview");
+      const spotlight = html.slice(shop);
+      expect(spotlight).toContain("%2Fimages%2Fshop%2Flaplapla-adventures-showcase.webp");
+      expect(spotlight).toContain(dictionaries[lang].shop.homeShowcase.title);
+      expect(spotlight.match(/class="shop-concept-card"/g)).toHaveLength(4);
+      expect(spotlight.indexOf('class="home-shop-spotlight-visual"')).toBeLessThan(spotlight.indexOf('class="home-shop-title"'));
     });
   }
 
@@ -56,4 +65,5 @@ describe("home section order", () => {
     expect(mobile).not.toMatch(/scroll-snap-type:\s*y\s+mandatory/);
     expect(mobile).toMatch(/\.home-wrapper-mobile \.home-mobile-snap-shell\s*\{[^}]*overflow:\s*visible;[^}]*scroll-snap-type:\s*none;/s);
   });
+
 });

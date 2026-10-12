@@ -3,31 +3,37 @@ import Link from "next/link";
 import Image from "next/image";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
-import { SVALBARD_FREE_EXPERIENCE } from "@/lib/shop/freeExperiences";
 
-export function ShopSpotlight({ lang, mobile = false }: { lang: Lang; mobile?: boolean }) {
+const SHOWCASE_IMAGE = "/images/shop/laplapla-adventures-showcase.webp";
+
+export function ShopSpotlight({ lang }: { lang: Lang }) {
   const dict = dictionaries[lang].shop;
-  const action = (
-    <Link href={buildLocalizedPublicPath("/shop", lang)} className="home-shop-action">
-      <span aria-hidden="true" style={{ marginRight: lang === "he" ? 0 : "0.5rem", marginLeft: lang === "he" ? "0.5rem" : 0 }}>🛍️</span>
-      {dict.seeStore}
-    </Link>
-  );
+  const copy = dict.homeShowcase;
 
   return (
     <section className="home-shop-spotlight" aria-labelledby="home-shop-title">
       <div className="home-shop-spotlight-content">
-        {mobile ? (
-          <div className="home-shop-spotlight-preview" aria-hidden="true">
-            <Image src={SVALBARD_FREE_EXPERIENCE.image} alt="" fill sizes="(max-width: 767px) 100vw, 1px" unoptimized />
+        <div className="home-shop-spotlight-hero">
+          <div className="home-shop-spotlight-visual">
+            <Image
+              src={SHOWCASE_IMAGE}
+              alt={copy.imageAlt}
+              width={1774}
+              height={887}
+              sizes="(max-width: 767px) calc(100vw - 28px), (max-width: 1100px) 48vw, 620px"
+            />
           </div>
-        ) : null}
-        <h2 id="home-shop-title" className="page-title home-shop-title">
-          {dict.hubTitle}
-        </h2>
-        <p className="home-shop-desc">{dict.hubDescription}</p>
-        {mobile ? action : null}
-        
+          <div className="home-shop-spotlight-copy">
+            <h2 id="home-shop-title" className="home-shop-title" dir={lang === "he" ? "rtl" : "ltr"}>
+              {copy.title}
+            </h2>
+            <p className="home-shop-desc">{copy.description}</p>
+            <Link href={buildLocalizedPublicPath("/shop", lang)} className="home-shop-action">
+              <span aria-hidden="true">🎁</span>
+              {copy.action}
+            </Link>
+          </div>
+        </div>
         <div className="shop-concept-grid">
           <div className="shop-concept-card">
             <h3>{dict.conceptCards.solve.title}</h3>
@@ -46,8 +52,6 @@ export function ShopSpotlight({ lang, mobile = false }: { lang: Lang; mobile?: b
             <p>{dict.conceptCards.together.desc}</p>
           </div>
         </div>
-
-        {!mobile ? action : null}
       </div>
     </section>
   );

@@ -920,6 +920,12 @@ type DictionaryShape = {
     navTitle: string;
     hubTitle: string;
     hubDescription: string;
+    homeShowcase: {
+      title: string;
+      description: string;
+      action: string;
+      imageAlt: string;
+    };
     comingSoonTitle: string;
     comingSoonText: string;
     exploreFreeContent: string;

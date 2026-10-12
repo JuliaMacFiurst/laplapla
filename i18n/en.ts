@@ -1133,6 +1133,12 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
     navTitle: "Shop",
     hubTitle: "LapLapLa Adventures",
     hubDescription: "A shop of ready-made adventures, games, and knowledge kits.",
+    homeShowcase: {
+      title: "LAPLAPLA ADVENTURES",
+      description: "Ready-to-play adventures, games and discovery kits.",
+      action: "Explore the shop",
+      imageAlt: "A raccoon, dog, polar bear and parrot explore an adventure map by the window",
+    },
     comingSoonTitle: "Preparing the first collections",
     comingSoonText: "Printable kits, quests, and interactive adventures will appear here soon.",
     exploreFreeContent: "Explore the free materials meanwhile",
