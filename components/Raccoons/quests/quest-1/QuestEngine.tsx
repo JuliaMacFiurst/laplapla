@@ -87,7 +87,7 @@ export default function QuestEngine() {
         className="quest-back-to-maps-button"
         onClick={() => {
           router.push(
-            { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
+            { pathname: "/shop", query: buildLocalizedQuery(lang) },
             undefined,
             { locale: lang },
           );

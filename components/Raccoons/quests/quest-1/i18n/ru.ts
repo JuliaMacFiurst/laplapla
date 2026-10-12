@@ -4,7 +4,7 @@ export const ru: Quest1Dictionary = {
   engine: {
     confirmExit:
       "Твой прогресс в квесте сейчас не сохранён.\nЕсли ты выйдешь, придётся начинать сначала. Выйти из квеста?",
-    homeButton: "Назад к картам",
+    homeButton: "Вернуться в магазин",
     prevButton: "← Назад",
     nextButton: "Вперёд →",
   },
@@ -319,7 +319,7 @@ export const ru: Quest1Dictionary = {
   day7: {
     title: "Клад Времён",
     videoTitle: "Spitsbergen Flight",
-    backButton: "↩️ Вернуться на карту",
+    backButton: "Вернуться в магазин",
     blocks: [
       [
         "Каждая экспедиция когда-нибудь заканчивается.",

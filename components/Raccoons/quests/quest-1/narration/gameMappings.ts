@@ -105,10 +105,8 @@ const SEA_DIALOG_BLOCKS: Record<string, NarrationBlockId> = {
 const STAR_DIALOG_BLOCKS: Record<string, NarrationBlockId> = {
   intro_1: "svalbard.day04.stars-dialogue.intro-1",
   intro_2: "svalbard.day04.stars-dialogue.intro-1",
-  intro_3: "svalbard.day04.stars-dialogue.intro-3",
-  intro_4: "svalbard.day04.stars-dialogue.intro-3",
-  merak_1: "svalbard.day04.stars-dialogue.merak-1",
-  dubhe_1: "svalbard.day04.stars-dialogue.merak-1",
+  // These two recordings combine lines that still tell the child to draw.
+  // Keep them unavailable until the updated dialogue is recorded.
   polaris_1: "svalbard.day04.stars-dialogue.polaris-1",
   finish_1: "svalbard.day04.stars-dialogue.polaris-1",
   finish_2: "svalbard.day04.stars-dialogue.finish-2",
@@ -126,6 +124,8 @@ const GARAGE_BLOCKS: Record<SledPart, NarrationBlockId> = {
 };
 
 export const QUEST_1_UNAVAILABLE_BLOCKS: Partial<Record<NarrationBlockId, string>> = {
+  "svalbard.day04.stars-dialogue.intro-3": "The recording includes the obsolete manual drawing instruction.",
+  "svalbard.day04.stars-dialogue.merak-1": "The recording includes the obsolete manual drawing instruction.",
   "svalbard.day03.flight-dialogue.straight-5":
     "One recording combines straight_5 and arc_1 from mutually exclusive route choices.",
   "svalbard.day03.flight-dialogue.zigzag-3":

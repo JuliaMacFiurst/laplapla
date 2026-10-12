@@ -2,22 +2,30 @@
 
 import Image from "next/image";
 import type { PageId } from "../QuestEngine";
-import StarsMap from "../sail/StarsMap";
+import StarsMap, { type StarsMapHandle } from "../sail/StarsMap";
 import DialogBoxStars from "../logic/DialogBoxStars";
 import DialogBoxStarsInteractive from "../logic/DialogBoxStarsInteractive";
 import { useRef, useState, useEffect } from "react";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
-import { getStarRouteDialogs, type StarDialogueStep } from "../i18n/dialogs";
+import {
+  getStarRouteDialogs,
+  getStarNavigationUi,
+  relocalizeStarDialogueQueue,
+  type StarDialogueStep,
+} from "../i18n/dialogs";
 import { devLog } from "@/utils/devLog";
-import { useAvailableNarrationBlocks } from "../narration/availability";
+import { QuestNarrationSlot, useAvailableNarrationBlocks } from "../narration/availability";
 import { STARS_INTRO_BLOCKS, starDialogueBlockId } from "../narration/gameMappings";
+import { getStarNavigationVideoEmbedUrl } from "../sail/starNavigationVideos";
+import { formatLocalizedStarFactText } from "@/utils/starInfo";
 
 export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
   const { lang, t } = useQuest1I18n();
-  const racTextRef = useRef<HTMLDivElement | null>(null);
-  const starsMapRef = useRef<any>(null);
+  const starsMapRef = useRef<StarsMapHandle>(null);
   const starRouteDialogs = getStarRouteDialogs(lang);
+  const navigationVideoUrl = getStarNavigationVideoEmbedUrl(lang);
+  const navigationUi = getStarNavigationUi(lang);
 
   const introDialogs = starRouteDialogs.filter((d) => d.condition === "intro");
   const [dialogueQueue, setDialogueQueue] =
@@ -28,7 +36,8 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
   );
   const [finishDialogueQueue, setFinishDialogueQueue] = useState<StarDialogueStep[]>([]);
   const [showVideo, setShowVideo] = useState(false);
-  const [fadeOutInteractive, setFadeOutInteractive] = useState(false);
+  const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
+  const selectedStarFact = selectedStarId ? formatLocalizedStarFactText(selectedStarId, lang) : null;
 
   const [introDone, setIntroDone] = useState(false);
   const visibleDialogueId = finishDialogueQueue[0]?.id
@@ -45,27 +54,11 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
     showVideo ? ["svalbard.day04.stars.arrival.01"] : [],
   );
 
-  const handleMapClick = () => {
-    if (!introDone) {
-      const currentIntro = dialogueQueue[0];
-      if (currentIntro?.id === "intro_4") {
-        setIntroDone(true);
-        setDialogueQueue([]);
-        starsMapRef.current?.startRoute();
-      }
-    }
-  };
-
   useEffect(() => {
-    if (showVideo) {
-      setTimeout(() => {
-        document.querySelector(".youtube-wrapper")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      }, 300);
-    }
-  }, [showVideo]);
+    setDialogueQueue((queue) => relocalizeStarDialogueQueue(queue, lang, selectedStarId));
+    setMapDialogueQueue((queue) => relocalizeStarDialogueQueue(queue, lang, selectedStarId));
+    setFinishDialogueQueue((queue) => relocalizeStarDialogueQueue(queue, lang, selectedStarId));
+  }, [lang, selectedStarId]);
 
   return (
     <div className="quest-page-bg">
@@ -105,41 +98,33 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
       </div>
 
       <div style={{ marginTop: "40px" }}>
-        <div onClick={handleMapClick}>
           <StarsMap
             ref={starsMapRef}
-            racTextRef={racTextRef}
+            onStarSelect={setSelectedStarId}
             onStep={(stepId: string) => {
               devLog("[Day4StarsNav] onStep:", stepId);
 
-              // Пропускаем служебный шаг
-              if (stepId === "first_click") {
-                return;
-              }
-
-              // Разбор wrong-star:[humanName]
               if (stepId.startsWith("wrong-star:")) {
-                const [, humanName] = stepId.split(":"); // например "Фекда" или "no_id"
+                const [, humanName] = stepId.split(":");
 
-                // Определяем, какое состояние сейчас активно
-                const merakPhase = starsMapRef.current?.getRouteStep?.() === "waiting_merak";
-                const dubhePhase = starsMapRef.current?.getRouteStep?.() === "waiting_dubhe";
+                const merakPhase = starsMapRef.current?.getRouteStep?.() === "find_merak";
+                const dubhePhase = starsMapRef.current?.getRouteStep?.() === "find_dubhe";
+                const polarisPhase = starsMapRef.current?.getRouteStep?.() === "find_polaris";
 
-                // Выбираем нужный ключ ошибки
                 let dialogId = "";
                 if (merakPhase) {
                   dialogId = humanName === "no_id" ? "wrong_merak_no_id" : "wrong_merak_wrong_id";
                 } else if (dubhePhase) {
                   dialogId = humanName === "no_id" ? "wrong_dubhe_no_id" : "wrong_dubhe_wrong_id";
+                } else if (polarisPhase) {
+                  dialogId = "wrong_polaris";
                 }
 
-                // Находим соответствующие строки диалога
                 const wrongLines = starRouteDialogs.filter((d) => d.id === dialogId);
 
                 if (wrongLines.length > 0) {
                   const cloned = wrongLines.map((line) => ({ ...line }));
 
-                  // Подставляем красивое имя звезды
                   if (humanName !== "no_id") {
                     cloned.forEach((line) => {
                       line.text = line.text.replace("#id", humanName);
@@ -157,19 +142,14 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
                   (d) => d.id === "finish_1" || d.id === "finish_2"
                 );
 
-                // trigger fade-out of interactive box
-                setFadeOutInteractive(true);
-
-                // stop interactive dialogue
+                setShowVideo(true);
                 setMapDialogueQueue([]);
 
-                // load finish dialogue
                 setFinishDialogueQueue(finishLines);
 
                 return;
               }
 
-              // Остальные шаги: click_merak, click_dubhe, correct_line, finish
               const newLines = starRouteDialogs.filter(
                 (d) => d.condition === stepId
               );
@@ -179,17 +159,10 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
               }
             }}
           />
-        </div>
 
-        <div ref={racTextRef} id="raccoonText" className="quest-speech">
-          {t.day4StarsNav.defaultSpeech}
+        <div id="raccoonText" className="quest-speech">
+          {selectedStarFact ? `${lang === "ru" ? "Енот" : lang === "he" ? "לוגן" : "Logan"}: ${selectedStarFact}` : t.day4StarsNav.defaultSpeech}
         </div>
-
-        {lang !== "ru" && t.day4StarsNav.mapTranslationNotice && (
-          <div className="quest-map-translation-note" dir={lang === "he" ? "rtl" : "ltr"}>
-            {t.day4StarsNav.mapTranslationNotice}
-          </div>
-        )}
 
         <div className="flight-dialog-box-wrapper">
           {!introDone && dialogueQueue.length > 0 && (
@@ -199,6 +172,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
                 const current = dialogueQueue[0];
                 if (current?.id === "intro_4") {
                   setIntroDone(true);
+                  setSelectedStarId(null);
                   starsMapRef.current?.startRoute();
                   setDialogueQueue([]);
                   return;
@@ -209,7 +183,7 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
           )}
 
           {introDone && mapDialogueQueue.length > 0 && (
-            <div className={fadeOutInteractive ? "dialog-fade-out" : ""}>
+            <div>
               <DialogBoxStarsInteractive
                 key={mapDialogueQueue[0]?.id}
                 queue={mapDialogueQueue}
@@ -218,73 +192,38 @@ export default function Day4StarsNav({ go }: { go: (id: PageId) => void }) {
           )}
 
           {finishDialogueQueue.length > 0 && (
-            <DialogBoxStars
-              queue={finishDialogueQueue}
-              onNext={() => {
-                const current = finishDialogueQueue[0];
-
-                if (current.id === "finish_1") {
-                  setShowVideo(true);
-                  setFinishDialogueQueue((q) => q.slice(1));
-                  return;
-                }
-
-                if (current.id === "finish_2") {
-                  setFinishDialogueQueue([]);
-                  return;
-                }
-
-                setFinishDialogueQueue((q) => q.slice(1));
-              }}
-            />
+            finishDialogueQueue.map((line) => <DialogBoxStarsInteractive key={line.id} queue={[line]} />)
           )}
         </div>
 
+        <QuestNarrationSlot />
+
+        {showVideo && <QuestTextBlocks blocks={[t.day4StarsNav.arrivalBlock]} style={{ marginTop: "20px" }} />}
+
         {showVideo && (
-          <>
-          <div className="ice-window" style={{ marginTop: "100px" }}>
-            <div className="youtube-wrapper-polar-star">
-
-              <iframe
-                className="quest-video"
-                src="https://www.youtube.com/embed/CWf0_sdJOJI?enablejsapi=1"
-                title={t.day4StarsNav.videoTitle}
-                allow="autoplay; encrypted-media; fullscreen"
-                allowFullScreen
-              />
+          <section className="star-navigation-completion">
+            {navigationVideoUrl ? (
+              <div className="ice-window">
+                <div className="youtube-wrapper-polar-star">
+                  <iframe
+                    className="quest-video"
+                    src={navigationVideoUrl}
+                    title={t.day4StarsNav.videoTitle}
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            ) : <p className="quest-video-unavailable" role="status">{navigationUi.videoUnavailable}</p>}
+            <div className="quest-center ice-button-wrapper">
+              <button type="button" className="ice-button" onClick={() => go("day5_spitsbergen")}>
+                <Image className="ice" src="/quests/assets/buttons/ice-button-bg.svg" alt="" width={720} height={180} unoptimized />
+                <span className="ice-text">{t.day4StarsNav.nextButton}</span>
+                <Image className="penguin" src="/supabase-storage/characters/other/penguin.gif" alt="" width={92} height={92} unoptimized />
+              </button>
             </div>
-          </div>
-       
-
-         <QuestTextBlocks blocks={[t.day4StarsNav.arrivalBlock]} style={{ marginTop: "20px" }} />
-
-    <div
-            className="quest-center ice-button-wrapper"
-            style={{ marginTop: "60px" }}
-          >
-
-      <div className="ice-button" onClick={() => go("day5_spitsbergen")}>
-        <Image
-          className="ice"
-          src="/quests/assets/buttons/ice-button-bg.svg"
-          alt=""
-          width={720}
-          height={180}
-          unoptimized
-        />
-        <div className="ice-text">{t.day4StarsNav.nextButton}</div>
-        <Image
-          className="penguin"
-          src="/supabase-storage/characters/other/penguin.gif"
-          alt=""
-          width={92}
-          height={92}
-          unoptimized
-        />
-      </div>
-</div>
-</>
-       )}
+          </section>
+        )}
     </div>
       </div>
     

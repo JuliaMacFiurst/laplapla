@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import type { Lang } from "@/i18n";
 import type { Quest1PageId } from "../progress";
 import QuestNarrationPlayer from "./QuestNarrationPlayer";
@@ -23,6 +24,7 @@ type Registration = {
 
 type NarrationAvailabilityApi = {
   register: (registration: Registration) => () => void;
+  setPlayerMount: (element: HTMLDivElement | null) => void;
 };
 
 const NarrationAvailabilityContext = createContext<NarrationAvailabilityApi | null>(null);
@@ -39,6 +41,7 @@ export function QuestNarrationScope({
   const [registrations, setRegistrations] = useState<Map<string, readonly NarrationBlockId[]>>(
     () => new Map(),
   );
+  const [playerMount, setPlayerMount] = useState<HTMLDivElement | null>(null);
 
   const register = useCallback(({ key, blockIds }: Registration) => {
     setRegistrations((current) => {
@@ -57,22 +60,34 @@ export function QuestNarrationScope({
     };
   }, []);
 
-  const value = useMemo(() => ({ register }), [register]);
+  const value = useMemo(() => ({ register, setPlayerMount }), [register]);
   const availableBlockIds = useMemo(
     () => normalizeAvailableNarrationBlocks([...registrations.values()].flat()).sort(compareNarrationBlocks),
     [registrations],
   );
 
+  const player = (
+    <QuestNarrationPlayer
+      pageId={pageId}
+      locale={locale}
+      availableBlockIds={availableBlockIds}
+    />
+  );
+
   return (
     <NarrationAvailabilityContext.Provider value={value}>
       {children}
-      <QuestNarrationPlayer
-        pageId={pageId}
-        locale={locale}
-        availableBlockIds={availableBlockIds}
-      />
+      {playerMount ? createPortal(player, playerMount) : player}
     </NarrationAvailabilityContext.Provider>
   );
+}
+
+export function QuestNarrationSlot() {
+  const context = useContext(NarrationAvailabilityContext);
+  const setMount = useCallback((element: HTMLDivElement | null) => {
+    context?.setPlayerMount(element);
+  }, [context]);
+  return <div className="quest-star-narration-slot" ref={setMount} />;
 }
 
 export function useAvailableNarrationBlocks(key: string, blockIds: readonly string[]) {

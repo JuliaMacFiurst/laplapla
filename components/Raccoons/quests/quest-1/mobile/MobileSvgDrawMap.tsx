@@ -3,6 +3,7 @@ import { getMapSvg } from "@/utils/storageMaps";
 import { sanitizeSvg } from "@/lib/security/sanitize";
 import { LapLapLaSpinner } from "@/components/LoadingSpinner";
 import { useQuest1I18n } from "../i18n";
+import { drawStarNavigationLine, type StarNavigationPhase } from "../sail/starNavigation";
 
 const DEFAULT_VIEW_BOX = { width: 2000, height: 856 };
 const MIN_ZOOM = 1;
@@ -16,6 +17,7 @@ export type MobileSvgMapPoint = {
 
 export type MobileSvgMapHit = {
   id: string;
+  ancestorIds: string[];
   tagName: string;
   classNames: string[];
 };
@@ -28,6 +30,8 @@ export type MobileSvgMapPointerEvent = {
 
 type MobileSvgDrawMapProps = {
   mapPath: string;
+  mapSource?: "supabase" | "r2";
+  starNavigationPhase?: "idle" | StarNavigationPhase;
   loadingLabel: string;
   emptyLabel?: string;
   routePoints?: MobileSvgMapPoint[];
@@ -39,6 +43,7 @@ type MobileSvgDrawMapProps = {
   targetLabel?: string;
   enablePanZoom?: boolean;
   ignoredHitIds?: Set<string>;
+  highlightIds?: string[];
   onPointerDown?: (event: MobileSvgMapPointerEvent) => void;
   onPointerMove?: (event: MobileSvgMapPointerEvent) => void;
   onPointerUp?: (event: MobileSvgMapPointerEvent) => void;
@@ -75,11 +80,21 @@ function toPolylinePath(points: MobileSvgMapPoint[], width: number, height: numb
 }
 
 function getElementHit(element: Element | null, ignoredHitIds?: Set<string>): MobileSvgMapHit | null {
-  const hit = element?.closest("[id]") as HTMLElement | SVGElement | null;
+  const ancestorIds: string[] = [];
+  let current = element as HTMLElement | SVGElement | null;
+  let hit: HTMLElement | SVGElement | null = null;
+  while (current) {
+    if (current.id) {
+      ancestorIds.push(current.id);
+      hit ??= current;
+    }
+    current = current.parentElement as HTMLElement | SVGElement | null;
+  }
   if (!hit?.id || ignoredHitIds?.has(hit.id)) return null;
 
   return {
     id: hit.id,
+    ancestorIds,
     tagName: hit.tagName.toLowerCase(),
     classNames: Array.from(hit.classList),
   };
@@ -91,6 +106,8 @@ function clamp(value: number, min: number, max: number) {
 
 export default function MobileSvgDrawMap({
   mapPath,
+  mapSource = "supabase",
+  starNavigationPhase,
   loadingLabel,
   emptyLabel = "",
   routePoints = [],
@@ -102,6 +119,7 @@ export default function MobileSvgDrawMap({
   targetLabel = "",
   enablePanZoom = false,
   ignoredHitIds,
+  highlightIds = [],
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -125,6 +143,7 @@ export default function MobileSvgDrawMap({
   const [pan, setPan] = useState({ x: 0, y: 0 });
 
   const viewBox = useMemo(() => parseViewBox(svgContent), [svgContent]);
+  const svgMarkup = useMemo(() => ({ __html: sanitizeSvg(svgContent) }), [svgContent]);
   const hasRoute = Boolean(routePathD) || routePoints.length > 1;
   const transformStyle = enablePanZoom
     ? {
@@ -139,7 +158,7 @@ export default function MobileSvgDrawMap({
     setLoading(true);
     setSvgContent("");
 
-    void getMapSvg(mapPath).then((nextSvg) => {
+    void getMapSvg(mapPath, mapSource).then((nextSvg) => {
       if (cancelled) return;
       setSvgContent(nextSvg || "");
       setLoading(false);
@@ -148,7 +167,7 @@ export default function MobileSvgDrawMap({
     return () => {
       cancelled = true;
     };
-  }, [mapPath]);
+  }, [mapPath, mapSource]);
 
   useEffect(() => {
     const container = svgContainerRef.current;
@@ -162,6 +181,27 @@ export default function MobileSvgDrawMap({
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     svg.style.display = "block";
   }, [svgContent]);
+
+  useEffect(() => {
+    if (starNavigationPhase === undefined) return;
+    const svg = svgContainerRef.current?.querySelector("svg");
+    if (!svg) return;
+    drawStarNavigationLine(svg, starNavigationPhase);
+    const observer = new ResizeObserver(() => drawStarNavigationLine(svg, starNavigationPhase));
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [starNavigationPhase, svgContent]);
+
+  useEffect(() => {
+    const container = svgContainerRef.current;
+    if (!container) return;
+    container.querySelectorAll(".star-glow-strong").forEach((element) => {
+      element.classList.remove("star-glow-strong");
+    });
+    highlightIds.forEach((id) => {
+      container.querySelector(`[id="${id}"]`)?.classList.add("star-glow-strong");
+    });
+  }, [highlightIds, svgContent]);
 
   const clampPan = (nextPan: { x: number; y: number }, nextZoom = zoom) => {
     const rect = surfaceRef.current?.getBoundingClientRect();
@@ -319,7 +359,8 @@ export default function MobileSvgDrawMap({
           <div
             ref={svgContainerRef}
             className="quest-mobile-svg-map-base"
-            dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
+            dir={starNavigationPhase === undefined ? undefined : "ltr"}
+            dangerouslySetInnerHTML={svgMarkup}
           />
         ) : (
           <div className="quest-mobile-svg-map-state quest-mobile-svg-map-empty">{emptyLabel}</div>

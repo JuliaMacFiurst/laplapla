@@ -4,7 +4,7 @@ export const he: Quest1Dictionary = {
   engine: {
     confirmExit:
       "ההתקדמות שלך במשימה עדיין לא נשמרה.\nאם תצא עכשיו, תצטרך להתחיל מהתחלה. לצאת מהמשימה?",
-    homeButton: "חזרה למפות",
+    homeButton: "חזרה לחנות",
     prevButton: "← חזרה",
     nextButton: "הבא →",
   },
@@ -301,7 +301,7 @@ export const he: Quest1Dictionary = {
   day7: {
     title: "אוצר הזמנים",
     videoTitle: "Spitsbergen Flight",
-    backButton: "↩️ לחזור למפה",
+    backButton: "חזרה לחנות",
     videoTranslationNotice:
       "לסרטון הזה עדיין אין תרגום לעברית. ייתכן שהוא יתווסף בהמשך.",
     blocks: [

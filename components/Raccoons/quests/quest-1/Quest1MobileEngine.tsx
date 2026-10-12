@@ -7,6 +7,7 @@ import type { PageId } from "./QuestEngine";
 import { getFlightQuestions, getSailQuestions, type QuestQuestion } from "./i18n/tests";
 import DialogBox from "./logic/DialogBox";
 import DialogBoxStars from "./logic/DialogBoxStars";
+import DialogBoxStarsInteractive from "./logic/DialogBoxStarsInteractive";
 import CockpitHint from "./flight/CockpitHint";
 import PlaneWindshield, { type PlaneWindshieldRef } from "./flight/PlaneWindshield";
 import InstrumentPanel from "./flight/InstrumentPanel";
@@ -15,7 +16,9 @@ import { getTakeoffHints } from "./i18n/takeoffHints";
 import {
   getFlightRouteDialogs,
   getSeaRouteDialogs,
+  getStarNavigationUi,
   getStarRouteDialogs,
+  relocalizeStarDialogueQueue,
   type FlightDialogueStep,
   type SeaDialogueStep,
   type StarDialogueStep,
@@ -32,13 +35,26 @@ import DogSledRunStage from "./logic/dog-sled-game/DogSledRunStage";
 import type { PreparationResult, SledPart } from "./logic/dog-sled-game/PreparationPopup";
 import type { CharacterResult } from "@/types/types";
 import countryNames from "@/utils/country_names.json";
-import seaNames from "@/utils/sea_names.json";
-import { starInfoList } from "@/utils/starInfo";
+import {
+  findStarInfo,
+  formatLocalizedStarFactText,
+  getLocalizedStarName,
+} from "@/utils/starInfo";
 import { sanitizeRichText } from "@/lib/security/sanitize";
+import {
+  advanceStarNavigation,
+  findStarNavigationTarget,
+  getStarMap,
+  type StarNavigationPhase,
+} from "./sail/starNavigation";
+import { getStarNavigationVideoEmbedUrl } from "./sail/starNavigationVideos";
+import { getDay7VideoEmbedUrl } from "./videoEmbeds";
+import { getInformationalStarIdAtPoint } from "./sail/starNavigationInfo";
 import { useQuest1Progress } from "./useQuest1Progress";
+import { formatSeaRouteMessage, localizeSeaRoute } from "./sail/seaRouteLocalization";
 import { isQuest1NarrationEnabled } from "./narration/catalog";
 import { QuestNarrationScope } from "./narration/availability";
-import { useAvailableNarrationBlocks } from "./narration/availability";
+import { QuestNarrationSlot, useAvailableNarrationBlocks } from "./narration/availability";
 import type { NarrationBlockId } from "./narration/catalog";
 import {
   DAY_1_BLOCKS,
@@ -399,18 +415,21 @@ function getCountryLabel(id: string, lang: "ru" | "en" | "he") {
   return entry?.[lang] || id;
 }
 
-function getSeaLabel(id: string, lang: "ru" | "en" | "he") {
-  const entry = (seaNames as Record<string, Partial<Record<"ru" | "en" | "he", string>>>)[id];
-  return entry?.[lang] || id;
-}
-
 function isSeaHit(hit: MobileSvgMapHit | null) {
   return Boolean(hit?.id && hit.tagName === "path" && !hit.classNames.includes("land"));
 }
 
-function getStarHumanName(id: string) {
-  const normalized = id === "Dubhe-Star" ? "Dubhe" : id;
-  return starInfoList.find((star) => star.id === normalized || star.id === id)?.name || id;
+function getStarHumanName(id: string, lang: "ru" | "en" | "he" = "ru") {
+  const star = findStarInfo(id);
+  return star ? getLocalizedStarName(star, lang) : id;
+}
+
+function getMobileStarSemanticId(hit: MobileSvgMapHit | null) {
+  const target = findStarNavigationTarget(hit?.ancestorIds ?? [hit?.id]);
+  if (target === "merak") return "Merak-Star";
+  if (target === "dubhe") return "Dubhe-Star";
+  if (target === "polaris") return "Polar-Star";
+  return (hit?.ancestorIds ?? [hit?.id]).find((id): id is string => Boolean(id && findStarInfo(id))) ?? "";
 }
 
 const TAKEOFF_VIDEO_MAP: Record<string, string[]> = {
@@ -780,17 +799,32 @@ function Day3SailMobile({ go }: MobilePageProps) {
     setIsDrawing(false);
     setRouteFinished(true);
 
-    const seas = Array.from(touchedSeaIdsRef.current)
-      .map((id) => getSeaLabel(id, lang))
-      .filter(Boolean)
-      .join(", ");
+    const seas = localizeSeaRoute(touchedSeaIdsRef.current, lang);
 
     setFeedback(
       seas
-        ? t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas)
+        ? formatSeaRouteMessage(
+            t.day3Sail.mapSpeech.routeThroughSeas,
+            touchedSeaIdsRef.current,
+            lang,
+          )
         : t.day3Sail.mapSpeech.routeComplete,
     );
   };
+
+  useEffect(() => {
+    if (!routeFinished) return;
+    const seas = localizeSeaRoute(touchedSeaIdsRef.current, lang);
+    setFeedback(
+      seas
+        ? formatSeaRouteMessage(
+            t.day3Sail.mapSpeech.routeThroughSeas,
+            touchedSeaIdsRef.current,
+            lang,
+          )
+        : t.day3Sail.mapSpeech.routeComplete,
+    );
+  }, [lang, routeFinished, t.day3Sail.mapSpeech.routeComplete, t.day3Sail.mapSpeech.routeThroughSeas]);
 
   const validateSeaPoint = (event: MobileSvgMapPointerEvent) => {
     if (isNearTarget(event.point)) {
@@ -1132,13 +1166,16 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
 
 function Day4StarsNavMobile({ go }: MobilePageProps) {
   const { lang, t } = useQuest1I18n();
+  const starMap = getStarMap(lang);
+  const navigationUi = getStarNavigationUi(lang);
+  const navigationVideoUrl = getStarNavigationVideoEmbedUrl(lang);
   const starRouteDialogs = useMemo(() => getStarRouteDialogs(lang), [lang]);
   const introDialogs = useMemo(() => starRouteDialogs.filter((dialog) => dialog.condition === "intro"), [starRouteDialogs]);
   const [dialogueQueue, setDialogueQueue] = useState<StarDialogueStep[]>(introDialogs);
-  const [routeStep, setRouteStep] = useState<"idle" | "waiting_merak" | "waiting_dubhe" | "waiting_polaris" | "completed">("idle");
-  const [routePoints, setRoutePoints] = useState<{ x: number; y: number }[]>([]);
+  const [routeStep, setRouteStep] = useState<"idle" | StarNavigationPhase>("idle");
   const [feedback, setFeedback] = useState(t.day4StarsNav.defaultSpeech);
-  const [showVideo, setShowVideo] = useState(false);
+  const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
+  const showVideo = routeStep === "completed";
   const starDialogueBlock = starDialogueBlockId(dialogueQueue[0]?.id);
   useAvailableNarrationBlocks("mobile-day4-stars-story", STARS_INTRO_BLOCKS);
   useAvailableNarrationBlocks(
@@ -1151,7 +1188,8 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
   );
 
   const setWrongDialog = (phase: "merak" | "dubhe", hit: MobileSvgMapHit | null) => {
-    const humanName = hit?.id ? getStarHumanName(hit.id) : "no_id";
+    const semanticId = getMobileStarSemanticId(hit);
+    const humanName = semanticId ? getStarHumanName(semanticId, lang) : "no_id";
     const dialogId =
       phase === "merak"
         ? humanName === "no_id"
@@ -1172,20 +1210,25 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
   };
 
   const handleStarPress = (event: MobileSvgMapPointerEvent) => {
-    const id = event.hit?.id || "";
-    const info = starInfoList.find((star) => star.id === id || (id === "Dubhe-Star" && star.id === "Dubhe"));
-    if (info) {
-      setFeedback(`${getMobileLoganName(lang)}: «${info.name}. ${info.description}»`);
+    const id = getMobileStarSemanticId(event.hit);
+    const target = findStarNavigationTarget(event.hit?.ancestorIds ?? [event.hit?.id]);
+    const informationalStarId = getInformationalStarIdAtPoint(
+      event.originalEvent.currentTarget,
+      event.originalEvent.clientX,
+      event.originalEvent.clientY,
+    );
+    if (informationalStarId) {
+      setSelectedStarId(informationalStarId);
+      return;
     }
-
     if (routeStep === "idle") {
       return;
     }
 
-    if (routeStep === "waiting_merak") {
-      if (id === "Merak-Star") {
-        setRoutePoints([event.point]);
-        setRouteStep("waiting_dubhe");
+    if (routeStep === "find_merak") {
+      if (target === "merak") {
+        setSelectedStarId(id);
+        setRouteStep(advanceStarNavigation(routeStep, target));
         setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.condition === "click_merak"));
         return;
       }
@@ -1193,10 +1236,10 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
       return;
     }
 
-    if (routeStep === "waiting_dubhe") {
-      if (id === "Dubhe-Star" || id === "Dubhe") {
-        setRoutePoints((points) => [...points.slice(0, 1), event.point]);
-        setRouteStep("waiting_polaris");
+    if (routeStep === "find_dubhe") {
+      if (target === "dubhe") {
+        setSelectedStarId(id);
+        setRouteStep(advanceStarNavigation(routeStep, target));
         setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.condition === "click_dubhe"));
         return;
       }
@@ -1204,10 +1247,10 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
       return;
     }
 
-    if (routeStep === "waiting_polaris") {
-      if (id === "Polar-Star") {
-        setRoutePoints((points) => [...points.slice(0, 2), event.point]);
-        setRouteStep("completed");
+    if (routeStep === "find_polaris") {
+      if (target === "polaris") {
+        setSelectedStarId(id);
+        setRouteStep(advanceStarNavigation(routeStep, target));
         setDialogueQueue(
           starRouteDialogs.filter(
             (dialog) => dialog.condition === "click_polaris" || dialog.id === "finish_1" || dialog.id === "finish_2",
@@ -1215,21 +1258,25 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
         );
         return;
       }
-      setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.condition === "wrong_line"));
+      setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.id === "wrong_polaris"));
     }
   };
+
+  useEffect(() => {
+    const fact = selectedStarId ? formatLocalizedStarFactText(selectedStarId, lang) : null;
+    setFeedback(fact || t.day4StarsNav.defaultSpeech);
+  }, [lang, selectedStarId, t.day4StarsNav.defaultSpeech]);
+
+  useEffect(() => {
+    setDialogueQueue((queue) => relocalizeStarDialogueQueue(queue, lang, selectedStarId));
+  }, [lang, selectedStarId]);
 
   const handleDialogNext = () => {
     const current = dialogueQueue[0];
     if (current?.id === "intro_4") {
-      setRouteStep("waiting_merak");
+      setRouteStep("find_merak");
+      setSelectedStarId(null);
       setDialogueQueue([]);
-      return;
-    }
-
-    if (current?.id === "finish_1") {
-      setShowVideo(true);
-      setDialogueQueue((queue) => queue.slice(1));
       return;
     }
 
@@ -1245,68 +1292,54 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
         onRevealNext={() => {}}
       />
 
-      <div className="quest-mobile-map-workspace">
-        <div className="quest-mobile-map-heading">
-          {routeStep === "waiting_merak"
-            ? lang === "ru"
-              ? "Найди Мерак и нажми на него."
-              : lang === "he"
-                ? "מצאו את מראק ולחצו עליו."
-                : "Find Merak and tap it."
-            : routeStep === "waiting_dubhe"
-              ? lang === "ru"
-                ? "Теперь найди Дубхе."
-                : lang === "he"
-                  ? "עכשיו מצאו את דובהה."
-                  : "Now find Dubhe."
-              : routeStep === "waiting_polaris"
-                ? lang === "ru"
-                  ? "Нажми на Полярную звезду, чтобы закончить линию."
-                  : lang === "he"
-                    ? "לחצו על כוכב הצפון כדי להשלים את הקו."
-                    : "Tap Polaris to finish the line."
-                : lang === "ru"
-                  ? "Прочитай диалог и начни поиск звезд."
-                  : lang === "he"
-                    ? "קראו את הדיאלוג והתחילו לחפש כוכבים."
-                    : "Read the dialogue and start finding stars."}
+      <div className="quest-mobile-map-workspace quest-mobile-map-workspace--stars">
+        <div className="quest-mobile-stars-scene" dir="ltr">
+          <video className="quest-raccoon-stars-video" aria-hidden="true" autoPlay muted loop playsInline src="/supabase-storage/quests/1_quest/images/sailor-raccoon.webm" />
+          <MobileSvgDrawMap
+            mapPath={starMap.path}
+            mapSource={starMap.source}
+            starNavigationPhase={routeStep}
+            highlightIds={[
+              ...(routeStep !== "idle" && routeStep !== "find_merak" ? ["Merak-Star"] : []),
+              ...(["find_polaris", "completed"].includes(routeStep) ? ["Dubhe-Star"] : []),
+              ...(routeStep === "completed" ? ["Polar-Star"] : []),
+            ]}
+            enablePanZoom
+            onPointerDown={handleStarPress}
+            ignoredHitIds={MOBILE_MAP_BAD_IDS}
+            loadingLabel={lang === "ru" ? "Загружаем звездную карту..." : lang === "he" ? "טוענים מפת כוכבים..." : "Loading star map..."}
+            emptyLabel={lang === "ru" ? "Звездная карта не загрузилась" : lang === "he" ? "מפת הכוכבים לא נטענה" : "Star map did not load"}
+          />
+          <video className="quest-svensen-video" aria-hidden="true" autoPlay muted loop playsInline src="/supabase-storage/quests/1_quest/images/svensen-talks.webm" />
         </div>
-        <MobileSvgDrawMap
-          mapPath="north-stars/north-stars.svg"
-          routePoints={routePoints}
-          routeColor="#facc15"
-          routeStrokeWidth={4}
-          enablePanZoom
-          onPointerDown={handleStarPress}
-          ignoredHitIds={MOBILE_MAP_BAD_IDS}
-          loadingLabel={lang === "ru" ? "Загружаем звездную карту..." : lang === "he" ? "טוענים מפת כוכבים..." : "Loading star map..."}
-          emptyLabel={lang === "ru" ? "Звездная карта не загрузилась" : lang === "he" ? "מפת הכוכבים לא נטענה" : "Star map did not load"}
-        />
+        {routeStep !== "idle" && routeStep !== "completed" && (
+          <div className="star-navigation-status" dir={lang === "he" ? "rtl" : "ltr"} role="status">
+            <p className="star-navigation-instruction">{navigationUi[routeStep]}</p>
+          </div>
+        )}
         <QuestMobileFeedback speaker={getMobileLoganName(lang)} text={feedback} />
       </div>
 
-      <QuestMobileStarsDialog queue={dialogueQueue} onNext={handleDialogNext} />
+      {routeStep === "idle" ? (
+        <QuestMobileStarsDialog queue={dialogueQueue} onNext={handleDialogNext} />
+      ) : (
+        <div className="quest-mobile-dialog-wrapper">
+          {dialogueQueue.map((line) => <DialogBoxStarsInteractive key={line.id} queue={[line]} />)}
+        </div>
+      )}
 
-      {showVideo ? (
-        <>
-          <div className="quest-mobile-youtube quest-mobile-youtube-polar">
-            <iframe
-              src="https://www.youtube.com/embed/CWf0_sdJOJI?enablejsapi=1"
-              title={t.day4StarsNav.videoTitle}
-              allow="autoplay; encrypted-media; fullscreen"
-              allowFullScreen
-            />
-          </div>
-          <QuestMobileTextReveal
-            paragraphs={t.day4StarsNav.arrivalBlock}
-            revealCount={t.day4StarsNav.arrivalBlock.length}
-            onRevealNext={() => {}}
-          />
-          <button type="button" className="quest-mobile-primary" onClick={() => go("day5_spitsbergen")}>
-            {t.day4StarsNav.nextButton}
-          </button>
-        </>
-      ) : null}
+      <QuestNarrationSlot />
+
+      {showVideo && <QuestMobileTextReveal paragraphs={t.day4StarsNav.arrivalBlock} revealCount={t.day4StarsNav.arrivalBlock.length} onRevealNext={() => {}} />}
+
+      {showVideo && (
+        <div className="star-navigation-completion" dir={lang === "he" ? "rtl" : "ltr"}>
+          {navigationVideoUrl ? <div className="quest-mobile-youtube quest-mobile-youtube-polar">
+            <iframe src={navigationVideoUrl} title={t.day4StarsNav.videoTitle} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+          </div> : <p className="quest-video-unavailable" role="status">{navigationUi.videoUnavailable}</p>}
+          <button type="button" className="quest-mobile-primary" onClick={() => go("day5_spitsbergen")}>{t.day4StarsNav.nextButton}</button>
+        </div>
+      )}
     </>
   );
 }
@@ -1785,7 +1818,7 @@ function Day7TreasureMobile() {
 
   const goToMap = useCallback(() => {
     void router.push(
-      { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
+      { pathname: "/shop", query: buildLocalizedQuery(lang) },
       undefined,
       { locale: lang },
     );
@@ -1816,7 +1849,7 @@ function Day7TreasureMobile() {
     <div className={`quest-mobile-final ${celebrating ? "is-celebrating" : ""}`}>
       <div className="quest-mobile-final-video">
         <iframe
-          src="https://www.youtube.com/embed/sE2jxOVG8kU"
+          src={getDay7VideoEmbedUrl(lang)}
           title={t.day7.videoTitle}
           allow="autoplay; encrypted-media; fullscreen"
           allowFullScreen
@@ -1884,7 +1917,7 @@ export default function Quest1MobileEngine() {
 
   const exit = useCallback(() => {
     void router.replace(
-      { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
+      { pathname: "/shop", query: buildLocalizedQuery(lang) },
       undefined,
       { locale: lang },
     );

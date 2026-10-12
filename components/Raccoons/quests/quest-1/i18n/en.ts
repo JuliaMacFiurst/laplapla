@@ -4,7 +4,7 @@ export const en: Quest1Dictionary = {
   engine: {
     confirmExit:
       "Your quest progress is not saved yet.\nIf you leave now, you will have to start over. Leave the quest?",
-    homeButton: "Back to maps",
+    homeButton: "Back to Store",
     prevButton: "← Back",
     nextButton: "Next →",
   },
@@ -301,7 +301,7 @@ export const en: Quest1Dictionary = {
   day7: {
     title: "Treasure of Time",
     videoTitle: "Spitsbergen Flight",
-    backButton: "↩️ Return to the map",
+    backButton: "Back to Store",
     videoTranslationNotice:
       "This video does not have an English translation yet. It may be added later.",
     blocks: [

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import DogSled, { DogSledState } from "./track/DogSled";
-import { BACKGROUND_LAYERS } from "./background/backgroundLayers";
+import { BACKGROUND_LAYERS, getBackgroundPositionX } from "./background/backgroundLayers";
 import { useObstacles } from "./track/useObstacles";
 import { useBonusStars, BonusStar } from "./track/useBonusStars";
 import { buildSledRunConfig, PreparationResult } from "./track/useSledRunConfig";
@@ -669,9 +669,7 @@ export default function DogSledRunStage({
               className="dog-sled-background-layer"
               style={{
                 backgroundImage: `url(${layer.src})`,
-                transform: `translateX(-${
-                  (scrollX * layer.speedMultiplier) % stageWidth
-                }px)`,
+                backgroundPositionX: `${getBackgroundPositionX(scrollX, layer.speedMultiplier)}px`,
                 zIndex: layer.zIndex,
               }}
             />

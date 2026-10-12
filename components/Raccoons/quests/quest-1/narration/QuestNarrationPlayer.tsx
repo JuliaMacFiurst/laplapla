@@ -120,11 +120,7 @@ export default function QuestNarrationPlayer({ pageId, locale, availableBlockIds
   }, [locale, stop]);
 
   useEffect(() => () => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.src = "";
-    }
+    stopQuestNarrationAudio(audioRef.current);
   }, []);
 
   const previous = useMemo(

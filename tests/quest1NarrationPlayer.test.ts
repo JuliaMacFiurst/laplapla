@@ -128,8 +128,8 @@ describe("Svalbard gameplay availability", () => {
   it("classifies every manifest block as integrated or explicitly unavailable", () => {
     const integrated = new Set(QUEST_1_INTEGRATED_BLOCKS);
     const unavailable = new Set(Object.keys(QUEST_1_UNAVAILABLE_BLOCKS));
-    expect(integrated.size).toBe(80);
-    expect(unavailable.size).toBe(3);
+    expect(integrated.size).toBe(78);
+    expect(unavailable.size).toBe(5);
     expect([...integrated].filter((id) => unavailable.has(id))).toEqual([]);
     expect(new Set([...integrated, ...unavailable])).toEqual(
       new Set(manifest.blocks.map((block) => block.id)),
@@ -152,7 +152,8 @@ describe("Svalbard gameplay availability", () => {
     expect(seaDialogueBlockId(undefined)).toBeNull();
     expect(seaDialogueBlockId("ice_1")).toBe("svalbard.day03.sail-dialogue.ice-1");
     expect(starDialogueBlockId("wrong_merak_no_id")).toBeNull();
-    expect(starDialogueBlockId("merak_1")).toBe("svalbard.day04.stars-dialogue.merak-1");
+    expect(starDialogueBlockId("merak_1")).toBeNull();
+    expect(starDialogueBlockId("dubhe_1")).toBeNull();
   });
 
   it("isolates optional garage details from other rooms", () => {
@@ -214,7 +215,7 @@ describe("Svalbard player navigation and lifecycle", () => {
     const player = read("components/Raccoons/quests/quest-1/narration/QuestNarrationPlayer.tsx");
     expect(player).toContain("selectNarrationBlock(available, selectedRef.current)");
     expect(player).toContain("[locale, stop]");
-    expect(player).toContain("audio.pause()");
+    expect(player).toContain("stopQuestNarrationAudio(audioRef.current)");
   });
 
   it("uses one mocked audio element and unloads its source", async () => {
@@ -234,6 +235,20 @@ describe("Svalbard player navigation and lifecycle", () => {
     await playQuestNarrationAudio(audio, "/audio/one.mp3");
     expect(audio.loadCalls).toBe(0);
     expect(audio.playCalls).toBe(1);
+  });
+
+  it("stops the previous narration element before a new page starts playback", async () => {
+    vi.stubGlobal("window", { location: { href: "https://laplapla.com/quests/quest-1" } });
+    const previousPage = new MockAudio();
+    const nextPage = new MockAudio();
+    await playQuestNarrationAudio(previousPage, "/audio/ru/stars.mp3");
+    await playQuestNarrationAudio(nextPage, "/audio/ru/station.mp3");
+    expect(previousPage.pauseCalls).toBeGreaterThan(0);
+    expect(previousPage.src).toBe("");
+    expect(nextPage.playCalls).toBe(1);
+    expect(nextPage.pauseCalls).toBe(0);
+    stopQuestNarrationAudio(nextPage);
+    expect(nextPage.src).toBe("");
   });
 
   it("keeps automatic continuation bounded by current available list", () => {
