@@ -303,7 +303,7 @@ export const en: Quest1Dictionary = {
     videoTitle: "Spitsbergen Flight",
     backButton: "Back to Store",
     videoTranslationNotice:
-      "This video does not have an English translation yet. It may be added later.",
+      "This video does not have an Hebrew translation yet. It may be added later.",
     blocks: [
       [
         "Every expedition ends someday.",
