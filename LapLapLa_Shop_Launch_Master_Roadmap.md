@@ -292,7 +292,7 @@ Receipt PDF access and quest result access are different products/artifacts. Do 
 
 ## PLANNED STOREFRONT/DISCOVERY FOLLOW-UP — Free Svalbard quest
 
-**Status: IMPLEMENTATION IN PROGRESS — progress persistence completed; storefront integration remains separate**
+**Status: IMPLEMENTATION CHECKPOINT COMPLETE / DEVICE QA PARTIAL — the free quest is integrated; physical mobile verification and audio production activation remain open**
 
 Product direction:
 - The existing Svalbard / Global Seed Vault quest is intended to become a **free interactive discovery product** in LapLapLa Shop.
@@ -302,21 +302,23 @@ Product direction:
 - [x] Anonymous browser-local progress persists across reloads, browser restarts, locales and desktop/mobile layouts; explicit replay clears only this quest's progress.
 - [x] Static mini-game UI, laboratory item copy, dog-sled results/controls and map controls are localized for RU / EN / HE.
 - [x] `/shop` includes a localized free Svalbard discovery card with direct anonymous launch and no commerce or entitlement coupling.
-- [ ] Replace or localize Russian text embedded in the externally loaded star-map SVG; the current EN/HE notice remains until that asset work is approved.
+- [x] RU uses the existing Supabase star map; EN and HE share the English SVG from the approved R2 object key. The game keeps the original star IDs and coordinates.
+- [x] Mobile Quest #1 layout and RU / EN / HE dialogue are prepared; the star-navigation sequence, informational star clicks, Garage and Laboratory repairs, localized final video selection, and Back to Store are integrated. The desktop quest was confirmed by the owner; full physical-device mobile QA is still pending.
 - [x] Add a feature-gated contextual narration-player foundation with manifest-derived RU/EN/HE URLs, page/route-scoped availability, isolated preferences and no gameplay coupling.
-- [ ] Complete narration activation: 80/83 blocks are now registered at their real reveal points and all 249 catalog paths are validated; three flight-dialogue recordings need approved re-segmentation/source-state resolution, followed by preview QA and separate production enablement.
+- [x] Register the approved contextual narration coverage: 80/83 blocks are tied to real reveal points and all 249 catalog paths are validated.
+- [ ] Resolve the three flight-dialogue recording/source-state mismatches, finish preview QA, and separately approve production audio activation. The production flag is not confirmed enabled.
+- [ ] Complete physical mobile Quest #1 QA, including mini-game replay and the EN/HE final-video image and controls.
 
-Required future read-only audit:
-- [ ] Establish the real routes, components and data flow.
-- [ ] Verify RU / EN / HE, mobile and Hebrew RTL behavior.
+Remaining verification and discovery decisions:
+- [x] Establish the real routes, components and data flow for anonymous quest progress, localized maps, narration, and free shop entry.
+- [ ] Verify the complete quest on physical mobile devices in RU / EN / HE, including Hebrew RTL.
 - [ ] Determine real age/audience, duration and device requirements from the existing quest.
-- [ ] Confirm whether it is fully public and requires no auth, entitlement or payment.
-- [ ] Identify real assets suitable for storefront merchandising.
-- [ ] Review start and completion UX.
-- [ ] Review the current ending around the approximately two-minute YouTube cartoon without assuming the film itself should be replaced.
-- [ ] Decide whether completion should provide a natural `completed quest → discover more LapLapLa experiences → /shop` path.
+- [x] Confirm the free quest launches without auth, entitlement or payment.
+- [x] Identify and use the approved Svalbard poster for storefront merchandising.
+- [x] Provide a localized `completed quest → /shop` route through Back to Store.
+- [ ] Finish device-level start/completion UX and EN/HE final-video playback checks.
 
-Only after that audit should a separate implementation checkpoint add Svalbard to `/shop`. This planned follow-up must not interrupt Phase 4.
+This discovery checkpoint does not complete Phase 1, Phase 4, production activation, or PayPal Live.
 
 ---
 
@@ -826,6 +828,28 @@ Remaining in this phase:
 Validation:
 - Focused narration tests (24), full Vitest (1,159), TypeScript, changed-file ESLint, production build and `git diff --check` passed.
 - Local real-file preview confirmed HE playback, HE → EN stop/remap behavior, RU / EN / HE layout at 1440×900, 768×1024 and 390×844, correct RTL and no user-route control overlap or horizontal overflow.
+
+## 2026-10-12 — Mobile home shop access and Svalbard checkpoint
+Phase: Planned storefront/discovery follow-up
+Status: PARTIAL — Svalbard implementation checkpoint complete; physical mobile and protected editor QA remain open
+Commits:
+- capybara_tales: `434fdfc` `fix(quests): correct Hebrew video translation notice`
+- capybara_tales: this commit — `fix(mobile): prioritize shop on homepage and close Svalbard checkpoint`
+Completed:
+- Moved the single mobile homepage shop section directly after the animal cards and Sound Case preorder banner, ahead of Novinki; desktop section order and styles remain unchanged.
+- Replaced the homepage-only mobile nested mandatory snap scrolling with normal document scrolling so the shop and footer can be reached; kept the mobile header account action compact.
+- Recorded the existing Svalbard free-shop entry, RU/EN/HE localization, saved progress, repaired star-navigation and station mini-games, Back to Store, locale-specific final-video configuration, and 80/83 contextual narration coverage.
+Remaining in this phase:
+- Verify the complete Svalbard mobile quest on physical devices, including game replay and EN/HE final-video playback controls; the owner has confirmed the desktop quest.
+- Resolve the three blocked flight narration sources and separately approve production audio activation. Do not infer that the production flag is enabled.
+- Mobile protected Sound Case #001 editor QA is **PARTIAL / NOT VERIFIED** on the owner's physical phone: local dev-server sign-in is unavailable there. Protected builder, preview, RTL, save/retry and access boundaries have automated coverage, but authorized device-level visual and print checks remain open. Auth and entitlement were not changed.
+- Commerce Phase 1 visual UX, Phase 4 protected device/physical print QA, production activation and PayPal Live remain separate roadmap work.
+Decisions/blockers:
+- Chrome responsive viewport checks are browser emulation, not physical-device or installed-PWA proof. No credential, auth, audio manifest, R2, Supabase or commerce configuration changed.
+Validation:
+- Local Chrome checked the homepage at 390×844, 375×812 and 360×800 in RU/EN/HE: section order, one shop section, RTL, normal scroll to footer, no horizontal overflow and localized /shop links. The shop CTA was opened in all three locales.
+- Desktop homepage checks at 1440×900 and 1280×800 in RU/EN/HE preserved banner, animal cards, Novinki and shop order, with no horizontal overflow; the change is scoped to mobile rendering and CSS breakpoints.
+- 154 focused tests and 1,208 full Vitest tests passed; TypeScript, changed-file ESLint, production build and `git diff --check` passed.
 
 ---
 

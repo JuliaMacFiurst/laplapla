@@ -2038,17 +2038,14 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
   .home-wrapper-mobile .home-mobile-snap-shell {
     display: block;
-    height: 100dvh;
-    overflow-y: auto;
-    scroll-snap-type: y mandatory;
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
+    height: auto;
+    overflow: visible;
+    scroll-snap-type: none;
   }
 
   .home-wrapper-mobile .home-mobile-screen {
     min-height: 100dvh;
-    height: 100dvh;
-    scroll-snap-align: start;
+    height: auto;
     box-sizing: border-box;
   }
 
@@ -2062,18 +2059,16 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
   .home-wrapper-mobile .sound-case-home-promo--mobile {
     display: flex;
     min-height: calc(100dvh - 64px);
-    height: calc(100dvh - 64px);
+    height: auto;
     flex-direction: column;
     box-sizing: border-box;
     margin: 0;
-    overflow-y: auto;
+    overflow: visible;
     border: 0;
     border-radius: 0;
     background:
       radial-gradient(circle at 12% 12%, rgba(136, 72, 134, 0.38), transparent 34%),
       #1e1728;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
   }
 
   .sound-case-home-promo--mobile .sound-case-home-promo__scene {
@@ -2205,12 +2200,11 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
   .home-wrapper-mobile .home-brand-overview {
     min-height: 100dvh;
-    scroll-snap-align: start;
     box-sizing: border-box;
     margin: 0;
     padding: 18px 16px 22px;
     border-radius: 0;
-    overflow-y: auto;
+    overflow: visible;
   }
 
   .home-wrapper-mobile .home-brand-overview h2 {
@@ -2234,14 +2228,12 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 
   .home-wrapper-mobile .home-retention-section {
     min-height: 100dvh;
-    height: 100dvh;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    height: auto;
     box-sizing: border-box;
     margin: 0;
     padding: 18px 10px 22px;
     border-radius: 0;
-    overflow-y: auto;
+    overflow: visible;
   }
 
   .home-wrapper-mobile .home-retention-title {
@@ -2314,6 +2306,26 @@ html[dir="rtl"] :where(p, h1, h2, h3, h4, h5, h6, li, span, a, button, label, fi
 }
 
 @media (max-width: 560px) {
+  body:has(.home-wrapper-mobile) .top-bar-auth-zone {
+    gap: 6px !important;
+  }
+
+  body:has(.home-wrapper-mobile) .top-bar-signin-label {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    border: 1px solid rgba(185, 166, 218, 0.72);
+    border-radius: 999px;
+    background: linear-gradient(135deg, #fff4c2, #fce7f3);
+    box-shadow: 0 2px 8px rgba(86, 64, 118, 0.13);
+    font-family: var(--font-varela-round), system-ui, sans-serif;
+    font-size: 0.72rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
   .lang-switcher button {
     font-size: 1.15rem;
     padding: 4px 8px;
