@@ -9,7 +9,7 @@ type PrivacyContent = { title: string; lastUpdated: string; sections: PrivacySec
 export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
   en: {
     title: "Privacy Policy",
-    lastUpdated: "Last updated: October 1, 2026.",
+    lastUpdated: "Last updated: October 13, 2026.",
     sections: [
       { h: "1. Introduction", paragraphs: [
         "This Privacy Policy explains what information LapLapLa processes, why it is needed, where it may be sent, and what choices are available to you. Most public content can be viewed without an account.",
@@ -47,7 +47,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       ] },
       { h: "9. Service Providers", paragraphs: [
         "LapLapLa uses Supabase for authentication, customer and product-access data, saved personalization, preorder registrations, analytics, public content storage, and other database functions; Sentry for diagnostics; Vercel for hosting and server logs; and, when enabled, Upstash for distributed request limiting. Google provides identity authentication when you choose Google sign-in.",
-        "LapLapLa does not currently process payments through PayPal or another payment provider. Payment processing will be described in this policy if and when it becomes available.",
+        "LapLapLa has a PayPal checkout integration currently limited to Sandbox test payments. When checkout is enabled, PayPal processes the payment; LapLapLa stores order and transaction references, not card details. Live payments are not currently enabled.",
       ] },
       { h: "10. Age Requirement", paragraphs: [
         "The main LapLapLa service is intended for users aged 16 and over and is not intended for users under 16.",
@@ -66,7 +66,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
   },
   he: {
     title: "מדיניות פרטיות",
-    lastUpdated: "עדכון אחרון: 1 באוקטובר 2026.",
+    lastUpdated: "עדכון אחרון: 13 באוקטובר 2026.",
     sections: [
       { h: "1. מבוא", paragraphs: [
         "מדיניות זו מסבירה איזה מידע LapLapLa מעבדת, מדוע הוא נחוץ, לאן הוא עשוי להישלח ואילו אפשרויות עומדות לרשותכם. ברוב התכנים הציבוריים אפשר לצפות ללא חשבון.",
@@ -104,7 +104,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       ] },
       { h: "9. ספקי שירות", paragraphs: [
         "LapLapLa משתמשת ב‑Supabase לצורכי אימות, נתוני לקוחות וגישה למוצרים, התאמה אישית שנשמרה, הרשמות מוקדמות, ניתוח שימוש, אחסון תוכן ציבורי ופונקציות מסד נתונים נוספות; ב‑Sentry לצורכי אבחון; ב‑Vercel לצורכי אירוח ויומני שרת; וכאשר השירות מופעל, ב‑Upstash להגבלת בקשות מבוזרת. Google מספקת אימות זהות כאשר בוחרים בכניסה באמצעות Google.",
-        "LapLapLa אינה מעבדת כיום תשלומים באמצעות PayPal או ספק תשלומים אחר. עיבוד תשלומים יתואר במדיניות זו אם וכאשר יהיה זמין.",
+        "ל־LapLapLa יש שילוב תשלום עם PayPal, המוגבל כעת לתשלומי בדיקה בסביבת Sandbox. כשהתשלום מופעל, PayPal מעבדת אותו; LapLapLa שומרת פרטי הזמנה ואסמכתאות עסקה, ולא פרטי כרטיס. תשלומים בסביבת Live עדיין אינם פעילים.",
       ] },
       { h: "10. דרישת גיל", paragraphs: [
         "השירות הראשי של LapLapLa מיועד למשתמשים בני 16 ומעלה ואינו מיועד למשתמשים מתחת לגיל 16.",
@@ -123,7 +123,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
   },
   ru: {
     title: "Политика конфиденциальности",
-    lastUpdated: "Последнее обновление: 1 октября 2026 года.",
+    lastUpdated: "Последнее обновление: 13 октября 2026 года.",
     sections: [
       { h: "1. Введение", paragraphs: [
         "Эта Политика конфиденциальности объясняет, какие сведения обрабатывает LapLapLa, зачем они нужны, куда могут передаваться и какие возможности есть у пользователя. Большинство публичных материалов можно просматривать без аккаунта.",
@@ -161,7 +161,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       ] },
       { h: "9. Поставщики услуг", paragraphs: [
         "LapLapLa использует Supabase для аутентификации, данных пользователей и доступа к продуктам, сохранённой персонализации, регистраций предзаказа, аналитики, хранения публичного контента и других функций базы данных; Sentry — для диагностики; Vercel — для хостинга и серверных журналов; Upstash, когда он включён, — для распределённого ограничения запросов. Google предоставляет проверку личности при выборе входа через Google.",
-        "Сейчас LapLapLa не обрабатывает платежи через PayPal или другого платёжного провайдера. Если обработка платежей станет доступна, она будет описана в этой политике.",
+        "У LapLapLa есть интеграция оплаты через PayPal, сейчас ограниченная тестовыми платежами Sandbox. Когда checkout включён, PayPal обрабатывает платёж; LapLapLa хранит данные заказа и ссылки на транзакцию, но не данные карты. Платежи в режиме Live пока не включены.",
       ] },
       { h: "10. Возрастные требования", paragraphs: [
         "Основной сервис LapLapLa предназначен для пользователей 16 лет и старше и не предназначен для пользователей младше 16 лет.",

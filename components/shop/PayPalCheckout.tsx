@@ -18,6 +18,9 @@ import {
   getOrCreatePayPalCheckoutKey,
 } from "@/lib/shop/paypalCheckoutSession";
 import type { CustomerBillingIdentityResponse } from "@/lib/customer/billingIdentity";
+import { ShopLegalDisclosure } from "@/components/legal/ShopLegalDisclosure";
+import { checkoutConsentCopy } from "@/lib/legal/checkoutConsent";
+import { shopPolicyPaths } from "@/lib/legal/shopPolicies";
 
 type PayPalApprovalData = { orderId?: unknown };
 type PayPalPaymentSession = {
@@ -101,11 +104,19 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
   const [billingError, setBillingError] = useState(false);
   const [identityRevision, setIdentityRevision] = useState(0);
   const [paypalEnvironment, setPayPalEnvironment] = useState<"sandbox" | "live" | null>(null);
+  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [electronicReceiptAccepted, setElectronicReceiptAccepted] = useState(false);
+  const consentingUserId = auth.status === "authenticated" ? auth.session.user.id : null;
   const activeOrderRef = useRef<{ localOrderId: string; paypalOrderId: string } | null>(null);
   const checkoutOutcomeHandledRef = useRef(false);
   const createPath = buildLocalizedPublicPath("/shop/sound-case-001/create", lang);
   const checkoutPath = buildLocalizedPublicPath("/shop/sound-case-001/checkout", lang);
   const signInPath = `${buildLocalizedPublicPath("/account/sign-in", lang)}?next=${encodeURIComponent(checkoutPath)}`;
+
+  useEffect(() => {
+    setLegalAccepted(false);
+    setElectronicReceiptAccepted(false);
+  }, [consentingUserId, lang]);
 
   const authenticatedFetch = useCallback(async (url: string, body: unknown) => {
     if (auth.status !== "authenticated") throw new Error("Authentication required");
@@ -250,7 +261,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
   };
 
   const startCheckout = async () => {
-    if (!paymentSession || auth.status !== "authenticated" || !paypalEnvironment) return;
+    if (!paymentSession || auth.status !== "authenticated" || !paypalEnvironment || !legalAccepted || !electronicReceiptAccepted) return;
     setState("opening");
     checkoutOutcomeHandledRef.current = false;
     const checkoutIdempotencyKey = getOrCreatePayPalCheckoutKey(
@@ -263,6 +274,9 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
     const orderPromise = authenticatedFetch("/api/customer/checkout/paypal/create", {
       productId: PAYPAL_CHECKOUT_PRODUCT_ID,
       checkoutIdempotencyKey,
+      legalAccepted,
+      electronicReceiptAccepted,
+      lang,
     }).then(async (response) => {
       const result = await readJson<PayPalCreateResponse>(response);
       if (!response.ok || !result.ok) {
@@ -316,6 +330,10 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       billingName={billingName}
       billingSaving={billingSaving}
       billingError={billingError}
+      legalAccepted={legalAccepted}
+      electronicReceiptAccepted={electronicReceiptAccepted}
+      onLegalAcceptedChange={setLegalAccepted}
+      onElectronicReceiptAcceptedChange={setElectronicReceiptAccepted}
       onBillingNameChange={(value) => { setBillingName(value); setBillingError(false); }}
       onBillingSave={() => void saveBillingIdentity()}
       onStart={() => void startCheckout()}
@@ -337,6 +355,7 @@ export function PayPalCheckoutView({
   createPath,
   recoveryOrderReference,
   billingIdentity, billingName, billingSaving, billingError, onBillingNameChange, onBillingSave,
+  legalAccepted, electronicReceiptAccepted, onLegalAcceptedChange, onElectronicReceiptAcceptedChange,
   onStart,
   onRetry,
 }: {
@@ -354,10 +373,15 @@ export function PayPalCheckoutView({
   billingError: boolean;
   onBillingNameChange: (value: string) => void;
   onBillingSave: () => void;
+  legalAccepted: boolean;
+  electronicReceiptAccepted: boolean;
+  onLegalAcceptedChange: (value: boolean) => void;
+  onElectronicReceiptAcceptedChange: (value: boolean) => void;
   onStart: () => void;
   onRetry: () => void;
 }) {
   const copy = paypalCheckoutCopy[lang];
+  const consent = checkoutConsentCopy[lang];
   if (authStatus === "loading" || state === "loading") {
     return <p className="paypal-checkout__status" aria-live="polite">{copy.loading}</p>;
   }
@@ -436,10 +460,29 @@ export function PayPalCheckoutView({
           <strong>{formatPrice(pricedQuote.amountMinor, pricedQuote.currency, lang)}</strong>
         </div>
       ) : null}
+      <ShopLegalDisclosure lang={lang} />
+      <div className="paypal-checkout__consents" dir={lang === "he" ? "rtl" : "ltr"}>
+        <label className="paypal-checkout__consent" htmlFor="checkout-legal-consent">
+          <input id="checkout-legal-consent" type="checkbox" checked={legalAccepted} onChange={(event) => onLegalAcceptedChange(event.target.checked)} />
+          <span>
+            {consent.legalBefore}
+            <Link href={buildLocalizedPublicPath(shopPolicyPaths.sale, lang)}>{consent.sale}</Link>
+            {consent.legalBetweenSaleRefund}
+            <Link href={buildLocalizedPublicPath(shopPolicyPaths.refund, lang)}>{consent.refund}</Link>
+            {consent.legalBetweenRefundLicense}
+            <Link href={buildLocalizedPublicPath(shopPolicyPaths.printable, lang)}>{consent.license}</Link>
+            {consent.legalAfter}
+          </span>
+        </label>
+        <label className="paypal-checkout__consent" htmlFor="checkout-electronic-receipt-consent">
+          <input id="checkout-electronic-receipt-consent" type="checkbox" checked={electronicReceiptAccepted} onChange={(event) => onElectronicReceiptAcceptedChange(event.target.checked)} />
+          <span>{consent.electronicReceipt}</span>
+        </label>
+      </div>
       <button
         className="paypal-checkout__paypal-button"
         type="button"
-        disabled={!paymentReady || state === "opening" || state === "capturing"}
+        disabled={!paymentReady || !legalAccepted || !electronicReceiptAccepted || state === "opening" || state === "capturing"}
         onClick={onStart}
       >
         {state === "opening" || state === "capturing" ? copy.loading : copy.payWithPayPal}

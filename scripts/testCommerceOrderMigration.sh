@@ -31,7 +31,7 @@ pg_ctl -D "$data_dir" -l "$test_root/postgres.log" -o "-k $socket_dir -p $port" 
 
 psql_local=(psql -X -v ON_ERROR_STOP=1 -h "$socket_dir" -p "$port" -d postgres)
 
-"${psql_local[@]}" -c "create role anon; create role authenticated; create role service_role;" >/dev/null
+"${psql_local[@]}" -c "create role anon; create role authenticated; create role service_role bypassrls;" >/dev/null
 "${psql_local[@]}" -c "alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;" >/dev/null
 "${psql_local[@]}" -c "
   create schema auth;
@@ -92,5 +92,19 @@ wait "$artifact_a_pid" "$artifact_b_pid"
 artifact_results="$(sort "$test_root/artifact-a.out" "$test_root/artifact-b.out" | tr '\n' ' ')"
 [[ "$artifact_results" = "claimed processing " ]]
 "${psql_local[@]}" -f "$repo_root/tests/sql/receiptArtifactConcurrencyAssert.sql"
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610130001_create_checkout_consents.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/checkoutConsentRecovery.sql"
+
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptOriginalDeliveryConcurrencySetup.sql" >/dev/null
+receipt_delivery_target_id="$("${psql_local[@]}" -Atc "select receipt_id from public.receipt_original_delivery_concurrency_target limit 1")"
+"${psql_local[@]}" -Atc "set role service_role; update public.receipt_original_deliveries set status='sending', attempt_count=1, claim_token='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', claimed_at=now(), updated_at=now() where receipt_id='$receipt_delivery_target_id' and status='pending' and attempt_count=0 returning receipt_id" >"$test_root/original-delivery-a.out" &
+receipt_delivery_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; update public.receipt_original_deliveries set status='sending', attempt_count=1, claim_token='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', claimed_at=now(), updated_at=now() where receipt_id='$receipt_delivery_target_id' and status='pending' and attempt_count=0 returning receipt_id" >"$test_root/original-delivery-b.out" &
+receipt_delivery_b_pid=$!
+wait "$receipt_delivery_a_pid" "$receipt_delivery_b_pid"
+[[ "$(cat "$test_root/original-delivery-a.out" "$test_root/original-delivery-b.out" | grep -c "$receipt_delivery_target_id")" -eq 1 ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptOriginalDeliveryConcurrencyAssert.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptDeliveryLifecycleAssert.sql"
 
 printf 'Commerce order foundation SQL regression checks passed.\n'

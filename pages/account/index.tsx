@@ -86,7 +86,7 @@ export default function CustomerAccountPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `receipt-${purchase.receipt.displayNumber ?? "purchase"}.pdf`;
+      link.download = `receipt-copy-${purchase.receipt.displayNumber ?? "purchase"}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
       setReceiptDownload({ orderId: null, error: false });

@@ -40,7 +40,7 @@ export default function TermsPage() {
             },
             {
               h: "6. Limitation of Liability",
-              p: `LapLapLa is provided “as is.” We are not liable for misuse of the service, AI-generated content, or third-party content.`,
+              p: `LapLapLa is provided “as is” to the extent permitted by applicable law. We are not liable for misuse of the service, AI-generated content, or third-party content where the law permits this limitation. Mandatory consumer rights concerning purchased products remain unaffected.`,
             },
           ],
         };
@@ -71,7 +71,7 @@ export default function TermsPage() {
             },
             {
               h: "6. הגבלת אחריות",
-              p: `השירות ניתן "כמות שהוא". איננו אחראים לשימוש לרעה בשירות, בתוכן שנוצר על ידי בינה מלאכותית או בתוכן מצדדים שלישיים.`,
+              p: `השירות ניתן "כמות שהוא" ככל שהדין החל מתיר זאת. איננו אחראים לשימוש לרעה בשירות, בתוכן שנוצר באמצעות בינה מלאכותית או בתוכן מצדדים שלישיים, במידה שהדין מתיר הגבלה זו. אין בכך כדי לגרוע מזכויות צרכניות קוגנטיות לגבי מוצרים שנרכשו.`,
             },
           ],
         };
@@ -102,7 +102,7 @@ export default function TermsPage() {
             },
             {
               h: "6. Ограничение ответственности",
-              p: `Сервис предоставляется «как есть». Мы не несем ответственности за неправильное использование платформы, контента, созданного ИИ, или стороннего контента.`,
+              p: `Сервис предоставляется «как есть» в пределах, допускаемых применимым законодательством. Мы не несём ответственности за неправильное использование платформы, контента, созданного ИИ, или стороннего контента там, где закон допускает такое ограничение. Обязательные права покупателей приобретённых продуктов сохраняются.`,
             },
           ],
         };

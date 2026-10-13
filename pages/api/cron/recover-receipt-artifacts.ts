@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { recoverReceiptArtifacts, type ReceiptArtifactRecoverySummary } from "@/lib/server/commerce/receipts/artifactRecovery";
 import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
+import { recoverOriginalReceiptDeliveries } from "@/lib/server/commerce/receipts/originalDelivery";
 
-type Response = ({ ok: true } & ReceiptArtifactRecoverySummary) | { ok: false; error: string };
+type Response = ({ ok: true } & ReceiptArtifactRecoverySummary & { originalDelivery?: NonNullable<Awaited<ReturnType<typeof recoverOriginalReceiptDeliveries>>> }) | { ok: false; error: string };
 
 export async function recoverReceiptArtifactsHandler(req: NextApiRequest, res: NextApiResponse<Response>) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
@@ -17,7 +18,9 @@ export async function recoverReceiptArtifactsHandler(req: NextApiRequest, res: N
     return;
   }
   try {
-    res.status(200).json({ ok: true, ...await recoverReceiptArtifacts() });
+    const artifacts = await recoverReceiptArtifacts();
+    const originalDelivery = await recoverOriginalReceiptDeliveries();
+    res.status(200).json({ ok: true, ...artifacts, ...(originalDelivery ? { originalDelivery } : {}) });
   } catch (error) {
     await captureAndAlertServerError(error, {
       route: "/api/cron/recover-receipt-artifacts", method: "GET", runtime: "server", statusCode: 503,

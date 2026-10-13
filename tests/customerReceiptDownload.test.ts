@@ -4,7 +4,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 const mocks = vi.hoisted(() => ({ access: vi.fn(), download: vi.fn(), client: null as unknown }));
 vi.mock("@/lib/server/auth/customerAccess", () => ({ resolveCustomerAccess: mocks.access }));
-vi.mock("@/lib/server/customerPurchases", async (original) => ({ ...(await original<typeof import("@/lib/server/customerPurchases")>()), downloadOwnReceiptOriginal: mocks.download }));
+vi.mock("@/lib/server/customerPurchases", async (original) => ({ ...(await original<typeof import("@/lib/server/customerPurchases")>()), downloadOwnReceiptCopy: mocks.download }));
 
 import { customerReceiptDownloadHandler } from "@/pages/api/customer/purchases/[orderId]/receipt";
 
@@ -15,7 +15,7 @@ function response() {
   return { res, result };
 }
 
-describe("customer receipt original download API", () => {
+describe("customer receipt copy download API", () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.access.mockResolvedValue({ isAuthenticated: true, accessToken: "token", user: { id: "user-1" } }); });
 
   it("rejects anonymous and malformed order requests", async () => {
@@ -25,13 +25,13 @@ describe("customer receipt original download API", () => {
     expect(mocks.download).not.toHaveBeenCalled();
   });
 
-  it("derives ownership from authenticated user and downloads only a ready original", async () => {
-    mocks.download.mockResolvedValue({ status: "ready", bytes: Buffer.from("pdf"), fileName: "receipt-WEB-000001.pdf" });
+  it("derives ownership from authenticated user and downloads only a ready copy", async () => {
+    mocks.download.mockResolvedValue({ status: "ready", bytes: Buffer.from("pdf"), fileName: "receipt-copy-WEB-000001.pdf" });
     const target = response(); await customerReceiptDownloadHandler(req(), target.res);
     expect(mocks.download).toHaveBeenCalledWith("user-1", "11111111-1111-4111-8111-111111111111");
     expect(target.result.status).toBe(200);
     expect(target.result.headers["Content-Type"]).toBe("application/pdf");
-    expect(target.result.headers["Content-Disposition"]).toContain("receipt-WEB-000001.pdf");
+    expect(target.result.headers["Content-Disposition"]).toContain("receipt-copy-WEB-000001.pdf");
   });
 
   it("does not download another customer's or non-ready receipt", async () => {
@@ -46,6 +46,7 @@ describe("customer receipt original download API", () => {
     const server = readFileSync(`${process.cwd()}/lib/server/customerPurchases.ts`, "utf8");
     expect(route).not.toMatch(/documentCopy|receiptId|storageKey|bucket/);
     expect(server).toContain('.eq("user_id", userId)');
-    expect(server).toContain('.eq("document_copy", "original")');
+    expect(server).toContain('.eq("document_copy", "copy")');
+    expect(server).toContain('delivery.data?.status !== "accepted"');
   });
 });

@@ -10,6 +10,7 @@ import { SOUND_CASE_001_ASSET_MANIFEST } from "@/lib/shop/quests/sound-case-001/
 import { SOUND_CASE_PRODUCT_INCLUDED_MEDIA } from "@/lib/shop/soundCasePromoMedia";
 import { SOUND_CASE_PRODUCT_DETAIL_COPY } from "@/lib/shop/soundCaseProductDetail";
 import type { ShopProduct } from "@/lib/shop/types";
+import { ShopLegalDisclosure } from "@/components/legal/ShopLegalDisclosure";
 
 import { SoundCaseVideoPresentation } from "./SoundCaseVideoPresentation";
 
@@ -58,6 +59,7 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
             <div><span>{detail.priceLabel}</span><strong><bdi>{formatPrice(product.price, product.currency, lang)}</bdi></strong></div>
             <Link className="sound-case-product__primary-cta" href={ctaHref}>{isSoundCasePreorder ? productText.preorder.productCta : productText.createCta}</Link>
           </div>
+          <ShopLegalDisclosure lang={lang} />
           <p className="sound-case-product__availability-note">{productText.preparationNote}</p>
         </div>
       </section>

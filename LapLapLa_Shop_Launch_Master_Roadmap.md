@@ -34,11 +34,11 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 | Customer purchase flow | PARTIAL | Sandbox flow is developed, but product remains `coming-soon` and checkout is Sandbox-only. |
 | Storefront design | PARTIAL | Sound Case #001 product detail and shop index now have launch-quality merchandising; age/duration are approved provisional facts pending live playtest, while minimum-player and preparation-burden decisions remain. |
 | Builder / preview / print | PARTIAL | Canonical 24-page preview, saved-only printing, code-derived print guidance and account Edit/Open & print intents exist; protected-route visual QA and physical printer validation remain. |
-| Post-purchase UX | PARTIAL | `/account` now provides localized purchase history, truthful access/payment/receipt states, re-edit/re-print entry and secure original-receipt download; email delivery remains optional/not started. |
-| Commerce Admin | PARTIAL | Strong read-only foundation; receipt/artifact/notification/recovery visibility is missing. |
+| Post-purchase UX | PARTIAL | `/account` provides localized purchase history, re-edit/re-print entry and server-authorized receipt **copy** download after original-email acceptance. The original email/account copy flow is not verified in Production. |
+| Commerce Admin | PARTIAL | A local, uncommitted admin candidate adds read-only original-email delivery status and manual-review guidance; authenticated API-to-UI verification and Preview release remain open. |
 | Refund lifecycle | READY FOR TECHNICAL DESIGN | Accountant rules for full/partial refunds and corrective documents are confirmed; technical lifecycle, entitlement behavior and delivery remain unimplemented. |
-| Legal | BLOCKED FOR LAUNCH | Privacy/Terms are not yet suitable for real PayPal digital-product sales. |
-| Production configuration | NOT STARTED | Live PayPal, product activation and controlled real purchase remain. |
+| Legal | BLOCKED FOR LAUNCH | Shop policies and checkout consent copy exist only in the uncommitted local tree; release and final prepayment review remain. Do not infer that Production serves these texts. |
+| Production configuration | BLOCKED | Vercel's latest visible Production deployment is `4922379` from `main` (2026-10-05); newer `staging-updated` builds are Preview. Production env names include Resend, Supabase service role, the receipt bucket and `CRON_SECRET`, but searches found no PayPal variables or `RECEIPT_ORIGINAL_EMAIL_ENABLED`. Values and runtime behavior remain untested. A read-only public check found HTTPS on `/`, while Shop routes returned 404. |
 
 ---
 
@@ -138,6 +138,7 @@ Turn canonical Commerce in `upload-lessons` from a read-only order viewer into a
 - [x] Show business copy (`העתק`) artifact state.
 - [x] Show artifact generation/storage failure safely.
 - [x] Show purchase Discord notification delivery state.
+- [x] Implement read-only original-email delivery evidence on the authorized Commerce order detail page locally: `pending`, `sending`, `accepted`, `failed`, `uncertain`, and an explicit missing-record state. The admin release is not deployed; operator visual QA remains open.
 - [x] Show recovery/operational failure information useful to an operator.
 - [x] Add one coherent **Operational problems** summary instead of forcing table archaeology.
 - [x] Add safe server-authorized admin download for customer original PDF.
@@ -160,7 +161,7 @@ Recovery actions, if needed, come later and must be narrow, idempotent, server-a
 ### Phase 1 Definition of Done
 Julia can open one genuine order in canonical Commerce and understand, from one detail page:
 
-`Payment → Customer → Product → Entitlement → Receipt → מקור → העתק → Purchase notification → Operational problems`
+`Payment → Customer → Product → Entitlement → Receipt → מקור → העתק → Original email delivery → Purchase notification → Operational problems`
 
 without opening Supabase manually.
 
@@ -203,9 +204,9 @@ This section records accounting facts and system invariants only. Final schema, 
 - [x] Show Sound Case #001 purchase/order information.
 - [x] Show useful purchase status/date/amount where appropriate.
 - [x] Clear actions: open/edit, print/re-download.
-- [x] Customer can securely access/download receipt original (`מקור`).
+- [x] Customer can securely access/download only a receipt copy (`העתק`) after the original email is accepted; the original is not offered in the account. Production E2E remains pending.
 - [x] Define/display receipt delivery state where useful.
-- [ ] Decide whether launch v1 also sends receipt by email or whether secure account download is the initial delivery channel.
+- [x] Owner decided: send the original once by email; make only marked copies available in the account after provider acceptance. Controlled original-delivery E2E remains pending.
 - [x] Explain that purchased quest can be edited and printed again.
 - [x] Implement responsive RU/EN/HE + RTL account experience; final device-level launch QA remains in the global launch checklist.
 
@@ -371,19 +372,28 @@ This discovery checkpoint does not complete Phase 1, Phase 4, production activat
 - [ ] Monitor failed/uncertain notifications manually and verify the form on a physical mobile device.
 - [ ] Review Privacy text for support-message processing and retention before public activation.
 
+### Checkout consent and original-receipt delivery checkpoint (2026-10-13)
+- [x] The owner applied `202610130001_create_checkout_consents.sql` manually. Read-only inspection confirmed both tables, columns, indexes, constraints, triggers, functions and RLS in the target Supabase schema.
+- [x] The owner registered the already-applied `202610130001` migration with official Supabase migration repair and verified `25/25` local and remote migration versions match. The SQL must not be applied again.
+- [ ] Effective `service_role` table privileges still include `TRUNCATE` through the project's default grants; the SQL migration does not revoke them. Review least-privilege hardening separately before Live use of immutable consent/delivery evidence. `anon` and `authenticated` have no direct table privileges.
+- [x] Local checkout code now reuses matching immutable consent evidence before attempting an insert. A concurrent insert rejected by the applied `BEFORE INSERT` trigger can recover from the first request's matching row; missing or mismatched evidence fails closed. Local PostgreSQL trigger and checkout regression tests pass.
+- [ ] Original-receipt email delivery and account copy access still require activation, a controlled end-to-end check, and operator visibility for failed/uncertain delivery before Live sales.
+- **Receipt Delivery status:** CODE READY / ISOLATED TESTS PASS / RESEND PDF TRANSPORT TEST: PASS / ORIGINAL DELIVERY E2E PENDING. The owner confirmed actual Gmail receipt and successful opening of the synthetic PDF after one Resend HTTP 200 acceptance; this was not an original receipt and did not touch the receipt ledger.
+- **Next required launch task:** Receipt Original Email Delivery E2E in a controlled environment, including original email acceptance, delivery-state recovery, and customer account copy access. Do not use a real payment or send a real accounting document during automated checks.
+
 Seller identity canonical data:
 - Business: `אומנצ׳קים`
 - Owner: `יוליה נואה מכלין`
 - Status: `עוסק פטור`
 - Business/tax number: `337738868`
-- Address: `אחדות 18, חריש`
+- Address: restricted to accounting receipts and the private receipt issuer profile; legal disclosure review remains open.
 - Contact: `omanchikim@gmail.com`
 
 ---
 
 ## PHASE 6 — Operator playbook
 
-**Status: NOT STARTED**
+**Status: PARTIAL — local runbook draft prepared, operator acceptance pending**
 
 Create a short operational guide, not a giant manual.
 
@@ -400,6 +410,8 @@ It must cover:
 - [ ] Refund request.
 - [ ] Dispute/chargeback.
 - [ ] What must NEVER be edited manually in Supabase.
+
+The local Commerce Admin runbook draft now covers the healthy paid order, missing entitlement/PDF, failed or uncertain original email delivery, webhook replay and refund escalation. It explicitly forbids blind resend and changing immutable evidence. Review and approve it with the operator and accountant before the first sale; the draft does not complete this phase.
 
 This playbook should reference Commerce UI wherever possible rather than direct DB inspection.
 
@@ -420,6 +432,45 @@ Only after preceding launch blockers are resolved.
 - [ ] Verify production seller/payment copy.
 - [ ] Controlled Production deploy.
 - [ ] No casual staging→main merge: audit exact release delta first.
+
+### Production readiness audit checkpoint (2026-10-13)
+- [x] Current uncommitted Shop/receipt tree passes 1,297 Vitest tests, TypeScript, ESLint and local production build. Build success is not a deployed purchase test.
+- [x] Read-only Supabase inspection confirmed 25 migration history entries, including `202610130001`, and a private `receipt-pdfs` bucket limited to PDF and 2 MiB. Production application service-role access and actual Storage upload remain unverified.
+- [x] Inspect Vercel deployment metadata, domains and env names/scopes without opening secret values: latest visible Production deployment is `4922379` from `main` (2026-10-05); newer `staging-updated` builds are Preview. `www.laplapla.com` is marked Valid Configuration / Production, with apex redirected to www. `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RECEIPT_PDF_STORAGE_BUCKET`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` and Upstash variables are listed for Production. This confirms presence only, not values, connectivity or use by the currently deployed revision.
+- [ ] Add and verify Production PayPal Live configuration and `RECEIPT_ORIGINAL_EMAIL_ENABLED` in a controlled activation step. Vercel project and shared-variable searches found no `PAYPAL_*` variables or receipt-original flag on 2026-10-13; verify PayPal app/webhook in the provider dashboard as well. This checkout has no `.vercel/project.json` link, and local `.env.local` is not Production evidence.
+- [ ] Resolve public Shop routes: a read-only HTTPS check of `www.laplapla.com` returned 200 for `/`, but 404 for `/shop`, `/en/shop`, `/he/shop`, the product route and `/api/shop/paypal/config`. Determine deployed revision/routing before activation.
+- [ ] Remove the explicit Sandbox-only checkout page gate and Sandbox customer copy in a reviewed release; keep Sound Case #001 `coming-soon` until the controlled activation window. Verify the Live checkout API's receipt-delivery prerequisites and both consent records before PayPal order creation.
+- [ ] Before the first real payment, establish operator access to original-delivery `pending/sending/accepted/failed/uncertain` evidence and a documented no-blind-retry procedure. The canonical Commerce Admin currently does not display `receipt_original_deliveries`.
+- [ ] Verify a safe manual refund/correction route with the accountant for the first sale; automated refund lifecycle is still unimplemented. Public rollout requires its separate readiness decision.
+- [ ] Do not treat the confirmed synthetic Resend PDF transport as original-receipt E2E or provider acceptance as mailbox delivery. Confirm Production cron scheduling, protected access and monitoring after deployment, without running recovery against existing orders during the audit.
+- [x] Safe Release Candidate inventory (2026-10-13): 44 pre-existing modified/untracked public-repo paths reviewed. The proposed public release contains 42 Shop implementation/dependency paths plus this Roadmap and `docs/shop-release-candidate-inventory.md`; the one-shot synthetic Resend transport script is related test tooling and excluded. The canonical admin candidate contains six isolated Commerce files; three pre-existing analytics edits remain excluded. No file has been staged or committed.
+- [ ] Finish release validation and operator acceptance. Public Shop: 1,297/1,297 Vitest, TypeScript, ESLint and local production build pass. Commerce Admin: 27/27 focused tests, scoped TypeScript, changed-file ESLint and an isolated HEAD-plus-six-file webpack production build pass. Its normal checkout build/typecheck are blocked by pre-existing ignored `scripts/tmp` imports; the full admin suite has six unrelated Content Factory failures. Resolve the local build hygiene and perform authorized admin visual QA before declaring the candidate release-ready.
+- [x] Independent manifest isolation check (2026-10-13): all 45 current public changed paths are classified as 44 candidate files and one excluded Resend diagnostic script; all nine admin changed paths are classified as six candidate files and three excluded analytics edits. Clean HEAD-plus-manifest copies reproduce the public 1,297/1,297 Vitest pass, TypeScript, ESLint and production Turbopack build with synthetic public Supabase build parameters. The clean admin candidate passes TypeScript, 19 Commerce-focused tests and a webpack production build with synthetic public build parameters. No service-role secret or original-email code was found in public static bundles.
+- [ ] Independent operator acceptance remains open: the clean admin candidate and clean base have the same full-suite result (339/348 versus 332/341 passing; nine baseline failures, including Content Factory suites) and the same repository-wide ESLint findings (95 errors, three warnings). The ignored `scripts/tmp` files are absent from clean checkouts; both clean admin checkouts pass TypeScript and webpack build. An unauthenticated browser request correctly redirects to Google login, but authorized order-detail visual QA across delivery states, mobile and Hebrew RTL is NOT VERIFIED without a synthetic authorized fixture/session. Do not advance to Preview signoff or public sales on this evidence alone.
+- [x] Commerce Admin component-level visual QA (2026-10-13): a test-only route in a temporary checkout rendered the actual order-detail JSX with fictional fixtures for missing, pending, sending, accepted, failed and uncertain delivery. Desktop 1440px, tablet 768px, and emulated mobile 390px/320px showed readable receipt/order IDs, status, attempts, provider reference and error code without document horizontal overflow; failed/uncertain warnings were visible. Technical dates and identifiers in the delivery panel were isolated left-to-right after a forced-RTL rendering exposed date-order reversal. This is not a real authorized browser session or a new Hebrew Admin locale.
+- [ ] Full authorized Commerce operator browser verification remains open. Use an isolated operator session with synthetic data to confirm the existing auth/allowlist/API path, then perform Preview QA. The component fixture bypassed data fetching only in a temporary test harness; Production authentication and middleware were not changed. Public sales remain NO-GO.
+- [ ] Authenticated Commerce integration / Preview signoff (2026-10-13): no safe authorized synthetic operator session or isolated order fixture was available. In a clean local Admin build, unauthenticated order-detail and receipt-original API requests returned 401; the delivery lookup and six UI states remain verified only by focused tests and component-level visual QA. The owner confirmed that authorized Commerce Admin operators may download the original PDF; customers may download only a copy. The existing Admin and customer routes match this rule. Preview environment scopes, live Supabase connectivity and the real authorized API/UI round trip are NOT VERIFIED. Public sales remain NO-GO.
+- [ ] **SECRET ROTATION: P0 BEFORE PREVIEW.** A diagnostic command exposed five server-side values from the ignored local `.env.local` in the task tool output: `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `PAYPAL_CLIENT_SECRET`, `RESEND_API_KEY`, and `UPSTASH_REDIS_REST_TOKEN`. Rotate affected credentials across every consuming local/Preview/Production environment; use provider-specific containment where old and new values cannot overlap. Prioritize immediate containment of the Supabase service-role key and cron secret if either is active beyond local development. The same Supabase service-role value is present in both local repositories. Exact values were not found in tracked/untracked source files, staged or unstaged diffs, or the checked shell history. Vercel scopes, CI/CD logs and provider usage remain NOT VERIFIED. No secret values belong in the release manifest or Roadmap.
+
+### SHOP PREVIEW READINESS — 2026-10-13
+
+**Status: BLOCKED / PUBLIC SALES NO-GO.** This is a local preparation checkpoint, not a Preview deployment or authorization to enable checkout.
+
+- **Git scope:** `staging-updated` at `71b9cb6`. Use the reviewed public Shop manifest in `docs/shop-release-candidate-inventory.md`, plus the mobile-only checkout width fix in its already included `styles/Shop.css`. Exclude `scripts/sendResendPdfTransportTest.ts`. The six-file Commerce Admin candidate in `upload-lessons` is a separate release with three unrelated analytics edits excluded. No files are staged or committed.
+- **Build and tests:** local TypeScript, repository ESLint, 1,297/1,297 Vitest tests, production build and `git diff --check` passed. Unauthenticated local browser checks reached RU/EN/HE Shop, product, Sandbox checkout and protected-builder sign-in states; a mobile checkout horizontal overflow was traced to content-box width plus padding and corrected only at `max-width: 520px`. The final production build has no checkout document overflow at emulated 320px or 390px in RU/EN/HE; Hebrew remains RTL. Authorized Google sign-in, Sandbox payment, entitlement, save/print and physical-device behavior remain NOT VERIFIED in this checkpoint.
+- **Environment readiness:** Preview Vercel project link, variable names/scopes/values, Sandbox webhook registration and Preview-to-Production Supabase separation are NOT VERIFIED. Local `.env.local` is not Preview evidence: it points to the known Supabase project, has `PAYPAL_ENVIRONMENT=sandbox`, has no `PAYPAL_WEBHOOK_ID`, and has `RECEIPT_ORIGINAL_EMAIL_ENABLED=true`. Never copy that local flag or exposed credentials into Preview. Configure Preview-only Sandbox credentials and a separate compatible Supabase project/private `receipt-pdfs` bucket before state-changing QA. Leave `RECEIPT_ORIGINAL_EMAIL_ENABLED` unset or false and do not configure `CRON_SECRET` for Preview until recovery behavior is separately approved.
+- **Security blockers:** exact-value comparison confirms all five current local server secrets still occur in Codex session history; the service-role key is also shared by the local Admin checkout. No exact secret values were found among the 1,121 tracked and untracked public-repo files or 237 generated `.next/static` files checked. Rotation/revocation and scope verification across local, Preview and Production remain P0; server-only secrets must stay out of client bundles.
+- **Deployment blockers / owner actions:** confirm rotation and revoke exposed credentials, inspect Vercel Preview and branch-specific scopes without displaying values, establish isolated Supabase and Sandbox webhook configuration, review the exact candidate commits in both repositories, obtain separate Preview deployment approval, then perform Preview smoke tests. Vercel scheduled cron invocations target Production; nevertheless protected Preview cron endpoints must remain inaccessible without a configured secret. Do not use this checkpoint to activate Live payments, original receipt email or public product sales.
+
+### FIRST SALE CRITICAL PATH — 2026-10-14
+
+**Status: local Shop candidate validated; Sandbox purchase not yet exercised; Live/public sales NO-GO.** This checkpoint supersedes the 2026-10-13 Preview planning assumptions where the owner has since made a different decision. The existing Supabase project will be used for controlled Sandbox QA; the owner has accepted deferring credential rotation until testing is complete. Neither decision changes the server-only handling of credentials.
+
+- The reviewed public Shop manifest is `docs/shop-release-candidate-inventory.md`: include its 25 Shop paths, 17 dependencies/tests, this Roadmap and the inventory itself; exclude the one-shot Resend transport script. The separate Commerce Admin candidate remains outside this public-repo commit. No commit or deployment has been made.
+- The direct `/shop/sound-case-001/checkout` route is available only when `PAYPAL_ENVIRONMENT=sandbox`; the catalog remains `coming-soon`, so the ordinary product CTA still leads to preorder. A controlled Sandbox buyer may use the direct checkout route after authentication and billing identity setup. Sandbox orders and entitlements will persist in the shared Supabase project, identified by `provider_environment=sandbox`; do not delete or misclassify them as Live sales.
+- Sandbox payment cannot create an official receipt: `issue_receipt_for_paid_order` returns `sandbox_order` before issuance, and `receipts_environment_check` permits only `live`. Therefore Sandbox QA cannot verify original-email delivery or customer receipt-copy access; these remain for the first controlled Live purchase. No new migration or accounting change is required for Sandbox safety.
+- Local TypeScript, repository ESLint, full Vitest (1,297/1,297), production build and `git diff --check` passed on 2026-10-14. These checks do not verify a real authenticated Sandbox payment or target Vercel environment. Local PayPal is set to Sandbox and original-email delivery is disabled; the local `PAYPAL_WEBHOOK_ID` is missing. Preview PayPal Sandbox credentials, webhook ID, Supabase scopes and feature flags still require owner verification before payment QA. Live checkout remains gated by the Sandbox-only page, `coming-soon` catalog status and server receipt-delivery prerequisites.
+- **Next release action:** review and explicitly approve the isolated public Shop commit from the manifest. After a separately approved Preview deployment, verify Sandbox-only configuration, then conduct one controlled Sandbox purchase. Do not enable Live payments, issue a real receipt, or open public sales at this checkpoint.
 
 ---
 
@@ -444,6 +495,8 @@ Validate:
 → `customer account receipt access`
 → `builder access`
 → `personalize/reprint`
+
+For the controlled first purchase, also verify one original email to the purchaser, `receipt_original_deliveries` evidence, and copy-only account download. If provider outcome is `failed` or `uncertain`, stop further sales and perform manual review; never blindly resend the original.
 
 - [ ] Verify customer original visually.
 - [ ] Verify business copy visually.
@@ -509,7 +562,7 @@ Do not declare the shop launch-ready until all applicable items are checked.
 - [ ] Loading/error/retry/empty/success states are understandable.
 - [x] Account provides a real My purchases experience.
 - [x] Customer can return, edit and re-print the purchased quest.
-- [x] Customer can securely obtain receipt original.
+- [ ] Original receipt is delivered once by email and the customer can securely obtain only a marked copy from the account; controlled Production E2E is pending.
 - [x] Commerce admin exposes payment, entitlement, receipt, both artifacts, notification and operational problems.
 - [x] Admin can securely download original and business copy.
 - [x] Stale Takbull placeholder removed.
@@ -924,6 +977,152 @@ Completed:
 Remaining:
 - Antigravity must synchronize Supabase CLI migration history without reapplying the SQL. Verify production Vercel variables and the deployed form, then test the protected cron in its target environment.
 - Continue manual review of failed/uncertain notification states; complete physical mobile QA and Privacy wording/retention review. Customer Support Center is not yet launched in production.
+
+## 2026-10-13 — Checkout consent schema and recovery checkpoint
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: SCHEMA VERIFIED / MIGRATION HISTORY PENDING / CHECKOUT RECOVERY FIXED LOCALLY
+Completed:
+- The owner manually applied `202610130001_create_checkout_consents.sql`. Read-only inspection verified the expected schema objects and RLS; the migration version remains absent from the remote registry.
+- Fixed the local retry path for an existing `capture_pending` order without changing the applied SQL. Verified the actual `BEFORE INSERT` trigger in isolated PostgreSQL and the application recovery path in automated tests.
+Remaining:
+- Synchronize migration history without applying SQL again; review inherited `service_role` `TRUNCATE` privileges. Complete receipt-email activation and controlled delivery/copy QA before enabling Live checkout. No real payment or receipt email was sent during this checkpoint.
+
+## 2026-10-13 — Checkout consent migration-history synchronization attempt
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: SCHEMA RECONFIRMED / MIGRATION HISTORY PENDING
+Completed:
+- Read-only verification confirmed the two tables, migration indexes, functions, triggers and RLS still exist; the registry still contains 24 versions and lacks `202610130001`. Both new tables contained zero rows at this check.
+- Confirmed the local Supabase CLI is available, but this checkout is not linked to a project and the CLI has no access token. No repair command or migration SQL was run.
+Remaining:
+- Authenticate and link the CLI to `wazoncnmsxbjzvbjenpw`, verify the project ref, then use official migration repair to mark `202610130001` applied. Verify 25 versions afterward; original-receipt email delivery and customer copy access remain the next controlled QA task.
+
+## 2026-10-13 — Checkout consent migration history synchronized
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: MIGRATION HISTORY SYNCED (OWNER-VERIFIED 25/25) / RECEIPT ORIGINAL EMAIL DELIVERY E2E NEXT
+Completed:
+- The owner ran official `supabase migration repair --status applied 202610130001` after manually applying the SQL and verified `supabase migration list` shows 25/25 matching local and remote versions. The existing `checkout_consents` and `receipt_original_deliveries` tables were verified in the prior read-only schema audit.
+- The repeat-checkout recovery fix remains implemented and locally tested; no migration SQL was reapplied.
+Remaining:
+- Complete controlled Receipt Original Email Delivery E2E and customer copy verification, then separately verify target-environment configuration before Live checkout. The inherited `service_role` `TRUNCATE` privilege review remains open.
+
+## 2026-10-13 — Receipt original email delivery readiness check
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: CODE AND ISOLATED TESTS PASS / REAL DELIVERY E2E PENDING
+Completed:
+- Independently confirmed the remote migration registry contains `202610130001` as its 25th version. Reviewed paid-order finalization, receipt issuance, private PDF artifacts, original Resend delivery, recovery cron, and owner-only account copy download.
+- Added local isolated PostgreSQL coverage for concurrent original-delivery claims and no retry after an uncertain result, plus mocked provider coverage for timeout, 429 and 5xx. Hardened the Live checkout configuration gate so a missing PDF Storage bucket blocks order creation before PayPal.
+- Generated synthetic original and copy PDFs locally with Chrome; both are single-page A4, and extracted copy text includes `קבלה העתק` and the unchanged receipt number. Full Vitest, TypeScript, ESLint of changed TypeScript files, isolated SQL checks and `git diff --check` passed.
+Remaining:
+- Local configuration lacks `RECEIPT_ORIGINAL_EMAIL_ENABLED` and `RECEIPT_PDF_STORAGE_BUCKET`; production configuration has not been verified. Verify private bucket configuration and target-environment secrets, then perform a controlled original-email and customer-copy E2E with approved accounting procedure. No real payment or accounting document was created or sent in this check.
+
+## 2026-10-13 — Synthetic Resend PDF transport check prepared
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: CODE READY / ISOLATED TESTS PASS / REAL RESEND TEST PENDING
+Completed:
+- Prepared and visually inspected a standalone synthetic PDF prominently marked `TEST DOCUMENT — NOT A RECEIPT`, with no purchase, customer, receipt number, or accounting data. A guarded one-shot transport script uses the existing Resend sender and API, without importing commerce modules or accessing Supabase.
+- Local `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are present; the configured From matches the previously confirmed sender. An independent read-only Resend domain-list request returned HTTP 401, so sender permission remains technically NOT VERIFIED until an authorized transport test or provider-side check succeeds.
+Remaining:
+- Obtain explicit owner permission before sending one synthetic PDF email to the owner mailbox. Verify both Resend acceptance and actual mailbox receipt separately. Do not mark original-receipt delivery or Production readiness complete from this transport check.
+
+## 2026-10-13 — Synthetic Resend PDF transport accepted
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: RESEND ACCEPTED / OWNER MAILBOX CONFIRMATION PENDING / ORIGINAL DELIVERY E2E PENDING
+Completed:
+- With explicit owner permission, sent exactly one synthetic PDF marked `TEST DOCUMENT — NOT A RECEIPT` from the configured sender to the owner mailbox. Resend returned HTTP 200 and an email ID. The one-attempt local guard remains in place; no automatic retry occurred.
+- No PayPal call, Supabase write, receipt ledger access, accounting document, recovery cron, or original-delivery feature-flag change occurred.
+Remaining:
+- Owner to confirm actual receipt and attachment in the mailbox. This transport test does not verify the original receipt workflow or Production configuration.
+
+## 2026-10-13 — Synthetic Resend PDF transport verified in Gmail
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: RESEND PDF TRANSPORT TEST: PASS / ORIGINAL DELIVERY E2E PENDING
+Completed:
+- The owner confirmed that the one authorized synthetic PDF email arrived in Gmail, its attachment opened, and the PDF contents rendered correctly. Resend returned HTTP 200 with email ID `01a13548-dd1c-7e51-9e97-b77265bdbdb2`; no repeat send occurred.
+- This verifies transport of a test PDF only. It does not verify generation, storage, or delivery of an original accounting receipt, customer copy access, or Production configuration.
+Remaining:
+- Run the receipt issuance, original and copy artifact, mocked email delivery, and account copy flow against an isolated test database. Keep real payments and accounting documents out of the test.
+
+## 2026-10-13 — Isolated receipt delivery lifecycle regression check
+Phase: Phase 5 — Legal readiness / Phase 7 dependency
+Status: ISOLATED SQL AND MOCKED SERVICE TESTS PASS / ORIGINAL DELIVERY E2E PENDING
+Completed:
+- Extended the temporary PostgreSQL regression suite to assert that one synthetic paid order retains exactly one receipt, one ready original artifact, one ready copy artifact, and one accepted delivery record after replay. A second delivery claim and a transition from accepted back to sending are rejected. The mock provider ID is test data only.
+- Reused existing Vitest coverage for artifact upload and replay, one mocked Resend request with accepted status, and server-side customer ownership and copy-only download. These checks use no production database, real payment, real receipt email, or accounting document.
+Remaining:
+- The SQL fixture models artifact metadata and mock provider acceptance; Vitest mocks Storage and Resend. A single deployment-level flow with actual private Storage, the target environment, and an approved accounting original has not been performed. Keep original email delivery disabled until that controlled verification and operator readiness are complete.
+
+## 2026-10-13 — Production readiness audit before first controlled sale
+Phase: Phase 7 / Phase 8 planning
+Status: NO-GO FOR LIVE PURCHASE; AUDIT AND PLAN ONLY
+Confirmed:
+- The uncommitted Shop/receipt implementation builds locally; 1,297 Vitest tests, TypeScript and ESLint passed. Remote migration history has 25 entries and the PDF Storage bucket is private. The owner verified Gmail delivery and opening of one synthetic PDF; no original accounting receipt was sent.
+- The checkout page is explicitly Sandbox-only and Sound Case #001 remains `coming-soon`. During the read-only public check, the HTTPS site root loaded but Shop routes returned 404. The latest visible Vercel Production deployment is `4922379` from `main` (2026-10-05); newer `staging-updated` builds are Preview. Production env names for Resend, Supabase service role, receipt bucket, `CRON_SECRET` and Upstash are present; Vercel searches found no PayPal variables or receipt-original email flag. Commerce Admin has receipt and artifact views but does not expose original-email delivery status.
+Not verified:
+- Whether configured Production env values are correct and active in the deployed revision, service-role connectivity, PayPal Live app/webhook, PDF upload and original-email/account-copy E2E, cron execution, and any real payment. No Production setting was changed.
+Next:
+- Review and isolate the uncommitted release delta; restore Shop routes, verify Production configuration and operator response to failed/uncertain delivery, then activate Live checkout only for a monitored controlled purchase. A manual accountant-approved correction route must exist before taking a genuine payment.
+
+## 2026-10-13 — Safe Shop Release Candidate preparation
+Phase: Phase 1 / Phase 6 / Phase 7
+Status: ISOLATED CANDIDATE IDENTIFIED / PUBLIC SALES NO-GO
+Completed:
+- Reviewed and classified all 44 pre-existing public-repo changed paths in `docs/shop-release-candidate-inventory.md` and separated the one-shot Resend transport test script from the proposed release. The runtime/legal/checkout/receipt changes remain uncommitted and unstaged. No Live payment or product activation was enabled.
+- Added only read-only original-email delivery status to the canonical Commerce Admin order detail through its existing authorized GET API. The page shows five persisted statuses, missing evidence, attempt and provider references, with no resend or edit control. Added seven behavior tests and a concise operator runbook; unrelated analytics edits in the admin checkout were preserved.
+- Public Shop: 1,297 Vitest tests, TypeScript, ESLint and production build passed. Admin Commerce: 27 focused tests, scoped TypeScript, changed-file ESLint and an isolated clean HEAD-plus-candidate webpack production build passed. The normal admin checkout typecheck/build fail on pre-existing ignored `scripts/tmp` files, and six full-suite failures belong to Content Factory tests outside Commerce.
+Remaining:
+- Review the exact candidate manifest, perform admin operator/visual QA, address the admin checkout build hygiene without bundling unrelated scripts, and obtain explicit release approval. Production PayPal, routes, delivery configuration and controlled Live purchase remain blocked/unverified. No commit, deployment or database mutation occurred.
+
+## 2026-10-13 — Independent Shop Release Candidate verification
+Phase: Phase 7 release validation
+Status: CLEAN CHECKOUT TECHNICAL CHECKS PASS / OPERATOR VISUAL QA NOT VERIFIED / PUBLIC SALES NO-GO
+Verified:
+- Constructed temporary copies from public `71b9cb6ae0469dc26cc8576dbe100aef8d6fbb95` and admin `130cd538f474de94e15e279d466da2ecc321c962`, overlaying only the 44 public and six admin manifest files. Original source files remained untouched; only this Roadmap was updated. Unrelated analytics edits and the one-shot Resend test script were not included.
+- Public candidate: 1,297/1,297 Vitest, TypeScript, ESLint and standard Turbopack production build passed. Admin candidate: TypeScript, 19 Commerce-focused tests and webpack production build passed. Builds used synthetic public Supabase values only, with no live service credentials.
+- Full admin tests failed identically on clean base and candidate: nine baseline failures in analytics documentation and Content Factory/remediation suites; the seven candidate Commerce tests passed. Repository-wide Admin ESLint also reports the same 95 errors and three warnings on base and candidate. Ignored `scripts/tmp` files are absent from both clean checkouts, whose TypeScript and webpack builds pass.
+- The unauthenticated order-detail route redirected to Google login in an isolated browser context. Server-side authorization and read-only delivery lookup remain covered by focused tests. Authenticated visual state, mobile layout and Hebrew RTL have not been observed in a browser.
+Remaining:
+- Obtain an authorized synthetic operator fixture/session and complete order-detail visual QA for missing/pending/sending/accepted/failed/uncertain, mobile and RTL. Review the existing Admin baseline lint/test failures separately; do not import Content Factory or analytics changes into this Shop candidate. Then validate Preview deployment and environment configuration under separate approval. Live payment, receipt and public sales remain blocked. No commit, push, merge, migration, email or deployment was performed.
+
+## 2026-10-13 — Commerce Admin synthetic visual QA
+Phase: Phase 7 operator validation
+Status: COMPONENT VISUAL QA PASS / AUTHENTICATED BROWSER QA PENDING / PUBLIC SALES NO-GO
+Verified:
+- Rendered the Commerce order-detail component in an isolated test-only local route with six fictional original-delivery states and no Production data. Confirmed status labels, missing evidence, warnings for failed/uncertain, IDs, timestamps, attempts, provider ID and error code. No resend or editable-evidence control appeared.
+- Checked 1440px desktop, 768px tablet and 390px/320px mobile emulation. The document had no horizontal overflow; the existing Admin tab strip remains independently horizontally scrollable. Forced RTL exposed date-order reversal in the delivery panel; a minimal display-only bidi isolation was added to dates and technical identifiers, then visually verified at 390px/320px. No general Hebrew Admin localization was introduced.
+- After the UI fix, a clean HEAD-plus-six-file Admin checkout passed 19 Commerce-targeted tests, TypeScript, scoped ESLint and webpack production build with synthetic public Supabase build values. QA screenshots contain only fictional data and are stored outside both repositories.
+Remaining:
+- No real authenticated operator session or live API/Supabase response was used; full authorized browser verification remains NOT VERIFIED. Preview deployment, Production configuration, real payment and receipt delivery remain separate blocked steps. No commit, push, merge, migration, real order, receipt or email was performed.
+
+## 2026-10-13 — Commerce Admin authenticated integration and Preview readiness audit
+Phase: Phase 7 operator validation
+Status: AUTHENTICATED QA NOT VERIFIED / PREVIEW BLOCKED / PUBLIC SALES NO-GO
+Verified:
+- Inspected the existing Google OAuth session, `ADMIN_EMAILS` allowlist, server-only service-role client, authorized Commerce order API and read-only original-delivery lookup. A clean local Admin production build with synthetic public configuration returned 401 for unauthenticated order and original-PDF API requests. Focused Commerce tests passed 19/19; clean Admin TypeScript, scoped ESLint and webpack build passed. The prior RTL `<bdi dir="ltr">` display fix remains in the isolated candidate.
+- The public Shop candidate passed 63 focused commerce tests, TypeScript, scoped ESLint and a clean standard Turbopack production build with synthetic public configuration. Product status remains `coming-soon`; the checkout page remains Sandbox-only. The candidate includes the applied 25/25 migration source without reapplying it.
+- Inspected repository deployment settings and cross-repository contract. Admin Preview requires its own `ADMIN_EMAILS`, public Supabase URL/anon key and server-only Supabase URL/service-role key. Shop Preview needs a compatible schema, private receipt Storage, Sandbox PayPal configuration, and server-only receipt/Resend/cron settings; their current Preview scopes and connectivity were not accessible in this audit. No deployment or environment change was made.
+Remaining:
+- Establish a safe authorized operator session against synthetic isolated orders and verify the real API-to-UI response for all delivery states. The owner confirmed that authorized Admin access to the original PDF is permitted, while the customer receipt API must remain copy-only; no route change is needed. Review and rotate local credentials exposed in task tool output before Preview.
+- Obtain explicit approval for a later Preview-only deployment and scope-by-scope environment review. Do not enable Live checkout, original-email sending, public product availability or public sales. No commit, push, merge, migration, payment, receipt, email or deployment occurred in this audit.
+
+## 2026-10-13 — Receipt PDF access decision
+Phase: Phase 7 operator validation
+Status: ACCESS RULE CONFIRMED / AUTHENTICATED QA STILL PENDING / PUBLIC SALES NO-GO
+- The owner confirmed that an authorized Commerce Admin operator may download the original receipt PDF. Customers may download only a copy. The existing protected Admin route and copy-only customer API follow this distinction; no receipt route was changed.
+- The original-download interpretation is no longer a Preview decision blocker. Authorized operator integration QA, Preview environment verification and credential rotation remain open.
+
+## 2026-10-13 — Security recovery before Preview
+Phase: Phase 7 release security
+Status: SECRET ROTATION P0 BEFORE PREVIEW / PUBLIC SALES NO-GO
+- Confirmed that a prior diagnostic command printed five local server secrets into the task tool response. The local `.env.local` is ignored by Git; a value-only scan found no copies in repository source, staged/unstaged diffs or checked shell history. This does not prove that external logs, backups, CI/CD history or provider dashboards contain no copies; those locations were not accessible for verification.
+- The one-shot synthetic Resend PDF script prints only reviewed sender/recipient/attachment metadata, HTTP status, provider email ID and sanitized errors; the isolated Commerce SQL test script does not print environment variables. The exposure came from an ad hoc environment-file search, not from either script. Future diagnostics must output variable names or presence booleans only.
+- Owner action: identify every local, Preview and Production consumer; create replacement credentials or a replacement Upstash database as applicable; update/redeploy all consumers; verify safe health checks; then revoke old credentials. For high-privilege Supabase and cron access, assess immediate containment even if dependent features must pause. Do not advance to Preview before rotation and scope verification. No credentials or deployment were changed in this audit.
+
+## 2026-10-13 — Shop Preview release preparation
+Phase: Phase 7 release validation
+Status: LOCAL BUILD PASS / PREVIEW ENV NOT VERIFIED / SECRET ROTATION P0 / PUBLIC SALES NO-GO
+- Rechecked the existing 44-file public release scope and separate six-file Admin scope; the one-shot Resend diagnostic and unrelated Admin analytics edits remain excluded. The existing Shop candidate passes TypeScript, ESLint, 1,297 Vitest tests and production build. A local unauthenticated RU/EN/HE mobile browser check exposed checkout horizontal overflow; a scoped CSS box-sizing correction was added without changing payment logic and verified at emulated 320px/390px.
+- Local values for all five previously exposed server secrets still match Codex session records; no matching values were found in 1,121 checked public-repo files. Vercel Preview scopes and isolated Supabase connectivity were not accessible. Local `PAYPAL_WEBHOOK_ID` is absent and the local original-email flag is enabled, so `.env.local` is unsuitable as Preview configuration.
+- Next owner actions: rotate and verify all exposed credentials, establish isolated Preview Supabase and Sandbox PayPal settings, review candidate boundaries, then explicitly approve a Preview-only deployment. No commit, push, merge, deploy, migration, payment, receipt or email was performed.
 
 ---
 

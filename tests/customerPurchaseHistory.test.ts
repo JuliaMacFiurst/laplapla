@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ client: null as unknown }));
 vi.mock("@/lib/server/supabase", () => ({ createServerSupabaseClient: () => mocks.client }));
 
-import { downloadOwnReceiptOriginal, getCustomerPurchases } from "@/lib/server/customerPurchases";
+import { downloadOwnReceiptCopy, getCustomerPurchases } from "@/lib/server/customerPurchases";
 import type { ProductEntitlement } from "@/lib/customer/types";
 
 function builder(result: { data: unknown; error: unknown }, calls: Array<[string, unknown]>) {
@@ -33,8 +33,8 @@ const order = { id: "order-1", status: "paid", total_minor: 4900, currency: "ILS
 describe("customer purchase history aggregation", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("maps an own paid order with active access and ready original receipt", async () => {
-    const fake = client({ orders: { data: [order], error: null }, receipts: { data: [{ id: "receipt-1", order_id: "order-1", receipt_number: 1, receipt_series: { series_code: "WEB" } }], error: null }, receipt_artifacts: { data: [{ receipt_id: "receipt-1", status: "ready" }], error: null } });
+  it("maps an own paid order with active access and a copy after the original was accepted", async () => {
+    const fake = client({ orders: { data: [order], error: null }, receipts: { data: [{ id: "receipt-1", order_id: "order-1", receipt_number: 1, receipt_series: { series_code: "WEB" } }], error: null }, receipt_artifacts: { data: [{ receipt_id: "receipt-1", status: "ready" }], error: null }, receipt_original_deliveries: { data: [{ receipt_id: "receipt-1", status: "accepted" }], error: null } });
     mocks.client = fake.api;
     const result = await getCustomerPurchases("user-1", [entitlement]);
     expect(result.purchases).toEqual([expect.objectContaining({ orderId: "order-1", paymentStatus: "paid", accessStatus: "active", receipt: { status: "available", displayNumber: "WEB-000001" } })]);
@@ -50,7 +50,7 @@ describe("customer purchase history aggregation", () => {
     expect(result.accessGrants).toEqual([{ entitlementId: "promo-1", productId: "sound-case-001", source: "promo", status: "active", grantedAt: promo.granted_at }]);
   });
 
-  it("handles pending original, missing receipt, and legacy orders without exposing business copy", async () => {
+  it("keeps copies unavailable until the original email is accepted", async () => {
     const pendingFake = client({ orders: { data: [order], error: null }, receipts: { data: [{ id: "receipt-1", order_id: "order-1", receipt_number: 1, receipt_series: { series_code: "WEB" } }], error: null }, receipt_artifacts: { data: [{ receipt_id: "receipt-1", status: "processing" }], error: null } });
     mocks.client = pendingFake.api;
     expect((await getCustomerPurchases("user-1", [entitlement])).purchases[0]?.receipt.status).toBe("preparing");
@@ -58,29 +58,42 @@ describe("customer purchase history aggregation", () => {
     mocks.client = legacyFake.api;
     expect((await getCustomerPurchases("user-1", [entitlement])).purchases[0]?.receipt.status).toBe("not_available");
     const source = readFileSync(`${process.cwd()}/lib/server/customerPurchases.ts`, "utf8");
-    expect(source).toContain('.eq("document_copy", "original")');
-    expect(source).not.toContain('.eq("document_copy", "copy")');
+    expect(source).toContain('.eq("document_copy", "copy")');
+    expect(source).not.toContain('.eq("document_copy", "original")');
   });
 });
 
 describe("customer receipt storage ownership", () => {
-  it("resolves own order, original artifact, and private key entirely server-side", async () => {
+  it("never exposes the original or a copy before original email acceptance", async () => {
     const fake = client({
       orders: { data: { id: "order-1" }, error: null },
       receipts: { data: { id: "receipt-1", receipt_number: 1, receipt_series: { series_code: "WEB" } }, error: null },
-      receipt_artifacts: { data: { status: "ready", storage_bucket: "receipt-pdfs", storage_key: "receipts/receipt-1/original/artifact.pdf", content_type: "application/pdf" }, error: null },
+      receipt_original_deliveries: { data: { status: "uncertain" }, error: null },
+    });
+    mocks.client = fake.api;
+    expect(await downloadOwnReceiptCopy("user-1", "order-1")).toEqual({ status: "not_ready" });
+    expect(fake.calls.receipt_artifacts).toBeUndefined();
+    expect(fake.storageCalls).toEqual([]);
+  });
+
+  it("resolves own order, accepted original delivery, copy artifact, and private key entirely server-side", async () => {
+    const fake = client({
+      orders: { data: { id: "order-1" }, error: null },
+      receipts: { data: { id: "receipt-1", receipt_number: 1, receipt_series: { series_code: "WEB" } }, error: null },
+      receipt_original_deliveries: { data: { status: "accepted" }, error: null },
+      receipt_artifacts: { data: { status: "ready", storage_bucket: "receipt-pdfs", storage_key: "receipts/receipt-1/copy/artifact.pdf", content_type: "application/pdf" }, error: null },
     }, new Blob(["pdf"], { type: "application/pdf" }));
     mocks.client = fake.api;
-    const result = await downloadOwnReceiptOriginal("user-1", "order-1");
-    expect(result).toEqual(expect.objectContaining({ status: "ready", fileName: "receipt-WEB-000001.pdf" }));
+    const result = await downloadOwnReceiptCopy("user-1", "order-1");
+    expect(result).toEqual(expect.objectContaining({ status: "ready", fileName: "receipt-copy-WEB-000001.pdf" }));
     expect(fake.calls.orders).toContainEqual(["eq", ["user_id", "user-1"]]);
-    expect(fake.calls.receipt_artifacts).toContainEqual(["eq", ["document_copy", "original"]]);
-    expect(fake.storageCalls).toEqual([["receipt-pdfs", "receipts/receipt-1/original/artifact.pdf"]]);
+    expect(fake.calls.receipt_artifacts).toContainEqual(["eq", ["document_copy", "copy"]]);
+    expect(fake.storageCalls).toEqual([["receipt-pdfs", "receipts/receipt-1/copy/artifact.pdf"]]);
   });
 
   it("stops before receipt and Storage lookup when the order is not owned", async () => {
     const fake = client({ orders: { data: null, error: null } }); mocks.client = fake.api;
-    expect(await downloadOwnReceiptOriginal("user-1", "foreign-order")).toEqual({ status: "not_found" });
+    expect(await downloadOwnReceiptCopy("user-1", "foreign-order")).toEqual({ status: "not_found" });
     expect(fake.calls.receipts).toBeUndefined();
     expect(fake.storageCalls).toEqual([]);
   });

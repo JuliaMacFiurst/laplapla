@@ -1310,7 +1310,7 @@ If you notice an error or inaccuracy, contact the editor at juliamakhlinfiurst@g
         howItWorksSteps: [
           "Enter the participants' names and choose a language.",
           "LapLapLa personalizes the adventure materials.",
-          "After purchase, the materials will be available to print or download.",
+          "After purchase, you can prepare and print the materials through your browser.",
           "Later, you will be able to change the team and prepare the materials again.",
         ],
         requirementsTitle: "What you will need",

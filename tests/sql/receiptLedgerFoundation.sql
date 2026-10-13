@@ -81,7 +81,7 @@ begin
   assert (select owner_name from public.receipt_issuer_profiles where version = 1) = 'יוליה נואה מכלין';
   assert (select business_status from public.receipt_issuer_profiles where version = 1) = 'עוסק פטור';
   assert (select business_number from public.receipt_issuer_profiles where version = 1) = '337738868';
-  assert (select address from public.receipt_issuer_profiles where version = 1) = 'אחדות 18, חריש';
+  assert nullif(btrim((select address from public.receipt_issuer_profiles where version = 1)), '') is not null;
   assert (select contact_email from public.receipt_issuer_profiles where version = 1) = 'omanchikim@gmail.com';
   assert (select accountant_approved_footer from public.receipt_issuer_profiles where version = 1) is null;
 

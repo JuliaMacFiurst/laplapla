@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const mocks = vi.hoisted(() => ({
   resolveCustomerAccess: vi.fn(),
   createLocalCommerceOrder: vi.fn(),
+  recordCheckoutConsents: vi.fn(),
   resolveProductPrice: vi.fn(),
   findResumable: vi.fn(),
   getOrder: vi.fn(),
@@ -15,12 +16,14 @@ const mocks = vi.hoisted(() => ({
   finalize: vi.fn(),
   issueReceipt: vi.fn(),
   requireTrustedBillingIdentity: vi.fn(),
+  getPayPalServerConfig: vi.fn(),
   PayPalApiError: class PayPalApiError extends Error {},
   BillingIdentityError: class BillingIdentityError extends Error { constructor(public code: string) { super(code); } },
 }));
 
 vi.mock("@/lib/server/auth/customerAccess", () => ({ resolveCustomerAccess: mocks.resolveCustomerAccess }));
 vi.mock("@/lib/server/commerce/orders", () => ({ createLocalCommerceOrder: mocks.createLocalCommerceOrder }));
+vi.mock("@/lib/server/commerce/checkoutConsents", () => ({ recordCheckoutConsents: mocks.recordCheckoutConsents }));
 vi.mock("@/lib/server/commerce/paypal/orders", () => ({
   getPayPalCheckoutOrderForCustomer: mocks.getOrder,
   findResumablePayPalCheckoutForCustomer: mocks.findResumable,
@@ -29,10 +32,7 @@ vi.mock("@/lib/server/commerce/paypal/orders", () => ({
 }));
 vi.mock("@/lib/server/commerce/resolveProductPrice", () => ({ resolveProductPrice: mocks.resolveProductPrice }));
 vi.mock("@/lib/server/commerce/paypal/config", () => ({
-  getPayPalServerConfig: () => ({
-    environment: "sandbox", clientId: "client", clientSecret: "test-value",
-    apiBaseUrl: "https://api-m.sandbox.paypal.com", sdkUrl: "https://www.sandbox.paypal.com/web-sdk/v6/core",
-  }),
+  getPayPalServerConfig: mocks.getPayPalServerConfig,
 }));
 vi.mock("@/lib/server/commerce/paypal/client", () => ({
   PayPalApiError: mocks.PayPalApiError,
@@ -64,6 +64,10 @@ function request(body: unknown, origin = "http://localhost:3000") {
   } as unknown as NextApiRequest;
 }
 
+function createRequest(body: Record<string, unknown>, origin = "http://localhost:3000") {
+  return request({ legalAccepted: true, electronicReceiptAccepted: true, lang: "en", ...body }, origin);
+}
+
 function response() {
   const result = { status: 200, body: null as unknown, headers: {} as Record<string, string> };
   const res = {
@@ -85,8 +89,13 @@ function order(overrides: Record<string, unknown> = {}) {
 }
 
 describe("authenticated PayPal create endpoint", () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getPayPalServerConfig.mockReturnValue({
+      environment: "sandbox", clientId: "client", clientSecret: "test-value",
+      apiBaseUrl: "https://api-m.sandbox.paypal.com", sdkUrl: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+    });
     mocks.resolveCustomerAccess.mockResolvedValue({ isAuthenticated: true, accessToken: "token", user });
     mocks.requireTrustedBillingIdentity.mockResolvedValue({ billingName: "Buyer Example", email: "buyer@example.com" });
     mocks.createLocalCommerceOrder.mockResolvedValue({ status: "order", order: { orderId: localOrderId } });
@@ -99,20 +108,67 @@ describe("authenticated PayPal create endpoint", () => {
     "returns the immutable %i ILS %s snapshot", async (amountMinor, _source) => {
       mocks.getOrder.mockResolvedValue(order({ totalMinor: amountMinor }));
       const { res, result } = response();
-      await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+      await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
       expect(result.status).toBe(200);
       expect(result.body).toMatchObject({ ok: true, amountMinor, currency: "ILS", paypalOrderId: "PAYPAL_ORDER_1" });
       expect(mocks.paypalCreate).toHaveBeenCalledWith(expect.objectContaining({ amountMinor, currency: "ILS" }));
       expect(mocks.createLocalCommerceOrder).toHaveBeenCalledWith(expect.objectContaining({
         billingName: "Buyer Example", verifiedEmail: "buyer@example.com", providerEnvironment: "sandbox",
       }));
+      expect(mocks.recordCheckoutConsents).toHaveBeenCalledWith({ orderId: localOrderId, userId: user.id, lang: "en" });
     },
   );
+
+  it("rejects either missing consent on the server before creating a PayPal order", async () => {
+    for (const body of [
+      { legalAccepted: false },
+      { electronicReceiptAccepted: false },
+      { legalAccepted: "true" },
+      { lang: "fr" },
+    ]) {
+      const target = response();
+      await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey, ...body }), target.res);
+      expect(target.result.status).toBe(400);
+    }
+    expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not open PayPal when immutable consent storage is unavailable", async () => {
+    mocks.recordCheckoutConsents.mockRejectedValueOnce(new Error("consent storage unavailable"));
+    const target = response();
+    await expect(paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res))
+      .rejects.toThrow("consent storage unavailable");
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
+
+  it("keeps live checkout closed until original receipt email delivery is configured", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "false");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live" });
+    const target = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res);
+    expect(target.result.status).toBe(503);
+    expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
+
+  it("keeps live checkout closed when the private receipt PDF bucket is not configured", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "true");
+    vi.stubEnv("RESEND_API_KEY", "test-only");
+    vi.stubEnv("RESEND_FROM_EMAIL", "LapLapLa <support@example.test>");
+    vi.stubEnv("RECEIPT_PDF_STORAGE_BUCKET", "");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live" });
+    const target = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res);
+    expect(target.result.status).toBe(503);
+    expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
 
   it("blocks local and PayPal order creation when billing identity is missing", async () => {
     mocks.requireTrustedBillingIdentity.mockRejectedValue(new mocks.BillingIdentityError("billing_identity_required"));
     const target = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res);
     expect(target.result).toMatchObject({ status: 409, body: { ok: false, code: "billing_identity_required" } });
     expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
     expect(mocks.paypalCreate).not.toHaveBeenCalled();
@@ -121,15 +177,15 @@ describe("authenticated PayPal create endpoint", () => {
   it("rejects authentication, foreign origins and browser-controlled prices", async () => {
     mocks.resolveCustomerAccess.mockResolvedValueOnce({ isAuthenticated: false, accessToken: null, user: null });
     const anonymous = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), anonymous.res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), anonymous.res);
     expect(anonymous.result.status).toBe(401);
 
     const foreign = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }, "https://evil.example"), foreign.res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }, "https://evil.example"), foreign.res);
     expect(foreign.result.status).toBe(403);
 
     const tampered = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey, price: 1, currency: "USD" }), tampered.res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey, price: 1, currency: "USD" }), tampered.res);
     expect(tampered.result.status).toBe(400);
     expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
   });
@@ -137,7 +193,7 @@ describe("authenticated PayPal create endpoint", () => {
   it("does not create another PayPal order on an idempotent retry", async () => {
     mocks.getOrder.mockResolvedValue(order({ status: "pending_approval", providerOrderId: "PAYPAL_ORDER_1" }));
     const { res, result } = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
     expect(result.body).toMatchObject({ ok: true, paypalOrderId: "PAYPAL_ORDER_1" });
     expect(mocks.paypalCreate).not.toHaveBeenCalled();
     expect(mocks.bindOrder).not.toHaveBeenCalled();
@@ -146,7 +202,7 @@ describe("authenticated PayPal create endpoint", () => {
   it("does not create an order when the product is already owned", async () => {
     mocks.createLocalCommerceOrder.mockResolvedValue({ status: "already_owned", productId: "sound-case-001" });
     const { res, result } = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
     expect(result.body).toEqual({ ok: true, status: "already_owned", productId: "sound-case-001" });
     expect(mocks.paypalCreate).not.toHaveBeenCalled();
   });
@@ -156,7 +212,7 @@ describe("authenticated PayPal create endpoint", () => {
       status: "needs_reconciliation", productId: "sound-case-001",
     });
     const { res, result } = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
     expect(result.body).toEqual({ ok: true, status: "needs_reconciliation", productId: "sound-case-001" });
     expect(mocks.paypalCreate).not.toHaveBeenCalled();
   });
@@ -166,7 +222,7 @@ describe("authenticated PayPal create endpoint", () => {
       status: "capture_pending", providerOrderId: "PAYPAL_ORDER_1", totalMinor: 3900,
     }));
     const { res, result } = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
     expect(result.body).toMatchObject({
       ok: true, status: "reconcile_required", localOrderId, paypalOrderId: "PAYPAL_ORDER_1", amountMinor: 3900,
     });
@@ -176,7 +232,7 @@ describe("authenticated PayPal create endpoint", () => {
   it("returns a safe failure and never grants access when PayPal create fails", async () => {
     mocks.paypalCreate.mockRejectedValue(new mocks.PayPalApiError("provider unavailable"));
     const { res, result } = response();
-    await paypalCreateHandler(request({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
     expect(result.status).toBe(502);
     expect(result.body).toEqual({ ok: false, code: "paypal_unavailable" });
     expect(mocks.finalize).not.toHaveBeenCalled();

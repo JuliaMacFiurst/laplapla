@@ -12,17 +12,21 @@ import { PAYPAL_CHECKOUT_PRODUCT_ID, type PayPalCreateResponse } from "@/lib/sho
 import { getProductById } from "@/lib/shop/catalog";
 import { withApiHandler } from "@/utils/apiHandler";
 import { BillingIdentityError, requireTrustedBillingIdentity } from "@/lib/server/customerBillingIdentity";
+import { recordCheckoutConsents } from "@/lib/server/commerce/checkoutConsents";
+import type { Lang } from "@/i18n";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-const EXPECTED_BODY_KEYS = ["checkoutIdempotencyKey", "productId"];
+const EXPECTED_BODY_KEYS = ["checkoutIdempotencyKey", "productId", "legalAccepted", "electronicReceiptAccepted", "lang"];
 
 function parseBody(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   if (!Object.keys(value).every((key) => EXPECTED_BODY_KEYS.includes(key))) return null;
-  const body = value as { productId?: unknown; checkoutIdempotencyKey?: unknown };
+  const body = value as { productId?: unknown; checkoutIdempotencyKey?: unknown; legalAccepted?: unknown; electronicReceiptAccepted?: unknown; lang?: unknown };
   if (body.productId !== PAYPAL_CHECKOUT_PRODUCT_ID) return null;
   if (typeof body.checkoutIdempotencyKey !== "string" || !UUID_PATTERN.test(body.checkoutIdempotencyKey)) return null;
-  return { productId: body.productId, checkoutIdempotencyKey: body.checkoutIdempotencyKey };
+  if (body.legalAccepted !== true || body.electronicReceiptAccepted !== true) return null;
+  if (body.lang !== "ru" && body.lang !== "en" && body.lang !== "he") return null;
+  return { productId: body.productId, checkoutIdempotencyKey: body.checkoutIdempotencyKey, lang: body.lang as Lang };
 }
 
 export async function paypalCreateHandler(req: NextApiRequest, res: NextApiResponse<PayPalCreateResponse>) {
@@ -45,6 +49,15 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     paypalConfig = getPayPalServerConfig();
   } catch {
     res.status(503).json({ ok: false, code: "paypal_unavailable" });
+    return;
+  }
+  // A live purchase must not promise an emailed original while delivery is disabled.
+  if (paypalConfig.environment === "live" && (
+    process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED !== "true"
+    || !process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL
+    || !process.env.RECEIPT_PDF_STORAGE_BUCKET?.trim()
+  )) {
+    res.status(503).json({ ok: false, code: "order_unavailable" });
     return;
   }
   const product = getProductById(body.productId);
@@ -84,6 +97,8 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     });
     return;
   }
+
+  await recordCheckoutConsents({ orderId: localResult.order.orderId, userId: access.user.id, lang: body.lang });
 
   let localOrder = await getPayPalCheckoutOrderForCustomer(localResult.order.orderId, access.user.id);
   if (!localOrder) {

@@ -7,6 +7,7 @@ vi.mock("@/hooks/useCustomerSession", () => ({
 }));
 import { PayPalCheckoutView } from "@/components/shop/PayPalCheckout";
 import { paypalCheckoutCopy } from "@/lib/shop/paypalCheckoutCopy";
+import { checkoutConsentCopy } from "@/lib/legal/checkoutConsent";
 
 describe("localized PayPal Sandbox checkout UI", () => {
   it.each(["ru", "en", "he"] as const)("has complete checkout copy for %s", (lang) => {
@@ -24,6 +25,10 @@ describe("localized PayPal Sandbox checkout UI", () => {
     signInPath: "/en/account/sign-in?next=%2Fen%2Fshop%2Fsound-case-001%2Fcheckout",
     createPath: "/en/shop/sound-case-001/create",
     recoveryOrderReference: null,
+    legalAccepted: false,
+    electronicReceiptAccepted: false,
+    onLegalAcceptedChange: () => undefined,
+    onElectronicReceiptAcceptedChange: () => undefined,
     onStart: () => undefined,
     onRetry: () => undefined,
     billingIdentity: { billingName: "Julia Example", email: "customer@example.com", complete: true },
@@ -33,6 +38,19 @@ describe("localized PayPal Sandbox checkout UI", () => {
     onBillingNameChange: () => undefined,
     onBillingSave: () => undefined,
   };
+
+  it.each(["ru", "en", "he"] as const)("requires two separate unchecked consents in %s", (lang) => {
+    const html = renderToStaticMarkup(createElement(PayPalCheckoutView, { ...baseProps, lang, quote: null }));
+    expect(html).toContain('id="checkout-legal-consent"');
+    expect(html).toContain('id="checkout-electronic-receipt-consent"');
+    expect(html).toContain(checkoutConsentCopy[lang].electronicReceipt);
+    expect(html).toContain(`${lang === "ru" ? "" : `/${lang}`}/terms-of-sale`);
+    expect(html).toContain(`${lang === "ru" ? "" : `/${lang}`}/refund-policy`);
+    expect(html).toContain(`${lang === "ru" ? "" : `/${lang}`}/printable-license`);
+    expect(html).toMatch(/class="paypal-checkout__paypal-button"[^>]*disabled=""/u);
+    expect(html).not.toMatch(/id="checkout-(?:legal|electronic-receipt)-consent"[^>]*checked/u);
+    if (lang === "he") expect(html).toContain('class="paypal-checkout__consents" dir="rtl"');
+  });
 
   it("renders unauthenticated sign-in and server-resolved 39/49 prices", () => {
     const anonymous = renderToStaticMarkup(createElement(PayPalCheckoutView, {

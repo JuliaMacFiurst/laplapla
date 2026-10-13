@@ -46,6 +46,33 @@ describe("receipt PDF artifact coordinator", () => {
     expect(deps.upload).not.toHaveBeenCalled();
   });
 
+  it("stores both PDF byte streams once and reuses them on a repeated issuance", async () => {
+    const stored = new Map<string, Buffer>();
+    const ready = new Set<string>();
+    const deps = dependencies({
+      claim: vi.fn(async (_id, copy): Promise<ReceiptArtifactClaimRow> => ({
+        result: ready.has(copy) ? "ready" : "claimed",
+        artifact_id: `${copy}-artifact`, claim_token: ready.has(copy) ? null : `${copy}-token`,
+        storage_bucket: "receipt-pdfs", storage_key: `receipts/${receiptId}/${copy}/${copy}-artifact.pdf`,
+        existing_sha256: ready.has(copy) ? createHash("sha256").update(stored.get(copy)!).digest("hex") : null,
+        existing_byte_size: ready.has(copy) ? stored.get(copy)!.byteLength : null,
+      })),
+      render: vi.fn(async (_snapshot, copy) => Buffer.from(`synthetic-${copy}-pdf`)),
+      upload: vi.fn(async (_bucket, key, bytes): Promise<"uploaded"> => {
+        stored.set(key.includes("/original/") ? "original" : "copy", Buffer.from(bytes));
+        return "uploaded";
+      }),
+      complete: vi.fn(async (artifactId) => { ready.add(artifactId.split("-")[0]); return true; }),
+    });
+    expect((await ensureReceiptArtifacts(receiptId, { dependencies: deps })).complete).toBe(true);
+    expect(stored.get("original")?.toString()).toBe("synthetic-original-pdf");
+    expect(stored.get("copy")?.toString()).toBe("synthetic-copy-pdf");
+    expect((await ensureReceiptArtifacts(receiptId, { dependencies: deps })).complete).toBe(true);
+    expect(deps.render).toHaveBeenCalledTimes(2);
+    expect(deps.upload).toHaveBeenCalledTimes(2);
+    expect(stored.size).toBe(2);
+  });
+
   it("preserves a ready original and retries only a failed copy", async () => {
     const deps = dependencies({
       claim: vi.fn(async (_id, copy): Promise<ReceiptArtifactClaimRow> => copy === "original"

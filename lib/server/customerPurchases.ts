@@ -7,6 +7,7 @@ type ItemRow = { product_id: string; product_title_snapshot: string | null; enti
 type OrderRow = { id: string; status: "creating" | "pending_approval" | "capture_pending" | "paid" | "cancelled" | "failed"; total_minor: number; currency: string; paid_at: string | null; created_at: string; provider_environment: "sandbox" | "live" | null; order_items: ItemRow | ItemRow[] | null };
 type ReceiptRow = { id: string; order_id: string; receipt_number: number; receipt_series: { series_code: string } | Array<{ series_code: string }> | null };
 type ArtifactRow = { receipt_id: string; status: "pending" | "processing" | "ready" | "failed" };
+type DeliveryRow = { receipt_id: string; status: "pending" | "sending" | "accepted" | "failed" | "uncertain" };
 
 const first = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
 
@@ -17,8 +18,8 @@ function paymentStatus(status: OrderRow["status"]): CustomerPaymentStatus {
   return "processing";
 }
 
-function receiptStatus(input: { order: OrderRow; receipt: ReceiptRow | null; artifact: ArtifactRow | null }): CustomerReceiptStatus {
-  if (input.receipt && input.artifact?.status === "ready") return "available";
+function receiptStatus(input: { order: OrderRow; receipt: ReceiptRow | null; artifact: ArtifactRow | null; delivery: DeliveryRow | null }): CustomerReceiptStatus {
+  if (input.receipt && input.artifact?.status === "ready" && input.delivery?.status === "accepted") return "available";
   if (input.receipt || (input.order.status === "paid" && input.order.provider_environment === "live")) return "preparing";
   return "not_available";
 }
@@ -42,10 +43,15 @@ export async function getCustomerPurchases(userId: string, entitlements: readonl
   const receipts = (receiptResult.data ?? []) as unknown as ReceiptRow[];
   const receiptIds = receipts.map((receipt) => receipt.id);
   const artifactResult = receiptIds.length
-    ? await supabase.from("receipt_artifacts").select("receipt_id,status").in("receipt_id", receiptIds).eq("artifact_type", "receipt_pdf").eq("document_copy", "original")
+    ? await supabase.from("receipt_artifacts").select("receipt_id,status").in("receipt_id", receiptIds).eq("artifact_type", "receipt_pdf").eq("document_copy", "copy")
     : { data: [], error: null };
   if (artifactResult.error) throw artifactResult.error;
   const artifacts = (artifactResult.data ?? []) as ArtifactRow[];
+  const deliveryResult = receiptIds.length
+    ? await supabase.from("receipt_original_deliveries").select("receipt_id,status").in("receipt_id", receiptIds)
+    : { data: [], error: null };
+  if (deliveryResult.error) throw deliveryResult.error;
+  const deliveries = (deliveryResult.data ?? []) as DeliveryRow[];
 
   const linkedEntitlements = new Set<string>();
   const purchases: CustomerPurchase[] = orders.flatMap((order) => {
@@ -55,6 +61,7 @@ export async function getCustomerPurchases(userId: string, entitlements: readonl
     const entitlement = first(item.product_entitlements);
     const receipt = receipts.find((candidate) => candidate.order_id === order.id) ?? null;
     const artifact = receipt ? artifacts.find((candidate) => candidate.receipt_id === receipt.id) ?? null : null;
+    const delivery = receipt ? deliveries.find((candidate) => candidate.receipt_id === receipt.id) ?? null : null;
     const series = receipt ? first(receipt.receipt_series) : null;
     return [{
       orderId: order.id,
@@ -66,7 +73,7 @@ export async function getCustomerPurchases(userId: string, entitlements: readonl
       paymentStatus: paymentStatus(order.status),
       accessStatus: entitlement?.status ?? "unavailable",
       receipt: {
-        status: receiptStatus({ order, receipt, artifact }),
+        status: receiptStatus({ order, receipt, artifact, delivery }),
         displayNumber: receipt && series ? `${series.series_code}-${String(receipt.receipt_number).padStart(6, "0")}` : null,
       },
     }];
@@ -79,7 +86,7 @@ export async function getCustomerPurchases(userId: string, entitlements: readonl
   return { purchases, accessGrants };
 }
 
-export async function downloadOwnReceiptOriginal(userId: string, orderId: string) {
+export async function downloadOwnReceiptCopy(userId: string, orderId: string) {
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data: order, error: orderError } = await supabase.from("orders").select("id").eq("id", orderId).eq("user_id", userId).limit(1).maybeSingle();
   if (orderError) throw orderError;
@@ -88,7 +95,10 @@ export async function downloadOwnReceiptOriginal(userId: string, orderId: string
   if (receiptError) throw receiptError;
   if (!receiptData) return { status: "not_found" as const };
   const receipt = receiptData as unknown as Pick<ReceiptRow, "id" | "receipt_number" | "receipt_series">;
-  const { data: artifact, error: artifactError } = await supabase.from("receipt_artifacts").select("status,storage_bucket,storage_key,content_type").eq("receipt_id", receipt.id).eq("artifact_type", "receipt_pdf").eq("document_copy", "original").limit(1).maybeSingle();
+  const delivery = await supabase.from("receipt_original_deliveries").select("status").eq("receipt_id", receipt.id).maybeSingle();
+  if (delivery.error) throw delivery.error;
+  if (delivery.data?.status !== "accepted") return { status: "not_ready" as const };
+  const { data: artifact, error: artifactError } = await supabase.from("receipt_artifacts").select("status,storage_bucket,storage_key,content_type").eq("receipt_id", receipt.id).eq("artifact_type", "receipt_pdf").eq("document_copy", "copy").limit(1).maybeSingle();
   if (artifactError) throw artifactError;
   if (!artifact) return { status: "not_found" as const };
   if (artifact.status !== "ready" || artifact.content_type !== "application/pdf") return { status: "not_ready" as const };
@@ -96,5 +106,5 @@ export async function downloadOwnReceiptOriginal(userId: string, orderId: string
   if (storageError || !object) return { status: "not_ready" as const };
   const series = first(receipt.receipt_series);
   if (!series) return { status: "not_found" as const };
-  return { status: "ready" as const, bytes: Buffer.from(await object.arrayBuffer()), fileName: `receipt-${series.series_code}-${String(receipt.receipt_number).padStart(6, "0")}.pdf` };
+  return { status: "ready" as const, bytes: Buffer.from(await object.arrayBuffer()), fileName: `receipt-copy-${series.series_code}-${String(receipt.receipt_number).padStart(6, "0")}.pdf` };
 }

@@ -35,7 +35,7 @@ describe("immutable receipt HTML template", () => {
     expect(html).toContain("WEB-000001");
     expect(html).toContain("יוליה נואה מכלין");
     expect(html).toContain("337738868");
-    expect(html).toContain("אחדות 18, חריש");
+    expect(html).toContain("רחוב בדיקה 1, עיר לדוגמה");
     expect(html).toContain("omanchikim@gmail.com");
     expect(html).toContain("לקוחה לדוגמה");
     expect(html).toContain("07.10.2026");

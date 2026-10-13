@@ -45,6 +45,7 @@ import PWAAppShell from "@/components/PWA/PWAAppShell";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { getActiveContentExitProperties, trackEvent, trackSessionStart } from "@/lib/analytics/client";
 import { analyticsNavigationKey, isNewAnalyticsNavigation } from "@/lib/analytics/pageView";
+import { shopLegalDisclosure, shopPolicyPaths } from "@/lib/legal/shopPolicies";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -517,6 +518,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                   >
                     {t.footer.terms}
                   </a>
+                  <a href={buildLocalizedPublicPath(shopPolicyPaths.sale, lang)}>{shopLegalDisclosure[lang].sale}</a>
+                  <a href={buildLocalizedPublicPath(shopPolicyPaths.refund, lang)}>{shopLegalDisclosure[lang].refund}</a>
+                  <a href={buildLocalizedPublicPath(shopPolicyPaths.printable, lang)}>{shopLegalDisclosure[lang].printable}</a>
                   <a
                     href={buildLocalizedPublicPath("/privacy", lang)}
                     onClick={() =>

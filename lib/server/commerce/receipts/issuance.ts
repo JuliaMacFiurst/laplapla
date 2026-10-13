@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 import { ensureReceiptArtifacts } from "@/lib/server/commerce/receipts/artifacts";
+import { sendOriginalReceiptOnce } from "@/lib/server/commerce/receipts/originalDelivery";
 
 export type ReceiptIssuanceSource = "capture" | "webhook" | "recovery";
 
@@ -94,7 +95,8 @@ export async function issueReceiptAfterPaidFinalization(input: {
         return { status: "failed", code: "malformed_success_result" };
       }
       try {
-        await ensureReceiptArtifacts(row.issued_receipt_id, { source: input.source });
+        const artifacts = await ensureReceiptArtifacts(row.issued_receipt_id, { source: input.source });
+        if (artifacts.complete) await sendOriginalReceiptOnce(row.issued_receipt_id);
       } catch {
         // A paid order and its receipt remain successful even if artifact setup is unavailable.
       }

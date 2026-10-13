@@ -10,7 +10,7 @@ const base: ReceiptDocumentSnapshot = {
     ownerName: "יוליה נואה מכלין",
     businessStatus: "עוסק פטור",
     businessNumber: "337738868",
-    address: "אחדות 18, חריש",
+    address: "רחוב בדיקה 1, עיר לדוגמה",
     contactEmail: "omanchikim@gmail.com",
     accountantApprovedFooter: null,
   },
