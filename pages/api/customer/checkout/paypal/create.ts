@@ -14,9 +14,24 @@ import { withApiHandler } from "@/utils/apiHandler";
 import { BillingIdentityError, requireTrustedBillingIdentity } from "@/lib/server/customerBillingIdentity";
 import { recordCheckoutConsents } from "@/lib/server/commerce/checkoutConsents";
 import type { Lang } from "@/i18n";
+import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const EXPECTED_BODY_KEYS = ["checkoutIdempotencyKey", "productId", "legalAccepted", "electronicReceiptAccepted", "lang"];
+
+function getPayPalCheckoutRedirectUrls(originHeader: string | undefined, lang: Lang) {
+  if (!originHeader) return null;
+  try {
+    const origin = new URL(originHeader);
+    if (origin.href !== `${origin.origin}/`) return null;
+    const checkoutUrl = new URL(buildLocalizedPublicPath("/shop/sound-case-001/checkout", lang), origin);
+    const cancelUrl = new URL(checkoutUrl);
+    cancelUrl.searchParams.set("paypal_cancel", "1");
+    return { returnUrl: checkoutUrl.href, cancelUrl: cancelUrl.href };
+  } catch {
+    return null;
+  }
+}
 
 function parseBody(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -34,6 +49,11 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
   if (!enforceSameOrigin(req, res)) return;
   const body = parseBody(req.body);
   if (!body) {
+    res.status(400).json({ ok: false, code: "invalid_request" });
+    return;
+  }
+  const redirectUrls = getPayPalCheckoutRedirectUrls(req.headers.origin, body.lang);
+  if (!redirectUrls) {
     res.status(400).json({ ok: false, code: "invalid_request" });
     return;
   }
@@ -151,6 +171,7 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
       amountMinor: localOrder.totalMinor,
       currency: localOrder.currency,
       requestId: localOrder.paypalCreateRequestId,
+      ...redirectUrls,
     });
     const binding = await bindPayPalOrderToLocalOrder({
       orderId: localOrder.orderId,

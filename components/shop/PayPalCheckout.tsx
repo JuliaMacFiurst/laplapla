@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCustomerSession } from "@/hooks/useCustomerSession";
 import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import { formatPrice } from "@/lib/shop/commerce";
+import { getProductById } from "@/lib/shop/catalog";
+import { getQuotedLaunchOffer } from "@/lib/shop/launchOffer";
 import {
   PAYPAL_CHECKOUT_PRODUCT_ID,
   type PayPalCaptureResponse,
@@ -21,6 +24,7 @@ import type { CustomerBillingIdentityResponse } from "@/lib/customer/billingIden
 import { ShopLegalDisclosure } from "@/components/legal/ShopLegalDisclosure";
 import { checkoutConsentCopy } from "@/lib/legal/checkoutConsent";
 import { shopPolicyPaths } from "@/lib/legal/shopPolicies";
+import { handlePayPalApprovalOnce, paidCheckoutSuccessHref, resumeReturnedPayPalSession } from "@/lib/shop/paypalCheckoutReturn";
 
 type PayPalApprovalData = { orderId?: unknown };
 type PayPalPaymentSession = {
@@ -28,6 +32,8 @@ type PayPalPaymentSession = {
     options: { presentationMode: "auto" },
     orderPromise: Promise<{ orderId: string }>,
   ) => Promise<void>;
+  hasReturned: () => boolean;
+  resume: () => Promise<void>;
 };
 type PayPalSdkInstance = {
   findEligibleMethods: (input: { currencyCode: string }) => Promise<{ isEligible: (method: string) => boolean }>;
@@ -61,7 +67,7 @@ type CheckoutState =
   | "needs_reconciliation"
   | "cancelled"
   | "error"
-  | "success";
+  | "owned";
 type SuccessfulQuote = Extract<PayPalQuoteResponse, { ok: true }>;
 
 const localeByLang: Record<Lang, string> = { ru: "ru-RU", en: "en-US", he: "he-IL" };
@@ -94,6 +100,7 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export function PayPalCheckout({ lang }: { lang: Lang }) {
+  const router = useRouter();
   const auth = useCustomerSession();
   const [state, setState] = useState<CheckoutState>("loading");
   const [quote, setQuote] = useState<SuccessfulQuote | null>(null);
@@ -109,6 +116,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
   const consentingUserId = auth.status === "authenticated" ? auth.session.user.id : null;
   const activeOrderRef = useRef<{ localOrderId: string; paypalOrderId: string } | null>(null);
   const checkoutOutcomeHandledRef = useRef(false);
+  const returnedSessionAttemptedRef = useRef(false);
   const createPath = buildLocalizedPublicPath("/shop/sound-case-001/create", lang);
   const checkoutPath = buildLocalizedPublicPath("/shop/sound-case-001/checkout", lang);
   const signInPath = `${buildLocalizedPublicPath("/account/sign-in", lang)}?next=${encodeURIComponent(checkoutPath)}`;
@@ -140,13 +148,14 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
     try {
       const response = await authenticatedFetch("/api/customer/checkout/paypal/capture", activeOrder);
       const result = await readJson<PayPalCaptureResponse>(response);
-      if (!response.ok || !result.ok || result.status !== "paid") throw new Error("Reconciliation failed");
+      const successHref = paidCheckoutSuccessHref(result, lang);
+      if (!response.ok || !successHref) throw new Error("Reconciliation failed");
       if (paypalEnvironment) clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id, paypalEnvironment);
-      setState("success");
+      void router.replace(successHref).catch(() => window.location.assign(successHref));
     } catch {
       setState("recovery");
     }
-  }, [auth, authenticatedFetch, paypalEnvironment]);
+  }, [auth, authenticatedFetch, lang, paypalEnvironment, router]);
 
   useEffect(() => {
     if (auth.status === "loading") return;
@@ -156,6 +165,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       setPaymentSession(null);
       return;
     }
+    if (returnedSessionAttemptedRef.current) return;
 
     let active = true;
     setState("loading");
@@ -217,29 +227,50 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
         pageType: "checkout",
         locale: localeByLang[lang],
       });
-      const methods = await sdk.findEligibleMethods({ currencyCode: resolvedQuote.currency });
-      if (!methods.isEligible("paypal")) throw new Error("PayPal is not eligible");
-
       const session = sdk.createPayPalOneTimePaymentSession({
         onApprove: async (data) => {
-          const activeOrder = activeOrderRef.current;
-          if (!activeOrder || data.orderId !== activeOrder.paypalOrderId) {
-            setState("error");
-            return;
-          }
-          setState("capturing");
-          await reconcileActiveOrder();
+          await handlePayPalApprovalOnce({
+            paypalOrderId: data.orderId,
+            expectedPaypalOrderId: activeOrderRef.current?.paypalOrderId ?? null,
+            handled: checkoutOutcomeHandledRef,
+            onMismatch: () => setState("error"),
+            capture: async () => {
+              setState("capturing");
+              await reconcileActiveOrder();
+            },
+          });
         },
-        onCancel: () => setState("cancelled"),
+        onCancel: () => {
+          checkoutOutcomeHandledRef.current = true;
+          setState("cancelled");
+        },
         onError: () => {
-          if (!checkoutOutcomeHandledRef.current) setState("error");
+          if (!checkoutOutcomeHandledRef.current) {
+            checkoutOutcomeHandledRef.current = true;
+            setState("error");
+          }
         },
       });
       if (!active) return;
       setPaymentSession(session);
+      const returned = await resumeReturnedPayPalSession(session, () => {
+        returnedSessionAttemptedRef.current = true;
+        setState("opening");
+      });
+      if (!active) return;
+      if (returned) {
+        if (!checkoutOutcomeHandledRef.current) setState("needs_reconciliation");
+        return;
+      }
+      if (new URLSearchParams(window.location.search).get("paypal_cancel") === "1") {
+        setState("cancelled");
+        return;
+      }
+      const methods = await sdk.findEligibleMethods({ currencyCode: resolvedQuote.currency });
+      if (!active || !methods.isEligible("paypal")) throw new Error("PayPal is not eligible");
       setState("ready");
     }).catch(() => {
-      if (active) setState("error");
+      if (active) setState(returnedSessionAttemptedRef.current ? "needs_reconciliation" : "error");
     });
 
     return () => { active = false; };
@@ -299,7 +330,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       if (result.status === "already_owned") {
         checkoutOutcomeHandledRef.current = true;
         clearPayPalCheckoutKey(window.sessionStorage, auth.session.user.id, paypalEnvironment);
-        setState("success");
+        setState("owned");
         throw new Error("Product already owned");
       }
       activeOrderRef.current = {
@@ -396,11 +427,11 @@ export function PayPalCheckoutView({
     );
   }
 
-  if (quote?.status === "already_owned" || state === "success") {
+  if (quote?.status === "already_owned" || state === "owned") {
     return (
       <section className="paypal-checkout__panel paypal-checkout__panel--success" aria-live="polite">
-        <h2>{state === "success" ? copy.successTitle : copy.ownedTitle}</h2>
-        <p>{state === "success" ? copy.successBody : copy.ownedBody}</p>
+        <h2>{copy.ownedTitle}</h2>
+        <p>{copy.ownedBody}</p>
         <Link className="paypal-checkout__primary" href={createPath}>{copy.openBuilder}</Link>
       </section>
     );
@@ -452,12 +483,32 @@ export function PayPalCheckoutView({
   }
 
   const pricedQuote = quote?.status === "priced" ? quote : null;
+  const quotedProduct = pricedQuote ? getProductById(pricedQuote.productId) : null;
+  const quotedLaunchOffer = quotedProduct && pricedQuote ? getQuotedLaunchOffer(quotedProduct, pricedQuote) : null;
   return (
     <section className="paypal-checkout__panel">
       {pricedQuote ? (
-        <div className="paypal-checkout__price">
-          <span>{pricedQuote.priceSource === "preorder" ? copy.preorderPrice : copy.regularPrice}</span>
-          <strong>{formatPrice(pricedQuote.amountMinor, pricedQuote.currency, lang)}</strong>
+        <div className={`paypal-checkout__price${quotedLaunchOffer ? " paypal-checkout__price--offer" : ""}`} dir={lang === "he" ? "rtl" : "ltr"}>
+          {quotedLaunchOffer ? (
+            <>
+              <div className="paypal-checkout__price-row paypal-checkout__price-row--regular">
+                <span>{copy.regularPrice}</span>
+                <s><bdi dir="ltr">{formatPrice(quotedLaunchOffer.regularMinor, pricedQuote.currency, lang)}</bdi></s>
+              </div>
+              <div className="paypal-checkout__price-row paypal-checkout__price-row--total">
+                <span>{copy.launchOfferPrice}</span>
+                <strong><bdi dir="ltr">{formatPrice(pricedQuote.amountMinor, pricedQuote.currency, lang)}</bdi></strong>
+              </div>
+              <p className="paypal-checkout__price-savings">
+                {copy.savings} <bdi dir="ltr">{formatPrice(quotedLaunchOffer.savingsMinor, pricedQuote.currency, lang)}</bdi>
+              </p>
+            </>
+          ) : (
+            <div className="paypal-checkout__price-row paypal-checkout__price-row--total">
+              <span>{pricedQuote.priceSource === "preorder" ? copy.preorderPrice : copy.price}</span>
+              <strong><bdi dir="ltr">{formatPrice(pricedQuote.amountMinor, pricedQuote.currency, lang)}</bdi></strong>
+            </div>
+          )}
         </div>
       ) : null}
       <ShopLegalDisclosure lang={lang} />

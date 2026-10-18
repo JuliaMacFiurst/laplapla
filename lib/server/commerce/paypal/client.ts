@@ -24,7 +24,7 @@ export class PayPalApiError extends Error {
 
 export type PayPalCreatedOrder = {
   id: string;
-  status: "CREATED";
+  status: "CREATED" | "PAYER_ACTION_REQUIRED";
 };
 
 export type PayPalCaptureResult =
@@ -107,10 +107,10 @@ function parseMinorAmount(value: unknown) {
 function parseCreatedOrder(payload: unknown): PayPalCreatedOrder {
   if (!isRecord(payload)) throw malformedPayPalResponse("malformed_create_response");
   const id = providerIdentifier(payload.id);
-  if (!id || payload.status !== "CREATED") {
+  if (!id || (payload.status !== "CREATED" && payload.status !== "PAYER_ACTION_REQUIRED")) {
     throw malformedPayPalResponse("malformed_create_response");
   }
-  return { id, status: "CREATED" };
+  return { id, status: payload.status };
 }
 
 function parseCaptureResult(payload: unknown, expected: {
@@ -227,12 +227,22 @@ export function createPayPalClient(options?: {
       amountMinor: number;
       currency: string;
       requestId: string;
+      returnUrl: string;
+      cancelUrl: string;
     }) {
       const payload = await authenticatedRequest("/v2/checkout/orders", {
         method: "POST",
         headers: { "PayPal-Request-Id": input.requestId },
         body: JSON.stringify({
           intent: "CAPTURE",
+          payment_source: {
+            paypal: {
+              experience_context: {
+                return_url: input.returnUrl,
+                cancel_url: input.cancelUrl,
+              },
+            },
+          },
           purchase_units: [{
             reference_id: input.localOrderId,
             custom_id: input.localOrderId,

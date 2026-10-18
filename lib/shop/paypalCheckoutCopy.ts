@@ -8,7 +8,10 @@ export type PayPalCheckoutCopy = {
   signInTitle: string;
   signInBody: string;
   signIn: string;
+  price: string;
   regularPrice: string;
+  launchOfferPrice: string;
+  savings: string;
   preorderPrice: string;
   payWithPayPal: string;
   secureNote: string;
@@ -44,7 +47,10 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     signInTitle: "Сначала войдите в LapLapLa",
     signInBody: "Покупка привязывается к вашему аккаунту и после оплаты открывает персонализацию.",
     signIn: "Войти и продолжить",
+    price: "Цена",
     regularPrice: "Обычная цена",
+    launchOfferPrice: "Цена по акции",
+    savings: "Вы экономите",
     preorderPrice: "Ваша цена предзаказа",
     payWithPayPal: "Оплатить через PayPal Sandbox",
     secureNote: "Платёж проходит в защищённом окне PayPal. LapLapLa не получает данные карты.",
@@ -74,7 +80,10 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     signInTitle: "Sign in to LapLapLa first",
     signInBody: "Your purchase is linked to your account and unlocks personalization after payment.",
     signIn: "Sign in and continue",
+    price: "Price",
     regularPrice: "Regular price",
+    launchOfferPrice: "Launch offer",
+    savings: "You save",
     preorderPrice: "Your preorder price",
     payWithPayPal: "Pay with PayPal Sandbox",
     secureNote: "Payment happens in PayPal's hosted experience. LapLapLa does not receive card details.",
@@ -104,7 +113,10 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     signInTitle: "קודם נכנסים ל־LapLapLa",
     signInBody: "הרכישה משויכת לחשבון שלכם, ולאחר התשלום נפתחת ההתאמה האישית.",
     signIn: "כניסה והמשך",
+    price: "מחיר",
     regularPrice: "מחיר רגיל",
+    launchOfferPrice: "מחיר מבצע",
+    savings: "חיסכון של",
     preorderPrice: "מחיר ההרשמה המוקדמת שלכם",
     payWithPayPal: "תשלום דרך PayPal Sandbox",
     secureNote: "התשלום מתבצע בחלון המאובטח של PayPal. פרטי הכרטיס אינם נמסרים ל־LapLapLa.",

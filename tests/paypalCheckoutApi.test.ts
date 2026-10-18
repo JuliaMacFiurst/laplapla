@@ -100,7 +100,7 @@ describe("authenticated PayPal create endpoint", () => {
     mocks.requireTrustedBillingIdentity.mockResolvedValue({ billingName: "Buyer Example", email: "buyer@example.com" });
     mocks.createLocalCommerceOrder.mockResolvedValue({ status: "order", order: { orderId: localOrderId } });
     mocks.getOrder.mockResolvedValue(order());
-    mocks.paypalCreate.mockResolvedValue({ id: "PAYPAL_ORDER_1", status: "CREATED" });
+    mocks.paypalCreate.mockResolvedValue({ id: "PAYPAL_ORDER_1", status: "PAYER_ACTION_REQUIRED" });
     mocks.bindOrder.mockResolvedValue({ result: "bound", orderId: localOrderId, status: "pending_approval", paypalOrderId: "PAYPAL_ORDER_1" });
   });
 
@@ -118,6 +118,45 @@ describe("authenticated PayPal create endpoint", () => {
       expect(mocks.recordCheckoutConsents).toHaveBeenCalledWith({ orderId: localOrderId, userId: user.id, lang: "en" });
     },
   );
+
+  it("hands a newly created approval-required PayPal order to the first SDK start without capturing", async () => {
+    mocks.getOrder.mockResolvedValue(order({ totalMinor: 3900 }));
+    const { res, result } = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), res);
+
+    expect(result).toMatchObject({
+      status: 200,
+      body: { ok: true, status: "pending_approval", paypalOrderId: "PAYPAL_ORDER_1", amountMinor: 3900 },
+    });
+    expect(mocks.bindOrder).toHaveBeenCalledOnce();
+    expect(mocks.paypalCreate).toHaveBeenCalledOnce();
+    expect(mocks.beginCapture).not.toHaveBeenCalled();
+    expect(mocks.paypalCapture).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["ru", "/shop/sound-case-001/checkout"],
+    ["en", "/en/shop/sound-case-001/checkout"],
+    ["he", "/he/shop/sound-case-001/checkout"],
+  ])("uses the trusted %s checkout route for PayPal redirect and cancellation", async (lang, path) => {
+    const target = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey, lang }), target.res);
+    expect(target.result.status).toBe(200);
+    expect(mocks.paypalCreate).toHaveBeenCalledWith(expect.objectContaining({
+      returnUrl: `http://localhost:3000${path}`,
+      cancelUrl: `http://localhost:3000${path}?paypal_cancel=1`,
+    }));
+  });
+
+  it("rejects a missing browser origin before creating a local or PayPal order", async () => {
+    const target = response();
+    const req = createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey });
+    delete req.headers.origin;
+    await paypalCreateHandler(req, target.res);
+    expect(target.result.status).toBe(400);
+    expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
 
   it("rejects either missing consent on the server before creating a PayPal order", async () => {
     for (const body of [

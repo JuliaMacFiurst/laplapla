@@ -165,6 +165,8 @@ describe("typed PayPal Orders v2 client", () => {
       amountMinor: 3900,
       currency: "ILS",
       requestId: "create-request-id",
+      returnUrl: "http://localhost:3000/en/shop/sound-case-001/checkout",
+      cancelUrl: "http://localhost:3000/en/shop/sound-case-001/checkout?paypal_cancel=1",
     })).resolves.toEqual({ id: "PAYPAL_ORDER_1", status: "CREATED" });
 
     expect(fetchImpl.mock.calls[0]?.[0]).toBe("https://api-m.sandbox.paypal.com/v1/oauth2/token");
@@ -175,12 +177,53 @@ describe("typed PayPal Orders v2 client", () => {
     expect((createInit.headers as Record<string, string>)["PayPal-Request-Id"]).toBe("create-request-id");
     expect(JSON.parse(String(createInit.body))).toMatchObject({
       intent: "CAPTURE",
+      payment_source: { paypal: { experience_context: {
+        return_url: "http://localhost:3000/en/shop/sound-case-001/checkout",
+        cancel_url: "http://localhost:3000/en/shop/sound-case-001/checkout?paypal_cancel=1",
+      } } },
       purchase_units: [{
         reference_id: "11111111-1111-4111-8111-111111111111",
         custom_id: "11111111-1111-4111-8111-111111111111",
         amount: { value: "39.00", currency_code: "ILS" },
       }],
     });
+  });
+
+  it("passes a PayPal approval-required order to the SDK instead of rejecting its valid create response", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({
+        id: "PAYPAL_ORDER_2",
+        status: "PAYER_ACTION_REQUIRED",
+        links: [{ rel: "payer-action", href: "https://www.sandbox.paypal.com/checkoutnow?token=PAYPAL_ORDER_2" }],
+      }, 200));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+
+    await expect(paypal.createOrder({
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      amountMinor: 3900,
+      currency: "ILS",
+      requestId: "create-request-id",
+      returnUrl: "http://localhost:3000/shop/sound-case-001/checkout",
+      cancelUrl: "http://localhost:3000/shop/sound-case-001/checkout?paypal_cancel=1",
+    })).resolves.toEqual({ id: "PAYPAL_ORDER_2", status: "PAYER_ACTION_REQUIRED" });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not treat an already completed response as a fresh approval order", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "token", token_type: "Bearer" }))
+      .mockResolvedValueOnce(jsonResponse({ id: "PAYPAL_ORDER_2", status: "COMPLETED" }, 200));
+    const paypal = createPayPalClient({ fetchImpl, config: testConfig });
+
+    await expect(paypal.createOrder({
+      localOrderId: "11111111-1111-4111-8111-111111111111",
+      amountMinor: 3900,
+      currency: "ILS",
+      requestId: "create-request-id",
+      returnUrl: "http://localhost:3000/shop/sound-case-001/checkout",
+      cancelUrl: "http://localhost:3000/shop/sound-case-001/checkout?paypal_cancel=1",
+    })).rejects.toMatchObject({ safeCode: "malformed_create_response" });
   });
 
   it("accepts only a completed capture tied to the expected local and provider order", async () => {
@@ -255,6 +298,8 @@ describe("typed PayPal Orders v2 client", () => {
       amountMinor: 4900,
       currency: "ILS",
       requestId: "request",
+      returnUrl: "http://localhost:3000/shop/sound-case-001/checkout",
+      cancelUrl: "http://localhost:3000/shop/sound-case-001/checkout?paypal_cancel=1",
     })).rejects.toMatchObject({ safeCode: "malformed_oauth_response" });
 
     const mismatch = createPayPalClient({

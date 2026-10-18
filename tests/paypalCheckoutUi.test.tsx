@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { createElement } from "react";
+import { Children, createElement, isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@/hooks/useCustomerSession", () => ({
@@ -8,6 +8,7 @@ vi.mock("@/hooks/useCustomerSession", () => ({
 import { PayPalCheckoutView } from "@/components/shop/PayPalCheckout";
 import { paypalCheckoutCopy } from "@/lib/shop/paypalCheckoutCopy";
 import { checkoutConsentCopy } from "@/lib/legal/checkoutConsent";
+import { formatPrice } from "@/lib/shop/commerce";
 
 describe("localized PayPal Sandbox checkout UI", () => {
   it.each(["ru", "en", "he"] as const)("has complete checkout copy for %s", (lang) => {
@@ -52,6 +53,30 @@ describe("localized PayPal Sandbox checkout UI", () => {
     if (lang === "he") expect(html).toContain('class="paypal-checkout__consents" dir="rtl"');
   });
 
+  it.each(["ru", "en", "he"] as const)("starts checkout from the first payment click in %s", (lang) => {
+    const onStart = vi.fn();
+    const onRetry = vi.fn();
+    const view = PayPalCheckoutView({
+      ...baseProps,
+      lang,
+      quote: { ok: true, status: "priced", productId: "sound-case-001", amountMinor: 3900, currency: "ILS", priceSource: "catalog" },
+      legalAccepted: true,
+      electronicReceiptAccepted: true,
+      onStart,
+      onRetry,
+    });
+    if (!isValidElement<{ children: React.ReactNode }>(view)) throw new Error("Checkout view did not render");
+    const button = Children.toArray(view.props.children).find((child) =>
+      isValidElement<{ className?: string }>(child) && child.props.className === "paypal-checkout__paypal-button",
+    );
+    if (!isValidElement<{ disabled?: boolean; onClick?: () => void }>(button)) throw new Error("PayPal button missing");
+
+    expect(button.props.disabled).toBe(false);
+    button.props.onClick?.();
+    expect(onStart).toHaveBeenCalledOnce();
+    expect(onRetry).not.toHaveBeenCalled();
+  });
+
   it("renders unauthenticated sign-in and server-resolved 39/49 prices", () => {
     const anonymous = renderToStaticMarkup(createElement(PayPalCheckoutView, {
       ...baseProps, lang: "en", authStatus: "anonymous", quote: null,
@@ -66,7 +91,10 @@ describe("localized PayPal Sandbox checkout UI", () => {
       },
     }));
     expect(preorder).toContain("39");
-    expect(preorder).toContain(paypalCheckoutCopy.en.preorderPrice);
+    expect(preorder).toContain(paypalCheckoutCopy.en.launchOfferPrice);
+    expect(preorder).toContain(paypalCheckoutCopy.en.savings);
+    expect(preorder).toContain("49");
+    expect(preorder).toContain("<s>");
 
     const catalog = renderToStaticMarkup(createElement(PayPalCheckoutView, {
       ...baseProps, lang: "en", quote: {
@@ -75,7 +103,49 @@ describe("localized PayPal Sandbox checkout UI", () => {
       },
     }));
     expect(catalog).toContain("49");
-    expect(catalog).toContain(paypalCheckoutCopy.en.regularPrice);
+    expect(catalog).toContain(paypalCheckoutCopy.en.price);
+    expect(catalog).not.toContain(paypalCheckoutCopy.en.launchOfferPrice);
+    expect(catalog).not.toContain("<s>");
+  });
+
+  it.each(["ru", "en", "he"] as const)("shows the quoted launch price and savings in %s", (lang) => {
+    const html = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps, lang, quote: {
+        ok: true, status: "priced", productId: "sound-case-001",
+        amountMinor: 3900, currency: "ILS", priceSource: "catalog",
+      },
+    }));
+    const copy = paypalCheckoutCopy[lang];
+    expect(html).toContain(copy.regularPrice);
+    expect(html).toContain(copy.launchOfferPrice);
+    expect(html).toContain(copy.savings);
+    expect(html).toContain(formatPrice(4900, "ILS", lang));
+    expect(html).toContain(formatPrice(3900, "ILS", lang));
+    expect(html).toContain(formatPrice(1000, "ILS", lang));
+    expect(html).toContain('<s><bdi dir="ltr">');
+    expect(html).toContain('<strong><bdi dir="ltr">');
+    if (lang === "he") expect(html).toContain('class="paypal-checkout__price paypal-checkout__price--offer" dir="rtl"');
+  });
+
+  it("uses the resumed order quote without claiming a different offer", () => {
+    const html = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps, lang: "en", quote: {
+        ok: true, status: "priced", productId: "sound-case-001",
+        amountMinor: 4900, currency: "ILS", priceSource: "catalog",
+      },
+    }));
+    expect(html).toContain(formatPrice(4900, "ILS", "en"));
+    expect(html).not.toContain(paypalCheckoutCopy.en.savings);
+    expect(html).not.toContain('paypal-checkout__price--offer');
+  });
+
+  it("does not show an unconfirmed amount while the quote is loading", () => {
+    const html = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps, lang: "en", state: "loading", quote: null,
+    }));
+    expect(html).toContain(paypalCheckoutCopy.en.loading);
+    expect(html).not.toContain('paypal-checkout__price');
+    expect(html).not.toContain(paypalCheckoutCopy.en.payWithPayPal);
   });
 
   it.each(["ru", "en", "he"] as const)("collects missing billing identity in %s before PayPal", (lang) => {
@@ -90,18 +160,19 @@ describe("localized PayPal Sandbox checkout UI", () => {
     if (lang === "he") expect(paypalCheckoutCopy.he.billingTitle).toContain("שם");
   });
 
-  it("renders owned and paid-success states with the personalization CTA", () => {
+  it("renders an existing entitlement without claiming a new purchase", () => {
     const owned = renderToStaticMarkup(createElement(PayPalCheckoutView, {
       ...baseProps, lang: "ru", quote: { ok: true, status: "already_owned", productId: "sound-case-001" },
     }));
     expect(owned).toContain(paypalCheckoutCopy.ru.ownedTitle);
     expect(owned).toContain("/en/shop/sound-case-001/create");
 
-    const success = renderToStaticMarkup(createElement(PayPalCheckoutView, {
-      ...baseProps, lang: "he", state: "success", quote: null,
+    const ownedAfterCreate = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps, lang: "he", state: "owned", quote: null,
     }));
-    expect(success).toContain(paypalCheckoutCopy.he.successTitle);
-    expect(success).toContain(paypalCheckoutCopy.he.openBuilder);
+    expect(ownedAfterCreate).toContain(paypalCheckoutCopy.he.ownedTitle);
+    expect(ownedAfterCreate).toContain(paypalCheckoutCopy.he.openBuilder);
+    expect(ownedAfterCreate).not.toContain(paypalCheckoutCopy.he.successTitle);
   });
 
   it("renders cancellation and failure without implying that payment succeeded", () => {
