@@ -69,15 +69,15 @@ describe("LapLapLa shop storefront", () => {
     expect(html).toContain(product.duration?.[lang]);
     expect(html).toContain(formatPrice(product.price, product.currency, lang));
     expect(html).toContain("RU · EN · HE");
-    expect(html).toContain(copy.availability);
+    expect(html).toContain(product.status === "active" ? (lang === "ru" ? "Доступно для покупки" : lang === "he" ? "זמין לרכישה" : "Available to buy") : copy.availability);
     expect(html).toContain(product.heroImage);
     expect(html).toContain(`href="${buildLocalizedPublicPath("/shop/sound-case-001", lang)}"`);
     expect(html).not.toContain(`/shop/sound-case-001/create`);
     expect(html).not.toContain("Buy now");
   });
 
-  it("keeps the Sound Case coming soon and uses one real catalog product", () => {
-    expect(product.status).toBe("coming-soon");
+  it("makes the Sound Case purchasable and uses one real catalog product", () => {
+    expect(product.status).toBe("active");
     expect(product.heroImage).toContain("banner-horizontal.webp");
     const page = readFileSync(`${process.cwd()}/pages/shop/index.tsx`, "utf8");
     expect(page).toContain("getPublicProducts()");

@@ -94,8 +94,8 @@ export default function CustomerAccountPage() {
       setReceiptDownload({ orderId: null, error: true });
     }
   };
-  const paymentText = (status: CustomerPurchase["paymentStatus"]) => status === "paid" ? copy.paymentPaid : status === "processing" ? copy.paymentProcessing : status === "cancelled" ? copy.paymentCancelled : copy.paymentFailed;
-  const accessText = (status: CustomerPurchase["accessStatus"]) => status === "active" ? copy.accessActive : copy.accessUnavailable;
+  const paymentText = (status: CustomerPurchase["paymentStatus"]) => status === "paid" ? copy.paymentPaid : status === "refunded" ? copy.paymentRefunded : status === "processing" ? copy.paymentProcessing : status === "cancelled" ? copy.paymentCancelled : copy.paymentFailed;
+  const accessText = (status: CustomerPurchase["accessStatus"]) => status === "active" ? copy.accessActive : status === "refunded" || status === "revoked" ? copy.accessRevoked : copy.accessUnavailable;
   const receiptText = (status: CustomerPurchase["receipt"]["status"]) => status === "available" ? copy.receiptAvailable : status === "preparing" ? copy.receiptPreparing : copy.receiptUnavailable;
 
   return (

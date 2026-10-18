@@ -4,11 +4,13 @@ import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import { getLocalizedShortDescription, getLocalizedTitle } from "@/lib/shop/catalog";
 import { formatPrice } from "@/lib/shop/commerce";
+import { getProductPrice, LAUNCH_OFFER_COPY } from "@/lib/shop/launchOffer";
 import { SHOP_STOREFRONT_COPY } from "@/lib/shop/shopStorefront";
 import type { ShopProduct } from "@/lib/shop/types";
 
 export function ShopProductCard({ product, lang }: { product: ShopProduct; lang: Lang }) {
   const copy = SHOP_STOREFRONT_COPY[lang];
+  const offer = getProductPrice(product);
 
   return (
     <article className="shop-product-card" data-product-status={product.status}>
@@ -35,10 +37,10 @@ export function ShopProductCard({ product, lang }: { product: ShopProduct; lang:
           <div><dt>{copy.formatLabel}</dt><dd>{copy.formatValue}</dd></div>
         </dl>
         <div className="shop-product-card__purchase">
-          <div><span>{copy.priceLabel}</span><strong><bdi>{formatPrice(product.price, product.currency, lang)}</bdi></strong></div>
+          <div><span>{offer.promotional ? `${LAUNCH_OFFER_COPY[lang].badge} · ${LAUNCH_OFFER_COPY[lang].savings}` : copy.priceLabel}</span>{offer.promotional ? <s><bdi>{formatPrice(offer.regularMinor, product.currency, lang)}</bdi></s> : null}<strong><bdi>{formatPrice(offer.currentMinor, product.currency, lang)}</bdi></strong></div>
           <Link href={buildLocalizedPublicPath(`/shop/${product.slug}`, lang)}>{copy.detailsAction}</Link>
         </div>
-        <p className="shop-product-card__availability">{copy.availability}</p>
+        <p className="shop-product-card__availability">{product.status === "active" ? LAUNCH_OFFER_COPY[lang].available : copy.availability}</p>
       </div>
     </article>
   );

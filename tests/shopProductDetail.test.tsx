@@ -85,14 +85,14 @@ describe("Sound Case product merchandising detail", () => {
     expect(html.match(/loading="lazy"/g)?.length).toBeGreaterThanOrEqual(6);
   });
 
-  it("uses canonical catalog price and preserves coming-soon preorder routing", () => {
+  it("shows launch price and routes to checkout", () => {
     const html = renderToStaticMarkup(createElement(ShopProductDetail, { product, lang: "en" }));
 
     expect(product.price).toBe(4900);
     expect(product.currency).toBe("ILS");
-    expect(product.status).toBe("coming-soon");
+    expect(product.status).toBe("active");
     expect(html).toContain(formatPrice(product.price, product.currency, "en"));
-    expect(html).toContain('href="/en/shop/sound-case-001/preorder"');
+    expect(html).toContain('href="/en/shop/sound-case-001/checkout"');
     expect(html).not.toContain('href="/en/shop/sound-case-001/create"');
     expect(html).toContain(SOUND_CASE_PRODUCT_DETAIL_COPY.en.availability);
   });

@@ -3,6 +3,7 @@ import { getProductById } from "@/lib/shop/catalog";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { normalizePreorderEmail } from "@/lib/server/productPreorders";
 import { SOUND_CASE_PREORDER_OFFER } from "@/lib/server/commerce/preorderOffers";
+import { getProductPrice } from "@/lib/shop/launchOffer";
 
 export type VerifiedCustomer = Pick<User, "id" | "email" | "email_confirmed_at">;
 
@@ -41,12 +42,13 @@ export async function resolveProductPrice(input: {
   const canonicalPrice = {
     status: "priced" as const,
     productId: product.id,
-    priceMinor: product.price,
+    priceMinor: getProductPrice(product).currentMinor,
     currency: product.currency,
     source: "catalog" as const,
   };
 
   if (
+    product.status !== "coming-soon" ||
     product.id !== SOUND_CASE_PREORDER_OFFER.productId ||
     !input.verifiedCustomer.email ||
     !input.verifiedCustomer.email_confirmed_at

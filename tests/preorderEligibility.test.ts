@@ -61,17 +61,10 @@ describe("preorder email and trusted registration values", () => {
     expect(isValidPreorderEmail("maya+offer@example.com")).toBe(true);
   });
 
-  it("assigns product, offer, price, currency and consent version on the server", async () => {
-    await registerSoundCasePreorder({ email: " Maya@Example.COM ", locale: "en" });
-    expect(db.rpc).toHaveBeenCalledWith("register_product_preorder", {
-      target_product_id: "sound-case-001",
-      target_offer_code: "sound-case-001-preorder",
-      target_email_normalized: "maya@example.com",
-      target_preferred_locale: "en",
-      target_eligible_price_minor: 3900,
-      target_currency: "ILS",
-      target_consent_version: "sound-case-preorder-v1",
-    });
+  it("closes registration for the active product without deleting preorder infrastructure", async () => {
+    await expect(registerSoundCasePreorder({ email: " Maya@Example.COM ", locale: "en" })).resolves.toMatchObject({ status: "closed" });
+    expect(db.rpc).not.toHaveBeenCalled();
+    expect(readFileSyncSafe(`${process.cwd()}/lib/server/productPreorders.ts`)).toContain("register_product_preorder");
   });
 });
 
@@ -83,7 +76,7 @@ describe("server-only product price resolution", () => {
     db.preorder = null;
   });
 
-  it("uses the canonical 4900 ILS catalog price without a matching preorder", async () => {
+  it("uses the 3900 ILS launch price for every buyer", async () => {
     expect(getProductById("sound-case-001")?.price).toBe(4900);
     await expect(resolveProductPrice({
       verifiedCustomer,
@@ -91,7 +84,7 @@ describe("server-only product price resolution", () => {
     })).resolves.toEqual({
       status: "priced",
       productId: "sound-case-001",
-      priceMinor: 4900,
+      priceMinor: 3900,
       currency: "ILS",
       source: "catalog",
     });
@@ -107,22 +100,21 @@ describe("server-only product price resolution", () => {
       productId: "sound-case-001",
       priceMinor: 3900,
       currency: "ILS",
-      source: "preorder",
+      source: "catalog",
     });
-    expect(db.queries.find((query) => query.table === "product_preorders")?.filters)
-      .toContainEqual(["email_normalized", "maya@example.com"]);
+    expect(db.queries.some((query) => query.table === "product_preorders")).toBe(false);
   });
 
   it.each([
     { ...verifiedCustomer, email: undefined },
     { ...verifiedCustomer, email_confirmed_at: undefined },
-  ])("does not apply the discount without a verified account email", async (customer) => {
+  ])("applies the public launch offer without a verified account email", async (customer) => {
     db.preorder = { eligible_price_minor: 3900, currency: "ILS" };
     const result = await resolveProductPrice({
       verifiedCustomer: customer,
       productId: "sound-case-001",
     });
-    expect(result).toMatchObject({ priceMinor: 4900, source: "catalog" });
+    expect(result).toMatchObject({ priceMinor: 3900, source: "catalog" });
     expect(db.queries.some((query) => query.table === "product_preorders")).toBe(false);
   });
 
@@ -139,16 +131,16 @@ describe("server-only product price resolution", () => {
     const source = readFileSyncSafe(`${process.cwd()}/lib/server/commerce/resolveProductPrice.ts`);
     expect(source).not.toMatch(/paypal/i);
     expect(source).not.toMatch(/browser.*price|query.*price|localStorage/i);
-    expect(source).toContain("product.price");
+    expect(source).toContain("getProductPrice(product).currentMinor");
   });
 
-  it("keeps an existing registration eligible after the offer closes", async () => {
+  it("does not give old preorder records a separate price while the launch offer is active", async () => {
     db.preorder = { eligible_price_minor: 3900, currency: "ILS" };
     const result = await resolveProductPrice({
       verifiedCustomer,
       productId: "sound-case-001",
     });
-    expect(result).toMatchObject({ priceMinor: 3900, source: "preorder" });
+    expect(result).toMatchObject({ priceMinor: 3900, source: "catalog" });
     const source = readFileSyncSafe(`${process.cwd()}/lib/server/commerce/resolveProductPrice.ts`);
     expect(source).not.toContain("product_preorder_offers");
   });

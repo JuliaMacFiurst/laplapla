@@ -39,11 +39,13 @@ type CustomerCopy = {
   accessLabel: string;
   receiptLabel: string;
   paymentPaid: string;
+  paymentRefunded: string;
   paymentProcessing: string;
   paymentCancelled: string;
   paymentFailed: string;
   accessActive: string;
   accessUnavailable: string;
+  accessRevoked: string;
   receiptAvailable: string;
   receiptPreparing: string;
   receiptUnavailable: string;
@@ -93,8 +95,8 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     billingSaved: "Имя сохранено",
     verifiedEmail: "Подтверждённый email",
     purchaseDate: "Дата покупки", purchaseAmount: "Сумма", paymentLabel: "Оплата", accessLabel: "Доступ", receiptLabel: "Квитанция",
-    paymentPaid: "Оплачено", paymentProcessing: "Обрабатывается", paymentCancelled: "Отменено", paymentFailed: "Не завершено",
-    accessActive: "Активен", accessUnavailable: "Недоступен", receiptAvailable: "Готова", receiptPreparing: "Готовится", receiptUnavailable: "Не предусмотрена",
+    paymentPaid: "Оплачено", paymentRefunded: "Возвращена", paymentProcessing: "Обрабатывается", paymentCancelled: "Отменено", paymentFailed: "Не завершено",
+    accessActive: "Активен", accessRevoked: "Отозван", accessUnavailable: "Недоступен", receiptAvailable: "Готова", receiptPreparing: "Готовится", receiptUnavailable: "Не предусмотрена",
     downloadReceipt: "Скачать копию квитанции", downloadingReceipt: "Скачиваем…", receiptDownloadError: "Не удалось скачать копию квитанции. Попробуйте снова.",
     openEditPrint: "Открыть, изменить и распечатать", editPersonalization: "Изменить персонализацию", openAndPrint: "Открыть и распечатать", reprintHelp: "Вы можете в любое время изменить персонализацию и распечатать квест снова — без ограничения количества повторов.",
     accessProductsTitle: "Другие доступные продукты", accessWithoutPurchase: "Доступ предоставлен без покупки на сайте.", accessSource: "Источник доступа",
@@ -133,8 +135,8 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     billingSaved: "Name saved",
     verifiedEmail: "Verified email",
     purchaseDate: "Purchase date", purchaseAmount: "Amount", paymentLabel: "Payment", accessLabel: "Access", receiptLabel: "Receipt",
-    paymentPaid: "Paid", paymentProcessing: "Processing", paymentCancelled: "Cancelled", paymentFailed: "Not completed",
-    accessActive: "Active", accessUnavailable: "Unavailable", receiptAvailable: "Available", receiptPreparing: "Being prepared", receiptUnavailable: "Not applicable",
+    paymentPaid: "Paid", paymentRefunded: "Refunded", paymentProcessing: "Processing", paymentCancelled: "Cancelled", paymentFailed: "Not completed",
+    accessActive: "Active", accessRevoked: "Revoked", accessUnavailable: "Unavailable", receiptAvailable: "Available", receiptPreparing: "Being prepared", receiptUnavailable: "Not applicable",
     downloadReceipt: "Download receipt copy", downloadingReceipt: "Downloading…", receiptDownloadError: "The receipt copy could not be downloaded. Please try again.",
     openEditPrint: "Open, edit & print again", editPersonalization: "Edit personalization", openAndPrint: "Open & print", reprintHelp: "You can return at any time, change the personalization, and print the quest again with no reprint limit.",
     accessProductsTitle: "Other available products", accessWithoutPurchase: "Access was provided without a website purchase.", accessSource: "Access source",
@@ -173,8 +175,8 @@ export const customerCopy: Record<Lang, CustomerCopy> = {
     billingSaved: "השם נשמר",
     verifiedEmail: "אימייל מאומת",
     purchaseDate: "תאריך הרכישה", purchaseAmount: "סכום", paymentLabel: "תשלום", accessLabel: "גישה", receiptLabel: "קבלה",
-    paymentPaid: "שולם", paymentProcessing: "בטיפול", paymentCancelled: "בוטל", paymentFailed: "לא הושלם",
-    accessActive: "פעילה", accessUnavailable: "לא זמינה", receiptAvailable: "זמינה", receiptPreparing: "בהכנה", receiptUnavailable: "לא נדרשת",
+    paymentPaid: "שולם", paymentRefunded: "הוחזר", paymentProcessing: "בטיפול", paymentCancelled: "בוטל", paymentFailed: "לא הושלם",
+    accessActive: "פעילה", accessRevoked: "בוטלה", accessUnavailable: "לא זמינה", receiptAvailable: "זמינה", receiptPreparing: "בהכנה", receiptUnavailable: "לא נדרשת",
     downloadReceipt: "הורדת העתק קבלה", downloadingReceipt: "מורידים…", receiptDownloadError: "לא הצלחנו להוריד את העתק הקבלה. נסו שוב.",
     openEditPrint: "פתיחה, עריכה והדפסה מחדש", editPersonalization: "עריכת ההתאמה האישית", openAndPrint: "פתיחה והדפסה", reprintHelp: "אפשר לחזור בכל עת, לשנות את ההתאמה האישית ולהדפיס שוב ללא הגבלת הדפסות חוזרות.",
     accessProductsTitle: "מוצרים זמינים נוספים", accessWithoutPurchase: "הגישה ניתנה ללא רכישה באתר.", accessSource: "מקור הגישה",

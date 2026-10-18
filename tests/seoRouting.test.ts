@@ -95,7 +95,7 @@ describe("sitemap and map canonical rules", () => {
       "/privacy",
       "/terms",
       "/licenses",
-      "/shop/sound-case-001/preorder",
+      "/shop/sound-case-001",
     ]));
     expect(paths.some((path) => /admin|studio|export|preview|api/.test(path))).toBe(false);
   });

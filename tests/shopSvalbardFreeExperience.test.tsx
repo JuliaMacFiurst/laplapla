@@ -78,9 +78,9 @@ describe("Svalbard free shop experience", () => {
     });
   });
 
-  it("keeps Sound Case catalog data unchanged", () => {
+  it("keeps Sound Case regular catalog price unchanged", () => {
     const soundCase = getProductById("sound-case-001");
-    expect(soundCase).toMatchObject({ price: 4900, status: "coming-soon", sortOrder: 1 });
+    expect(soundCase).toMatchObject({ price: 4900, status: "active", sortOrder: 1 });
   });
 
   it("keeps the CTA visible and touch-sized on mobile without hover dependency", () => {

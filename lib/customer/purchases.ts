@@ -1,6 +1,6 @@
 import type { EntitlementSource, EntitlementStatus } from "@/lib/customer/types";
 
-export type CustomerPaymentStatus = "paid" | "processing" | "cancelled" | "failed";
+export type CustomerPaymentStatus = "paid" | "refunded" | "processing" | "cancelled" | "failed";
 export type CustomerReceiptStatus = "available" | "preparing" | "not_available";
 
 export type CustomerPurchase = {

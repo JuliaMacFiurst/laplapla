@@ -5,6 +5,7 @@ import { useState } from "react";
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
 import { formatPrice } from "@/lib/shop/commerce";
+import { getProductPrice, LAUNCH_OFFER_COPY } from "@/lib/shop/launchOffer";
 import { requireQuestAssetUrl } from "@/lib/shop/questAssets";
 import { SOUND_CASE_001_ASSET_MANIFEST } from "@/lib/shop/quests/sound-case-001/assets";
 import { SOUND_CASE_PRODUCT_INCLUDED_MEDIA } from "@/lib/shop/soundCasePromoMedia";
@@ -31,9 +32,11 @@ const soundCaseReuseIllustration = requireQuestAssetUrl(
 export function ShopProductDetail({ product, lang }: { product: ShopProduct; lang: Lang }) {
   const productText = dictionaries[lang].shop.soundCase;
   const detail = SOUND_CASE_PRODUCT_DETAIL_COPY[lang];
+  const offer = getProductPrice(product);
+  const offerCopy = LAUNCH_OFFER_COPY[lang];
   const isSoundCasePreorder = product.id === "sound-case-001" && product.status === "coming-soon";
   const ctaHref = buildLocalizedPublicPath(
-    isSoundCasePreorder ? `/shop/${product.slug}/preorder` : `/shop/${product.slug}/create`,
+    isSoundCasePreorder ? `/shop/${product.slug}/preorder` : `/shop/${product.slug}/checkout`,
     lang,
   );
   const previewPages = product.previewPages.map((url, index) =>
@@ -56,11 +59,11 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
           <p className="sound-case-product__subtitle">{product.subtitle[lang]}</p>
           <p className="sound-case-product__value">{detail.heroValue}</p>
           <div className="sound-case-product__purchase-summary">
-            <div><span>{detail.priceLabel}</span><strong><bdi>{formatPrice(product.price, product.currency, lang)}</bdi></strong></div>
-            <Link className="sound-case-product__primary-cta" href={ctaHref}>{isSoundCasePreorder ? productText.preorder.productCta : productText.createCta}</Link>
+            <div>{offer.promotional ? <><span>{offerCopy.badge} · {offerCopy.savings}</span><s><bdi>{formatPrice(offer.regularMinor, product.currency, lang)}</bdi></s></> : <span>{detail.priceLabel}</span>}<strong><bdi>{formatPrice(offer.currentMinor, product.currency, lang)}</bdi></strong></div>
+            <Link className="sound-case-product__primary-cta" href={ctaHref}>{isSoundCasePreorder ? productText.preorder.productCta : offerCopy.buy}</Link>
           </div>
           <ShopLegalDisclosure lang={lang} />
-          <p className="sound-case-product__availability-note">{productText.preparationNote}</p>
+          {isSoundCasePreorder ? <p className="sound-case-product__availability-note">{productText.preparationNote}</p> : null}
         </div>
       </section>
 
@@ -153,7 +156,7 @@ export function ShopProductDetail({ product, lang }: { product: ShopProduct; lan
 
       <section className="sound-case-product__final-cta" aria-labelledby="sound-case-final-title">
         <div><h2 id="sound-case-final-title">{detail.finalTitle}</h2><p>{detail.finalBody}</p></div>
-        <div><strong><bdi>{formatPrice(product.price, product.currency, lang)}</bdi></strong><Link className="sound-case-product__primary-cta" href={ctaHref}>{isSoundCasePreorder ? productText.preorder.productCta : productText.createCta}</Link></div>
+        <div>{offer.promotional ? <s><bdi>{formatPrice(offer.regularMinor, product.currency, lang)}</bdi></s> : null}<strong><bdi>{formatPrice(offer.currentMinor, product.currency, lang)}</bdi></strong><Link className="sound-case-product__primary-cta" href={ctaHref}>{isSoundCasePreorder ? productText.preorder.productCta : offerCopy.buy}</Link></div>
       </section>
     </main>
   );

@@ -50,6 +50,20 @@ describe("customer purchase history aggregation", () => {
     expect(result.accessGrants).toEqual([{ entitlementId: "promo-1", productId: "sound-case-001", source: "promo", status: "active", grantedAt: promo.granted_at }]);
   });
 
+  it("keeps the refunded old order revoked after a new paid order reactivates the shared entitlement", async () => {
+    const second = { ...order, id: "order-2", total_minor: 3900, paid_at: "2026-10-14T10:00:00Z" };
+    const fake = client({
+      orders: { data: [second, order], error: null },
+      commerce_refund_operations: { data: [{ order_id: "order-1", status: "completed" }], error: null },
+    });
+    mocks.client = fake.api;
+    const result = await getCustomerPurchases("user-1", [entitlement]);
+    expect(result.purchases.find((purchase) => purchase.orderId === "order-1")).toMatchObject({ paymentStatus: "refunded", accessStatus: "refunded", amountMinor: 4900 });
+    expect(result.purchases.find((purchase) => purchase.orderId === "order-2")).toMatchObject({ paymentStatus: "paid", accessStatus: "active", amountMinor: 3900 });
+    expect(fake.calls.orders).toContainEqual(["eq", ["user_id", "user-1"]]);
+    expect(fake.calls.commerce_refund_operations).toContainEqual(["in", ["order_id", ["order-2", "order-1"]]]);
+  });
+
   it("keeps copies unavailable until the original email is accepted", async () => {
     const pendingFake = client({ orders: { data: [order], error: null }, receipts: { data: [{ id: "receipt-1", order_id: "order-1", receipt_number: 1, receipt_series: { series_code: "WEB" } }], error: null }, receipt_artifacts: { data: [{ receipt_id: "receipt-1", status: "processing" }], error: null } });
     mocks.client = pendingFake.api;

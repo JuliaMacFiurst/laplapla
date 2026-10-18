@@ -41,8 +41,8 @@ type ProductDetailCopy = {
 
 export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
   ru: {
-    availability: "Скоро · предзаказ без оплаты",
-    priceLabel: "Обычная цена после запуска",
+    availability: "Доступно для покупки",
+    priceLabel: "Цена",
     heroValue: "Готовое групповое приключение, которое становится вашей собственной историей — с именами участников, печатными уликами и интерактивными звуковыми заданиями.",
     videoPresentation: {
       label: "ПОСМОТРИ ПРИКЛЮЧЕНИЕ",
@@ -65,7 +65,7 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     ],
     flowTitle: "Как это работает",
     flow: [
-      { title: "Покупка", body: "После запуска — безопасная оплата через PayPal." },
+      { title: "Покупка", body: "Безопасная оплата через PayPal." },
       { title: "Персонализация", body: "Вы выбираете язык и добавляете имена команды." },
       { title: "Печать", body: "Печатаете подготовленные материалы A4 через браузер." },
       { title: "Игра", body: "Команда открывает улики и проходит интерактивные этапы." },
@@ -98,17 +98,17 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     ],
     trustTitle: "Покупка без сюрпризов",
     trustItems: [
-      "Когда продажи откроются, оплата будет проходить через PayPal.",
+      "Оплата проходит через PayPal.",
       "Доступ к квесту открывается после подтверждённой оплаты.",
       "Купленный квест остаётся доступен в вашем аккаунте.",
     ],
     sellerLabel: "Продавец: אומנצ׳קים",
     finalTitle: "Готовы собрать команду?",
-    finalBody: "Сейчас можно записаться на предзаказ. Оплата ещё не открыта.",
+    finalBody: "Купите приключение и начните собирать команду.",
   },
   en: {
-    availability: "Coming soon · preorder with no payment",
-    priceLabel: "Regular price after launch",
+    availability: "Available to buy",
+    priceLabel: "Price",
     heroValue: "A complete group adventure that becomes your own story—with participant names, printable clues, and interactive sound challenges.",
     videoPresentation: {
       label: "WATCH THE ADVENTURE",
@@ -131,7 +131,7 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     ],
     flowTitle: "How it works",
     flow: [
-      { title: "Buy", body: "After launch, pay securely with PayPal." },
+      { title: "Buy", body: "Pay securely with PayPal." },
       { title: "Personalize", body: "Choose a language and add your team’s names." },
       { title: "Print", body: "Print the prepared A4 materials from your browser." },
       { title: "Play", body: "Open clues and continue through interactive stages." },
@@ -164,17 +164,17 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     ],
     trustTitle: "A purchase you can understand",
     trustItems: [
-      "When sales open, payment will be processed through PayPal.",
+      "Payment is processed through PayPal.",
       "Quest access opens after confirmed payment.",
       "Your purchased quest remains available in your account.",
     ],
     sellerLabel: "Seller: אומנצ׳קים",
     finalTitle: "Ready to gather your team?",
-    finalBody: "You can join the preorder now. Payment is not open yet.",
+    finalBody: "Buy the adventure and gather your team.",
   },
   he: {
-    availability: "בקרוב · הרשמה מוקדמת ללא תשלום",
-    priceLabel: "המחיר הרגיל לאחר ההשקה",
+    availability: "זמין לרכישה",
+    priceLabel: "מחיר",
     heroValue: "הרפתקה קבוצתית שלמה שהופכת לסיפור שלכם — עם שמות המשתתפים, רמזים להדפסה ומשימות צליל אינטראקטיביות.",
     videoPresentation: {
       label: "הצצה להרפתקה",
@@ -197,7 +197,7 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     ],
     flowTitle: "איך זה עובד",
     flow: [
-      { title: "קנייה", body: "לאחר ההשקה — תשלום מאובטח דרך PayPal." },
+      { title: "קנייה", body: "תשלום מאובטח דרך PayPal." },
       { title: "התאמה אישית", body: "בוחרים שפה ומוסיפים את שמות הצוות." },
       { title: "הדפסה", body: "מדפיסים את חומרי A4 המוכנים דרך הדפדפן." },
       { title: "משחק", body: "פותחים רמזים וממשיכים בשלבים האינטראקטיביים." },
@@ -230,12 +230,12 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
     ],
     trustTitle: "רכישה ברורה ורגועה",
     trustItems: [
-      "כשהמכירה תיפתח, התשלום יתבצע דרך PayPal.",
+      "התשלום מתבצע דרך PayPal.",
       "הגישה למשימה נפתחת לאחר אישור התשלום.",
       "המשימה שנרכשה נשארת זמינה בחשבון שלכם.",
     ],
     sellerLabel: "המוכר: אומנצ׳קים",
     finalTitle: "מוכנים לאסוף את הצוות?",
-    finalBody: "כעת אפשר להצטרף להרשמה המוקדמת. התשלום עדיין לא פתוח.",
+    finalBody: "קנו את ההרפתקה ואספו את הצוות.",
   },
 };

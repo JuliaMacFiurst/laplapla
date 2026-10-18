@@ -5,6 +5,9 @@ import { describe, expect, it } from "vitest";
 
 import { SoundCasePromoBanner } from "@/components/shop/SoundCasePromoBanner";
 import { dictionaries } from "@/i18n";
+import { getProductById } from "@/lib/shop/catalog";
+import { formatPrice } from "@/lib/shop/commerce";
+import { LAUNCH_OFFER_COPY } from "@/lib/shop/launchOffer";
 import {
   SOUND_CASE_PRODUCT_INCLUDED_MEDIA,
   SOUND_CASE_PROMO_MEDIA,
@@ -19,11 +22,14 @@ describe("Sound Case promotional visuals", () => {
     expect(html).toContain(copy.title);
     expect(html).toContain(copy.hook);
     expect(html).toContain(copy.imageAlt);
-    expect(html).toContain("49 ₪");
-    expect(html).toContain("39 ₪");
+    const product = getProductById("sound-case-001");
+    expect(product).not.toBeNull();
+    expect(html).toContain(formatPrice(4900, "ILS", lang));
+    expect(html).toContain(formatPrice(3900, "ILS", lang));
+    expect(html).toContain(LAUNCH_OFFER_COPY[lang].buy);
     expect(html).toContain(lang === "ru"
-      ? 'href="/shop/sound-case-001/preorder"'
-      : `href="/${lang}/shop/sound-case-001/preorder"`);
+      ? 'href="/shop/sound-case-001/checkout"'
+      : `href="/${lang}/shop/sound-case-001/checkout"`);
   });
 
   it("uses the public R2 banner and sticker collections", () => {

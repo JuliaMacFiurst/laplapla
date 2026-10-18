@@ -105,6 +105,9 @@ export const getServerSideProps: GetServerSideProps<PreorderPageProps> = async (
   ) {
     return { notFound: true };
   }
+  if (product.status !== "coming-soon") {
+    return { redirect: { destination: `/shop/${slug}`, permanent: false } };
+  }
 
   let initialOfferStatus: PreorderOfferStatus = "closed";
   try {

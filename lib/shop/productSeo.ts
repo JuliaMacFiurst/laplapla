@@ -10,6 +10,7 @@
 
 import type { Lang } from "@/i18n";
 import type { ShopProduct } from "./types";
+import { getProductPrice } from "./launchOffer";
 import { BASE_URL } from "@/lib/config";
 import {
   buildCanonicalUrl,
@@ -54,7 +55,7 @@ export function buildProductJsonLd(
     return null;
   }
 
-  const amount = product.price / 100;
+  const amount = getProductPrice(product).currentMinor / 100;
 
   return {
     "@context": "https://schema.org",

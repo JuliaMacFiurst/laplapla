@@ -104,12 +104,12 @@ describe("Sound Case personalization", () => {
 });
 
 describe("Sound Case catalog safety", () => {
-  it("resolves the prototype publicly but never as purchasable", () => {
+  it("resolves Sound Case as purchasable", () => {
     const product = getProductBySlug("sound-case-001");
 
-    expect(product?.status).toBe("coming-soon");
+    expect(product?.status).toBe("active");
     expect(getPublicProducts()).toContainEqual(product);
-    expect(getPurchasableProducts()).not.toContainEqual(product);
+    expect(getPurchasableProducts()).toContainEqual(product);
   });
 });
 

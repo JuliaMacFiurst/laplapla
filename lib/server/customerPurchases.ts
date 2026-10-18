@@ -8,6 +8,7 @@ type OrderRow = { id: string; status: "creating" | "pending_approval" | "capture
 type ReceiptRow = { id: string; order_id: string; receipt_number: number; receipt_series: { series_code: string } | Array<{ series_code: string }> | null };
 type ArtifactRow = { receipt_id: string; status: "pending" | "processing" | "ready" | "failed" };
 type DeliveryRow = { receipt_id: string; status: "pending" | "sending" | "accepted" | "failed" | "uncertain" };
+type RefundRow = { order_id: string; status: string };
 
 const first = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] ?? null : value;
 
@@ -36,6 +37,11 @@ export async function getCustomerPurchases(userId: string, entitlements: readonl
 
   const orders = (orderData ?? []) as unknown as OrderRow[];
   const orderIds = orders.map((order) => order.id);
+  const refundResult = orderIds.length
+    ? await supabase.from("commerce_refund_operations").select("order_id,status").in("order_id", orderIds)
+    : { data: [], error: null };
+  if (refundResult.error) throw refundResult.error;
+  const completedRefunds = new Set(((refundResult.data ?? []) as RefundRow[]).filter((row) => row.status === "completed").map((row) => row.order_id));
   const receiptResult = orderIds.length
     ? await supabase.from("receipts").select("id,order_id,receipt_number,receipt_series(series_code)").in("order_id", orderIds).eq("document_type", "receipt")
     : { data: [], error: null };
@@ -70,8 +76,8 @@ export async function getCustomerPurchases(userId: string, entitlements: readonl
       amountMinor: order.total_minor,
       currency: order.currency,
       purchasedAt: order.paid_at ?? order.created_at,
-      paymentStatus: paymentStatus(order.status),
-      accessStatus: entitlement?.status ?? "unavailable",
+      paymentStatus: completedRefunds.has(order.id) ? "refunded" : paymentStatus(order.status),
+      accessStatus: completedRefunds.has(order.id) ? "refunded" : entitlement?.status ?? "unavailable",
       receipt: {
         status: receiptStatus({ order, receipt, artifact, delivery }),
         displayNumber: receipt && series ? `${series.series_code}-${String(receipt.receipt_number).padStart(6, "0")}` : null,

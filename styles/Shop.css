@@ -1182,6 +1182,8 @@
   color: rgba(255, 255, 255, .62);
   font-size: .78rem;
 }
+.sound-case-product__purchase-summary s, .sound-case-product__final-cta s { color: rgba(255, 255, 255, .74); margin-inline: .4rem; }
+.shop-product-card__purchase s { color: #756b76; margin-inline: .4rem; }
 
 .sound-case-product__purchase-summary strong,
 .sound-case-product__final-cta strong {
@@ -1646,10 +1648,11 @@
 }
 
 /* ---------------------------------------------------------
-   PayPal Sandbox checkout (staging-only while product is coming soon)
+   PayPal Sandbox checkout
 --------------------------------------------------------- */
 
 .paypal-checkout {
+  box-sizing: border-box;
   width: min(calc(100% - 2rem), 760px);
   margin: clamp(1.5rem, 5vw, 4rem) auto;
   padding: clamp(1.25rem, 4vw, 2.5rem);
@@ -1657,16 +1660,29 @@
   border-radius: 30px;
   background: linear-gradient(145deg, #fffdf8, #fff 58%, #f5eff8);
   box-shadow: 0 22px 70px rgba(70, 47, 72, 0.12);
+  color: #302b38;
+  font-family: var(--font-nunito, "Nunito", var(--font-system, system-ui, sans-serif));
+  font-size: 1rem;
+  line-height: 1.55;
 }
+
+.paypal-checkout[dir="rtl"] {
+  font-family: var(--font-system, system-ui, sans-serif);
+}
+
+.paypal-checkout button,
+.paypal-checkout input { font-family: inherit; }
+.paypal-checkout a { overflow-wrap: anywhere; }
 
 .paypal-checkout__header h1 {
   margin: 0;
   color: #3c3040;
   font-size: clamp(2rem, 6vw, 3.7rem);
-  line-height: 1.02;
+  font-family: inherit;
+  line-height: 1.15;
 }
 
-.paypal-checkout__header > p:last-child {
+.paypal-checkout__header > p:not(.paypal-checkout__badge) {
   max-width: 58ch;
   color: #665d69;
   line-height: 1.6;
@@ -1679,7 +1695,7 @@
   border-radius: 999px;
   background: #fff0b8;
   color: #6b5012;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1693,19 +1709,37 @@
   background: rgba(255, 255, 255, 0.88);
 }
 
-.paypal-checkout__panel h2 { margin-top: 0; color: #3c3040; }
+.paypal-checkout__panel h2 { margin-top: 0; color: #3c3040; font-family: inherit; line-height: 1.25; }
+.paypal-checkout__panel .shop-legal-disclosure { font-size: 0.9375rem; line-height: 1.55; }
 .paypal-checkout__panel--success { border-color: rgba(55, 121, 110, 0.3); background: #f2fbf8; }
 
 .paypal-checkout__price {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  gap: 0.4rem;
   margin-bottom: 1.25rem;
 }
 
-.paypal-checkout__price span { color: #68606b; font-weight: 700; }
-.paypal-checkout__price strong { color: #3e725f; font-size: clamp(2rem, 7vw, 3rem); }
+.paypal-checkout__price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  min-width: 0;
+}
+.paypal-checkout__price-row span { color: #514652; font-weight: 700; }
+.paypal-checkout__price-row--regular { font-size: 1rem; }
+.paypal-checkout__price-row--regular s { color: #665d69; }
+.paypal-checkout__price-row--total strong {
+  color: #245a46;
+  font-size: clamp(2rem, 7vw, 3rem);
+  line-height: 1.2;
+}
+.paypal-checkout__price-savings {
+  margin: 0;
+  color: #245a46;
+  font-weight: 800;
+}
+.paypal-checkout__price bdi { white-space: nowrap; }
 
 .paypal-checkout__primary,
 .paypal-checkout__paypal-button {
@@ -1727,25 +1761,94 @@
 
 .paypal-checkout__primary { background: #6d486f; color: #fff; }
 .paypal-checkout__consents { display: grid; gap: 0.85rem; margin: 1rem 0 1.25rem; }
-.paypal-checkout__consent { display: flex; align-items: flex-start; gap: 0.65rem; color: #3c3040; line-height: 1.5; cursor: pointer; }
+.paypal-checkout__consent { display: flex; align-items: flex-start; gap: 0.65rem; color: #3c3040; font-size: 1rem; line-height: 1.55; cursor: pointer; }
 .paypal-checkout__consent input { flex: 0 0 auto; width: 1.15rem; height: 1.15rem; margin-top: 0.18rem; accent-color: #6d486f; }
 .paypal-checkout__consent a { color: #6d486f; text-decoration: underline; text-underline-offset: 2px; }
 .paypal-checkout__consent input:focus-visible { outline: 3px solid #9b5ca2; outline-offset: 3px; }
 .paypal-checkout__paypal-button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(104, 75, 10, 0.18); }
 .paypal-checkout__paypal-button:disabled { cursor: not-allowed; opacity: 0.65; }
-.paypal-checkout__secure-note { color: #746d76; font-size: 0.88rem; line-height: 1.5; }
+.paypal-checkout__secure-note { color: #514652; font-size: 0.875rem; line-height: 1.55; }
 .paypal-checkout__status { padding: 2rem 0; color: #665d69; }
 .paypal-checkout__error { color: #8b2f3e; }
 .paypal-checkout__error button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
 
 @media (max-width: 520px) {
   .paypal-checkout { box-sizing: border-box; width: min(calc(100% - 1rem), 760px); margin-block: 0.5rem; border-radius: 22px; }
-  .paypal-checkout__price { align-items: flex-start; flex-direction: column; gap: 0.2rem; }
+  .paypal-checkout__price-row { align-items: flex-start; flex-direction: column; gap: 0.1rem; }
   .paypal-checkout__paypal-button, .paypal-checkout__primary { box-sizing: border-box; width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .paypal-checkout__paypal-button { transition: none; }
+}
+
+/* ---------------------------------------------------------
+   Verified purchase confirmation
+--------------------------------------------------------- */
+
+.purchase-success {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-height: min(75vh, 720px);
+  padding: clamp(1rem, 5vw, 4rem);
+  color: #302b38;
+  font-family: var(--font-nunito, "Nunito", var(--font-system, system-ui, sans-serif));
+  line-height: 1.6;
+}
+.purchase-success[dir="rtl"] { font-family: var(--font-system, system-ui, sans-serif); }
+.purchase-success__card {
+  box-sizing: border-box;
+  width: min(100%, 700px);
+  padding: clamp(1.5rem, 6vw, 4rem);
+  border: 1px solid #eadfe7;
+  border-radius: 30px;
+  background: radial-gradient(circle at 85% 12%, #fff0ba 0, transparent 28%), linear-gradient(145deg, #fffdf8, #fff 55%, #f5eff8);
+  box-shadow: 0 22px 70px rgba(70, 47, 72, 0.12);
+  text-align: center;
+}
+.purchase-success__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: #fff0ba;
+  color: #6d486f;
+  font-size: 2rem;
+}
+.purchase-success h1 {
+  margin: 1.25rem 0 0.75rem;
+  color: #3c3040;
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  line-height: 1.2;
+}
+.purchase-success p { max-width: 54ch; margin: 0 auto; font-size: clamp(1rem, 2vw, 1.15rem); }
+.purchase-success__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.8rem; margin-top: 2rem; }
+.purchase-success__primary,
+.purchase-success__secondary {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  max-width: 100%;
+  padding: 0.75rem 1.35rem;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.purchase-success__primary { border: 1px solid #6d486f; background: #6d486f; color: #fff; }
+.purchase-success__secondary { border: 1px solid #6d486f; background: #fff; color: #6d486f; }
+.purchase-success__primary:focus-visible,
+.purchase-success__secondary:focus-visible { outline: 3px solid #9b5ca2; outline-offset: 3px; }
+@media (max-width: 390px) {
+  .purchase-success { padding: 0.5rem; }
+  .purchase-success__card { border-radius: 22px; }
+  .purchase-success__actions { flex-direction: column; align-items: stretch; }
 }
 
 /* ---------------------------------------------------------
