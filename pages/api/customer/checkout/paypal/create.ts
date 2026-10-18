@@ -3,6 +3,7 @@ import { resolveCustomerAccess } from "@/lib/server/auth/customerAccess";
 import { createLocalCommerceOrder } from "@/lib/server/commerce/orders";
 import { createPayPalClient, PayPalApiError } from "@/lib/server/commerce/paypal/client";
 import { getPayPalServerConfig } from "@/lib/server/commerce/paypal/config";
+import { isPayPalCheckoutAvailable } from "@/lib/server/commerce/paypal/checkoutAvailability";
 import {
   bindPayPalOrderToLocalOrder,
   getPayPalCheckoutOrderForCustomer,
@@ -71,12 +72,7 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     res.status(503).json({ ok: false, code: "paypal_unavailable" });
     return;
   }
-  // A live purchase must not promise an emailed original while delivery is disabled.
-  if (paypalConfig.environment === "live" && (
-    process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED !== "true"
-    || !process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL
-    || !process.env.RECEIPT_PDF_STORAGE_BUCKET?.trim()
-  )) {
+  if (!isPayPalCheckoutAvailable(paypalConfig)) {
     res.status(503).json({ ok: false, code: "order_unavailable" });
     return;
   }

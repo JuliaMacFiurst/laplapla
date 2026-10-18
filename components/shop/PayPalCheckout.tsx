@@ -353,6 +353,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       authStatus={auth.status}
       state={state}
       quote={quote}
+      environment={paypalEnvironment}
       paymentReady={Boolean(paymentSession)}
       signInPath={signInPath}
       createPath={createPath}
@@ -381,6 +382,7 @@ export function PayPalCheckoutView({
   authStatus,
   state,
   quote,
+  environment = "sandbox",
   paymentReady,
   signInPath,
   createPath,
@@ -394,6 +396,7 @@ export function PayPalCheckoutView({
   authStatus: "loading" | "anonymous" | "authenticated" | "error";
   state: CheckoutState;
   quote: SuccessfulQuote | null;
+  environment?: "sandbox" | "live" | null;
   paymentReady: boolean;
   signInPath: string;
   createPath: string;
@@ -536,7 +539,7 @@ export function PayPalCheckoutView({
         disabled={!paymentReady || !legalAccepted || !electronicReceiptAccepted || state === "opening" || state === "capturing"}
         onClick={onStart}
       >
-        {state === "opening" || state === "capturing" ? copy.loading : copy.payWithPayPal}
+        {state === "opening" || state === "capturing" ? copy.loading : environment === "live" ? copy.payWithPayPalLive : copy.payWithPayPal}
       </button>
       <p className="paypal-checkout__secure-note">{copy.secureNote}</p>
       {state === "cancelled" ? <p role="status">{copy.cancelled}</p> : null}

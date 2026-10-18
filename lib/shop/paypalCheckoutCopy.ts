@@ -4,6 +4,8 @@ export type PayPalCheckoutCopy = {
   title: string;
   intro: string;
   sandboxBadge: string;
+  liveBadge: string;
+  liveIntro: string;
   loading: string;
   signInTitle: string;
   signInBody: string;
@@ -14,6 +16,7 @@ export type PayPalCheckoutCopy = {
   savings: string;
   preorderPrice: string;
   payWithPayPal: string;
+  payWithPayPalLive: string;
   secureNote: string;
   cancelled: string;
   unavailable: string;
@@ -43,6 +46,8 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     title: "Оформление Sound Case #001",
     intro: "Тестовая покупка через PayPal Sandbox. Итоговую цену безопасно определяет LapLapLa.",
     sandboxBadge: "PayPal Sandbox · тестовая оплата",
+    liveBadge: "Безопасная оплата через PayPal",
+    liveIntro: "Проверьте данные покупки перед оплатой. Итоговую цену безопасно определяет LapLapLa.",
     loading: "Проверяем аккаунт и цену…",
     signInTitle: "Сначала войдите в LapLapLa",
     signInBody: "Покупка привязывается к вашему аккаунту и после оплаты открывает персонализацию.",
@@ -53,6 +58,7 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     savings: "Вы экономите",
     preorderPrice: "Ваша цена предзаказа",
     payWithPayPal: "Оплатить через PayPal Sandbox",
+    payWithPayPalLive: "Оплатить через PayPal",
     secureNote: "Платёж проходит в защищённом окне PayPal. LapLapLa не получает данные карты.",
     cancelled: "Оплата отменена. Деньги не списаны.",
     unavailable: "Сейчас не удалось открыть PayPal. Попробуйте ещё раз.",
@@ -76,6 +82,8 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     title: "Sound Case #001 checkout",
     intro: "A test purchase through PayPal Sandbox. LapLapLa securely resolves the final price.",
     sandboxBadge: "PayPal Sandbox · test payment",
+    liveBadge: "Secure PayPal checkout",
+    liveIntro: "Review your purchase before paying. LapLapLa securely resolves the final price.",
     loading: "Checking your account and price…",
     signInTitle: "Sign in to LapLapLa first",
     signInBody: "Your purchase is linked to your account and unlocks personalization after payment.",
@@ -86,6 +94,7 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     savings: "You save",
     preorderPrice: "Your preorder price",
     payWithPayPal: "Pay with PayPal Sandbox",
+    payWithPayPalLive: "Pay with PayPal",
     secureNote: "Payment happens in PayPal's hosted experience. LapLapLa does not receive card details.",
     cancelled: "Payment was cancelled. You were not charged.",
     unavailable: "PayPal could not be opened right now. Please try again.",
@@ -109,6 +118,8 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     title: "תשלום עבור תיק הצלילים מס׳ 001",
     intro: "רכישת ניסיון דרך PayPal Sandbox. המחיר הסופי נקבע בצורה מאובטחת על ידי LapLapLa.",
     sandboxBadge: "PayPal Sandbox · תשלום ניסיוני",
+    liveBadge: "תשלום מאובטח באמצעות PayPal",
+    liveIntro: "בדקו את פרטי הרכישה לפני התשלום. המחיר הסופי נקבע בצורה מאובטחת על ידי LapLapLa.",
     loading: "בודקים את החשבון ואת המחיר…",
     signInTitle: "קודם נכנסים ל־LapLapLa",
     signInBody: "הרכישה משויכת לחשבון שלכם, ולאחר התשלום נפתחת ההתאמה האישית.",
@@ -119,6 +130,7 @@ export const paypalCheckoutCopy: Record<Lang, PayPalCheckoutCopy> = {
     savings: "חיסכון של",
     preorderPrice: "מחיר ההרשמה המוקדמת שלכם",
     payWithPayPal: "תשלום דרך PayPal Sandbox",
+    payWithPayPalLive: "תשלום דרך PayPal",
     secureNote: "התשלום מתבצע בחלון המאובטח של PayPal. פרטי הכרטיס אינם נמסרים ל־LapLapLa.",
     cancelled: "התשלום בוטל ולא בוצע חיוב.",
     unavailable: "לא הצלחנו לפתוח את PayPal כרגע. נסו שוב.",

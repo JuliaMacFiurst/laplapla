@@ -92,6 +92,7 @@ describe("authenticated PayPal create endpoint", () => {
   afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("SHOP_LIVE_CHECKOUT_ENABLED", "false");
     mocks.getPayPalServerConfig.mockReturnValue({
       environment: "sandbox", clientId: "client", clientSecret: "test-value",
       apiBaseUrl: "https://api-m.sandbox.paypal.com", sdkUrl: "https://www.sandbox.paypal.com/web-sdk/v6/core",
@@ -189,6 +190,33 @@ describe("authenticated PayPal create endpoint", () => {
     expect(target.result.status).toBe(503);
     expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
     expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects direct Live create requests while the explicit flag is disabled", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "true");
+    vi.stubEnv("RESEND_API_KEY", "test-only");
+    vi.stubEnv("RESEND_FROM_EMAIL", "LapLapLa <support@example.test>");
+    vi.stubEnv("RECEIPT_PDF_STORAGE_BUCKET", "receipt-pdfs");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live", clientId: "public-test-id", clientSecret: "server-test-secret" });
+    const target = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res);
+    expect(target.result).toMatchObject({ status: 503, body: { ok: false, code: "order_unavailable" } });
+    expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+  });
+
+  it("allows configured Live create with the flag enabled", async () => {
+    vi.stubEnv("SHOP_LIVE_CHECKOUT_ENABLED", "true");
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "true");
+    vi.stubEnv("RESEND_API_KEY", "test-only");
+    vi.stubEnv("RESEND_FROM_EMAIL", "LapLapLa <support@example.test>");
+    vi.stubEnv("RECEIPT_PDF_STORAGE_BUCKET", "receipt-pdfs");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live", clientId: "public-test-id", clientSecret: "server-test-secret" });
+    const target = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), target.res);
+    expect(target.result.status).toBe(200);
+    expect(mocks.createLocalCommerceOrder).toHaveBeenCalledWith(expect.objectContaining({ providerEnvironment: "live" }));
+    expect(mocks.paypalCreate).toHaveBeenCalledOnce();
   });
 
   it("keeps live checkout closed when the private receipt PDF bucket is not configured", async () => {

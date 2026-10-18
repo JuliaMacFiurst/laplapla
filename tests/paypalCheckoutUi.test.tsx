@@ -225,10 +225,20 @@ describe("localized PayPal Sandbox checkout UI", () => {
     const component = readFileSync(`${process.cwd()}/components/shop/PayPalCheckout.tsx`, "utf8");
     expect(page).toContain('<meta name="robots" content="noindex, nofollow"');
     expect(page).toContain('dir={lang === "he" ? "rtl" : "ltr"}');
-    expect(page).toContain('process.env.PAYPAL_ENVIRONMENT !== "sandbox"');
+    expect(page).toContain("isPayPalCheckoutAvailable(config)");
     expect(component).toContain("buildLocalizedPublicPath");
     expect(component).toContain('/account/sign-in');
     expect(component).toContain('/shop/sound-case-001/create');
+  });
+
+  it.each(["ru", "en", "he"] as const)("uses real-payment wording for Live checkout in %s", (lang) => {
+    const html = renderToStaticMarkup(createElement(PayPalCheckoutView, {
+      ...baseProps, lang, environment: "live", quote: null,
+    }));
+    expect(html).toContain(paypalCheckoutCopy[lang].payWithPayPalLive);
+    expect(html).not.toContain(paypalCheckoutCopy[lang].payWithPayPal);
+    expect(paypalCheckoutCopy[lang].liveIntro).not.toContain("Sandbox");
+    expect(paypalCheckoutCopy[lang].liveBadge).not.toContain("Sandbox");
   });
 
   it("uses the official v6 hosted approval session and never embeds the secret", () => {
