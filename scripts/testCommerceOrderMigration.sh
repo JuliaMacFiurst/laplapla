@@ -107,4 +107,21 @@ wait "$receipt_delivery_a_pid" "$receipt_delivery_b_pid"
 "${psql_local[@]}" -f "$repo_root/tests/sql/receiptOriginalDeliveryConcurrencyAssert.sql"
 "${psql_local[@]}" -f "$repo_root/tests/sql/receiptDeliveryLifecycleAssert.sql"
 
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261013214846_commerce_full_refund_operations.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/commerceFullRefundOperations.sql"
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261014231224_sandbox_purchase_delivery.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/sandboxPurchaseDelivery.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261017195749_refund_email_deliveries.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/refundEmailDelivery.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/refundEmailConcurrencySetup.sql" >/dev/null
+refund_email_operation_id="66666666-6666-4666-8666-666666666603"
+"${psql_local[@]}" -Atc "set role service_role; update public.commerce_refund_email_deliveries set status='sending', attempt_count=1, claim_token='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', claimed_at=now() where operation_id='$refund_email_operation_id' and status='pending' and attempt_count=0 returning operation_id" >"$test_root/refund-email-a.out" &
+refund_email_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; update public.commerce_refund_email_deliveries set status='sending', attempt_count=1, claim_token='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', claimed_at=now() where operation_id='$refund_email_operation_id' and status='pending' and attempt_count=0 returning operation_id" >"$test_root/refund-email-b.out" &
+refund_email_b_pid=$!
+wait "$refund_email_a_pid" "$refund_email_b_pid"
+[[ "$(cat "$test_root/refund-email-a.out" "$test_root/refund-email-b.out" | grep -c "$refund_email_operation_id")" -eq 1 ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/refundEmailConcurrencyAssert.sql"
+
 printf 'Commerce order foundation SQL regression checks passed.\n'

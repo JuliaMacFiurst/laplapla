@@ -30,6 +30,12 @@ export async function sendOriginalReceiptOnce(receiptId: string): Promise<Delive
     customer_snapshot: { email?: unknown };
     receipt_series: { series_code: string } | { series_code: string }[];
   };
+  const orderResult = await db.from("orders")
+    .select("status,provider_environment,provider_capture_id")
+    .eq("id", receipt.order_id).maybeSingle();
+  if (orderResult.error) throw orderResult.error;
+  if (orderResult.data?.status !== "paid" || orderResult.data.provider_environment !== "live"
+    || !orderResult.data.provider_capture_id) return "skipped";
   const customerEmail = receipt.customer_snapshot?.email;
   if (typeof customerEmail !== "string" || !EMAIL_PATTERN.test(customerEmail)) return "skipped";
 

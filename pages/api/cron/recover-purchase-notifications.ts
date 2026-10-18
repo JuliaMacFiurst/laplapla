@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { recoverPurchaseNotifications } from "@/lib/server/commerce/purchaseNotifications";
+import { recoverSandboxPurchaseEmails } from "@/lib/server/commerce/sandboxPurchaseEmail";
+import { recoverRefundEmails } from "@/lib/server/commerce/refundEmail";
 import { captureAndAlertServerError } from "@/lib/monitoring/captureAndAlertServerError";
 
 export async function recoverPurchaseNotificationsHandler(req: NextApiRequest, res: NextApiResponse) {
@@ -15,7 +17,10 @@ export async function recoverPurchaseNotificationsHandler(req: NextApiRequest, r
     return;
   }
   try {
-    res.status(200).json({ ok: true, ...await recoverPurchaseNotifications() });
+    const [purchase, sandboxEmail, refundEmail] = await Promise.all([
+      recoverPurchaseNotifications(), recoverSandboxPurchaseEmails(), recoverRefundEmails(),
+    ]);
+    res.status(200).json({ ok: true, ...purchase, sandboxEmail, refundEmail });
   } catch (error) {
     try {
       await captureAndAlertServerError(error, {

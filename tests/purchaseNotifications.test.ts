@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), send: vi.fn(), alert: vi.fn() }));
-vi.mock("@/lib/server/supabase", () => ({ createServerSupabaseClient: () => ({ rpc: mocks.rpc }) }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), send: vi.fn(), alert: vi.fn(), environment: "live" as "live" | "sandbox", recoverEmail: vi.fn() }));
+vi.mock("@/lib/server/supabase", () => ({ createServerSupabaseClient: () => ({
+  rpc: mocks.rpc,
+  from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { provider_environment: mocks.environment }, error: null }) }) }) }),
+}) }));
 vi.mock("@/lib/monitoring/discordPurchase", () => ({ sendDiscordPurchaseNotification: mocks.send }));
 vi.mock("@/lib/monitoring/captureAndAlertServerError", () => ({ captureAndAlertServerError: mocks.alert }));
+vi.mock("@/lib/server/commerce/sandboxPurchaseEmail", () => ({ recoverSandboxPurchaseEmails: mocks.recoverEmail }));
 
 import { notifyPaidOrderPurchase, recoverPurchaseNotifications } from "@/lib/server/commerce/purchaseNotifications";
 import { recoverPurchaseNotificationsHandler } from "@/pages/api/cron/recover-purchase-notifications";
@@ -37,6 +41,8 @@ describe("purchase notification coordinator", () => {
     vi.clearAllMocks();
     mocks.send.mockResolvedValue({ ok: true, status: "sent", messageId: "discord-message-1" });
     mocks.alert.mockResolvedValue(undefined);
+    mocks.environment = "live";
+    mocks.recoverEmail.mockResolvedValue({ scanned: 0, accepted: 0, failed: 0, uncertain: 0, skipped: 0 });
     mocks.rpc.mockImplementation(async (name: string) => {
       if (name === "claim_paid_order_purchase_notification") return { data: [claim], error: null };
       if (name === "complete_purchase_notification") return { data: "sent", error: null };
@@ -57,6 +63,7 @@ describe("purchase notification coordinator", () => {
       provider: "paypal",
       paidAt: claim.paid_at,
       priceSource: "catalog",
+      environment: "live",
     });
     expect(JSON.stringify(mocks.send.mock.calls)).not.toMatch(/email|billing|payer|address/iu);
     expect(mocks.rpc).toHaveBeenCalledWith("complete_purchase_notification", {
@@ -75,6 +82,19 @@ describe("purchase notification coordinator", () => {
       expect(mocks.send).not.toHaveBeenCalled();
     },
   );
+
+  it("marks an ambiguous Sandbox Discord result uncertain and does not resend", async () => {
+    mocks.environment = "sandbox";
+    mocks.send.mockResolvedValueOnce({ ok: false, status: "discord-error", code: "network_error" });
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_paid_order_purchase_notification") return { data: [claim], error: null };
+      if (name === "mark_sandbox_purchase_notification_uncertain") return { data: "uncertain", error: null };
+      throw new Error(name);
+    });
+    await expect(notifyPaidOrderPurchase({ orderId, source: "capture" })).resolves.toMatchObject({ status: "failed", code: "network_error" });
+    expect(mocks.rpc).toHaveBeenCalledWith("mark_sandbox_purchase_notification_uncertain", expect.any(Object));
+    expect(mocks.rpc).not.toHaveBeenCalledWith("fail_purchase_notification", expect.anything());
+  });
 
   it.each([
     [{ ok: false, status: "not-configured", code: "missing_webhook" }, false],

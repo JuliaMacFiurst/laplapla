@@ -47,4 +47,16 @@ describe("Discord purchase delivery", () => {
       ok: false, status: "discord-error", code: "network_error",
     });
   });
+
+  it("uses the existing webhook for a Sandbox notice without buyer details", async () => {
+    process.env.DISCORD_PURCHASES_WEBHOOK_URL = "https://discord.invalid/purchases";
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "message-2" }) });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(sendDiscordPurchaseNotification({ ...input, environment: "sandbox", amountMinor: 3900 })).resolves.toMatchObject({ ok: true });
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(payload.embeds[0].title).toBe("🧪 LAPLAPLA SANDBOX PURCHASE");
+    expect(JSON.stringify(payload)).toContain("39.00 ILS");
+    expect(JSON.stringify(payload)).toContain("TEST ONLY — NO REAL MONEY");
+    expect(JSON.stringify(payload)).not.toMatch(/email|buyer|payer|address/iu);
+  });
 });

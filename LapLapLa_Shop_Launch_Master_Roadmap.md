@@ -31,13 +31,13 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 | Track | Status | Current state |
 |---|---|---|
 | Backend commerce | DONE / near production-ready | Trusted PayPal reconciliation, atomic paid finalization, entitlement, snapshots, receipt ledger, PDF artifacts and recovery exist. |
-| Customer purchase flow | PARTIAL | Sandbox flow is developed, but product remains `coming-soon` and checkout is Sandbox-only. |
+| Customer purchase flow | PARTIAL | Sound Case #001 is active in the local Shop candidate; a Sandbox purchase and refund have been exercised. Public sales remain closed and the Live flow is unverified. |
 | Storefront design | PARTIAL | Sound Case #001 product detail and shop index now have launch-quality merchandising; age/duration are approved provisional facts pending live playtest, while minimum-player and preparation-burden decisions remain. |
 | Builder / preview / print | PARTIAL | Canonical 24-page preview, saved-only printing, code-derived print guidance and account Edit/Open & print intents exist; protected-route visual QA and physical printer validation remain. |
 | Post-purchase UX | PARTIAL | `/account` provides localized purchase history, re-edit/re-print entry and server-authorized receipt **copy** download after original-email acceptance. The original email/account copy flow is not verified in Production. |
-| Commerce Admin | PARTIAL | A local, uncommitted admin candidate adds read-only original-email delivery status and manual-review guidance; authenticated API-to-UI verification and Preview release remain open. |
-| Refund lifecycle | READY FOR TECHNICAL DESIGN | Accountant rules for full/partial refunds and corrective documents are confirmed; technical lifecycle, entitlement behavior and delivery remain unimplemented. |
-| Legal | BLOCKED FOR LAUNCH | Shop policies and checkout consent copy exist only in the uncommitted local tree; release and final prepayment review remain. Do not infer that Production serves these texts. |
+| Commerce Admin | PARTIAL | A local Admin candidate provides full Sandbox refunds and read-only original-email delivery evidence; Preview release and Production verification remain open. |
+| Refund lifecycle | PARTIAL / MIGRATION REGISTERED | The full-refund migration is applied and registered in Supabase; a Sandbox refund with entitlement revocation was completed. Live corrective accounting documents, partial refunds and disputes remain open. |
+| Legal | BLOCKED FOR LAUNCH | Shop policies and checkout consents are implemented locally but are not yet deployed to Production. Final prepayment verification remains open. |
 | Production configuration | BLOCKED | Vercel's latest visible Production deployment is `4922379` from `main` (2026-10-05); newer `staging-updated` builds are Preview. Production env names include Resend, Supabase service role, the receipt bucket and `CRON_SECRET`, but searches found no PayPal variables or `RECEIPT_ORIGINAL_EMAIL_ENABLED`. Values and runtime behavior remain untested. A read-only public check found HTTPS on `/`, while Shop routes returned 404. |
 
 ---
@@ -332,14 +332,14 @@ This discovery checkpoint does not complete Phase 1, Phase 4, production activat
 
 ## PHASE 5 — Refund lifecycle + legal readiness
 
-**Status: REFUND READY FOR TECHNICAL DESIGN / LEGAL PARTIAL**
+**Status: FULL REFUND CANDIDATE LOCAL / MIGRATION PENDING / LEGAL PARTIAL**
 
 ### Refund technical lifecycle
-- [ ] Define full refund lifecycle.
+- [ ] Define full refund lifecycle. A local implementation candidate covers full PayPal refunds and entitlement revocation; it requires migration, environment configuration, authorized QA and a controlled Sandbox test before DONE.
 - [ ] Define partial refund lifecycle.
 - [ ] Define reversal lifecycle.
 - [ ] Define dispute/chargeback lifecycle.
-- [ ] Define entitlement transition (`active → refunded/revoked/...`).
+- [ ] Define entitlement transition (`active → refunded/revoked/...`). Full-refund candidate uses `active → refunded` in one database transaction after verified PayPal completion; not deployed or tested against the applied schema.
 - [x] Confirm accounting model and preserve original receipt as an immutable accounting document.
 - [ ] Design and implement linked append-only corrective accounting records without changing the original receipt.
 - [ ] Derive no/partial/full refund and net amount from linked refund operations rather than a standalone boolean.
@@ -347,6 +347,11 @@ This discovery checkpoint does not complete Phase 1, Phase 4, production activat
 - [ ] Deliver the corrective/refund document to the customer and retain the business copy; delivery method remains undecided.
 - [ ] Show refund/correction lifecycle in Commerce.
 - [ ] Show appropriate state to customer.
+
+### Full-refund Commerce Admin candidate (2026-10-14)
+- The authorized Admin order page gains a full-refund review and confirmation action. The Admin server verifies the capture and environment with PayPal before one monetary request; an existing operation prevents another request. Unknown outcomes require provider verification and never trigger automatic refund retries.
+- `20261013214846_commerce_full_refund_operations.sql` is **local only, NOT APPLIED**. It adds a private one-operation-per-order record and an atomic service-role completion function that marks the entitlement `refunded` while preserving the paid order and personalization. Sandbox records require no accounting documents. Live records remain `pending_manual` until the accountant-approved correction process is completed separately; the original receipt stays immutable.
+- Commerce Admin and public Shop are separate releases. Deploy the schema first after review, then the Admin server/UI with environment-specific PayPal credentials and refund feature flags. Do not enable the action or run the owner's existing test refund until migration and authorized Sandbox QA pass. Public sales remain NO-GO.
 
 ### Legal/customer-facing texts
 - [ ] Update Privacy: remove false statement that PayPal is not used.
@@ -1123,6 +1128,29 @@ Status: LOCAL BUILD PASS / PREVIEW ENV NOT VERIFIED / SECRET ROTATION P0 / PUBLI
 - Rechecked the existing 44-file public release scope and separate six-file Admin scope; the one-shot Resend diagnostic and unrelated Admin analytics edits remain excluded. The existing Shop candidate passes TypeScript, ESLint, 1,297 Vitest tests and production build. A local unauthenticated RU/EN/HE mobile browser check exposed checkout horizontal overflow; a scoped CSS box-sizing correction was added without changing payment logic and verified at emulated 320px/390px.
 - Local values for all five previously exposed server secrets still match Codex session records; no matching values were found in 1,121 checked public-repo files. Vercel Preview scopes and isolated Supabase connectivity were not accessible. Local `PAYPAL_WEBHOOK_ID` is absent and the local original-email flag is enabled, so `.env.local` is unsuitable as Preview configuration.
 - Next owner actions: rotate and verify all exposed credentials, establish isolated Preview Supabase and Sandbox PayPal settings, review candidate boundaries, then explicitly approve a Preview-only deployment. No commit, push, merge, deploy, migration, payment, receipt or email was performed.
+
+---
+
+## 2026-10-14 — Full-refund Commerce Admin candidate
+Phase: Phase 5
+Status: LOCAL IMPLEMENTATION / MIGRATION NOT APPLIED / SANDBOX REFUND NOT RUN
+- Prepared a separate private refund-operation migration in the public repository and an authenticated full-refund action in the canonical Commerce Admin. The flow verifies PayPal environment/capture/amount, records one operation before the provider call, and revokes access only after provider confirmation. Uncertain outcomes need read-only PayPal reconciliation; no automatic second monetary request is made.
+- Sandbox creates no accounting document. Live is explicitly `pending_manual` for the accountant-approved correction workflow. The original order, receipt and personalization remain unchanged. The current owner purchase and entitlement have not been modified.
+- Local checks: public Vitest 1,299/1,299, TypeScript, scoped ESLint and production build passed. Admin Commerce-focused tests, scoped TypeScript, scoped ESLint and an isolated production build passed. The ordinary Admin typecheck is blocked by pre-existing ignored `scripts/tmp` imports; its full suite still has six unrelated Content Factory failures. No real PayPal refund or authorized operator browser test occurred.
+- The Admin implementation needs the new migration, environment-specific PayPal credentials, explicit refund flags, authorized UI/API QA, and one controlled Sandbox refund before it can be called ready for manual operation. Partial refunds, disputes, and automatic corrective documents remain outside this candidate. Public sales remain NO-GO.
+
+## 2026-10-18 — Production release readiness audit
+Phase: Phase 7 release validation
+Status: LOCAL SHOP CHECKS PASS / MIGRATION HISTORY 25 OF 28 / PRODUCTION NO-GO
+- Read-only Supabase inspection found 25 registered versions and 28 local SQL files. The three unregistered versions are `20261013214846`, `20261014231224`, and `20261017195749`. Their tables, columns, constraints, indexes, triggers, RLS and grants match the local files; all eight function bodies match the local SQL. Prepare official linked-project migration-history repair in ascending order only after separate owner approval. Do not rerun the SQL.
+- Public Shop: TypeScript, ESLint, 1,368 Vitest tests, isolated PostgreSQL commerce SQL regression tests, production build and `git diff --check` passed. Commerce Admin: 31 focused Commerce tests, scoped ESLint and an isolated clean webpack production build passed. Its ordinary typecheck/build are blocked by pre-existing ignored `scripts/tmp` imports; its full suite has six unrelated Content Factory failures, and repository-wide ESLint reports unrelated errors.
+- Both local branches are two commits ahead of their verified remote heads; release changes remain uncommitted. Keep Admin analytics edits, generated `next-env.d.ts` and the one-shot Resend diagnostic script outside release commits. Public `/shop` returned 404 on both HTTPS domains at audit time. Production Vercel environment scopes, PayPal Live credentials/webhook, original receipt delivery and the first real payment remain unverified. No migration history, Production setting, payment, email, Git commit or deployment was changed.
+- Next: obtain approval for migration-history repair, review isolated Shop/Admin commit manifests, verify Production environment variables and operator procedures, then perform one monitored Live purchase under separate approval. Public sales remain NO-GO.
+
+## 2026-10-18 — Migration history repair completed
+Phase: Phase 7 release validation
+Status: 28/28 LOCAL AND REMOTE VERSIONS MATCH / PRODUCTION NO-GO
+- The owner authorized official linked-project history repair for `20261013214846`, `20261014231224` and `20261017195749`. All three commands succeeded. The previous 25 versions were preserved; public schema and data fingerprints matched before and after. No SQL migration was rerun.
 
 ---
 

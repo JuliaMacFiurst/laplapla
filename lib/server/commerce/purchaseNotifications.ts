@@ -47,12 +47,30 @@ async function markFailed(notificationId: string, claimToken: string, code: stri
   });
 }
 
+async function markSandboxUncertain(notificationId: string, claimToken: string, code: string) {
+  const supabase = createServerSupabaseClient({ serviceRole: true });
+  await supabase.rpc("mark_sandbox_purchase_notification_uncertain", {
+    target_notification_id: notificationId,
+    target_claim_token: claimToken,
+    target_failure_code: code,
+  });
+}
+
+function isAmbiguousDiscordFailure(code: string) {
+  return code === "network_error" || code === "missing_message_id"
+    || /^http_(?:429|5\d\d)$/u.test(code);
+}
+
 export async function notifyPaidOrderPurchase(input: {
   orderId: string;
   source: PurchaseNotificationSource;
 }): Promise<PurchaseNotificationResult> {
   try {
     const supabase = createServerSupabaseClient({ serviceRole: true });
+    const environmentResult = await supabase.from("orders")
+      .select("provider_environment").eq("id", input.orderId).maybeSingle();
+    if (environmentResult.error) throw environmentResult.error;
+    const environment = environmentResult.data?.provider_environment;
     const { data, error } = await supabase.rpc("claim_paid_order_purchase_notification", {
       target_order_id: input.orderId,
     });
@@ -60,7 +78,7 @@ export async function notifyPaidOrderPurchase(input: {
     const row = (Array.isArray(data) ? data[0] : data) as ClaimRow | null;
     if (!row?.result) throw new Error("empty_claim_result");
     if (row.result === "already_sent") return { status: "already_sent" };
-    if (["processing", "not_registered", "sandbox_order", "unknown_environment", "order_not_paid", "order_not_found"].includes(row.result)) {
+    if (["processing", "uncertain", "not_registered", "sandbox_order", "unknown_environment", "order_not_paid", "order_not_found", "access_not_active"].includes(row.result)) {
       return { status: "skipped", code: row.result };
     }
     if (row.result !== "claimed" || !row.notification_id || !row.claim_token || !row.product_title
@@ -79,9 +97,14 @@ export async function notifyPaidOrderPurchase(input: {
       provider: row.provider,
       paidAt: row.paid_at,
       priceSource: row.price_source,
+      environment,
     });
     if (!delivery.ok) {
-      await markFailed(row.notification_id, row.claim_token, delivery.code).catch(() => undefined);
+      if (environment === "sandbox" && isAmbiguousDiscordFailure(delivery.code)) {
+        await markSandboxUncertain(row.notification_id, row.claim_token, delivery.code).catch(() => undefined);
+      } else {
+        await markFailed(row.notification_id, row.claim_token, delivery.code).catch(() => undefined);
+      }
       if (delivery.status !== "not-configured") await safeAlert(input.orderId, input.source, delivery.code);
       return { status: "failed", code: delivery.code };
     }
@@ -92,6 +115,9 @@ export async function notifyPaidOrderPurchase(input: {
       target_discord_message_id: delivery.messageId,
     });
     if (completion.error || completion.data !== "sent") {
+      if (environment === "sandbox") {
+        await markSandboxUncertain(row.notification_id, row.claim_token, "completion_failed").catch(() => undefined);
+      }
       await safeAlert(input.orderId, input.source, "completion_failed");
       return { status: "failed", code: "completion_failed" };
     }

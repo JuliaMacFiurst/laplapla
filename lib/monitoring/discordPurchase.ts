@@ -7,6 +7,7 @@ export type DiscordPurchaseInput = {
   provider: string;
   paidAt: string;
   priceSource: string;
+  environment?: "sandbox" | "live";
 };
 
 export type DiscordPurchaseResult =
@@ -37,11 +38,25 @@ export async function sendDiscordPurchaseNotification(
   }
 
   try {
+    const sandbox = input.environment === "sandbox";
     const response = await fetch(`${webhook}?wait=true`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        embeds: [{
+        embeds: [sandbox ? {
+          title: "🧪 LAPLAPLA SANDBOX PURCHASE",
+          color: 0xf1c40f,
+          fields: [
+            { name: "Product", value: safeField(input.product), inline: false },
+            { name: "Amount", value: safeField(`${(input.amountMinor / 100).toFixed(2)} ${input.currency}`), inline: true },
+            { name: "Payment", value: "PayPal Sandbox", inline: true },
+            { name: "Order", value: safeField(input.orderId), inline: false },
+            { name: "Status", value: "PAID", inline: true },
+            { name: "Entitlement", value: "ACTIVE", inline: true },
+          ],
+          footer: { text: `TEST ONLY — NO REAL MONEY · Notification ${safeField(input.notificationId)}` },
+          timestamp: input.paidAt,
+        } : {
           title: "💰 New LapLapLa purchase",
           color: 0x2ecc71,
           fields: [

@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ db: null as unknown, fetch: vi.fn() }));
 vi.mock("@/lib/server/supabase", () => ({ createServerSupabaseClient: () => mocks.db }));
 import { recoverOriginalReceiptDeliveries, sendOriginalReceiptOnce } from "@/lib/server/commerce/receipts/originalDelivery";
 
-function fakeDatabase(options: { consent?: boolean; firstClaim?: boolean } = {}) {
+function fakeDatabase(options: { consent?: boolean; firstClaim?: boolean; orderEnvironment?: string } = {}) {
   const updates: Record<string, unknown>[] = [];
   let claimed = false;
   const receipt = { id: "receipt-1", order_id: "order-1", receipt_number: 1,
@@ -23,6 +23,7 @@ function fakeDatabase(options: { consent?: boolean; firstClaim?: boolean } = {})
       select: () => result,
       maybeSingle: async () => {
         if (table === "receipts") return { data: receipt, error: null };
+        if (table === "orders") return { data: { status: "paid", provider_environment: options.orderEnvironment ?? "live", provider_capture_id: "capture-1" }, error: null };
         if (table === "checkout_consents") return { data: options.consent === false ? null : { locale: "en" }, error: null };
         if (table === "receipt_artifacts") return { data: { status: "ready", storage_bucket: "private-receipts", storage_key: "receipt.pdf", content_type: "application/pdf" }, error: null };
         if (table === "receipt_original_deliveries") {
@@ -89,6 +90,12 @@ describe("one-time original receipt email", () => {
     mocks.db = fakeDatabase({ consent: false });
     await expect(sendOriginalReceiptOnce("receipt-1")).resolves.toBe("skipped");
     delete process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED;
+    await expect(sendOriginalReceiptOnce("receipt-1")).resolves.toBe("skipped");
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it("never sends an original receipt for a Sandbox order even if a receipt row exists", async () => {
+    mocks.db = fakeDatabase({ orderEnvironment: "sandbox" });
     await expect(sendOriginalReceiptOnce("receipt-1")).resolves.toBe("skipped");
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
