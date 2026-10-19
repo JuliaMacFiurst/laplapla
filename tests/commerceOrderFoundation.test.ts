@@ -21,6 +21,7 @@ import {
   claimPaymentProviderEvent,
   setPaymentProviderEventStatus,
 } from "@/lib/server/commerce/providerEvents";
+import type { AttributionSnapshot } from "@/lib/analytics/attribution";
 
 const customer = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -33,6 +34,23 @@ const trustedCheckoutFacts = {
   verifiedEmail: "customer@example.com",
   providerEnvironment: "sandbox" as const,
 };
+const attribution = {
+  version: 1,
+  visitor_id: "44444444-4444-4444-8444-444444444444",
+  session_id: "55555555-5555-4555-8555-555555555555",
+  first_touch: {
+    utm_source: "youtube", utm_medium: "social", utm_campaign: "launch",
+    utm_content: null, utm_term: null, external_referrer: "https://youtube.com/watch",
+    landing_pathname: "/shop", attributed_at: "2026-10-19T10:00:00.000Z",
+    source: "youtube", channel: "social",
+  },
+  session_touch: {
+    utm_source: null, utm_medium: null, utm_campaign: null,
+    utm_content: null, utm_term: null, external_referrer: null,
+    landing_pathname: "/shop/sound-case-001/checkout", attributed_at: "2026-10-19T10:05:00.000Z",
+    source: "direct", channel: "direct",
+  },
+} satisfies AttributionSnapshot;
 
 function orderRow(overrides: Record<string, unknown> = {}) {
   return [{
@@ -149,6 +167,24 @@ describe("trusted local commerce order creation", () => {
     });
     expect(first).toEqual(retry);
     expect(retry).toMatchObject({ status: "order", order: { totalMinor: 4900, created: false } });
+  });
+
+  it("attaches checkout attribution through a separate server-only idempotent RPC", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: orderRow(), error: null })
+      .mockResolvedValueOnce({ data: attribution, error: null });
+    await createLocalCommerceOrder({
+      verifiedCustomer: customer,
+      productId: "sound-case-001",
+      checkoutIdempotencyKey,
+      attribution,
+      ...trustedCheckoutFacts,
+    });
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "attach_commerce_order_attribution_once", {
+      target_order_id: "order-1",
+      target_user_id: customer.id,
+      target_attribution_snapshot: attribution,
+    });
   });
 
   it("returns an explicit reconciliation state instead of choosing between duplicate checkouts", async () => {

@@ -16,9 +16,11 @@ import { BillingIdentityError, requireTrustedBillingIdentity } from "@/lib/serve
 import { recordCheckoutConsents } from "@/lib/server/commerce/checkoutConsents";
 import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { parseAttributionSnapshot } from "@/lib/analytics/attribution";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-const EXPECTED_BODY_KEYS = ["checkoutIdempotencyKey", "productId", "legalAccepted", "electronicReceiptAccepted", "lang"];
+const MAX_BODY_BYTES = 8 * 1024;
+const EXPECTED_BODY_KEYS = ["checkoutIdempotencyKey", "productId", "legalAccepted", "electronicReceiptAccepted", "lang", "attribution"];
 
 function getPayPalCheckoutRedirectUrls(originHeader: string | undefined, lang: Lang) {
   if (!originHeader) return null;
@@ -37,12 +39,14 @@ function getPayPalCheckoutRedirectUrls(originHeader: string | undefined, lang: L
 function parseBody(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   if (!Object.keys(value).every((key) => EXPECTED_BODY_KEYS.includes(key))) return null;
-  const body = value as { productId?: unknown; checkoutIdempotencyKey?: unknown; legalAccepted?: unknown; electronicReceiptAccepted?: unknown; lang?: unknown };
+  const body = value as { productId?: unknown; checkoutIdempotencyKey?: unknown; legalAccepted?: unknown; electronicReceiptAccepted?: unknown; lang?: unknown; attribution?: unknown };
   if (body.productId !== PAYPAL_CHECKOUT_PRODUCT_ID) return null;
   if (typeof body.checkoutIdempotencyKey !== "string" || !UUID_PATTERN.test(body.checkoutIdempotencyKey)) return null;
   if (body.legalAccepted !== true || body.electronicReceiptAccepted !== true) return null;
   if (body.lang !== "ru" && body.lang !== "en" && body.lang !== "he") return null;
-  return { productId: body.productId, checkoutIdempotencyKey: body.checkoutIdempotencyKey, lang: body.lang as Lang };
+  const attribution = body.attribution == null ? null : parseAttributionSnapshot(body.attribution);
+  if (body.attribution != null && !attribution) return null;
+  return { productId: body.productId, checkoutIdempotencyKey: body.checkoutIdempotencyKey, lang: body.lang as Lang, attribution };
 }
 
 export async function paypalCreateHandler(req: NextApiRequest, res: NextApiResponse<PayPalCreateResponse>) {
@@ -100,6 +104,7 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     billingName: identity.billingName,
     verifiedEmail: identity.email,
     providerEnvironment: paypalConfig.environment,
+    attribution: body.attribution,
   });
   if (localResult.status === "already_owned") {
     res.status(200).json({ ok: true, status: "already_owned", productId: localResult.productId });
@@ -204,12 +209,12 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
   }
 }
 
-export const config = { api: { bodyParser: { sizeLimit: "2kb" } } };
+export const config = { api: { bodyParser: { sizeLimit: "8kb" } } };
 
 export default withApiHandler<PayPalCreateResponse>(
   {
     guard: {
-      methods: ["POST"], limit: 12, windowMs: 60_000, maxBodyBytes: 2 * 1024,
+      methods: ["POST"], limit: 12, windowMs: 60_000, maxBodyBytes: MAX_BODY_BYTES,
       keyPrefix: "paypal-create",
     },
   },

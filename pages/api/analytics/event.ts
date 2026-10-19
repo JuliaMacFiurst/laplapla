@@ -3,6 +3,7 @@ import {
   isAnalyticsEntityType,
   isAnalyticsEventName,
   isAnalyticsLang,
+  isProductInterestProperties,
   type AnalyticsMetadata,
   type AnalyticsProperties,
 } from "@/lib/analytics/events";
@@ -42,6 +43,25 @@ function isUnsafeAnalyticsKey(key: string) {
   return /(^|_)(email|e_mail|name|first_name|last_name|full_name|ip|ip_address|phone|address|lat|latitude|lng|lon|longitude|geo|location)(_|$)/i.test(key);
 }
 
+function hasLikelyPii(value: string) {
+  return /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/u.test(value) ||
+    /(?:^|\D)\+?\d[\d\s().-]{7,}\d(?:\D|$)/u.test(value);
+}
+
+function readSafeAnalyticsLocation(value: unknown, includeOrigin: boolean) {
+  const raw = readString(value, 600);
+  if (!raw) return null;
+  try {
+    const absolute = /^https?:\/\//iu.test(raw);
+    const parsed = new URL(raw, "https://laplapla.invalid");
+    if (!/^https?:$/u.test(parsed.protocol) || parsed.username || parsed.password) return null;
+    const safe = includeOrigin && absolute ? `${parsed.origin}${parsed.pathname}` : parsed.pathname;
+    return safe.slice(0, 300);
+  } catch {
+    return null;
+  }
+}
+
 function sanitizeAnalyticsObject(value: unknown, maxEntries = 40): AnalyticsMetadata {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
@@ -55,7 +75,12 @@ function sanitizeAnalyticsObject(value: unknown, maxEntries = 40): AnalyticsMeta
     }
 
     if (typeof rawValue === "string") {
-      metadata[normalizedKey] = truncate(rawValue.trim(), 240);
+      const normalizedValue = normalizedKey === "current_page"
+        ? readSafeAnalyticsLocation(rawValue, false)
+        : normalizedKey === "source_page" || normalizedKey === "referrer"
+          ? readSafeAnalyticsLocation(rawValue, true)
+          : truncate(rawValue.trim(), 240);
+      if (normalizedValue && !hasLikelyPii(normalizedValue)) metadata[normalizedKey] = normalizedValue;
     } else if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
       metadata[normalizedKey] = rawValue;
     } else if (typeof rawValue === "boolean" || rawValue === null) {
@@ -193,6 +218,11 @@ export default async function handler(
     return;
   }
 
+  if (eventName === "product_interest" && !isProductInterestProperties(payload.properties)) {
+    res.status(400).json({ error: "Invalid product interest properties" });
+    return;
+  }
+
   try {
     const supabase = createServerSupabaseClient({ serviceRole: true });
     const metadata = sanitizeMetadata(payload.metadata);
@@ -202,8 +232,8 @@ export default async function handler(
     const payloadAnonymousUserId =
       readUuid(properties.anonymous_user_id) || readUuid(payload.visitorId);
     const payloadPage =
-      readString(properties.current_page, 300) ||
-      readString(payload.page, 300);
+      readSafeAnalyticsLocation(properties.current_page, false) ||
+      readSafeAnalyticsLocation(payload.page, false);
 
     const { error } = await supabase.from("analytics_events").insert({
       event_id: eventId,
@@ -224,9 +254,9 @@ export default async function handler(
       language: payloadLang,
       device_type: readString(properties.device_type, 32),
       viewport_width: readNumber(properties.viewport_width),
-      source_page: readString(properties.source_page, 300),
+      source_page: readSafeAnalyticsLocation(properties.source_page, true),
       current_page: payloadPage,
-      referrer: readString(properties.referrer, 300),
+      referrer: readSafeAnalyticsLocation(properties.referrer, true),
       anonymous_user_id: payloadAnonymousUserId,
       duration_seconds: readNumber(properties.duration_seconds),
       completion_percent: readNumber(properties.completion_percent),

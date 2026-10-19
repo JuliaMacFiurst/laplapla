@@ -28,10 +28,11 @@ export default function ShopProductPage({ slug }: ShopProductPageProps) {
     trackEvent("product_view", {
       section: "shop",
       content_type: "shop_product",
+      content_id: product?.id ?? slug,
       content_slug: slug,
       language: lang,
     });
-  }, [lang, slug]);
+  }, [lang, product?.id, slug]);
 
   if (!product) {
     return null;

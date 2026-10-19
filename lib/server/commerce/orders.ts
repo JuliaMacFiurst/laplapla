@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/commerce/resolveProductPrice";
 import type { PayPalEnvironment } from "@/lib/server/commerce/paypal/config";
 import { resolveProductReceiptSnapshot } from "@/lib/server/commerce/productReceiptSnapshots";
+import type { AttributionSnapshot } from "@/lib/analytics/attribution";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
@@ -72,6 +73,7 @@ export async function createLocalCommerceOrder(input: {
   billingName: string;
   verifiedEmail: string;
   providerEnvironment: PayPalEnvironment;
+  attribution?: AttributionSnapshot | null;
 }): Promise<CreateLocalCommerceOrderResult> {
   if (!UUID_PATTERN.test(input.checkoutIdempotencyKey)) {
     throw new Error("A valid checkout idempotency key is required");
@@ -116,6 +118,15 @@ export async function createLocalCommerceOrder(input: {
   }
   if (row.checkout_result === "invalid_state") {
     throw new Error("Existing checkout is not resumable");
+  }
+
+  if (input.attribution) {
+    const { error: attributionError } = await supabase.rpc("attach_commerce_order_attribution_once", {
+      target_order_id: row.order_id,
+      target_user_id: input.verifiedCustomer.id,
+      target_attribution_snapshot: input.attribution,
+    });
+    if (attributionError) throw attributionError;
   }
 
   return {

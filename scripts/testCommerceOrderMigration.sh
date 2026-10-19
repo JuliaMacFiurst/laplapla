@@ -124,4 +124,26 @@ wait "$refund_email_a_pid" "$refund_email_b_pid"
 [[ "$(cat "$test_root/refund-email-a.out" "$test_root/refund-email-b.out" | grep -c "$refund_email_operation_id")" -eq 1 ]]
 "${psql_local[@]}" -f "$repo_root/tests/sql/refundEmailConcurrencyAssert.sql"
 
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261018220604_analytics_phase_2a_order_attribution.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/orderAttribution.sql"
+
+analytics_migrations=(
+  "supabase/migrations/202606020001_create_meme_engine_cache.sql"
+  "supabase/migrations/202606020002_add_meme_engine_cache_cleanup.sql"
+  "supabase/migrations/202606090001_create_analytics_events.sql"
+  "supabase/migrations/202606090002_add_analytics_events_cleanup.sql"
+  "supabase/migrations/202606170001_expand_analytics_events.sql"
+  "supabase/migrations/202606180001_create_analytics_daily_summary.sql"
+  "supabase/migrations/202607290001_lock_analytics_writes_to_server.sql"
+  "supabase/migrations/202609300001_analytics_v2_foundation.sql"
+  "supabase/migrations/202609300002_restrict_internal_rpc_execute.sql"
+  "supabase/migrations/202609300004_add_preorder_analytics_events.sql"
+)
+for migration in "${analytics_migrations[@]}"; do
+  "${psql_local[@]}" -f "$repo_root/$migration" >/dev/null
+done
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261019110250_analytics_phase_2b_commerce_report.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/commerceAnalyticsReport.sql"
+
 printf 'Commerce order foundation SQL regression checks passed.\n'

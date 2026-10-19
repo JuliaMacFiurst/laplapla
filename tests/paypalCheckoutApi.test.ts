@@ -56,6 +56,23 @@ import { paypalResumeHandler } from "@/pages/api/customer/checkout/paypal/resume
 const user = { id: "11111111-1111-4111-8111-111111111111", email: "buyer@example.com", email_confirmed_at: "2026-10-01" };
 const localOrderId = "22222222-2222-4222-8222-222222222222";
 const checkoutKey = "33333333-3333-4333-8333-333333333333";
+const attribution = {
+  version: 1,
+  visitor_id: "44444444-4444-4444-8444-444444444444",
+  session_id: "55555555-5555-4555-8555-555555555555",
+  first_touch: {
+    utm_source: "youtube", utm_medium: "social", utm_campaign: "launch",
+    utm_content: "video-1", utm_term: null, external_referrer: "https://www.youtube.com/watch",
+    landing_pathname: "/en/shop", attributed_at: "2026-10-18T10:00:00.000Z",
+    source: "youtube", channel: "social",
+  },
+  session_touch: {
+    utm_source: null, utm_medium: null, utm_campaign: null,
+    utm_content: null, utm_term: null, external_referrer: null,
+    landing_pathname: "/en/shop/sound-case-001/checkout", attributed_at: "2026-10-18T10:05:00.000Z",
+    source: "direct", channel: "direct",
+  },
+};
 
 function request(body: unknown, origin = "http://localhost:3000") {
   return {
@@ -133,6 +150,35 @@ describe("authenticated PayPal create endpoint", () => {
     expect(mocks.paypalCreate).toHaveBeenCalledOnce();
     expect(mocks.beginCapture).not.toHaveBeenCalled();
     expect(mocks.paypalCapture).not.toHaveBeenCalled();
+  });
+
+  it("validates and forwards privacy-safe attribution without treating it as payment authority", async () => {
+    const { res, result } = response();
+    await paypalCreateHandler(createRequest({
+      productId: "sound-case-001",
+      checkoutIdempotencyKey: checkoutKey,
+      attribution,
+    }), res);
+    expect(result.status).toBe(200);
+    expect(mocks.createLocalCommerceOrder).toHaveBeenCalledWith(expect.objectContaining({ attribution }));
+    expect(mocks.paypalCreate).toHaveBeenCalledWith(expect.not.objectContaining({ attribution: expect.anything() }));
+  });
+
+  it("rejects malformed or PII-bearing attribution before local order creation", async () => {
+    for (const invalidAttribution of [
+      { ...attribution, visitor_id: "invalid" },
+      { ...attribution, first_touch: { ...attribution.first_touch, utm_campaign: "buyer@example.com" } },
+      { ...attribution, session_touch: { ...attribution.session_touch, channel: "paid" } },
+    ]) {
+      const target = response();
+      await paypalCreateHandler(createRequest({
+        productId: "sound-case-001",
+        checkoutIdempotencyKey: checkoutKey,
+        attribution: invalidAttribution,
+      }), target.res);
+      expect(target.result.status).toBe(400);
+    }
+    expect(mocks.createLocalCommerceOrder).not.toHaveBeenCalled();
   });
 
   it.each([

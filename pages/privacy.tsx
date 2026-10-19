@@ -9,7 +9,7 @@ type PrivacyContent = { title: string; lastUpdated: string; sections: PrivacySec
 export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
   en: {
     title: "Privacy Policy",
-    lastUpdated: "Last updated: October 13, 2026.",
+    lastUpdated: "Last updated: October 19, 2026.",
     sections: [
       { h: "1. Introduction", paragraphs: [
         "This Privacy Policy explains what information LapLapLa processes, why it is needed, where it may be sent, and what choices are available to you. Most public content can be viewed without an account.",
@@ -30,10 +30,12 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       { h: "5. Product Analytics", paragraphs: [
         "LapLapLa collects pseudonymous usage statistics. Events may include page views, sessions, language, device and viewport category, opening and completing content, use of maps and creative tools, project or export actions, external-link actions, preorder form outcomes, and technical errors.",
         "For analytics, LapLapLa creates a random visitor identifier and session identifier in localStorage. A session may be shared by tabs in the same browser profile and rotates after a period without tracked activity. These analytics identifiers are not intended to contain your name or email address. Preorder email addresses, normalized emails, email hashes, customer identifiers, and preorder record identifiers are not sent as analytics properties.",
+        "When you arrive through a link or another website, LapLapLa may store campaign parameters (utm_source, utm_medium, utm_campaign, utm_content, and utm_term), the initial external referring page without its query string, the landing pathname, and the attribution time. The first visit source and the source for the current analytics session are stored in the browser. LapLapLa does not use advertising fingerprinting for this attribution.",
+        "When you start checkout, a privacy-limited copy of that attribution may be attached to the order so LapLapLa can understand which sources lead to purchases. It does not confirm payment and does not include names, email addresses, card details, or the contents of personalization.",
         "Raw analytics events are stored in Supabase and are normally deleted after approximately 15 days. Aggregate reports that do not contain individual visitor or session identifiers may be retained for longer.",
       ] },
       { h: "6. Browser Storage and Local Materials", paragraphs: [
-        "LapLapLa uses browser storage, including localStorage, sessionStorage, and IndexedDB, for language preferences, authentication sessions, analytics identifiers, application state, and locally created projects where applicable.",
+        "LapLapLa uses browser storage, including localStorage, sessionStorage, and IndexedDB, for language preferences, authentication sessions, analytics identifiers and attribution, application state, and locally created projects where applicable.",
         "Drawings, local studio projects, selected files, and voice recordings may remain on the device using browser storage, data URLs, or temporary blob URLs. If a feature explicitly saves personalization to your account, that personalization is stored by LapLapLa as described above. Analytics may record that an action occurred, but not the contents of a drawing, recording, or local project file.",
       ] },
       { h: "7. Search and External Media", paragraphs: [
@@ -53,7 +55,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
         "The main LapLapLa service is intended for users aged 16 and over and is not intended for users under 16.",
       ] },
       { h: "11. Retention", paragraphs: [
-        "Personal data is kept for as long as reasonably necessary for the purpose for which it was collected, to provide and secure the service, meet applicable obligations, and handle legal requests. Account, product-access, and personalization data may be retained while the account or related access remains active. A preorder registration may be retained until the related eligibility is used, expires, is withdrawn, or no longer needs to be administered.",
+        "Personal data is kept for as long as reasonably necessary for the purpose for which it was collected, to provide and secure the service, meet applicable obligations, and handle legal requests. Account, product-access, and personalization data may be retained while the account or related access remains active. A preorder registration may be retained until the related eligibility is used, expires, is withdrawn, or no longer needs to be administered. Order, transaction-reference, receipt, and order-attribution records may be retained as part of the commercial history for accounting, support, fraud prevention, and legal obligations; they are not deleted by the approximately 15-day raw analytics cleanup.",
       ] },
       { h: "12. Your Rights and Requests", paragraphs: [
         "You may contact juliamakhlinfiurst@gmail.com to request access to, correction of, or deletion of applicable personal data, or to withdraw the preorder communication consent. LapLapLa does not currently provide automated self-service account deletion. We may need to verify your identity and ask for enough information to locate the relevant account, preorder, personalization, or technical records.",
@@ -66,7 +68,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
   },
   he: {
     title: "מדיניות פרטיות",
-    lastUpdated: "עדכון אחרון: 13 באוקטובר 2026.",
+    lastUpdated: "עדכון אחרון: 19 באוקטובר 2026.",
     sections: [
       { h: "1. מבוא", paragraphs: [
         "מדיניות זו מסבירה איזה מידע LapLapLa מעבדת, מדוע הוא נחוץ, לאן הוא עשוי להישלח ואילו אפשרויות עומדות לרשותכם. ברוב התכנים הציבוריים אפשר לצפות ללא חשבון.",
@@ -87,10 +89,12 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       { h: "5. ניתוח השימוש במוצר", paragraphs: [
         "LapLapLa אוספת נתוני שימוש פסאודונימיים. האירועים עשויים לכלול צפיות בדפים, הפעלות, שפה, סוג מכשיר וגודל מסך, פתיחה והשלמה של תוכן, שימוש במפות ובכלי יצירה, פעולות בפרויקטים או בייצוא, פתיחת קישורים חיצוניים, תוצאות של טופס ההרשמה המוקדמת ושגיאות טכניות.",
         "לצורכי ניתוח שימוש LapLapLa יוצרת ב‑localStorage מזהה אקראי למבקר ומזהה אקראי להפעלה. הפעלה יכולה להיות משותפת לכרטיסיות באותו פרופיל דפדפן ומתחלפת לאחר פרק זמן ללא פעילות מתועדת. המזהים האלה אינם מיועדים להכיל שם או כתובת אימייל. כתובת האימייל של ההרשמה המוקדמת, האימייל בצורתו האחידה, גיבוב של האימייל, מזהי לקוחות ומזהי רשומות הרשמה אינם נשלחים כמאפייני ניתוח שימוש.",
+        "כאשר מגיעים באמצעות קישור או מאתר אחר, LapLapLa עשויה לשמור פרמטרים של קמפיין (utm_source, utm_medium, utm_campaign, utm_content ו‑utm_term), את דף ההפניה החיצוני הראשוני ללא מחרוזת השאילתה, את נתיב דף הנחיתה ואת זמן השיוך. מקור הביקור הראשון ומקור הפעלת הניתוח הנוכחית נשמרים בדפדפן. LapLapLa אינה משתמשת בטביעת אצבע פרסומית לצורך שיוך זה.",
+        "בעת התחלת התשלום, עותק מוגבל מבחינת פרטיות של נתוני השיוך עשוי להיקשר להזמנה כדי להבין אילו מקורות מובילים לרכישות. נתון זה אינו מאשר תשלום ואינו כולל שמות, כתובות אימייל, פרטי כרטיס או תוכן של התאמה אישית.",
         "אירועי ניתוח גולמיים נשמרים ב‑Supabase ונמחקים בדרך כלל לאחר כ‑15 ימים. דוחות מצטברים שאינם כוללים מזהים של מבקרים או הפעלות בודדות עשויים להישמר זמן רב יותר.",
       ] },
       { h: "6. אחסון בדפדפן וחומרים מקומיים", paragraphs: [
-        "LapLapLa משתמשת באחסון הדפדפן, לרבות localStorage, sessionStorage ו‑IndexedDB, עבור העדפות שפה, הפעלות אימות, מזהי ניתוח שימוש, מצב היישום ופרויקטים שנוצרים מקומית, לפי העניין.",
+        "LapLapLa משתמשת באחסון הדפדפן, לרבות localStorage, sessionStorage ו‑IndexedDB, עבור העדפות שפה, הפעלות אימות, מזהי ניתוח שימוש ושיוך מקורות, מצב היישום ופרויקטים שנוצרים מקומית, לפי העניין.",
         "ציורים, פרויקטים מקומיים באולפן, קבצים שנבחרו והקלטות קול יכולים להישאר במכשיר באמצעות אחסון הדפדפן, כתובות data או כתובות blob זמניות. אם תכונה מסוימת שומרת במפורש התאמה אישית בחשבון, ההתאמה נשמרת אצל LapLapLa כמתואר לעיל. נתוני הניתוח עשויים לתעד שפעולה התבצעה, אך לא את תוכן הציור, ההקלטה או קובץ הפרויקט המקומי.",
       ] },
       { h: "7. חיפוש ומדיה חיצונית", paragraphs: [
@@ -110,7 +114,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
         "השירות הראשי של LapLapLa מיועד למשתמשים בני 16 ומעלה ואינו מיועד למשתמשים מתחת לגיל 16.",
       ] },
       { h: "11. תקופת שמירה", paragraphs: [
-        "מידע אישי נשמר כל עוד הוא נחוץ באופן סביר למטרה שלשמה נאסף, להפעלת השירות ולאבטחתו, למילוי התחייבויות רלוונטיות ולטיפול בדרישות משפטיות. נתוני חשבון, גישה למוצרים והתאמה אישית עשויים להישמר כל עוד החשבון או הגישה הקשורה פעילים. הרשמה מוקדמת עשויה להישמר עד למימוש הזכאות, לפקיעתה, לביטולה או עד שלא יהיה עוד צורך לנהל אותה.",
+        "מידע אישי נשמר כל עוד הוא נחוץ באופן סביר למטרה שלשמה נאסף, להפעלת השירות ולאבטחתו, למילוי התחייבויות רלוונטיות ולטיפול בדרישות משפטיות. נתוני חשבון, גישה למוצרים והתאמה אישית עשויים להישמר כל עוד החשבון או הגישה הקשורה פעילים. הרשמה מוקדמת עשויה להישמר עד למימוש הזכאות, לפקיעתה, לביטולה או עד שלא יהיה עוד צורך לנהל אותה. רשומות הזמנה, אסמכתאות עסקה, קבלות ושיוך המקור של ההזמנה עשויות להישמר כחלק מההיסטוריה המסחרית לצורכי חשבונאות, תמיכה, מניעת הונאה וחובות משפטיות; הן אינן נמחקות במסגרת ניקוי אירועי הניתוח הגולמיים לאחר כ‑15 ימים.",
       ] },
       { h: "12. הזכויות שלכם ובקשות בנוגע למידע", paragraphs: [
         "אפשר לפנות אל juliamakhlinfiurst@gmail.com כדי לבקש גישה למידע אישי רלוונטי, לתקן אותו או למחוק אותו, או כדי לבטל את ההסכמה לקבלת הודעת ההרשמה המוקדמת. LapLapLa אינה מציעה כיום מחיקה אוטומטית של חשבון בשירות עצמי. ייתכן שנצטרך לאמת את זהותכם ולבקש מידע מספיק כדי לאתר את החשבון, ההרשמה המוקדמת, ההתאמה האישית או הרשומות הטכניות הרלוונטיות.",
@@ -123,7 +127,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
   },
   ru: {
     title: "Политика конфиденциальности",
-    lastUpdated: "Последнее обновление: 13 октября 2026 года.",
+    lastUpdated: "Последнее обновление: 19 октября 2026 года.",
     sections: [
       { h: "1. Введение", paragraphs: [
         "Эта Политика конфиденциальности объясняет, какие сведения обрабатывает LapLapLa, зачем они нужны, куда могут передаваться и какие возможности есть у пользователя. Большинство публичных материалов можно просматривать без аккаунта.",
@@ -144,10 +148,12 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       { h: "5. Продуктовая аналитика", paragraphs: [
         "LapLapLa собирает псевдонимную статистику использования. События могут включать просмотры страниц, сессии, язык, категорию устройства и размер экрана, открытие и завершение контента, использование карт и творческих инструментов, действия с проектами или экспортом, переходы по внешним ссылкам, результаты формы предзаказа и технические ошибки.",
         "Для аналитики LapLapLa создаёт в localStorage случайный идентификатор посетителя и идентификатор сессии. Сессия может быть общей для вкладок одного профиля браузера и меняется после периода без отслеживаемой активности. Эти идентификаторы не предназначены для хранения имени или email. Email предзаказа, его стандартизированная версия или хеш, идентификаторы пользователя и записи предзаказа не передаются как свойства аналитики.",
+        "При переходе по ссылке или с другого сайта LapLapLa может сохранять параметры кампании (utm_source, utm_medium, utm_campaign, utm_content и utm_term), первоначальную внешнюю страницу-источник без строки запроса, путь посадочной страницы и время атрибуции. В браузере сохраняются источник первого визита и источник текущей аналитической сессии. Для такой атрибуции LapLapLa не использует рекламный fingerprinting.",
+        "При начале checkout ограниченная с точки зрения конфиденциальности копия атрибуции может быть связана с заказом, чтобы понимать, какие источники приводят к покупкам. Она не подтверждает оплату и не содержит имён, email, платёжных данных карты или содержимого персонализации.",
         "Сырые аналитические события хранятся в Supabase и обычно удаляются приблизительно через 15 дней. Агрегированные отчёты без идентификаторов отдельных посетителей или сессий могут храниться дольше.",
       ] },
       { h: "6. Хранилища браузера и локальные материалы", paragraphs: [
-        "LapLapLa использует хранилища браузера, включая localStorage, sessionStorage и IndexedDB, для языковых настроек, сессий аутентификации, идентификаторов аналитики, состояния приложения и локально созданных проектов, когда это применимо.",
+        "LapLapLa использует хранилища браузера, включая localStorage, sessionStorage и IndexedDB, для языковых настроек, сессий аутентификации, идентификаторов и атрибуции аналитики, состояния приложения и локально созданных проектов, когда это применимо.",
         "Рисунки, локальные проекты студий, выбранные файлы и голосовые записи могут оставаться на устройстве в хранилище браузера, data URL или временных blob URL. Если функция явно сохраняет персонализацию в аккаунте, она хранится у LapLapLa, как описано выше. Аналитика может фиксировать факт действия, но не содержимое рисунка, записи или локального файла проекта.",
       ] },
       { h: "7. Поиск и внешние медиа", paragraphs: [
@@ -167,7 +173,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
         "Основной сервис LapLapLa предназначен для пользователей 16 лет и старше и не предназначен для пользователей младше 16 лет.",
       ] },
       { h: "11. Срок хранения", paragraphs: [
-        "Персональные данные хранятся столько, сколько разумно необходимо для цели их сбора, работы и защиты сервиса, выполнения применимых обязательств и обработки законных запросов. Данные аккаунта, доступа к продуктам и персонализации могут храниться, пока аккаунт или связанный доступ остаются активными. Регистрация предзаказа может храниться до использования, истечения или отзыва соответствующего права либо пока необходимость управлять этим правом не отпадёт.",
+        "Персональные данные хранятся столько, сколько разумно необходимо для цели их сбора, работы и защиты сервиса, выполнения применимых обязательств и обработки законных запросов. Данные аккаунта, доступа к продуктам и персонализации могут храниться, пока аккаунт или связанный доступ остаются активными. Регистрация предзаказа может храниться до использования, истечения или отзыва соответствующего права либо пока необходимость управлять этим правом не отпадёт. Данные заказа, ссылки на транзакции, чеки и атрибуция заказа могут сохраняться как часть коммерческой истории для бухгалтерии, поддержки, предотвращения мошенничества и выполнения правовых обязанностей; очистка сырых аналитических событий примерно через 15 дней их не удаляет.",
       ] },
       { h: "12. Права пользователя и запросы", paragraphs: [
         "Можно обратиться по адресу juliamakhlinfiurst@gmail.com, чтобы запросить доступ к применимым персональным данным, их исправление или удаление либо отозвать согласие на сообщение о предзаказе. Сейчас LapLapLa не предоставляет автоматическое самостоятельное удаление аккаунта. Для выполнения запроса может потребоваться подтвердить личность и предоставить достаточно сведений, чтобы найти соответствующий аккаунт, предзаказ, персонализацию или технические записи.",

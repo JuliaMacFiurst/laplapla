@@ -3,6 +3,11 @@ import type {
   AnalyticsEventName,
   AnalyticsProperties,
 } from "@/lib/analytics/events";
+import {
+  attributionAnalyticsProperties,
+  resolveAttributionSnapshot,
+  type AttributionSnapshot,
+} from "@/lib/analytics/attribution";
 
 const VISITOR_STORAGE_KEY = "laplapla_analytics_visitor_id";
 const LEGACY_SESSION_STORAGE_KEY = "laplapla_analytics_session_id";
@@ -135,7 +140,17 @@ function getCurrentPage() {
     return null;
   }
 
-  return `${window.location.pathname}${window.location.search}`;
+  return window.location.pathname || "/";
+}
+
+function getSafeDocumentReferrer() {
+  if (typeof document === "undefined" || !document.referrer) return null;
+  try {
+    const referrer = new URL(document.referrer);
+    return `${referrer.origin}${referrer.pathname}`;
+  } catch {
+    return null;
+  }
 }
 
 export function getAnalyticsSkipReason(input: {
@@ -211,7 +226,11 @@ function stripUnsafeProperties(properties: AnalyticsProperties): AnalyticsProper
   return safe;
 }
 
-function buildProperties(input: AnalyticsEventInput, ids: AnalyticsIds): AnalyticsProperties {
+function buildProperties(
+  input: AnalyticsEventInput,
+  ids: AnalyticsIds,
+  attribution: AttributionSnapshot | null,
+): AnalyticsProperties {
   const currentPage = input.page || getCurrentPage();
   const properties = stripUnsafeProperties({
     ...input.metadata,
@@ -221,17 +240,37 @@ function buildProperties(input: AnalyticsEventInput, ids: AnalyticsIds): Analyti
     language: input.properties?.language ?? input.lang ?? null,
     device_type: input.properties?.device_type ?? getDeviceType(),
     viewport_width: input.properties?.viewport_width ?? (typeof window !== "undefined" ? window.innerWidth : null),
-    source_page: input.properties?.source_page ?? (typeof document !== "undefined" ? document.referrer || null : null),
+    source_page: input.properties?.source_page ?? getSafeDocumentReferrer(),
     current_page: input.properties?.current_page ?? currentPage,
-    referrer: input.properties?.referrer ?? (typeof document !== "undefined" ? document.referrer || null : null),
+    referrer: input.properties?.referrer ?? getSafeDocumentReferrer(),
     session_id: input.properties?.session_id ?? input.sessionId ?? ids.sessionId,
     anonymous_user_id: input.properties?.anonymous_user_id ?? input.visitorId ?? ids.anonymousUserId,
     environment: input.properties?.environment ?? process.env.NODE_ENV ?? "unknown",
+    ...(attribution ? attributionAnalyticsProperties(attribution) : {}),
   });
   return {
     ...properties,
     export_method: normalizeExportMethod(input.eventName, properties),
   };
+}
+
+function resolveCurrentAttribution(ids: AnalyticsIds): AttributionSnapshot | null {
+  if (typeof window === "undefined" || !ids.anonymousUserId || !ids.sessionId) return null;
+  try {
+    return resolveAttributionSnapshot(window.localStorage, {
+      href: window.location.href,
+      referrer: typeof document !== "undefined" ? document.referrer : null,
+      visitorId: ids.anonymousUserId,
+      sessionId: ids.sessionId,
+    });
+  } catch {
+    return null;
+  }
+}
+
+export function getCheckoutAttribution(): AttributionSnapshot | null {
+  if (typeof window === "undefined" || shouldSkipAnalytics()) return null;
+  return resolveCurrentAttribution(getAnalyticsIds());
 }
 
 function normalizeExportMethod(
@@ -492,7 +531,8 @@ export function trackEvent(
       typeof inputOrEventName === "string" ? [inputOrEventName, properties] : inputOrEventName,
     );
     const ids = getAnalyticsIds();
-    const mergedProperties = buildProperties(input, ids);
+    const attribution = resolveCurrentAttribution(ids);
+    const mergedProperties = buildProperties(input, ids, attribution);
 
     if (ids.isNewSession && input.eventName !== "session_start" && ids.sessionId) {
       try {

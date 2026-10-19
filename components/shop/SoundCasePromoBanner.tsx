@@ -7,6 +7,7 @@ import { getProductById } from "@/lib/shop/catalog";
 import { formatPrice } from "@/lib/shop/commerce";
 import { getProductPrice, LAUNCH_OFFER_COPY } from "@/lib/shop/launchOffer";
 import { SOUND_CASE_PROMO_MEDIA } from "@/lib/shop/soundCasePromoMedia";
+import { trackProductInterest } from "@/lib/analytics/commerce";
 
 export function SoundCasePromoBanner({
   lang,
@@ -74,7 +75,16 @@ export function SoundCasePromoBanner({
             <strong><bdi>{formatPrice(offer.currentMinor, product.currency, lang)}</bdi></strong>
           </div>
           <div className="sound-case-home-promo__action-row">
-            <Link className="sound-case-home-promo__cta" href={checkoutHref}>
+            <Link
+              className="sound-case-home-promo__cta"
+              href={checkoutHref}
+              onClick={() => trackProductInterest({
+                productId: product.id,
+                contentSlug: product.slug,
+                language: lang,
+                entryPoint: "home_promo",
+              })}
+            >
               {offerCopy.buy}
             </Link>
           </div>

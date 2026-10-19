@@ -72,6 +72,51 @@ describe("analytics ingestion API", () => {
     expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ event_id: "11111111-1111-4111-8111-111111111111", event_name: eventName }));
   });
 
+  it("records a validated product_interest event without customer PII", async () => {
+    insertMock.mockResolvedValue({ error: null });
+    const req = request("product_interest");
+    Object.assign(req.body, {
+      properties: {
+        product_id: "sound-case-001",
+        content_slug: "sound-case-001",
+        language: "en",
+        entry_point: "product_hero",
+        destination: "checkout",
+      },
+    });
+    const capture = responseCapture();
+    await handler(req as never, capture.response as never);
+    expect(capture.result()).toEqual({ statusCode: 200, body: { ok: true, status: "recorded" } });
+    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
+      event_name: "product_interest",
+      content_slug: "sound-case-001",
+      language: "en",
+      entry_point: "product_hero",
+      properties: expect.objectContaining({ destination: "checkout", product_id: "sound-case-001" }),
+    }));
+    expect(JSON.stringify(insertMock.mock.calls)).not.toMatch(/email|customer_name|provider_order_id/iu);
+  });
+
+  it.each([
+    { product_id: "sound-case-001", content_slug: "sound-case-001", language: "en", entry_point: "unknown", destination: "checkout" },
+    { product_id: "sound-case-001", content_slug: "sound-case-001", language: "en", entry_point: "home_promo", destination: "product" },
+    { product_id: "buyer@example.com", content_slug: "sound-case-001", language: "en", entry_point: "home_promo", destination: "checkout" },
+  ])("rejects invalid product_interest properties", async (properties) => {
+    const req = request("product_interest");
+    Object.assign(req.body, { properties });
+    const capture = responseCapture();
+    await handler(req as never, capture.response as never);
+    expect(capture.result()).toEqual({ statusCode: 400, body: { error: "Invalid product interest properties" } });
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects arbitrary event names", async () => {
+    const capture = responseCapture();
+    await handler(request("purchase_completed") as never, capture.response as never);
+    expect(capture.result()).toEqual({ statusCode: 400, body: { error: "Unknown analytics event" } });
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
   it("returns duplicate idempotent success and does not create a second logical event", async () => {
     insertMock.mockResolvedValue({ error: { code: "23505" } });
     const capture = responseCapture();
@@ -86,5 +131,33 @@ describe("analytics ingestion API", () => {
     await handler(request() as never, capture.response as never);
     expect(capture.result()).toEqual({ statusCode: 200, body: { ok: true, status: "skipped", reason: "vercel_preview" } });
     expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("strips query-string and property PII from acquisition-enriched analytics", async () => {
+    insertMock.mockResolvedValue({ error: null });
+    const req = request("product_view");
+    req.body.page = "/shop/sound-case-001?utm_source=youtube&email=private@example.com";
+    Object.assign(req.body, {
+      properties: {
+        current_page: "/shop/sound-case-001?utm_source=youtube&email=private@example.com",
+        referrer: "https://www.google.com/search?q=private@example.com",
+        attribution_session_source: "youtube",
+        attribution_utm_campaign: "private@example.com",
+      },
+    });
+    const capture = responseCapture();
+    await handler(req as never, capture.response as never);
+    expect(capture.result()).toEqual({ statusCode: 200, body: { ok: true, status: "recorded" } });
+    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
+      page: "/shop/sound-case-001",
+      current_page: "/shop/sound-case-001",
+      referrer: "https://www.google.com/search",
+      properties: expect.objectContaining({
+        current_page: "/shop/sound-case-001",
+        referrer: "https://www.google.com/search",
+        attribution_session_source: "youtube",
+      }),
+    }));
+    expect(JSON.stringify(insertMock.mock.calls)).not.toContain("private@example.com");
   });
 });

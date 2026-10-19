@@ -36,6 +36,8 @@ and Julia can operate the purchase from the canonical Commerce admin without man
 | Builder / preview / print | PARTIAL | Canonical 24-page preview, saved-only printing, code-derived print guidance and account Edit/Open & print intents exist; protected-route visual QA and physical printer validation remain. |
 | Post-purchase UX | PARTIAL | `/account` provides localized purchase history, re-edit/re-print entry and server-authorized receipt **copy** download after original-email acceptance. The original email/account copy flow is not verified in Production. |
 | Commerce Admin | PARTIAL | A local Admin candidate provides full Sandbox refunds and read-only original-email delivery evidence; Preview release and Production verification remain open. |
+| Acquisition attribution | PARTIAL / MIGRATION APPLIED AND REGISTERED | Analytics Phase 2A is implemented locally and migration `20261018220604` is applied and registered (it was migration 29; Production now has 30 registered versions after Phase 2B): privacy-safe first/session touch follows the 30-minute analytics session and a write-once snapshot can be attached to a PayPal order. The application code is not deployed; Live checkout remains disabled. |
+| Commerce analytics | PARTIAL / RPC APPLIED AND REGISTERED | Analytics Phase 2B commerce RPC is applied and registered as migration `20261019110250`. Admin integration is implemented locally in `upload-lessons`; deployment and Production smoke tests remain pending. Live checkout remains disabled. |
 | Refund lifecycle | PARTIAL / MIGRATION REGISTERED | The full-refund migration is applied and registered in Supabase; a Sandbox refund with entitlement revocation was completed. Live corrective accounting documents, partial refunds and disputes remain open. |
 | Legal | BLOCKED FOR LAUNCH | Shop policies and checkout consents are implemented locally but are not yet deployed to Production. Final prepayment verification remains open. |
 | Production configuration | BLOCKED | Vercel's latest visible Production deployment is `4922379` from `main` (2026-10-05); newer `staging-updated` builds are Preview. Production env names include Resend, Supabase service role, the receipt bucket and `CRON_SECRET`, but searches found no PayPal variables or `RECEIPT_ORIGINAL_EMAIL_ENABLED`. Values and runtime behavior remain untested. A read-only public check found HTTPS on `/`, while Shop routes returned 404. |
@@ -1151,6 +1153,54 @@ Status: LOCAL SHOP CHECKS PASS / MIGRATION HISTORY 25 OF 28 / PRODUCTION NO-GO
 Phase: Phase 7 release validation
 Status: 28/28 LOCAL AND REMOTE VERSIONS MATCH / PRODUCTION NO-GO
 - The owner authorized official linked-project history repair for `20261013214846`, `20261014231224` and `20261017195749`. All three commands succeeded. The previous 25 versions were preserved; public schema and data fingerprints matched before and after. No SQL migration was rerun.
+
+## 2026-10-19 — Analytics Phase 2A acquisition attribution
+Phase: Analytics Phase 2A
+Status: LOCAL IMPLEMENTATION COMPLETE / MIGRATION APPLIED AND REGISTERED / APPLICATION NOT DEPLOYED
+Commits:
+- capybara_tales: not committed by instruction
+Completed:
+- Added privacy-safe five-UTM, external-referrer, landing-path and timestamp capture with immutable browser first-touch and 30-minute session-touch semantics. Direct, organic, social, paid, referral and campaign classification is derived without fingerprinting.
+- Added bounded server validation at PayPal checkout creation and a write-once order attribution snapshot. The snapshot is separate from PayPal payment authority and from the approximately 15-day raw analytics retention.
+- Added RU / EN / HE privacy disclosures covering acquisition data, order linkage and commercial-history retention.
+- Added Vitest and disposable PostgreSQL regression coverage for navigation/reload/language/session behavior, invalid and PII-like values, checkout propagation, retry/resume immutability and RPC permissions.
+Remaining in this phase:
+- Production has `20261018220604_analytics_phase_2a_order_attribution.sql` applied and registered; 29 migration versions are confirmed. Deploy the reviewed Phase 2A application code only through the later release workflow.
+- Live checkout remains disabled. Phase 2B adds Commerce/Analytics report aggregation separately; its Commerce Admin UI is Part 2.
+Decisions/blockers:
+- Attribution is a bounded browser-supplied marketing signal, not proof of payment. Payment completion continues to come only from the verified PayPal capture/webhook flow.
+- Existing orders remain valid with a null snapshot. Once a snapshot is attached, database enforcement prevents replacement on duplicate checkout requests or resume.
+Validation:
+- Full Vitest: 1,394/1,394 passed. TypeScript and scoped ESLint passed.
+- Disposable Analytics V2 and Commerce PostgreSQL suites passed; the latter executed the new migration and write-once/ACL regression. `git diff --check` passed.
+
+## 2026-10-19 — Analytics Phase 2B Part 1 commerce reporting foundation
+Phase: Analytics Phase 2B Part 1
+Status: MIGRATION APPLIED AND REGISTERED / APPLICATION NOT DEPLOYED / ADMIN PART 2 IMPLEMENTED LOCALLY
+Commits:
+- capybara_tales: not committed by instruction
+Completed:
+- Added the bounded `product_interest` event for the product hero, product final and home promo checkout CTAs, plus the stable catalog product id on the existing `product_view` producer.
+- Added the server-only `commerce_analytics_report_v1` migration contract. It derives checkout starts and authoritative paid revenue from durable orders, completed refunds from refund operations, groups money by currency, separates Live/Sandbox commerce, and reports Phase 2A first/session-touch attribution without exposing PII.
+- Top-of-funnel metrics remain explicitly scoped to all Production site traffic. The report labels Shop/Product/Interest/Checkout/Paid as independent counts and does not publish false cross-cohort conversion percentages.
+- Added TypeScript report types, ingestion/producer regression coverage and disposable PostgreSQL coverage for financial boundaries, attribution, raw-retention independence and RPC ACLs.
+Remaining:
+- The owner manually applied `20261019110250_analytics_phase_2b_commerce_report.sql`; the migration is registered and Production now has 30 registered versions.
+- Admin Phase 2B is implemented locally in the existing `/admin/analytics` dashboard in `upload-lessons`. It has not been committed, pushed or deployed.
+- Deploy neither Phase 2A nor Phase 2B application code in this task. Production smoke tests remain pending and Live checkout stays disabled.
+
+## 2026-10-19 — Analytics Phase 2B Part 2 Admin integration
+Phase: Analytics Phase 2B Part 2
+Status: LOCAL IMPLEMENTATION COMPLETE / NOT DEPLOYED / PRODUCTION SMOKE TESTS PENDING
+Completed:
+- Integrated the existing server-only `commerce_analytics_report_v1` into the authenticated Analytics Admin API using the service-role server client and strict nested runtime validation.
+- Added Acquisition and Commerce Analytics tabs to the existing `/admin/analytics` dashboard, preserving all Phase 1 tabs and the separate `/admin/commerce` operations interface.
+- Added Live/Sandbox commerce selection while keeping audience traffic explicitly scoped to all Production traffic. Revenue remains separated by currency, negative net revenue is preserved, and funnel values are labelled as independent counts without conversion percentages.
+- Extended Copy, JSON and tab-specific CSV exports with the Commerce/Acquisition report and data-quality context without customer, provider, visitor or session identifiers.
+Remaining:
+- Review and commit the existing Phase 1 plus Phase 2B Admin working tree together, then deploy through the normal controlled workflow.
+- Run authenticated Production smoke tests for 24h/7d/14d, Live/Sandbox, empty states, exports and data-incomplete warnings after deployment.
+- Phase 2A storefront application code is still not deployed. Live checkout remains disabled.
 
 ---
 

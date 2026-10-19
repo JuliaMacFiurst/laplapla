@@ -43,6 +43,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "story_downloaded",
   "shop_view",
   "product_view",
+  "product_interest",
   "preorder_page_view",
   "preorder_submit_attempt",
   "preorder_signup_success",
@@ -176,6 +177,7 @@ export const ANALYTICS_EVENT_LABELS: Record<AnalyticsEventName, string> = {
   story_downloaded: "Stories downloaded",
   shop_view: "Shop viewed",
   product_view: "Shop product viewed",
+  product_interest: "Shop checkout CTA clicked",
   preorder_page_view: "Preorder page viewed",
   preorder_submit_attempt: "Preorder signup attempted",
   preorder_signup_success: "Preorder signup completed",
@@ -192,4 +194,34 @@ export function isAnalyticsEntityType(value: unknown): value is AnalyticsEntityT
 
 export function isAnalyticsLang(value: unknown): value is AnalyticsLang {
   return value === "ru" || value === "en" || value === "he";
+}
+
+export const PRODUCT_INTEREST_ENTRY_POINTS = [
+  "product_hero",
+  "product_final",
+  "home_promo",
+] as const;
+
+export type ProductInterestEntryPoint = (typeof PRODUCT_INTEREST_ENTRY_POINTS)[number];
+
+export type ProductInterestProperties = AnalyticsProperties & {
+  product_id: string;
+  content_slug: string;
+  language: AnalyticsLang;
+  entry_point: ProductInterestEntryPoint;
+  destination: "checkout";
+};
+
+const PRODUCT_ANALYTICS_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,119}$/u;
+
+export function isProductInterestProperties(value: unknown): value is ProductInterestProperties {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const properties = value as Record<string, unknown>;
+  return typeof properties.product_id === "string" &&
+    PRODUCT_ANALYTICS_ID_PATTERN.test(properties.product_id) &&
+    typeof properties.content_slug === "string" &&
+    PRODUCT_ANALYTICS_ID_PATTERN.test(properties.content_slug) &&
+    isAnalyticsLang(properties.language) &&
+    (PRODUCT_INTEREST_ENTRY_POINTS as readonly unknown[]).includes(properties.entry_point) &&
+    properties.destination === "checkout";
 }

@@ -25,6 +25,7 @@ import { ShopLegalDisclosure } from "@/components/legal/ShopLegalDisclosure";
 import { checkoutConsentCopy } from "@/lib/legal/checkoutConsent";
 import { shopPolicyPaths } from "@/lib/legal/shopPolicies";
 import { handlePayPalApprovalOnce, paidCheckoutSuccessHref, resumeReturnedPayPalSession } from "@/lib/shop/paypalCheckoutReturn";
+import { getCheckoutAttribution } from "@/lib/analytics/client";
 
 type PayPalApprovalData = { orderId?: unknown };
 type PayPalPaymentSession = {
@@ -308,6 +309,7 @@ export function PayPalCheckout({ lang }: { lang: Lang }) {
       legalAccepted,
       electronicReceiptAccepted,
       lang,
+      attribution: getCheckoutAttribution(),
     }).then(async (response) => {
       const result = await readJson<PayPalCreateResponse>(response);
       if (!response.ok || !result.ok) {
