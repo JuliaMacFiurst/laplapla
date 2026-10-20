@@ -4,6 +4,9 @@ import { resolveProductPrice } from "@/lib/server/commerce/resolveProductPrice";
 import { enforceSameOrigin } from "@/lib/server/security/requestOrigin";
 import { PAYPAL_CHECKOUT_PRODUCT_ID, type PayPalQuoteResponse } from "@/lib/shop/paypalCheckout";
 import { withApiHandler } from "@/utils/apiHandler";
+import { getPayPalServerConfig } from "@/lib/server/commerce/paypal/config";
+import { isPayPalCheckoutAvailableForCustomer } from "@/lib/server/commerce/paypal/checkoutAvailability";
+import { findResumablePayPalCheckoutForCustomer } from "@/lib/server/commerce/paypal/orders";
 
 const EXPECTED_BODY_KEYS = ["productId"];
 
@@ -30,6 +33,19 @@ export async function paypalQuoteHandler(req: NextApiRequest, res: NextApiRespon
   }
 
   try {
+    const config = getPayPalServerConfig();
+    if (!isPayPalCheckoutAvailableForCustomer(config, access.user)) {
+      // A previously created order may return from PayPal after the creation gate closes.
+      // Use its immutable snapshot; this endpoint cannot create a new order.
+      const lookup = await findResumablePayPalCheckoutForCustomer(access.user.id, PAYPAL_CHECKOUT_PRODUCT_ID, config.environment);
+      if (lookup.status !== "one" || !lookup.order.providerOrderId) {
+        res.status(503).json({ ok: false, code: "unavailable" });
+        return;
+      }
+      res.status(200).json({ ok: true, status: "priced", productId: PAYPAL_CHECKOUT_PRODUCT_ID,
+        amountMinor: lookup.order.totalMinor, currency: lookup.order.currency, priceSource: lookup.order.priceSource });
+      return;
+    }
     const result = await resolveProductPrice({
       verifiedCustomer: access.user,
       productId: PAYPAL_CHECKOUT_PRODUCT_ID,

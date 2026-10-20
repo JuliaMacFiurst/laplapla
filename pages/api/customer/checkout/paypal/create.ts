@@ -3,7 +3,7 @@ import { resolveCustomerAccess } from "@/lib/server/auth/customerAccess";
 import { createLocalCommerceOrder } from "@/lib/server/commerce/orders";
 import { createPayPalClient, PayPalApiError } from "@/lib/server/commerce/paypal/client";
 import { getPayPalServerConfig } from "@/lib/server/commerce/paypal/config";
-import { isPayPalCheckoutAvailable } from "@/lib/server/commerce/paypal/checkoutAvailability";
+import { isPayPalCheckoutAvailableForCustomer } from "@/lib/server/commerce/paypal/checkoutAvailability";
 import {
   bindPayPalOrderToLocalOrder,
   getPayPalCheckoutOrderForCustomer,
@@ -76,7 +76,7 @@ export async function paypalCreateHandler(req: NextApiRequest, res: NextApiRespo
     res.status(503).json({ ok: false, code: "paypal_unavailable" });
     return;
   }
-  if (!isPayPalCheckoutAvailable(paypalConfig)) {
+  if (!isPayPalCheckoutAvailableForCustomer(paypalConfig, access.user)) {
     res.status(503).json({ ok: false, code: "order_unavailable" });
     return;
   }

@@ -52,6 +52,8 @@ vi.mock("@/lib/server/customerBillingIdentity", () => ({
 import { paypalCreateHandler } from "@/pages/api/customer/checkout/paypal/create";
 import { paypalCaptureHandler } from "@/pages/api/customer/checkout/paypal/capture";
 import { paypalResumeHandler } from "@/pages/api/customer/checkout/paypal/resume";
+import { paypalQuoteHandler } from "@/pages/api/customer/checkout/paypal/quote";
+import { privateLiveAccessHandler } from "@/pages/api/customer/checkout/paypal/private-access";
 
 const user = { id: "11111111-1111-4111-8111-111111111111", email: "buyer@example.com", email_confirmed_at: "2026-10-01" };
 const localOrderId = "22222222-2222-4222-8222-222222222222";
@@ -265,6 +267,96 @@ describe("authenticated PayPal create endpoint", () => {
     expect(mocks.paypalCreate).toHaveBeenCalledOnce();
   });
 
+  it("allows only the configured confirmed customer to create a private Live order", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "false");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_RECEIPT_EMAIL_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_USER_ID", user.id);
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_NOT_BEFORE", new Date(Date.now() - 60_000).toISOString());
+    vi.stubEnv("RESEND_API_KEY", "test-only");
+    vi.stubEnv("RESEND_FROM_EMAIL", "LapLapLa <support@example.test>");
+    vi.stubEnv("RECEIPT_PDF_STORAGE_BUCKET", "receipt-pdfs");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live", clientId: "public-test-id", clientSecret: "server-test-secret" });
+
+    mocks.resolveCustomerAccess.mockResolvedValueOnce({ isAuthenticated: true, accessToken: "token", user: { ...user, id: "44444444-4444-4444-8444-444444444444" } });
+    const denied = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), denied.res);
+    expect(denied.result.status).toBe(503);
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+
+    const allowed = response();
+    await paypalCreateHandler(createRequest({ productId: "sound-case-001", checkoutIdempotencyKey: checkoutKey }), allowed.res);
+    expect(allowed.result.status).toBe(200);
+    expect(mocks.createLocalCommerceOrder).toHaveBeenCalledWith(expect.objectContaining({ verifiedCustomer: user, providerEnvironment: "live" }));
+    expect(mocks.paypalCreate).toHaveBeenCalledOnce();
+  });
+
+  it("issues a short-lived page pass only to the confirmed private Live customer", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "false");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_RECEIPT_EMAIL_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_USER_ID", user.id);
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_NOT_BEFORE", new Date(Date.now() - 60_000).toISOString());
+    vi.stubEnv("RESEND_API_KEY", "test-only");
+    vi.stubEnv("RESEND_FROM_EMAIL", "LapLapLa <support@example.test>");
+    vi.stubEnv("RECEIPT_PDF_STORAGE_BUCKET", "receipt-pdfs");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live", clientId: "public-test-id", clientSecret: "server-test-secret" });
+
+    const permitted = response();
+    await privateLiveAccessHandler(request({}), permitted.res);
+    expect(permitted.result).toMatchObject({ status: 200, body: { ok: true } });
+    expect(permitted.result.headers["Set-Cookie"]).toContain("HttpOnly; Secure; SameSite=Lax");
+
+    mocks.resolveCustomerAccess.mockResolvedValueOnce({ isAuthenticated: true, accessToken: "token", user: { ...user, id: "44444444-4444-4444-8444-444444444444" } });
+    const denied = response();
+    await privateLiveAccessHandler(request({}), denied.res);
+    expect(denied.result.status).toBe(404);
+    expect(denied.result.headers["Set-Cookie"]).toBeUndefined();
+
+    mocks.resolveCustomerAccess.mockResolvedValueOnce({ isAuthenticated: false, accessToken: null, user: null });
+    const signedOut = response();
+    await privateLiveAccessHandler(request({}), signedOut.res);
+    expect(signedOut.result.status).toBe(401);
+  });
+
+  it("denies private Live quote and resume to a different authenticated customer", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "false");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_RECEIPT_EMAIL_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_USER_ID", user.id);
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_NOT_BEFORE", new Date(Date.now() - 60_000).toISOString());
+    vi.stubEnv("RESEND_API_KEY", "test-only");
+    vi.stubEnv("RESEND_FROM_EMAIL", "LapLapLa <support@example.test>");
+    vi.stubEnv("RECEIPT_PDF_STORAGE_BUCKET", "receipt-pdfs");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live", clientId: "public-test-id", clientSecret: "server-test-secret" });
+    mocks.resolveCustomerAccess.mockResolvedValue({ isAuthenticated: true, accessToken: "token", user: { ...user, id: "44444444-4444-4444-8444-444444444444" } });
+    const quote = response();
+    await paypalQuoteHandler(request({ productId: "sound-case-001" }), quote.res);
+    const resume = response();
+    await paypalResumeHandler(request({ productId: "sound-case-001" }), resume.res);
+    expect(quote.result.status).toBe(503);
+    expect(resume.result.status).toBe(503);
+    expect(mocks.resolveProductPrice).not.toHaveBeenCalled();
+    expect(mocks.findResumable).toHaveBeenCalledWith("44444444-4444-4444-8444-444444444444", "sound-case-001", "live");
+  });
+
+  it("can read the immutable in-flight order after private creation is disabled", async () => {
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live", clientId: "public-test-id", clientSecret: "server-test-secret" });
+    mocks.findResumable.mockResolvedValue({ status: "one", order: order({
+      userId: user.id, status: "pending_approval", providerOrderId: "PAYPAL_ORDER_1",
+      totalMinor: 3900, currency: "ILS", priceSource: "catalog",
+    }) });
+    const quote = response();
+    await paypalQuoteHandler(request({ productId: "sound-case-001" }), quote.res);
+    const resume = response();
+    await paypalResumeHandler(request({ productId: "sound-case-001" }), resume.res);
+    expect(quote.result).toMatchObject({ status: 200, body: { ok: true, status: "priced", amountMinor: 3900, currency: "ILS" } });
+    expect(resume.result).toMatchObject({ status: 200, body: { ok: true, status: "resumable", paypalOrderId: "PAYPAL_ORDER_1" } });
+    expect(mocks.resolveProductPrice).not.toHaveBeenCalled();
+    expect(mocks.paypalCreate).not.toHaveBeenCalled();
+    expect(mocks.paypalCapture).not.toHaveBeenCalled();
+  });
+
   it("keeps live checkout closed when the private receipt PDF bucket is not configured", async () => {
     vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "true");
     vi.stubEnv("RESEND_API_KEY", "test-only");
@@ -353,6 +445,7 @@ describe("authenticated PayPal create endpoint", () => {
 });
 
 describe("authenticated PayPal capture endpoint", () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.resolveCustomerAccess.mockResolvedValue({ isAuthenticated: true, accessToken: "token", user });
@@ -377,6 +470,18 @@ describe("authenticated PayPal capture endpoint", () => {
       confirmedAmountMinor: 4900, confirmedCurrency: "ILS",
     }));
     expect(mocks.issueReceipt).toHaveBeenCalledWith({ orderId: localOrderId, source: "capture" });
+  });
+
+  it("reconciles an existing verified Live capture after private creation is disabled", async () => {
+    vi.stubEnv("SHOP_LIVE_CHECKOUT_ENABLED", "false");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_ENABLED", "false");
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "live", clientId: "public-test-id", clientSecret: "server-test-secret" });
+    mocks.getOrder.mockResolvedValue(order({ status: "capture_pending", providerOrderId: "PAYPAL_ORDER_1", providerEnvironment: "live" }));
+    const { res, result } = response();
+    await paypalCaptureHandler(request({ localOrderId, paypalOrderId: "PAYPAL_ORDER_1" }), res);
+    expect(result.body).toMatchObject({ ok: true, status: "paid" });
+    expect(mocks.paypalShow).toHaveBeenCalledOnce();
+    expect(mocks.paypalCapture).not.toHaveBeenCalled();
   });
 
   it("keeps a successful purchase successful when receipt issuance fails", async () => {
@@ -494,6 +599,7 @@ describe("authenticated PayPal capture endpoint", () => {
 describe("authenticated PayPal resume endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getPayPalServerConfig.mockReturnValue({ environment: "sandbox", clientId: "client", clientSecret: "test-value" });
     mocks.resolveCustomerAccess.mockResolvedValue({ isAuthenticated: true, accessToken: "token", user });
     mocks.resolveProductPrice.mockResolvedValue({
       status: "priced", productId: "sound-case-001", priceMinor: 4900, currency: "ILS", source: "catalog",

@@ -36,19 +36,20 @@ export default function PayPalCheckoutPage({ slug, environment }: PayPalCheckout
   );
 }
 
-export const getServerSideProps: GetServerSideProps<PayPalCheckoutPageProps> = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps<PayPalCheckoutPageProps> = async ({ params, req }) => {
   const slug = typeof params?.slug === "string" ? params.slug : "";
   const product = getProductBySlug(slug);
   if (slug !== "sound-case-001" || !product) {
     return { notFound: true };
   }
-  const [{ getPayPalServerConfig }, { isPayPalCheckoutAvailable }] = await Promise.all([
+  const [{ getPayPalServerConfig }, { isPayPalCheckoutAvailable }, { hasValidPrivateLiveCheckoutCookie, PRIVATE_LIVE_TEST_COOKIE }] = await Promise.all([
     import("@/lib/server/commerce/paypal/config"),
     import("@/lib/server/commerce/paypal/checkoutAvailability"),
+    import("@/lib/server/commerce/paypal/privateLiveTest"),
   ]);
   try {
     const config = getPayPalServerConfig();
-    if (!isPayPalCheckoutAvailable(config)) return { notFound: true };
+    if (!isPayPalCheckoutAvailable(config) && !hasValidPrivateLiveCheckoutCookie(config, req?.cookies?.[PRIVATE_LIVE_TEST_COOKIE])) return { notFound: true };
     return { props: { slug, environment: config.environment } };
   } catch {
     return { notFound: true };

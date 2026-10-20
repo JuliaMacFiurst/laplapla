@@ -1218,6 +1218,26 @@ Status: BLOCKED BEFORE MERGE COMMIT AND PUSH / PRODUCTION NOT DEPLOYED
 - Vercel Dashboard shows `SHOP_LIVE_CHECKOUT_ENABLED` and `RECEIPT_ORIGINAL_EMAIL_ENABLED` in Production scope. Both are stored as write-only Secret variables, so their actual values could not be verified as `false` through the available read-only UI. The required pre-push safety condition is therefore unmet. No merge commit, push, deployment or Production smoke test was performed.
 - Next: the owner must provide a trustworthy confirmation of both effective Production values, or set them to `false` through a separately authorized configuration change and verify the resulting deployment configuration. Re-run the pre-push checks before completing the prepared merge. Live checkout and original receipt email must remain disabled until separately approved.
 
+## 2026-10-20 — Production release Stage B completed
+Phase: Production release preparation
+Status: PRODUCTION DEPLOYED / READ-ONLY SMOKE PASS / LIVE SALES CLOSED
+- The owner authoritatively confirmed `SHOP_LIVE_CHECKOUT_ENABLED=false` and `RECEIPT_ORIGINAL_EMAIL_ENABLED=false` in Vercel Production. No environment variable was read, overwritten or reconfigured during release execution.
+- The isolated rehearsal was completed as merge commit `fad94d811e5143958c66b97eafb9d975eaab0882`, with parents `4922379a87e13920b4fc1f6b766ba78e0e3c05fe` (main) and `92f884f0b4c41e8fe423ef412f1203a74125f1eb` (staging-updated). A normal push updated `origin/main`. The original staging checkout and its unrelated local files were preserved.
+- Vercel Production deployment `GiESXhLPReu4dE6c1nPBfysG7wfM` reached Ready for that exact merge commit and serves `www.laplapla.com`.
+- Read-only smoke: homepage, RU/EN/HE Shop and Sound Case product pages, `/library`, `/bedtime-stories` and a legacy story URL loaded as expected. Sound Case remains visible with its price and localized Coming soon status; no public CTA linked to checkout. Direct `/shop/sound-case-001/checkout` returned 404. Hebrew document direction was `rtl`.
+- Supabase migration history was read-only verified at 31/31 before release. No migration, payment, refund, email, cron, or Production data write was executed. The first controlled Live purchase and original receipt email remain untested and require separate owner authorization; public sales remain closed.
+- This outcome entry was prepared locally after the release. Publishing it would require a separate documentation commit and push; neither was performed automatically.
+
+## 2026-10-20 — Private Live purchase preparation
+Phase: First controlled Live purchase
+Status: LOCAL IMPLEMENTATION / PRODUCTION NOT DEPLOYED / PUBLIC SALES CLOSED
+- The approved original receipt PDF format is confirmed by the owner; the outdated sign-off TODO was removed without changing the PDF template, numbering or ledger.
+- A server-only, default-off private Live allowance was prepared for one confirmed Supabase Auth user ID. Public Shop CTAs continue to use the unchanged global Live gate. A short-lived signed page pass plus order-bound quote/resume permit reconciliation of an already created order after the creation gate closes; capture and signed webhook remain available without reopening new order creation.
+- Private original email eligibility is limited to the configured user and Live orders created after a recent UTC cutoff. Private recovery selects only that user's new orders; global original email remains disabled. No Production setting, payment, receipt, email or migration was changed.
+- Read-only Supabase checks found one confirmed matching Auth user, no active Sound Case entitlement, one issuer profile, one active Live series, a private `receipt-pdfs` bucket, and no pending or missing original-delivery record at the time checked. The user ID and secrets are absent from source and report.
+- Storefront implementation and runbook are in an isolated clean clone for verification. Commerce Admin has five local release commits ahead of origin/main; its Production Vercel project lacks PayPal credential names and Commerce refund flags. Neither repository has been pushed or deployed for this phase.
+- First real Live purchase, original PDF delivery, customer inbox receipt and public sales remain unchecked.
+
 ---
 
 # 7. Instructions for every future Codex prompt

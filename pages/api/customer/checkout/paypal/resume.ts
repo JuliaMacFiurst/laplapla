@@ -9,6 +9,7 @@ import {
 } from "@/lib/shop/paypalCheckout";
 import { withApiHandler } from "@/utils/apiHandler";
 import { getPayPalServerConfig } from "@/lib/server/commerce/paypal/config";
+import { isPayPalCheckoutAvailableForCustomer } from "@/lib/server/commerce/paypal/checkoutAvailability";
 
 const EXPECTED_BODY_KEYS = ["productId"];
 
@@ -38,25 +39,31 @@ export async function paypalResumeHandler(
   }
 
   try {
-    const price = await resolveProductPrice({
-      verifiedCustomer: access.user,
-      productId: PAYPAL_CHECKOUT_PRODUCT_ID,
-    });
-    if (price.status === "already_owned") {
-      res.status(200).json({ ok: true, status: "already_owned", productId: price.productId });
-      return;
+    const paypalConfig = getPayPalServerConfig();
+    const creationAllowed = isPayPalCheckoutAvailableForCustomer(paypalConfig, access.user);
+    if (creationAllowed) {
+      const price = await resolveProductPrice({ verifiedCustomer: access.user, productId: PAYPAL_CHECKOUT_PRODUCT_ID });
+      if (price.status === "already_owned") {
+        res.status(200).json({ ok: true, status: "already_owned", productId: price.productId });
+        return;
+      }
     }
 
     const lookup = await findResumablePayPalCheckoutForCustomer(
       access.user.id,
       PAYPAL_CHECKOUT_PRODUCT_ID,
-      getPayPalServerConfig().environment,
+      paypalConfig.environment,
     );
     if (lookup.status === "none") {
-      res.status(200).json({ ok: true, status: "none" });
+      res.status(creationAllowed ? 200 : 503).json(creationAllowed
+        ? { ok: true, status: "none" } : { ok: false, code: "unavailable" });
       return;
     }
     if (lookup.status === "needs_reconciliation") {
+      if (!creationAllowed) {
+        res.status(503).json({ ok: false, code: "unavailable" });
+        return;
+      }
       res.status(200).json({
         ok: true,
         status: "needs_reconciliation",
@@ -66,6 +73,10 @@ export async function paypalResumeHandler(
     }
 
     const order = lookup.order;
+    if (!creationAllowed && !order.providerOrderId) {
+      res.status(503).json({ ok: false, code: "unavailable" });
+      return;
+    }
     res.status(200).json({
       ok: true,
       status: "resumable",

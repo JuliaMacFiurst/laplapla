@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ db: null as unknown, fetch: vi.fn() }));
 vi.mock("@/lib/server/supabase", () => ({ createServerSupabaseClient: () => mocks.db }));
 import { recoverOriginalReceiptDeliveries, sendOriginalReceiptOnce } from "@/lib/server/commerce/receipts/originalDelivery";
 
-function fakeDatabase(options: { consent?: boolean; firstClaim?: boolean; orderEnvironment?: string } = {}) {
+function fakeDatabase(options: { consent?: boolean; firstClaim?: boolean; orderEnvironment?: string; userId?: string; createdAt?: string } = {}) {
   const updates: Record<string, unknown>[] = [];
   let claimed = false;
   const receipt = { id: "receipt-1", order_id: "order-1", receipt_number: 1,
@@ -23,7 +23,7 @@ function fakeDatabase(options: { consent?: boolean; firstClaim?: boolean; orderE
       select: () => result,
       maybeSingle: async () => {
         if (table === "receipts") return { data: receipt, error: null };
-        if (table === "orders") return { data: { status: "paid", provider_environment: options.orderEnvironment ?? "live", provider_capture_id: "capture-1" }, error: null };
+        if (table === "orders") return { data: { status: "paid", provider_environment: options.orderEnvironment ?? "live", provider_capture_id: "capture-1", user_id: options.userId ?? "11111111-1111-4111-8111-111111111111", created_at: options.createdAt ?? "2026-10-20T12:00:00.000Z" }, error: null };
         if (table === "checkout_consents") return { data: options.consent === false ? null : { locale: "en" }, error: null };
         if (table === "receipt_artifacts") return { data: { status: "ready", storage_bucket: "private-receipts", storage_key: "receipt.pdf", content_type: "application/pdf" }, error: null };
         if (table === "receipt_original_deliveries") {
@@ -56,6 +56,7 @@ describe("one-time original receipt email", () => {
     vi.stubGlobal("fetch", mocks.fetch);
   });
   afterEach(() => {
+    vi.unstubAllEnvs();
     delete process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED;
     delete process.env.RESEND_API_KEY;
     delete process.env.RESEND_FROM_EMAIL;
@@ -98,6 +99,52 @@ describe("one-time original receipt email", () => {
     mocks.db = fakeDatabase({ orderEnvironment: "sandbox" });
     await expect(sendOriginalReceiptOnce("receipt-1")).resolves.toBe("skipped");
     expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it("permits only a new private Live order and never fans out to older or other-user receipts", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "false");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_RECEIPT_EMAIL_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_USER_ID", "11111111-1111-4111-8111-111111111111");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_NOT_BEFORE", "2026-10-20T11:00:00.000Z");
+    mocks.fetch.mockResolvedValue({ ok: true, json: async () => ({ id: "provider-1" }) });
+    mocks.db = fakeDatabase({ createdAt: "2026-10-19T12:00:00.000Z" });
+    await expect(sendOriginalReceiptOnce("receipt-1")).resolves.toBe("skipped");
+    mocks.db = fakeDatabase({ userId: "22222222-2222-4222-8222-222222222222" });
+    await expect(sendOriginalReceiptOnce("receipt-1")).resolves.toBe("skipped");
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    mocks.db = fakeDatabase();
+    await expect(sendOriginalReceiptOnce("receipt-1")).resolves.toBe("accepted");
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+  });
+
+  it("scopes private recovery before choosing receipts instead of using the global oldest-first queue", async () => {
+    vi.stubEnv("RECEIPT_ORIGINAL_EMAIL_ENABLED", "false");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_RECEIPT_EMAIL_ENABLED", "true");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_USER_ID", "11111111-1111-4111-8111-111111111111");
+    vi.stubEnv("SHOP_PRIVATE_LIVE_TEST_NOT_BEFORE", "2026-10-20T11:00:00.000Z");
+    const db = fakeDatabase();
+    const originalFrom = db.from;
+    const filters: unknown[][] = [];
+    const globalRpc = vi.fn(db.rpc);
+    mocks.db = {
+      ...db,
+      rpc: globalRpc,
+      from: (table: string) => table !== "orders" ? originalFrom(table) : {
+        ...originalFrom(table),
+        select: (columns: string) => columns.startsWith("id,receipts") ? {
+          eq: (...args: unknown[]) => { filters.push(args); return query; },
+          gte: (...args: unknown[]) => { filters.push(args); return query; },
+          order: () => query,
+          limit: async () => ({ data: [{ receipts: [{ id: "receipt-1", receipt_original_deliveries: [] }] }], error: null }),
+        } : originalFrom(table).select(),
+      },
+    };
+    const query = (mocks.db as { from: (name: string) => { select: (columns: string) => unknown } }).from("orders").select("id,receipts") as never;
+    mocks.fetch.mockResolvedValue({ ok: true, json: async () => ({ id: "provider-1" }) });
+    await expect(recoverOriginalReceiptDeliveries()).resolves.toMatchObject({ scanned: 1, accepted: 1 });
+    expect(filters).toContainEqual(["user_id", "11111111-1111-4111-8111-111111111111"]);
+    expect(filters).toContainEqual(["created_at", "2026-10-20T11:00:00.000Z"]);
+    expect(globalRpc).not.toHaveBeenCalled();
   });
 
   it("records a provider rejection without retrying the original", async () => {

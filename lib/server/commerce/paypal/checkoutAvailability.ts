@@ -1,4 +1,5 @@
 import { getPayPalServerConfig, type PayPalServerConfig } from "./config";
+import { hasPrivateLiveTestConfiguration, isPrivateLiveTestCustomer } from "./privateLiveTest";
 
 export function isPayPalCheckoutAvailable(config: PayPalServerConfig): boolean {
   if (!config.clientId?.trim() || !config.clientSecret?.trim()) return false;
@@ -18,4 +19,15 @@ export function getShopCheckoutAvailability(): boolean {
   } catch {
     return false;
   }
+}
+
+export function isPrivateLiveCheckoutPageAvailable(config: PayPalServerConfig) {
+  return Boolean(config.clientId?.trim() && config.clientSecret?.trim()) && hasPrivateLiveTestConfiguration(config);
+}
+
+export function isPayPalCheckoutAvailableForCustomer(
+  config: PayPalServerConfig,
+  user: { id: string; email_confirmed_at?: string | null },
+) {
+  return isPayPalCheckoutAvailable(config) || isPrivateLiveTestCustomer(config, user);
 }

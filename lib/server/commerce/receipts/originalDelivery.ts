@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import type { Lang } from "@/i18n";
+import { canDeliverPrivateLiveTestOriginal, getPrivateLiveReceiptRecoveryScope, isPrivateLiveReceiptRecoveryEnabled } from "@/lib/server/commerce/paypal/privateLiveTest";
 
 type DeliveryStatus = "accepted" | "failed" | "uncertain" | "skipped";
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
@@ -13,8 +14,8 @@ const emailCopy: Record<Lang, { subject: string; body: string }> = {
 };
 
 export async function sendOriginalReceiptOnce(receiptId: string): Promise<DeliveryStatus> {
-  // Activation requires a separate accounting/legal sign-off for the PDF format.
-  if (process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED !== "true") return "skipped";
+  // The approved PDF format is unchanged. Private delivery is scoped to a new Live order.
+  if (process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED !== "true" && !isPrivateLiveReceiptRecoveryEnabled()) return "skipped";
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL?.trim();
   if (!key || !from) return "skipped";
@@ -31,11 +32,13 @@ export async function sendOriginalReceiptOnce(receiptId: string): Promise<Delive
     receipt_series: { series_code: string } | { series_code: string }[];
   };
   const orderResult = await db.from("orders")
-    .select("status,provider_environment,provider_capture_id")
+    .select("status,provider_environment,provider_capture_id,user_id,created_at")
     .eq("id", receipt.order_id).maybeSingle();
   if (orderResult.error) throw orderResult.error;
   if (orderResult.data?.status !== "paid" || orderResult.data.provider_environment !== "live"
     || !orderResult.data.provider_capture_id) return "skipped";
+  if (process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED !== "true"
+    && !canDeliverPrivateLiveTestOriginal(orderResult.data)) return "skipped";
   const customerEmail = receipt.customer_snapshot?.email;
   if (typeof customerEmail !== "string" || !EMAIL_PATTERN.test(customerEmail)) return "skipped";
 
@@ -116,28 +119,54 @@ export async function sendOriginalReceiptOnce(receiptId: string): Promise<Delive
 }
 
 export async function recoverOriginalReceiptDeliveries() {
-  if (process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED !== "true") return null;
+  if (process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED !== "true" && !isPrivateLiveReceiptRecoveryEnabled()) return null;
   const db = createServerSupabaseClient({ serviceRole: true });
-  const staleCutoff = new Date(Date.now() - 15 * 60_000).toISOString();
-  const stale = await db.from("receipt_original_deliveries")
-    .update({ status: "uncertain", error_code: "claim_timed_out", updated_at: new Date().toISOString() })
-    .eq("status", "sending").lt("claimed_at", staleCutoff);
-  if (stale.error) throw stale.error;
-
-  const candidates = await db.rpc("list_receipt_original_delivery_candidates", { target_limit: 3 });
-  if (candidates.error) throw candidates.error;
+  const privateScope = process.env.RECEIPT_ORIGINAL_EMAIL_ENABLED === "true" ? null : getPrivateLiveReceiptRecoveryScope();
+  let receiptIds: string[];
+  if (privateScope) {
+    // The global candidate RPC is oldest-first. Restrict the private recovery query
+    // before selecting candidates so unrelated old receipts cannot block the test.
+    const orders = await db.from("orders")
+      .select("id,receipts(id,receipt_original_deliveries(status,attempt_count))")
+      .eq("user_id", privateScope.userId).eq("provider_environment", "live")
+      .eq("status", "paid").gte("created_at", privateScope.notBefore)
+      .order("created_at", { ascending: true }).limit(3);
+    if (orders.error) throw orders.error;
+    receiptIds = (orders.data ?? []).flatMap((order) => {
+      const receipts = Array.isArray(order.receipts) ? order.receipts : order.receipts ? [order.receipts] : [];
+      return receipts.flatMap((receipt) => {
+        const deliveries = Array.isArray(receipt.receipt_original_deliveries)
+          ? receipt.receipt_original_deliveries : receipt.receipt_original_deliveries ? [receipt.receipt_original_deliveries] : [];
+        return deliveries.length === 0 || deliveries.some((delivery) => delivery.status === "pending" && delivery.attempt_count === 0)
+          ? [receipt.id] : [];
+      });
+    });
+  } else {
+    const staleCutoff = new Date(Date.now() - 15 * 60_000).toISOString();
+    const stale = await db.from("receipt_original_deliveries")
+      .update({ status: "uncertain", error_code: "claim_timed_out", updated_at: new Date().toISOString() })
+      .eq("status", "sending").lt("claimed_at", staleCutoff);
+    if (stale.error) throw stale.error;
+    const candidates = await db.rpc("list_receipt_original_delivery_candidates", { target_limit: 3 });
+    if (candidates.error) throw candidates.error;
+    receiptIds = (candidates.data ?? []).map((row: { receipt_id: string }) => row.receipt_id);
+  }
   const summary = { scanned: 0, accepted: 0, failed: 0, uncertain: 0, skipped: 0, manualReview: 0 };
-  for (const row of (candidates.data ?? []) as { receipt_id: string }[]) {
+  for (const receiptId of receiptIds) {
     summary.scanned += 1;
-    const result = await sendOriginalReceiptOnce(row.receipt_id);
+    const result = await sendOriginalReceiptOnce(receiptId);
     if (result === "accepted") summary.accepted += 1;
     if (result === "failed") summary.failed += 1;
     if (result === "uncertain") summary.uncertain += 1;
     if (result === "skipped") summary.skipped += 1;
   }
-  const review = await db.from("receipt_original_deliveries")
-    .select("receipt_id", { count: "exact", head: true }).in("status", ["failed", "uncertain"]);
-  if (review.error) throw review.error;
-  summary.manualReview = (review.count ?? 0) + summary.skipped;
+  if (privateScope) {
+    summary.manualReview = summary.skipped;
+  } else {
+    const review = await db.from("receipt_original_deliveries")
+      .select("receipt_id", { count: "exact", head: true }).in("status", ["failed", "uncertain"]);
+    if (review.error) throw review.error;
+    summary.manualReview = (review.count ?? 0) + summary.skipped;
+  }
   return summary;
 }
