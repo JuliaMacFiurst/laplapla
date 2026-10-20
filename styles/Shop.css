@@ -2448,12 +2448,17 @@
 }
 
 .customer-account__purchases > li {
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  align-items: start;
 }
 
 .customer-account__purchase-main {
   min-width: 0;
-  flex: 1;
+}
+
+.customer-account__purchase-main h3 {
+  overflow-wrap: anywhere;
 }
 
 .customer-account__purchase-meta {
@@ -2499,6 +2504,20 @@
   align-content: flex-start;
 }
 
+.customer-account__purchases .customer-account__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+}
+
+.customer-account__purchases .customer-account__actions > * {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
 .customer-account__secondary {
   min-height: 46px;
   padding: 0.75rem 1.15rem;
@@ -2514,6 +2533,27 @@
 .customer-account__secondary:disabled { cursor: wait; opacity: 0.58; }
 .customer-account__download-error { color: #8a3850; font-weight: 700; }
 .customer-account__grants { margin-top: 2rem; }
+
+.customer-account__support {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1.2rem;
+  border: 1px solid #e7dce5;
+  border-radius: 18px;
+  background: #f8f3f7;
+}
+
+.customer-account__support h2 { margin: 0; }
+
+@media (max-width: 800px) {
+  .customer-account__purchases > li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 @media (max-width: 600px) {
   .customer-auth,

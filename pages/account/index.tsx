@@ -109,7 +109,6 @@ export default function CustomerAccountPage() {
       <main className="customer-account" dir={lang === "he" ? "rtl" : "ltr"}>
         <section className="customer-account__panel">
           <h1>{copy.accountTitle}</h1>
-          <Link className="customer-account__secondary" href={buildLocalizedPublicPath("/support", lang)}>{supportCopy[lang].accountLink}</Link>
 
           {auth.status === "loading" ? <p>{copy.loading}</p> : null}
           {auth.status === "error" ? <p role="alert">{auth.error}</p> : null}
@@ -208,6 +207,10 @@ export default function CustomerAccountPage() {
               {account?.accessGrants.length ? <section className="customer-account__grants"><h2>{copy.accessProductsTitle}</h2><ul className="customer-account__products">{account.accessGrants.map((grant: CustomerAccessGrant) => { const product = getProductById(grant.productId); const active = grant.status === "active"; return <li key={grant.entitlementId}><div><span className={active ? "is-active" : "is-inactive"}>{active ? copy.active : copy.unavailable}</span><h3>{product ? getLocalizedTitle(product, lang) : grant.productId}</h3><p>{copy.accessWithoutPurchase}</p><small>{copy.accessSource}: {grant.source}</small></div>{active && product ? <div className="customer-account__actions"><Link className="customer-account__primary" href={buildLocalizedPublicPath(`/shop/${product.slug}/create`, lang)}>{copy.openEditPrint}</Link></div> : null}</li>; })}</ul></section> : null}
             </>
           ) : null}
+          <section className="customer-account__support" aria-labelledby="account-support-title">
+            <h2 id="account-support-title">{supportCopy[lang].title}</h2>
+            <Link className="customer-account__secondary" href={buildLocalizedPublicPath("/support", lang)}>{supportCopy[lang].accountLink}</Link>
+          </section>
         </section>
       </main>
     </>
