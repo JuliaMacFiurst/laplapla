@@ -10,15 +10,16 @@ const LANGS: { code: Lang; label: string }[] = [
   { code: "en", label: "EN" },
 ];
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ lang }: { lang?: Lang } = {}) {
   const router = useRouter();
-  const [current, setCurrent] = useState<Lang>("ru");
+  const [current, setCurrent] = useState<Lang>(() => lang ?? "ru");
 
   useEffect(() => {
-    setCurrent(getCurrentLang(router));
-  }, [router]);
+    setCurrent(lang ?? getCurrentLang(router));
+  }, [lang, router]);
 
   const switchLang = async (lang: Lang) => {
+    setCurrent(lang);
     persistLanguagePreference(lang);
 
     const isCapybaraPage = router.pathname === "/capybara";

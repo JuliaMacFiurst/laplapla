@@ -202,6 +202,173 @@
   box-shadow: 0 8px 18px rgba(22, 51, 74, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
+.quest-restart-button {
+  position: fixed;
+  z-index: 9998;
+  inset-inline-start: 20px;
+  bottom: 20px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 999px;
+  background: rgba(8, 47, 62, .82);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.quest-narration-enabled {
+  padding-bottom: 84px;
+}
+
+.quest-narration-launcher,
+.quest-narration-player {
+  position: fixed;
+  z-index: 9997;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  color: #fff;
+  background: rgba(8, 47, 62, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 12px 30px rgba(8, 30, 43, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.quest-star-narration-slot:not(:empty) {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 14px auto;
+}
+
+.quest-star-narration-slot .quest-narration-player,
+.quest-star-narration-slot .quest-narration-launcher {
+  position: static;
+  left: auto;
+  bottom: auto;
+  transform: none;
+}
+
+.quest-narration-launcher {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.15rem;
+}
+
+.quest-narration-player {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100vw - 24px);
+  min-height: 50px;
+  padding: 5px 7px;
+  border-radius: 999px;
+  box-sizing: border-box;
+}
+
+.quest-narration-button,
+.quest-narration-collapse {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  font: inherit;
+}
+
+.quest-narration-button--primary {
+  background: #fff;
+  color: #173d4e;
+}
+
+.quest-narration-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.quest-narration-launcher:focus-visible,
+.quest-narration-button:focus-visible,
+.quest-narration-collapse:focus-visible {
+  outline: 3px solid #ffd966;
+  outline-offset: 2px;
+}
+
+.quest-narration-time {
+  min-width: 76px;
+  color: inherit;
+  font: 700 0.78rem/1.1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  direction: ltr;
+  text-align: center;
+}
+
+.quest-narration-status {
+  max-width: 150px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.quest-narration-collapse {
+  flex-basis: 34px;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  font-size: 1.35rem;
+}
+
+@media (max-width: 520px) {
+  .quest-narration-enabled .quest-mobile-content {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .quest-narration-player {
+    gap: 2px;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    padding-inline: 5px;
+  }
+
+  .quest-narration-button {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .quest-narration-time {
+    min-width: 68px;
+    font-size: 0.72rem;
+  }
+
+  .quest-narration-status {
+    position: absolute;
+    inset-inline: 12px;
+    bottom: calc(100% + 6px);
+    max-width: none;
+    padding: 6px 9px;
+    border-radius: 8px;
+    background: rgba(8, 47, 62, 0.94);
+    text-align: center;
+  }
+}
+
+.quest-mobile-restart {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .quest-map-translation-note {
   max-width: 760px;
   margin: 10px auto 0;
@@ -406,7 +573,7 @@
 
 .quest-mobile-final-video {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   border-radius: 8px;
   background: #101820;
@@ -519,6 +686,7 @@
   display: grid;
   gap: 12px;
   margin-top: 14px;
+  min-width: 0;
 }
 
 .quest-mobile-map-heading {
@@ -2530,6 +2698,13 @@
   pointer-events: auto;
 }
 
+.star-navigation-completion .ice-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
 @keyframes ice-bounce {
   0% {
     transform: translateY(0);
@@ -2977,24 +3152,179 @@
 }
 
 .stars-map-frame {
-  display: inline-block;
+  display: block;
+  width: min(100%, 700px);
   margin-inline: auto;
   position: relative;
-  max-height: 720px;
 }
 
 .stars-map {
-  
-
-  /* ключевой момент: ставим режим, который игнорирует собственные viewBox-рамки */
-  object-fit: cover;
-
-  /* чтобы SVG идеально заполнил фрейм и чёрная рамка ушла под обрез */
+  width: 100%;
+  aspect-ratio: 800 / 862;
   display: block;
+}
 
-  /* если чёрная рамка всё ещё видна — чуть увеличиваем масштаб */
-  transform: scale(1.03);
-  transform-origin: center;
+.stars-map > div,
+.stars-map > div > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.stars-map #Merak,
+.stars-map #Dubhe,
+.stars-map #Polaris,
+.quest-mobile-svg-map-base #Merak,
+.quest-mobile-svg-map-base #Dubhe,
+.quest-mobile-svg-map-base #Polaris {
+  pointer-events: bounding-box;
+  cursor: pointer;
+}
+
+.star-navigation-section {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.star-navigation-section .stars-map-container {
+  padding: clamp(8px, 2vw, 22px);
+  height: auto;
+}
+
+.star-navigation-map-scene {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) minmax(0, 700px) minmax(72px, 1fr);
+  align-items: end;
+  width: 100%;
+  min-width: 0;
+}
+
+.star-navigation-map-scene .stars-map-frame {
+  width: 100%;
+}
+
+.star-navigation-map-scene .quest-raccoon-stars-video,
+.star-navigation-map-scene .quest-svensen-video {
+  width: min(100%, 180px);
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  position: relative;
+  z-index: 2;
+}
+
+.star-navigation-map-scene .quest-raccoon-stars-video {
+  justify-self: end;
+  transform: translateX(12%);
+}
+
+.star-navigation-map-scene .quest-svensen-video {
+  justify-self: start;
+  transform: translateX(-12%);
+}
+
+.star-navigation-status {
+  box-sizing: border-box;
+  width: min(680px, 100%);
+  margin: 14px auto 0;
+  padding: 12px 18px;
+  border: 2px solid #d48d2a;
+  border-radius: 18px;
+  background: #fff9f0;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+
+.star-navigation-instruction {
+  margin: 0;
+  color: #412100;
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 700;
+}
+
+.quest-mobile-map-workspace .star-navigation-status {
+  width: 100%;
+  margin: 0;
+}
+
+.quest-mobile-map-workspace--stars .quest-mobile-svg-map {
+  width: min(100%, 560px);
+  max-height: none;
+}
+
+.quest-mobile-stars-scene {
+  display: grid;
+  grid-template-columns: clamp(30px, 6vw, 80px) minmax(0, 560px) clamp(30px, 6vw, 80px);
+  align-items: end;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.quest-mobile-stars-scene .quest-mobile-svg-map {
+  min-width: 0;
+}
+
+.quest-mobile-stars-scene .quest-raccoon-stars-video,
+.quest-mobile-stars-scene .quest-svensen-video {
+  width: min(140%, 112px);
+  height: auto;
+  max-width: none;
+  object-fit: contain;
+  position: relative;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.quest-mobile-stars-scene .quest-raccoon-stars-video {
+  justify-self: end;
+}
+
+.quest-mobile-stars-scene .quest-svensen-video {
+  justify-self: start;
+}
+
+.quest-mobile-map-workspace--stars .quest-mobile-feedback {
+  margin-top: 0;
+}
+
+.quest-mobile-youtube-polar {
+  margin-top: 0;
+}
+
+.star-navigation-completion {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 760px);
+  margin: 20px auto 0;
+}
+
+.star-navigation-completion .ice-window {
+  clip-path: none;
+  overflow: visible;
+  backdrop-filter: none;
+  border-radius: 26px;
+}
+
+.stars-map .star-glow-strong,
+.quest-mobile-svg-map-base .star-glow-strong {
+  filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 9px #facc15);
+}
+
+.quest-video-unavailable {
+  max-width: 680px;
+  margin: 52px auto 20px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #17324d;
+  text-align: center;
 }
 
 .map-frame .quest-map {
@@ -3113,16 +3443,6 @@
   pointer-events: none;  /* чтобы не перекрывал карту */
 }
 
-.raccoon-stars-absolute {
-  position: absolute;
-  top: 400px;        /* голова енота заходит на карту */
-  left: -220px;           /* чуть смещаем влево */
-  width: 500px;
-  height: auto;
-  z-index: 200000;
-  pointer-events: none;
-}
-
 .quest-raccoon-stars-video {
   width: 370px;
   height: auto;
@@ -3151,15 +3471,6 @@
   pointer-events: none;
 }
 
-.svensen-absolute {
-  position: absolute;
-  top: 600px;
-  right: -150px;      /* чуть смещаем влево */
-  height: auto;
-  z-index: 200000;
-  pointer-events: none;
-}
-
 .quest-svensen-video {
   width: 300px;
 }
@@ -3181,6 +3492,27 @@
   border-radius: 12px;
   position: relative;
   z-index: 200001;
+}
+
+/* Keep RTL text direction separate from the physical map coordinate system. */
+[dir="rtl"] .map-frame .raccoon-absolute,
+[dir="rtl"] .map-frame .raccoon-sailor-absolute {
+  left: -200px;
+  width: 180px;
+}
+
+[dir="rtl"] .map-frame .quest-raccoon-video,
+[dir="rtl"] .map-frame .quest-sialor-video {
+  width: 180px;
+}
+
+[dir="rtl"] .map-frame .bulldog-absolute {
+  right: -180px;
+  width: 160px;
+}
+
+[dir="rtl"] .map-frame .quest-buldog-video {
+  width: 160px;
 }
 
 .quest-speech {
@@ -3805,18 +4137,21 @@
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
-  padding-bottom: 56.25%; /* 16:9 */
-  height: 0;
-  overflow: hidden;
+  aspect-ratio: 3 / 2;
 }
 
 .youtube-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
+  display: block;
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+.ice-window:has(> .youtube-wrapper) {
+  clip-path: none;
+  overflow: visible;
+  backdrop-filter: none;
+  border-radius: 26px;
 }
 
 .youtube-wrapper-polar-star {
@@ -3824,15 +4159,11 @@
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
-  padding-bottom: 56.25%; /* 16:9 */
-  height: 0;
-  overflow: hidden;
+  aspect-ratio: 16 / 9;
 }
 
 .youtube-wrapper-polar-star iframe {
-  position: absolute;
-  top: 50px;
-  left: 0;
+  display: block;
   width: 100%;
   height: 100%;
   border: 0;

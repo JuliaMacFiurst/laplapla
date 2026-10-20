@@ -11,6 +11,8 @@ import CockpitHint from "../flight/CockpitHint";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
 import { getTakeoffHints } from "../i18n/takeoffHints";
+import { useAvailableNarrationBlocks } from "../narration/availability";
+import { TAKEOFF_STORY_BLOCKS, takeoffHintBlockId } from "../narration/gameMappings";
 
 export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
   const { lang, t } = useQuest1I18n();
@@ -18,14 +20,22 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
   const [angle, setAngle] = useState(0);
   const [pushPull, setPushPull] = useState(0);
   const [hint, setHint] = useState<string | null>(null);
+  const [activeSwitchId, setActiveSwitchId] = useState<string | null>(null);
   const takeoffHints = getTakeoffHints(lang);
+  const hintBlockId = takeoffHintBlockId(activeSwitchId);
+  useAvailableNarrationBlocks("day4-takeoff-story", TAKEOFF_STORY_BLOCKS);
+  useAvailableNarrationBlocks("day4-takeoff-hint", hintBlockId ? [hintBlockId] : []);
 
   function handleSwitch(id: string) {
     if (id.startsWith("switcher-on")) {
       const text = takeoffHints[id];
-      if (text) setHint(text);
+      if (text) {
+        setHint(text);
+        setActiveSwitchId(id);
+      }
     } else {
       setHint(null);
+      setActiveSwitchId(null);
     }
 
     // Видео-карты под каждый свитчер
@@ -81,7 +91,10 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
     />
       {hint && (
         <div className="cockpit-hint-overlay">
-          <CockpitHint text={hint} onClose={() => setHint(null)} />
+          <CockpitHint text={hint} onClose={() => {
+            setHint(null);
+            setActiveSwitchId(null);
+          }} />
         </div>
       )}
   </div>
@@ -145,7 +158,7 @@ export default function Day4Takeoff({ go }: { go: (id: PageId) => void }) {
     <iframe
       className="quest-video"
       src="https://www.youtube.com/embed/5NhIRwCq428?autoplay=1&mute=1&loop=1&playlist=5NhIRwCq428&controls=0&modestbranding=1&playsinline=1&enablejsapi=1"
-      title="Spitsbergen Flight"
+      title={t.day4StarsNav.videoTitle}
       allow="autoplay; encrypted-media; fullscreen"
       allowFullScreen
     />

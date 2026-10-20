@@ -31,3 +31,7 @@ export const BACKGROUND_LAYERS: BackgroundLayer[] = [
     zIndex: 4,
   },
 ];
+
+export function getBackgroundPositionX(scrollX: number, speedMultiplier: number) {
+  return -scrollX * speedMultiplier;
+}

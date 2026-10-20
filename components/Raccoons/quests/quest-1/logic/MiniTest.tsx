@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuest1I18n } from "../i18n";
+import { useAvailableNarrationBlocks } from "../narration/availability";
+import type { NarrationBlockId } from "../narration/catalog";
 
 type Question = {
   text: string;
@@ -12,11 +14,13 @@ export default function MiniTest({
   finishTitle,
   finishButtonText,
   onFinish,
+  explanationBlockIds = [],
 }: {
   questions: Question[];
   finishTitle: string;
   finishButtonText: string;
   onFinish: () => void;
+  explanationBlockIds?: readonly (NarrationBlockId | null)[];
 }) {
   const { lang, t } = useQuest1I18n();
   const [current, setCurrent] = useState(0);
@@ -33,6 +37,11 @@ export default function MiniTest({
   }, [finished]);
 
   const question = questions[current];
+  const explanationBlockId = explanationBlockIds[current] ?? null;
+  useAvailableNarrationBlocks(
+    "desktop-quiz-explanation",
+    question?.explanation && explanationBlockId ? [explanationBlockId] : [],
+  );
 
   const handleSelect = (index: number) => {
     if (checked) return;

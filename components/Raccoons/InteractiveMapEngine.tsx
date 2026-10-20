@@ -46,8 +46,16 @@ import {
   isMobileTouchTapEligible,
   selectMobileProximityTarget,
   selectFirstInteractiveViewportHit,
-  selectSmallestSvgHit,
 } from "@/lib/mapSvgInteraction";
+import {
+  applyPhysicMapStyling,
+  selectBiomeSvgHit,
+} from "@/lib/physicMapStyling";
+import {
+  clampDesktopPhysicMapPosition,
+  getDesktopPhysicPositionAfterZoomOut,
+  type DesktopPhysicMapGeometry,
+} from "@/lib/desktopPhysicMapPan";
 import { supabase } from "@/lib/supabase";
 import flagCodeMap from "@/utils/confirmed_country_codes.json";
 import { getMapSvg } from "@/utils/storageMaps";
@@ -60,8 +68,19 @@ import {
   clampMobilePanPosition,
   getMobileMaxZoom,
   getMobilePanBounds,
+  getMobilePhysicPanBounds,
+  getMobilePhysicPositionAfterZoom,
+  getMobilePhysicDoubleTapZoom,
   type RaccoonMapType,
 } from "@/lib/raccoonMapZoom";
+import {
+  getAnimalMobileDoubleTapZoom,
+  getAnimalMobilePositionAfterZoom,
+  getAnimalMobilePanBounds,
+  getAnimalMobileResetPosition,
+  getAnimalMobileSafeView,
+  getMissingAnimalViewBox,
+} from "@/lib/animalMapView";
 
 interface InteractiveMapProps {
   svgPath: string;
@@ -589,12 +608,6 @@ export default function InteractiveMap({
   const mobileMinZoomRef = useRef(
     type === "animal" ? 1 : type === "weather" ? 0.55 : 0.8,
   );
-  const animalContentBoundsRef = useRef<{
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-  } | null>(null);
   const mapContentRef = useRef<HTMLDivElement | null>(null);
   const svgHostRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
@@ -602,6 +615,8 @@ export default function InteractiveMap({
   const startYRef = useRef(0);
   const currentXRef = useRef(0);
   const currentYRef = useRef(0);
+  const desktopPhysicDragGeometryRef = useRef<DesktopPhysicMapGeometry | null>(null);
+  const desktopAnimalDragGeometryRef = useRef<DesktopPhysicMapGeometry | null>(null);
   const movedDuringDragRef = useRef(false);
   const didDragRef = useRef(false);
   const pointerStartClientXRef = useRef(0);
@@ -1144,6 +1159,17 @@ export default function InteractiveMap({
         svgElement.classList.add(`${type}-map`);
         svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
         svgElement.style.overflow = "visible";
+        if (type === "animal") {
+          const missingViewBox = getMissingAnimalViewBox(
+            svgElement.getAttribute("viewBox"),
+            svgElement.getAttribute("width"),
+            svgElement.getAttribute("height"),
+          );
+          if (missingViewBox) svgElement.setAttribute("viewBox", missingViewBox);
+        }
+        if (type === "physic") {
+          applyPhysicMapStyling(svgElement as SVGSVGElement);
+        }
         setSvgContent(svgElement.outerHTML);
       } else {
         setSvgContent(text);
@@ -1153,12 +1179,6 @@ export default function InteractiveMap({
       setIsMapLoading(false);
     });
   }, [svgPath, type]);
-
-  useLayoutEffect(() => {
-    // Disable special animal-content bounds logic on mobile.
-    // It over-constrains panning and traps the map around America.
-    animalContentBoundsRef.current = null;
-  }, [isMobile, svgContent, type]);
 
   useEffect(() => {
     isLoadingRef.current = isPopupLoading;
@@ -1459,16 +1479,34 @@ export default function InteractiveMap({
     }
     // SVG viewBox values are internal coordinates, not CSS pixels. Clamp against
     // the rendered SVG viewport so maps with small viewBoxes do not get pinned.
-    return getMobilePanBounds({
+    const params = {
       viewportWidth: containerRect.width,
       viewportHeight: containerRect.height,
       contentWidth: layoutWidth,
       contentHeight: layoutHeight,
       zoom: nextZoom,
-    });
-  }, [isMobile]);
+    };
+    if (type === "animal" && viewBox.width > 0 && viewBox.height > 0) {
+      return getAnimalMobilePanBounds({
+        ...params,
+        viewBoxWidth: viewBox.width,
+        viewBoxHeight: viewBox.height,
+      });
+    }
+    return type === "physic"
+      ? getMobilePhysicPanBounds(params)
+      : getMobilePanBounds(params);
+  }, [isMobile, type]);
 
   const applyHardClamp = (nextZoom = zoomRef.current) => {
+    const animalReset = isMobile && type === "animal" && safeViewRef.current
+      ? getAnimalMobileResetPosition(safeViewRef.current, nextZoom) : null;
+    if (animalReset) {
+      currentXRef.current = animalReset.x;
+      currentYRef.current = animalReset.y;
+      applyMapTransform(currentXRef.current, currentYRef.current, nextZoom);
+      return;
+    }
     const bounds = getPanBounds(nextZoom);
     if (!bounds) return;
 
@@ -1484,6 +1522,9 @@ export default function InteractiveMap({
   };
 
   const clampMobilePosition = useCallback((x: number, y: number, nextZoom: number) => {
+    const animalReset = isMobile && type === "animal" && safeViewRef.current
+      ? getAnimalMobileResetPosition(safeViewRef.current, nextZoom) : null;
+    if (animalReset) return animalReset;
     const bounds = getPanBounds(nextZoom);
     if (!bounds) {
       return { x, y };
@@ -1493,7 +1534,51 @@ export default function InteractiveMap({
       x: softClamp(x, bounds.minX, bounds.maxX),
       y: softClamp(y, bounds.minY, bounds.maxY),
     };
-  }, [getPanBounds, softClamp]);
+  }, [getPanBounds, isMobile, softClamp, type]);
+
+  const getDesktopPhysicMapGeometry = useCallback(() => {
+    if (isMobile || type !== "physic" || zoomRef.current <= 0) return null;
+    const container = mapContentRef.current?.parentElement;
+    const svg = svgHostRef.current?.querySelector("svg");
+    if (!container || !svg || svg.viewBox.baseVal.width <= 0) return null;
+
+    const viewport = container.getBoundingClientRect();
+    const renderedSvg = svg.getBoundingClientRect();
+    const zoom = zoomRef.current;
+    if (viewport.width <= 0 || viewport.height <= 0 ||
+        renderedSvg.width <= 0 || renderedSvg.height <= 0) return null;
+
+    return {
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+      svgLeft: (renderedSvg.left - viewport.left - currentXRef.current) / zoom,
+      svgTop: (renderedSvg.top - viewport.top - currentYRef.current) / zoom,
+      svgWidth: renderedSvg.width / zoom,
+      svgHeight: renderedSvg.height / zoom,
+    };
+  }, [isMobile, type]);
+
+  const getDesktopAnimalMapGeometry = () => {
+    if (isMobile || type !== "animal" || zoomRef.current <= 0) return null;
+    const container = mapContentRef.current?.parentElement;
+    const svg = svgHostRef.current?.querySelector("svg");
+    if (!container || !svg || svg.viewBox.baseVal.width <= 0) return null;
+
+    const viewport = container.getBoundingClientRect();
+    const renderedSvg = svg.getBoundingClientRect();
+    const zoom = zoomRef.current;
+    if (viewport.width <= 0 || viewport.height <= 0 ||
+        renderedSvg.width <= 0 || renderedSvg.height <= 0) return null;
+
+    return {
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+      svgLeft: (renderedSvg.left - viewport.left - currentXRef.current) / zoom,
+      svgTop: (renderedSvg.top - viewport.top - currentYRef.current) / zoom,
+      svgWidth: renderedSvg.width / zoom,
+      svgHeight: renderedSvg.height / zoom,
+    };
+  };
 
   const applyMapTransform = useCallback((
     nextX = currentXRef.current,
@@ -1505,11 +1590,58 @@ export default function InteractiveMap({
       return;
     }
 
+    const realSizePhysic = !isMobile && type === "physic";
+    const svgHost = svgHostRef.current;
+    const container = mapContent.parentElement;
+    if (realSizePhysic) {
+      const viewBox = svgHost?.querySelector("svg")?.viewBox.baseVal;
+      const baseWidth = mapContent.clientWidth;
+      const hostWidth = `${baseWidth * nextZoom}px`;
+      if (svgHost && svgHost.style.width !== hostWidth) svgHost.style.width = hostWidth;
+      if (viewBox?.width && viewBox.height) {
+        const baseHeight = `${baseWidth * 0.8 * viewBox.height / viewBox.width}px`;
+        if (mapContent.style.height !== baseHeight) mapContent.style.height = baseHeight;
+      }
+      mapContent.style.willChange = "auto";
+      // Prevent zoom controls from scrolling the oversized SVG inside its viewport.
+      if (container) container.style.overflow = "clip";
+    } else if (!isMobile || svgHost?.style.width || mapContent.style.height) {
+      if (svgHost) svgHost.style.width = "";
+      mapContent.style.height = "";
+      mapContent.style.willChange = "";
+      if (container) container.style.overflow = "";
+    }
+
     mapContent.style.transformOrigin = "0 0";
-    mapContent.style.transform = isMobile
+    mapContent.style.transform = realSizePhysic
+      ? `translate(${nextX}px, ${nextY}px)`
+      : isMobile
       ? `translate(${nextX}px, ${nextY}px) scale(${nextZoom})`
       : `translate3d(${nextX}px, ${nextY}px, 0) scale(${nextZoom})`;
-  }, [isMobile]);
+  }, [isMobile, type]);
+
+  useEffect(() => {
+    if (isMobile || type !== "physic") return;
+    const container = mapContentRef.current?.parentElement;
+    if (!container) return;
+    let lastWidth = container.clientWidth;
+    const observer = new ResizeObserver(() => {
+      const width = container.clientWidth;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      applyMapTransform();
+      const geometry = getDesktopPhysicMapGeometry();
+      if (!geometry) return;
+      const clamped = clampDesktopPhysicMapPosition(
+        { x: currentXRef.current, y: currentYRef.current }, zoomRef.current, geometry,
+      );
+      currentXRef.current = clamped.x;
+      currentYRef.current = clamped.y;
+      applyMapTransform(clamped.x, clamped.y);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [applyMapTransform, getDesktopPhysicMapGeometry, isMobile, type]);
 
   // --- Helper to reset the map view to the safe initial view ---
   const resetMapView = () => {
@@ -1571,15 +1703,7 @@ export default function InteractiveMap({
     if (isMobile) {
       let initialMobileZoom = type === "weather" ? 0.72 : 1;
 
-      if (type === "animal") {
-        const fitX = container.getBoundingClientRect().width / viewBox.width;
-        const fitY = container.getBoundingClientRect().height / viewBox.height;
-        const fitZoom = Math.min(fitX, fitY);
-        initialMobileZoom = Math.min(1, Math.max(0.35, fitZoom));
-
-        // Allow zooming back out to the full-world fitted view.
-        mobileMinZoomRef.current = initialMobileZoom;
-      } else {
+      if (type !== "animal") {
         mobileMinZoomRef.current = type === "weather" ? 0.55 : 0.8;
       }
 
@@ -1588,10 +1712,16 @@ export default function InteractiveMap({
       let offsetY = 0;
 
       if (type === "animal") {
-        const centerX = viewBox.width / 2;
-        const centerY = viewBox.height / 2;
-        offsetX = containerRect.width / 2 - centerX * initialMobileZoom;
-        offsetY = containerRect.height / 2 - centerY * initialMobileZoom;
+        const fitted = getAnimalMobileSafeView({
+          viewportWidth: containerRect.width,
+          viewportHeight: containerRect.height,
+          contentWidth: svg.clientWidth,
+          contentHeight: svg.clientHeight,
+        });
+        initialMobileZoom = fitted.zoom;
+        mobileMinZoomRef.current = fitted.zoom;
+        offsetX = fitted.x;
+        offsetY = fitted.y;
       }
 
       const clamped = clampMobilePosition(offsetX, offsetY, initialMobileZoom);
@@ -1647,6 +1777,49 @@ export default function InteractiveMap({
     applyMapTransform(offsetX, offsetY, optimalZoom);
   }, [applyMapTransform, clampMobilePosition, isMobile, svgContent, type]);
 
+  useEffect(() => {
+    if (!isMobile || type !== "animal" || !svgContent) return;
+    const container = mapContentRef.current?.parentElement;
+    const svg = svgHostRef.current?.querySelector("svg");
+    if (!container || !svg) return;
+    let previousWidth = container.clientWidth;
+    let previousHeight = container.clientHeight;
+    const observer = new ResizeObserver(() => {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width === previousWidth && height === previousHeight) return;
+      previousWidth = width;
+      previousHeight = height;
+      const previousMin = mobileMinZoomRef.current;
+      const fitted = getAnimalMobileSafeView({
+        viewportWidth: width,
+        viewportHeight: height,
+        contentWidth: svg.clientWidth,
+        contentHeight: svg.clientHeight,
+      });
+      mobileMinZoomRef.current = fitted.zoom;
+      safeViewRef.current = fitted;
+      if (zoomRef.current <= previousMin + 1e-9) {
+        zoomRef.current = fitted.zoom;
+        setZoom(fitted.zoom);
+        currentXRef.current = fitted.x;
+        currentYRef.current = fitted.y;
+        applyMapTransform(fitted.x, fitted.y, fitted.zoom);
+      } else {
+        const bounds = getPanBounds(zoomRef.current);
+        if (!bounds) return;
+        const clamped = clampMobilePanPosition(
+          currentXRef.current, currentYRef.current, bounds,
+        );
+        currentXRef.current = clamped.x;
+        currentYRef.current = clamped.y;
+        applyMapTransform(clamped.x, clamped.y, zoomRef.current);
+      }
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [applyMapTransform, getPanBounds, isMobile, svgContent, type]);
+
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (Date.now() - lastTouchDragAtRef.current < 800) {
       return;
@@ -1659,6 +1832,8 @@ export default function InteractiveMap({
     pointerStartClientYRef.current = e.clientY;
     startXRef.current = e.clientX - currentXRef.current;
     startYRef.current = e.clientY - currentYRef.current;
+    desktopPhysicDragGeometryRef.current = getDesktopPhysicMapGeometry();
+    desktopAnimalDragGeometryRef.current = getDesktopAnimalMapGeometry();
     if (mapContentRef.current) {
       mapContentRef.current.style.cursor = "grabbing";
     }
@@ -1680,7 +1855,10 @@ export default function InteractiveMap({
     }
     const nextX = e.clientX - startXRef.current;
     const nextY = e.clientY - startYRef.current;
-    const clamped = clampMobilePosition(nextX, nextY, zoomRef.current);
+    const geometry = desktopPhysicDragGeometryRef.current ?? desktopAnimalDragGeometryRef.current;
+    const clamped = geometry
+      ? clampDesktopPhysicMapPosition({ x: nextX, y: nextY }, zoomRef.current, geometry)
+      : clampMobilePosition(nextX, nextY, zoomRef.current);
     currentXRef.current = clamped.x;
     currentYRef.current = clamped.y;
     applyMapTransform(clamped.x, clamped.y, zoomRef.current);
@@ -1688,6 +1866,8 @@ export default function InteractiveMap({
 
   const handleMouseUp = () => {
     isDraggingRef.current = false;
+    desktopPhysicDragGeometryRef.current = null;
+    desktopAnimalDragGeometryRef.current = null;
     if (mapContentRef.current) {
       mapContentRef.current.style.cursor = "grab";
     }
@@ -1829,14 +2009,33 @@ export default function InteractiveMap({
         const maxZoom = getMobileMaxZoom(type);
 
         const nextZoom =
-          zoomRef.current >= 2
-            ? mobileMinZoomRef.current
-            : Math.min(maxZoom, zoomRef.current * 1.6);
-        const clamped = clampMobilePosition(
-          currentXRef.current,
-          currentYRef.current,
-          nextZoom,
-        );
+          type === "physic"
+            ? getMobilePhysicDoubleTapZoom(
+                zoomRef.current, mobileMinZoomRef.current, maxZoom,
+              )
+            : type === "animal"
+              ? getAnimalMobileDoubleTapZoom(
+                  zoomRef.current, mobileMinZoomRef.current, maxZoom,
+                )
+            : zoomRef.current >= 2
+              ? mobileMinZoomRef.current
+              : Math.min(maxZoom, zoomRef.current * 1.6);
+        const containerRect = mapContentRef.current?.parentElement?.getBoundingClientRect();
+        const position = (type === "physic" || type === "animal") && containerRect && endedTouch
+          ? (type === "physic" ? getMobilePhysicPositionAfterZoom : getAnimalMobilePositionAfterZoom)(
+              { x: currentXRef.current, y: currentYRef.current },
+              zoomRef.current,
+              nextZoom,
+              {
+                x: endedTouch.clientX - containerRect.left,
+                y: endedTouch.clientY - containerRect.top,
+              },
+            )
+          : { x: currentXRef.current, y: currentYRef.current };
+        const physicBounds = type === "physic" ? getPanBounds(nextZoom) : null;
+        const clamped = physicBounds
+          ? clampMobilePanPosition(position.x, position.y, physicBounds)
+          : clampMobilePosition(position.x, position.y, nextZoom);
         zoomRef.current = nextZoom;
         setZoom(nextZoom);
         currentXRef.current = clamped.x;
@@ -2391,11 +2590,13 @@ export default function InteractiveMap({
         }
       });
 
-      if (hits.length === 0) {
-        return getPathFromNode(event.target);
-      }
-
-      return selectSmallestSvgHit(hits, (path) => path.getBBox());
+      const result = selectBiomeSvgHit(
+        type === "physic" ? "physic" : "weather",
+        hits,
+        (path) => path.getBBox(),
+      );
+      const selected = result.selected ?? getPathFromNode(event.target);
+      return selected;
     };
 
     const getPathFromPointerEvent = (event: MouseEvent) => {
@@ -2869,11 +3070,28 @@ export default function InteractiveMap({
                     ? getMobileMaxZoom(type)
                     : type === "river" ? 6 : 4;
                   const nextZoom = Math.min(zoomRef.current * 1.2, maxZoom);
-                  const clamped = clampMobilePosition(
-                    currentXRef.current,
-                    currentYRef.current,
-                    nextZoom,
-                  );
+                  const geometry = getDesktopPhysicMapGeometry() ?? getDesktopAnimalMapGeometry();
+                  const viewport = mapContentRef.current?.parentElement?.getBoundingClientRect();
+                  const position = isMobile && (type === "physic" || type === "animal") && viewport
+                    ? (type === "physic" ? getMobilePhysicPositionAfterZoom : getAnimalMobilePositionAfterZoom)(
+                        { x: currentXRef.current, y: currentYRef.current },
+                        zoomRef.current,
+                        nextZoom,
+                        { x: viewport.width / 2, y: viewport.height / 2 },
+                      )
+                    : { x: currentXRef.current, y: currentYRef.current };
+                  const physicBounds = isMobile && type === "physic"
+                    ? getPanBounds(nextZoom) : null;
+                  const clamped = geometry
+                    ? clampDesktopPhysicMapPosition(
+                        position, nextZoom, geometry)
+                    : physicBounds
+                    ? clampMobilePanPosition(position.x, position.y, physicBounds)
+                    : clampMobilePosition(
+                        position.x,
+                        position.y,
+                        nextZoom,
+                      );
                   zoomRef.current = nextZoom;
                   setZoom(nextZoom);
                   currentXRef.current = clamped.x;
@@ -2891,11 +3109,32 @@ export default function InteractiveMap({
                     zoomRef.current / 1.2,
                     isMobile ? mobileMinZoomRef.current : 1,
                   );
-                  const clamped = clampMobilePosition(
-                    currentXRef.current,
-                    currentYRef.current,
-                    nextZoom,
-                  );
+                  const geometry = getDesktopPhysicMapGeometry() ?? getDesktopAnimalMapGeometry();
+                  const viewport = mapContentRef.current?.parentElement?.getBoundingClientRect();
+                  const position = isMobile && (type === "physic" || type === "animal") && viewport
+                    ? (type === "physic" ? getMobilePhysicPositionAfterZoom : getAnimalMobilePositionAfterZoom)(
+                        { x: currentXRef.current, y: currentYRef.current },
+                        zoomRef.current,
+                        nextZoom,
+                        { x: viewport.width / 2, y: viewport.height / 2 },
+                      )
+                    : { x: currentXRef.current, y: currentYRef.current };
+                  const physicBounds = isMobile && type === "physic"
+                    ? getPanBounds(nextZoom) : null;
+                  const clamped = geometry
+                    ? getDesktopPhysicPositionAfterZoomOut(
+                        { x: currentXRef.current, y: currentYRef.current },
+                        zoomRef.current,
+                        nextZoom,
+                        geometry,
+                      )
+                    : physicBounds
+                    ? clampMobilePanPosition(position.x, position.y, physicBounds)
+                    : clampMobilePosition(
+                        type === "animal" && isMobile ? position.x : currentXRef.current,
+                        type === "animal" && isMobile ? position.y : currentYRef.current,
+                        nextZoom,
+                      );
                   zoomRef.current = nextZoom;
                   setZoom(nextZoom);
                   currentXRef.current = clamped.x;

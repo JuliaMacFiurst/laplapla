@@ -1,7 +1,9 @@
 import { FormEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { dictionaries, type Lang } from "@/i18n";
+import { trackEvent } from "@/lib/analytics/client";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { formatPrice } from "@/lib/shop/commerce";
 import type {
   PreorderOfferStatus,
   PreorderSignupResponse,
@@ -14,10 +16,7 @@ const formatPreorderPrice = (priceMinor: number, currency: string, lang: Lang) =
     return `${priceMinor / 100} ₪`;
   }
 
-  return new Intl.NumberFormat(lang === "he" ? "he-IL" : lang === "en" ? "en-US" : "ru-RU", {
-    style: "currency",
-    currency,
-  }).format(priceMinor / 100);
+  return formatPrice(priceMinor, currency, lang);
 };
 
 export function PreorderSignupForm({
@@ -33,7 +32,7 @@ export function PreorderSignupForm({
   preorderPriceMinor: number;
   currency: string;
 }) {
-  const copy = dictionaries[lang].soundCasePreorder;
+  const copy = dictionaries[lang].shop.soundCase.preorder;
   const canonicalPrice = formatPreorderPrice(canonicalPriceMinor, currency, lang);
   const preorderPrice = formatPreorderPrice(preorderPriceMinor, currency, lang);
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -44,18 +43,37 @@ export function PreorderSignupForm({
   );
   const [message, setMessage] = useState<string | null>(null);
 
+  const analyticsProperties = {
+    section: "shop",
+    content_type: "shop_product",
+    content_id: "sound-case-001",
+    content_slug: "sound-case-001",
+    offer_code: "sound-case-001-preorder",
+    language: lang,
+  } as const;
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (state === "submitting" || state === "success" || state === "closed") return;
 
+    trackEvent("preorder_submit_attempt", analyticsProperties);
+
     if (!emailInputRef.current?.checkValidity()) {
       setMessage(copy.invalidEmail);
       setState("error");
+      trackEvent("preorder_signup_failed", {
+        ...analyticsProperties,
+        result_reason: "invalid_email",
+      });
       return;
     }
     if (!consent) {
       setMessage(copy.consentRequired);
       setState("error");
+      trackEvent("preorder_signup_failed", {
+        ...analyticsProperties,
+        result_reason: "consent_required",
+      });
       return;
     }
 
@@ -72,11 +90,16 @@ export function PreorderSignupForm({
 
       if (response.ok && payload?.ok) {
         setState("success");
+        trackEvent("preorder_signup_success", analyticsProperties);
         return;
       }
 
       if (payload && !payload.ok && payload.code === "preorder_closed") {
         setState("closed");
+        trackEvent("preorder_signup_failed", {
+          ...analyticsProperties,
+          result_reason: "preorder_closed",
+        });
         return;
       }
 
@@ -89,9 +112,17 @@ export function PreorderSignupForm({
         : copy.serverError;
       setMessage(validationMessage);
       setState("error");
+      trackEvent("preorder_signup_failed", {
+        ...analyticsProperties,
+        result_reason: payload && !payload.ok ? payload.code : "server_error",
+      });
     } catch {
       setMessage(copy.serverError);
       setState("error");
+      trackEvent("preorder_signup_failed", {
+        ...analyticsProperties,
+        result_reason: "network_error",
+      });
     }
   };
 

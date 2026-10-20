@@ -597,14 +597,14 @@
   position: absolute;
   inset: 0;
 
-  width: 200%;
+  width: 100%;
   height: 100%;
 
   background-repeat: repeat-x;
   background-size: auto 100%;
   background-position: left bottom;
 
-  will-change: transform;
+  will-change: background-position;
 }
 
 .dog-sled-world {

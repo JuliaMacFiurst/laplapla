@@ -210,7 +210,7 @@ export default function CharacterStage({
       <div className="dressup-content">
         <Image
           src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Scoreboard.webp"
-          alt="scoreboard"
+          alt={t.day5Heat.scoreboardAlt}
           className="dressup-scoreboard"
           width={220}
           height={120}
@@ -282,6 +282,7 @@ export default function CharacterStage({
         {characterFinished && (
           <button
             className="dressup-next-character-btn"
+            aria-label={t.day5Heat.nextCharacter}
             onClick={() => {
               const result: CharacterResult = {
                 character: current,
@@ -323,7 +324,7 @@ export default function CharacterStage({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/supabase-storage/quests/1_quest/games/dress-up/Interface/Clothing-distribution-belt.webp"
-          alt="clothes belt"
+          alt={t.day5Heat.clothesBeltAlt}
           className="dressup-belt"
         />
         {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
@@ -335,7 +336,7 @@ export default function CharacterStage({
               className="dressup-spinner"
             />
           ) : (
-            <button onClick={startGame} className="dressup-start-btn" />
+            <button onClick={startGame} className="dressup-start-btn" aria-label={t.day5Heat.startGame} />
           ))}
         {/* TODO: spinner используется во время загрузки нового персонажа и его одежды */}
         {!timerRunning &&
@@ -349,6 +350,7 @@ export default function CharacterStage({
           ) : (
             <button
               className="dressup-restart-btn"
+              aria-label={t.day5Heat.restartGame}
               onClick={() => {
                 setClothes(allClothes);
                 setDressedItems([]);

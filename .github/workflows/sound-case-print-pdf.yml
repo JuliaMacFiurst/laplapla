@@ -1,0 +1,130 @@
+name: Sound Case Print PDF Verification
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect print-related changes
+    runs-on: ubuntu-latest
+    outputs:
+      print: ${{ steps.filter.outputs.print }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > changed-files.txt
+          if grep -Eq '^(components/shop/|lib/fonts\.ts$|lib/shop/printableAssets\.ts$|lib/shop/questDocument\.ts$|lib/shop/quests/sound-case-001/|pages/_app\.tsx$|pages/_document\.tsx$|pages/internal/quest-print-lab\.tsx$|styles/.*\.css$|assets/fonts/|public/fonts/|public/laplapla-logo.*\.webp$|public/quests/sound-case-001/|scripts/(generateSoundCaseCollectiblePrintHeroes|verifySoundCasePrintPdf)\.(mjs|cjs)$|tests/(fixtures/sound-case-001-print/|soundCase.*\.(test|spec)\.)|package(-lock)?\.json$|next\.config\.|\.github/workflows/sound-case-print-pdf\.yml$|README\.md$)' changed-files.txt; then
+            echo "print=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "print=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  linux-pdf:
+    name: Linux / Chromium + Poppler
+    needs: changes
+    if: needs.changes.outputs.print == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install PDF and font dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils fontconfig fonts-noto-core fonts-noto-extra fonts-noto-color-emoji
+      - run: npm ci
+      - run: npm run build
+      - name: Start production server
+        run: |
+          mkdir -p tmp
+          npm run start -- --hostname 127.0.0.1 --port 3000 > tmp/sound-case-print-server.log 2>&1 &
+          curl --fail --retry 60 --retry-delay 1 --retry-connrefused http://127.0.0.1:3000/internal/quest-print-lab > /dev/null
+      - name: Verify rendered PDFs with Poppler
+        env:
+          REQUIRE_QUARTZ: "0"
+        run: npm run test:print-pdf
+      - name: Upload PDF diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sound-case-print-linux-diagnostics
+          path: |
+            tmp/pdfs/sound-case-001-regression/
+            tmp/sound-case-print-server.log
+            output/pdf/
+          if-no-files-found: warn
+          retention-days: 7
+
+  macos-quartz:
+    name: macOS / Chromium + Poppler + Quartz
+    needs: changes
+    if: needs.changes.outputs.print == 'true'
+    runs-on: macos-14
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install PDF dependencies
+        run: |
+          brew install poppler
+          test -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" || brew install --cask google-chrome
+      - run: npm ci
+      - run: npm run build
+      - name: Start production server
+        run: |
+          mkdir -p tmp
+          npm run start -- --hostname 127.0.0.1 --port 3000 > tmp/sound-case-print-server.log 2>&1 &
+          curl --fail --retry 60 --retry-delay 1 --retry-connrefused http://127.0.0.1:3000/internal/quest-print-lab > /dev/null
+      - name: Verify rendered PDFs with Quartz
+        env:
+          REQUIRE_QUARTZ: "1"
+          CHROME_EXECUTABLE_PATH: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+        run: npm run test:print-pdf
+      - name: Upload PDF diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sound-case-print-macos-diagnostics
+          path: |
+            tmp/pdfs/sound-case-001-regression/
+            tmp/sound-case-print-server.log
+            output/pdf/
+          if-no-files-found: warn
+          retention-days: 7
+
+  required-check:
+    name: Sound Case Print PDF Verification
+    if: always()
+    needs: [changes, linux-pdf, macos-quartz]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce PDF verification result
+        env:
+          PRINT_CHANGED: ${{ needs.changes.outputs.print }}
+          LINUX_RESULT: ${{ needs.linux-pdf.result }}
+          MACOS_RESULT: ${{ needs.macos-quartz.result }}
+        run: |
+          set -euo pipefail
+          if [[ "$PRINT_CHANGED" != "true" ]]; then
+            echo "No print-related changes; the stable required check succeeds without expensive rendering."
+            exit 0
+          fi
+          test "$LINUX_RESULT" = "success"
+          test "$MACOS_RESULT" = "success"

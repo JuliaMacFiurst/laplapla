@@ -20,6 +20,7 @@ export type SEOProps = {
   description: string;
   path: string;
   type?: string;
+  image?: string;
   lang?: Lang;
   canonicalOverride?: string;
   alternates?: Array<{
@@ -28,7 +29,7 @@ export type SEOProps = {
   }>;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
   noindex?: boolean;
-  image?: string;
+  noindexFollow?: boolean;
 };
 
 function normalizePath(path: string) {
@@ -50,12 +51,13 @@ export default function SEO({
   description,
   path,
   type = "website",
+  image,
   lang,
   canonicalOverride,
   alternates,
   jsonLd,
   noindex = false,
-  image,
+  noindexFollow = false,
 }: SEOProps) {
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
@@ -65,7 +67,11 @@ export default function SEO({
   const identityJsonLd = buildCoreIdentityJsonLd(resolvedLang);
   const pageJsonLd = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   const mergedJsonLd = [...identityJsonLd, ...pageJsonLd];
-  const socialImage = image || `${BASE_URL}${SITE_SOCIAL_IMAGE_PATH}`;
+  const socialImage = image
+    ? image.startsWith("http://") || image.startsWith("https://")
+      ? image
+      : `${BASE_URL}${image.startsWith("/") ? image : `/${image}`}`
+    : `${BASE_URL}${SITE_SOCIAL_IMAGE_PATH}`;
   const locale = resolvedLang === "he" ? "he_IL" : resolvedLang === "en" ? "en_US" : "ru_RU";
 
   return (
@@ -75,7 +81,7 @@ export default function SEO({
       <meta
         key="robots"
         name="robots"
-        content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"}
+        content={noindex ? `noindex, ${noindexFollow ? "follow" : "nofollow"}` : "index, follow, max-image-preview:large"}
       />
       <meta key="application-name" name="application-name" content={SITE_NAME} />
       <link key="canonical" rel="canonical" href={canonical} />

@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { PageId } from "../QuestEngine";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
+import { DAY_6_BLOCKS } from "../narration/gameMappings";
 
 export default function Day6Expedition({ go }: { go: (id: PageId) => void }) {
   const { t } = useQuest1I18n();
@@ -37,7 +38,12 @@ export default function Day6Expedition({ go }: { go: (id: PageId) => void }) {
       </div>
 
       {/* Текстовые плитки */}
-      <QuestTextBlocks blocks={t.day6.blocks} style={{ marginTop: "24px" }} />
+      <QuestTextBlocks
+        blocks={t.day6.blocks}
+        narrationKey="day6-story"
+        narrationBlockIds={DAY_6_BLOCKS}
+        style={{ marginTop: "24px" }}
+      />
 
       {/* Кнопка дальше */}
       <footer className="quest-footer">

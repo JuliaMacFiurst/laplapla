@@ -11,6 +11,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "external_link_clicked",
   "error_seen",
   "studio_open",
+  "studio_cta_clicked",
   "studio_project_created",
   "studio_media_added",
   "studio_sticker_added",
@@ -40,6 +41,13 @@ export const ANALYTICS_EVENT_NAMES = [
   "project_created",
   "short_opened",
   "story_downloaded",
+  "shop_view",
+  "product_view",
+  "product_interest",
+  "preorder_page_view",
+  "preorder_submit_attempt",
+  "preorder_signup_success",
+  "preorder_signup_failed",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENT_NAMES)[number];
@@ -53,6 +61,7 @@ export const ANALYTICS_ENTITY_TYPES = [
   "studio_project",
   "video",
   "short",
+  "shop_product",
 ] as const;
 
 export type AnalyticsEntityType = (typeof ANALYTICS_ENTITY_TYPES)[number];
@@ -73,6 +82,7 @@ export type AnalyticsSection =
   | "library"
   | "books"
   | "map"
+  | "shop"
   | "legal"
   | "other";
 
@@ -110,6 +120,7 @@ export type AnalyticsProperties = {
 };
 
 export type AnalyticsEventInput = {
+  eventId?: string;
   eventName: AnalyticsEventName;
   entityType?: AnalyticsEntityType;
   entityId?: string | number | null;
@@ -135,6 +146,7 @@ export const ANALYTICS_EVENT_LABELS: Record<AnalyticsEventName, string> = {
   external_link_clicked: "External links clicked",
   error_seen: "Errors seen",
   studio_open: "Studio opened",
+  studio_cta_clicked: "Studio CTA clicked",
   studio_project_created: "Studio projects created",
   studio_media_added: "Studio media added",
   studio_sticker_added: "Studio stickers added",
@@ -160,10 +172,17 @@ export const ANALYTICS_EVENT_LABELS: Record<AnalyticsEventName, string> = {
   story_completed: "Stories completed",
   recipe_opened: "Recipes viewed",
   map_opened: "Maps opened",
-  video_exported: "Videos exported",
+  video_exported: "Video exported",
   project_created: "Projects created",
   short_opened: "Shorts opened",
-  story_downloaded: "Story downloads",
+  story_downloaded: "Stories downloaded",
+  shop_view: "Shop viewed",
+  product_view: "Shop product viewed",
+  product_interest: "Shop checkout CTA clicked",
+  preorder_page_view: "Preorder page viewed",
+  preorder_submit_attempt: "Preorder signup attempted",
+  preorder_signup_success: "Preorder signup completed",
+  preorder_signup_failed: "Preorder signup failed",
 };
 
 export function isAnalyticsEventName(value: unknown): value is AnalyticsEventName {
@@ -176,4 +195,34 @@ export function isAnalyticsEntityType(value: unknown): value is AnalyticsEntityT
 
 export function isAnalyticsLang(value: unknown): value is AnalyticsLang {
   return value === "ru" || value === "en" || value === "he";
+}
+
+export const PRODUCT_INTEREST_ENTRY_POINTS = [
+  "product_hero",
+  "product_final",
+  "home_promo",
+] as const;
+
+export type ProductInterestEntryPoint = (typeof PRODUCT_INTEREST_ENTRY_POINTS)[number];
+
+export type ProductInterestProperties = AnalyticsProperties & {
+  product_id: string;
+  content_slug: string;
+  language: AnalyticsLang;
+  entry_point: ProductInterestEntryPoint;
+  destination: "checkout";
+};
+
+const PRODUCT_ANALYTICS_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,119}$/u;
+
+export function isProductInterestProperties(value: unknown): value is ProductInterestProperties {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const properties = value as Record<string, unknown>;
+  return typeof properties.product_id === "string" &&
+    PRODUCT_ANALYTICS_ID_PATTERN.test(properties.product_id) &&
+    typeof properties.content_slug === "string" &&
+    PRODUCT_ANALYTICS_ID_PATTERN.test(properties.content_slug) &&
+    isAnalyticsLang(properties.language) &&
+    (PRODUCT_INTEREST_ENTRY_POINTS as readonly unknown[]).includes(properties.entry_point) &&
+    properties.destination === "checkout";
 }

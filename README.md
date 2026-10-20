@@ -61,6 +61,16 @@ npm run build
 - `PEXELS_API_KEY`
 - `GOOGLE_TTS_API_KEY`
 
+Для PayPal checkout/webhook используются только server-side переменные:
+
+- `PAYPAL_ENVIRONMENT=sandbox` или `live`;
+- `PAYPAL_CLIENT_ID`;
+- `PAYPAL_CLIENT_SECRET`;
+- `PAYPAL_WEBHOOK_ID` — ID webhook, зарегистрированного для того же Sandbox или Live app и URL `/api/webhooks/paypal`.
+
+Sandbox и Live используют разные credentials и разные webhook ID. `PAYPAL_CLIENT_SECRET` и
+`PAYPAL_WEBHOOK_ID` нельзя публиковать через `NEXT_PUBLIC_*` или client config API.
+
 Важно:
 
 - Секретные ключи должны использоваться только на сервере и через API routes.
@@ -76,6 +86,27 @@ npm run build
 - проверка server-side интеграций: `Supabase`, `GIPHY`, `Pexels`, `Google TTS`
 - проверка env: приватные ключи не должны попадать в клиентский bundle
 
+### Проверка печатного PDF Sound Case #001
+
+После `npm run build` запустите production-сервер командой `npm run start`, затем в другом терминале выполните:
+
+```bash
+npm run test:print-pdf
+```
+
+Проверка обязательна при изменении печатных React-компонентов, `styles/*.css`, генераторов и конфигурации PDF, шрифтов, изображений/SVG Sound Case #001, зависимостей, тестов или эталонов. Она создаёт PDF для RU/EN/HE, независимо рендерит контрольные страницы через Poppler, а на macOS также через Quartz, и проверяет визуальные эталоны, физические размеры, границы карточек, перекрытие текста, RTL, отсутствие больших soft mask и локальность декоративных узоров.
+
+Эталоны обновляются только после ручного одобрения нового дизайна:
+
+```bash
+UPDATE_SNAPSHOTS=1 npm run test:print-pdf
+git diff -- tests/fixtures/sound-case-001-print
+```
+
+Не используйте для печати полноразмерные полупрозрачные CSS-градиенты, `filter`, `mix-blend-mode` или повторяемые gradients: PDF-просмотрщики могут по-разному интерпретировать compositing и начало координат pattern. Для сложного затемнения используйте непрозрачный предварительно сведённый растр, оставляя текст векторным; для повторяемого декора — локальный SVG без общих `defs`/ID.
+
+Для диагностики сравните файлы из `tmp/pdfs/sound-case-001-regression/`: PDF Chromium, PNG Poppler, PNG Quartz и `*-diff.png`. На macOS откройте итоговый `output/pdf/sound-case-001-full-ru.pdf` в Preview и проверьте страницы 11, 13, 15 и 23 при масштабе 100%. Не считайте Linux-проверку подтверждением Quartz: в CI для него предусмотрен отдельный обязательный macOS-job.
+
 ## Monitoring
 
 - План безопасного rollout `Sentry` для этого репозитория описан в [docs/sentry-rollout.md](/Users/julia_mac/AI-Workspace/dev/capybara_tales/docs/sentry-rollout.md).
@@ -84,7 +115,7 @@ npm run build
 - Для прямой server-side отправки Discord-alert без Sentry webhook UI используется helper [lib/monitoring/discordAlert.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/discordAlert.ts).
 - Для product analytics reports используется отдельный helper [lib/monitoring/discordAnalyticsReport.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/discordAnalyticsReport.ts).
 - Для fallback coverage в routes вне `withApiHandler` используется helper [lib/monitoring/captureAndAlertServerError.ts](/Users/julia_mac/AI-Workspace/dev/capybara_tales/lib/monitoring/captureAndAlertServerError.ts).
-- Нужные env: `DISCORD_ERROR_WEBHOOK_URL` для production errors, `DISCORD_ANALYTICS_WEBHOOK_URL` для analytics reports и опционально `DISCORD_ALERT_SECRET`. Старый `DISCORD_WEBHOOK_URL` остается fallback только для error channel.
+- Нужные env: `DISCORD_ERROR_WEBHOOK_URL` для production errors, `DISCORD_ANALYTICS_WEBHOOK_URL` для analytics reports, `DISCORD_PURCHASES_WEBHOOK_URL` для подтверждённых Live-покупок и опционально `DISCORD_ALERT_SECRET`. Старый `DISCORD_WEBHOOK_URL` остается fallback только для error channel.
 - В Sentry Internal Integration укажите webhook `https://www.laplapla.com/api/alert-discord`, включите `Alert Rule Action`, а Client Secret сохраните в Vercel как server-only env `SENTRY_WEBHOOK_SECRET`.
 - Для production server-side alerting без Sentry webhook UI достаточно `DISCORD_ERROR_WEBHOOK_URL` и `SENTRY_ENVIRONMENT=production`; env-изменения в Vercel применяются только после нового deploy.
 - Analytics reports не отправляются в error channel. Если `DISCORD_ANALYTICS_WEBHOOK_URL` не настроен, daily-report cron должен залогировать warning и завершиться корректно.
@@ -98,6 +129,12 @@ npm run build
 - Для MVP Cloudflare не нужен; достаточно Supabase migration, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` и `DISCORD_ANALYTICS_WEBHOOK_URL`.
 - Чтобы клиентские ошибки попадали в Discord, в Sentry создайте Issue Alert: environment `production`, level `error`/`fatal`, action `Send a notification via <Internal Integration>`. Endpoint проверяет стандартную HMAC-подпись Sentry; `x-alert-secret` остаётся только для ручных тестов.
 - `/api/alert-discord` возвращает `502`, если Discord отклонил сообщение или webhook недоступен.
+
+## Receipt PDF artifacts
+
+- Production PDF artifacts use a private Supabase Storage bucket configured by the server-only `RECEIPT_PDF_STORAGE_BUCKET` environment variable.
+- The recommended bucket name is `receipt-pdfs`; it must remain private and accept only `application/pdf` objects up to 2 MB.
+- Bucket creation is a manual infrastructure step. Browser roles receive no Storage policies; generation uses the existing server-side service role.
 
 ## Локальные backup-скрипты
 

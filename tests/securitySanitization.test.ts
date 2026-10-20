@@ -34,6 +34,18 @@ describe("security sanitization", () => {
     expect(clean).not.toContain("<script");
   });
 
+  it("preserves star-map masks and label typography without keeping unsafe CSS", () => {
+    const clean = sanitizeSvg(`<?xml version="1.0"?><svg viewBox="0 0 800 862">
+      <mask id="mask71" maskUnits="userSpaceOnUse" x="195" y="39" width="348" height="189" style="mask-type:luminance"><path fill="white" d="M195 39H543V228H195Z"/></mask>
+      <g mask="url(#mask71)"><text id="Dubhe" style="font-family:'ChalkboardSE-Bold', 'Chalkboard SE', cursive;font-size:11.561px;font-weight:700;fill:#7fffdb;behavior:url(javascript:alert(1))">Dubhe</text></g>
+    </svg>`);
+    expect(clean.startsWith("<svg")).toBe(true);
+    expect(clean).toContain('maskUnits="userSpaceOnUse"');
+    expect(clean).toContain('mask="url(#mask71)"');
+    expect(clean).toContain("font-family:'ChalkboardSE-Bold', 'Chalkboard SE', cursive");
+    expect(clean).not.toContain("behavior");
+  });
+
   it("preserves safe map presentation styles", () => {
     const clean = sanitizeSvg(
       '<svg viewBox="0 0 10 10"><g id="biome" style="display:inline"><path id="region" class="biome" data-name="forest" d="M0 0L1 1" style="fill:#447821;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;visibility:visible"/></g></svg>',

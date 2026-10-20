@@ -7,6 +7,9 @@ import HomeButton from "./HomeButton";
 import { buildLocalizedPublicPath, buildLocalizedQuery } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import Link from "next/link";
+import { isDarkSoundCaseRoute } from "@/lib/quests/soundCaseRouting";
+import { useCustomerSession } from "@/hooks/useCustomerSession";
+import { getCustomerNavigationLabel } from "@/lib/customer/authUi";
 
 type TopBarProps = {
   lang: Lang;
@@ -16,7 +19,13 @@ export default function TopBar({ lang }: TopBarProps) {
   const router = useRouter();
   const isHome = router.pathname === "/";
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
+  const isUnknownSoundScene =
+    router.pathname === "/quests/sound-case-001/stage-01/unknown-sound";
+  const isDarkSoundCaseScene = isDarkSoundCaseRoute(router.pathname);
   const isMobile = useIsMobile();
+  const customerSession = useCustomerSession();
+  const customerIsAuthenticated = customerSession.status === "authenticated";
+  const customerNavigationLabel = getCustomerNavigationLabel(lang, customerIsAuthenticated);
 
   const [menuHover, setMenuHover] = useState(false);
   const closeTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -56,8 +65,15 @@ export default function TopBar({ lang }: TopBarProps) {
     );
   };
 
+  const openUnknownSoundHelp = () => {
+    window.dispatchEvent(new Event("laplapla:unknown-sound-help"));
+  };
+
   return (
-    <div className="top-bar">
+    <div
+      className={`top-bar${isDarkSoundCaseScene ? " top-bar--unknown-sound" : ""}`}
+      data-quest-header={isUnknownSoundScene ? "unknown-sound" : isDarkSoundCaseScene ? "sound-case" : undefined}
+    >
       {/* Левая/основная зона */}
       {isHome ? (
         <div className="top-bar-home-menu-cluster">
@@ -116,8 +132,62 @@ export default function TopBar({ lang }: TopBarProps) {
         <div aria-hidden />
       )}
 
-      {/* Правая зона — язык */}
+      {/* Правая зона — магазин и язык */}
       <div className="top-bar-actions">
+        <div className="top-bar-auth-zone" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <Link
+            className="top-bar-signin"
+            href={buildLocalizedPublicPath("/account", lang)}
+            aria-label={customerNavigationLabel}
+            aria-busy={customerSession.status === "loading"}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+              color: "var(--color-text, #333)",
+              fontSize: "0.9rem",
+              textDecoration: "none",
+            }}
+          >
+            {isDarkSoundCaseScene ? (
+              <span className="top-bar-signin-icon" aria-hidden="true">↪</span>
+            ) : null}
+            <span className="top-bar-signin-label">
+              {customerNavigationLabel}
+            </span>
+          </Link>
+
+          <Link
+            href={buildLocalizedPublicPath("/shop", lang)}
+            className="top-bar-cart"
+            aria-label={dictionaries[lang].shop.navTitle}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none",
+              color: "var(--color-text, #333)",
+              background: "var(--color-surface, #fff)",
+              borderRadius: "50%",
+              width: "36px",
+              height: "36px",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+            }}
+          >
+            <span aria-hidden="true" style={{ fontSize: "1.1rem" }}>🛒</span>
+          </Link>
+          {isUnknownSoundScene ? (
+            <button
+              className="top-bar-quest-help"
+              type="button"
+              onClick={openUnknownSoundHelp}
+              aria-label={dictionaries[lang].shop.soundCase.unknownSoundScene.helpAriaLabel}
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+          ) : null}
+        </div>
         <LanguageSwitcher />
       </div>
     </div>

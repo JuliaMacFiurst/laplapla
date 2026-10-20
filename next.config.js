@@ -2,6 +2,7 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 const isProduction = process.env.NODE_ENV === "production";
 const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || "";
+const paypalSources = ["https://*.paypal.com", "https://*.paypalobjects.com"];
 
 const connectSrc = [
   "'self'",
@@ -9,6 +10,8 @@ const connectSrc = [
   "https://api.giphy.com",
   "https://api.pexels.com",
   "https://media.laplapla.com",
+  "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev",
+  ...paypalSources,
 ];
 
 if (sentryDsn) {
@@ -24,21 +27,21 @@ if (!isProduction) {
   connectSrc.push("http://127.0.0.1:5050");
 }
 
-const allowedDevOrigins = isProduction ? undefined : ["192.168.*.*"];
+const allowedDevOrigins = isProduction ? undefined : ["192.168.*.*", "127.0.0.1"];
 
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "frame-ancestors 'self'",
   "object-src 'self'",
-  "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
+  "form-action 'self' " + paypalSources.join(" "),
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' " + paypalSources.join(" "),
+  "style-src 'self' 'unsafe-inline' " + paypalSources.join(" "),
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "connect-src " + connectSrc.join(" "),
   "media-src 'self' data: blob: https:",
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com " + paypalSources.join(" "),
   "worker-src 'self' blob:",
   ...(isProduction ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
@@ -92,6 +95,9 @@ const adminNoStoreHeaders = [
 const technicalNoIndexSources = [
   "/api/:path*",
   "/admin-login",
+  "/account",
+  "/account/:path*",
+  "/auth/callback",
   "/studio",
   "/cats/studio",
   "/cats/export",
@@ -100,9 +106,17 @@ const technicalNoIndexSources = [
 ];
 
 const supabaseStorageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const wakeTheDuneAudioOrigin = "https://pub-90c38f7454e44f0eaba7a2cdd9030ee6.r2.dev";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  outputFileTracingIncludes: {
+    "/api/customer/checkout/paypal/capture": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/webhooks/paypal": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/cron/recover-receipts": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/cron/recover-receipt-artifacts": ["./assets/fonts/*.ttf", "./node_modules/@sparticuz/chromium/bin/**"],
+  },
   poweredByHeader: false,
   allowedDevOrigins,
   i18n: {
@@ -181,6 +195,10 @@ const nextConfig = {
         source: "/sitemap.xml",
         destination: "/api/sitemap.xml",
       },
+      ...(!isProduction ? [{
+        source: "/wake-the-dune-audio/:path*",
+        destination: `${wakeTheDuneAudioOrigin}/quests/sound-case-001/mini-games/wake-the-dune/audio/:path*`,
+      }] : []),
     ];
 
     if (!supabaseStorageOrigin) {

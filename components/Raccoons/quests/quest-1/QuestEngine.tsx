@@ -15,6 +15,10 @@ import Day5Heat from "./pages/station-doors/Day5Heat";
 import Day5Lab from "./pages/station-doors/Day5Lab";
 import Day6Expedition from "./pages/Day6Expedition";
 import Day7TreasureOfTimes from "./pages/Day7TreasureOfTimes";
+import type { Quest1PageId } from "./progress";
+import { useQuest1Progress } from "./useQuest1Progress";
+import { isQuest1NarrationEnabled } from "./narration/catalog";
+import { QuestNarrationScope } from "./narration/availability";
 
 // дальше добавляем по мере создания
 
@@ -49,12 +53,12 @@ const PAGE_ORDER: PageId[] = [
   "day7_treasure_of_times",
 ];
 
-export type PageId = keyof typeof PAGES;
+export type PageId = Quest1PageId;
 
 export default function QuestEngine() {
   const router = useRouter();
   const { lang, t } = useQuest1I18n();
-  const [pageId, setPageId] = useState<PageId>("day1");
+  const { pageId, go, restart } = useQuest1Progress();
   const [devMode, setDevMode] = useState(false);
 
   useEffect(() => {
@@ -68,22 +72,25 @@ export default function QuestEngine() {
   return (
     <div
       dir={lang === "he" ? "rtl" : "ltr"}
-      className={lang === "he" ? "quest-1-hebrew-font" : undefined}
+      className={[
+        lang === "he" ? "quest-1-hebrew-font" : "",
+        isQuest1NarrationEnabled ? "quest-narration-enabled" : "",
+      ].filter(Boolean).join(" ") || undefined}
     >
-      <Page go={setPageId} />
+      <QuestNarrationScope key={pageId} pageId={pageId} locale={lang}>
+        <Page go={go} />
+      </QuestNarrationScope>
+      <button type="button" className="quest-restart-button" onClick={restart}>
+        {t.day5Lab.gameFinal.restartButton}
+      </button>
       <div
         className="quest-back-to-maps-button"
         onClick={() => {
-          const confirmed = window.confirm(
-            t.engine.confirmExit
+          router.push(
+            { pathname: "/shop", query: buildLocalizedQuery(lang) },
+            undefined,
+            { locale: lang },
           );
-          if (confirmed) {
-            router.push(
-              { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
-              undefined,
-              { locale: lang },
-            );
-          }
         }}
       >
         {t.engine.homeButton}
@@ -102,7 +109,7 @@ export default function QuestEngine() {
           <button
             onClick={() => {
               const idx = PAGE_ORDER.indexOf(pageId);
-              if (idx > 0) setPageId(PAGE_ORDER[idx - 1]);
+              if (idx > 0) go(PAGE_ORDER[idx - 1]);
             }}
             style={{
               padding: "6px 12px",
@@ -119,7 +126,7 @@ export default function QuestEngine() {
           <button
             onClick={() => {
               const idx = PAGE_ORDER.indexOf(pageId);
-              if (idx < PAGE_ORDER.length - 1) setPageId(PAGE_ORDER[idx + 1]);
+              if (idx < PAGE_ORDER.length - 1) go(PAGE_ORDER[idx + 1]);
             }}
             style={{
               padding: "6px 12px",

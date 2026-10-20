@@ -1,0 +1,47 @@
+import type { GetServerSideProps } from "next";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { ProtectedQuestBuilder } from "@/components/shop/ProtectedQuestBuilder";
+import { dictionaries } from "@/i18n";
+import { getCurrentLang } from "@/lib/i18n/routing";
+import { getProductBySlug } from "@/lib/shop/catalog";
+import { isPublicProduct } from "@/lib/shop/types";
+
+type QuestBuilderPageProps = {
+  slug: string;
+};
+
+export default function QuestBuilderPage({ slug }: QuestBuilderPageProps) {
+  const router = useRouter();
+  const lang = getCurrentLang(router);
+  const text = dictionaries[lang].shop.soundCase;
+  const product = getProductBySlug(slug);
+  const initialMode = router.query.mode === "edit" ? "edit" : router.query.mode === "ready" ? "ready" : "default";
+
+  if (!product) {
+    return null;
+  }
+
+  return (
+    <>
+      <Head>
+        <title>{`${text.builder.title} · ${text.title} | LapLapLa`}</title>
+        <meta name="description" content={text.description} />
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
+      <ProtectedQuestBuilder productId={product.id} interfaceLang={lang} initialMode={initialMode} />
+    </>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps<QuestBuilderPageProps> = async ({ params }) => {
+  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const product = getProductBySlug(slug);
+  if (slug !== "sound-case-001" || !product || !isPublicProduct(product)) {
+    return { notFound: true };
+  }
+
+  return {
+    props: { slug },
+  };
+};

@@ -4,7 +4,7 @@ export const he: Quest1Dictionary = {
   engine: {
     confirmExit:
       "ההתקדמות שלך במשימה עדיין לא נשמרה.\nאם תצא עכשיו, תצטרך להתחיל מהתחלה. לצאת מהמשימה?",
-    homeButton: "חזרה למפות",
+    homeButton: "חזרה לחנות",
     prevButton: "← חזרה",
     nextButton: "הבא →",
   },
@@ -170,8 +170,8 @@ export const he: Quest1Dictionary = {
         "גם לך הגיע הזמן להתכונן למשלחת הקוטבית שלך! בבסיס יש שלוש מחלקות, וכל אחת מהן תעזור לך ללמוד חלק חשוב מההכנה:",
       ],
       [
-        "— <strong>מודול חום</strong> — שבו לומדים על לבוש קוטבי נכון.<br/>— <strong>מעבדת ציוד</strong> — שבה בודקים כלים ומכשירים.<br/>— <strong>מוסך</strong> — המקום שבו מכינים אופנועי שלג וציוד ליציאה.",
-        "אפשר להיכנס לחדרים בכל סדר שתרצה. כשתסיים את כל שלושת השלבים, המשלחת תתחיל!",
+        "— <strong>מודול החום</strong> — כאן לומדים איך להתלבש נכון בתנאי הקוטב.<br/>— <strong>מעבדת הציוד</strong> — כאן בודקים כלים ומכשירים.<br/>— <strong>המוסך</strong> — כאן מכינים אופנועי שלג וציוד ליציאה.",
+        "אפשר לבקר בכל אחד משלושת החדרים ולנסות את המשימות. כשמוכנים, אפשר להמשיך במסע!",
       ],
     ],
     labels: {
@@ -187,6 +187,12 @@ export const he: Quest1Dictionary = {
     backButton: "חזרה לתחנה המחקרית",
     loadingCharacters: "טוען דמויות…",
     characterCounter: "דמות {current} מתוך {total}",
+    startGame: "להתחיל במשחק",
+    restartGame: "להתחיל מחדש",
+    nextCharacter: "לדמות הבאה",
+    playAgain: "לשחק שוב",
+    scoreboardAlt: "לוח ניקוד",
+    clothesBeltAlt: "מסוע בגדים",
   },
   day5Garage: {
     title: "מוסך",
@@ -198,6 +204,11 @@ export const he: Quest1Dictionary = {
     warningBack: "🔧 לחזור להכנות",
     warningRisk: "⚠️ לקחת סיכון ולצאת",
     backButton: "חזרה לתחנה המחקרית",
+    run: {
+      start: "להתחיל במרוץ", stop: "עצירה", back: "חזרה",
+      controls: "שליטה במזחלת", finish: "סיום",
+      result: "תוצאה", stars: "כוכבים", crashes: "תאונות", retry: "לנסות שוב",
+    },
     stats: {
       lowRisk: "סיכון נמוך",
       highRisk: "סיכון גבוה",
@@ -244,6 +255,8 @@ export const he: Quest1Dictionary = {
     subtitle: "כאן נבדוק כלים ונכין ערכת חוקר.",
     backButton: "חזרה לתחנה המחקרית",
     scoreLabel: "ניקוד",
+    laneLabel: "מסלול {number}",
+    backpackControls: "שליטה בתרמיל",
     gameStart: {
       title: "מיני-משחק המעבדה",
       caption: "אספו רק את הפריטים שיהיו שימושיים במשלחת קוטבית!",
@@ -254,6 +267,9 @@ export const he: Quest1Dictionary = {
       backpackCaption: "אלה הפריטים שאת לוקחת איתך למשלחת הקוטבית:",
       restartButton: "לשחק שוב",
     },
+  },
+  mapUi: {
+    svalbard: "סבאלברד", zoomIn: "הגדלה", zoomOut: "הקטנה", resetZoom: "איפוס תצוגה",
   },
   day6: {
     title: "משלחת",
@@ -285,7 +301,7 @@ export const he: Quest1Dictionary = {
   day7: {
     title: "אוצר הזמנים",
     videoTitle: "Spitsbergen Flight",
-    backButton: "↩️ לחזור למפה",
+    backButton: "חזרה לחנות",
     videoTranslationNotice:
       "לסרטון הזה עדיין אין תרגום לעברית. ייתכן שהוא יתווסף בהמשך.",
     blocks: [

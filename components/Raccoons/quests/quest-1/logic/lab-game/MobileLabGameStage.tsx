@@ -1,21 +1,36 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useQuest1I18n } from "../../i18n";
 import {
   BACKPACK_IMAGE_URL,
   BACKPACK_VIDEO_URL,
   BASE_URL,
   FALLING_LANE_COUNT,
+  projectMobileFallingY,
   LOGAN_VIDEO_URL,
 } from "./types";
 import { useLabGameState } from "./useLabGameState";
+import { useAvailableNarrationBlocks } from "../../narration/availability";
 
 export default function MobileLabGameStage() {
   const { t } = useQuest1I18n();
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const lanesRef = useRef<HTMLDivElement | null>(null);
+  const [laneHeight, setLaneHeight] = useState(0);
   const draggingRef = useRef(false);
+  useEffect(() => {
+    const lanes = lanesRef.current;
+    if (!lanes) return;
+    const update = () => {
+      setLaneHeight(lanes.querySelector(".quest-mobile-lab-lane")?.clientHeight ?? 0);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(lanes);
+    return () => observer.disconnect();
+  }, []);
   const {
     lanes,
     score,
@@ -34,6 +49,10 @@ export default function MobileLabGameStage() {
     gameDurationMs: 30_000,
     finishDelayMs: 0,
   });
+  useAvailableNarrationBlocks(
+    "day5-mobile-lab-instruction",
+    !gameStarted ? ["svalbard.day05.lab.instruction.01"] : [],
+  );
 
   const moveToLane = (nextLane: number) => {
     const clampedLane = Math.max(0, Math.min(nextLane, FALLING_LANE_COUNT - 1));
@@ -108,7 +127,7 @@ export default function MobileLabGameStage() {
           </div>
         ) : null}
 
-        <div className="quest-mobile-lab-lanes" aria-hidden={!gameStarted}>
+        <div ref={lanesRef} className="quest-mobile-lab-lanes" aria-hidden={!gameStarted}>
           {lanes.map((lane) => (
             <button
               key={lane.laneIndex}
@@ -116,7 +135,7 @@ export default function MobileLabGameStage() {
               className={`quest-mobile-lab-lane ${backpackLane === lane.laneIndex ? "is-selected" : ""}`}
               onClick={() => moveToLane(lane.laneIndex)}
               disabled={!gameStarted}
-              aria-label={`Lane ${lane.laneIndex + 1}`}
+              aria-label={t.day5Lab.laneLabel.replace("{number}", String(lane.laneIndex + 1))}
             >
               {lane.item ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -125,7 +144,7 @@ export default function MobileLabGameStage() {
                   src={`${BASE_URL}/${lane.item.id}.webp`}
                   alt={lane.item.label}
                   className={`quest-mobile-lab-item ${lane.status ? `is-${lane.status}` : ""}`}
-                  style={{ "--lab-item-y": `${lane.y}px` } as CSSProperties}
+                  style={{ "--lab-item-y": `${projectMobileFallingY(lane.y, laneHeight)}px` } as CSSProperties}
                 />
               ) : null}
             </button>
@@ -202,7 +221,7 @@ export default function MobileLabGameStage() {
         ) : null}
       </div>
 
-      <div className="quest-mobile-lab-controls" aria-label="Backpack controls">
+      <div className="quest-mobile-lab-controls" aria-label={t.day5Lab.backpackControls}>
         <button type="button" onClick={() => moveToLane(backpackLane - 1)} disabled={backpackLane <= 0}>
           ←
         </button>

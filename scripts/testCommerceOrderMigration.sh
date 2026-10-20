@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+test_root="$(mktemp -d "${TMPDIR:-/tmp}/laplapla-commerce-orders.XXXXXX")"
+data_dir="$test_root/data"
+socket_dir="$test_root/socket"
+port="$((50000 + RANDOM % 10000))"
+
+cleanup() {
+  if [[ -f "$data_dir/postmaster.pid" ]]; then
+    pg_ctl -D "$data_dir" stop -m fast >/dev/null 2>&1 || true
+  fi
+  case "$test_root" in
+    "${TMPDIR:-/tmp}"/laplapla-commerce-orders.*) rm -rf -- "$test_root" ;;
+    *) printf 'Refusing to remove unexpected test path: %s\n' "$test_root" >&2 ;;
+  esac
+}
+trap cleanup EXIT
+
+for command in initdb pg_ctl psql; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    printf 'Required PostgreSQL command is unavailable: %s\n' "$command" >&2
+    exit 1
+  fi
+done
+
+mkdir -p "$socket_dir"
+initdb -D "$data_dir" --auth=trust --encoding=UTF8 --no-locale >/dev/null
+pg_ctl -D "$data_dir" -l "$test_root/postgres.log" -o "-k $socket_dir -p $port" start >/dev/null
+
+psql_local=(psql -X -v ON_ERROR_STOP=1 -h "$socket_dir" -p "$port" -d postgres)
+
+"${psql_local[@]}" -c "create role anon; create role authenticated; create role service_role bypassrls;" >/dev/null
+"${psql_local[@]}" -c "alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;" >/dev/null
+"${psql_local[@]}" -c "
+  create schema auth;
+  create table auth.users (id uuid primary key);
+  create function auth.uid() returns uuid language sql stable as 'select null::uuid';
+" >/dev/null
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202609290001_create_customer_profiles_and_product_entitlements.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610010001_create_commerce_order_foundation.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610010002_bind_paypal_checkout_orders.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610010003_add_paypal_checkout_recovery.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610060001_add_paypal_webhook_event_recovery.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/commerceOrderFoundation.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610070001_add_billing_identity_order_snapshots.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/billingIdentityOrderSnapshots.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610070002_create_receipt_ledger_foundation.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerFoundation.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610070003_add_purchase_notification_delivery.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/purchaseNotificationDelivery.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/purchaseNotificationConcurrencySetup.sql" >/dev/null
+purchase_notification_order_id="$("${psql_local[@]}" -Atc "select order_id from public.purchase_notification_concurrency_order")"
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_paid_order_purchase_notification('$purchase_notification_order_id')" >"$test_root/purchase-notification-a.out" &
+purchase_notification_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_paid_order_purchase_notification('$purchase_notification_order_id')" >"$test_root/purchase-notification-b.out" &
+purchase_notification_b_pid=$!
+wait "$purchase_notification_a_pid" "$purchase_notification_b_pid"
+purchase_notification_results="$(sort "$test_root/purchase-notification-a.out" "$test_root/purchase-notification-b.out" | tr '\n' ' ')"
+[[ "$purchase_notification_results" = "claimed processing " ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/purchaseNotificationConcurrencyAssert.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerConcurrencySetup.sql" >/dev/null
+
+same_order_id="$("${psql_local[@]}" -Atc "select order_id from public.receipt_concurrency_orders where label = 'same'")"
+different_a_id="$("${psql_local[@]}" -Atc "select order_id from public.receipt_concurrency_orders where label = 'different-a'")"
+different_b_id="$("${psql_local[@]}" -Atc "select order_id from public.receipt_concurrency_orders where label = 'different-b'")"
+
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$same_order_id')" >"$test_root/same-a.out" &
+same_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$same_order_id')" >"$test_root/same-b.out" &
+same_b_pid=$!
+wait "$same_a_pid" "$same_b_pid"
+
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$different_a_id')" >"$test_root/different-a.out" &
+different_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.issue_receipt_for_paid_order('$different_b_id')" >"$test_root/different-b.out" &
+different_b_pid=$!
+wait "$different_a_pid" "$different_b_pid"
+
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptLedgerConcurrencyAssert.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610080001_create_receipt_pdf_artifacts.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptPdfArtifacts.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptArtifactConcurrencySetup.sql" >/dev/null
+receipt_artifact_target_id="$("${psql_local[@]}" -Atc "select receipt_id from public.receipt_artifact_concurrency_target limit 1")"
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_receipt_pdf_artifact('$receipt_artifact_target_id','original','receipt-pdfs','receipt-html-v2',300)" >"$test_root/artifact-a.out" &
+artifact_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; select result from public.claim_receipt_pdf_artifact('$receipt_artifact_target_id','original','receipt-pdfs','receipt-html-v2',300)" >"$test_root/artifact-b.out" &
+artifact_b_pid=$!
+wait "$artifact_a_pid" "$artifact_b_pid"
+artifact_results="$(sort "$test_root/artifact-a.out" "$test_root/artifact-b.out" | tr '\n' ' ')"
+[[ "$artifact_results" = "claimed processing " ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptArtifactConcurrencyAssert.sql"
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/202610130001_create_checkout_consents.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/checkoutConsentRecovery.sql"
+
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptOriginalDeliveryConcurrencySetup.sql" >/dev/null
+receipt_delivery_target_id="$("${psql_local[@]}" -Atc "select receipt_id from public.receipt_original_delivery_concurrency_target limit 1")"
+"${psql_local[@]}" -Atc "set role service_role; update public.receipt_original_deliveries set status='sending', attempt_count=1, claim_token='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', claimed_at=now(), updated_at=now() where receipt_id='$receipt_delivery_target_id' and status='pending' and attempt_count=0 returning receipt_id" >"$test_root/original-delivery-a.out" &
+receipt_delivery_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; update public.receipt_original_deliveries set status='sending', attempt_count=1, claim_token='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', claimed_at=now(), updated_at=now() where receipt_id='$receipt_delivery_target_id' and status='pending' and attempt_count=0 returning receipt_id" >"$test_root/original-delivery-b.out" &
+receipt_delivery_b_pid=$!
+wait "$receipt_delivery_a_pid" "$receipt_delivery_b_pid"
+[[ "$(cat "$test_root/original-delivery-a.out" "$test_root/original-delivery-b.out" | grep -c "$receipt_delivery_target_id")" -eq 1 ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptOriginalDeliveryConcurrencyAssert.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/receiptDeliveryLifecycleAssert.sql"
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261013214846_commerce_full_refund_operations.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/commerceFullRefundOperations.sql"
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261014231224_sandbox_purchase_delivery.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/sandboxPurchaseDelivery.sql"
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261017195749_refund_email_deliveries.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/refundEmailDelivery.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/refundEmailConcurrencySetup.sql" >/dev/null
+refund_email_operation_id="66666666-6666-4666-8666-666666666603"
+"${psql_local[@]}" -Atc "set role service_role; update public.commerce_refund_email_deliveries set status='sending', attempt_count=1, claim_token='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', claimed_at=now() where operation_id='$refund_email_operation_id' and status='pending' and attempt_count=0 returning operation_id" >"$test_root/refund-email-a.out" &
+refund_email_a_pid=$!
+"${psql_local[@]}" -Atc "set role service_role; update public.commerce_refund_email_deliveries set status='sending', attempt_count=1, claim_token='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', claimed_at=now() where operation_id='$refund_email_operation_id' and status='pending' and attempt_count=0 returning operation_id" >"$test_root/refund-email-b.out" &
+refund_email_b_pid=$!
+wait "$refund_email_a_pid" "$refund_email_b_pid"
+[[ "$(cat "$test_root/refund-email-a.out" "$test_root/refund-email-b.out" | grep -c "$refund_email_operation_id")" -eq 1 ]]
+"${psql_local[@]}" -f "$repo_root/tests/sql/refundEmailConcurrencyAssert.sql"
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261018220604_analytics_phase_2a_order_attribution.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/orderAttribution.sql"
+
+analytics_migrations=(
+  "supabase/migrations/202606020001_create_meme_engine_cache.sql"
+  "supabase/migrations/202606020002_add_meme_engine_cache_cleanup.sql"
+  "supabase/migrations/202606090001_create_analytics_events.sql"
+  "supabase/migrations/202606090002_add_analytics_events_cleanup.sql"
+  "supabase/migrations/202606170001_expand_analytics_events.sql"
+  "supabase/migrations/202606180001_create_analytics_daily_summary.sql"
+  "supabase/migrations/202607290001_lock_analytics_writes_to_server.sql"
+  "supabase/migrations/202609300001_analytics_v2_foundation.sql"
+  "supabase/migrations/202609300002_restrict_internal_rpc_execute.sql"
+  "supabase/migrations/202609300004_add_preorder_analytics_events.sql"
+)
+for migration in "${analytics_migrations[@]}"; do
+  "${psql_local[@]}" -f "$repo_root/$migration" >/dev/null
+done
+
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261019110250_analytics_phase_2b_commerce_report.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/tests/sql/commerceAnalyticsReport.sql"
+
+printf 'Commerce order foundation SQL regression checks passed.\n'

@@ -150,7 +150,7 @@ describe("preorder signup API", () => {
     expect(result.body).toEqual({ ok: false, code: "preorder_closed" });
   });
 
-  it("returns a generic server error without echoing the email", async () => {
+  it("returns a generic server error without logging or echoing the email", async () => {
     preorderMocks.registerSoundCasePreorder.mockRejectedValue(new Error("database unavailable"));
     const { res, result } = response();
     await preorderSignupHandler(request(validBody), res);
@@ -207,9 +207,11 @@ describe("localized preorder UI", () => {
       preorderPriceMinor: 3900,
       currency: "ILS",
     }));
+    expect(html).toContain("49");
+    expect(html).toContain("39");
     expect(html).toContain("49 ₪");
     expect(html).toContain("39 ₪");
-    expect(html).toContain(dictionaries[lang].soundCasePreorder.privacyLabel);
+    expect(html).toContain(dictionaries[lang].shop.soundCase.preorder.privacyLabel);
     expect(html).toContain(lang === "ru" ? 'href="/privacy"' : `href="/${lang}/privacy"`);
   });
 
@@ -221,19 +223,28 @@ describe("localized preorder UI", () => {
       preorderPriceMinor: 3900,
       currency: "ILS",
     }));
-    expect(html).toContain(dictionaries.en.soundCasePreorder.closedTitle);
+    expect(html).toContain(dictionaries.en.shop.soundCase.preorder.closedTitle);
     expect(html).not.toContain('type="email"');
+  });
+
+  it("keeps success and error copy localized and Hebrew direction on the page", () => {
+    for (const lang of ["ru", "en", "he"] as const) {
+      const copy = dictionaries[lang].shop.soundCase.preorder;
+      expect(copy.successTitle).toBeTruthy();
+      expect(copy.successBody).toContain("39");
+      expect(copy.serverError).toBeTruthy();
+    }
+    const pageSource = readFileSync(`${process.cwd()}/pages/shop/[slug]/preorder.tsx`, "utf8");
+    expect(pageSource).toContain('dir={lang === "he" ? "rtl" : "ltr"}');
   });
 });
 
-describe("preorder routing and analytics isolation", () => {
-  it("uses a localized self-canonical indexable page without preorder event calls", () => {
+describe("preorder routing and SEO contract", () => {
+  it("uses a self-canonical localized indexable page and localized product CTA", () => {
     const pageSource = readFileSync(`${process.cwd()}/pages/shop/[slug]/preorder.tsx`, "utf8");
-    const formSource = readFileSync(`${process.cwd()}/components/shop/PreorderSignupForm.tsx`, "utf8");
+    const detailSource = readFileSync(`${process.cwd()}/components/shop/ShopProductDetail.tsx`, "utf8");
     expect(pageSource).toContain('path={`/shop/${slug}/preorder`}');
-    expect(pageSource).toContain('dir={lang === "he" ? "rtl" : "ltr"}');
     expect(pageSource).not.toContain("noindex");
-    expect(`${pageSource}\n${formSource}`).not.toMatch(/preorder_(?:page_view|submit_attempt|signup_success|signup_failed)/);
-    expect(`${pageSource}\n${formSource}`).not.toContain("@/lib/analytics");
+    expect(detailSource).toContain("`/shop/${product.slug}/preorder`");
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LabThing } from "./types";
 import {
   FALLING_CATCH_LINE,
@@ -13,7 +13,8 @@ import {
   ScoreEntry,
   FallingThingStatus,
 } from "./types";
-import labThings from "./lab-things.json";
+import { useQuest1I18n } from "../../i18n";
+import { getLabThings } from "../../i18n/labThings";
 
 const DEFAULT_GAME_DURATION_MS = 45_000;
 const DEFAULT_FINISH_DELAY_MS = 0;
@@ -83,6 +84,8 @@ const createInitialLanes = (): LaneState[] =>
   }));
 
 export function useLabGameState(options: UseLabGameStateOptions = {}) {
+  const { lang } = useQuest1I18n();
+  const labThings = useMemo(() => getLabThings(lang), [lang]);
   const {
     gameDurationMs = DEFAULT_GAME_DURATION_MS,
     finishOnQueueComplete = true,
@@ -98,18 +101,17 @@ export function useLabGameState(options: UseLabGameStateOptions = {}) {
   const [queueSize, setQueueSize] = useState(0);
 
   const rebuildQueue = useCallback(() => {
-    orderedQueueRef.current = buildOrderedQueue(labThings as LabThing[]);
+    orderedQueueRef.current = buildOrderedQueue(labThings);
     nextItemIndexRef.current = 0;
     const size = orderedQueueRef.current.length;
     setQueueSize(size);
-  }, []);
+  }, [labThings]);
 
   useEffect(() => {
-    if (orderedQueueRef.current.length === 0) {
+    if (!gameStartedRef.current) {
       rebuildQueue();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [rebuildQueue]);
 
   const [lanes, setLanes] = useState<LaneState[]>(() => createInitialLanes());
   const lanesRef = useRef<LaneState[]>(lanes);

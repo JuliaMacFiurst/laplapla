@@ -86,4 +86,17 @@ describe("distributed rate limiting", () => {
     expect(firstBody).not.toBe(secondBody);
     expect(firstBody).not.toContain("203.0.113.3");
   });
+
+  it("fails closed for a malformed success response from Redis", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: "invalid command" }), { status: 200 }),
+    ));
+    const res = response();
+    await expect(applyDistributedApiGuard(request("203.0.113.5"), res, {
+      limit: 2,
+      keyPrefix: "customer-support",
+      failClosedOnError: true,
+    })).resolves.toBe(false);
+    expect(res.status).toHaveBeenCalledWith(503);
+  });
 });

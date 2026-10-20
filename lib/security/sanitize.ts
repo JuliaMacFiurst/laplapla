@@ -101,6 +101,8 @@ const SVG_GLOBAL_ATTRIBUTES = [
   "clip-path",
   "clip-rule",
   "mask",
+  "maskUnits",
+  "maskContentUnits",
   "offset",
   "stop-color",
   "stop-opacity",
@@ -153,7 +155,12 @@ const SVG_OPTIONS: sanitizeHtml.IOptions = {
       fill: [SAFE_SVG_PAINT],
       "fill-opacity": [SAFE_SVG_NUMBER],
       "fill-rule": [/^(?:nonzero|evenodd|inherit)$/],
+      "font-family": [/^[\w\s,'"-]+$/],
+      "font-size": [SAFE_SVG_NUMBER],
+      "font-style": [/^(?:normal|italic|oblique)$/],
+      "font-weight": [/^(?:normal|bold|bolder|lighter|[1-9]00)$/],
       marker: [/^none$/],
+      "mask-type": [/^(?:alpha|luminance)$/],
       opacity: [SAFE_SVG_NUMBER],
       overflow: [/^(?:visible|hidden)$/],
       stroke: [SAFE_SVG_PAINT],
@@ -203,7 +210,7 @@ export function sanitizeRichText(value: unknown): string {
 }
 
 export function sanitizeSvg(value: unknown): string {
-  const clean = sanitizeHtml(typeof value === "string" ? value : "", SVG_OPTIONS);
+  const clean = sanitizeHtml(typeof value === "string" ? value : "", SVG_OPTIONS).trim();
   return /^\s*<svg(?:\s|>)/.test(clean) ? clean : "";
 }
 

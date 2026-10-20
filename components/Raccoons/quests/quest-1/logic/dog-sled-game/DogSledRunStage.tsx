@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import DogSled, { DogSledState } from "./track/DogSled";
-import { BACKGROUND_LAYERS } from "./background/backgroundLayers";
+import { BACKGROUND_LAYERS, getBackgroundPositionX } from "./background/backgroundLayers";
 import { useObstacles } from "./track/useObstacles";
 import { useBonusStars, BonusStar } from "./track/useBonusStars";
 import { buildSledRunConfig, PreparationResult } from "./track/useSledRunConfig";
@@ -10,6 +10,7 @@ import { SnowDriftController } from "./SnowdriftController";
 import SnowDriftVisual from "./track/SnowDriftVisual";
 import FinishLine from "./FinishLine";
 import RunResultsOverlay from "./RunResultsOverlay";
+import { useQuest1I18n } from "../../i18n";
 
 type Phase = "ready" | "running" | "crash" | "finish";
 
@@ -42,6 +43,7 @@ export default function DogSledRunStage({
   onExit,
   mobileControls = false,
 }: DogSledRunStageProps) { 
+  const { t } = useQuest1I18n();
   const stageRef = useRef<HTMLDivElement>(null);
   const lastTimeRef = useRef<number | null>(null);
   const mobilePointerActiveRef = useRef(false);
@@ -667,9 +669,7 @@ export default function DogSledRunStage({
               className="dog-sled-background-layer"
               style={{
                 backgroundImage: `url(${layer.src})`,
-                transform: `translateX(-${
-                  (scrollX * layer.speedMultiplier) % stageWidth
-                }px)`,
+                backgroundPositionX: `${getBackgroundPositionX(scrollX, layer.speedMultiplier)}px`,
                 zIndex: layer.zIndex,
               }}
             />
@@ -710,6 +710,7 @@ export default function DogSledRunStage({
             finishX={finishX}
             scrollX={scrollX}
             stageWidth={stageWidth}
+            label={t.day5Garage.run.finish}
           />
         )}
 
@@ -833,9 +834,9 @@ export default function DogSledRunStage({
       {/* OVERLAY UI */}
       {phase === "ready" && (
         <div className="dog-sled-run-overlay">
-          <button onClick={startRun}>Начать заезд</button>
+          <button onClick={startRun}>{t.day5Garage.run.start}</button>
 
-          {onExit && <button onClick={onExit}>← Назад</button>}
+          {onExit && <button onClick={onExit}>← {t.day5Garage.run.back}</button>}
         </div>
       )}
 
@@ -848,7 +849,7 @@ export default function DogSledRunStage({
             <span className="dog-sled-star-value">{collectedStars}</span>
           </div>
           <button className="dog-sled-stop-btn" onClick={handleStop}>
-            Стоп
+            {t.day5Garage.run.stop}
           </button>
         </div>
       )}
@@ -856,7 +857,7 @@ export default function DogSledRunStage({
       {mobileControls && phase === "running" ? (
         <div
           className="dog-sled-mobile-controls"
-          aria-label="Sled controls"
+          aria-label={t.day5Garage.run.controls}
           onPointerDown={(event) => event.stopPropagation()}
         >
           <div className="dog-sled-mobile-pad">

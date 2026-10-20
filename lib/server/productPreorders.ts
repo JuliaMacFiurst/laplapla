@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { SOUND_CASE_PREORDER_OFFER } from "@/lib/server/commerce/preorderOffers";
+import { getProductById } from "@/lib/shop/catalog";
 import {
   MAX_PREORDER_EMAIL_LENGTH,
   type PreorderOfferStatus,
@@ -31,6 +32,7 @@ export async function registerSoundCasePreorder(input: {
   email: string;
   locale: Lang;
 }): Promise<RegisterPreorderResult> {
+  if (getProductById(SOUND_CASE_PREORDER_OFFER.productId)?.status !== "coming-soon") return { status: "closed", created: false };
   const emailNormalized = normalizePreorderEmail(input.email);
   const supabase = createServerSupabaseClient({ serviceRole: true });
   const { data, error } = await supabase.rpc("register_product_preorder", {

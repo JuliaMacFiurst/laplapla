@@ -10,6 +10,7 @@ type ApiGuardOptions = {
   windowMs?: number;
   maxBodyBytes?: number;
   keyPrefix?: string;
+  failClosedOnDistributedLimitError?: boolean;
 };
 
 type ApiHandlerOptions = {
@@ -114,6 +115,7 @@ export function withApiHandler<T = unknown>(
         limit: options.guard.limit,
         windowMs: options.guard.windowMs,
         keyPrefix: options.guard.keyPrefix,
+        failClosedOnError: options.guard.failClosedOnDistributedLimitError,
       }))
     ) {
       return;

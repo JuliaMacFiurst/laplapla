@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="172mm" height="146mm" viewBox="0 0 172 146" role="img" aria-labelledby="title desc">
+  <title id="title">Stage 02 Vibrating Cards tuck box dieline</title>
+  <desc id="desc">One-piece 73 by 86 by 8 millimeter tuck box with solid cut lines and dashed fold lines.</desc>
+  <g id="artwork" fill="none">
+    <g id="front-panel"/><g id="back-panel"/><g id="left-panel"/><g id="right-panel"/><g id="top-panel"/><g id="bottom-panel"/>
+  </g>
+  <g id="fold-guides" fill="none" stroke="#777" stroke-width="0.2" stroke-dasharray="2 1.5" vector-effect="non-scaling-stroke">
+    <path d="M10 32V118 M18 32V118 M91 32V118 M99 32V118"/>
+    <path d="M10 32H18 M91 32H99 M99 32H172 M99 23H172"/>
+    <path d="M10 118H172 M18 127H91"/>
+  </g>
+  <g id="cut-guides" fill="none" stroke="#111" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+    <path d="M10 32L0 36V114L10 118"/>
+    <path d="M10 32V23L18 20V32"/>
+    <path d="M18 32H91"/>
+    <path d="M91 32V20L99 23V32"/>
+    <path d="M99 32V7L104 0H167L172 7V118"/>
+    <path d="M172 118V127L166 132H105L99 127V118"/>
+    <path d="M99 118V132L91 136V118"/>
+    <path d="M91 118V140L85 146H24L18 140V118"/>
+    <path d="M18 118V136L10 132V118"/>
+  </g>
+</svg>

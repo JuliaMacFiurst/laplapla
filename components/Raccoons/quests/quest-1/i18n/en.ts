@@ -4,7 +4,7 @@ export const en: Quest1Dictionary = {
   engine: {
     confirmExit:
       "Your quest progress is not saved yet.\nIf you leave now, you will have to start over. Leave the quest?",
-    homeButton: "Back to maps",
+    homeButton: "Back to Store",
     prevButton: "← Back",
     nextButton: "Next →",
   },
@@ -170,8 +170,8 @@ export const en: Quest1Dictionary = {
         "It is time for you to get ready for your own polar expedition too! The base has three departments, and each one will help you master an important part of the preparation:",
       ],
       [
-        "— <strong>Thermal module</strong> — where you learn proper polar clothing.<br/>— <strong>Equipment lab</strong> — where tools and instruments are tested.<br/>— <strong>Garage</strong> — where snowmobiles and field equipment are prepared for departure.",
-        "You can enter the rooms in any order. Once you complete all three stages, the expedition will begin!",
+        "— <strong>Heat Module</strong> — where you learn how to dress for polar conditions.<br/>— <strong>Equipment Lab</strong> — where tools and instruments are tested.<br/>— <strong>Garage</strong> — where snowmobiles and expedition gear are prepared.",
+        "You can explore any of the three rooms and try their challenges. When you're ready, continue your expedition!",
       ],
     ],
     labels: {
@@ -187,6 +187,12 @@ export const en: Quest1Dictionary = {
     backButton: "Back to the research station",
     loadingCharacters: "Loading characters…",
     characterCounter: "Character {current} of {total}",
+    startGame: "Start game",
+    restartGame: "Start over",
+    nextCharacter: "Next character",
+    playAgain: "Play again",
+    scoreboardAlt: "Scoreboard",
+    clothesBeltAlt: "Clothing conveyor belt",
   },
   day5Garage: {
     title: "Garage",
@@ -198,6 +204,11 @@ export const en: Quest1Dictionary = {
     warningBack: "🔧 Return to preparation",
     warningRisk: "⚠️ Take the risk and ride",
     backButton: "Back to the research station",
+    run: {
+      start: "Start run", stop: "Stop", back: "Back",
+      controls: "Sled controls", finish: "FINISH",
+      result: "Result", stars: "Stars", crashes: "Crashes", retry: "Try again",
+    },
     stats: {
       lowRisk: "Low risk",
       highRisk: "High risk",
@@ -244,6 +255,8 @@ export const en: Quest1Dictionary = {
     subtitle: "Here we will test tools and prepare an explorer's kit.",
     backButton: "Back to the research station",
     scoreLabel: "Score",
+    laneLabel: "Lane {number}",
+    backpackControls: "Backpack controls",
     gameStart: {
       title: "Laboratory mini-game",
       caption: "Collect only the items that are useful for a polar expedition!",
@@ -254,6 +267,9 @@ export const en: Quest1Dictionary = {
       backpackCaption: "You are taking these items with you on the polar expedition:",
       restartButton: "Play again",
     },
+  },
+  mapUi: {
+    svalbard: "Svalbard", zoomIn: "Zoom in", zoomOut: "Zoom out", resetZoom: "Reset zoom",
   },
   day6: {
     title: "Expedition",
@@ -285,9 +301,9 @@ export const en: Quest1Dictionary = {
   day7: {
     title: "Treasure of Time",
     videoTitle: "Spitsbergen Flight",
-    backButton: "↩️ Return to the map",
+    backButton: "Back to Store",
     videoTranslationNotice:
-      "This video does not have an English translation yet. It may be added later.",
+      "This video does not have an Hebrew translation yet. It may be added later.",
     blocks: [
       [
         "Every expedition ends someday.",

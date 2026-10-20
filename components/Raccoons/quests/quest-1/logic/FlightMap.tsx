@@ -24,7 +24,7 @@ const SVAL_POINT = { x: 0.517, y: 0.015 };
 
 function getCountryLabel(id: string, lang: "ru" | "en" | "he"): string {
   const entry = (countryNames as Record<string, any>)[id];
-  return entry?.[lang] || entry?.ru || id;
+  return entry?.[lang] || id;
 }
 
 export default function FlightMap({
@@ -270,7 +270,7 @@ export default function FlightMap({
           <div className="quest-pin-start" ref={pinStartRef}></div>
           <div className="quest-pin-end" ref={pinEndRef}></div>
           <div id="svalbard-marker" className="quest-pin-svalbard" ref={svalMkRef}></div>
-          <div id="svalbard-label" className="quest-svalbard-label">Шпицберген</div>
+          <div id="svalbard-label" className="quest-svalbard-label">{t.mapUi.svalbard}</div>
           <svg
             ref={routeSvgRef}
             className="quest-route-svg"

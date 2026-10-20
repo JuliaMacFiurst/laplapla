@@ -1,0 +1,241 @@
+import type { Lang } from "@/i18n";
+
+export type SoundCaseVideoPresentationCopy = {
+  label: string;
+  heading: string;
+  description: string;
+  playLabel: string;
+  iframeTitle: string;
+};
+
+type ProductDetailCopy = {
+  availability: string;
+  priceLabel: string;
+  heroValue: string;
+  videoPresentation: SoundCaseVideoPresentationCopy;
+  whatIsTitle: string;
+  whatIsBody: string;
+  includedTitle: string;
+  includedIntro: string;
+  includedImageAlts: string[];
+  flowTitle: string;
+  flow: Array<{ title: string; body: string }>;
+  galleryTitle: string;
+  galleryIntro: string;
+  galleryLabels: string[];
+  personalizationTitle: string;
+  personalizationBody: string;
+  personalizationItems: string[];
+  reuseTitle: string;
+  reuseBody: string;
+  detailsTitle: string;
+  ageLabel: string;
+  durationLabel: string;
+  details: Array<{ label: string; value: string }>;
+  trustTitle: string;
+  trustItems: string[];
+  sellerLabel: string;
+  finalTitle: string;
+  finalBody: string;
+};
+
+export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
+  ru: {
+    availability: "Доступно для покупки",
+    priceLabel: "Цена",
+    heroValue: "Готовое групповое приключение, которое становится вашей собственной историей — с именами участников, печатными уликами и интерактивными звуковыми заданиями.",
+    videoPresentation: {
+      label: "ПОСМОТРИ ПРИКЛЮЧЕНИЕ",
+      heading: "Услышь, как начинается загадка",
+      description: "Таинственная запись, звуковые эксперименты и восемь этапов приключения. Посмотри короткое видео и узнай, что ждёт твою команду.",
+      playLabel: "Воспроизвести видео о приключении",
+      iframeTitle: "Видео-презентация Sound Case #001",
+    },
+    whatIsTitle: "Что это за квест?",
+    whatIsBody: "Команда расследует загадочный звук, проходит восемь связанных этапов и через игру знакомится с вибрацией, ритмом, звуковыми кодами и поющими песками.",
+    includedTitle: "Что входит в Sound Case",
+    includedIntro: "Это не одна рабочая страница, а 24-страничный комплект материалов для целого приключения.",
+    includedImageAlts: [
+      "Персонализированные страницы квеста формата A4",
+      "Восемь этапов приключения Sound Case",
+      "Печатные карточки и улики Sound Case",
+      "QR-коды для интерактивных заданий Sound Case",
+      "Звуковые мини-игры и научные эксперименты",
+      "Веер персональных коллекционных карточек участников",
+    ],
+    flowTitle: "Как это работает",
+    flow: [
+      { title: "Покупка", body: "Безопасная оплата через PayPal." },
+      { title: "Персонализация", body: "Вы выбираете язык и добавляете имена команды." },
+      { title: "Печать", body: "Печатаете подготовленные материалы A4 через браузер." },
+      { title: "Игра", body: "Команда открывает улики и проходит интерактивные этапы." },
+    ],
+    galleryTitle: "Настоящие материалы приключения",
+    galleryIntro: "Фрагменты карточек, улик и финальных наград, которые уже входят в Sound Case #001.",
+    galleryLabels: [
+      "Карточка звука из первого этапа",
+      "Печатная карточка вибрационного шифра",
+      "Эксперимент о поющих дюнах",
+      "Коллекционные карточки участников",
+    ],
+    personalizationTitle: "Сделано для вашей команды",
+    personalizationBody: "Не нужно разбираться во внутренних настройках: после покупки конструктор проведёт вас по трём понятным шагам.",
+    personalizationItems: [
+      "Выберите язык квеста: русский, English или עברית.",
+      "Добавьте имя главного участника.",
+      "Добавьте до 8 участников команды.",
+    ],
+    reuseTitle: "Можно вернуться и распечатать снова",
+    reuseBody: "Персонализация сохраняется в аккаунте. После покупки можно снова открыть квест, изменить имена и повторно подготовить материалы к печати.",
+    detailsTitle: "Практические детали",
+    ageLabel: "Возраст",
+    durationLabel: "Продолжительность",
+    details: [
+      { label: "Формат", value: "24 печатные страницы A4 + интерактивные этапы по QR-кодам" },
+      { label: "Языки", value: "Русский · English · עברית" },
+      { label: "Команда", value: "Главный участник + до 8 участников" },
+      { label: "Доступ", value: "Сохраняется в аккаунте для редактирования и повторной печати" },
+    ],
+    trustTitle: "Покупка без сюрпризов",
+    trustItems: [
+      "Оплата проходит через PayPal.",
+      "Доступ к квесту открывается после подтверждённой оплаты.",
+      "Купленный квест остаётся доступен в вашем аккаунте.",
+    ],
+    sellerLabel: "Продавец: אומנצ׳קים",
+    finalTitle: "Готовы собрать команду?",
+    finalBody: "Купите приключение и начните собирать команду.",
+  },
+  en: {
+    availability: "Available to buy",
+    priceLabel: "Price",
+    heroValue: "A complete group adventure that becomes your own story—with participant names, printable clues, and interactive sound challenges.",
+    videoPresentation: {
+      label: "WATCH THE ADVENTURE",
+      heading: "Hear how the mystery begins",
+      description: "A mysterious recording, sound experiments, and eight stages of adventure. Watch this short video to discover what awaits your team.",
+      playLabel: "Play the adventure video",
+      iframeTitle: "Sound Case #001 video presentation",
+    },
+    whatIsTitle: "What kind of quest is it?",
+    whatIsBody: "The team investigates a mysterious sound across eight connected stages, discovering vibration, rhythm, sound codes, and singing sands through play.",
+    includedTitle: "What comes with Sound Case",
+    includedIntro: "This is not a single worksheet: it is a 24-page set of materials for a complete adventure.",
+    includedImageAlts: [
+      "Personalized A4 pages from the Sound Case adventure",
+      "Eight stages of the Sound Case adventure",
+      "Printable Sound Case cards and clues",
+      "QR codes linking to interactive Sound Case activities",
+      "Sound mini-games and hands-on experiments",
+      "A fan of personalized participant collectible cards",
+    ],
+    flowTitle: "How it works",
+    flow: [
+      { title: "Buy", body: "Pay securely with PayPal." },
+      { title: "Personalize", body: "Choose a language and add your team’s names." },
+      { title: "Print", body: "Print the prepared A4 materials from your browser." },
+      { title: "Play", body: "Open clues and continue through interactive stages." },
+    ],
+    galleryTitle: "Real materials from the adventure",
+    galleryIntro: "A look at cards, clues, and final rewards already included in Sound Case #001.",
+    galleryLabels: [
+      "A sound card from the first stage",
+      "A printable vibration-code card",
+      "The singing-dunes experiment",
+      "Personal collectible cards",
+    ],
+    personalizationTitle: "Made for your team",
+    personalizationBody: "There are no complicated settings: after purchase, the builder guides you through three clear choices.",
+    personalizationItems: [
+      "Choose the quest language: Русский, English, or עברית.",
+      "Add the lead participant’s name.",
+      "Add up to 8 team participants.",
+    ],
+    reuseTitle: "Come back and print again",
+    reuseBody: "Personalization is saved to your account. After purchase, you can reopen the quest, change names, and prepare the materials for printing again.",
+    detailsTitle: "Practical details",
+    ageLabel: "Age",
+    durationLabel: "Duration",
+    details: [
+      { label: "Format", value: "24 printable A4 pages + QR-linked interactive stages" },
+      { label: "Languages", value: "Русский · English · עברית" },
+      { label: "Team", value: "Lead participant + up to 8 participants" },
+      { label: "Access", value: "Saved to your account for editing and reprinting" },
+    ],
+    trustTitle: "A purchase you can understand",
+    trustItems: [
+      "Payment is processed through PayPal.",
+      "Quest access opens after confirmed payment.",
+      "Your purchased quest remains available in your account.",
+    ],
+    sellerLabel: "Seller: אומנצ׳קים",
+    finalTitle: "Ready to gather your team?",
+    finalBody: "Buy the adventure and gather your team.",
+  },
+  he: {
+    availability: "זמין לרכישה",
+    priceLabel: "מחיר",
+    heroValue: "הרפתקה קבוצתית שלמה שהופכת לסיפור שלכם — עם שמות המשתתפים, רמזים להדפסה ומשימות צליל אינטראקטיביות.",
+    videoPresentation: {
+      label: "הצצה להרפתקה",
+      heading: "שמעו איך התעלומה מתחילה",
+      description: "הקלטה מסתורית, ניסויים בצלילים ושמונה שלבים של הרפתקה. צפו בסרטון קצר וגלו מה מחכה לצוות שלכם.",
+      playLabel: "הפעלת סרטון ההרפתקה",
+      iframeTitle: "סרטון הצגה של Sound Case #001",
+    },
+    whatIsTitle: "איזו משימה זו?",
+    whatIsBody: "הצוות חוקר צליל מסתורי לאורך שמונה שלבים מחוברים ומגלה דרך המשחק רעידות, קצב, קודי צליל וחולות מזמרים.",
+    includedTitle: "מה מקבלים ב־Sound Case",
+    includedIntro: "זה לא דף עבודה אחד, אלא ערכה בת 24 עמודים להרפתקה שלמה.",
+    includedImageAlts: [
+      "דפי A4 אישיים מתוך הרפתקת Sound Case",
+      "שמונת שלבי ההרפתקה של Sound Case",
+      "כרטיסים ורמזים להדפסה של Sound Case",
+      "קודי QR שמובילים למשימות אינטראקטיביות של Sound Case",
+      "משחקוני צליל וניסויים מעשיים",
+      "מניפה של כרטיסי אספנות אישיים למשתתפים",
+    ],
+    flowTitle: "איך זה עובד",
+    flow: [
+      { title: "קנייה", body: "תשלום מאובטח דרך PayPal." },
+      { title: "התאמה אישית", body: "בוחרים שפה ומוסיפים את שמות הצוות." },
+      { title: "הדפסה", body: "מדפיסים את חומרי A4 המוכנים דרך הדפדפן." },
+      { title: "משחק", body: "פותחים רמזים וממשיכים בשלבים האינטראקטיביים." },
+    ],
+    galleryTitle: "חומרים אמיתיים מההרפתקה",
+    galleryIntro: "הצצה לכרטיסים, לרמזים ולפרסים הסופיים שכבר כלולים ב־Sound Case #001.",
+    galleryLabels: [
+      "כרטיס צליל מהשלב הראשון",
+      "כרטיס קוד רעידות להדפסה",
+      "הניסוי על הדיונות המזמרות",
+      "כרטיסי אספנות אישיים",
+    ],
+    personalizationTitle: "נוצר עבור הצוות שלכם",
+    personalizationBody: "אין הגדרות מסובכות: לאחר הרכישה, הבונה מוביל אתכם בשלוש בחירות ברורות.",
+    personalizationItems: [
+      "בוחרים את שפת המשימה: Русский, English או עברית.",
+      "מוסיפים את שם המשתתף הראשי.",
+      "מוסיפים עד 8 משתתפים לצוות.",
+    ],
+    reuseTitle: "אפשר לחזור ולהדפיס שוב",
+    reuseBody: "ההתאמה האישית נשמרת בחשבון. לאחר הרכישה אפשר לפתוח שוב את המשימה, לשנות שמות ולהכין מחדש את החומרים להדפסה.",
+    detailsTitle: "פרטים שימושיים",
+    ageLabel: "גיל",
+    durationLabel: "משך המשחק",
+    details: [
+      { label: "פורמט", value: "24 עמודי A4 להדפסה + שלבים אינטראקטיביים המקושרים בקודי QR" },
+      { label: "שפות", value: "Русский · English · עברית" },
+      { label: "צוות", value: "משתתף ראשי + עד 8 משתתפים" },
+      { label: "גישה", value: "נשמר בחשבון לעריכה ולהדפסה חוזרת" },
+    ],
+    trustTitle: "רכישה ברורה ורגועה",
+    trustItems: [
+      "התשלום מתבצע דרך PayPal.",
+      "הגישה למשימה נפתחת לאחר אישור התשלום.",
+      "המשימה שנרכשה נשארת זמינה בחשבון שלכם.",
+    ],
+    sellerLabel: "המוכר: אומנצ׳קים",
+    finalTitle: "מוכנים לאסוף את הצוות?",
+    finalBody: "קנו את ההרפתקה ואספו את הצוות.",
+  },
+};

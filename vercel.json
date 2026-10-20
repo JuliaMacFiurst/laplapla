@@ -15,6 +15,22 @@
     {
       "path": "/api/cron/cleanup-analytics",
       "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/cron/recover-receipts",
+      "schedule": "10 1 * * *"
+    },
+    {
+      "path": "/api/cron/recover-receipt-artifacts",
+      "schedule": "25 1 * * *"
+    },
+    {
+      "path": "/api/cron/recover-purchase-notifications",
+      "schedule": "40 1 * * *"
+    },
+    {
+      "path": "/api/cron/recover-support-notifications",
+      "schedule": "55 1 * * *"
     }
   ]
 }

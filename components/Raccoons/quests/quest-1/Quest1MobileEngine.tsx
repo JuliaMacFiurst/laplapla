@@ -7,6 +7,7 @@ import type { PageId } from "./QuestEngine";
 import { getFlightQuestions, getSailQuestions, type QuestQuestion } from "./i18n/tests";
 import DialogBox from "./logic/DialogBox";
 import DialogBoxStars from "./logic/DialogBoxStars";
+import DialogBoxStarsInteractive from "./logic/DialogBoxStarsInteractive";
 import CockpitHint from "./flight/CockpitHint";
 import PlaneWindshield, { type PlaneWindshieldRef } from "./flight/PlaneWindshield";
 import InstrumentPanel from "./flight/InstrumentPanel";
@@ -15,7 +16,9 @@ import { getTakeoffHints } from "./i18n/takeoffHints";
 import {
   getFlightRouteDialogs,
   getSeaRouteDialogs,
+  getStarNavigationUi,
   getStarRouteDialogs,
+  relocalizeStarDialogueQueue,
   type FlightDialogueStep,
   type SeaDialogueStep,
   type StarDialogueStep,
@@ -32,9 +35,43 @@ import DogSledRunStage from "./logic/dog-sled-game/DogSledRunStage";
 import type { PreparationResult, SledPart } from "./logic/dog-sled-game/PreparationPopup";
 import type { CharacterResult } from "@/types/types";
 import countryNames from "@/utils/country_names.json";
-import seaNames from "@/utils/sea_names.json";
-import { starInfoList } from "@/utils/starInfo";
+import {
+  findStarInfo,
+  formatLocalizedStarFactText,
+  getLocalizedStarName,
+} from "@/utils/starInfo";
 import { sanitizeRichText } from "@/lib/security/sanitize";
+import {
+  advanceStarNavigation,
+  findStarNavigationTarget,
+  getStarMap,
+  type StarNavigationPhase,
+} from "./sail/starNavigation";
+import { getStarNavigationVideoEmbedUrl } from "./sail/starNavigationVideos";
+import { getDay7VideoEmbedUrl } from "./videoEmbeds";
+import { getInformationalStarIdAtPoint } from "./sail/starNavigationInfo";
+import { useQuest1Progress } from "./useQuest1Progress";
+import { formatSeaRouteMessage, localizeSeaRoute } from "./sail/seaRouteLocalization";
+import { isQuest1NarrationEnabled } from "./narration/catalog";
+import { QuestNarrationScope } from "./narration/availability";
+import { QuestNarrationSlot, useAvailableNarrationBlocks } from "./narration/availability";
+import type { NarrationBlockId } from "./narration/catalog";
+import {
+  DAY_1_BLOCKS,
+  DAY_2_BLOCKS,
+  DAY_2_CHOICE_BLOCK,
+  DAY_6_BLOCKS,
+  FLIGHT_STATIC_BLOCKS,
+  SAIL_STATIC_BLOCKS,
+  STARS_INTRO_BLOCKS,
+  STATION_BLOCKS,
+  TAKEOFF_STORY_BLOCKS,
+  flightDialogueBlockId,
+  garagePartBlockId,
+  seaDialogueBlockId,
+  starDialogueBlockId,
+  takeoffHintBlockId,
+} from "./narration/gameMappings";
 
 type MobilePageProps = {
   go: (id: PageId) => void;
@@ -59,8 +96,6 @@ const MOBILE_PAGE_ORDER: PageId[] = [
   "day7_treasure_of_times",
 ];
 
-const QUEST_1_MOBILE_PROGRESS_KEY = "quest-1-mobile-page";
-
 const MOBILE_MAP_BAD_IDS = new Set([
   "__next",
   "map-wrap",
@@ -75,49 +110,36 @@ function flattenBlocks(blocks: string[][]) {
   return blocks.flatMap((block) => block);
 }
 
-function isMobilePageId(value: string | null): value is PageId {
-  return Boolean(value && MOBILE_PAGE_ORDER.includes(value as PageId));
-}
-
-function readStoredMobilePageId(): PageId {
-  if (typeof window === "undefined") return "day1";
-
-  try {
-    const storedPageId = window.sessionStorage.getItem(QUEST_1_MOBILE_PROGRESS_KEY);
-    return isMobilePageId(storedPageId) ? storedPageId : "day1";
-  } catch {
-    return "day1";
-  }
-}
-
-function clearStoredMobilePageId() {
-  try {
-    window.sessionStorage.removeItem(QUEST_1_MOBILE_PROGRESS_KEY);
-  } catch {
-    // Session storage can be unavailable in private or restricted browsing modes.
-  }
-}
-
 function QuestMobileShell({
   title,
   children,
   onExit,
+  onRestart,
+  restartLabel,
   progress,
 }: {
   title: string;
   children: ReactNode;
   onExit: () => void;
+  onRestart: () => void;
+  restartLabel: string;
   progress: string;
 }) {
   const { lang, t } = useQuest1I18n();
 
   return (
-    <main className="quest-mobile-screen" dir={lang === "he" ? "rtl" : "ltr"}>
+    <main
+      className={`quest-mobile-screen${isQuest1NarrationEnabled ? " quest-narration-enabled" : ""}`}
+      dir={lang === "he" ? "rtl" : "ltr"}
+    >
       <header className="quest-mobile-topbar">
         <button type="button" className="quest-mobile-back" onClick={onExit}>
           {t.engine.homeButton}
         </button>
         <div className="quest-mobile-progress">{progress}</div>
+        <button type="button" className="quest-mobile-restart" onClick={onRestart}>
+          {restartLabel}
+        </button>
       </header>
       <section className="quest-mobile-content">
         <h1 className="quest-mobile-title">{title}</h1>
@@ -242,11 +264,13 @@ function QuestMobileQuiz({
   finishTitle,
   finishButtonText,
   onFinish,
+  explanationBlockIds = [],
 }: {
   questions: QuestQuestion[];
   finishTitle: string;
   finishButtonText: string;
   onFinish: () => void;
+  explanationBlockIds?: readonly (NarrationBlockId | null)[];
 }) {
   const { lang, t } = useQuest1I18n();
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -255,6 +279,11 @@ function QuestMobileQuiz({
 
   const question = questions[questionIndex];
   const isLast = questionIndex >= questions.length - 1;
+  const explanationBlockId = explanationBlockIds[questionIndex] ?? null;
+  useAvailableNarrationBlocks(
+    "mobile-quiz-explanation",
+    checked && question?.explanation && explanationBlockId ? [explanationBlockId] : [],
+  );
 
   if (!question) {
     return (
@@ -383,21 +412,24 @@ function getMobileLoganName(lang: string) {
 
 function getCountryLabel(id: string, lang: "ru" | "en" | "he") {
   const entry = (countryNames as Record<string, Partial<Record<"ru" | "en" | "he", string>>>)[id.toLowerCase()];
-  return entry?.[lang] || entry?.ru || id;
-}
-
-function getSeaLabel(id: string, lang: "ru" | "en" | "he") {
-  const entry = (seaNames as Record<string, Partial<Record<"ru" | "en" | "he", string>>>)[id];
-  return entry?.[lang] || entry?.ru || id;
+  return entry?.[lang] || id;
 }
 
 function isSeaHit(hit: MobileSvgMapHit | null) {
   return Boolean(hit?.id && hit.tagName === "path" && !hit.classNames.includes("land"));
 }
 
-function getStarHumanName(id: string) {
-  const normalized = id === "Dubhe-Star" ? "Dubhe" : id;
-  return starInfoList.find((star) => star.id === normalized || star.id === id)?.name || id;
+function getStarHumanName(id: string, lang: "ru" | "en" | "he" = "ru") {
+  const star = findStarInfo(id);
+  return star ? getLocalizedStarName(star, lang) : id;
+}
+
+function getMobileStarSemanticId(hit: MobileSvgMapHit | null) {
+  const target = findStarNavigationTarget(hit?.ancestorIds ?? [hit?.id]);
+  if (target === "merak") return "Merak-Star";
+  if (target === "dubhe") return "Dubhe-Star";
+  if (target === "polaris") return "Polar-Star";
+  return (hit?.ancestorIds ?? [hit?.id]).find((id): id is string => Boolean(id && findStarInfo(id))) ?? "";
 }
 
 const TAKEOFF_VIDEO_MAP: Record<string, string[]> = {
@@ -504,6 +536,10 @@ function Day1Mobile({ go }: MobilePageProps) {
   const [started, setStarted] = useState(false);
   const [revealCount, setRevealCount] = useState(1);
   const [muted, setMuted] = useState(false);
+  useAvailableNarrationBlocks(
+    "mobile-day1-story",
+    started ? DAY_1_BLOCKS.slice(0, revealCount) : [],
+  );
 
   const start = () => {
     setStarted(true);
@@ -576,6 +612,11 @@ function Day2Mobile({ go }: MobilePageProps) {
   const paragraphs = useMemo(() => flattenBlocks(t.day2.blocks), [t.day2.blocks]);
   const [revealCount, setRevealCount] = useState(1);
   const isFinished = revealCount >= paragraphs.length;
+  useAvailableNarrationBlocks("mobile-day2-story", DAY_2_BLOCKS.slice(0, revealCount));
+  useAvailableNarrationBlocks(
+    "mobile-day2-choice",
+    isFinished ? [DAY_2_CHOICE_BLOCK] : [],
+  );
 
   return (
     <>
@@ -651,6 +692,16 @@ function Day3FlightMobile({ go }: MobilePageProps) {
   }, [lang, routeType, t.day3Flight.speech.overCountries, t.day3Flight.speech.overOcean]);
 
   const introDone = revealCount >= paragraphs.length;
+  const flightDialogueBlock = flightDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("mobile-day3-flight-intro", [FLIGHT_STATIC_BLOCKS[0]]);
+  useAvailableNarrationBlocks(
+    "mobile-day3-flight-tools",
+    introDone ? FLIGHT_STATIC_BLOCKS.slice(1) : [],
+  );
+  useAvailableNarrationBlocks(
+    "mobile-day3-flight-dialogue",
+    readyForQuiz && flightDialogueBlock ? [flightDialogueBlock] : [],
+  );
 
   return (
     <>
@@ -677,7 +728,7 @@ function Day3FlightMobile({ go }: MobilePageProps) {
               routePoints={routePoints}
               startPoint={startPoint}
               targetPoint={targetPoint}
-              targetLabel="Svalbard"
+              targetLabel={t.mapUi.svalbard}
               onPointerDown={setHomePoint}
               onRouteHitIdsChange={updateFlightFeedback}
               ignoredHitIds={MOBILE_MAP_BAD_IDS}
@@ -709,6 +760,7 @@ function Day3FlightMobile({ go }: MobilePageProps) {
                 questions={questions}
                 finishTitle={t.day3Flight.finishTitle}
                 finishButtonText={t.day3Flight.finishButton}
+                explanationBlockIds={[null, "svalbard.day03.flight.mercator-explanation.01", null]}
                 onFinish={() => go("day4_takeoff")}
               />
             </>
@@ -747,17 +799,32 @@ function Day3SailMobile({ go }: MobilePageProps) {
     setIsDrawing(false);
     setRouteFinished(true);
 
-    const seas = Array.from(touchedSeaIdsRef.current)
-      .map((id) => getSeaLabel(id, lang))
-      .filter(Boolean)
-      .join(", ");
+    const seas = localizeSeaRoute(touchedSeaIdsRef.current, lang);
 
     setFeedback(
       seas
-        ? t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas)
+        ? formatSeaRouteMessage(
+            t.day3Sail.mapSpeech.routeThroughSeas,
+            touchedSeaIdsRef.current,
+            lang,
+          )
         : t.day3Sail.mapSpeech.routeComplete,
     );
   };
+
+  useEffect(() => {
+    if (!routeFinished) return;
+    const seas = localizeSeaRoute(touchedSeaIdsRef.current, lang);
+    setFeedback(
+      seas
+        ? formatSeaRouteMessage(
+            t.day3Sail.mapSpeech.routeThroughSeas,
+            touchedSeaIdsRef.current,
+            lang,
+          )
+        : t.day3Sail.mapSpeech.routeComplete,
+    );
+  }, [lang, routeFinished, t.day3Sail.mapSpeech.routeComplete, t.day3Sail.mapSpeech.routeThroughSeas]);
 
   const validateSeaPoint = (event: MobileSvgMapPointerEvent) => {
     if (isNearTarget(event.point)) {
@@ -842,6 +909,16 @@ function Day3SailMobile({ go }: MobilePageProps) {
   };
 
   const introDone = revealCount >= paragraphs.length;
+  const sailDialogueBlock = seaDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("mobile-day3-sail-intro", [SAIL_STATIC_BLOCKS[0]]);
+  useAvailableNarrationBlocks(
+    "mobile-day3-sail-tools",
+    introDone ? SAIL_STATIC_BLOCKS.slice(1) : [],
+  );
+  useAvailableNarrationBlocks(
+    "mobile-day3-sail-dialogue",
+    routeFinished && sailDialogueBlock ? [sailDialogueBlock] : [],
+  );
 
   return (
     <>
@@ -868,7 +945,7 @@ function Day3SailMobile({ go }: MobilePageProps) {
               routePoints={routePoints}
               startPoint={startPoint}
               targetPoint={targetPoint}
-              targetLabel="Svalbard"
+              targetLabel={t.mapUi.svalbard}
               onPointerDown={startRoute}
               onPointerMove={drawRoute}
               onPointerUp={stopRoute}
@@ -915,6 +992,13 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
   const [hint, setHint] = useState<string | null>(null);
   const [motionEnabled, setMotionEnabled] = useState(false);
   const [motionMessage, setMotionMessage] = useState("");
+  const [activeSwitchId, setActiveSwitchId] = useState<string | null>(null);
+  const takeoffHintId = takeoffHintBlockId(activeSwitchId);
+  useAvailableNarrationBlocks("mobile-day4-takeoff-story", TAKEOFF_STORY_BLOCKS);
+  useAvailableNarrationBlocks(
+    "mobile-day4-takeoff-hint",
+    takeoffHintId ? [takeoffHintId] : [],
+  );
 
   useEffect(() => {
     if (!motionEnabled || typeof window === "undefined") return undefined;
@@ -965,12 +1049,14 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
   const handleSwitch = (id: string) => {
     if (!id.startsWith("switcher-on")) {
       setHint(null);
+      setActiveSwitchId(null);
       return;
     }
 
     const text = takeoffHints[id];
     if (text) {
       setHint(text);
+      setActiveSwitchId(id);
     }
 
     const list = TAKEOFF_VIDEO_MAP[id];
@@ -993,7 +1079,10 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
           <PlaneWindshield ref={windshieldRef} angle={angle} pushPull={pushPull} />
           {hint ? (
             <div className="quest-mobile-cockpit-hint">
-              <CockpitHint text={hint} onClose={() => setHint(null)} />
+              <CockpitHint text={hint} onClose={() => {
+                setHint(null);
+                setActiveSwitchId(null);
+              }} />
             </div>
           ) : null}
         </div>
@@ -1062,7 +1151,7 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
       <div className="quest-mobile-youtube">
         <iframe
           src="https://www.youtube.com/embed/5NhIRwCq428?autoplay=1&mute=1&loop=1&playlist=5NhIRwCq428&controls=0&modestbranding=1&playsinline=1&enablejsapi=1"
-          title="Spitsbergen Flight"
+          title={t.day4StarsNav.videoTitle}
           allow="autoplay; encrypted-media; fullscreen"
           allowFullScreen
         />
@@ -1077,16 +1166,30 @@ function Day4TakeoffMobile({ go }: MobilePageProps) {
 
 function Day4StarsNavMobile({ go }: MobilePageProps) {
   const { lang, t } = useQuest1I18n();
+  const starMap = getStarMap(lang);
+  const navigationUi = getStarNavigationUi(lang);
+  const navigationVideoUrl = getStarNavigationVideoEmbedUrl(lang);
   const starRouteDialogs = useMemo(() => getStarRouteDialogs(lang), [lang]);
   const introDialogs = useMemo(() => starRouteDialogs.filter((dialog) => dialog.condition === "intro"), [starRouteDialogs]);
   const [dialogueQueue, setDialogueQueue] = useState<StarDialogueStep[]>(introDialogs);
-  const [routeStep, setRouteStep] = useState<"idle" | "waiting_merak" | "waiting_dubhe" | "waiting_polaris" | "completed">("idle");
-  const [routePoints, setRoutePoints] = useState<{ x: number; y: number }[]>([]);
+  const [routeStep, setRouteStep] = useState<"idle" | StarNavigationPhase>("idle");
   const [feedback, setFeedback] = useState(t.day4StarsNav.defaultSpeech);
-  const [showVideo, setShowVideo] = useState(false);
+  const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
+  const showVideo = routeStep === "completed";
+  const starDialogueBlock = starDialogueBlockId(dialogueQueue[0]?.id);
+  useAvailableNarrationBlocks("mobile-day4-stars-story", STARS_INTRO_BLOCKS);
+  useAvailableNarrationBlocks(
+    "mobile-day4-stars-dialogue",
+    starDialogueBlock ? [starDialogueBlock] : [],
+  );
+  useAvailableNarrationBlocks(
+    "mobile-day4-stars-arrival",
+    showVideo ? ["svalbard.day04.stars.arrival.01"] : [],
+  );
 
   const setWrongDialog = (phase: "merak" | "dubhe", hit: MobileSvgMapHit | null) => {
-    const humanName = hit?.id ? getStarHumanName(hit.id) : "no_id";
+    const semanticId = getMobileStarSemanticId(hit);
+    const humanName = semanticId ? getStarHumanName(semanticId, lang) : "no_id";
     const dialogId =
       phase === "merak"
         ? humanName === "no_id"
@@ -1107,20 +1210,25 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
   };
 
   const handleStarPress = (event: MobileSvgMapPointerEvent) => {
-    const id = event.hit?.id || "";
-    const info = starInfoList.find((star) => star.id === id || (id === "Dubhe-Star" && star.id === "Dubhe"));
-    if (info) {
-      setFeedback(`${getMobileLoganName(lang)}: «${info.name}. ${info.description}»`);
+    const id = getMobileStarSemanticId(event.hit);
+    const target = findStarNavigationTarget(event.hit?.ancestorIds ?? [event.hit?.id]);
+    const informationalStarId = getInformationalStarIdAtPoint(
+      event.originalEvent.currentTarget,
+      event.originalEvent.clientX,
+      event.originalEvent.clientY,
+    );
+    if (informationalStarId) {
+      setSelectedStarId(informationalStarId);
+      return;
     }
-
     if (routeStep === "idle") {
       return;
     }
 
-    if (routeStep === "waiting_merak") {
-      if (id === "Merak-Star") {
-        setRoutePoints([event.point]);
-        setRouteStep("waiting_dubhe");
+    if (routeStep === "find_merak") {
+      if (target === "merak") {
+        setSelectedStarId(id);
+        setRouteStep(advanceStarNavigation(routeStep, target));
         setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.condition === "click_merak"));
         return;
       }
@@ -1128,10 +1236,10 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
       return;
     }
 
-    if (routeStep === "waiting_dubhe") {
-      if (id === "Dubhe-Star" || id === "Dubhe") {
-        setRoutePoints((points) => [...points.slice(0, 1), event.point]);
-        setRouteStep("waiting_polaris");
+    if (routeStep === "find_dubhe") {
+      if (target === "dubhe") {
+        setSelectedStarId(id);
+        setRouteStep(advanceStarNavigation(routeStep, target));
         setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.condition === "click_dubhe"));
         return;
       }
@@ -1139,10 +1247,10 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
       return;
     }
 
-    if (routeStep === "waiting_polaris") {
-      if (id === "Polar-Star") {
-        setRoutePoints((points) => [...points.slice(0, 2), event.point]);
-        setRouteStep("completed");
+    if (routeStep === "find_polaris") {
+      if (target === "polaris") {
+        setSelectedStarId(id);
+        setRouteStep(advanceStarNavigation(routeStep, target));
         setDialogueQueue(
           starRouteDialogs.filter(
             (dialog) => dialog.condition === "click_polaris" || dialog.id === "finish_1" || dialog.id === "finish_2",
@@ -1150,21 +1258,25 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
         );
         return;
       }
-      setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.condition === "wrong_line"));
+      setDialogueQueue(starRouteDialogs.filter((dialog) => dialog.id === "wrong_polaris"));
     }
   };
+
+  useEffect(() => {
+    const fact = selectedStarId ? formatLocalizedStarFactText(selectedStarId, lang) : null;
+    setFeedback(fact || t.day4StarsNav.defaultSpeech);
+  }, [lang, selectedStarId, t.day4StarsNav.defaultSpeech]);
+
+  useEffect(() => {
+    setDialogueQueue((queue) => relocalizeStarDialogueQueue(queue, lang, selectedStarId));
+  }, [lang, selectedStarId]);
 
   const handleDialogNext = () => {
     const current = dialogueQueue[0];
     if (current?.id === "intro_4") {
-      setRouteStep("waiting_merak");
+      setRouteStep("find_merak");
+      setSelectedStarId(null);
       setDialogueQueue([]);
-      return;
-    }
-
-    if (current?.id === "finish_1") {
-      setShowVideo(true);
-      setDialogueQueue((queue) => queue.slice(1));
       return;
     }
 
@@ -1180,68 +1292,54 @@ function Day4StarsNavMobile({ go }: MobilePageProps) {
         onRevealNext={() => {}}
       />
 
-      <div className="quest-mobile-map-workspace">
-        <div className="quest-mobile-map-heading">
-          {routeStep === "waiting_merak"
-            ? lang === "ru"
-              ? "Найди Мерак и нажми на него."
-              : lang === "he"
-                ? "מצאו את מראק ולחצו עליו."
-                : "Find Merak and tap it."
-            : routeStep === "waiting_dubhe"
-              ? lang === "ru"
-                ? "Теперь найди Дубхе."
-                : lang === "he"
-                  ? "עכשיו מצאו את דובהה."
-                  : "Now find Dubhe."
-              : routeStep === "waiting_polaris"
-                ? lang === "ru"
-                  ? "Нажми на Полярную звезду, чтобы закончить линию."
-                  : lang === "he"
-                    ? "לחצו על כוכב הצפון כדי להשלים את הקו."
-                    : "Tap Polaris to finish the line."
-                : lang === "ru"
-                  ? "Прочитай диалог и начни поиск звезд."
-                  : lang === "he"
-                    ? "קראו את הדיאלוג והתחילו לחפש כוכבים."
-                    : "Read the dialogue and start finding stars."}
+      <div className="quest-mobile-map-workspace quest-mobile-map-workspace--stars">
+        <div className="quest-mobile-stars-scene" dir="ltr">
+          <video className="quest-raccoon-stars-video" aria-hidden="true" autoPlay muted loop playsInline src="/supabase-storage/quests/1_quest/images/sailor-raccoon.webm" />
+          <MobileSvgDrawMap
+            mapPath={starMap.path}
+            mapSource={starMap.source}
+            starNavigationPhase={routeStep}
+            highlightIds={[
+              ...(routeStep !== "idle" && routeStep !== "find_merak" ? ["Merak-Star"] : []),
+              ...(["find_polaris", "completed"].includes(routeStep) ? ["Dubhe-Star"] : []),
+              ...(routeStep === "completed" ? ["Polar-Star"] : []),
+            ]}
+            enablePanZoom
+            onPointerDown={handleStarPress}
+            ignoredHitIds={MOBILE_MAP_BAD_IDS}
+            loadingLabel={lang === "ru" ? "Загружаем звездную карту..." : lang === "he" ? "טוענים מפת כוכבים..." : "Loading star map..."}
+            emptyLabel={lang === "ru" ? "Звездная карта не загрузилась" : lang === "he" ? "מפת הכוכבים לא נטענה" : "Star map did not load"}
+          />
+          <video className="quest-svensen-video" aria-hidden="true" autoPlay muted loop playsInline src="/supabase-storage/quests/1_quest/images/svensen-talks.webm" />
         </div>
-        <MobileSvgDrawMap
-          mapPath="north-stars/north-stars.svg"
-          routePoints={routePoints}
-          routeColor="#facc15"
-          routeStrokeWidth={4}
-          enablePanZoom
-          onPointerDown={handleStarPress}
-          ignoredHitIds={MOBILE_MAP_BAD_IDS}
-          loadingLabel={lang === "ru" ? "Загружаем звездную карту..." : lang === "he" ? "טוענים מפת כוכבים..." : "Loading star map..."}
-          emptyLabel={lang === "ru" ? "Звездная карта не загрузилась" : lang === "he" ? "מפת הכוכבים לא נטענה" : "Star map did not load"}
-        />
+        {routeStep !== "idle" && routeStep !== "completed" && (
+          <div className="star-navigation-status" dir={lang === "he" ? "rtl" : "ltr"} role="status">
+            <p className="star-navigation-instruction">{navigationUi[routeStep]}</p>
+          </div>
+        )}
         <QuestMobileFeedback speaker={getMobileLoganName(lang)} text={feedback} />
       </div>
 
-      <QuestMobileStarsDialog queue={dialogueQueue} onNext={handleDialogNext} />
+      {routeStep === "idle" ? (
+        <QuestMobileStarsDialog queue={dialogueQueue} onNext={handleDialogNext} />
+      ) : (
+        <div className="quest-mobile-dialog-wrapper">
+          {dialogueQueue.map((line) => <DialogBoxStarsInteractive key={line.id} queue={[line]} />)}
+        </div>
+      )}
 
-      {showVideo ? (
-        <>
-          <div className="quest-mobile-youtube quest-mobile-youtube-polar">
-            <iframe
-              src="https://www.youtube.com/embed/CWf0_sdJOJI?enablejsapi=1"
-              title={t.day4StarsNav.videoTitle}
-              allow="autoplay; encrypted-media; fullscreen"
-              allowFullScreen
-            />
-          </div>
-          <QuestMobileTextReveal
-            paragraphs={t.day4StarsNav.arrivalBlock}
-            revealCount={t.day4StarsNav.arrivalBlock.length}
-            onRevealNext={() => {}}
-          />
-          <button type="button" className="quest-mobile-primary" onClick={() => go("day5_spitsbergen")}>
-            {t.day4StarsNav.nextButton}
-          </button>
-        </>
-      ) : null}
+      <QuestNarrationSlot />
+
+      {showVideo && <QuestMobileTextReveal paragraphs={t.day4StarsNav.arrivalBlock} revealCount={t.day4StarsNav.arrivalBlock.length} onRevealNext={() => {}} />}
+
+      {showVideo && (
+        <div className="star-navigation-completion" dir={lang === "he" ? "rtl" : "ltr"}>
+          {navigationVideoUrl ? <div className="quest-mobile-youtube quest-mobile-youtube-polar">
+            <iframe src={navigationVideoUrl} title={t.day4StarsNav.videoTitle} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+          </div> : <p className="quest-video-unavailable" role="status">{navigationUi.videoUnavailable}</p>}
+          <button type="button" className="quest-mobile-primary" onClick={() => go("day5_spitsbergen")}>{t.day4StarsNav.nextButton}</button>
+        </div>
+      )}
     </>
   );
 }
@@ -1252,6 +1350,7 @@ function Day5SpitsbergenMobile({ go }: MobilePageProps) {
   const paragraphs = useMemo(() => flattenBlocks(t.day5Spitsbergen.blocks), [t.day5Spitsbergen.blocks]);
   const introParagraphs = paragraphs.slice(0, 3);
   const detailParagraphs = paragraphs.slice(3);
+  useAvailableNarrationBlocks("mobile-day5-station", STATION_BLOCKS);
 
   const getDoorLabel = (id: MobileStationDoorId) => {
     if (id === "heat") return t.day5Spitsbergen.labels.heat;
@@ -1474,6 +1573,11 @@ function Day5GarageMobile({ go }: MobilePageProps) {
     stamina: 0.5,
     risk: 1,
   });
+  const garageBlock = garagePartBlockId(activePart);
+  useAvailableNarrationBlocks(
+    "mobile-day5-garage-part",
+    isLandscape && phase === "inspect" && garageBlock ? [garageBlock] : [],
+  );
 
   function statLevel(value: number) {
     if (value >= 0.9) return "is-max" as const;
@@ -1683,6 +1787,7 @@ function Day5GarageMobile({ go }: MobilePageProps) {
 function Day6ExpeditionMobile({ go }: MobilePageProps) {
   const { t } = useQuest1I18n();
   const paragraphs = useMemo(() => flattenBlocks(t.day6.blocks), [t.day6.blocks]);
+  useAvailableNarrationBlocks("mobile-day6-story", DAY_6_BLOCKS);
 
   return (
     <>
@@ -1709,11 +1814,11 @@ function Day7TreasureMobile() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const paragraphs = useMemo(() => flattenBlocks(t.day7.blocks), [t.day7.blocks]);
+  useAvailableNarrationBlocks("mobile-day7-ending", ["svalbard.day07.ending.01"]);
 
   const goToMap = useCallback(() => {
-    clearStoredMobilePageId();
     void router.push(
-      { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
+      { pathname: "/shop", query: buildLocalizedQuery(lang) },
       undefined,
       { locale: lang },
     );
@@ -1744,7 +1849,7 @@ function Day7TreasureMobile() {
     <div className={`quest-mobile-final ${celebrating ? "is-celebrating" : ""}`}>
       <div className="quest-mobile-final-video">
         <iframe
-          src="https://www.youtube.com/embed/sE2jxOVG8kU"
+          src={getDay7VideoEmbedUrl(lang)}
           title={t.day7.videoTitle}
           allow="autoplay; encrypted-media; fullscreen"
           allowFullScreen
@@ -1799,18 +1904,10 @@ function Day7TreasureMobile() {
 export default function Quest1MobileEngine() {
   const router = useRouter();
   const { lang, t } = useQuest1I18n();
-  const [pageId, setPageId] = useState<PageId>(readStoredMobilePageId);
+  const { pageId, go, restart } = useQuest1Progress();
   const [devMode, setDevMode] = useState(false);
   const pageIndex = MOBILE_PAGE_ORDER.indexOf(pageId);
   const progress = `${Math.max(1, pageIndex + 1)} / ${MOBILE_PAGE_ORDER.length}`;
-
-  useEffect(() => {
-    try {
-      window.sessionStorage.setItem(QUEST_1_MOBILE_PROGRESS_KEY, pageId);
-    } catch {
-      // Session storage can be unavailable in private or restricted browsing modes.
-    }
-  }, [pageId]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1819,60 +1916,27 @@ export default function Quest1MobileEngine() {
   }, []);
 
   const exit = useCallback(() => {
-    if (typeof window !== "undefined" && !window.confirm(t.engine.confirmExit)) {
-      return;
-    }
-
-    clearStoredMobilePageId();
     void router.replace(
-      { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
+      { pathname: "/shop", query: buildLocalizedQuery(lang) },
       undefined,
       { locale: lang },
     );
-  }, [lang, router, t.engine.confirmExit]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const historyState = { quest1ExitGuard: true };
-    window.history.pushState(historyState, "", window.location.href);
-
-    const handlePopState = () => {
-      if (window.confirm(t.engine.confirmExit)) {
-        clearStoredMobilePageId();
-        void router.replace(
-          { pathname: "/raccoons", query: buildLocalizedQuery(lang, { screen: "quests" }) },
-          undefined,
-          { locale: lang },
-        );
-        return;
-      }
-
-      window.history.pushState(historyState, "", window.location.href);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [lang, router, t.engine.confirmExit]);
+  }, [lang, router]);
 
   const renderPage = () => {
-    if (pageId === "day1") return <Day1Mobile go={setPageId} />;
-    if (pageId === "day2") return <Day2Mobile go={setPageId} />;
-    if (pageId === "day3flight") return <Day3FlightMobile go={setPageId} />;
-    if (pageId === "day3sail") return <Day3SailMobile go={setPageId} />;
-    if (pageId === "day4_takeoff") return <Day4TakeoffMobile go={setPageId} />;
-    if (pageId === "day4_sail") return <Day4StarsNavMobile go={setPageId} />;
-    if (pageId === "day5_spitsbergen") return <Day5SpitsbergenMobile go={setPageId} />;
-    if (pageId === "day5_heat") return <Day5HeatMobile go={setPageId} />;
-    if (pageId === "day5_lab") return <Day5LabMobile go={setPageId} />;
-    if (pageId === "day5_garage") return <Day5GarageMobile go={setPageId} />;
+    if (pageId === "day1") return <Day1Mobile go={go} />;
+    if (pageId === "day2") return <Day2Mobile go={go} />;
+    if (pageId === "day3flight") return <Day3FlightMobile go={go} />;
+    if (pageId === "day3sail") return <Day3SailMobile go={go} />;
+    if (pageId === "day4_takeoff") return <Day4TakeoffMobile go={go} />;
+    if (pageId === "day4_sail") return <Day4StarsNavMobile go={go} />;
+    if (pageId === "day5_spitsbergen") return <Day5SpitsbergenMobile go={go} />;
+    if (pageId === "day5_heat") return <Day5HeatMobile go={go} />;
+    if (pageId === "day5_lab") return <Day5LabMobile go={go} />;
+    if (pageId === "day5_garage") return <Day5GarageMobile go={go} />;
 
     if (pageId === "day6_expedition") {
-      return <Day6ExpeditionMobile go={setPageId} />;
+      return <Day6ExpeditionMobile go={go} />;
     }
 
     if (pageId === "day7_treasure_of_times") {
@@ -1894,7 +1958,7 @@ export default function Quest1MobileEngine() {
           className="quest-mobile-primary"
           onClick={() => {
             const next = MOBILE_PAGE_ORDER[Math.min(MOBILE_PAGE_ORDER.length - 1, pageIndex + 1)];
-            setPageId(next);
+            go(next);
           }}
         >
           {t.engine.nextButton}
@@ -1929,15 +1993,22 @@ export default function Quest1MobileEngine() {
                           : t.day2.question;
 
   return (
-    <QuestMobileShell title={title} onExit={exit} progress={progress}>
-      {renderPage()}
-      {devMode ? (
+    <QuestNarrationScope key={pageId} pageId={pageId} locale={lang}>
+      <QuestMobileShell
+        title={title}
+        onExit={exit}
+        onRestart={restart}
+        restartLabel={t.day5Lab.gameFinal.restartButton}
+        progress={progress}
+      >
+        {renderPage()}
+        {devMode ? (
         <div className="quest-mobile-dev-nav" aria-label="Quest dev navigation">
           <button
             type="button"
             onClick={() => {
               const previous = MOBILE_PAGE_ORDER[Math.max(0, pageIndex - 1)];
-              setPageId(previous);
+              go(previous);
             }}
             disabled={pageIndex <= 0}
           >
@@ -1945,7 +2016,7 @@ export default function Quest1MobileEngine() {
           </button>
           <select
             value={pageId}
-            onChange={(event) => setPageId(event.target.value as PageId)}
+            onChange={(event) => go(event.target.value as PageId)}
           >
             {MOBILE_PAGE_ORDER.map((id, index) => (
               <option key={id} value={id}>
@@ -1957,14 +2028,15 @@ export default function Quest1MobileEngine() {
             type="button"
             onClick={() => {
               const next = MOBILE_PAGE_ORDER[Math.min(MOBILE_PAGE_ORDER.length - 1, pageIndex + 1)];
-              setPageId(next);
+              go(next);
             }}
             disabled={pageIndex >= MOBILE_PAGE_ORDER.length - 1}
           >
             {t.engine.nextButton}
           </button>
         </div>
-      ) : null}
-    </QuestMobileShell>
+        ) : null}
+      </QuestMobileShell>
+    </QuestNarrationScope>
   );
 }

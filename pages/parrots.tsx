@@ -14,6 +14,12 @@ import { buildStudioRoute } from "@/lib/studioRouting";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { fetchParrotMusicStyles } from "@/lib/parrots/client";
 import { getHardcodedParrotStyleRecords, type ParrotStyleRecord } from "@/lib/parrots/catalog";
+import {
+  buildParrotsRouteWithoutStyle,
+  buildParrotStyleRoute,
+  readParrotStyleQuery,
+  resolveParrotStyleSelection,
+} from "@/lib/parrots/styleRouting";
 import TranslationWarning from "@/components/TranslationWarning";
 
 type ExportSlide = {
@@ -90,7 +96,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   const fallbackPresets = useMemo(() => getHardcodedParrotStyleRecords(lang), [lang]);
 
   useEffect(() => {
-    trackEvent("parrot_music_opened", {
+    trackEvent("content_open", {
       section: "parrots",
       content_type: "parrot_music",
       content_id: "parrot-music",
@@ -101,6 +107,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   }, [lang, router.asPath, seo.title]);
   const [styleRecords, setStyleRecords] = useState<ParrotStyleRecord[]>(fallbackPresets);
   const [activeId, setActiveId] = useState(fallbackPresets[0]?.id ?? "lofi");
+  const [settledStylesLang, setSettledStylesLang] = useState<Lang | null>(null);
   const preset = useMemo(
     () => styleRecords.find((item) => item.id === activeId) ?? styleRecords[0] ?? null,
     [activeId, styleRecords],
@@ -122,11 +129,10 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
   const [resolvedSlides, setResolvedSlides] = useState<ParrotSlide[]>(storySlides);
 
   useEffect(() => {
-    setStyleRecords(fallbackPresets);
-  }, [fallbackPresets]);
-
-  useEffect(() => {
     let cancelled = false;
+
+    setStyleRecords(fallbackPresets);
+    setSettledStylesLang(null);
 
     const loadStyles = async () => {
       try {
@@ -136,6 +142,10 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
         }
       } catch (error) {
         console.warn("[parrots] failed to load DB music styles; using fallback", error);
+      } finally {
+        if (!cancelled) {
+          setSettledStylesLang(lang);
+        }
       }
     };
 
@@ -144,17 +154,32 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
     return () => {
       cancelled = true;
     };
-  }, [lang]);
+  }, [fallbackPresets, lang]);
 
   useEffect(() => {
-    if (styleRecords.length === 0) {
+    if (!router.isReady || styleRecords.length === 0) {
       return;
     }
 
-    if (!styleRecords.some((item) => item.id === activeId)) {
-      setActiveId(styleRecords[0].id);
+    const queryStyle = readParrotStyleQuery(router.query.style);
+    const selection = resolveParrotStyleSelection(
+      styleRecords.map((item) => item.id),
+      queryStyle,
+      settledStylesLang === lang,
+    );
+
+    if (selection.styleId && selection.styleId !== activeId) {
+      setActiveId(selection.styleId);
     }
-  }, [activeId, styleRecords]);
+
+    if (selection.shouldNormalizeUrl) {
+      void router.replace(
+        buildParrotsRouteWithoutStyle(lang, router.query),
+        undefined,
+        { locale: lang, shallow: true, scroll: false },
+      );
+    }
+  }, [activeId, lang, router, router.isReady, router.query, settledStylesLang, styleRecords]);
 
   useEffect(() => {
     setMusicConfig({
@@ -240,6 +265,15 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
     );
   }, [lang, router, styleRecords, t.story.fallbackSilent]);
 
+  const handleSelectDesktopStyle = useCallback((styleId: string) => {
+    setActiveId(styleId);
+    void router.replace(
+      buildParrotStyleRoute(lang, styleId, router.query),
+      undefined,
+      { locale: lang, shallow: true, scroll: false },
+    );
+  }, [lang, router]);
+
   if (usesTouchParrotsLayout) {
     return (
       <>
@@ -250,6 +284,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             title={t.page.title}
             subtitle={t.page.subtitle}
             presets={styleRecords.map((item) => ({ ...item, localizedTitle: item.title }))}
+            activeStyleId={activeId}
             onOpenPreset={handleOpenPresetStudio}
             imageForPreset={(id) => imageForPreset(id, styleRecords.find((item) => item.id === id)?.iconUrl)}
           />
@@ -371,8 +406,8 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             {styleRecords.map((p) => (
               <button
                 key={p.id}
-                onClick={() => setActiveId(p.id)}
-                className={`style-preset-btn ${p.id === activeId ? 'is-active' : ''}`}
+                onClick={() => handleSelectDesktopStyle(p.id)}
+                className={`style-preset-btn ${p.id === "singing-dune" ? "is-singing-dune" : ""} ${p.id === activeId ? 'is-active' : ''}`}
                 style={{ backgroundImage: `url(${imageForPreset(p.id, p.iconUrl)})` }}
                 aria-pressed={p.id === activeId}
                 title={p.title}
@@ -461,6 +496,7 @@ export default function ParrotsPage({ lang: providedLang }: { lang?: Lang }) {
             font-family: var(--font-amatic-sc), cursive;
           }
           .style-preset-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.12); }
+          .style-preset-btn.is-singing-dune { background-size: 108%; }
           .style-preset-btn.is-active {
             border: 3px solid #b388ff; /* kawaii lavender */
             box-shadow: 0 0 0 6px rgba(179,136,255,0.18), 0 10px 24px rgba(179,136,255,0.25);

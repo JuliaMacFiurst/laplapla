@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getMapSvg } from "@/utils/storageMaps";
-import seaNames from "@/utils/sea_names.json";
 import { useQuest1I18n } from "../i18n";
 import { sanitizeRichText, sanitizeSvg } from "@/lib/security/sanitize";
-
-function translateSea(id: string, lang: "ru" | "en" | "he") {
-  const entry = (seaNames as any)[id];
-  if (!entry) return id;
-  return entry[lang] ?? entry.ru ?? id;
-}
+import { formatSeaRouteMessage } from "./seaRouteLocalization";
 
 const INITIAL_START = { x: 0.15, y: 0.75 };
 const TARGET_POINT = { x: 0.535, y: 0.075 };
@@ -156,8 +150,9 @@ export default function SeaMap({
       }
     }
 
-    const seas = [...touchedSeas].map(id => translateSea(id, lang)).join(", ");
-    rac.innerHTML = sanitizeRichText(t.day3Sail.mapSpeech.routeThroughSeas.replace("{seas}", seas));
+    rac.innerHTML = sanitizeRichText(
+      formatSeaRouteMessage(t.day3Sail.mapSpeech.routeThroughSeas, touchedSeas, lang),
+    );
   }, [isNearTarget, lang, racTextRef, route, t.day3Sail.mapSpeech.routeThroughSeas, t.day3Sail.mapSpeech.routeTooShort]);
 
   // Универсальная проверка точки маршрута

@@ -1,9 +1,9 @@
 const MAP_SVG_POLICY_VERSION = "2";
 
-export async function getMapSvg(path: string): Promise<string | null> {
+export async function getMapSvg(path: string, source: "supabase" | "r2" = "supabase"): Promise<string | null> {
   try {
     const response = await fetch(
-      `/api/map-svg?path=${encodeURIComponent(path)}&policy=${MAP_SVG_POLICY_VERSION}`,
+      `/api/map-svg?path=${encodeURIComponent(path)}&source=${source}&policy=${MAP_SVG_POLICY_VERSION}`,
     );
     if (!response.ok) {
       console.error("❌ Не удалось загрузить карту:", path, response.status);

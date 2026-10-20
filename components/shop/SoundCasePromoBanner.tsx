@@ -3,17 +3,27 @@ import Link from "next/link";
 
 import { dictionaries, type Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { getProductById } from "@/lib/shop/catalog";
+import { formatPrice } from "@/lib/shop/commerce";
+import { getProductPrice, LAUNCH_OFFER_COPY } from "@/lib/shop/launchOffer";
 import { SOUND_CASE_PROMO_MEDIA } from "@/lib/shop/soundCasePromoMedia";
+import { trackProductInterest } from "@/lib/analytics/commerce";
 
 export function SoundCasePromoBanner({
   lang,
   mobile = false,
+  checkoutAvailable = false,
 }: {
   lang: Lang;
   mobile?: boolean;
+  checkoutAvailable?: boolean;
 }) {
   const copy = dictionaries[lang].home.soundCasePromo;
-  const preorderHref = buildLocalizedPublicPath("/shop/sound-case-001/preorder", lang);
+  const product = getProductById("sound-case-001");
+  if (!product) return null;
+  const offer = getProductPrice(product);
+  const offerCopy = LAUNCH_OFFER_COPY[lang];
+  const checkoutHref = buildLocalizedPublicPath("/shop/sound-case-001/checkout", lang);
 
   return (
     <section
@@ -62,15 +72,23 @@ export function SoundCasePromoBanner({
         </div>
 
         <div className="sound-case-home-promo__offer">
-          <div className="sound-case-home-promo__prices" aria-label={`${copy.regularPrice}: 49 ₪. ${copy.preorderPrice}: 39 ₪.`}>
-            <span>{copy.regularPrice} <s><bdi>49 ₪</bdi></s></span>
-            <strong>{copy.preorderPrice} <bdi>39 ₪</bdi></strong>
+          <div className="sound-case-home-promo__prices">
+            {offer.promotional ? <span>{offerCopy.badge} · {offerCopy.savings} <s><bdi>{formatPrice(offer.regularMinor, product.currency, lang)}</bdi></s></span> : null}
+            <strong><bdi>{formatPrice(offer.currentMinor, product.currency, lang)}</bdi></strong>
           </div>
           <div className="sound-case-home-promo__action-row">
-            <Link className="sound-case-home-promo__cta" href={preorderHref}>
-              {copy.cta}
-            </Link>
-            <span className="sound-case-home-promo__no-payment">{copy.noPayment}</span>
+            {checkoutAvailable ? <Link
+              className="sound-case-home-promo__cta"
+              href={checkoutHref}
+              onClick={() => trackProductInterest({
+                productId: product.id,
+                contentSlug: product.slug,
+                language: lang,
+                entryPoint: "home_promo",
+              })}
+            >
+              {offerCopy.buy}
+            </Link> : <span className="sound-case-home-promo__cta sound-case-home-promo__cta--unavailable" role="status">{offerCopy.comingSoon}</span>}
           </div>
         </div>
       </div>

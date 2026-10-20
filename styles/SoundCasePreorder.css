@@ -138,6 +138,14 @@
 }
 .sound-case-home-promo__cta:focus-visible { outline: 4px solid #f4cf48; outline-offset: 3px; }
 .sound-case-home-promo__cta:active { transform: translateY(4px); box-shadow: 0 3px 0 #3c2948, 0 7px 14px rgba(77, 43, 77, 0.22); }
+.sound-case-home-promo__cta--unavailable,
+.sound-case-home-promo__cta--unavailable:hover,
+.sound-case-home-promo__cta--unavailable:active {
+  background: #655b68;
+  box-shadow: none;
+  cursor: default;
+  transform: none;
+}
 .sound-case-home-promo__no-payment { color: #625764; font-size: 0.78rem; font-weight: 750; }
 .sound-case-home-promo__sticker {
   position: absolute;

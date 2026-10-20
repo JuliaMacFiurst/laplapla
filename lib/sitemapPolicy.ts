@@ -5,6 +5,7 @@ export const CORE_SITEMAP_PAGES = [
   { path: "/capybara", priority: "0.86", changefreq: "weekly" },
   { path: "/books/kladbishenskaya-kniga", priority: "0.78", changefreq: "monthly" },
   { path: "/parrots", priority: "0.84", changefreq: "weekly" },
+  { path: "/quests/sound-case-001/singing-dunes", priority: "0.76", changefreq: "monthly" },
   { path: "/raccoons", priority: "0.84", changefreq: "weekly" },
   { path: "/applab", priority: "0.78", changefreq: "monthly" },
   { path: "/library", priority: "0.88", changefreq: "weekly" },
@@ -13,7 +14,8 @@ export const CORE_SITEMAP_PAGES = [
   { path: "/privacy", priority: "0.42", changefreq: "monthly" },
   { path: "/terms", priority: "0.42", changefreq: "monthly" },
   { path: "/licenses", priority: "0.42", changefreq: "monthly" },
-  { path: "/shop/sound-case-001/preorder", priority: "0.88", changefreq: "weekly" },
+  { path: "/shop", priority: "0.9", changefreq: "daily" },
+  { path: "/shop/sound-case-001", priority: "0.88", changefreq: "weekly" },
 ] as const;
 
 export function sitemapContainsOnlyCanonicalPublicUrls(xml: string) {

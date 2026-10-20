@@ -1,12 +1,16 @@
+import { useEffect } from "react";
 import type { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
 import { PreorderSignupForm } from "@/components/shop/PreorderSignupForm";
 import { dictionaries } from "@/i18n";
+import { trackEvent } from "@/lib/analytics/client";
 import { getCurrentLang } from "@/lib/i18n/routing";
+import { getProductBySlug } from "@/lib/shop/catalog";
 import type { PreorderOfferStatus } from "@/lib/shop/preorders";
 import { SOUND_CASE_PROMO_MEDIA } from "@/lib/shop/soundCasePromoMedia";
+import { isPublicProduct } from "@/lib/shop/types";
 import {
   getSoundCasePreorderOfferStatus,
   SOUND_CASE_PREORDER_OFFER,
@@ -29,7 +33,18 @@ export default function PreorderPage({
 }: PreorderPageProps) {
   const router = useRouter();
   const lang = getCurrentLang(router);
-  const copy = dictionaries[lang].soundCasePreorder;
+  const copy = dictionaries[lang].shop.soundCase.preorder;
+
+  useEffect(() => {
+    trackEvent("preorder_page_view", {
+      section: "shop",
+      content_type: "shop_product",
+      content_id: "sound-case-001",
+      content_slug: slug,
+      offer_code: "sound-case-001-preorder",
+      language: lang,
+    });
+  }, [lang, slug]);
 
   return (
     <>
@@ -83,8 +98,16 @@ export default function PreorderPage({
 
 export const getServerSideProps: GetServerSideProps<PreorderPageProps> = async ({ params }) => {
   const slug = typeof params?.slug === "string" ? params.slug : "";
-  if (slug !== SOUND_CASE_PREORDER_OFFER.productId) {
+  const product = getProductBySlug(slug);
+  if (
+    slug !== SOUND_CASE_PREORDER_OFFER.productId ||
+    !product ||
+    !isPublicProduct(product)
+  ) {
     return { notFound: true };
+  }
+  if (product.status !== "coming-soon") {
+    return { redirect: { destination: `/shop/${slug}`, permanent: false } };
   }
 
   let initialOfferStatus: PreorderOfferStatus = "closed";
@@ -98,9 +121,9 @@ export const getServerSideProps: GetServerSideProps<PreorderPageProps> = async (
     props: {
       slug,
       initialOfferStatus,
-      canonicalPriceMinor: SOUND_CASE_PREORDER_OFFER.canonicalPriceMinor,
+      canonicalPriceMinor: product.price,
       preorderPriceMinor: SOUND_CASE_PREORDER_OFFER.priceMinor,
-      currency: SOUND_CASE_PREORDER_OFFER.currency,
+      currency: product.currency,
     },
   };
 };

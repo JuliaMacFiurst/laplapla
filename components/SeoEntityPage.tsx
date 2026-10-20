@@ -273,9 +273,8 @@ export default function SeoEntityPage({
   const aiAssisted = renderedStories.some((story) => story.publication?.aiAssisted === true);
 
   useEffect(() => {
-    const eventName = entityType === "country" ? "country_opened" : "content_open";
     trackEvent({
-      eventName,
+      eventName: "content_open",
       entityType: "map",
       entityId: `${entityType}:${slug}`,
       entityTitle: title,

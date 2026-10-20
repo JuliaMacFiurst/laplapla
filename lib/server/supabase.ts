@@ -9,7 +9,10 @@ const getServerAnonKey = () =>
 const getServerServiceRoleKey = () =>
   process.env["SUPABASE_SERVICE_ROLE_KEY"] || "";
 
-export function createServerSupabaseClient(options?: { serviceRole?: boolean }) {
+export function createServerSupabaseClient(options?: {
+  serviceRole?: boolean;
+  accessToken?: string;
+}) {
   const supabaseUrl = getServerSupabaseUrl();
   const key = options?.serviceRole ? getServerServiceRoleKey() : getServerAnonKey();
 
@@ -17,5 +20,24 @@ export function createServerSupabaseClient(options?: { serviceRole?: boolean }) 
     throw new Error("Supabase server env is not configured");
   }
 
-  return createClient(supabaseUrl, key);
+  if (options?.serviceRole && options.accessToken) {
+    throw new Error("A user access token cannot be combined with the service role");
+  }
+
+  return createClient(supabaseUrl, key, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
+    ...(options?.accessToken
+      ? {
+          global: {
+            headers: {
+              Authorization: `Bearer ${options.accessToken}`,
+            },
+          },
+        }
+      : {}),
+  });
 }

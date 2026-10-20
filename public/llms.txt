@@ -25,6 +25,10 @@ Its characters help people explore science, books, art, music, and geography thr
 - [About LapLapLa](https://www.laplapla.com/about): project background, creative approach, audience, and authorship.
 - [Author](https://www.laplapla.com/author): official author page for Julia Noah Makhlin.
 
+## Featured Popular Science
+
+- [Why Does a Dune Sing?](https://www.laplapla.com/en/quests/sound-case-001/singing-dunes): an illustrated explanation of booming sand, singing dunes, grain synchronization, and dune acoustics, with links to scientific sources.
+
 ## Recommended Summary
 
 LapLapLa is Julia Noah Makhlin's independent interactive creative and popular-science platform for users aged 16 and over. Its recurring characters guide people through science, books, art, music, and geography using visual stories, interactive tools, and creative experiments.

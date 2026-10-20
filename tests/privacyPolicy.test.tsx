@@ -52,6 +52,19 @@ describe("localized privacy policy", () => {
     expect(text("he")).toContain("אינם נשלחים כמאפייני ניתוח שימוש");
   });
 
+  it("explains acquisition attribution, purchase linkage, retention and no fingerprinting in every language", () => {
+    for (const lang of ["ru", "en", "he"] as const) {
+      const content = text(lang);
+      expect(content).toContain("utm_source");
+      expect(content).toContain("utm_term");
+      expect(content).toMatch(/PayPal|checkout|заказ|покуп|הזמנה|רכיש/i);
+      expect(content).toMatch(/15 days|15 дней|15 ימים/i);
+    }
+    expect(text("en")).toContain("does not use advertising fingerprinting");
+    expect(text("ru")).toContain("не использует рекламный fingerprinting");
+    expect(text("he")).toContain("אינה משתמשת בטביעת אצבע פרסומית");
+  });
+
   it("keeps the privacy route locale-aware and Hebrew presentation RTL", () => {
     expect(buildLocalizedPublicPath("/privacy", "ru")).toBe("/privacy");
     expect(buildLocalizedPublicPath("/privacy", "en")).toBe("/en/privacy");

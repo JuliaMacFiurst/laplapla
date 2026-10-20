@@ -6,6 +6,7 @@ import { buildLocalizedQuery, getCurrentLang } from "@/lib/i18n/routing";
 import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
+import { getDay7VideoEmbedUrl } from "../videoEmbeds";
 
 export default function Day7TreasureOfTimes() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function Day7TreasureOfTimes() {
         <div className="youtube-wrapper">
           <iframe
             className="quest-video"
-            src="https://www.youtube.com/embed/sE2jxOVG8kU"
+            src={getDay7VideoEmbedUrl(lang)}
             title={t.day7.videoTitle}
             allow="autoplay; encrypted-media; fullscreen"
             allowFullScreen
@@ -46,7 +47,12 @@ export default function Day7TreasureOfTimes() {
       )}
 
       {/* Текстовые плитки */}
-      <QuestTextBlocks blocks={t.day7.blocks} style={{ marginTop: "24px" }} />
+      <QuestTextBlocks
+        blocks={t.day7.blocks}
+        narrationKey="day7-ending"
+        narrationBlockIds={["svalbard.day07.ending.01"]}
+        style={{ marginTop: "24px" }}
+      />
 
         <footer className="quest-footer">
         <div
@@ -57,7 +63,7 @@ export default function Day7TreasureOfTimes() {
             className="ice-button"
             onClick={() => {
               router.push(
-                { pathname: "/raccoons", query: buildLocalizedQuery(lang) },
+                { pathname: "/shop", query: buildLocalizedQuery(lang) },
                 undefined,
                 { locale: lang },
               );

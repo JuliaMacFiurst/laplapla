@@ -128,7 +128,7 @@ export const getRequestLang = (
 
 export const buildLocalizedQuery = (
   _lang: Lang,
-  query?: Record<string, string | number | boolean | undefined>,
+  query?: Record<string, string | string[] | number | boolean | undefined>,
 ) => {
   const nextQuery = { ...(query ?? {}) };
   delete nextQuery.lang;

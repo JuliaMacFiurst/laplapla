@@ -26,6 +26,11 @@ import '../styles/BedtimeStories.css';
 import '../styles/AppLab.css';
 import '../styles/LoadingSpinner.css';
 import '../styles/SoundCasePreorder.css';
+import '../styles/Shop.css';
+import '../styles/Support.css';
+import '../styles/SoundCaseQuest.css';
+import '../styles/WakeTheDune.css';
+import '../styles/SingingDunesArticle.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -40,6 +45,8 @@ import PWAInstallBanner from "@/components/PWA/PWAInstallBanner";
 import PWAAppShell from "@/components/PWA/PWAAppShell";
 import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { getActiveContentExitProperties, trackEvent, trackSessionStart } from "@/lib/analytics/client";
+import { analyticsNavigationKey, isNewAnalyticsNavigation } from "@/lib/analytics/pageView";
+import { shopLegalDisclosure, shopPolicyPaths } from "@/lib/legal/shopPolicies";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -128,6 +135,7 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
   const router = useRouter();
   const activeStartedAtRef = useRef<number | null>(null);
   const activeDurationMsRef = useRef(0);
+  const lastPageViewKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!router.isReady) {
@@ -135,6 +143,9 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
     }
 
     const currentPage = router.asPath;
+    const navigationKey = analyticsNavigationKey(currentPage, lang);
+    const shouldTrackPageView = isNewAnalyticsNavigation(lastPageViewKeyRef.current, navigationKey);
+    lastPageViewKeyRef.current = navigationKey;
     const section = resolveAnalyticsSection(router.pathname);
     const readableTitle = document.title || router.pathname;
     activeDurationMsRef.current = 0;
@@ -145,24 +156,26 @@ function AnalyticsPageViewTracker({ lang }: { lang: Lang }) {
       language: lang,
       current_page: currentPage,
     });
-    trackEvent({
-      eventName: "page_view",
-      entityType: "page",
-      entityId: router.pathname,
-      entityTitle: readableTitle,
-      page: currentPage,
-      lang,
-      properties: {
-        section,
-        content_type: "page",
-        content_id: router.pathname,
-        content_title: readableTitle,
-        page_title: document.title || readableTitle,
-        readable_title: readableTitle,
-        language: lang,
-        current_page: currentPage,
-      },
-    });
+    if (shouldTrackPageView) {
+      trackEvent({
+        eventName: "page_view",
+        entityType: "page",
+        entityId: router.pathname,
+        entityTitle: readableTitle,
+        page: currentPage,
+        lang,
+        properties: {
+          section,
+          content_type: "page",
+          content_id: router.pathname,
+          content_title: readableTitle,
+          page_title: document.title || readableTitle,
+          readable_title: readableTitle,
+          language: lang,
+          current_page: currentPage,
+        },
+      });
+    }
 
     const startTimer = window.setTimeout(() => {
       trackEvent("content_start", {
@@ -285,6 +298,7 @@ function getHydrationStableLang(
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
+  const isWakeTheDunePage = router.pathname === "/mini-games/wake-the-dune";
   const isCatsPage = router.pathname.startsWith("/cats");
   const isExportPage = router.pathname === "/cats/export";
   const isInstallPage = router.pathname === "/install";
@@ -443,10 +457,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         </>
       )}
 
-      <div className={`app-layout${isCapybaraPage ? " app-layout-capybara" : ""}`}>
-        {!isExportPage && <TopBar lang={lang} />}
+      <div className={`app-layout${isCapybaraPage ? " app-layout-capybara" : ""}${isWakeTheDunePage ? " app-layout--wake-dune" : ""}`}>
+        {!isExportPage && !isWakeTheDunePage && <TopBar lang={lang} />}
         <Component {...pageProps} lang={lang} />
-        <PWAInstallBanner disabled={isQuestPage || isExportPage || isInstallPage} />
+        <PWAInstallBanner disabled={isQuestPage || isExportPage || isInstallPage || isWakeTheDunePage} />
 
         {showHiddenAdminLogout ? (
           <button
@@ -473,7 +487,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           </button>
         ) : null}
 
-        {!isQuestPage && !isExportPage && (
+        {!isQuestPage && !isExportPage && !isWakeTheDunePage && (
           <div className="footer-stack">
             <footer className="unified-footer">
               <div className="footer-left">
@@ -505,6 +519,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                   >
                     {t.footer.terms}
                   </a>
+                  <a href={buildLocalizedPublicPath(shopPolicyPaths.sale, lang)}>{shopLegalDisclosure[lang].sale}</a>
+                  <a href={buildLocalizedPublicPath(shopPolicyPaths.refund, lang)}>{shopLegalDisclosure[lang].refund}</a>
+                  <a href={buildLocalizedPublicPath(shopPolicyPaths.printable, lang)}>{shopLegalDisclosure[lang].printable}</a>
                   <a
                     href={buildLocalizedPublicPath("/privacy", lang)}
                     onClick={() =>
@@ -529,6 +546,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                   >
                     {t.footer.licenses}
                   </a>
+                  <a href={buildLocalizedPublicPath("/support", lang)}>{t.footer.support}</a>
                   <a
                     href={buildLocalizedPublicPath("/author", lang)}
                     onClick={() =>
