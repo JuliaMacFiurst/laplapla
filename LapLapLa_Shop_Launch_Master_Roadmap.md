@@ -1238,6 +1238,15 @@ Status: LOCAL IMPLEMENTATION / PRODUCTION NOT DEPLOYED / PUBLIC SALES CLOSED
 - Storefront implementation and runbook are in an isolated clean clone for verification. Commerce Admin has five local release commits ahead of origin/main; its Production Vercel project lacks PayPal credential names and Commerce refund flags. Neither repository has been pushed or deployed for this phase.
 - First real Live purchase, original PDF delivery, customer inbox receipt and public sales remain unchecked.
 
+## 2026-10-20 — Controlled Live release verification (follow-up)
+Phase: First controlled Live purchase
+Status: RELEASE VALIDATED LOCALLY / PRODUCTION DEPLOYMENT PENDING / PUBLIC SALES CLOSED
+- Storefront commit `cbf41e7e6dd5cb5fd7c7d7d192ed701b6268d0f3` remains local in the isolated release clone. TypeScript, full ESLint, Vitest 1444/1444, Production build and whitespace checks passed. The original staging checkout and its local diagnostic files remain untouched.
+- Supabase project `wazoncnmsxbjzvbjenpw` was checked read-only: 31 migration versions registered, one confirmed designated Auth user, one refunded Sound Case entitlement and no active entitlement or unfinished Live order. The most recent 39 ILS purchase is Sandbox with a completed refund. One current issuer profile, one active Live receipt series, one private `receipt-pdfs` bucket and zero pending original deliveries were found.
+- The four required Admin variable names are now present in the `upload-lessons` Vercel Production scope. Their hidden values were not opened. Storefront private test variables remain absent, so the private mode stays off. The owner confirmed the public checkout and global original-email flags remain false.
+- Admin's five Commerce/Analytics commits remain local. In a clean validation copy, Commerce/Analytics tests 63/63, TypeScript, scoped ESLint and Production build passed. The full Admin suite is 370/378: the same eight Content Factory cases also fail on the unchanged `origin/main` baseline (which is 320/329). The affected code and tests are outside the Commerce release diff. Full ESLint has the same 95 errors in the same 31 files on both heads, with no overlap with the 23 release files. These are documented baseline failures; no tests or rules were disabled.
+- Next: publish both validated applications, verify both Vercel deployments and read-only smoke tests. First Live purchase and receipt delivery remain pending; public checkout and global original email remain disabled.
+
 ---
 
 # 7. Instructions for every future Codex prompt
