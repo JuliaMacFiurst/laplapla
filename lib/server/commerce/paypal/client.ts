@@ -240,6 +240,7 @@ export function createPayPalClient(options?: {
               experience_context: {
                 return_url: input.returnUrl,
                 cancel_url: input.cancelUrl,
+                shipping_preference: "NO_SHIPPING",
               },
             },
           },

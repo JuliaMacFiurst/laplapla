@@ -48,6 +48,9 @@ describe("server-side PayPal checkout gate", () => {
     vi.stubEnv("SHOP_LIVE_CHECKOUT_ENABLED", "true");
     const result = await getServerSideProps(context);
     expect(result).toEqual({ props: { slug: "sound-case-001", environment: "live" } });
+    const config = getPayPalServerConfig();
+    expect(isPayPalCheckoutAvailableForCustomer(config, { id: "22222222-2222-4222-8222-222222222222", email_confirmed_at: "2026-10-01" })).toBe(true);
+    expect(isPayPalCheckoutAvailableForCustomer(config, { id: "33333333-3333-4333-8333-333333333333", email_confirmed_at: null })).toBe(true);
     expect(JSON.stringify(result)).not.toContain("server-only-test-secret");
     expect(JSON.stringify(result)).not.toContain("server-only-test-resend-key");
   });

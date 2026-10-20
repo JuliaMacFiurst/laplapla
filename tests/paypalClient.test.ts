@@ -180,6 +180,7 @@ describe("typed PayPal Orders v2 client", () => {
       payment_source: { paypal: { experience_context: {
         return_url: "http://localhost:3000/en/shop/sound-case-001/checkout",
         cancel_url: "http://localhost:3000/en/shop/sound-case-001/checkout?paypal_cancel=1",
+        shipping_preference: "NO_SHIPPING",
       } } },
       purchase_units: [{
         reference_id: "11111111-1111-4111-8111-111111111111",
