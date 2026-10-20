@@ -1247,6 +1247,13 @@ Status: RELEASE VALIDATED LOCALLY / PRODUCTION DEPLOYMENT PENDING / PUBLIC SALES
 - Admin's five Commerce/Analytics commits remain local. In a clean validation copy, Commerce/Analytics tests 63/63, TypeScript, scoped ESLint and Production build passed. The full Admin suite is 370/378: the same eight Content Factory cases also fail on the unchanged `origin/main` baseline (which is 320/329). The affected code and tests are outside the Commerce release diff. Full ESLint has the same 95 errors in the same 31 files on both heads, with no overlap with the 23 release files. These are documented baseline failures; no tests or rules were disabled.
 - Next: publish both validated applications, verify both Vercel deployments and read-only smoke tests. First Live purchase and receipt delivery remain pending; public checkout and global original email remain disabled.
 
+## 2026-10-20 — Controlled Live preparation deployed
+Phase: First controlled Live purchase
+Status: STOREFRONT AND COMMERCE ADMIN DEPLOYED / PRIVATE TEST OFF / PUBLIC SALES CLOSED
+- Storefront release code `cbf41e7e6dd5cb5fd7c7d7d192ed701b6268d0f3` and verification roadmap commit `d5ee9873a27efbf83d60f2f4377dd07944b6d53c` were pushed to `main`. Vercel Production deployment `FK43rTw55oMWwEWGLh1wz5yYrReq` reached Ready. Admin's five Commerce/Analytics commits through `0896517e9d5c7578ec4f39ad8c1184e4892a44f6` were pushed to `main`; Production deployment `GZtrsYPduFT4HV8Nf4W24BbjRNXS` reached Ready.
+- Read-only smoke: Shop, product, library and RU/EN/HE returned 200; the legacy bedtime-stories route redirected to `/library`; visible product CTA was Coming soon and direct checkout returned 404. Hebrew remained RTL. Fresh Google sign-in loaded the customer purchases after an old browser session returned 401. Admin Commerce loaded orders and Live/Sandbox filters; Commerce Analytics loaded both environments. Unauthenticated Admin API returned 401. Both OAuth redirects used project `wazoncnmsxbjzvbjenpw`.
+- Public Live checkout and global original email delivery remain disabled by owner-confirmed Production flags. Private Live test variables have not been enabled. No payment, refund, email, migration or Supabase write was performed. Approved original receipt PDF format remains unchanged. The first Live purchase and original delivery are pending an explicit private configuration step and owner-run transaction.
+
 ---
 
 # 7. Instructions for every future Codex prompt
