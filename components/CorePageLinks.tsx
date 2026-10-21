@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { Lang } from "@/i18n";
 import { buildLocalizedPublicPath } from "@/lib/i18n/routing";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 
 export type CorePageKey = "home" | "cats" | "dog" | "book" | "parrots" | "raccoons" | "shop";
 
@@ -58,8 +59,9 @@ type CorePageLinksProps = {
 };
 
 export default function CorePageLinks({ current, lang, related }: CorePageLinksProps) {
+  const originMode = useOriginMode();
   const labels = CORE_PAGE_LABELS[lang];
-  const uniqueKeys = Array.from(new Set(["home", ...related])).filter((key) => key !== current) as CorePageKey[];
+  const uniqueKeys = Array.from(new Set(["home", ...related])).filter((key) => key !== current && (key !== "shop" || originMode === "WEB")) as CorePageKey[];
 
   return (
     <nav

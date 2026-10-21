@@ -1,7 +1,7 @@
 {
   "appId": "laplapla",
   "appName": "LapLapLa",
-  "cacheVersion": "2026.08.03.3",
+  "cacheVersion": "2026.10.21.android-origin.1",
   "logoPath": "/laplapla-logo.webp",
   "splashPath": "/pwa/splash/generated/web/app-splash-logo-640.webp",
   "backgroundColor": "#fff8ef",

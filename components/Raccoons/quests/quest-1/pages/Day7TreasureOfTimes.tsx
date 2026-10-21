@@ -7,9 +7,11 @@ import { buildSupabaseStorageUrl } from "@/lib/publicAssetUrls";
 import { useQuest1I18n } from "../i18n";
 import QuestTextBlocks from "../QuestTextBlocks";
 import { getDay7VideoEmbedUrl } from "../videoEmbeds";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 
 export default function Day7TreasureOfTimes() {
   const router = useRouter();
+  const originMode = useOriginMode();
   const lang = getCurrentLang(router);
   const { t } = useQuest1I18n();
 
@@ -63,7 +65,7 @@ export default function Day7TreasureOfTimes() {
             className="ice-button"
             onClick={() => {
               router.push(
-                { pathname: "/shop", query: buildLocalizedQuery(lang) },
+                { pathname: originMode === "WEB" ? "/shop" : "/raccoons", query: buildLocalizedQuery(lang) },
                 undefined,
                 { locale: lang },
               );

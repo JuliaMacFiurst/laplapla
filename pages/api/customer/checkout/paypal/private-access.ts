@@ -1,3 +1,4 @@
+import { requireWebCommerceOrigin } from "@/lib/server/commerce/originGuard";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { resolveCustomerAccess } from "@/lib/server/auth/customerAccess";
 import { getPayPalServerConfig } from "@/lib/server/commerce/paypal/config";
@@ -6,6 +7,7 @@ import { enforceSameOrigin } from "@/lib/server/security/requestOrigin";
 import { withApiHandler } from "@/utils/apiHandler";
 
 export async function privateLiveAccessHandler(req: NextApiRequest, res: NextApiResponse) {
+  if (!requireWebCommerceOrigin(req, res)) return;
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   if (!enforceSameOrigin(req, res)) return;
   const access = await resolveCustomerAccess(req);

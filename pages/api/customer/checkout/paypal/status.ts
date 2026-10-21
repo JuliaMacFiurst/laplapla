@@ -1,3 +1,4 @@
+import { requireWebCommerceOrigin } from "@/lib/server/commerce/originGuard";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { resolveCustomerAccess } from "@/lib/server/auth/customerAccess";
 import { getPurchaseSuccessState, type PurchaseSuccessState } from "@/lib/server/commerce/purchaseSuccess";
@@ -9,6 +10,7 @@ export type PurchaseStatusResponse =
   | { ok: false; code: "invalid_request" | "authentication_required" | "order_not_found" | "verification_failed" };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<PurchaseStatusResponse>) {
+  if (!requireWebCommerceOrigin(req, res)) return;
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");

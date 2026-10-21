@@ -1,3 +1,4 @@
+import { requireWebCommerceOrigin } from "@/lib/server/commerce/originGuard";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { resolveCustomerAccess } from "@/lib/server/auth/customerAccess";
 import { findResumablePayPalCheckoutForCustomer } from "@/lib/server/commerce/paypal/orders";
@@ -25,6 +26,7 @@ export async function paypalResumeHandler(
   req: NextApiRequest,
   res: NextApiResponse<PayPalResumeResponse>,
 ) {
+  if (!requireWebCommerceOrigin(req, res)) return;
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   if (!enforceSameOrigin(req, res)) return;
   if (!hasAllowedBody(req.body)) {

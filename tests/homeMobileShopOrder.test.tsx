@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 import Home from "@/pages/Home";
+import { OriginModeContext } from "@/lib/runtime/OriginModeContext";
 import { dictionaries, type Lang } from "@/i18n";
 
 const viewport = vi.hoisted(() => ({ mobile: false }));
@@ -14,10 +15,18 @@ vi.mock("@/components/SEO", () => ({ default: () => null }));
 const sectionIndex = (html: string, className: string) => html.indexOf(`class="${className}`);
 
 describe("home section order", () => {
+  it.each(["ru", "en", "he"] as Lang[])("does not render commercial home links on the Android origin in %s", (lang) => {
+    viewport.mobile = true;
+    const html = renderToStaticMarkup(<OriginModeContext.Provider value="ANDROID_APP"><Home lang={lang} retention={null} /></OriginModeContext.Provider>);
+    expect(html).not.toContain('class="sound-case-home-promo"');
+    expect(html).not.toContain('class="home-shop-spotlight"');
+    expect(html).not.toContain('href="/shop"');
+    expect(html).not.toContain(`href="/${lang}/shop"`);
+  });
   for (const lang of ["ru", "en", "he"] as Lang[]) {
     it(`places the one shop section after the preorder banner on ${lang} mobile`, () => {
       viewport.mobile = true;
-      const html = renderToStaticMarkup(<Home lang={lang} retention={null} />);
+      const html = renderToStaticMarkup(<OriginModeContext.Provider value="WEB"><Home lang={lang} retention={null} /></OriginModeContext.Provider>);
       const banner = sectionIndex(html, "sound-case-home-promo");
       const shop = sectionIndex(html, "home-shop-spotlight");
       const latest = sectionIndex(html, "home-retention-section");
@@ -40,7 +49,7 @@ describe("home section order", () => {
 
     it(`preserves the desktop banner, cards, latest, shop order on ${lang}`, () => {
       viewport.mobile = false;
-      const html = renderToStaticMarkup(<Home lang={lang} retention={null} />);
+      const html = renderToStaticMarkup(<OriginModeContext.Provider value="WEB"><Home lang={lang} retention={null} /></OriginModeContext.Provider>);
       const banner = sectionIndex(html, "sound-case-home-promo");
       const cards = sectionIndex(html, "grid");
       const latest = sectionIndex(html, "home-retention-section");

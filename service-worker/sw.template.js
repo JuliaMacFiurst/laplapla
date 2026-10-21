@@ -51,6 +51,8 @@ function isValidPrecacheResponse(url, response) {
 
 function isPrivatePath(pathname) {
   return (
+    (self.location.hostname === "app.laplapla.com" && /^(\/(ru|en|he))?\/shop(\/|$)/.test(pathname)) ||
+    (self.location.hostname === "app.laplapla.com" && pathname.startsWith("/_next/data/") && pathname.includes("/shop/")) ||
     pathname.startsWith("/api/") ||
     pathname === "/api" ||
     pathname.startsWith("/admin") ||

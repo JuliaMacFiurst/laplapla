@@ -1,3 +1,4 @@
+import { requireWebCommerceOrigin } from "@/lib/server/commerce/originGuard";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { enforceSameOrigin } from "@/lib/server/security/requestOrigin";
 import {
@@ -23,6 +24,7 @@ export async function preorderSignupHandler(
   req: NextApiRequest,
   res: NextApiResponse<PreorderSignupResponse>,
 ) {
+  if (!requireWebCommerceOrigin(req, res)) return;
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
 
   if (!enforceSameOrigin(req, res)) return;

@@ -1,12 +1,14 @@
+import { requireWebCommerceOrigin } from "@/lib/server/commerce/originGuard";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getPayPalPublicConfig } from "@/lib/server/commerce/paypal/config";
 import type { PayPalPublicConfigResponse } from "@/lib/shop/paypalCheckout";
 import { withApiHandler } from "@/utils/apiHandler";
 
 export async function paypalConfigHandler(
-  _req: NextApiRequest,
+  req: NextApiRequest,
   res: NextApiResponse<PayPalPublicConfigResponse>,
 ) {
+  if (!requireWebCommerceOrigin(req, res)) return;
   try {
     res.status(200).json({ ok: true, ...getPayPalPublicConfig() });
   } catch {

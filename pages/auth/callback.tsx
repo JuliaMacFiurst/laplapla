@@ -5,6 +5,7 @@ import { consumeCustomerAuthDestination } from "@/lib/customer/authRouting";
 import { customerCopy } from "@/lib/customer/copy";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { supabase } from "@/lib/supabase";
+import { browserOriginMode } from "@/lib/runtime/originMode";
 
 export default function CustomerAuthCallbackPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function CustomerAuthCallbackPage() {
       window.localStorage,
       router.query.next,
       lang,
+      browserOriginMode(),
     );
 
     void supabase.auth.initialize().then(async ({ error: initializeError }) => {

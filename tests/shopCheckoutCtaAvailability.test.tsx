@@ -83,6 +83,17 @@ describe("public Shop checkout availability", () => {
     }
   });
 
+  it("passes a trusted homepage origin mode without a global App getInitialProps", async () => {
+    const context = (host: string, forwardedHost?: string) => ({
+      locale: "en",
+      req: { headers: { host, ...(forwardedHost ? { "x-forwarded-host": forwardedHost } : {}) } },
+    } as unknown as GetServerSidePropsContext);
+    expect(await homeProps(context("www.laplapla.com", "www.laplapla.com"))).toMatchObject({ props: { originMode: "WEB" } });
+    expect(await homeProps(context("app.laplapla.com", "app.laplapla.com"))).toMatchObject({ props: { originMode: "ANDROID_APP" } });
+    expect(await homeProps(context("www.laplapla.com", "app.laplapla.com"))).toMatchObject({ props: { originMode: "UNKNOWN" } });
+    expect(await homeProps(context("preview.vercel.app"))).toMatchObject({ props: { originMode: "UNKNOWN" } });
+  });
+
   it("keeps Sandbox available independently of the Live flag and fails closed without configuration", () => {
     configureLive(false);
     vi.stubEnv("PAYPAL_ENVIRONMENT", "sandbox");

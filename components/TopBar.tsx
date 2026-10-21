@@ -10,6 +10,7 @@ import Link from "next/link";
 import { isDarkSoundCaseRoute } from "@/lib/quests/soundCaseRouting";
 import { useCustomerSession } from "@/hooks/useCustomerSession";
 import { getCustomerNavigationLabel } from "@/lib/customer/authUi";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 
 type TopBarProps = {
   lang: Lang;
@@ -17,6 +18,7 @@ type TopBarProps = {
 
 export default function TopBar({ lang }: TopBarProps) {
   const router = useRouter();
+  const originMode = useOriginMode();
   const isHome = router.pathname === "/";
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
   const isUnknownSoundScene =
@@ -158,7 +160,7 @@ export default function TopBar({ lang }: TopBarProps) {
             </span>
           </Link>
 
-          <Link
+          {originMode === "WEB" ? <Link
             href={buildLocalizedPublicPath("/shop", lang)}
             className="top-bar-cart"
             aria-label={dictionaries[lang].shop.navTitle}
@@ -176,7 +178,7 @@ export default function TopBar({ lang }: TopBarProps) {
             }}
           >
             <span aria-hidden="true" style={{ fontSize: "1.1rem" }}>🛒</span>
-          </Link>
+          </Link> : null}
           {isUnknownSoundScene ? (
             <button
               className="top-bar-quest-help"

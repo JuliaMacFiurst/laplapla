@@ -49,7 +49,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       ] },
       { h: "9. Service Providers", paragraphs: [
         "LapLapLa uses Supabase for authentication, customer and product-access data, saved personalization, preorder registrations, analytics, public content storage, and other database functions; Sentry for diagnostics; Vercel for hosting and server logs; and, when enabled, Upstash for distributed request limiting. Google provides identity authentication when you choose Google sign-in.",
-        "LapLapLa has a PayPal checkout integration currently limited to Sandbox test payments. When checkout is enabled, PayPal processes the payment; LapLapLa stores order and transaction references, not card details. Live payments are not currently enabled.",
+        "The web store at www.laplapla.com uses PayPal Live to process digital-product payments. LapLapLa stores order and transaction references, not card details. The Android app at app.laplapla.com does not offer purchases or payment links; customers can access digital materials already available to their accounts.",
       ] },
       { h: "10. Age Requirement", paragraphs: [
         "The main LapLapLa service is intended for users aged 16 and over and is not intended for users under 16.",
@@ -108,7 +108,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       ] },
       { h: "9. ספקי שירות", paragraphs: [
         "LapLapLa משתמשת ב‑Supabase לצורכי אימות, נתוני לקוחות וגישה למוצרים, התאמה אישית שנשמרה, הרשמות מוקדמות, ניתוח שימוש, אחסון תוכן ציבורי ופונקציות מסד נתונים נוספות; ב‑Sentry לצורכי אבחון; ב‑Vercel לצורכי אירוח ויומני שרת; וכאשר השירות מופעל, ב‑Upstash להגבלת בקשות מבוזרת. Google מספקת אימות זהות כאשר בוחרים בכניסה באמצעות Google.",
-        "ל־LapLapLa יש שילוב תשלום עם PayPal, המוגבל כעת לתשלומי בדיקה בסביבת Sandbox. כשהתשלום מופעל, PayPal מעבדת אותו; LapLapLa שומרת פרטי הזמנה ואסמכתאות עסקה, ולא פרטי כרטיס. תשלומים בסביבת Live עדיין אינם פעילים.",
+        "החנות באתר www.laplapla.com משתמשת ב־PayPal Live לתשלום על מוצרים דיגיטליים. LapLapLa שומרת פרטי הזמנה ואסמכתאות עסקה, ולא פרטי כרטיס. האפליקציה ב־app.laplapla.com אינה מציעה רכישות או קישורי תשלום; ניתן לגשת בה לחומרים דיגיטליים שכבר זמינים בחשבון.",
       ] },
       { h: "10. דרישת גיל", paragraphs: [
         "השירות הראשי של LapLapLa מיועד למשתמשים בני 16 ומעלה ואינו מיועד למשתמשים מתחת לגיל 16.",
@@ -167,7 +167,7 @@ export const PRIVACY_CONTENT: Record<Lang, PrivacyContent> = {
       ] },
       { h: "9. Поставщики услуг", paragraphs: [
         "LapLapLa использует Supabase для аутентификации, данных пользователей и доступа к продуктам, сохранённой персонализации, регистраций предзаказа, аналитики, хранения публичного контента и других функций базы данных; Sentry — для диагностики; Vercel — для хостинга и серверных журналов; Upstash, когда он включён, — для распределённого ограничения запросов. Google предоставляет проверку личности при выборе входа через Google.",
-        "У LapLapLa есть интеграция оплаты через PayPal, сейчас ограниченная тестовыми платежами Sandbox. Когда checkout включён, PayPal обрабатывает платёж; LapLapLa хранит данные заказа и ссылки на транзакцию, но не данные карты. Платежи в режиме Live пока не включены.",
+        "Веб-магазин на www.laplapla.com использует PayPal Live для оплаты цифровых продуктов. LapLapLa хранит данные заказа и ссылки на транзакцию, но не данные карты. Приложение на app.laplapla.com не предлагает покупки или ссылки на оплату; пользователи могут получать доступ к цифровым материалам, уже доступным их аккаунтам.",
       ] },
       { h: "10. Возрастные требования", paragraphs: [
         "Основной сервис LapLapLa предназначен для пользователей 16 лет и старше и не предназначен для пользователей младше 16 лет.",

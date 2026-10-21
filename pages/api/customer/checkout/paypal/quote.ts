@@ -1,3 +1,4 @@
+import { requireWebCommerceOrigin } from "@/lib/server/commerce/originGuard";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { resolveCustomerAccess } from "@/lib/server/auth/customerAccess";
 import { resolveProductPrice } from "@/lib/server/commerce/resolveProductPrice";
@@ -19,6 +20,7 @@ function hasAllowedBody(value: unknown): value is { productId: string } {
 }
 
 export async function paypalQuoteHandler(req: NextApiRequest, res: NextApiResponse<PayPalQuoteResponse>) {
+  if (!requireWebCommerceOrigin(req, res)) return;
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   if (!enforceSameOrigin(req, res)) return;
   if (!hasAllowedBody(req.body)) {

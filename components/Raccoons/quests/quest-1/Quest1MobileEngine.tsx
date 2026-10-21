@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/router";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { useQuest1I18n } from "./i18n";
 import type { PageId } from "./QuestEngine";
@@ -1810,6 +1811,7 @@ function Day6ExpeditionMobile({ go }: MobilePageProps) {
 
 function Day7TreasureMobile() {
   const router = useRouter();
+  const originMode = useOriginMode();
   const { lang, t } = useQuest1I18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [celebrating, setCelebrating] = useState(false);
@@ -1818,11 +1820,11 @@ function Day7TreasureMobile() {
 
   const goToMap = useCallback(() => {
     void router.push(
-      { pathname: "/shop", query: buildLocalizedQuery(lang) },
+      { pathname: originMode === "WEB" ? "/shop" : "/raccoons", query: buildLocalizedQuery(lang) },
       undefined,
       { locale: lang },
     );
-  }, [lang, router]);
+  }, [lang, router, originMode]);
 
   const finishQuest = () => {
     if (celebrating) return;
@@ -1903,6 +1905,7 @@ function Day7TreasureMobile() {
 
 export default function Quest1MobileEngine() {
   const router = useRouter();
+  const originMode = useOriginMode();
   const { lang, t } = useQuest1I18n();
   const { pageId, go, restart } = useQuest1Progress();
   const [devMode, setDevMode] = useState(false);
@@ -1917,11 +1920,11 @@ export default function Quest1MobileEngine() {
 
   const exit = useCallback(() => {
     void router.replace(
-      { pathname: "/shop", query: buildLocalizedQuery(lang) },
+      { pathname: originMode === "WEB" ? "/shop" : "/raccoons", query: buildLocalizedQuery(lang) },
       undefined,
       { locale: lang },
     );
-  }, [lang, router]);
+  }, [lang, router, originMode]);
 
   const renderPage = () => {
     if (pageId === "day1") return <Day1Mobile go={go} />;

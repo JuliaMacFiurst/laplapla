@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { buildLocalizedQuery } from "@/lib/i18n/routing";
 import { useQuest1I18n } from "./i18n";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 
 import Day1 from "./pages/Day1";
 import Day2 from "./pages/Day2";
@@ -56,6 +57,7 @@ const PAGE_ORDER: PageId[] = [
 export type PageId = Quest1PageId;
 
 export default function QuestEngine() {
+  const originMode = useOriginMode();
   const router = useRouter();
   const { lang, t } = useQuest1I18n();
   const { pageId, go, restart } = useQuest1Progress();
@@ -87,7 +89,7 @@ export default function QuestEngine() {
         className="quest-back-to-maps-button"
         onClick={() => {
           router.push(
-            { pathname: "/shop", query: buildLocalizedQuery(lang) },
+            { pathname: originMode === "WEB" ? "/shop" : "/raccoons", query: buildLocalizedQuery(lang) },
             undefined,
             { locale: lang },
           );

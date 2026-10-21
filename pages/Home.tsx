@@ -8,6 +8,7 @@ import SEO from "@/components/SEO";
 import { SoundCasePromoBanner } from "@/components/shop/SoundCasePromoBanner";
 import { dictionaries, type Lang } from "../i18n";
 import { ShopSpotlight } from "@/components/shop/ShopSpotlight";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BASE_URL } from "@/lib/config";
@@ -179,6 +180,7 @@ function HomepageRetentionBlocks({
 }
 
 export default function Home({ lang, retention, checkoutAvailable = false }: { lang?: Lang; retention?: HomepageRetentionData | null; checkoutAvailable?: boolean }) {
+  const originMode = useOriginMode();
   const router = useRouter();
   const resolvedLang = lang ?? getCurrentLang(router);
   const isMobile = useIsMobile(767);
@@ -221,7 +223,7 @@ export default function Home({ lang, retention, checkoutAvailable = false }: { l
               </div>
             </header>
 
-            {!isMobile ? <SoundCasePromoBanner lang={resolvedLang} checkoutAvailable={checkoutAvailable} /> : null}
+            {!isMobile && originMode === "WEB" ? <SoundCasePromoBanner lang={resolvedLang} checkoutAvailable={checkoutAvailable} /> : null}
 
             <div className={`grid ${isMobile ? "grid-mobile-menu" : ""}`}>
               <Link
@@ -290,9 +292,9 @@ export default function Home({ lang, retention, checkoutAvailable = false }: { l
             </div>
           </section>
 
-          {isMobile ? <SoundCasePromoBanner lang={resolvedLang} mobile checkoutAvailable={checkoutAvailable} /> : null}
+          {isMobile && originMode === "WEB" ? <SoundCasePromoBanner lang={resolvedLang} mobile checkoutAvailable={checkoutAvailable} /> : null}
 
-          {isMobile ? <ShopSpotlight lang={resolvedLang} /> : null}
+          {isMobile && originMode === "WEB" ? <ShopSpotlight lang={resolvedLang} /> : null}
 
           <section className="home-brand-overview" aria-labelledby="laplapla-brand-heading">
             <h2 id="laplapla-brand-heading">{t.brand.heading}</h2>
@@ -315,7 +317,7 @@ export default function Home({ lang, retention, checkoutAvailable = false }: { l
 
           <HomepageRetentionBlocks lang={resolvedLang} retention={retention} />
 
-          {!isMobile ? <ShopSpotlight lang={resolvedLang} /> : null}
+          {!isMobile && originMode === "WEB" ? <ShopSpotlight lang={resolvedLang} /> : null}
 
         </div>
       </div>

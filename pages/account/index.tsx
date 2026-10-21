@@ -10,13 +10,16 @@ import { getLocalizedShortDescription, getLocalizedTitle, getProductById } from 
 import { supportCopy } from "@/lib/support/copy";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import type { CustomerBillingIdentityResponse } from "@/lib/customer/billingIdentity";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 
 type AccountResponse = CustomerAccountResponse & { profile: CustomerProfile | null; entitlements: ProductEntitlement[] };
 
 export default function CustomerAccountPage() {
+  const originMode = useOriginMode();
   const router = useRouter();
   const lang = getCurrentLang(router);
   const copy = customerCopy[lang];
+  const deleteAccountLabel = { ru: "Запросить удаление аккаунта", en: "Request account deletion", he: "בקשה למחיקת חשבון" }[lang];
   const auth = useCustomerSession();
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
@@ -109,6 +112,7 @@ export default function CustomerAccountPage() {
       <main className="customer-account" dir={lang === "he" ? "rtl" : "ltr"}>
         <section className="customer-account__panel">
           <h1>{copy.accountTitle}</h1>
+          <p><Link href={buildLocalizedPublicPath("/account/delete", lang)}>{deleteAccountLabel}</Link></p>
 
           {auth.status === "loading" ? <p>{copy.loading}</p> : null}
           {auth.status === "error" ? <p role="alert">{auth.error}</p> : null}
@@ -138,7 +142,7 @@ export default function CustomerAccountPage() {
                 </Link>
               </div>
 
-              {billing ? (
+              {billing && originMode === "WEB" ? (
                 <section className="customer-account__billing" aria-labelledby="billing-title">
                   <h2 id="billing-title">{copy.billingTitle}</h2>
                   <p>{copy.billingHelp}</p>

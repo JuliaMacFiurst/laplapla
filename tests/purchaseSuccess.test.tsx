@@ -39,7 +39,7 @@ const order = {
 };
 
 function request(id: string = orderId) {
-  return { method: "GET", query: { orderId: id }, headers: { authorization: "Bearer test-token" } } as unknown as NextApiRequest;
+  return { method: "GET", query: { orderId: id }, headers: { host: "www.laplapla.com", authorization: "Bearer test-token" } } as unknown as NextApiRequest;
 }
 
 function response() {

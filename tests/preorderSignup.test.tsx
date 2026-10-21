@@ -28,7 +28,7 @@ function request(body: unknown, overrides: Partial<NextApiRequest> = {}): NextAp
     body,
     query: {},
     cookies: {},
-    headers: {},
+    headers: { host: "www.laplapla.com" },
     socket: { remoteAddress: "127.0.0.1" },
     ...overrides,
   } as unknown as NextApiRequest;
@@ -73,6 +73,11 @@ describe("server-controlled preorder definition", () => {
 });
 
 describe("preorder signup API", () => {
+  it("rejects app-origin preorder requests", async () => {
+    const { res, result } = response();
+    await preorderSignupHandler(request({}, { headers: { host: "app.laplapla.com" } }), res);
+    expect(result.status).toBe(403);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     preorderMocks.registerSoundCasePreorder.mockResolvedValue({ status: "registered", created: true });

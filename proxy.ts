@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { buildCanonicalMapEntityPathFromUnknown, normalizeMapEntityType, normalizeSlug } from "@/lib/mapEntityRouting";
 import { getLanguageRestoreRedirect } from "@/lib/i18n/languageRestore";
+import { classifyOriginHost, isPurchaseApi, isPurchasePage } from "@/lib/runtime/originMode";
 import {
   buildLegacyLangRedirect,
   buildLocalizedPublicPath,
@@ -46,6 +47,12 @@ export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const rawPathname = new URL(request.url).pathname;
   const normalizedPathname = pathname !== "/" ? pathname.replace(/\/+$/, "") || "/" : pathname;
+
+  const mode = classifyOriginHost(request.headers.get("host") ?? undefined, request.headers.get("x-forwarded-host") ?? undefined);
+  if (mode !== "WEB" && (isPurchaseApi(rawPathname) || isPurchasePage(rawPathname) ||
+      isPurchaseApi(pathname) || isPurchasePage(pathname))) {
+    return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "private, no-store, max-age=0" } });
+  }
 
   if (
     normalizedPathname.startsWith("/api") ||

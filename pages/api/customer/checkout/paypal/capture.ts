@@ -1,3 +1,4 @@
+import { requireWebCommerceOrigin } from "@/lib/server/commerce/originGuard";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { resolveCustomerAccess } from "@/lib/server/auth/customerAccess";
 import { finalizeLocalOrderPaid } from "@/lib/server/commerce/finalizePaidOrder";
@@ -26,6 +27,7 @@ function parseBody(value: unknown) {
 }
 
 export async function paypalCaptureHandler(req: NextApiRequest, res: NextApiResponse<PayPalCaptureResponse>) {
+  if (!requireWebCommerceOrigin(req, res)) return;
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   if (!enforceSameOrigin(req, res)) return;
   const body = parseBody(req.body);

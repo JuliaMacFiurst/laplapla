@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildCustomerAuthCallbackUrl,
   consumeCustomerAuthDestination,
@@ -9,6 +9,9 @@ import {
   storeCustomerAuthDestination,
 } from "@/lib/customer/authRouting";
 import { getCustomerNavigationLabel } from "@/lib/customer/authUi";
+import { browserOriginMode } from "@/lib/runtime/originMode";
+
+afterEach(() => vi.unstubAllGlobals());
 
 function memoryStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -20,6 +23,16 @@ function memoryStorage(initial: Record<string, string> = {}) {
 }
 
 describe("customer OAuth routing", () => {
+  it("resolves the browser origin before consuming a stored web checkout return", () => {
+    vi.stubGlobal("window", { location: { host: "www.laplapla.com" } });
+    const storage = memoryStorage();
+    storeCustomerAuthDestination(storage, "/shop/sound-case-001/checkout", "ru", browserOriginMode());
+    expect(consumeCustomerAuthDestination(storage, undefined, "ru", browserOriginMode()))
+      .toBe("/shop/sound-case-001/checkout");
+    vi.stubGlobal("window", { location: { host: "app.laplapla.com" } });
+    expect(resolveCustomerDestination("/shop/sound-case-001/checkout", "ru", browserOriginMode()))
+      .toBe("/account");
+  });
   it.each([
     ["ru", "https://www.laplapla.com/auth/callback", "/account"],
     ["en", "https://www.laplapla.com/en/auth/callback", "/en/account"],

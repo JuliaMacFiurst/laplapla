@@ -47,6 +47,8 @@ import { useResponsiveViewport } from "@/hooks/useResponsiveViewport";
 import { getActiveContentExitProperties, trackEvent, trackSessionStart } from "@/lib/analytics/client";
 import { analyticsNavigationKey, isNewAnalyticsNavigation } from "@/lib/analytics/pageView";
 import { shopLegalDisclosure, shopPolicyPaths } from "@/lib/legal/shopPolicies";
+import { OriginModeContext } from "@/lib/runtime/OriginModeContext";
+import { browserOriginMode, initialOriginMode, type OriginMode } from "@/lib/runtime/originMode";
 
 const ADMIN_APP_ORIGINS = [
   process.env["NEXT_PUBLIC_ADMIN_APP_ORIGIN"],
@@ -297,6 +299,8 @@ function getHydrationStableLang(
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const [activeOriginMode, setActiveOriginMode] = useState<OriginMode>(() => initialOriginMode(pageProps));
+  useEffect(() => { setActiveOriginMode(browserOriginMode()); }, []);
   const isQuestPage = router.pathname.startsWith("/quest") || router.pathname.startsWith("/quests");
   const isWakeTheDunePage = router.pathname === "/mini-games/wake-the-dune";
   const isCatsPage = router.pathname.startsWith("/cats");
@@ -457,6 +461,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         </>
       )}
 
+      <OriginModeContext.Provider value={activeOriginMode}>
       <div className={`app-layout${isCapybaraPage ? " app-layout-capybara" : ""}${isWakeTheDunePage ? " app-layout--wake-dune" : ""}`}>
         {!isExportPage && !isWakeTheDunePage && <TopBar lang={lang} />}
         <Component {...pageProps} lang={lang} />
@@ -519,9 +524,11 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                   >
                     {t.footer.terms}
                   </a>
-                  <a href={buildLocalizedPublicPath(shopPolicyPaths.sale, lang)}>{shopLegalDisclosure[lang].sale}</a>
-                  <a href={buildLocalizedPublicPath(shopPolicyPaths.refund, lang)}>{shopLegalDisclosure[lang].refund}</a>
-                  <a href={buildLocalizedPublicPath(shopPolicyPaths.printable, lang)}>{shopLegalDisclosure[lang].printable}</a>
+                  {activeOriginMode === "WEB" ? <>
+                    <a href={buildLocalizedPublicPath(shopPolicyPaths.sale, lang)}>{shopLegalDisclosure[lang].sale}</a>
+                    <a href={buildLocalizedPublicPath(shopPolicyPaths.refund, lang)}>{shopLegalDisclosure[lang].refund}</a>
+                    <a href={buildLocalizedPublicPath(shopPolicyPaths.printable, lang)}>{shopLegalDisclosure[lang].printable}</a>
+                  </> : null}
                   <a
                     href={buildLocalizedPublicPath("/privacy", lang)}
                     onClick={() =>
@@ -630,6 +637,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </div>
       <div id="modal-root"></div>
       <div id="popup-root"></div>
+      </OriginModeContext.Provider>
     </div>
   );
 }

@@ -100,6 +100,7 @@ function request(payload: unknown, headers: Record<string, string> = {}) {
     query: {},
     cookies: {},
     headers: {
+      host: "www.laplapla.com",
       "paypal-transmission-id": "transmission-1",
       "paypal-transmission-time": "2026-10-06T10:00:00Z",
       "paypal-transmission-sig": "signature-value",
@@ -152,6 +153,14 @@ describe("PayPal webhook reconciliation", () => {
     mocks.issueReceipt.mockResolvedValue({ status: "issued", receiptId: "receipt-1", displayNumber: "WEB-000001" });
     mocks.captureAndAlert.mockResolvedValue(undefined);
     mocks.discordAlert.mockResolvedValue({ ok: true, status: "sent" });
+  });
+
+  it("validates PayPal signatures independently of the callback hostname", async () => {
+    mocks.verifySignature.mockResolvedValue(false);
+    const target = response();
+    await paypalWebhookHandler(request(completedEvent(), { host: "app.laplapla.com" }), target.res);
+    expect(target.result).toMatchObject({ status: 401, body: { code: "invalid_signature" } });
+    expect(mocks.claimEvent).not.toHaveBeenCalled();
   });
 
   it("rejects missing headers and failed signatures before claiming an event", async () => {

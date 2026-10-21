@@ -1,14 +1,14 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/router";
 import SEO from "@/components/SEO";
 import {
   buildCustomerAuthCallbackUrl,
-  resolveCustomerDestination,
   storeCustomerAuthDestination,
 } from "@/lib/customer/authRouting";
 import { customerCopy } from "@/lib/customer/copy";
 import { buildLocalizedPublicPath, getCurrentLang } from "@/lib/i18n/routing";
 import { supabase } from "@/lib/supabase";
+import { browserOriginMode } from "@/lib/runtime/originMode";
 
 function getStringParam(value: string | string[] | undefined) {
   return typeof value === "string" ? value : null;
@@ -18,17 +18,13 @@ export default function CustomerSignInPage() {
   const router = useRouter();
   const lang = getCurrentLang(router);
   const copy = customerCopy[lang];
-  const nextTarget = useMemo(
-    () => resolveCustomerDestination(getStringParam(router.query.next), lang),
-    [lang, router.query.next],
-  );
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const callbackUrl = () => {
-    storeCustomerAuthDestination(window.localStorage, nextTarget, lang);
+    storeCustomerAuthDestination(window.localStorage, getStringParam(router.query.next), lang, browserOriginMode());
     return buildCustomerAuthCallbackUrl(window.location.origin, lang);
   };
 

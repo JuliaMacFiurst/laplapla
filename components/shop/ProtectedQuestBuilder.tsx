@@ -7,6 +7,7 @@ import { getProductById } from "@/lib/shop/catalog";
 import { dictionaries, type Lang } from "@/i18n";
 import type { QuestPersonalization } from "@/lib/shop/questPersonalization";
 import { QuestBuilder, type QuestBuilderMode } from "./QuestBuilder";
+import { useOriginMode } from "@/lib/runtime/OriginModeContext";
 
 type ProductAccessState = "checking" | "granted" | "denied" | "error";
 
@@ -16,6 +17,7 @@ export function ProtectedQuestBuilder({ productId, interfaceLang, initialMode = 
   initialMode?: QuestBuilderMode;
 }) {
   const auth = useCustomerSession();
+  const originMode = useOriginMode();
   const [access, setAccess] = useState<ProductAccessState>("checking");
   const [initialPersonalization, setInitialPersonalization] = useState<QuestPersonalization | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -105,7 +107,8 @@ export function ProtectedQuestBuilder({ productId, interfaceLang, initialMode = 
           <>
             <h1>{copy.entitlementRequiredTitle}</h1>
             <p>{copy.entitlementRequiredBody}</p>
-            <Link href={productPath}>{copy.backToProduct}</Link>
+            {originMode === "WEB" ? <Link href={productPath}>{copy.backToProduct}</Link> :
+              <Link href={buildLocalizedPublicPath("/account", interfaceLang)}>{copy.accountTitle}</Link>}
           </>
         ) : null}
         {isError ? (

@@ -55,6 +55,19 @@ import { paypalResumeHandler } from "@/pages/api/customer/checkout/paypal/resume
 import { paypalQuoteHandler } from "@/pages/api/customer/checkout/paypal/quote";
 import { privateLiveAccessHandler } from "@/pages/api/customer/checkout/paypal/private-access";
 
+describe("Android origin payment isolation", () => {
+  it("rejects create, capture, resume, quote and private access before commerce work", async () => {
+    for (const handler of [paypalCreateHandler, paypalCaptureHandler, paypalResumeHandler, paypalQuoteHandler, privateLiveAccessHandler]) {
+      const req = request({});
+      req.headers.host = "app.laplapla.com";
+      const target = response();
+      await handler(req, target.res);
+      expect(target.result.status).toBe(403);
+      expect(target.result.body).toEqual({ ok: false, code: "unavailable" });
+    }
+  });
+});
+
 const user = { id: "11111111-1111-4111-8111-111111111111", email: "buyer@example.com", email_confirmed_at: "2026-10-01" };
 const localOrderId = "22222222-2222-4222-8222-222222222222";
 const checkoutKey = "33333333-3333-4333-8333-333333333333";
@@ -78,7 +91,7 @@ const attribution = {
 
 function request(body: unknown, origin = "http://localhost:3000") {
   return {
-    method: "POST", body, query: {}, cookies: {}, headers: { origin },
+    method: "POST", body, query: {}, cookies: {}, headers: { origin, host: "www.laplapla.com" },
     socket: { remoteAddress: "127.0.0.1" },
   } as unknown as NextApiRequest;
 }
