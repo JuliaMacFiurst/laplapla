@@ -251,6 +251,23 @@ export const en = {
     homeExperience: "Explore all LapLapLa experiences",
   },
   pwaInstall: {
+    androidApp: {
+      seoTitle: "LapLapLa is already installed!",
+      kicker: "Android · Google Play",
+      title: "LapLapLa is already installed!",
+      lead: "You're using the Android version of LapLapLa from Google Play. Free games, stories, and creative tools are available here.",
+      materialsTitle: "Your materials",
+      materialsText: "If you already have access to purchased LapLapLa materials, sign in to your account to open them.",
+      accountButton: "Sign in to your account",
+      extraTitle: "Additional materials",
+      extraText: "Additional digital materials cannot be purchased in this version of the app. You can purchase them on the official LapLapLa website and then use them here through your account.",
+      homeButton: "Go to the home page",
+    },
+    webInstalled: {
+      title: "The LapLapLa web app is installed!",
+      lead: "You're using the installed LapLapLa web app (PWA). The Android app from Google Play is a separate version.",
+      homeButton: "Go to the home page",
+    },
     seo: {
       title: "Install LapLapLa as an app",
       description: "How to install LapLapLa on Android, iPhone, iPad, Mac, and Windows.",
@@ -272,6 +289,7 @@ export const en = {
       installButton: "Install app",
       unavailableButton: "Open browser menu",
       installedNote: "LapLapLa is already open in app mode.",
+      versionsNote: "LapLapLa is available as an Android app on Google Play and as an installable web app (PWA). These are separate installation options.",
       cards: {
         android: {
           title: "Android",

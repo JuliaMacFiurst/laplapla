@@ -251,6 +251,23 @@ export const ru = {
     homeExperience: "Все миры LapLapLa",
   },
   pwaInstall: {
+    androidApp: {
+      seoTitle: "LapLapLa уже установлена!",
+      kicker: "Android · Google Play",
+      title: "LapLapLa уже установлена!",
+      lead: "Вы используете Android-версию LapLapLa из Google Play. Здесь доступны бесплатные игры, истории и творческие инструменты.",
+      materialsTitle: "Ваши материалы",
+      materialsText: "Если у вас уже есть доступ к приобретённым материалам LapLapLa, войдите в свой аккаунт, чтобы открыть их.",
+      accountButton: "Войти в аккаунт",
+      extraTitle: "Дополнительные материалы",
+      extraText: "Приобретение дополнительных цифровых материалов в этой версии приложения недоступно. Их можно приобрести на официальном сайте LapLapLa и затем использовать здесь через свой аккаунт.",
+      homeButton: "На главную",
+    },
+    webInstalled: {
+      title: "Веб-версия LapLapLa установлена!",
+      lead: "Вы открыли установленную веб-версию LapLapLa (PWA). Android-приложение из Google Play — отдельная версия.",
+      homeButton: "На главную",
+    },
     seo: {
       title: "Установить LapLapLa как приложение",
       description: "Инструкции по установке LapLapLa на Android, iPhone, iPad, Mac и Windows.",
@@ -272,6 +289,7 @@ export const ru = {
       installButton: "Установить приложение",
       unavailableButton: "Откройте меню браузера",
       installedNote: "LapLapLa уже открыта в режиме приложения.",
+      versionsNote: "LapLapLa доступна как Android-приложение в Google Play и как устанавливаемая веб-версия (PWA). Это разные варианты установки.",
       cards: {
         android: {
           title: "Android",

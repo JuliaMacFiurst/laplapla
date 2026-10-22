@@ -251,6 +251,23 @@ export const he = {
     homeExperience: "לכל החוויות של LapLapLa",
   },
   pwaInstall: {
+    androidApp: {
+      seoTitle: "LapLapLa כבר מותקנת!",
+      kicker: "Android · Google Play",
+      title: "LapLapLa כבר מותקנת!",
+      lead: "אתם משתמשים בגרסת Android של LapLapLa מ-Google Play. כאן זמינים משחקים, סיפורים וכלי יצירה ללא תשלום.",
+      materialsTitle: "התכנים שלכם",
+      materialsText: "אם כבר יש לכם גישה לתכנים של LapLapLa שרכשתם, היכנסו לחשבון כדי לפתוח אותם.",
+      accountButton: "כניסה לחשבון",
+      extraTitle: "תכנים נוספים",
+      extraText: "אי אפשר לרכוש תכנים דיגיטליים נוספים בגרסה זו של האפליקציה. אפשר לרכוש אותם באתר הרשמי של LapLapLa ולהשתמש בהם כאן דרך החשבון שלכם.",
+      homeButton: "לעמוד הבית",
+    },
+    webInstalled: {
+      title: "גרסת האינטרנט של LapLapLa מותקנת!",
+      lead: "פתחתם את גרסת האינטרנט המותקנת של LapLapLa (PWA). אפליקציית Android מ-Google Play היא גרסה נפרדת.",
+      homeButton: "לעמוד הבית",
+    },
     seo: {
       title: "להתקין את LapLapLa כאפליקציה",
       description: "הוראות התקנה של LapLapLa ב-Android, iPhone, iPad, Mac ו-Windows.",
@@ -272,6 +289,7 @@ export const he = {
       installButton: "להתקין אפליקציה",
       unavailableButton: "פתחו את תפריט הדפדפן",
       installedNote: "LapLapLa כבר פתוחה במצב אפליקציה.",
+      versionsNote: "LapLapLa זמינה כאפליקציית Android ב-Google Play וגם כגרסת אינטרנט הניתנת להתקנה (PWA). אלה שתי אפשרויות התקנה נפרדות.",
       cards: {
         android: {
           title: "Android",

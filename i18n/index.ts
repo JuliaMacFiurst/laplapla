@@ -211,6 +211,19 @@ type DictionaryShape = {
   };
 
   pwaInstall: {
+    androidApp: {
+      seoTitle: string;
+      kicker: string;
+      title: string;
+      lead: string;
+      materialsTitle: string;
+      materialsText: string;
+      accountButton: string;
+      extraTitle: string;
+      extraText: string;
+      homeButton: string;
+    };
+    webInstalled: { title: string; lead: string; homeButton: string };
     seo: {
       title: string;
       description: string;
@@ -232,6 +245,7 @@ type DictionaryShape = {
       installButton: string;
       unavailableButton: string;
       installedNote: string;
+      versionsNote: string;
       cards: {
         android: {
           title: string;
