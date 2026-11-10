@@ -30,7 +30,6 @@ describe("commerce analytics client producers", () => {
   it.each([
     "product_hero",
     "product_final",
-    "home_promo",
   ] as const)("sends one bounded event for one %s logical click without blocking navigation", (entryPoint) => {
     const result = trackProductInterest({
       productId: product.id,
@@ -52,14 +51,15 @@ describe("commerce analytics client producers", () => {
     });
   });
 
-  it("wires exactly the three requested CTA entry points and keeps the existing product_view producer", () => {
+  it("separates promo interactions from purchase intent and keeps the existing product_view producer", () => {
     const detail = readFileSync(`${process.cwd()}/components/shop/ShopProductDetail.tsx`, "utf8");
     const promo = readFileSync(`${process.cwd()}/components/shop/SoundCasePromoBanner.tsx`, "utf8");
     const productPage = readFileSync(`${process.cwd()}/pages/shop/[slug].tsx`, "utf8");
 
     expect(detail.match(/entryPoint: "product_hero"/gu)).toHaveLength(1);
     expect(detail.match(/entryPoint: "product_final"/gu)).toHaveLength(1);
-    expect(promo.match(/entryPoint: "home_promo"/gu)).toHaveLength(1);
+    expect(promo).toContain('trackEvent("shop_promo_impression"');
+    expect(promo).toContain('trackEvent("shop_promo_click"');
     expect(`${detail}\n${promo}`).not.toContain("preventDefault");
     expect(productPage.match(/trackEvent\("product_view"/gu)).toHaveLength(1);
     expect(productPage).toContain("content_id: product?.id ?? slug");
@@ -71,11 +71,12 @@ describe("commerce analytics client producers", () => {
       period: { from: "2026-10-19T00:00:00.000000Z", to: "2026-10-20T00:00:00.000000Z", timezone: "UTC", interval: "[from,to)" },
       environment: "sandbox",
       traffic_scope: "all_production",
-      audience: {}, commerce: {}, attribution: {}, sources: {}, products: [],
+      audience: {}, commerce: {}, attribution: {}, sources: {}, products: [], promotions: [],
       funnel: { mode: "independent_counts", conversion_percentages_available: false },
       data_quality: {},
     };
     expect(parseCommerceAnalyticsReportV1(report)).toBe(report);
+    expect(() => parseCommerceAnalyticsReportV1({ ...report, promotions: undefined })).toThrow();
     expect(() => parseCommerceAnalyticsReportV1({ ...report, funnel: { mode: "strict", conversion_percentages_available: true } })).toThrow("Unsafe commerce funnel semantics");
   });
 });

@@ -94,7 +94,9 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
       { label: "Формат", value: "24 печатные страницы A4 + интерактивные этапы по QR-кодам" },
       { label: "Языки", value: "Русский · English · עברית" },
       { label: "Команда", value: "Главный участник + до 8 участников" },
+      { label: "Подготовка взрослого", value: "Нужны принтер, бумага A4, интернет и устройство для открытия QR-кодов. После персонализации распечатайте материалы и подготовьте карточки перед игрой." },
       { label: "Доступ", value: "Сохраняется в аккаунте для редактирования и повторной печати" },
+      { label: "После оплаты", value: "Открывается конструктор в аккаунте; персонализированные материалы печатаются через браузер. Готовый PDF-файл не отправляется." },
     ],
     trustTitle: "Покупка без сюрпризов",
     trustItems: [
@@ -160,7 +162,9 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
       { label: "Format", value: "24 printable A4 pages + QR-linked interactive stages" },
       { label: "Languages", value: "Русский · English · עברית" },
       { label: "Team", value: "Lead participant + up to 8 participants" },
+      { label: "Adult preparation", value: "Have a printer, A4 paper, internet, and a device for QR codes ready. Personalize and print the materials, then prepare the cards before play." },
       { label: "Access", value: "Saved to your account for editing and reprinting" },
+      { label: "After payment", value: "The builder opens in your account; print personalized materials from your browser. A ready-made PDF file is not emailed." },
     ],
     trustTitle: "A purchase you can understand",
     trustItems: [
@@ -226,7 +230,9 @@ export const SOUND_CASE_PRODUCT_DETAIL_COPY: Record<Lang, ProductDetailCopy> = {
       { label: "פורמט", value: "24 עמודי A4 להדפסה + שלבים אינטראקטיביים המקושרים בקודי QR" },
       { label: "שפות", value: "Русский · English · עברית" },
       { label: "צוות", value: "משתתף ראשי + עד 8 משתתפים" },
+      { label: "הכנה למבוגר", value: "צריך מדפסת, נייר A4, אינטרנט ומכשיר לפתיחת קודי QR. לאחר ההתאמה האישית מדפיסים את החומרים ומכינים את הכרטיסים לפני המשחק." },
       { label: "גישה", value: "נשמר בחשבון לעריכה ולהדפסה חוזרת" },
+      { label: "לאחר התשלום", value: "הבונה נפתח בחשבון; מדפיסים את החומרים האישיים דרך הדפדפן. קובץ PDF מוכן אינו נשלח בדוא״ל." },
     ],
     trustTitle: "רכישה ברורה ורגועה",
     trustItems: [

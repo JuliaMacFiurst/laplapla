@@ -71,6 +71,8 @@ const PRODUCTS: ShopProduct[] = [
       "כ־90–120 דקות, בהתאם לגודל הקבוצה ולקצב שלה.",
     ),
     format: "printable",
+    offerTier: "full_adventure",
+    delivery: "account_print_builder",
     includedItems: [
       localizedString("Персонализированные страницы A4", "Personalized A4 pages", "דפי A4 אישיים"),
       localizedString("8 этапов приключения", "8 adventure stages", "8 שלבים של הרפתקה"),

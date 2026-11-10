@@ -78,6 +78,8 @@ describe("LapLapLa shop storefront", () => {
 
   it("makes the Sound Case purchasable and uses one real catalog product", () => {
     expect(product.status).toBe("active");
+    expect(product.offerTier).toBe("full_adventure");
+    expect(product.delivery).toBe("account_print_builder");
     expect(product.heroImage).toContain("banner-horizontal.webp");
     const page = readFileSync(`${process.cwd()}/pages/shop/index.tsx`, "utf8");
     expect(page).toContain("getPublicProducts()");

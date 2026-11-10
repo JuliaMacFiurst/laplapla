@@ -65,6 +65,15 @@ export type CommerceAnalyticsReportV1 = {
     checkout_starts: number;
     paid: Array<{ currency: string; paid_orders: number; gross_minor: number }>;
   }>;
+  promotions: Array<{
+    product_id: string;
+    impressions: number;
+    impression_visitors: number;
+    impression_sessions: number;
+    clicks: number;
+    click_visitors: number;
+    click_sessions: number;
+  }>;
   funnel: {
     mode: "independent_counts";
     conversion_percentages_available: false;
@@ -115,7 +124,7 @@ export function parseCommerceAnalyticsReportV1(value: unknown): CommerceAnalytic
   if (!isRecord(value.audience) || !isRecord(value.commerce) || !isRecord(value.attribution)) {
     throw new Error("Incomplete commerce analytics report");
   }
-  if (!isRecord(value.sources) || !Array.isArray(value.products) || !isRecord(value.funnel) || !isRecord(value.data_quality)) {
+  if (!isRecord(value.sources) || !Array.isArray(value.products) || !Array.isArray(value.promotions) || !isRecord(value.funnel) || !isRecord(value.data_quality)) {
     throw new Error("Incomplete commerce analytics report");
   }
   if (value.funnel.mode !== "independent_counts" || value.funnel.conversion_percentages_available !== false) {

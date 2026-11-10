@@ -144,6 +144,8 @@ for migration in "${analytics_migrations[@]}"; do
 done
 
 "${psql_local[@]}" -f "$repo_root/supabase/migrations/20261019110250_analytics_phase_2b_commerce_report.sql" >/dev/null
+"${psql_local[@]}" -f "$repo_root/supabase/migrations/20261110111649_shop_promo_funnel_events.sql" >/dev/null
 "${psql_local[@]}" -f "$repo_root/tests/sql/commerceAnalyticsReport.sql"
+"${psql_local[@]}" -f "$repo_root/tests/sql/shopPromoCommerceReport.sql"
 
 printf 'Commerce order foundation SQL regression checks passed.\n'

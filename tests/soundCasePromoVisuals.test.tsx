@@ -7,7 +7,6 @@ import { SoundCasePromoBanner } from "@/components/shop/SoundCasePromoBanner";
 import { dictionaries } from "@/i18n";
 import { getProductById } from "@/lib/shop/catalog";
 import { formatPrice } from "@/lib/shop/commerce";
-import { LAUNCH_OFFER_COPY } from "@/lib/shop/launchOffer";
 import {
   SOUND_CASE_PRODUCT_INCLUDED_MEDIA,
   SOUND_CASE_PROMO_MEDIA,
@@ -26,10 +25,11 @@ describe("Sound Case promotional visuals", () => {
     expect(product).not.toBeNull();
     expect(html).toContain(formatPrice(4900, "ILS", lang));
     expect(html).toContain(formatPrice(3900, "ILS", lang));
-    expect(html).toContain(LAUNCH_OFFER_COPY[lang].buy);
+    expect(html).toContain(copy.cta);
     expect(html).toContain(lang === "ru"
-      ? 'href="/shop/sound-case-001/checkout"'
-      : `href="/${lang}/shop/sound-case-001/checkout"`);
+      ? 'href="/shop/sound-case-001"'
+      : `href="/${lang}/shop/sound-case-001"`);
+    expect(html).not.toContain(`/shop/sound-case-001/checkout`);
   });
 
   it("uses the public R2 banner and sticker collections", () => {

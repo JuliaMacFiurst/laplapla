@@ -114,7 +114,7 @@ describe("Analytics v2 navigation and report contract", () => {
   });
 
   it("keeps TypeScript taxonomy aligned with the database and bounds completion by matched opens", async () => {
-    const sql = await readFile(new URL("../supabase/migrations/20261019110250_analytics_phase_2b_commerce_report.sql", import.meta.url), "utf8");
+    const sql = await readFile(new URL("../supabase/migrations/20261110111649_shop_promo_funnel_events.sql", import.meta.url), "utf8");
     const constraint = sql.match(/analytics_events_event_name_check check \(event_name in \(([\s\S]*?)\n\s*\)\);/)?.[1] || "";
     const sqlNames = Array.from(constraint.matchAll(/'([^']+)'/g), (match) => match[1]);
     expect(new Set(sqlNames)).toEqual(new Set(ANALYTICS_EVENT_NAMES));
@@ -124,7 +124,8 @@ describe("Analytics v2 navigation and report contract", () => {
     expect(foundationSql).toContain("content_open_events as");
     expect(foundationSql).toContain("canonical.event_name = 'content_open'");
     expect(foundationSql).toContain("analytics_events_event_id_key unique (event_id)");
-    expect(sql).not.toMatch(/create index if not exists (orders_environment_created_at_idx|commerce_refunds_completed_environment_idx)/u);
-    expect(sql).toContain("sum(item.unit_price_minor::bigint * item.quantity::bigint)::bigint as gross_minor");
+    const commerceSql = await readFile(new URL("../supabase/migrations/20261019110250_analytics_phase_2b_commerce_report.sql", import.meta.url), "utf8");
+    expect(commerceSql).not.toMatch(/create index if not exists (orders_environment_created_at_idx|commerce_refunds_completed_environment_idx)/u);
+    expect(commerceSql).toContain("sum(item.unit_price_minor::bigint * item.quantity::bigint)::bigint as gross_minor");
   });
 });

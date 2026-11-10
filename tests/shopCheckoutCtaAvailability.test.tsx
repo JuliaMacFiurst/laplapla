@@ -43,12 +43,13 @@ describe("public Shop checkout availability", () => {
 
     for (const html of [card, detail, promo]) {
       expect(html.replace(/[\u2066-\u2069]/g, "")).toContain(product.title[lang]);
-      expect(html).toContain(soon);
       expect(html).not.toContain(`/shop/sound-case-001/checkout`);
       expect(html).not.toContain(`/shop/sound-case-001/preorder`);
     }
+    expect(card).toContain(soon);
+    expect(detail).toContain(soon);
+    expect(promo).toContain(`href="${lang === "ru" ? "" : `/${lang}`}/shop/sound-case-001"`);
     expect(detail.match(/role="status"/g)).toHaveLength(2);
-    expect(promo).toContain('role="status"');
     expect(product.status).toBe("active");
   });
 
@@ -59,9 +60,9 @@ describe("public Shop checkout availability", () => {
     const checkoutPath = lang === "ru" ? "/shop/sound-case-001/checkout" : `/${lang}/shop/sound-case-001/checkout`;
 
     expect(detail).toContain(`href="${checkoutPath}"`);
-    expect(promo).toContain(`href="${checkoutPath}"`);
+    expect(promo).toContain(`href="${lang === "ru" ? "" : `/${lang}`}/shop/sound-case-001"`);
     expect(detail).toContain(LAUNCH_OFFER_COPY[lang].buy);
-    expect(promo).toContain(LAUNCH_OFFER_COPY[lang].buy);
+    expect(promo).not.toContain(LAUNCH_OFFER_COPY[lang].buy);
     expect(detail).not.toContain('role="status"');
   });
 

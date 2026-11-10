@@ -193,7 +193,7 @@ export const en = {
       hook: "What can sing right beneath your feet?",
       regularPrice: "Regular price",
       preorderPrice: "Launch offer",
-      cta: "Buy now",
+      cta: "Explore the adventure",
       noPayment: "Save ₪10",
       imageAlt: "A parrot and capybara investigate singing sand in a sound lab",
     },

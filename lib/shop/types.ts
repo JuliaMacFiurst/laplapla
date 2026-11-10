@@ -30,6 +30,12 @@ export const PRODUCT_FORMATS = [
 
 export type ProductFormat = (typeof PRODUCT_FORMATS)[number];
 
+/** Commercial scope, independent of file format and catalog category. */
+export type ProductTier = "starter_pdf" | "full_adventure";
+
+/** What an entitlement unlocks; a receipt PDF is never product delivery. */
+export type ProductDelivery = "account_print_builder" | "private_pdf_download";
+
 export const PRODUCT_CATEGORIES = [
   "adventures",
   "science",
@@ -113,6 +119,9 @@ export interface ShopProduct {
   duration: LocalizedString | null;
 
   format: ProductFormat;
+
+  offerTier: ProductTier;
+  delivery: ProductDelivery;
 
   /** What's included — list of items shown on the product page. */
   includedItems: LocalizedString[];
